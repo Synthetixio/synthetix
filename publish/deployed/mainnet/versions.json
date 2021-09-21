@@ -284,11 +284,11 @@
 			},
 			"TokenStatesXAG": {
 				"address": "0x53d244Fb46357568DBeF082225cCC87cBD94aAE8",
-				"status": "current"
+				"status": "deleted"
 			},
 			"TokenStatesXAU": {
 				"address": "0x20569B49d74c1EDE765382574F7F3fdC2a078A4f",
-				"status": "current"
+				"status": "deleted"
 			},
 			"TokenStateSynthetix": {
 				"address": "0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
@@ -352,7 +352,7 @@
 			},
 			"TokenStatesBNB": {
 				"address": "0xf9bd94C6F93c1FA5F38174c5e424721e1046af07",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysBNB": {
 				"address": "0x013AE307648f529aa72c5767A334DDd37aaB43c3",
@@ -366,7 +366,7 @@
 			},
 			"TokenStateiBTC": {
 				"address": "0xa1652766155D4Debc31D01BF3f748cB46508745b",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiBTC": {
 				"address": "0x2B143041a6F8BE9dCC66E9110178a264A223A3bd",
@@ -380,7 +380,7 @@
 			},
 			"TokenStateiETH": {
 				"address": "0x7b6ab32Ca02B31485fbf7265437c2853792CC5d9",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiETH": {
 				"address": "0xD4fb1706Ae549FEBeC06bb7175b08010DD1B0C2e",
@@ -394,7 +394,7 @@
 			},
 			"TokenStateiBNB": {
 				"address": "0xc4E4c442653fDC78A71401684fd6cF9d67B3B643",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiBNB": {
 				"address": "0x7c8F07Ac5b0a2876ee582a661d53dE2D0BbAd96F",
@@ -537,7 +537,7 @@
 			},
 			"TokenStatesTRX": {
 				"address": "0x7EC5697C724895DA7f2320bDE063BEF6215a72e2",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysTRX": {
 				"address": "0x0944d2C41FEF3088467287e208E5bBB622A0c09C",
@@ -551,7 +551,7 @@
 			},
 			"TokenStatesXTZ": {
 				"address": "0x959894a82fbF99d35B12ed1EA81e783296229862",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysXTZ": {
 				"address": "0xF45B14ddaBF0F0e275E215b94dD24Ae013a27F12",
@@ -629,7 +629,7 @@
 			},
 			"TokenStateiTRX": {
 				"address": "0xd69EabdF940174cA571A6D71dde9B9A4dbCdBb0f",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiTRX": {
 				"address": "0xCd8D927f2CB03d2eFB7f96CeB66Ec4976843E012",
@@ -643,7 +643,7 @@
 			},
 			"TokenStateiXTZ": {
 				"address": "0xca0d3004f5E771A129fB94619f8867A23e8A23de",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiXTZ": {
 				"address": "0xc2992b2C22238F296c2f429ee2f7AfB462Ed1750",
@@ -688,7 +688,7 @@
 		"contracts": {
 			"TokenStatesCEX": {
 				"address": "0xc5680d24C3086e10f618b5176A59E90D6284be9f",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysCEX": {
 				"address": "0xb91B114a24a1c16834F1217cC3B9eE117b6c817A",
@@ -702,7 +702,7 @@
 			},
 			"TokenStateiCEX": {
 				"address": "0x3Fb1F228168432688b4E851Fe909907248cf9eCD",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiCEX": {
 				"address": "0xAE7F21C0dFe5481ca77d538b5609938a51850942",
@@ -822,11 +822,11 @@
 			},
 			"ProxysXAG": {
 				"address": "0x6A22e5e94388464181578Aa7A6B869e00fE27846",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysXAU": {
 				"address": "0x261EfCdD24CeA98652B9700800a13DfBca4103fF",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyXDR": {
 				"address": "0xb3f67dE9a919476a4c0fE821d67bf5C4637D8429",
@@ -897,7 +897,7 @@
 			},
 			"ProxysBNB": {
 				"address": "0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsBNB": {
 				"address": "0x33cE216C10dEA5E724b7A90628ce7853eef127B3",
@@ -906,7 +906,7 @@
 			},
 			"ProxyiBTC": {
 				"address": "0xD6014EA05BDe904448B743833dDF07c3C7837481",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiBTC": {
 				"address": "0xCe88906100c145522Be3a509683881241aBb3C52",
@@ -915,7 +915,7 @@
 			},
 			"ProxyiETH": {
 				"address": "0xA9859874e1743A32409f75bB11549892138BBA1E",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiETH": {
 				"address": "0x3f3804176D90640aC6063124afd4bc0636aC85B6",
@@ -924,7 +924,7 @@
 			},
 			"ProxyiBNB": {
 				"address": "0xAFD870F32CE54EfdBF677466B612bf8ad164454B",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiBNB": {
 				"address": "0x57Ff288dd9D478b046647A5aB917195449F1F6e5",
@@ -941,7 +941,7 @@
 			},
 			"ProxysTRX": {
 				"address": "0xf2E08356588EC5cd9E437552Da87C0076b4970B0",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsTRX": {
 				"address": "0x0dA04b80e21B344fCFD49C04bEC658E80F1D7428",
@@ -950,7 +950,7 @@
 			},
 			"ProxysXTZ": {
 				"address": "0x2e59005c5c0f0a4D77CcA82653d48b46322EE5Cd",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsXTZ": {
 				"address": "0xC0b1F43Ee7b0670F7B34e14c4702e54a905A51B5",
@@ -967,7 +967,7 @@
 			},
 			"ProxyiTRX": {
 				"address": "0xC5807183a9661A533CB08CbC297594a0B864dc12",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiTRX": {
 				"address": "0x80eDAC70ec108a9c5B47972da9924397Ba974Ff9",
@@ -976,7 +976,7 @@
 			},
 			"ProxyiXTZ": {
 				"address": "0x8deef89058090ac5655A99EEB451a4f9183D1678",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiXTZ": {
 				"address": "0x72661E76475354403838EB04144206f70Ff97d79",
@@ -985,7 +985,7 @@
 			},
 			"ProxysCEX": {
 				"address": "0xeABACD844A196D7Faf3CE596edeBF9900341B420",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsCEX": {
 				"address": "0x93CfF799F255eDa2089cFB3F05696B5B66873C1A",
@@ -994,7 +994,7 @@
 			},
 			"ProxyiCEX": {
 				"address": "0x336213e1DDFC69f4701Fc3F86F4ef4A160c1159d",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiCEX": {
 				"address": "0x43e1505E315BE6C8b875a37F7D8753Ba84140A37",
@@ -1059,11 +1059,11 @@
 			},
 			"TokenStatesXRP": {
 				"address": "0xb90AafFB61dFC042e7a7AbcE069DDB4BAE9ab192",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysXRP": {
 				"address": "0xa2B0fDe6D710e201d0d608e924A484d1A5fEd57c",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsXRP": {
 				"address": "0xFf6866FF46c71706DcD5A0A38f12279553bE6233",
@@ -1072,11 +1072,11 @@
 			},
 			"TokenStatesLTC": {
 				"address": "0xe1a2C7957a4771031301f2E25b0f52039aD97270",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysLTC": {
 				"address": "0xC14103C2141E842e228FBaC594579e798616ce7A",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsLTC": {
 				"address": "0x8e0cC15bBCd10E170AC07982B5D6930502C63784",
@@ -1111,11 +1111,11 @@
 			},
 			"TokenStateiXRP": {
 				"address": "0xa9d6aE0F9E9da6FFC357Cd155CCe18E3491e135D",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiXRP": {
 				"address": "0x27269b3e45A4D3E79A3D6BFeE0C8fB13d0D711A6",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiXRP": {
 				"address": "0xcBBb17D9767bD57FBF4Bbf8842E916bCb3826ec1",
@@ -1124,11 +1124,11 @@
 			},
 			"TokenStateiLINK": {
 				"address": "0x3FdF819c3665D6866b5Bb0F56E1EDA0D7f69B714",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiLINK": {
 				"address": "0x2d7aC061fc3db53c39fe1607fB8cec1B2C162B01",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiLINK": {
 				"address": "0xEC114001D23eeFE6624Fb42cCbF4b3c793e295f1",
@@ -1137,11 +1137,11 @@
 			},
 			"TokenStateiLTC": {
 				"address": "0x7B1010586F923CbF61e7C314146853675705751F",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiLTC": {
 				"address": "0x79da1431150C9b82D2E5dfc1C68B33216846851e",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiLTC": {
 				"address": "0x05DD55C18999b4a2f905978C029B85dA37750170",
@@ -1150,11 +1150,11 @@
 			},
 			"TokenStateiDEFI": {
 				"address": "0x6E9BAC2827dBBa78D11b270115086CC357988928",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiDEFI": {
 				"address": "0x14d10003807AC60d07BB0ba82cAeaC8d2087c157",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiDEFI": {
 				"address": "0x8E39e807D9eaE1cED9BCE296F211c38BA5ab2f9B",
@@ -1837,11 +1837,11 @@
 		"contracts": {
 			"TokenStatesEOS": {
 				"address": "0x631443C4121ca7B4c90dC79a37B1DcE8B79aDeEc",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysEOS": {
 				"address": "0x88C8Cf3A212c0369698D13FE98Fcb76620389841",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsEOS": {
 				"address": "0x31a9c51eEd5282F11ae5CDD061A65A4ce0346C08",
@@ -1863,11 +1863,11 @@
 			},
 			"TokenStatesETC": {
 				"address": "0xd4DB55Cf39c37BEAa3A47F2555D57B4ea2d9Ff39",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysETC": {
 				"address": "0x22602469d704BfFb0936c7A7cfcD18f7aA269375",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsETC": {
 				"address": "0x2369D37ae9B30451D859C11CAbAc70df1CE48F78",
@@ -1876,11 +1876,11 @@
 			},
 			"TokenStatesDASH": {
 				"address": "0x136b1EC699c62b0606854056f02dC7Bb80482d63",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysDASH": {
 				"address": "0xfE33ae95A9f0DA8A845aF33516EDc240DCD711d6",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsDASH": {
 				"address": "0xc66499aCe3B6c6a30c784bE5511E8d338d543913",
@@ -1889,11 +1889,11 @@
 			},
 			"TokenStatesXMR": {
 				"address": "0x23d5381713841724A67B731026b32322228cA3C7",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysXMR": {
 				"address": "0x5299d6F7472DCc137D7f3C4BcfBBB514BaBF341A",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsXMR": {
 				"address": "0x86FD9c0261E804476bA11056fFD758da2469ed56",
@@ -1915,11 +1915,11 @@
 			},
 			"TokenStatesFTSE": {
 				"address": "0xD1B420854527e4b0e489bd37ec8f9DB1E6305515",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysFTSE": {
 				"address": "0x23348160D7f5aca21195dF2b70f28Fce2B0be9fC",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsFTSE": {
 				"address": "0x8D34924EAe7578692775fDd94Ed27bc355397E4a",
@@ -1928,11 +1928,11 @@
 			},
 			"TokenStatesNIKKEI": {
 				"address": "0xc69D8B688a309FDEa9273DDE1A46bF1e51928a55",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysNIKKEI": {
 				"address": "0x757de3ac6B830a931eF178C6634c5C551773155c",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsNIKKEI": {
 				"address": "0x4CeB220C5E38E27ef5187F7ab853aC182D233d39",
@@ -1941,11 +1941,11 @@
 			},
 			"TokenStateiEOS": {
 				"address": "0x68a8b098967Ae077dcFf5cC8E29B7cb15f1A3cC8",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiEOS": {
 				"address": "0xF4EebDD0704021eF2a6Bbe993fdf93030Cd784b4",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiEOS": {
 				"address": "0xc66a263f2C7C1Af0bD70c6cA4Bff5936F3D6Ef9F",
@@ -1967,11 +1967,11 @@
 			},
 			"TokenStateiETC": {
 				"address": "0x71892d13BA2b19f196760f619eE9C67534a49E37",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiETC": {
 				"address": "0xd50c1746D835d2770dDA3703B69187bFfeB14126",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiETC": {
 				"address": "0xF13f9E75913b352622F8AEEA5Ac32498b1C228d0",
@@ -1980,11 +1980,11 @@
 			},
 			"TokenStateiDASH": {
 				"address": "0x01ADA1140cA795897c45016Dfd296382267b264a",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiDASH": {
 				"address": "0xCB98f42221b2C251A4E74A1609722eE09f0cc08E",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiDASH": {
 				"address": "0x5f7A299Be82D8f5A626300c62C477b233F616121",
@@ -1993,11 +1993,11 @@
 			},
 			"TokenStateiXMR": {
 				"address": "0xE20117888AB22ACF65b02C196A9f8423b502876c",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiXMR": {
 				"address": "0x4AdF728E2Df4945082cDD6053869f51278fae196",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiXMR": {
 				"address": "0xC5D2b3f5DAf11B6111Af86a72A5938B0fE6c5045",
@@ -2006,11 +2006,11 @@
 			},
 			"TokenStateiADA": {
 				"address": "0xD636802A5b903b23726189D9B89daAD2750177FA",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiADA": {
 				"address": "0x8A8079c7149B8A1611e5C5d978DCA3bE16545F83",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiADA": {
 				"address": "0x9D4193187B247a400E8D8ba716F1C18c0dC65528",
@@ -2426,12 +2426,12 @@
 			},
 			"TokenStatesOIL": {
 				"address": "0x98d7CcF403B8BD2F6DC3F3cA4161f1E8db3dD080",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0f7749d534fc2dd7ab5c3b8490967a5792fb132eaeba573e74f6016c383d7701"
 			},
 			"ProxysOIL": {
 				"address": "0x6d16cF3EC5F763d4d99cB0B0b110eefD93B11B56",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf57882920536d50a381ff2e8395534cabfdd4224df40c4efa8ec25a8c8ab7088"
 			},
 			"SynthsOIL": {
@@ -2442,12 +2442,12 @@
 			},
 			"TokenStateiOIL": {
 				"address": "0xF92BE89BF1aebA61AC48D90CF7C9Ac2b3616c4Da",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0f7749d534fc2dd7ab5c3b8490967a5792fb132eaeba573e74f6016c383d7701"
 			},
 			"ProxyiOIL": {
 				"address": "0xA5a5DF41883Cdc00c4cCC6E8097130535399d9a3",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf57882920536d50a381ff2e8395534cabfdd4224df40c4efa8ec25a8c8ab7088"
 			},
 			"SynthiOIL": {
@@ -2594,12 +2594,12 @@
 			},
 			"SynthsXAG": {
 				"address": "0x9745606DA6e162866DAD7bF80f2AbF145EDD7571",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsXAU": {
 				"address": "0x5eDf7dd83fE2889D264fa9D3b93d0a6e6A45D6C6",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsETH": {
@@ -2610,62 +2610,62 @@
 			},
 			"SynthsBNB": {
 				"address": "0xda3c83750b1FA31Fda838136ef3f853b41cb7a5a",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiBTC": {
 				"address": "0x8350d1b2d6EF5289179fe49E5b0F208165B4e32e",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiETH": {
 				"address": "0x29DD4A59F4D339226867e77aF211724eaBb45c02",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiBNB": {
 				"address": "0xf7B8dF8b16dA302d85603B8e7F95111a768458Cc",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthsTRX": {
 				"address": "0x47bD14817d7684082E04934878EE2Dd3576Ae19d",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsXTZ": {
 				"address": "0x6F927644d55E32318629198081923894FbFe5c07",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiTRX": {
 				"address": "0x0517A56da8A517e3b2D484Cc5F1Da4BDCfE68ec3",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiXTZ": {
 				"address": "0x099CfAd1640fc7EA686ab1D83F0A285Ba0470882",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthsCEX": {
 				"address": "0x2acfe6265D358d982cB1c3B521199973CD443C71",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiCEX": {
 				"address": "0x6Dc6a64724399524184C2c44a526A2cff1BaA507",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthsXRP": {
 				"address": "0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsLTC": {
 				"address": "0xA962208CDC8588F9238fae169d0F63306c353F4F",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthsLINK": {
@@ -2680,22 +2680,22 @@
 			},
 			"SynthiXRP": {
 				"address": "0x19cC1f63e344D74A87D955E3F3E95B28DDDc61d8",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiLINK": {
 				"address": "0x4D50A0e5f068ACdC80A1da2dd1f0Ad48845df2F8",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiLTC": {
 				"address": "0xb73c665825dAa926D6ef09417FbE5654473c1b49",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiDEFI": {
 				"address": "0x87eb6e935e3C7E3E3A0E31a5658498bC87dE646E",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"AddressResolver": {
@@ -2717,7 +2717,7 @@
 			},
 			"SynthsEOS": {
 				"address": "0xAf090d6E583C082f2011908cf95c2518BE7A53ac",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsBCH": {
@@ -2727,17 +2727,17 @@
 			},
 			"SynthsETC": {
 				"address": "0x21ee4afBd6c151fD9A69c1389598170B1d45E0e3",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsDASH": {
 				"address": "0xcb6Cb218D558ae7fF6415f95BDA6616FCFF669Cb",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsXMR": {
 				"address": "0x7B29C9e188De18563B19d162374ce6836F31415a",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsADA": {
@@ -2747,17 +2747,17 @@
 			},
 			"SynthsFTSE": {
 				"address": "0x3E2dA260B4A85782A629320EB027A3B7c28eA9f1",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthsNIKKEI": {
 				"address": "0xc02DD182Ce029E6d7f78F37492DFd39E4FEB1f8b",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthiEOS": {
 				"address": "0x806A599d60B2FdBda379D5890287D2fba1026cC0",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiBCH": {
@@ -2767,22 +2767,22 @@
 			},
 			"SynthiETC": {
 				"address": "0xCea42504874586a718954746A564B72bc7eba3E3",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiDASH": {
 				"address": "0x947d5656725fB9A8f9c826A91b6082b07E2745B7",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiXMR": {
 				"address": "0x186E56A62E7caCE1308f1A1B0dbb27f33F80f16f",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"SynthiADA": {
 				"address": "0x931c5516EE121a177bD2B60e0122Da5B27630ABc",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"Liquidations": {
@@ -2819,12 +2819,12 @@
 			},
 			"SynthsOIL": {
 				"address": "0x2962EA4E749e54b10CFA557770D597027BA67cB3",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3d820f5a98d5766a8a1269f33a9036e9475eac34e8e4fa2b73e74ec6b2246b37"
 			},
 			"SynthiOIL": {
 				"address": "0x53869BDa4b8d85aEDCC9C6cAcf015AF9447Cade7",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x8eba20fb0acca6ab8f2186ec8180cc072e41d70fef7589a27738e968b3351e18"
 			},
 			"CollateralManagerState": {
@@ -3073,32 +3073,32 @@
 			},
 			"TokenStatesUNI": {
 				"address": "0x9234733bD0F3E227e431BBE7B09CEB0E3E9755e3",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxysUNI": {
 				"address": "0x30635297E450b930f8693297eBa160D9e6c8eBcf",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthsUNI": {
 				"address": "0xAa1b12E3e5F70aBCcd1714F4260A74ca21e7B17b",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
 			},
 			"TokenStatesYFI": {
 				"address": "0xF61F4A57C63340ac1Fd75578ae878c8a263aeC06",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxysYFI": {
 				"address": "0x992058B7DB08F9734d84485bfbC243C4ee6954A7",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthsYFI": {
 				"address": "0x0F393ce493d8FB0b83915248a21a3104932ed97c",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
 			},
 			"TokenStatesDOT": {
@@ -3118,122 +3118,122 @@
 			},
 			"TokenStatesREN": {
 				"address": "0x6e6d86D88d2Ce382918EB4F062F0fff82B8c9b99",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxysREN": {
 				"address": "0xD31533E8d0f3DF62060e94B3F1318137bB6E3525",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthsREN": {
 				"address": "0x4287dac1cC7434991119Eba7413189A66fFE65cF",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
 			},
 			"TokenStatesCOMP": {
 				"address": "0x5f298BD4391d32Af25368FA78dc210A56c7Ccc9c",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxysCOMP": {
 				"address": "0xEb029507d3e043DD6C87F2917C4E82B902c35618",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthsCOMP": {
 				"address": "0x34c76BC146b759E58886e821D62548AC1e0BA7Bc",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
 			},
 			"TokenStateiAAVE": {
 				"address": "0xC43c0D8b2A3509d193974695568164C190af2AAF",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxyiAAVE": {
 				"address": "0x176C674Ee533C6139B0dc8b458D72A93dCB3e705",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthiAAVE": {
 				"address": "0x1cB27Ac646afAE192dF9928A2808C0f7f586Af7d",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			},
 			"TokenStateiUNI": {
 				"address": "0x13caB49E4484C2E0624d2bdF3dADfAD43e5611f9",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxyiUNI": {
 				"address": "0x36A00FF9072570eF4B9292117850B8FE08d96cce",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthiUNI": {
 				"address": "0x3dD7b893c25025CabFBd290A5E06BaFF3DE335b8",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			},
 			"TokenStateiYFI": {
 				"address": "0x643088Ad7A6CEB1ec95be0E7B382438399CA8e7C",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxyiYFI": {
 				"address": "0x592244301CeA952d6daB2fdC1fE6bd9E53917306",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthiYFI": {
 				"address": "0x1A4505543C92084bE57ED80113eaB7241171e7a8",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			},
 			"TokenStateiDOT": {
 				"address": "0x41d85Df6513A86eb2eA186e2cf4ec0fE5dD16754",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxyiDOT": {
 				"address": "0x46a97629C9C1F58De6EC18C7F536e7E6d6A6ecDe",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthiDOT": {
 				"address": "0xF6ce55E09De0F9F97210aAf6DB88Ed6b6792Ca1f",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			},
 			"TokenStateiREN": {
 				"address": "0x348C3c80c4F23574BC8cDF669A0Dc106a4E32BFf",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxyiREN": {
 				"address": "0x0fEd38108bdb8e62ef7b5680E8E0726E2F29e0De",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthiREN": {
 				"address": "0xacAAB69C2BA65A2DB415605F309007e18D4F5E8C",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			},
 			"TokenStateiCOMP": {
 				"address": "0x673Be1f8b8e1F2AB64C475b44060EE39163423f0",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxyiCOMP": {
 				"address": "0x6345728B1ccE16E6f8C509950b5c84FFF88530d9",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthiCOMP": {
 				"address": "0x9A5Ea0D8786B8d17a70410A905Aed1443fae5A38",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			}
 		}
@@ -3248,17 +3248,17 @@
 		"contracts": {
 			"TokenStatesTSLA": {
 				"address": "0x259F2584E8A672DA3773F91D66567a3229Dee93d",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
 			},
 			"ProxysTSLA": {
 				"address": "0x918dA91Ccbc32B7a6A0cc4eCd5987bbab6E31e6D",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
 			},
 			"SynthsTSLA": {
 				"address": "0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
 			}
 		}
@@ -3319,122 +3319,122 @@
 			},
 			"TokenStates1INCH": {
 				"address": "0xeD1EfD716C7E2e821BBD4EC1480D649df7fb2279",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"Proxys1INCH": {
 				"address": "0xcD39b5434a0A92cf47D1F567a7dF84bE356814F0",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"Synths1INCH": {
 				"address": "0x0E8Fa2339314AB7E164818F26207897bBe29C3af",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesRUNE": {
 				"address": "0x860C5f944b098cE28CF9f2Da099913F01c9364D8",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysRUNE": {
 				"address": "0x0352557B007A4Aae1511C114409b932F06F9E2f4",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsRUNE": {
 				"address": "0xe615Df79AC987193561f37E77465bEC2aEfe9aDb",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesCRV": {
 				"address": "0x602590F2aa35B71ccB1Ca72E673A75b26eC7f4E8",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysCRV": {
 				"address": "0xD38aEb759891882e78E957c80656572503D8c1B1",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsCRV": {
 				"address": "0x13D0F5B8630520eA04f694F17A001fb95eaFD30E",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesAAPL": {
 				"address": "0x830B48539D82a4D34dD670bfE163f9eF84B6c2f1",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysAAPL": {
 				"address": "0x7537AAe01f3B218DAE75e10d952473823F961B87",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsAAPL": {
 				"address": "0x815CeF3b7773f35428B4353073B086ecB658f73C",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesFB": {
 				"address": "0xBF416bdf37b1590A3A37A1504865354Bf5D90b34",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysFB": {
 				"address": "0xf50B5e535F62a56A9BD2d8e2434204E726c027Fa",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsFB": {
 				"address": "0xb0e0BA880775B7F2ba813b3800b3979d719F0379",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesGOOG": {
 				"address": "0x272BbF5eEf131A3eb4a3078A58cFcD0978585F98",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysGOOG": {
 				"address": "0xC63B8ECCE56aB9C46184eC6aB85e4771fEa4c8AD",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsGOOG": {
 				"address": "0x8e082925e78538955bC0e2F363FC5d1Ab3be739b",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesNFLX": {
 				"address": "0x438D8701892AB7578ea34F8cDCdCAdc93e48D443",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysNFLX": {
 				"address": "0x5A7E3c07604EB515C16b36cd51906a65f021F609",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsNFLX": {
 				"address": "0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesAMZN": {
 				"address": "0xc341BD8d6BB064FdD94b5142513027A01c1716C9",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysAMZN": {
 				"address": "0x9CF7E61853ea30A41b02169391b393B901eac457",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsAMZN": {
 				"address": "0x9530FA32a3059114AC20A5812870Da12D97d1174",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"VirtualSynthMastercopy": {
@@ -3489,32 +3489,32 @@
 		"contracts": {
 			"TokenStatesCOIN": {
 				"address": "0x102e541a34AA7e7205c32ddF58308395d733Ce1f",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysCOIN": {
 				"address": "0x9EeF4CA7aB9fa8bc0650127341C2d3F707a40f8A",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsCOIN": {
 				"address": "0x249612F641111022f2f48769f3Df5D85cb3E26a2",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			},
 			"TokenStatesMSFT": {
 				"address": "0x7EbeEa83591c048a40502985254A3Df19Ea90067",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
 			},
 			"ProxysMSFT": {
 				"address": "0x745a824D6aBBD236AA794b5530062778A6Ad7523",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xfb133acce922041ba6b061ee7a8ce32c7908b0cbb37f343dd9fd81d532999bd8"
 			},
 			"SynthsMSFT": {
 				"address": "0x04720DbBD4599aD26811545595d97fB813E84964",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			}
 		}
