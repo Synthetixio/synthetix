@@ -13,9 +13,5 @@
 		"name": "sBTC",
 		"asset": "BTC",
 		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sLINK",
-		"asset": "LINK"
 	}
 ]
