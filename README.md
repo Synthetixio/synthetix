@@ -37,7 +37,7 @@ For a guide from the community, see [synthetix.community](https://synthetix.comm
 
 ### Setup
 
-Run `npm run setup` script after installing dependencies with `npm install`. It will trigger whitelisted postinstall scripts for dependencies and apply custom patches to them.
+Run `npm run setup` script after installing dependencies with `npm install`. It will trigger postinstall scripts for dependencies which are whitelited inside allowlist and apply our custom patches for external dependencies if needed.
 
 ### Branching
 
