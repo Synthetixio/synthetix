@@ -52,6 +52,7 @@ module.exports = {
 			gasPrice: GAS_PRICE,
 			hardfork: 'london',
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
+			initialBaseFeePerGas: '100000',
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
