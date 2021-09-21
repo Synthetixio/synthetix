@@ -149,9 +149,12 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run:
+          name: Get patches hash
+          command: md5sum patches/* > patches.hash
       - restore_cache:
           keys:
-            - v4-dependencies-{{ checksum "package-lock.json" }}
+            - v4-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "patches.hash" }}
       - run:
           name: Set custom npm cache directory
           command: npm config set cache .npm-cache --global
@@ -159,7 +162,7 @@ jobs:
           name: Install dependencies
           command: npm install --prefer-offline --no-audit
       - save_cache:
-          key: v4-dependencies-{{ checksum "package-lock.json" }}
+          key: v4-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "patches.hash" }}
           paths:
             - node_modules
             - .npm-cache
