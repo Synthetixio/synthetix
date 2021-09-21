@@ -1,22 +1,26 @@
 [
 	{
 		"name": "sUSD",
-		"asset": "USD",
-		"subclass": "MultiCollateralSynth"
+		"asset": "USD"
 	},
 	{
 		"name": "sETH",
-		"asset": "ETH",
-		"subclass": "MultiCollateralSynth"
+		"asset": "ETH"
 	},
 	{
 		"name": "sBTC",
-		"asset": "BTC",
-		"subclass": "MultiCollateralSynth"
+		"asset": "BTC"
 	},
 	{
 		"name": "sLINK",
-		"asset": "LINK",
-		"subclass": "MultiCollateralSynth"
+		"asset": "LINK"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE"
 	}
 ]

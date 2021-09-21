@@ -2,19 +2,19 @@
 	"SystemSettings": {
 		"deploy": false
 	},
+	"SynthetixBridgeToBase": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
-	"DebtCache": {
-		"deploy": false
-	},
-	"Depot": {
-		"deploy": false
-	},
 	"TradingRewards": {
+		"deploy": false
+	},
+	"DebtCache": {
 		"deploy": false
 	},
 	"EscrowChecker": {
@@ -65,9 +65,6 @@
 	"RewardEscrow": {
 		"deploy": false
 	},
-	"RewardEscrowV2": {
-		"deploy": false
-	},
 	"RewardsDistribution": {
 		"deploy": false
 	},
@@ -113,64 +110,58 @@
 	"TokenStatesUSD": {
 		"deploy": false
 	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
 	"TokenStatesETH": {
-		"deploy": false
-	},
-	"TokenStatesBTC": {
-		"deploy": false
-	},
-	"TokenStatesLINK": {
 		"deploy": false
 	},
 	"ProxysETH": {
 		"deploy": false
 	},
-	"ProxysBTC": {
+	"SynthsETH": {
 		"deploy": false
 	},
-	"ProxysLINK": {
+	"TokenStatesBTC": {
+		"deploy": false
+	},
+	"ProxysBTC": {
 		"deploy": false
 	},
 	"SynthsBTC": {
 		"deploy": false
 	},
-	"SynthsETH": {
+	"TokenStatesLINK": {
+		"deploy": false
+	},
+	"ProxysLINK": {
 		"deploy": false
 	},
 	"SynthsLINK": {
 		"deploy": false
 	},
-	"ShortingRewardssBTC": {
+	"TokenStatesUNI": {
 		"deploy": false
 	},
-	"ShortingRewardssETH": {
+	"ProxysUNI": {
 		"deploy": false
 	},
-	"ShortingRewardsLINK": {
+	"SynthsUNI": {
 		"deploy": false
 	},
-	"SynthetixBridgeToBase": {
+	"TokenStatesAAVE": {
 		"deploy": false
 	},
-	"CollateralUtil": {
+	"ProxysAAVE": {
 		"deploy": false
 	},
-	"CollateralManager": {
-		"deploy": false
-	},
-	"CollateralManagerState": {
-		"deploy": false
-	},
-	"CollateralShort": {
+	"SynthsAAVE": {
 		"deploy": false
 	},
 	"EtherWrapper": {
-		"deploy": false
-	},
-	"WETH": {
-		"deploy": false
-	},
-	"SynthRedeemer": {
 		"deploy": false
 	}
 }

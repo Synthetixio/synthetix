@@ -119,34 +119,16 @@
 	"TokenStatesBTC": {
 		"deploy": true
 	},
-	"TokenStatesLINK": {
-		"deploy": true
-	},
 	"ProxysETH": {
 		"deploy": true
 	},
 	"ProxysBTC": {
 		"deploy": true
 	},
-	"ProxysLINK": {
-		"deploy": true
-	},
 	"SynthsBTC": {
 		"deploy": true
 	},
 	"SynthsETH": {
-		"deploy": true
-	},
-	"SynthsLINK": {
-		"deploy": true
-	},
-	"ShortingRewardssBTC": {
-		"deploy": true
-	},
-	"ShortingRewardssETH": {
-		"deploy": true
-	},
-	"ShortingRewardsLINK": {
 		"deploy": true
 	},
 	"SynthetixBridgeToBase": {

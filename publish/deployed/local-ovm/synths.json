@@ -16,7 +16,6 @@
 	},
 	{
 		"name": "sLINK",
-		"asset": "LINK",
-		"subclass": "MultiCollateralSynth"
+		"asset": "LINK"
 	}
 ]
