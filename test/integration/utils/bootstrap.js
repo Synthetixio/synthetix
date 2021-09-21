@@ -15,6 +15,8 @@ function bootstrapL1({ ctx }) {
 		ctx.useOvm = false;
 		ctx.fork = hre.config.fork;
 
+		ctx.addedSynths = hre.config.addedSynths || [];
+
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
 		await loadUsers({ ctx });
@@ -35,6 +37,8 @@ function bootstrapL2({ ctx }) {
 	before('bootstrap layer 2 instance', async () => {
 		ctx.useOvm = true;
 		ctx.l1mock = { useOvm: false };
+
+		ctx.addedSynths = hre.config.addedSynths || [];
 
 		/*
 		 * We also bootstrap an L1 provider on the assumption that the L2 integration tests
@@ -74,7 +78,7 @@ function bootstrapL2({ ctx }) {
 }
 
 function bootstrapDual({ ctx }) {
-	before('bootstrap layer 1 and layer 2 intances', async () => {
+	before('bootstrap layer 1 and layer 2 instances', async () => {
 		ctx.l1 = { useOvm: false };
 		ctx.l2 = { useOvm: true };
 

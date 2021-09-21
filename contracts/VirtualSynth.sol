@@ -11,9 +11,6 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IExchanger.sol";
-// Note: use OZ's IERC20 here as using ours will complain about conflicting names
-// during the build
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/virtualsynth
 // Note: this contract should be treated as an abstract contract and should not be directly deployed.

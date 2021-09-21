@@ -469,11 +469,6 @@ contract('PurgeableSynth', accounts => {
 											'The balance after connecting TokenState must not have changed'
 										);
 									});
-									describe('when owner attemps to remove new synth from the system', () => {
-										it('then it reverts', async () => {
-											await assert.revert(issuer.removeSynth(sAUD, { from: owner }));
-										});
-									});
 									describe('and purge is called on the replacement sAUD contract', () => {
 										let txn;
 

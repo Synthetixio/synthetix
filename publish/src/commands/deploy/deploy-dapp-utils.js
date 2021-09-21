@@ -17,8 +17,4 @@ module.exports = async ({ account, addressOf, deployer }) => {
 		name: 'DappMaintenance',
 		args: [account],
 	});
-
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketData',
-	});
 };

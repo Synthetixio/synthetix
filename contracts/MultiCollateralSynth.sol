@@ -9,6 +9,8 @@ import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
+    bytes32 public constant CONTRACT_NAME = "MultiCollateralSynth";
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";

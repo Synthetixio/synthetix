@@ -24,7 +24,6 @@ const commands = {
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
-	importFeePeriods: require('../../publish/src/commands/import-fee-periods').importFeePeriods,
 };
 
 const snx = require('../..');
@@ -632,12 +631,10 @@ describe('publish scripts', () => {
 				});
 			});
 
-			describe('importFeePeriods script', () => {
-				let oldFeePoolAddress;
+			describe('importFeePeriods', () => {
 				let feePeriodLength;
 
 				beforeEach(async () => {
-					oldFeePoolAddress = getTarget({ contract: 'FeePool' }).address;
 					feePeriodLength = await callMethodWithRetry(FeePool.FEE_PERIOD_LENGTH());
 				});
 
@@ -662,43 +659,12 @@ describe('publish scripts', () => {
 					});
 				};
 
-				describe('when import script is called with the same source fee pool as the currently deployed one', () => {
-					it('then it fails', done => {
-						commands
-							.importFeePeriods({
-								sourceContractAddress: oldFeePoolAddress,
-								network,
-								privateKey: accounts.deployer.privateKey,
-								yes: true,
-							})
-							.then(() => done('Should not succeed.'))
-							.catch(() => done());
-					});
-				});
-				describe('when FeePool alone is redeployed', () => {
-					beforeEach(redeployFeePeriodOnly);
-
-					describe('when new fee periods are attempted to be imported', () => {
-						it('fails as there isnt more than a single period', done => {
-							commands
-								.importFeePeriods({
-									sourceContractAddress: oldFeePoolAddress,
-									network,
-									privateKey: accounts.deployer.privateKey,
-									yes: true,
-								})
-								.then(() => done('Should not succeed.'))
-								.catch(() => done());
-						});
-					});
-				});
-
 				describe('when FeePool is given three true imported periods', () => {
 					let periodsAdded;
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '0', '0', '0', '0']);
+							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
@@ -709,16 +675,22 @@ describe('publish scripts', () => {
 								i + 1,
 								0,
 								startTime,
-								0,
-								0,
-								0,
-								0,
+								3,
+								4,
+								5,
+								6,
 								overrides
 							);
 							await tx.wait();
 						}
 					});
-					describe('when the new FeePool is invalid', () => {
+
+					describe('when the system is suspended', () => {
+						beforeEach(async () => {
+							await getContract({ target: 'SystemStatus' }).suspendSystem('1', {
+								from: accounts.deployer.address,
+							});
+						});
 						describe('when FeePool alone is redeployed', () => {
 							beforeEach(redeployFeePeriodOnly);
 							describe('using the FeePoolNew', () => {
@@ -728,58 +700,6 @@ describe('publish scripts', () => {
 									FeePoolNew = getContract({ target: 'FeePool' });
 								});
 
-								describe('when the new FeePool is manually given fee periods', () => {
-									beforeEach(async () => {
-										for (let i = 0; i < feePeriodLength; i++) {
-											const tx = await FeePoolNew.importFeePeriod(
-												i,
-												i + 1,
-												0,
-												daysAgo((i + 1) * 6),
-												0,
-												0,
-												0,
-												0,
-												overrides
-											);
-											await tx.wait();
-										}
-									});
-									describe('when new fee periods are attempted to be imported', () => {
-										it('fails as the target FeePool now has imported fee periods', done => {
-											commands
-												.importFeePeriods({
-													sourceContractAddress: oldFeePoolAddress,
-													network,
-													privateKey: accounts.deployer.privateKey,
-													yes: true,
-												})
-												.then(() => done('Should not succeed.'))
-												.catch(() => done());
-										});
-									});
-								});
-							});
-						});
-					});
-					describe('when FeePool alone is redeployed', () => {
-						beforeEach(redeployFeePeriodOnly);
-						describe('using the FeePoolNew', () => {
-							let FeePoolNew;
-							beforeEach(async () => {
-								targets = getTarget();
-								FeePoolNew = getContract({ target: 'FeePool' });
-							});
-
-							describe('when import is called', () => {
-								beforeEach(async () => {
-									await commands.importFeePeriods({
-										sourceContractAddress: oldFeePoolAddress,
-										network,
-										privateKey: accounts.deployer.privateKey,
-										yes: true,
-									});
-								});
 								it('then the periods are added correctly', async () => {
 									let periods = await Promise.all(
 										[0, 1].map(i => callMethodWithRetry(FeePoolNew.recentFeePeriods(i)))
@@ -795,41 +715,6 @@ describe('publish scripts', () => {
 
 									assert.strictEqual(JSON.stringify(periods[0]), JSON.stringify(periodsAdded[0]));
 									assert.strictEqual(JSON.stringify(periods[1]), JSON.stringify(periodsAdded[1]));
-								});
-							});
-						});
-					});
-					describe('when FeePool is given old import periods', () => {
-						beforeEach(async () => {
-							for (let i = 0; i < feePeriodLength; i++) {
-								const tx = await FeePool.importFeePeriod(
-									i,
-									i + 1,
-									0,
-									daysAgo((i + 1) * 14),
-									0,
-									0,
-									0,
-									0,
-									overrides
-								);
-								await tx.wait();
-							}
-						});
-						describe('when FeePool alone is redeployed', () => {
-							beforeEach(redeployFeePeriodOnly);
-
-							describe('when new fee periods are attempted to be imported', () => {
-								it('fails as the most recent period is older than 1week', done => {
-									commands
-										.importFeePeriods({
-											sourceContractAddress: oldFeePoolAddress,
-											network,
-											privateKey: accounts.deployer.privateKey,
-											yes: true,
-										})
-										.then(() => done('Should not succeed.'))
-										.catch(() => done());
 								});
 							});
 						});

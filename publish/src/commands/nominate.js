@@ -17,14 +17,19 @@ const {
 	confirmAction,
 } = require('../util');
 
+const DEFAULTS = {
+	gasPrice: '15',
+	gasLimit: 2e5, // 200,000
+};
+
 const nominate = async ({
 	network,
 	newOwner,
 	contracts,
 	useFork = false,
 	deploymentPath,
-	gasPrice,
-	gasLimit,
+	gasPrice = DEFAULTS.gasPrice,
+	gasLimit = DEFAULTS.gasLimit,
 	useOvm,
 	privateKey,
 	providerUrl,

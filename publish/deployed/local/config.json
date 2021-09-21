@@ -14,15 +14,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": true
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": true
-	},
-	"BinaryOptionMarketData": {
-		"deploy": true
-	},
 	"CollateralManager": {
 		"deploy": true
 	},
@@ -459,6 +450,9 @@
 		"deploy": true
 	},
 	"WETH": {
+		"deploy": true
+	},
+	"SynthRedeemer": {
 		"deploy": true
 	}
 }

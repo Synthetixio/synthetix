@@ -1,24 +1,20 @@
 'use strict';
 
-const path = require('path');
 const fs = require('fs');
 const uniq = require('lodash.uniq');
 const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = require('../util');
 const { red, gray, yellow } = require('chalk');
 
-const {
-	constants: { CONFIG_FILENAME },
-	releases,
-} = require('../../../.');
+const { releases } = require('../../../.');
 
 const DEFAULTS = {
 	network: 'kovan',
 };
 
-const { stringify } = require('../util');
+const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 // Get unreleased releases
-const getReleases = (useOvm = false) =>
+const getReleasesNotYetReleased = (useOvm = false) =>
 	releases.releases.filter(
 		release => !release.released && !!release.ovm === useOvm && release.sips.length > 0
 	);
@@ -37,29 +33,63 @@ const getSipSources = (sip, useOvm = false) => {
 	if (Array.isArray(sip.sources)) return sip.sources;
 	const baseSources = sip.sources.base || [];
 	const layerSources = sip.sources[useOvm ? 'ovm' : 'base'] || [];
+	console.log([...baseSources, ...layerSources]);
 	return [...baseSources, ...layerSources];
 };
 
-const prepareDeploy = async ({ network = DEFAULTS.network, useOvm, useSips }) => {
+const prepareDeploy = async ({
+	network = DEFAULTS.network,
+	synthsToAdd = [],
+	useOvm,
+	useSips,
+	useReleases = true,
+}) => {
 	ensureNetwork(network);
 
 	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
+	// Get config and synths
+	const { config, configFile, synths, synthsFile } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
+
+	// now prepare synths, if any
+	if (synthsToAdd.length) {
+		fs.writeFileSync(synthsFile, stringify(synths.concat(synthsToAdd)));
+		console.log(
+			yellow(synthsFile),
+			gray(
+				`updated for ${yellow(network)} with synths ${yellow(synthsToAdd.map(({ name }) => name))}.`
+			)
+		);
+	}
+
 	// Get unreleased source files
 	let sources;
 	if (useSips) {
 		// Pick unreleased sips that have sources that need to be prepared
-		sources = getSips().flatMap(sip => getSipSources(sip, useOvm));
-	} else {
+		const sips = getSips();
+		sources = sips.flatMap(sip => getSipSources(sip, useOvm));
+
+		if (sources.length > 0) {
+			console.log(gray(`Preparing SIPs: ${sips.map(({ sip }) => sip).join(', ')}`));
+		}
+	} else if (useReleases) {
 		// Get all the sources coming from the SIPs from the release on the required layer
-		sources = getReleases()
+		const unreleased = getReleasesNotYetReleased();
+		sources = unreleased
 			.flatMap(({ sips }) => sips)
 			.flatMap(sipNumber => {
 				const sip = releases.sips.find(sip => sip.sip === sipNumber);
 				if (!sip) throw new Error(`Invalid SIP number "${sipNumber}"`);
-				return getSipSources(sipNumber, useOvm);
+				return getSipSources(sip, useOvm);
 			});
+
+		if (sources.length > 0) {
+			console.log(gray(`Preparing releases: ${unreleased.map(({ name }) => name).join(', ')}`));
+		}
 	}
 
 	sources = uniq(sources);
@@ -71,10 +101,6 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm, useSips }) =>
 
 	console.log(gray(`Preparing sources on ${network}:`));
 	console.log(gray(sources.map(source => `  - ${source}`).join('\n')));
-
-	// Get config.js
-	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
-	const config = JSON.parse(fs.readFileSync(configFile));
 
 	// Sweep sources and,
 	// (1) make sure they have an entry in config.json and,

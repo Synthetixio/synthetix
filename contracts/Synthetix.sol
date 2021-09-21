@@ -10,6 +10,8 @@ import "./interfaces/ISupplySchedule.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetix
 contract Synthetix is BaseSynthetix {
+    bytes32 public constant CONTRACT_NAME = "Synthetix";
+
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
     bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";

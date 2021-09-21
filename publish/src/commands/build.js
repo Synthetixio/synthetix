@@ -30,7 +30,7 @@ const build = async ({
 	cleanBuild,
 	migrations,
 	optimizerRuns = DEFAULTS.optimizerRuns,
-	showContractSize,
+	showSize,
 	showWarnings,
 	skipUnchanged,
 	testHelpers,
@@ -205,7 +205,7 @@ const build = async ({
 	// We're built!
 	console.log(green('Build succeeded'));
 
-	if (showContractSize) {
+	if (showSize) {
 		const contractToObjectMap = allCompiledFilePaths
 			.filter(file => fs.existsSync(file))
 			.reduce((memo, file) => {
@@ -236,7 +236,7 @@ module.exports = {
 				'Number of runs for the optimizer by default',
 				DEFAULTS.optimizerRuns
 			)
-			.option('-s, --show-contract-size', 'Show contract sizes')
+			.option('-s, --show-size', 'Show contract sizes')
 			.option('-t, --test-helpers', 'Also compile the test-helpers')
 			.option('-w, --show-warnings', 'Show warnings')
 			.option('-z, --use-ovm', 'Use Optimism OVM-compatible compiler')

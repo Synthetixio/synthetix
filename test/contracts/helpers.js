@@ -269,10 +269,14 @@ module.exports = {
 		for (const [i, contract] of Object.entries(contracts).concat([
 			[contracts.length, 'AddressResolver'],
 		])) {
-			if (mocks[contract]) {
+			const contractParts = contract.split(/:/);
+			const source = contractParts[0];
+			const label = contractParts[1] || source;
+
+			if (mocks[label]) {
 				continue; // prevent dupes
 			}
-			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
+			mocks[label] = await smockit(artifacts.require(source).abi, { address: accounts[i] });
 		}
 
 		const resolver = mocks['AddressResolver'];
