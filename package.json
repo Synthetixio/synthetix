@@ -78,6 +78,7 @@
 		"@eth-optimism/hardhat-ovm": "0.2.2",
 		"@eth-optimism/smock": "1.1.9",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
+		"@lavamoat/allow-scripts": "1.0.6",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",
 		"@nomiclabs/hardhat-truffle5": "2.0.0",
 		"@nomiclabs/hardhat-web3": "2.0.0",
