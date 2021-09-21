@@ -270,6 +270,16 @@ const owner = async ({
 	}
 
 	if (isOwnerASafe) {
+		if (!yes) {
+			await confirmOrEnd(
+				gray(
+					`Confirm: Stage`,
+					yellow(`${safeBatchSubmitter.transactions.length}`),
+					`transactions to the safe in a batch?`
+				)
+			);
+		}
+
 		const { transactions } = await safeBatchSubmitter.submit();
 
 		if (transactions.length) {
