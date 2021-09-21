@@ -140,5 +140,22 @@
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
 		"web3-utils": "1.2.2"
+	},
+	"lavamoat": {
+		"allowScripts": {
+			"uglifyjs-webpack-plugin": false,
+			"fsevents": true,
+			"keccak": true,
+			"secp256k1": true,
+			"web3": true,
+			"web3-bzz": true,
+			"bufferutil": false,
+			"utf-8-validate": true,
+			"web3-shh": true,
+			"highlight.js": true,
+			"core-js-pure": true,
+			"husky": true,
+			"@lavamoat/preinstall-always-fail": false
+		}
 	}
 }
