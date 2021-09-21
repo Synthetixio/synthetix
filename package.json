@@ -145,17 +145,17 @@
 	"lavamoat": {
 		"allowScripts": {
 			"uglifyjs-webpack-plugin": false,
-			"fsevents": true,
-			"keccak": true,
-			"secp256k1": true,
-			"web3": true,
-			"web3-bzz": true,
+			"fsevents": false,
+			"keccak": false,
+			"secp256k1": false,
+			"web3": false,
+			"web3-bzz": false,
 			"bufferutil": false,
-			"utf-8-validate": true,
-			"web3-shh": true,
-			"highlight.js": true,
-			"core-js-pure": true,
-			"husky": true,
+			"utf-8-validate": false,
+			"web3-shh": false,
+			"highlight.js": false,
+			"core-js-pure": false,
+			"husky": false,
 			"@lavamoat/preinstall-always-fail": false
 		}
 	}
