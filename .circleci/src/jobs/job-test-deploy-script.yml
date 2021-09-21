@@ -1,5 +1,5 @@
 # Validates that the deploy command is working as expected
-{{> job-header.yml}}
+{{> job-header-node.yml}}
 resource_class: large
 steps:
   - checkout
