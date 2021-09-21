@@ -35,6 +35,10 @@ For a guide from the community, see [synthetix.community](https://synthetix.comm
 
 ## Repo Guide
 
+### Setup
+
+Run `npm run setup` script after installing dependencies with `npm install`. It will trigger whitelisted postinstall scripts for dependencies and apply custom patches to them.
+
 ### Branching
 
 A note on the branches used in this repo.
