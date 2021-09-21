@@ -9,4 +9,4 @@ steps:
   - run:
       name: Lint lockfile
       command: |
-        lockfile-lint -p package-lock.json --type npm --allowed-hosts npm --validate-https
+        lockfile-lint -p package-lock.json --type npm --allowed-hosts npm --validate-https --empty-hostname false
