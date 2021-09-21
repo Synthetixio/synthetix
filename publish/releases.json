@@ -300,7 +300,6 @@
 				"CollateralManager",
 				"CollateralShort",
 				"CollateralUtil",
-				"MixinSystemSettings",
 				"ShortingRewards",
 				"SynthsBTC",
 				"SynthsETH",
