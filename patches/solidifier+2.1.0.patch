@@ -1,0 +1,125 @@
+diff --git a/node_modules/solidifier/cli.js b/node_modules/solidifier/cli.js
+deleted file mode 100755
+index 38eb705..0000000
+--- a/node_modules/solidifier/cli.js
++++ /dev/null
+@@ -1,14 +0,0 @@
+-#!/usr/bin/env node
+-
+-console.error(
+-	'\n' +
+-		'---------------------------------------\n' +
+-		'You have mistakenly installed the `solidifier` package, which is a library \n' +
+-		'intended to be used from javascript code in node directly. If you want the command line interface, run:\n' +
+-		'\n' +
+-		'$ npm uninstall solidifier\n' +
+-		'$ npm install solidifier-cli\n' +
+-		'\n' +
+-		"Then the `solidifier` command will work for you when it's in your path.\n" +
+-		'---------------------------------------\n'
+-);
+diff --git a/node_modules/solidifier/index.js b/node_modules/solidifier/index.js
+index d91f908..c12443a 100644
+--- a/node_modules/solidifier/index.js
++++ b/node_modules/solidifier/index.js
+@@ -1,5 +1,5 @@
+ const nodePath = require('path');
+-const parser = require('solidity-parser-antlr');
++const parser = require('@solidity-parser/parser');
+ 
+ const getImportsInFile = contents => {
+ 	const ast = parser.parse(contents, { tolerant: true, loc: true });
+@@ -25,6 +25,24 @@ const getPragmasInFile = contents => {
+ 	return pragmas;
+ };
+ 
++const duplicatedPragmas = pragmas => {
++	const seen = [];
++	const duplicates = [];
++
++	for (const pragma of pragmas) {
++		// We can have different experimental pragmas but only one version pragma.
++		const name = pragma.name === 'experimental' ? pragma.value : pragma.name;
++
++		if (seen.includes(name)) {
++			duplicates.push(pragma);
++		} else {
++			seen.push(name);
++		}
++	}
++
++	return duplicates;
++}
++
+ const getFileContents = fileObject => (
+ 	new Promise((resolve, reject) => {
+ 		if (fileObject.textContents) {
+@@ -164,14 +182,10 @@ module.exports = {
+ 
+ 		let content = await visit({ path, files, visited, insertFileNames });
+ 
+-		// Now we need to strip all but the first pragma statement.
++		// Now we need to strip all of the duplicated pragma statements.
+ 		const pragmas = getPragmasInFile(content);
+ 
+-		// Ignore the first one.
+-		pragmas.shift();
+-
+-		// Strip the rest
+-		for (const pragma of pragmas) {
++		for (const pragma of duplicatedPragmas(pragmas)) {
+ 			content = removeByLoc(content, pragma.loc);
+ 		}
+ 
+@@ -179,13 +193,6 @@ module.exports = {
+ 			content = removeExcessWhitespace(content);
+ 		}
+ 
+-		return `/* ===============================================
+-* Flattened with Solidifier by Coinage
+-* 
+-* https://solidifier.coina.ge
+-* ===============================================
+-*/
+-${content}
+-`;
++		return content;
+ 	}
+ };
+diff --git a/node_modules/solidifier/package-lock.json b/node_modules/solidifier/package-lock.json
+new file mode 100644
+index 0000000..19b3b00
+--- /dev/null
++++ b/node_modules/solidifier/package-lock.json
+@@ -0,0 +1,31 @@
++{
++	"name": "solidifier",
++	"version": "2.1.0",
++	"lockfileVersion": 2,
++	"requires": true,
++	"packages": {
++		"": {
++			"name": "solidifier",
++			"version": "2.1.0",
++			"license": "MIT",
++			"dependencies": {
++				"@solidity-parser/parser": "^0.12.1"
++			},
++			"bin": {
++				"solidifier": "cli.js"
++			}
++		},
++		"node_modules/@solidity-parser/parser": {
++			"version": "0.12.2",
++			"resolved": "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.12.2.tgz",
++			"integrity": "sha512-d7VS7PxgMosm5NyaiyDJRNID5pK4AWj1l64Dbz0147hJgy5k2C0/ZiKK/9u5c5K+HRUVHmp+RMvGEjGh84oA5Q=="
++		}
++	},
++	"dependencies": {
++		"@solidity-parser/parser": {
++			"version": "0.12.2",
++			"resolved": "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.12.2.tgz",
++			"integrity": "sha512-d7VS7PxgMosm5NyaiyDJRNID5pK4AWj1l64Dbz0147hJgy5k2C0/ZiKK/9u5c5K+HRUVHmp+RMvGEjGh84oA5Q=="
++		}
++	}
++}
