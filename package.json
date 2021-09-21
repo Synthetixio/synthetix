@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.48.0",
+	"version": "2.49.0",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -72,7 +72,7 @@
 	},
 	"devDependencies": {
 		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
-		"@codechecks/client": "0.1.10",
+		"@codechecks/client": "0.1.11",
 		"@eth-optimism/contracts": "0.3.4",
 		"@eth-optimism/core-utils": "~0.4.5",
 		"@eth-optimism/hardhat-ovm": "0.2.2",
