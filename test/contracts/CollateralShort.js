@@ -174,13 +174,30 @@ contract('CollateralShort', async accounts => {
 
 	before(async () => {
 		CollateralState = artifacts.require(`CollateralState`);
+	});
 
-		await setupShort();
+	it('should ensure only expected functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: artifacts.require('CollateralShort').abi,
+			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
+			expected: [
+				'open',
+				'close',
+				'deposit',
+				'repay',
+				'repayWithCollateral',
+				'withdraw',
+				'liquidate',
+				'draw',
+			],
+		});
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
+		await setupShort();
+
 		await updateRatesWithDefaults();
 
 		// set a 0.3% default exchange fee rate                                                                                 │        { contract: 'ExchangeState' },
@@ -212,23 +229,6 @@ contract('CollateralShort', async accounts => {
 		assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
 		assert.equal(await short.synths(1), toBytes32('SynthsETH'));
 		assert.bnEqual(await short.minCratio(), toUnit(1.2));
-	});
-
-	it('should ensure only expected functions are mutative', async () => {
-		ensureOnlyExpectedMutativeFunctions({
-			abi: short.abi,
-			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: [
-				'open',
-				'close',
-				'deposit',
-				'repay',
-				'repayWithCollateral',
-				'withdraw',
-				'liquidate',
-				'draw',
-			],
-		});
 	});
 
 	it('should access its dependencies via the address resolver', async () => {
