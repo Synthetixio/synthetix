@@ -5,9 +5,6 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 let MultiCollateralSynth;
-let CollateralState;
-let CollateralManagerState;
-let CollateralManager;
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toUnit, currentTime, fastForward } = require('../utils')();
@@ -16,7 +13,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts } = require('./setup');
 
 contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
@@ -37,22 +34,6 @@ contract('MultiCollateralSynth', accounts => {
 	const getid = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
-	};
-
-	const deployCollateral = async ({
-		state,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-	}) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
-		});
 	};
 
 	const issuesUSDToAccount = async (issueAmount, receiver) => {
@@ -78,9 +59,6 @@ contract('MultiCollateralSynth', accounts => {
 
 	before(async () => {
 		MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-		CollateralState = artifacts.require('CollateralState');
-		CollateralManagerState = artifacts.require('CollateralManagerState');
-		CollateralManager = artifacts.require('CollateralManager');
 	});
 
 	before(async () => {
@@ -92,6 +70,9 @@ contract('MultiCollateralSynth', accounts => {
 			ExchangeRates: exchangeRates,
 			DebtCache: debtCache,
 			FeePool: feePool,
+			CollateralManager: manager,
+			CollateralManagerState: managerState,
+			CollateralEth: ceth,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -105,46 +86,12 @@ contract('MultiCollateralSynth', accounts => {
 				'FeePool',
 				'CollateralUtil',
 				'CollateralManager',
+				'CollateralManagerState',
+				'CollateralEth',
 			],
 		}));
 
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		manager = await CollateralManager.new(
-			managerState.address,
-			owner,
-			resolver.address,
-			toUnit(10000),
-			0,
-			0,
-			{
-				from: deployerAccount,
-			}
-		);
-
 		await managerState.setAssociatedContract(manager.address, { from: owner });
-
-		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		ceth = await deployCollateral({
-			state: state.address,
-			owner: owner,
-			manager: manager.address,
-			resolver: resolver.address,
-			collatKey: toBytes32('sETH'),
-			minColat: toUnit(1.5),
-			minSize: toUnit(1),
-		});
-
-		await state.setAssociatedContract(ceth.address, { from: owner });
-
-		await resolver.importAddresses(
-			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
-			[ceth.address, manager.address],
-			{
-				from: owner,
-			}
-		);
 
 		await manager.rebuildCache();
 		await feePool.rebuildCache();
