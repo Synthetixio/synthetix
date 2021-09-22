@@ -14,7 +14,7 @@ const DEFAULTS = {
 const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 // Get unreleased releases
-const getReleasesNotYetReleased = (useOvm = false) =>
+const getReleasesNotYetReleased = ({ useOvm = false }) =>
 	releases.releases.filter(
 		release => !release.released && !!release.ovm === useOvm && release.sips.length > 0
 	);
@@ -78,7 +78,7 @@ const prepareDeploy = async ({
 		}
 	} else if (useReleases) {
 		// Get all the sources coming from the SIPs from the release on the required layer
-		const unreleased = getReleasesNotYetReleased();
+		const unreleased = getReleasesNotYetReleased({ useOvm });
 		sources = unreleased
 			.flatMap(({ sips }) => sips)
 			.flatMap(sipNumber => {

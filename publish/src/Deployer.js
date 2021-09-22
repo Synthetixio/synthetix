@@ -112,10 +112,8 @@ class Deployer {
 
 	async sendDummyTx() {
 		const tx = {
-			to: '0x0000000000000000000000000000000000000001',
-			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
+			to: '0x4200000000000000000000000000000000000006',
 			value: 0,
-			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
 		const response = await this.signer.sendTransaction(tx);
