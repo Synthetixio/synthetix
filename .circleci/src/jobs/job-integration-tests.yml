@@ -4,18 +4,20 @@
 # set custom delimiter to avoid checksum parsing
 {{=<% %>=}}
 resource_class: large
+environment:
+  OPTIMISM_TEST_COMMIT: '08d1c86a7878900cc70be59aee70e724e680ec9e'
 steps:
   - checkout
   - attach_workspace:
       at: .
   - restore_cache:
       keys:
-        - v6-optimism-build-{{ checksum "package-lock.json" }}
+        - v6-optimism-build-{{ .Environment.OPTIMISM_TEST_COMMIT }}
   - run:
       name: Build docker containers if necessary
       command: |
         if [ ! -d ./optimism ]; then
-          npx hardhat ops --fresh --build --build-ops
+          npx hardhat ops --fresh --build --build-ops --optimism-commit $OPTIMISM_TEST_COMMIT
         fi;
   - save_cache:
       key: v6-optimism-build-{{ checksum "package-lock.json" }}
@@ -26,7 +28,7 @@ steps:
       background: true
       command: |
         docker --version
-        npx hardhat ops --start
+        npx hardhat ops --start --optimism-commit $OPTIMISM_TEST_COMMIT
   - cmd-wait-for-port:
       port: 8545
   - cmd-wait-for-port:
