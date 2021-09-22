@@ -12,7 +12,7 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - v6-optimism-build-{{ .Environment.OPTIMISM_TEST_COMMIT }}
+        - v6-optimism-build-${OPTIMISM_TEST_COMMIT}
   - run:
       name: Build docker containers if necessary
       command: |

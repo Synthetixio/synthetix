@@ -264,7 +264,7 @@ const mixinGasOptions = async (tx, provider, maxFeePerGas, maxPriorityFeePerGas)
 		if (maxPriorityFeePerGas)
 			tx.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
 	} else {
-		tx.type = 1;
+		// tx.type = 1;
 	}
 
 	return tx;
