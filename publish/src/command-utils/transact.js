@@ -84,10 +84,10 @@ const performTransactionalStep = async ({
 				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 			};
 
-			if (
-				signer.provider.getNetwork().chainId == 42 ||
-				signer.provider.getNetwork().chainId == 420
-			) {
+			const networkInfo = await signer.provider.getNetwork();
+			console.log('chainid', networkInfo);
+
+			if (networkInfo.chainId !== 42 && networkInfo.chainId !== 420) {
 				overrides.type = 1;
 			}
 
