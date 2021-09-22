@@ -13,7 +13,7 @@ const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
 } = require('.');
 
-const GAS_PRICE = 200e9; // 20 GWEI
+const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
 
 module.exports = {
@@ -52,7 +52,6 @@ module.exports = {
 			gasPrice: GAS_PRICE,
 			hardfork: 'london',
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
-			initialBaseFeePerGas: '100000',
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
