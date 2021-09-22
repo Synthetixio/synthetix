@@ -95,7 +95,6 @@ jobs:
           background: true
           command: |
             docker --version
-            npx hardhat ops --build-ops
             npx hardhat ops --start
       - cmd-wait-for-port:
           port: 8545
