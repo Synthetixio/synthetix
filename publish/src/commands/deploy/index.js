@@ -287,7 +287,7 @@ const deploy = async ({
 		yes,
 	});
 
-	const { useEmptyCollateralManager, collateralManagerDefaults } = await deployLoans({
+	const { collateralManagerDefaults } = await deployLoans({
 		account,
 		addressOf,
 		deployer,
@@ -395,7 +395,6 @@ const deploy = async ({
 		deployer,
 		getDeployParameter,
 		runStep,
-		useEmptyCollateralManager,
 	});
 
 	await takeDebtSnapshotWhenRequired({

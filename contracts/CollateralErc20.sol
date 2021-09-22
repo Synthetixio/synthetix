@@ -6,10 +6,6 @@ pragma experimental ABIEncoderV2;
 import "./Collateral.sol";
 import "./interfaces/ICollateralErc20.sol";
 
-// Internal references
-import "./CollateralState.sol";
-import "./interfaces/IERC20.sol";
-
 // This contract handles the specific ERC20 implementation details of managing a loan.
 contract CollateralErc20 is ICollateralErc20, Collateral {
     // The underlying asset for this ERC20 collateral
@@ -18,7 +14,6 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     uint public underlyingContractDecimals;
 
     constructor(
-        CollateralState _state,
         address _owner,
         ICollateralManager _manager,
         address _resolver,
@@ -27,7 +22,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint _minCollateral,
         address _underlyingContract,
         uint _underlyingDecimals
-    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {
+    ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {
         underlyingContract = _underlyingContract;
 
         underlyingContractDecimals = _underlyingDecimals;
@@ -37,64 +32,64 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint collateral,
         uint amount,
         bytes32 currency
-    ) external {
+    ) external returns (uint id) {
         require(collateral <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
         // only transfer the actual collateral
-        IERC20(underlyingContract).transferFrom(msg.sender, address(this), collateral);
+        IERC20(underlyingContract).safeTransferFrom(msg.sender, address(this), collateral);
 
         // scale up before entering the system.
         uint scaledCollateral = scaleUpCollateral(collateral);
 
-        openInternal(scaledCollateral, amount, currency, false);
+        id = _open(scaledCollateral, amount, currency, false);
     }
 
-    function close(uint id) external {
-        uint collateral = closeInternal(msg.sender, id);
+    function close(uint id) external returns (uint amount, uint collateral) {
+        (amount, collateral) = _close(msg.sender, id);
 
         // scale down before transferring back.
         uint scaledCollateral = scaleDownCollateral(collateral);
 
-        IERC20(underlyingContract).transfer(msg.sender, scaledCollateral);
+        IERC20(underlyingContract).safeTransfer(msg.sender, scaledCollateral);
     }
 
     function deposit(
         address borrower,
         uint id,
         uint amount
-    ) external {
+    ) external returns (uint principal, uint collateral) {
         require(amount <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
-        IERC20(underlyingContract).transferFrom(msg.sender, address(this), amount);
+        IERC20(underlyingContract).safeTransferFrom(msg.sender, address(this), amount);
 
         // scale up before entering the system.
         uint scaledAmount = scaleUpCollateral(amount);
 
-        depositInternal(borrower, id, scaledAmount);
+        (principal, collateral) = _deposit(borrower, id, scaledAmount);
     }
 
-    function withdraw(uint id, uint amount) external {
+    function withdraw(uint id, uint amount) external returns (uint principal, uint collateral) {
         // scale up before entering the system.
         uint scaledAmount = scaleUpCollateral(amount);
 
-        uint withdrawnAmount = withdrawInternal(id, scaledAmount);
+        (principal, collateral) = _withdraw(id, scaledAmount);
 
         // scale down before transferring back.
-        uint scaledWithdraw = scaleDownCollateral(withdrawnAmount);
+        uint scaledWithdraw = scaleDownCollateral(collateral);
 
-        IERC20(underlyingContract).transfer(msg.sender, scaledWithdraw);
+        IERC20(underlyingContract).safeTransfer(msg.sender, scaledWithdraw);
     }
 
     function repay(
         address borrower,
         uint id,
         uint amount
-    ) external {
-        repayInternal(borrower, msg.sender, id, amount);
+    ) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repay(borrower, msg.sender, id, amount);
     }
 
-    function draw(uint id, uint amount) external {
-        drawInternal(id, amount);
+    function draw(uint id, uint amount) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _draw(id, amount);
     }
 
     function liquidate(
@@ -102,12 +97,12 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint id,
         uint amount
     ) external {
-        uint collateralLiquidated = liquidateInternal(borrower, id, amount);
+        uint collateralLiquidated = _liquidate(borrower, id, amount);
 
         // scale down before transferring back.
         uint scaledCollateral = scaleDownCollateral(collateralLiquidated);
 
-        IERC20(underlyingContract).transfer(msg.sender, scaledCollateral);
+        IERC20(underlyingContract).safeTransfer(msg.sender, scaledCollateral);
     }
 
     function scaleUpCollateral(uint collateral) public view returns (uint scaledUp) {

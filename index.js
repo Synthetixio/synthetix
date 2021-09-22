@@ -159,11 +159,9 @@ const defaults = {
 
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
-		SHORTS: [
-			{ long: 'sBTC', short: 'iBTC' },
-			{ long: 'sETH', short: 'iETH' },
-		],
+		SHORTS: ['sBTC', 'sETH'],
 		MAX_DEBT: w3utils.toWei('75000000'), // 75 million sUSD
+		MAX_SKEW_RATE: w3utils.toWei('0.2'),
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
@@ -185,6 +183,7 @@ const defaults = {
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
 		INTERACTION_DELAY: '3600', // 1 hour in secs
+		COLLAPSE_FEE_RATE: '0',
 	},
 
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),

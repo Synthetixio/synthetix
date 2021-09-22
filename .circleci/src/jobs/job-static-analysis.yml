@@ -1,5 +1,5 @@
 # Runs all static analysis checks
-{{> job-header.yml}}
+{{> job-header-node.yml}}
 steps:
   - checkout
   - attach_workspace:

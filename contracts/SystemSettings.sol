@@ -151,6 +151,30 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getEtherWrapperBurnFeeRate();
     }
 
+    function minCratio(address collateral) external view returns (uint) {
+        return getMinCratio(collateral);
+    }
+
+    function issueFeeRate(address collateral) external view returns (uint) {
+        return getIssueFeeRate(collateral);
+    }
+
+    function collateralManager(address collateral) external view returns (address) {
+        return getNewCollateralManager(collateral);
+    }
+
+    function canOpenLoans(address collateral) external view returns (bool) {
+        return getCanOpenLoans(collateral);
+    }
+
+    function interactionDelay(address collateral) external view returns (uint) {
+        return getInteractionDelay(collateral);
+    }
+
+    function collapseFeeRate(address collateral) external view returns (uint) {
+        return getCollapseFeeRate(collateral);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
@@ -305,6 +329,62 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
+    function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
+        require(_minCratio >= SafeDecimalMath.unit(), "Cratio must be above 1");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, _collateral)),
+            _minCratio
+        );
+        emit MinCratioRatioUpdated(_minCratio);
+    }
+
+    function setIssueFeeRate(address _collateral, uint _issueFeeRate) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, _collateral)),
+            _issueFeeRate
+        );
+        emit IssueFeeRateUpdated(_issueFeeRate);
+    }
+
+    function setCollateralManager(address _collateral, address _newCollateralManager) external onlyOwner {
+        flexibleStorage().setAddressValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, _collateral)),
+            _newCollateralManager
+        );
+        emit CollateralManagerUpdated(_newCollateralManager);
+    }
+
+    function setCanOpenLoans(address _collateral, bool _canOpenLoans) external onlyOwner {
+        flexibleStorage().setBoolValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, _collateral)),
+            _canOpenLoans
+        );
+        emit CanOpenLoansUpdated(_canOpenLoans);
+    }
+
+    function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, _collateral)),
+            _interactionDelay
+        );
+        emit InteractionDelayUpdated(_interactionDelay);
+    }
+
+    function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, _collateral)),
+            _collapseFeeRate
+        );
+        emit CollapseFeeRateUpdated(_collapseFeeRate);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -324,4 +404,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event MinCratioRatioUpdated(uint minCratio);
+    event IssueFeeRateUpdated(uint issueFeeRate);
+    event CollateralManagerUpdated(address newCollateralManager);
+    event CanOpenLoansUpdated(bool canOpenLoans);
+    event InteractionDelayUpdated(uint interactionDelay);
+    event CollapseFeeRateUpdated(uint collapseFeeRate);
 }
