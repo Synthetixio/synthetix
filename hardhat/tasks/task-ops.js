@@ -20,23 +20,16 @@ task('ops', 'Run Optimism chain')
 	.addFlag('start', 'Start the latest build')
 	.addFlag('stop', 'Stop optimism chain')
 	.addFlag('detached', 'Detach the chain from the console')
-	.addOptionalParam('optimismPath', 'Path to optmism repository folder', './optimism')
-	.addOptionalParam('optimismBranch', 'Branch to checkout', 'master')
-	.addOptionalParam(
-		'optimismCommit',
-		'Commit to checkout',
-		'05ace3ae2c12c6ba5a4a0ac33254f9547cc4557c'
-	)
+	.addOptionalParam('optimismPath', 'Path to optimism repository folder', './optimism')
+	.addOptionalParam('optimismBranch', 'Branch to checkout', 'experimental')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
 
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
 		const opsBranch = taskArguments.optimismBranch;
-		const opsCommit = taskArguments.optimismCommit;
 		const opsDetached = taskArguments.detached ? '-d' : '';
 
 		console.log(gray('optimism branch:', opsBranch));
-		console.log(gray('optimism commit:', opsCommit));
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
@@ -61,14 +54,14 @@ task('ops', 'Run Optimism chain')
 				_fresh({ opsPath });
 			}
 
-			_build({ opsPath, opsCommit, opsBranch });
+			_build({ opsPath, opsBranch });
 		}
 
 		if (taskArguments.buildOps || (taskArguments.fresh && taskArguments.start)) {
 			console.log(yellow('building ops'));
 			if (!fs.existsSync(opsPath)) {
 				_fresh({ opsPath });
-				_build({ opsPath, opsCommit, opsBranch });
+				_build({ opsPath, opsBranch });
 			}
 			_buildOps({ opsPath });
 		}
@@ -82,10 +75,10 @@ task('ops', 'Run Optimism chain')
 
 			if (!fs.existsSync(opsPath)) {
 				_fresh({ opsPath });
-				_build({ opsPath, opsCommit, opsBranch });
+				_build({ opsPath, opsBranch });
 				_buildOps({ opsPath });
 			} else if (!_imagesExist()) {
-				_build({ opsPath, opsCommit, opsBranch });
+				_build({ opsPath, opsBranch });
 				_buildOps({ opsPath });
 			}
 			await _start({ opsPath, opsDetached });
@@ -141,14 +134,10 @@ function _fresh({ opsPath }) {
 	]);
 }
 
-function _build({ opsPath, opsCommit, opsBranch }) {
-	console.log(gray('  checkout commit:', opsCommit));
+function _build({ opsPath, opsBranch }) {
 	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch `]);
 	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsBranch} `]);
 	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin ${opsBranch} `]);
-	if (opsCommit) {
-		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
-	}
 	console.log(gray('  get dependencies'));
 	execa.sync('sh', ['-c', `cd ${opsPath} && yarn `]);
 	console.log(gray('  build'));
