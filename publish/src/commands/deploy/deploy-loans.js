@@ -66,32 +66,22 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		args: [account, account],
 	});
 
-	const useEmptyCollateralManager = useOvm;
 	const collateralManager = await deployer.deployContract({
 		name: 'CollateralManager',
-		source: useEmptyCollateralManager ? 'EmptyCollateralManager' : 'CollateralManager',
-		args: useEmptyCollateralManager
-			? []
-			: [
-					addressOf(collateralManagerState),
-					account,
-					addressOf(ReadProxyAddressResolver),
-					collateralManagerDefaults['MAX_DEBT'],
-					collateralManagerDefaults['BASE_BORROW_RATE'],
-					collateralManagerDefaults['BASE_SHORT_RATE'],
-			  ],
-	});
-
-	const collateralStateEth = await deployer.deployContract({
-		name: 'CollateralStateEth',
-		source: 'CollateralState',
-		args: [account, account],
+		args: [
+			addressOf(collateralManagerState),
+			account,
+			addressOf(ReadProxyAddressResolver),
+			collateralManagerDefaults['MAX_DEBT'],
+			collateralManagerDefaults['MAX_SKEW_RATE'],
+			collateralManagerDefaults['BASE_BORROW_RATE'],
+			collateralManagerDefaults['BASE_SHORT_RATE'],
+		],
 	});
 
 	await deployer.deployContract({
 		name: 'CollateralEth',
 		args: [
-			addressOf(collateralStateEth),
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
@@ -99,12 +89,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
 		],
-	});
-
-	const collateralStateErc20 = await deployer.deployContract({
-		name: 'CollateralStateErc20',
-		source: 'CollateralState',
-		args: [account, account],
 	});
 
 	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
@@ -127,7 +111,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		name: 'CollateralErc20',
 		source: 'CollateralErc20',
 		args: [
-			addressOf(collateralStateErc20),
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
@@ -139,16 +122,9 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		],
 	});
 
-	const collateralStateShort = await deployer.deployContract({
-		name: 'CollateralStateShort',
-		source: 'CollateralState',
-		args: [account, account],
-	});
-
 	await deployer.deployContract({
 		name: 'CollateralShort',
 		args: [
-			addressOf(collateralStateShort),
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
@@ -160,6 +136,5 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	return {
 		collateralManagerDefaults,
-		useEmptyCollateralManager,
 	};
 };
