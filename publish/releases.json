@@ -298,6 +298,7 @@
 			"layer": "ovm",
 			"sources": [
 				"CollateralManager",
+				"CollateralManagerState",
 				"CollateralShort",
 				"CollateralUtil",
 				"SynthsBTC",
