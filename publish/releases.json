@@ -591,15 +591,6 @@
 			"sips": [158, 169]
 		},
 		{
-			"name": "Sargas",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 50
-			},
-			"sips": []
-		},
-		{
 			"name": "Sargas (Optimism)",
 			"ovm": true,
 			"released": false,
@@ -607,7 +598,7 @@
 				"major": 2,
 				"minor": 50
 			},
-			"sips": []
+			"sips": [135, 174]
 		},
 		{
 			"name": "Kaus",
