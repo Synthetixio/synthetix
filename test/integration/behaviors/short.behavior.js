@@ -13,8 +13,10 @@ const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
-		const amountToDeposit = parseEther('10000'); // sUSD
-		const amountToBorrow = parseEther('1'); // sETH
+		const amountOfsUSDRequired = parseEther('2000'); // sUSD
+		const amountToDeposit = parseEther('1000'); // sUSD
+		const amountToBorrow = parseEther('0.000001'); // sETH
+		const amountToExchange = parseEther('100'); // sUSD
 
 		let user, owner;
 		let CollateralShort, Synthetix, SynthsUSD, SystemSettings, interactionDelay, CollateralManager;
@@ -39,7 +41,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 		before('ensure user should have sUSD', async () => {
 			await CollateralManager.addCollaterals([CollateralShort.address]);
-			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: parseEther('20000') });
+			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: amountOfsUSDRequired });
 		});
 
 		before('ensure sETH supply exists', async () => {
@@ -48,7 +50,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 				ctx,
 				src: 'sUSD',
 				dest: 'sETH',
-				amount: parseEther('10'),
+				amount: parseEther('1'),
 				user: ctx.users.otherUser,
 			});
 		});
@@ -89,7 +91,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 						token: SynthsUSD,
 						owner: user,
 						beneficiary: CollateralShort,
-						amount: parseEther('20000'), // sUSD
+						amount: amountOfsUSDRequired,
 					});
 				});
 
@@ -103,8 +105,8 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loan = await getLoan({ ctx, id: loanId, user });
 				});
 
-				before('deposit more collateral', async () => {
-					assert.bnEqual(loan.collateral, parseEther('10000'));
+				before('deposit more collateral (doubling it)', async () => {
+					assert.bnEqual(loan.collateral, amountToDeposit);
 					tx = await CollateralShort.deposit(user.address, loanId, amountToDeposit);
 
 					const { events } = await tx.wait();
@@ -113,12 +115,11 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loanId = event.args.id;
 
 					loan = await getLoan({ ctx, id: loanId, user });
-					assert.bnEqual(loan.collateral, parseEther('20000'));
+					assert.bnEqual(loan.collateral, amountToDeposit.mul(2));
 				});
 
-				before('withdraw some collateral', async () => {
-					assert.bnEqual(loan.collateral, parseEther('20000'));
-					tx = await CollateralShort.withdraw(loanId, parseEther('5000'));
+				before('withdraw some collateral (removing the added double)', async () => {
+					tx = await CollateralShort.withdraw(loanId, amountToDeposit);
 
 					const { events } = await tx.wait();
 
@@ -126,12 +127,12 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loanId = event.args.id;
 
 					loan = await getLoan({ ctx, id: loanId, user });
-					assert.bnEqual(loan.collateral, parseEther('15000'));
+					assert.bnEqual(loan.collateral, amountToDeposit);
 				});
 
-				before('draw down the loan', async () => {
-					assert.bnEqual(loan.amount, parseEther('1'));
-					tx = await CollateralShort.draw(loanId, parseEther('1'));
+				before('draw down the loan (doubling it)', async () => {
+					assert.bnEqual(loan.amount, amountToBorrow);
+					tx = await CollateralShort.draw(loanId, amountToBorrow);
 
 					const { events } = await tx.wait();
 
@@ -139,12 +140,12 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loanId = event.args.id;
 
 					loan = await getLoan({ ctx, id: loanId, user });
-					assert.bnEqual(loan.amount, parseEther('2'));
+					assert.bnEqual(loan.amount, amountToBorrow.mul(2));
 				});
 
 				it('shows the loan amount and collateral are correct', async () => {
-					assert.bnEqual(loan.amount, parseEther('2'));
-					assert.bnEqual(loan.collateral, parseEther('15000'));
+					assert.bnEqual(loan.amount, amountToBorrow.mul(2));
+					assert.bnEqual(loan.collateral, amountToDeposit);
 				});
 
 				describe('closing a loan', () => {
@@ -153,7 +154,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 							ctx,
 							src: 'sUSD',
 							dest: 'sETH',
-							amount: parseEther('50000'),
+							amount: amountToExchange,
 							user,
 						});
 					});

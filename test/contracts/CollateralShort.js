@@ -160,6 +160,8 @@ contract('CollateralShort', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
+		await setupShort();
+
 		await updateRatesWithDefaults();
 
 		// set a 0.3% default exchange fee rate                                                                                 │        { contract: 'ExchangeState' },
@@ -189,7 +191,7 @@ contract('CollateralShort', async accounts => {
 		assert.equal(await short.synths(1), toBytes32('SynthsETH'));
 		assert.bnEqual(await short.minCratio(), toUnit(1.2));
 	});
-
+  
 	it('should ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: short.abi,
