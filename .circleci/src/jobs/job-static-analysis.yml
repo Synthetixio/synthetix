@@ -9,5 +9,9 @@ steps:
       # ignore slither error codes
       command: |
         set +e
-        slither .
+        slither . --disable-color 2>&1 | tee slitherReport.txt
         exit 0
+  - store_artifacts:
+      path: slitherReport.txt
+      destination: slitherReport.txt
+  
