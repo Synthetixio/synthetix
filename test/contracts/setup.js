@@ -24,6 +24,9 @@ const {
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
 		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
+		ETHER_WRAPPER_MAX_ETH,
+		ETHER_WRAPPER_MINT_FEE_RATE,
+		ETHER_WRAPPER_BURN_FEE_RATE,
 	},
 } = require('../../');
 
@@ -199,6 +202,8 @@ const setupContract = async ({
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
+		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
+		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
@@ -216,20 +221,6 @@ const setupContract = async ({
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
-		BinaryOptionMarketFactory: [owner, tryGetAddressOf('AddressResolver')],
-		BinaryOptionMarketManager: [
-			owner,
-			tryGetAddressOf('AddressResolver'),
-			61 * 60, // max oracle price age: 61 minutes
-			26 * 7 * 24 * 60 * 60, // expiry duration: 26 weeks (~ 6 months)
-			365 * 24 * 60 * 60, // Max time to maturity: ~ 1 year
-			toWei('2'), // Capital requirement
-			toWei('0.05'), // Skew Limit
-			toWei('0.008'), // pool fee
-			toWei('0.002'), // creator fee
-			toWei('0.02'), // refund fee
-		],
-		BinaryOptionMarketData: [],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -238,18 +229,35 @@ const setupContract = async ({
 			toUnit(50000000),
 			0,
 			0,
+			0,
 		],
 		CollateralUtil: [tryGetAddressOf('AddressResolver')],
 		Collateral: [
-			tryGetAddressOf('CollateralState'),
+			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			'sUSD',
-			1.2,
-			100,
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
 		],
-		CollateralState: [owner, tryGetAddressOf('Collateral')],
+		CollateralEth: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'),
+			toUnit(1.3),
+			toUnit(2),
+		],
+		CollateralShort: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
+		],
 		WETH: [],
+		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -501,6 +509,13 @@ const setupContract = async ({
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
+			} else if (mock === 'EtherWrapper') {
+				await mockGenericContractFnc({
+					instance,
+					mock,
+					fncName: 'totalIssuedSynths',
+					returns: ['0'],
+				});
 			} else if (mock === 'WrapperFactory') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -646,13 +661,28 @@ const setupAllContracts = async ({
 		{ contract: 'DappMaintenance' },
 		{ contract: 'WETH' },
 		{
+			contract: 'EtherWrapper',
+			mocks: [],
+			deps: ['AddressResolver', 'WETH'],
+		},
+		{
+			contract: 'NativeEtherWrapper',
+			mocks: [],
+			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
+		},
+		{
 			contract: 'WrapperFactory',
 			mocks: [],
 			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{
+			contract: 'SynthRedeemer',
+			mocks: ['Issuer'],
+			deps: ['AddressResolver'],
+		},
+		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'WrapperFactory'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -666,6 +696,8 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FlexibleStorage',
 				'WrapperFactory',
+				'EtherWrapper',
+				'SynthRedeemer',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
@@ -685,7 +717,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'WrapperFactory'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper', 'WrapperFactory'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
@@ -787,28 +819,10 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'FlexibleStorage',
 				'CollateralManager',
+				'EtherWrapper',
 				'WrapperFactory',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
-		},
-		{
-			contract: 'BinaryOptionMarketFactory',
-			deps: ['AddressResolver'],
-		},
-		{
-			contract: 'BinaryOptionMarketManager',
-			deps: [
-				'SystemStatus',
-				'AddressResolver',
-				'ExchangeRates',
-				'FeePool',
-				'Synthetix',
-				'BinaryOptionMarketFactory',
-			],
-		},
-		{
-			contract: 'BinaryOptionMarketData',
-			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 		{
 			contract: 'CollateralState',
@@ -836,7 +850,15 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Collateral',
-			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
+			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralEth',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralShort',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
 	];
 
@@ -1016,6 +1038,15 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setEtherWrapperMaxETH(ETHER_WRAPPER_MAX_ETH, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setEtherWrapperMintFeeRate(ETHER_WRAPPER_MINT_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
 		]);

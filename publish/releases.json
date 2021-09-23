@@ -294,6 +294,20 @@
 			"released": "base"
 		},
 		{
+			"sip": 135,
+			"layer": "ovm",
+			"sources": [
+				"CollateralManager",
+				"CollateralShort",
+				"CollateralUtil",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsLINK",
+				"SynthsUSD",
+				"SystemSettings"
+			]
+		},
+		{
 			"sip": 136,
 			"layer": "base",
 			"released": "base",
@@ -314,27 +328,47 @@
 		{
 			"sip": 142,
 			"layer": "base",
+			"released": "base",
 			"sources": [
 				"DebtCache",
 				"FeePool",
 				"Issuer",
 				"Synthetix",
 				"SynthsETH",
-				"SynthsUSD"
+				"SynthsUSD",
+				"SynthsBTC"
 			]
 		},
 		{
 			"sip": 145,
 			"layer": "base",
+			"released": "base",
 			"sources": ["DebtCache"]
 		},
 		{
-			"sip": 170,
-			"layer": "base"
+			"sip": 158,
+			"layer": "base",
+			"released": "base"
 		},
 		{
-			"sip": 180,
+			"sip": 169,
 			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 170,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 174,
+			"layer": "both",
+			"released": "base",
+			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+		},
+		{
+			"sip": 182,
+			"layer": "ovm",
 			"sources": ["DebtCache", "FeePool", "SystemSettings", "WrapperFactory"]
 		}
 	],
@@ -545,41 +579,21 @@
 		},
 		{
 			"name": "Mirfak",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 48
 			},
-			"sips": []
-		},
-		{
-			"name": "Mirfak (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 48
-			},
-			"sips": []
+			"sips": [142, 145, 170, 174]
 		},
 		{
 			"name": "Wezen",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 49
 			},
-			"sips": []
-		},
-		{
-			"name": "Wezen (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 49
-			},
-			"sips": []
+			"sips": [158, 169]
 		},
 		{
 			"name": "Sargas",

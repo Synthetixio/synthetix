@@ -12,13 +12,14 @@ const commands = {
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
-async function compileInstance({ useOvm, buildPath }) {
+async function compileInstance({ useOvm, buildPath, migrations }) {
 	await commands.build({
 		useOvm,
 		cleanBuild: true,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
 		buildPath,
+		migrations,
 	});
 }
 
@@ -27,33 +28,37 @@ async function prepareDeploy(...args) {
 }
 
 async function deployInstance({
-	useOvm,
-	providerUrl,
-	providerPort,
-	useFork = false,
-	network = 'local',
-	freshDeploy = true,
-	ignoreCustomParameters = false,
+	addNewSynths,
 	buildPath,
+	freshDeploy = true,
+	generateSolidity = false,
+	ignoreCustomParameters = false,
+	network = 'local',
+	providerPort,
+	providerUrl,
 	skipFeedChecks = true,
+	useFork = false,
+	useOvm,
 }) {
 	const privateKey = network === 'local' ? getLocalPrivateKey({ index: 0 }) : undefined;
 
 	await commands.deploy({
-		concurrency: 1,
-		network,
-		useFork,
-		freshDeploy,
-		yes: true,
-		providerUrl: `${providerUrl}:${providerPort}`,
-		gasPrice: useOvm ? OVM_GAS_PRICE : 1,
-		useOvm,
-		privateKey,
-		methodCallGasLimit: useOvm ? undefined : 3500000,
-		contractDeploymentGasLimit: useOvm ? undefined : 9500000,
-		ignoreCustomParameters,
+		addNewSynths,
 		buildPath,
+		concurrency: 1,
+		contractDeploymentGasLimit: useOvm ? undefined : 9500000,
+		freshDeploy,
+		gasPrice: useOvm ? OVM_GAS_PRICE : 1,
+		generateSolidity,
+		ignoreCustomParameters,
+		methodCallGasLimit: useOvm ? undefined : 3500000,
+		network,
+		privateKey,
+		providerUrl: `${providerUrl}:${providerPort}`,
 		skipFeedChecks,
+		useFork,
+		useOvm,
+		yes: true,
 	});
 }
 

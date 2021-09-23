@@ -243,6 +243,12 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'SynthRedeemer',
+		deps: ['AddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
 		name: 'WrapperFactory',
 		source: 'WrapperFactory',
 		deps: ['AddressResolver'],

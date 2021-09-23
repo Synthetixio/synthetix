@@ -38,13 +38,14 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice,
-	gasLimit,
+	gasPrice = DEFAULTS.gasPrice,
+	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
 	yes,
 	useOvm,
 	useFork,
 	providerUrl,
+	throwOnNotNominatedOwner = false,
 	isContract,
 }) => {
 	ensureNetwork(network);
@@ -84,7 +85,8 @@ const owner = async ({
 		providerUrl = envProviderUrl;
 	}
 
-	if (!privateKey) {
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey && !useFork) {
 		privateKey = envPrivateKey;
 	}
 
@@ -103,8 +105,18 @@ const owner = async ({
 		}
 	}
 
-	const wallet = new ethers.Wallet(privateKey, provider);
-	console.log(gray(`Using account with public key ${wallet.address}`));
+	let wallet;
+	if (!privateKey) {
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
+	} else {
+		wallet = new ethers.Wallet(privateKey, provider);
+	}
+
+	const signerAddress = wallet.address;
+
+	console.log(gray(`Using account with public key ${signerAddress}`));
 
 	if (!isContract && wallet.address.toLowerCase() !== newOwner.toLowerCase()) {
 		throw new Error(
@@ -338,11 +350,12 @@ const owner = async ({
 				return;
 			}
 		} else {
-			console.log(
-				cyan(
-					`Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`
-				)
-			);
+			const msg = `Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`;
+			if (throwOnNotNominatedOwner && contract !== 'DappMaintenance') {
+				throw Error(msg);
+			} else {
+				console.log(cyan(msg));
+			}
 		}
 	}
 	if (warnings.length) {

@@ -14,15 +14,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": true
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": true
-	},
-	"BinaryOptionMarketData": {
-		"deploy": true
-	},
 	"CollateralManager": {
 		"deploy": true
 	},
@@ -36,15 +27,6 @@
 		"deploy": true
 	},
 	"CollateralShort": {
-		"deploy": true
-	},
-	"CollateralStateErc20": {
-		"deploy": true
-	},
-	"CollateralStateEth": {
-		"deploy": true
-	},
-	"CollateralStateShort": {
 		"deploy": true
 	},
 	"CollateralUtil": {
@@ -453,6 +435,9 @@
 		"deploy": true
 	},
 	"WETH": {
+		"deploy": true
+	},
+	"SynthRedeemer": {
 		"deploy": true
 	}
 }

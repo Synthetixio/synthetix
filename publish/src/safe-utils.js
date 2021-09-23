@@ -4,6 +4,8 @@ const ethers = require('ethers');
 const axios = require('axios');
 const { green, gray, red, yellow } = require('chalk');
 
+const Web3 = require('web3');
+
 const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
@@ -235,14 +237,17 @@ const getNewTransactionHash = async ({ safeContract, data, to, sender, network, 
 	return { txHash, newNonce };
 };
 
-const getSafeSignature = async ({ signer, privateKey, providerUrl, contractTxHash }) => {
-	if (!signer) {
-		const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-		signer = new ethers.Wallet(privateKey, provider);
-	}
+const getSafeSignature = async ({ privateKey, providerUrl, contractTxHash }) => {
+	// NOTE: Signing via ethers seems to fail with error 422 as the
+	// signer doesn't match what gnosis expect.
+	// This is likely due to the EIP-191 compliance from ethers,
+	// see https://docs.ethers.io/v5/api/signer/#Signer-signMessage
+	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+
+	const signer = web3.eth.accounts.wallet.add(privateKey);
 
 	// sign txHash to get signature
-	const signature = await signer.signMessage(contractTxHash);
+	const { signature } = signer.sign(contractTxHash);
 
 	// For ethereum valid V is 27 or 28
 	// Adding 4 is required to make signature valid for safe contracts:

@@ -27,7 +27,23 @@ interface ISystemSettings {
 
     function wrapperMaxTokenAmount(address wrapper) external view returns (uint);
 
+    function wrapperMintFeeRate(address wrapper) external view returns (uint);
+
     function wrapperBurnFeeRate(address wrapper) external view returns (uint);
 
-    function wrapperMintFeeRate(address wrapper) external view returns (uint);
+    function etherWrapperMaxETH() external view returns (uint);
+
+    function etherWrapperMintFeeRate() external view returns (uint);
+
+    function etherWrapperBurnFeeRate() external view returns (uint);
+
+    function minCratio(address collateral) external view returns (uint);
+
+    function issueFeeRate(address collateral) external view returns (uint);
+
+    function collateralManager(address collateral) external view returns (address);
+
+    function canOpenLoans(address collateral) external view returns (bool);
+
+    function interactionDelay(address collateral) external view returns (uint);
 }

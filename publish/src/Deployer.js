@@ -58,6 +58,7 @@ class Deployer {
 		}
 		this.account = this.signer.address;
 		this.deployedContracts = {};
+		this.replacedContracts = {};
 		this._dryRunCounter = 0;
 
 		// Updated Config (Make a copy, don't mutate original)
@@ -289,6 +290,14 @@ class Deployer {
 			}
 			deployedContract.justDeployed = true; // indicate a fresh deployment occurred
 
+			if (existingAddress && existingABI) {
+				// keep track of replaced contract in case required (useful when doing local )
+				this.replacedContracts[name] = this.makeContract({
+					abi: existingABI,
+					address: existingAddress,
+				});
+				this.replacedContracts[name].source = existingSource;
+			}
 			// Deployment in OVM could result in empty bytecode if
 			// the contract's constructor parameters are unsafe.
 			// This check is probably redundant given the previous check, but just in case...
@@ -423,7 +432,13 @@ class Deployer {
 	getExistingContract({ contract }) {
 		let address;
 		if (this.network === 'local') {
-			address = this.deployment.targets[contract].address;
+			// try find the last replaced contract
+			// Note: this stores it in memory, so only really useful for
+			// local mode as when doing a real deploy we need to handle
+			// broken and resumed deploys
+			({ address } = this.replacedContracts[contract]
+				? this.replacedContracts[contract]
+				: this.deployment.targets[contract]);
 		} else {
 			const contractVersion = getVersions({
 				network: this.network,

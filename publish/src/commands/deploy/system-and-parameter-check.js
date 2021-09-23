@@ -241,5 +241,6 @@ module.exports = async ({
 		currentWeekOfInflation,
 		oldExrates,
 		oracleAddress,
+		systemSuspended,
 	};
 };

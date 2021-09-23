@@ -33,6 +33,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "FeePool";
+
     // Where fees are pooled in sUSD.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
