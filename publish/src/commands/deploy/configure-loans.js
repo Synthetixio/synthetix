@@ -35,8 +35,11 @@ module.exports = async ({
 
 	console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
 
-	if (CollateralEth && CollateralErc20 && CollateralShort) {
-		const CollateralsArg = [CollateralEth, CollateralErc20, CollateralShort].map(addressOf);
+	if (CollateralShort) {
+		let CollateralsArg = [CollateralShort].map(addressOf);
+		if (CollateralEth && CollateralErc20) {
+			CollateralsArg = [CollateralEth, CollateralErc20, CollateralShort].map(addressOf);
+		}
 		await runStep({
 			contract: 'CollateralManager',
 			target: CollateralManager,
