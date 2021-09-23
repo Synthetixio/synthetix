@@ -1,3 +1,4 @@
 {
-	"buidler_cache_directory": "build/cache"
+	"buidler_cache_directory": "build/cache",
+	"hardhat_artifacts_directory": "build/artifacts"
 }
