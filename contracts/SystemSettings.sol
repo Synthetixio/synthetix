@@ -133,19 +133,37 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getCrossDomainMessageGasLimit(gasLimitType);
     }
 
-    // SIP 112: Wrappr
+    // SIP 112: ETH Wrappr
+    // The maximum amount of ETH held by the EtherWrapper.
+    function etherWrapperMaxETH() external view returns (uint) {
+        return getEtherWrapperMaxETH();
+    }
+
+    // SIP 112: ETH Wrappr
+    // The fee for depositing ETH into the EtherWrapper.
+    function etherWrapperMintFeeRate() external view returns (uint) {
+        return getEtherWrapperMintFeeRate();
+    }
+
+    // SIP 112: ETH Wrappr
+    // The fee for burning sETH and releasing ETH from the EtherWrapper.
+    function etherWrapperBurnFeeRate() external view returns (uint) {
+        return getEtherWrapperBurnFeeRate();
+    }
+
+    // SIP 181: Wrapper Factory
     // The maximum amount of token held by the Wrapper.
     function wrapperMaxTokenAmount(address wrapper) external view returns (uint) {
         return getWrapperMaxTokenAmount(wrapper);
     }
 
-    // SIP 112: Wrappr
+    // SIP 181: Wrapper Factory
     // The fee for depositing token into the Wrapper.
     function wrapperMintFeeRate(address wrapper) external view returns (uint) {
         return getWrapperMintFeeRate(wrapper);
     }
 
-    // SIP 112: Wrappr
+    // SIP 181: Wrapper Factory
     // The fee for burning synth and releasing token from the Wrapper.
     function wrapperBurnFeeRate(address wrapper) external view returns (uint) {
         return getWrapperBurnFeeRate(wrapper);
@@ -288,6 +306,23 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
+    function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
+        emit EtherWrapperMaxETHUpdated(_maxETH);
+    }
+
+    function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
+        emit EtherWrapperMintFeeRateUpdated(_rate);
+    }
+
+    function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
+        emit EtherWrapperBurnFeeRateUpdated(_rate);
+    }
+
     function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwnerOrSelf {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
@@ -350,6 +385,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
+    event EtherWrapperMaxETHUpdated(uint maxETH);
+    event EtherWrapperMintFeeRateUpdated(uint rate);
+    event EtherWrapperBurnFeeRateUpdated(uint rate);
     event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
     event WrapperMintFeeRateUpdated(address wrapper, uint rate);
     event WrapperBurnFeeRateUpdated(address wrapper, uint rate);

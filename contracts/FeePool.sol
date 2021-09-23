@@ -25,6 +25,7 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ICollateralManager.sol";
+import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IWrapperFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/feepool
@@ -72,6 +73,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
@@ -91,7 +93,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_FEEPOOLSTATE;
@@ -104,6 +106,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[9] = CONTRACT_REWARDSDISTRIBUTION;
         newAddresses[10] = CONTRACT_COLLATERALMANAGER;
         newAddresses[11] = CONTRACT_WRAPPER_FACTORY;
+        newAddresses[12] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -149,6 +152,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
+    }
+
+    function etherWrapper() internal view returns (IEtherWrapper) {
+        return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -247,6 +254,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         require(getFeePeriodDuration() > 0, "Fee Period Duration not set");
         require(_recentFeePeriodsStorage(0).startTime <= (now - getFeePeriodDuration()), "Too early to close fee period");
 
+        etherWrapper().distributeFees();
         wrapperFactory().distributeFees();
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
@@ -722,9 +730,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
         bool isCollateral = collateralManager().hasCollateral(msg.sender);
+        bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isWrapper = msg.sender == address(wrapperFactory());
 
-        require(isExchanger || isSynth || isCollateral || isWrapper, "Only Internal Contracts");
+        require(isExchanger || isSynth || isCollateral || isEtherWrapper || isWrapper, "Only Internal Contracts");
         _;
     }
 
