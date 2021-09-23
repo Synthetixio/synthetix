@@ -55,8 +55,6 @@ const owner = async ({
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 		process.exitCode = 1;
 		return;
-	} else {
-		newOwner = newOwner.toLowerCase();
 	}
 	// ensure all nominated owners are accepted
 	const { config, deployment, ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
@@ -114,6 +112,10 @@ const owner = async ({
 			)
 		);
 	} catch (err) {
+		if (!/Safe Proxy contract is not deployed in the current network/.test(err.message)) {
+			throw err;
+		}
+
 		console.log(gray('New owner is not a Gnosis safe.'));
 
 		if (signer.address.toLowerCase() !== newOwner.toLowerCase()) {
@@ -176,6 +178,8 @@ const owner = async ({
 			});
 			if (!appended) {
 				console.log(gray('Skipping adding to the batch as already in pending queue'));
+			} else {
+				console.log(gray('Transaction successfully added to the batch.'));
 			}
 		} else {
 			try {
@@ -221,9 +225,9 @@ const owner = async ({
 		const currentOwner = (await deployedContract.owner()).toLowerCase();
 		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
 
-		if (currentOwner === newOwner) {
+		if (currentOwner === newOwner.toLowerCase()) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
-		} else if (nominatedOwner === newOwner) {
+		} else if (nominatedOwner === newOwner.toLowerCase()) {
 			const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
 			if (isOwnerASafe && !useFork) {
@@ -270,29 +274,35 @@ const owner = async ({
 	}
 
 	if (isOwnerASafe) {
-		if (!yes) {
-			await confirmOrEnd(
-				gray(
-					`Confirm: Stage`,
-					yellow(`${safeBatchSubmitter.transactions.length}`),
-					`transactions to the safe in a batch?`
-				)
-			);
-		}
-
-		const { transactions } = await safeBatchSubmitter.submit();
+		const { transactions } = safeBatchSubmitter;
 
 		if (transactions.length) {
+			if (!yes) {
+				await confirmOrEnd(
+					gray(
+						`Confirm: Stage`,
+						yellow(`${transactions.length}`),
+						`transactions to the safe in a batch?`
+					)
+				);
+			}
+
+			const { nonce } = await safeBatchSubmitter.submit();
+
 			console.log(
 				gray(
 					'Submitted a batch of',
 					yellow(transactions.length),
 					'transactions to the safe',
-					yellow(newOwner)
+					yellow(newOwner),
+					'at nonce position',
+					yellow(nonce)
 				)
 			);
 
 			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+		} else {
+			console.log(gray('No transactions to stage'));
 		}
 	}
 

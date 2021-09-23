@@ -22,14 +22,16 @@ class SafeBatchSubmitter {
 	}
 
 	async init() {
-		const { ethAdapter, service, safeAddress } = this;
+		const { ethAdapter, service, safeAddress, signer } = this;
 		this.transactions = [];
 		this.safe = await GnosisSafe.create({
 			ethAdapter,
 			safeAddress,
 		});
-		// TBD - should we also check this signer is one of the owners via safe.getOwners() or
-		// does it throw on creation?
+		// check if signer is on the list of owners
+		if (!(await this.safe.isOwner(signer.address))) {
+			throw Error(`Account ${signer.address} is not a signer on this safe`);
+		}
 		const currentNonce = await this.safe.getNonce();
 		const pendingTxns = await service.getPendingTransactions(safeAddress, currentNonce);
 		return { currentNonce, pendingTxns };
@@ -43,23 +45,42 @@ class SafeBatchSubmitter {
 			// the same contract cannot be added in one batch. This could be useful in situations
 			// where you want to accept, nominate another owner, migrate, then accept again.
 			// In these cases, use "force: true"
-			const currentNonce = await safe.getNonce(); // TBD - is this required?
+			const currentNonce = await safe.getNonce();
 			const pendingTxns = await service.getPendingTransactions(safeAddress, currentNonce);
-			if (
-				pendingTxns.results.find(
-					entry => entry.to === to && entry.data === data && entry.value === value
-				)
-			) {
+
+			this.currentNonce = currentNonce;
+			this.pendingTxns = pendingTxns;
+
+			this.unusedNoncePosition = currentNonce;
+
+			let matchedTxnIsPending = false;
+
+			for (const {
+				nonce,
+				dataDecoded: {
+					parameters: [{ valueDecoded }],
+				},
+			} of pendingTxns.results) {
+				// figure out what the next unused nonce position is (including everything else in the queue)
+				this.unusedNoncePosition = Math.max(this.unusedNoncePosition, nonce + 1);
+				matchedTxnIsPending =
+					matchedTxnIsPending ||
+					valueDecoded.find(
+						entry => entry.to === to && entry.data === data && entry.value === value
+					);
+			}
+
+			if (matchedTxnIsPending) {
 				return {};
 			}
 		}
 
-		transactions.push({ to, value, data });
+		transactions.push({ to, value, data, nonce: this.unusedNoncePosition });
 		return { appended: true };
 	}
 
 	async submit() {
-		const { safe, transactions, safeAddress, service } = this;
+		const { safe, transactions, safeAddress, service, unusedNoncePosition: nonce } = this;
 		if (!safe) {
 			throw Error('Safe must first be initialized');
 		}
@@ -73,7 +94,7 @@ class SafeBatchSubmitter {
 		try {
 			await service.proposeTransaction(safeAddress, batchTxn.data, txHash, signature);
 
-			return { transactions };
+			return { transactions, nonce };
 		} catch (err) {
 			throw Error(`Error trying to submit batch to safe.\n${err}`);
 		}
