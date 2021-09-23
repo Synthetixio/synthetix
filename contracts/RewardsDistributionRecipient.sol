@@ -17,15 +17,4 @@ contract RewardsDistributionRecipient is Owned {
     function setRewardsDistribution(address _rewardsDistribution) external onlyOwner {
         rewardsDistribution = _rewardsDistribution;
     }
-
-    /* ========== Math helpers ========== */
-
-    /*
-     * @dev copied from openzeppelin-solidity-2.3.0/contracts/math/Math.sol
-     *  to avoid using OZ Math import because of contract name collision (Math)
-     *  with the internal Math.sol contract which e.g. is confusing for slither-analyzer
-     */
-    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
 }

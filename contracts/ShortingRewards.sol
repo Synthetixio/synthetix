@@ -71,7 +71,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
-        return _min(block.timestamp, periodFinish);
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
     function rewardPerToken() public view returns (uint256) {
