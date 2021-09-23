@@ -294,6 +294,20 @@
 			"released": "base"
 		},
 		{
+			"sip": 135,
+			"layer": "ovm",
+			"sources": [
+				"CollateralManager",
+				"CollateralShort",
+				"CollateralUtil",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsLINK",
+				"SynthsUSD",
+				"SystemSettings"
+			]
+		},
+		{
 			"sip": 136,
 			"layer": "base",
 			"released": "base",
@@ -330,6 +344,16 @@
 			"layer": "base",
 			"released": "base",
 			"sources": ["DebtCache"]
+		},
+		{
+			"sip": 158,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 169,
+			"layer": "base",
+			"released": "base"
 		},
 		{
 			"sip": 170,
@@ -559,22 +583,12 @@
 		},
 		{
 			"name": "Wezen",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 49
 			},
-			"sips": []
-		},
-		{
-			"name": "Wezen (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 49
-			},
-			"sips": []
+			"sips": [158, 169]
 		},
 		{
 			"name": "Sargas",

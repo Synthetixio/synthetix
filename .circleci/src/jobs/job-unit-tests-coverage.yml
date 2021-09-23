@@ -1,5 +1,5 @@
 # Measures unit and spec test coverage
-{{> job-header.yml}}
+{{> job-header-node.yml}}
 resource_class: large
 parallelism: 8
 steps:

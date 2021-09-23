@@ -15,15 +15,7 @@ contract('Collateral', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: Collateral.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy'],
-			expected: [
-				'addRewardsContracts',
-				'addSynths',
-				'setCanOpenLoans',
-				'setInteractionDelay',
-				'setIssueFeeRate',
-				'setManager',
-				'setMinCratio',
-			],
+			expected: ['addRewardsContracts', 'addSynths'],
 		});
 	});
 });
