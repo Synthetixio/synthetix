@@ -29,15 +29,6 @@
 	"CollateralShort": {
 		"deploy": true
 	},
-	"CollateralStateErc20": {
-		"deploy": true
-	},
-	"CollateralStateEth": {
-		"deploy": true
-	},
-	"CollateralStateShort": {
-		"deploy": true
-	},
 	"CollateralUtil": {
 		"deploy": true
 	},
