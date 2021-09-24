@@ -19,9 +19,10 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 	.addOptionalParam('privateKey', 'Private key to use to sign txs')
 	.addOptionalParam('providerUrl', 'The http provider to use for communicating with the blockchain')
 	.addOptionalParam('deploymentPath', 'Specify the path to the deployment data directory')
+	.addOptionalParam('blockTag', 'Specify the block tag to interact at, per ethers.js specification')
 	.setAction(async (taskArguments, hre) => {
 		const { useOvm, useFork, deploymentPath, targetNetwork } = taskArguments;
-		let { providerUrl, gasLimit, gasPrice, privateKey } = taskArguments;
+		let { providerUrl, gasLimit, gasPrice, privateKey, blockTag } = taskArguments;
 		// ------------------
 		// Default values per network
 		// ------------------
@@ -33,6 +34,10 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 		if (useOvm) {
 			gasPrice = synthetix.constants.OVM_GAS_PRICE_GWEI;
 			gasLimit = undefined;
+		}
+		blockTag = blockTag || 'latest';
+		if (!isNaN(blockTag)) {
+			blockTag = parseInt(blockTag)
 		}
 
 		// ------------------
@@ -91,6 +96,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 			providerUrl,
 			privateKey,
 			publicKey,
+			blockTag
 		});
 
 		// Set up inquirer
@@ -111,6 +117,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 			gasPrice,
 			deploymentFilePath,
 			wallet,
+			blockTag
 		});
 
 		async function pickContract() {
@@ -162,7 +169,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 
 			const contract = new ethers.Contract(target.address, source.abi, wallet || provider);
 			if (source.bytecode === '') {
-				const code = await provider.getCode(target.address);
+				const code = await provider.getCode(target.address, blockTag);
 				console.log(red(`  > No code at ${target.address}, code: ${code}`));
 			}
 
@@ -258,9 +265,8 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 						const isArray = input.type.includes('[]');
 
 						if (requiresBytes32Util) {
-							message = `${message} (uses toBytes32${
-								isArray ? ' - if array, use ["a","b","c"] syntax' : ''
-							})`;
+							message = `${message} (uses toBytes32${isArray ? ' - if array, use ["a","b","c"] syntax' : ''
+								})`;
 						}
 
 						const answer = await inquirer.prompt([
@@ -315,9 +321,12 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 				// READ ONLY
 				if (abiItem.stateMutability === 'view' || abiItem.stateMutability === 'pure') {
 					console.log(gray('  > Querying...'));
+					const overrides = {
+						blockTag
+					};
 
 					try {
-						result = await contract[abiItemName](...inputs);
+						result = await contract[abiItemName](...inputs, overrides);
 					} catch (err) {
 						error = err;
 					}
@@ -326,6 +335,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					const overrides = {
 						gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
 						gasLimit,
+						blockTag
 					};
 
 					let preview;
@@ -363,6 +373,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 						result = await _confirmTx({
 							tx: result.tx,
 							provider,
+							blockTag
 						});
 
 						if (result.success) {
@@ -465,6 +476,7 @@ async function _printHeader({
 	gasPrice,
 	deploymentFilePath,
 	wallet,
+	blockTag
 }) {
 	console.clear();
 	console.log(green(`Interactive Synthetix CLI (v${synthetixPackage.version})`));
@@ -480,6 +492,7 @@ async function _printHeader({
 	console.log(gray(`> Network: ${network}`));
 	console.log(gray(`> Gas price: ${gasPrice}`));
 	console.log(gray(`> OVM: ${useOvm}`));
+	console.log(gray(`> Block tag: ${blockTag}`));
 	console.log(yellow(`> Target deployment: ${path.dirname(deploymentFilePath)}`));
 
 	if (wallet) {
@@ -568,7 +581,7 @@ function _logError(error) {
 	console.log(gray(JSON.stringify(error, null, 2)));
 }
 
-function _setupProvider({ providerUrl, privateKey, publicKey }) {
+function _setupProvider({ providerUrl, privateKey, publicKey, blockTag }) {
 	let provider;
 	if (providerUrl) {
 		provider = new ethers.providers.JsonRpcProvider(providerUrl);
@@ -579,7 +592,7 @@ function _setupProvider({ providerUrl, privateKey, publicKey }) {
 
 	let wallet;
 	if (publicKey) {
-		wallet = provider.getSigner(publicKey);
+		wallet = provider.getSigner(publicKey, blockTag);
 		wallet.address = publicKey;
 	} else if (privateKey) {
 		wallet = new ethers.Wallet(privateKey, provider);
@@ -607,7 +620,7 @@ async function _sendTx({ txPromise }) {
 	}
 }
 
-async function _confirmTx({ tx, provider }) {
+async function _confirmTx({ tx, provider, blockTag }) {
 	try {
 		const receipt = await tx.wait();
 
@@ -617,7 +630,7 @@ async function _confirmTx({ tx, provider }) {
 		};
 	} catch (error) {
 		try {
-			error.reason = await _getRevertReason({ tx, provider });
+			error.reason = await _getRevertReason({ tx, provider, blockTag });
 
 			return {
 				success: false,
@@ -649,8 +662,8 @@ function _hexToString(hex) {
 	return str.substring(0, str.length - 4);
 }
 
-async function _getRevertReason({ tx, provider }) {
-	const code = (await provider.call(tx)).substr(138);
+async function _getRevertReason({ tx, provider, blockTag }) {
+	const code = (await provider.call(tx, blockTag)).substr(138);
 	const hex = `0x${code}`;
 
 	if (code.length === '64') {
