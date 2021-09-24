@@ -12,13 +12,12 @@ describe('WrapperFactory integration tests (L2)', () => {
 	const wrapperOptions = { Wrapper: null, Synth: null, Token: null };
 
 	before(async () => {
-		const WrapperFactory = ctx.contracts.WrapperFactory;
+		const WrapperFactory = ctx.contracts.WrapperFactory.connect(ctx.users.owner);
 
 		const etherWrapperCreateTx = await WrapperFactory.createWrapper(
 			ctx.contracts.WETH.address,
 			toBytes32('sETH'),
-			toBytes32('SynthsETH'),
-			{ from: ctx.users.owner }
+			toBytes32('SynthsETH')
 		);
 
 		// extract address from events

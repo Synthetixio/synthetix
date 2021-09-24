@@ -43,6 +43,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // TODO(liamz): these are simple bounds for the mint/burn fee rates (max 100%).
     // Can we come up with better values?
+    uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
+    uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
+
     uint public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
     uint public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
 
