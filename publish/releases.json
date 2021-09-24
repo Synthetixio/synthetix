@@ -326,6 +326,12 @@
 			"sources": ["Exchanger"]
 		},
 		{
+			"sip": 140,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Synthetix"]
+		},
+		{
 			"sip": 142,
 			"layer": "both",
 			"released": "base",
