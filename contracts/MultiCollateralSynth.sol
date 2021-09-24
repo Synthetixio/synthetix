@@ -15,7 +15,7 @@ contract MultiCollateralSynth is Synth {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
-    bytes32 private constant CONTRACT_ETHER_WRAPPER = "WrapperFactory";
+    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     /* ========== CONSTRUCTOR ========== */

@@ -3,86 +3,87 @@ const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 
-function itCanWrapETH({ ctx }) {
+function itCanWrapETH({ ctx, wrapperOptions }) {
 	describe('ether wrapping', () => {
 		let user;
-		let balanceWETH, balancesETH;
-		let EtherWrapper, WETH, SynthsETH;
+		let balanceToken, balanceSynth;
+
+		let Wrapper, Token, Synth;
 
 		const amountToMint = ethers.utils.parseEther('1');
 
 		before('target contracts and users', async () => {
-			({ EtherWrapper, WETH, SynthsETH } = ctx.contracts);
+			({ Wrapper, Token, Synth } = wrapperOptions);
 
 			user = ctx.users.someUser;
 		});
 
-		before('ensure the user has WETH', async () => {
-			await ensureBalance({ ctx, symbol: 'WETH', user, balance: amountToMint });
+		before('ensure the user has token', async () => {
+			await ensureBalance({ ctx, symbol: await Token.symbol(), user, balance: amountToMint });
 		});
 
 		describe('when there is sufficient capacity in the wrapper', () => {
 			before(async function() {
-				const capacity = await EtherWrapper.capacity();
+				const capacity = await Wrapper.capacity();
 				if (capacity.lt(amountToMint)) {
-					console.log(chalk.yellow('> Skipping EtherWrapper.mint as insufficient capacity'));
+					console.log(chalk.yellow('> Skipping Wrapper.mint as insufficient capacity'));
 					this.skip();
 				}
 			});
 			describe('when the user mints sETH', () => {
 				before('record balances', async () => {
-					balanceWETH = await WETH.balanceOf(user.address);
-					balancesETH = await SynthsETH.balanceOf(user.address);
+					balanceToken = await Token.balanceOf(user.address);
+					balanceSynth = await Synth.balanceOf(user.address);
 				});
 
 				before('provide allowance', async () => {
-					WETH = WETH.connect(user);
+					Token = Token.connect(user);
 
-					const tx = await WETH.approve(EtherWrapper.address, ethers.constants.MaxUint256);
+					const tx = await Token.approve(Wrapper.address, ethers.constants.MaxUint256);
 					await tx.wait();
 				});
 
 				before('mint', async () => {
-					EtherWrapper = EtherWrapper.connect(user);
+					Wrapper = Wrapper.connect(user);
 
-					const tx = await EtherWrapper.mint(amountToMint);
+					const tx = await Wrapper.mint(amountToMint);
 					await tx.wait();
 				});
 
-				it('decreases the users WETH balance', async () => {
-					assert.bnLt(await WETH.balanceOf(user.address), balanceWETH);
+				it('decreases the users token balance', async () => {
+					assert.bnLt(await Token.balanceOf(user.address), balanceToken);
 				});
 
-				it('increases the users sETH balance', async () => {
-					assert.bnGt(await SynthsETH.balanceOf(user.address), balancesETH);
+				it('increases the users synth balance', async () => {
+					assert.bnGt(await Synth.balanceOf(user.address), balanceSynth);
 				});
 
 				describe('when the user burns sETH', () => {
 					before('record balances', async () => {
-						balanceWETH = await WETH.balanceOf(user.address);
-						balancesETH = await SynthsETH.balanceOf(user.address);
+						balanceToken = await Token.balanceOf(user.address);
+						balanceSynth = await Synth.balanceOf(user.address);
 					});
 
 					before('provide allowance', async () => {
-						SynthsETH = SynthsETH.connect(user);
+						Synth = Synth.connect(user);
 
-						const tx = await SynthsETH.approve(EtherWrapper.address, ethers.constants.MaxUint256);
+						const tx = await Synth.approve(Wrapper.address, ethers.constants.MaxUint256);
 						await tx.wait();
 					});
 
 					before('burn', async () => {
-						EtherWrapper = EtherWrapper.connect(user);
+						Wrapper = Wrapper.connect(user);
 
-						const tx = await EtherWrapper.burn(balancesETH);
+						const tx = await Wrapper.burn(balanceSynth);
 						await tx.wait();
 					});
 
-					it('increases the users WETH balance', async () => {
-						assert.bnGt(await WETH.balanceOf(user.address), balanceWETH);
+					it('increases the users token balance', async () => {
+						assert.bnGt(await Token.balanceOf(user.address), balanceToken);
 					});
 
-					it('decreases the users sETH balance', async () => {
-						assert.bnEqual(await SynthsETH.balanceOf(user.address), ethers.constants.Zero);
+					it('decreases the users synth balance', async () => {
+						assert.bnEqual(await Synth.balanceOf(user.address), ethers.constants.Zero);
 					});
 				});
 			});
