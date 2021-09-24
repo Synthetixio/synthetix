@@ -14,11 +14,12 @@ import "./interfaces/IWrapperFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/wrapperfactory
 contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
+    bytes32 internal constant CONTRACT_NAME = "WrapperFactory";
+
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 internal constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32 internal constant WRAPPER_FACTORY_CONTRACT_NAME = "WrapperFactory";
     uint internal constant WRAPPER_VERSION = 1;
 
     /* ========== CONSTRUCTOR ========== */
@@ -48,7 +49,7 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     // Returns the version of a wrapper created by this wrapper factory
     // Used by MultiCollateralSynth to know if it should trust the wrapper contract
     function isWrapper(address possibleWrapper) external view returns (bool) {
-        return flexibleStorage().getUIntValue(WRAPPER_FACTORY_CONTRACT_NAME, bytes32(uint(address(possibleWrapper)))) > 0;
+        return flexibleStorage().getUIntValue(CONTRACT_NAME, bytes32(uint(address(possibleWrapper)))) > 0;
     }
 
     // Returns sum of totalIssuedSynths for all wrappers deployed by this contract
@@ -82,7 +83,7 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
         wrapper.rebuildCache();
 
         // Register it so that MultiCollateralSynth knows to trust it
-        flexibleStorage().setUIntValue(WRAPPER_FACTORY_CONTRACT_NAME, bytes32(uint(address(wrapper))), WRAPPER_VERSION);
+        flexibleStorage().setUIntValue(CONTRACT_NAME, bytes32(uint(address(wrapper))), WRAPPER_VERSION);
 
         emit WrapperCreated(address(token), currencyKey, address(wrapper));
 
