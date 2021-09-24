@@ -60,6 +60,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // The minimum amount of collateral to create a loan.
     uint public minCollateral;
 
+    // The fee charged for issuing a loan.
+    uint public issueFeeRate;
+
     bool public canOpenLoans = true;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -173,6 +176,23 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return true;
     }
 
+    /* ---------- SETTERS ---------- */
+
+    function setMinCollateral(uint _minCollateral) external onlyOwner {
+        minCollateral = _minCollateral;
+        emit MinCollateralUpdated(minCollateral);
+    }
+
+    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
+        issueFeeRate = _issueFeeRate;
+        emit IssueFeeRateUpdated(issueFeeRate);
+    }
+
+    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+        canOpenLoans = _canOpenLoans;
+        emit CanOpenLoansUpdated(canOpenLoans);
+    }
+
     /* ---------- UTILITIES ---------- */
 
     // Check the account has enough of the synth to make the payment
@@ -251,7 +271,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(amount <= maxLoan(collateral, currency), "Exceed max borrow power");
 
         // 7. This fee is denominated in the currency of the loan.
-        uint issueFee = amount.multiplyDecimalRound(getIssueFeeRate(address(this)));
+        uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
         // 8. Calculate the minting fee and subtract it from the loan amount.
         uint loanAmountMinusFee = amount.sub(issueFee);
@@ -684,6 +704,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // ========== EVENTS ==========
+
+    // Setters
+    event MinCollateralUpdated(uint minCollateral);
+    event IssueFeeRateUpdated(uint issueFeeRate);
+    event CanOpenLoansUpdated(bool canOpenLoans);
 
     // Loans
     event LoanCreated(address indexed account, uint id, uint amount, uint collateral, bytes32 currency, uint issuanceFee);

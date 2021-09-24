@@ -90,7 +90,10 @@ function itCanOpenAndCloseShort({ ctx }) {
 				before('open the loan', async () => {
 					tx = await CollateralShort.open(amountToDeposit, amountToBorrow, toBytes32('sETH'));
 
-					const { events } = await tx.wait();
+					const receipt = await tx.wait();
+					console.log(`short.open gas used: ${receipt.gasUsed.toString()}`);
+					const { events } = receipt;
+
 					const event = events.find(l => l.event === 'LoanCreated');
 					loanId = event.args.id;
 
