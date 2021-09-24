@@ -106,10 +106,11 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     function capacity() public view returns (uint _capacity) {
         // capacity = max(maxETH - balance, 0)
         uint balance = getReserves();
-        if (balance >= maxTokenAmount()) {
+        uint maxToken = maxTokenAmount();
+        if (balance >= maxToken) {
             return 0;
         }
-        return maxTokenAmount().sub(balance);
+        return maxToken.sub(balance);
     }
 
     function totalIssuedSynths() public view returns (uint) {
