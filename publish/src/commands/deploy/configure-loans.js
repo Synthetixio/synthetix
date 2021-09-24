@@ -51,18 +51,16 @@ module.exports = async ({
 			comment: 'Ensure the CollateralManager has all Collateral contracts added',
 		});
 	}
-	if (CollateralEth) {
-		if (CollateralManager) {
-			await runStep({
-				contract: 'CollateralEth',
-				target: CollateralEth,
-				read: 'manager',
-				expected: input => input === addressOf(CollateralManager),
-				write: 'setManager',
-				writeArg: addressOf(CollateralManager),
-				comment: 'Ensure the CollateralEth is connected to the CollateralManager',
-			});
-		}
+	if (CollateralEth && CollateralManager) {
+		await runStep({
+			contract: 'CollateralEth',
+			target: CollateralEth,
+			read: 'manager',
+			expected: input => input === addressOf(CollateralManager),
+			write: 'setManager',
+			writeArg: addressOf(CollateralManager),
+			comment: 'Ensure the CollateralEth is connected to the CollateralManager',
+		});
 
 		const CollateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
@@ -100,18 +98,16 @@ module.exports = async ({
 		}
 	}
 
-	if (CollateralErc20) {
-		if (CollateralManager) {
-			await runStep({
-				contract: 'CollateralErc20',
-				target: CollateralErc20,
-				read: 'manager',
-				expected: input => input === addressOf(CollateralManager),
-				write: 'setManager',
-				writeArg: addressOf(CollateralManager),
-				comment: 'Ensure the CollateralErc20 contract is connected to the CollateralManager',
-			});
-		}
+	if (CollateralErc20 && CollateralManager) {
+		await runStep({
+			contract: 'CollateralErc20',
+			target: CollateralErc20,
+			read: 'manager',
+			expected: input => input === addressOf(CollateralManager),
+			write: 'setManager',
+			writeArg: addressOf(CollateralManager),
+			comment: 'Ensure the CollateralErc20 contract is connected to the CollateralManager',
+		});
 
 		const CollateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
 		await runStep({
@@ -149,18 +145,16 @@ module.exports = async ({
 		}
 	}
 
-	if (CollateralShort) {
-		if (CollateralManager) {
-			await runStep({
-				contract: 'CollateralShort',
-				target: CollateralShort,
-				read: 'manager',
-				expected: input => input === addressOf(CollateralManager),
-				write: 'setManager',
-				writeArg: addressOf(CollateralManager),
-				comment: 'Ensure the CollateralShort contract is connected to the CollateralManager',
-			});
-		}
+	if (CollateralShort && CollateralManager) {
+		await runStep({
+			contract: 'CollateralShort',
+			target: CollateralShort,
+			read: 'manager',
+			expected: input => input === addressOf(CollateralManager),
+			write: 'setManager',
+			writeArg: addressOf(CollateralManager),
+			comment: 'Ensure the CollateralShort contract is connected to the CollateralManager',
+		});
 
 		const CollateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
 		await runStep({
