@@ -3,7 +3,7 @@ name: Slither
 
 on:
   push:
-    branches: [develop, master, slither-pr-codechecks-action]
+    branches: [develop, master]
   pull_request:
 
 jobs:
