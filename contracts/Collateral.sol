@@ -575,7 +575,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkLoanRatio(loan);
 
         // 4. This fee is denominated in the currency of the loan
-        uint issueFee = amount.multiplyDecimalRound(getIssueFeeRate(address(this)));
+        uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
         // 5. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);

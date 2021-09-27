@@ -58,7 +58,6 @@ contract('CollateralErc20', async accounts => {
 		sBTCSynth,
 		renBTC,
 		systemStatus,
-		systemSettings,
 		synths,
 		manager,
 		issuer,
@@ -125,7 +124,6 @@ contract('CollateralErc20', async accounts => {
 		synths = ['sUSD', 'sBTC'];
 		({
 			SystemStatus: systemStatus,
-			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
 			SynthsBTC: sBTCSynth,
@@ -142,7 +140,6 @@ contract('CollateralErc20', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
-				'SystemSettings',
 				'Issuer',
 				'DebtCache',
 				'Exchanger',
@@ -498,7 +495,7 @@ contract('CollateralErc20', async accounts => {
 
 				loan = await cerc20.loans(id);
 
-				issueFeeRate = new BN(await systemSettings.issueFeeRate(cerc20.address));
+				issueFeeRate = new BN(await cerc20.issueFeeRate());
 				issueFee = fiveHundredSUSD.mul(issueFeeRate);
 			});
 
@@ -519,7 +516,7 @@ contract('CollateralErc20', async accounts => {
 			it('should issue the minting fee to the fee pool', async () => {
 				const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
 
-				assert.equal(issueFee, feePoolBalance.toString());
+				assert.equal(issueFee.toString(), feePoolBalance.toString());
 			});
 
 			it('should emit the event properly', async () => {
@@ -546,7 +543,7 @@ contract('CollateralErc20', async accounts => {
 
 				loan = await cerc20.loans(id);
 
-				issueFeeRate = await systemSettings.issueFeeRate(cerc20.address);
+				issueFeeRate = await cerc20.issueFeeRate();
 				issueFee = toUnit(2).mul(issueFeeRate);
 			});
 
@@ -567,7 +564,7 @@ contract('CollateralErc20', async accounts => {
 			it('should issue the minting fee to the fee pool', async () => {
 				const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
 
-				assert.equal(issueFee, feePoolBalance.toString());
+				assert.equal(issueFee.toString(), feePoolBalance.toString());
 			});
 
 			it('should emit the event properly', async () => {

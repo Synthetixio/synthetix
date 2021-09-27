@@ -160,8 +160,6 @@ contract('CollateralShort', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		await setupShort();
-
 		await updateRatesWithDefaults();
 
 		// set a 0.3% default exchange fee rate
@@ -217,6 +215,70 @@ contract('CollateralShort', async accounts => {
 			await addressResolver.getAddress(toBytes32('ExchangeRates')),
 			exchangeRates.address
 		);
+	});
+
+	describe('setting variables', async () => {
+		describe('setCanOpenLoans', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						short.setCanOpenLoans(false, { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await short.setCanOpenLoans(false, { from: owner });
+				});
+				it('should update the flag', async () => {
+					assert.isFalse(await short.canOpenLoans());
+				});
+			});
+		});
+
+		describe('setMinCollateral', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						short.setMinCollateral(toUnit(1.2), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await short.setMinCollateral(toUnit(1.2), { from: owner });
+				});
+				it('should allow min collateral to be 0', async () => {
+					await short.setMinCollateral(toUnit(0), { from: owner });
+					assert.bnEqual(await short.minCollateral(), toUnit(0));
+				});
+			});
+		});
+
+		describe('setIssueFeeRate', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						short.setIssueFeeRate(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await short.setIssueFeeRate(toUnit(0.2), { from: owner });
+				});
+				it('should update the issue fee', async () => {
+					assert.bnEqual(await short.issueFeeRate(), toUnit(0.2));
+				});
+				it('should allow the issue fee rate to be 0', async () => {
+					await short.setIssueFeeRate(toUnit(0), { from: owner });
+					assert.bnEqual(await short.issueFeeRate(), toUnit(0));
+				});
+			});
+		});
 	});
 
 	describe('opening shorts', async () => {
