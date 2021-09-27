@@ -214,10 +214,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(interestIndex != 0, "Loan is closed");
     }
 
-    function _issuanceRatio() internal view returns (uint ratio) {
-        ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
-    }
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Synths ---------- */
