@@ -37,7 +37,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 		}
 		blockTag = blockTag || 'latest';
 		if (!isNaN(blockTag)) {
-			blockTag = parseInt(blockTag)
+			blockTag = parseInt(blockTag);
 		}
 
 		// ------------------
@@ -96,7 +96,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 			providerUrl,
 			privateKey,
 			publicKey,
-			blockTag
 		});
 
 		// Set up inquirer
@@ -117,7 +116,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 			gasPrice,
 			deploymentFilePath,
 			wallet,
-			blockTag
+			blockTag,
 		});
 
 		async function pickContract() {
@@ -265,8 +264,9 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 						const isArray = input.type.includes('[]');
 
 						if (requiresBytes32Util) {
-							message = `${message} (uses toBytes32${isArray ? ' - if array, use ["a","b","c"] syntax' : ''
-								})`;
+							message = `${message} (uses toBytes32${
+								isArray ? ' - if array, use ["a","b","c"] syntax' : ''
+							})`;
 						}
 
 						const answer = await inquirer.prompt([
@@ -322,7 +322,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 				if (abiItem.stateMutability === 'view' || abiItem.stateMutability === 'pure') {
 					console.log(gray('  > Querying...'));
 					const overrides = {
-						blockTag
+						blockTag,
 					};
 
 					try {
@@ -335,7 +335,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					const overrides = {
 						gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
 						gasLimit,
-						blockTag
 					};
 
 					let preview;
@@ -373,7 +372,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 						result = await _confirmTx({
 							tx: result.tx,
 							provider,
-							blockTag
+							blockTag,
 						});
 
 						if (result.success) {
@@ -476,7 +475,7 @@ async function _printHeader({
 	gasPrice,
 	deploymentFilePath,
 	wallet,
-	blockTag
+	blockTag,
 }) {
 	console.clear();
 	console.log(green(`Interactive Synthetix CLI (v${synthetixPackage.version})`));
@@ -581,7 +580,7 @@ function _logError(error) {
 	console.log(gray(JSON.stringify(error, null, 2)));
 }
 
-function _setupProvider({ providerUrl, privateKey, publicKey, blockTag }) {
+function _setupProvider({ providerUrl, privateKey, publicKey }) {
 	let provider;
 	if (providerUrl) {
 		provider = new ethers.providers.JsonRpcProvider(providerUrl);
@@ -592,7 +591,7 @@ function _setupProvider({ providerUrl, privateKey, publicKey, blockTag }) {
 
 	let wallet;
 	if (publicKey) {
-		wallet = provider.getSigner(publicKey, blockTag);
+		wallet = provider.getSigner(publicKey);
 		wallet.address = publicKey;
 	} else if (privateKey) {
 		wallet = new ethers.Wallet(privateKey, provider);
