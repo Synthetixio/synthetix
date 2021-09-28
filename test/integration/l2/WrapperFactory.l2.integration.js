@@ -20,6 +20,8 @@ describe('WrapperFactory integration tests (L2)', () => {
 			toBytes32('SynthsETH')
 		);
 
+		console.log(etherWrapperCreateTx);
+
 		// extract address from events
 		const etherWrapperAddress = etherWrapperCreateTx.logs.find(l => l.event === 'WrapperCreated')
 			.args.wrapperAddress;

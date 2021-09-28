@@ -177,7 +177,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
         uint burnAmount =
             targetSynthIssued < amountIn ? targetSynthIssued.add(calculateBurnFee(targetSynthIssued)) : amountIn;
-        uint amountOut = burnAmount.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
+        uint amountOut = burnAmount.divideDecimal(SafeDecimalMath.unit().add(burnFeeRate()));
         uint feeAmountTarget = burnAmount.sub(amountOut);
 
         // Transfer token to user.
@@ -210,11 +210,13 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Escrow fee.
         synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
 
-        _setTargetSynthIssued(targetSynthIssued.add(excessAmount).add(amount));
+        _setTargetSynthIssued(targetSynthIssued.add(amount).add(excessAmount));
     }
 
     function _burn(uint amount) internal {
-        uint excessAmount = getReserves().sub(targetSynthIssued.add(amount));
+        // this is logically equivalent to getReserves() - (targetSynthIssued - amount), without going negative
+        uint excessAmount = getReserves().add(amount).sub(targetSynthIssued);
+
         uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
 
         // Burn `amount` of currencyKey from user.
@@ -225,7 +227,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Escrow fee.
         synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
 
-        _setTargetSynthIssued(targetSynthIssued.add(excessAmount.sub(amount)));
+        _setTargetSynthIssued(targetSynthIssued.add(excessAmount).sub(amount));
     }
 
     function _setTargetSynthIssued(uint _targetSynthIssued) internal {
