@@ -6,8 +6,6 @@ import "./IERC20.sol";
 interface IWrapperFactory {
     function isWrapper(address possibleWrapper) external view returns (bool);
 
-    function totalIssuedSynths() external view returns (uint);
-
     function createWrapper(
         IERC20 token,
         bytes32 currencyKey,

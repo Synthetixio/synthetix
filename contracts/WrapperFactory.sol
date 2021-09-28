@@ -52,11 +52,6 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
         return flexibleStorage().getUIntValue(CONTRACT_NAME, bytes32(uint(address(possibleWrapper)))) > 0;
     }
 
-    // Returns sum of totalIssuedSynths for all wrappers deployed by this contract
-    function totalIssuedSynths() external view returns (uint) {
-        return 0; // stub
-    }
-
     function feesEscrowed() public view returns (uint) {
         return synthsUSD().balanceOf(address(this));
     }
