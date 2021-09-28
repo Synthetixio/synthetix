@@ -150,6 +150,19 @@ contract('CollateralShort', async accounts => {
 			)
 		);
 
+		assert.isTrue(
+			await short.areSynthsAndCurrenciesSet(
+				['SynthsBTC', 'SynthsETH'].map(toBytes32),
+				['sBTC', 'sETH'].map(toBytes32)
+			)
+		);
+
+		assert.isTrue(await manager.isSynthManaged(sUSD));
+		assert.isTrue(await manager.isSynthManaged(sETH));
+		assert.isTrue(await manager.isSynthManaged(sBTC));
+
+		assert.isTrue(await manager.hasAllCollaterals([short.address]));
+
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
@@ -160,8 +173,6 @@ contract('CollateralShort', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		await setupShort();
-
 		await updateRatesWithDefaults();
 
 		// set a 0.3% default exchange fee rate
