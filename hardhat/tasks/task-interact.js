@@ -84,7 +84,9 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 
 		if (!providerUrl && process.env.PROVIDER_URL) {
 			const envProviderUrl = process.env.PROVIDER_URL;
-			if (envProviderUrl.includes('infura')) {
+			if (targetNetwork === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
+				providerUrl = process.env.PROVIDER_URL_MAINNET;
+			} else if (envProviderUrl.includes('infura')) {
 				providerUrl = process.env.PROVIDER_URL.replace('network', targetNetwork);
 			} else {
 				providerUrl = envProviderUrl;
