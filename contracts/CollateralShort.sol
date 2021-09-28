@@ -71,7 +71,10 @@ contract CollateralShort is Collateral {
     }
 
     // Needed for Lyra.
-    function getShortAndCollateral(address borrower, uint id) external view returns (uint principal, uint collateral) {
+    function getShortAndCollateral(
+        address, /* borrower */
+        uint id
+    ) external view returns (uint principal, uint collateral) {
         Loan memory loan = loans[id];
         return (loan.amount, loan.collateral);
     }
