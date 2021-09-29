@@ -43,6 +43,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The set of all collateral contracts.
     AddressSetLib.AddressSet internal _collaterals;
 
+    // The set of all available currency keys.
+    Bytes32SetLib.Bytes32Set internal _currencyKeys;
+
     // The set of all synths issuable by the various collateral contracts
     Bytes32SetLib.Bytes32Set internal _synths;
 
@@ -204,6 +207,23 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
+    function totalLongAndShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
+        bytes32[] memory currencyKeys = _currencyKeys.elements;
+
+        if (currencyKeys.length > 0) {
+            (uint[] memory rates, bool invalid) = _exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+            for (uint i = 0; i < rates.length; i++) {
+                uint longAmount = state.long(currencyKeys[i]).multiplyDecimal(rates[i]);
+                uint shortAmount = state.short(currencyKeys[i]).multiplyDecimal(rates[i]);
+                susdValue = susdValue.add(longAmount);
+                susdValue = susdValue.add(shortAmount);
+                if (invalid) {
+                    anyRateIsInvalid = true;
+                }
+            }
+        }
+    }
+
     function getBorrowRate() public view returns (uint borrowRate, bool anyRateIsInvalid) {
         // get the snx backed debt.
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
@@ -277,17 +297,12 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         (entryRate, lastRate, lastUpdated, newIndex) = state.getShortRatesAndTime(currency, index);
     }
 
-    // This function might run into gas issues on L2 if there are too many synths
-    // since it iterates through both long and short synth arrays.
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid) {
         uint usdAmount = _exchangeRates().effectiveValue(currency, amount, sUSD);
 
-        (uint longValue, bool longInvalid) = totalLong();
-        (uint shortValue, bool shortInvalid) = totalShort();
+        (uint longAndShortValue, bool invalid) = totalLongAndShort();
 
-        anyRateIsInvalid = longInvalid || shortInvalid;
-
-        return (longValue.add(shortValue).add(usdAmount) <= maxDebt, anyRateIsInvalid);
+        return (longAndShortValue.add(usdAmount) <= maxDebt, invalid);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -352,6 +367,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
             if (!_synths.contains(synthNamesInResolver[i])) {
                 bytes32 synthName = synthNamesInResolver[i];
                 _synths.add(synthName);
+                _currencyKeys.add(synthKeys[i]);
                 synthsByKey[synthKeys[i]] = synthName;
                 emit SynthAdded(synthName);
             }
