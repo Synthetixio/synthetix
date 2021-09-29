@@ -21,7 +21,11 @@ module.exports = ({ params, yes, ignoreCustomParameters }) => async name => {
 			try {
 				await confirmAction(
 					yellow(
-						`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
+						`⚠⚠⚠ WARNING: Found an entry for ${
+							param.name
+						} in params.json. Specified value is ${JSON.stringify(
+							param.value
+						)} and default is ${JSON.stringify(defaultParam)}.` +
 							'\nDo you want to use the specified value (default otherwise)? (y/n) '
 					)
 				);
@@ -39,7 +43,9 @@ module.exports = ({ params, yes, ignoreCustomParameters }) => async name => {
 	if (effectiveValue !== defaultParam) {
 		console.log(
 			yellow(
-				`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.json.`
+				`PARAMETER OVERRIDE: Overriding default ${name} with ${JSON.stringify(
+					effectiveValue
+				)}, specified in params.json.`
 			)
 		);
 	}
