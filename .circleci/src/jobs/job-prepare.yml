@@ -6,12 +6,9 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run:
-      name: Get patches hash
-      command: md5sum patches/* > patches.hash
   - restore_cache:
       keys:
-        - v4-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "patches.hash" }}
+        - v4-dependencies-{{ checksum "package-lock.json" }}
   - run:
       name: Set custom npm cache directory
       command: npm config set cache .npm-cache --global
@@ -19,13 +16,10 @@ steps:
       name: Install dependencies
       command: npm install --prefer-offline --no-audit
   - run:
-      name: Apply patches to dependencies
-      command: npx patch-package
-  - run:
       name: Run postinstall scripts for whitelisted dependencies
       command: npx allow-scripts
   - save_cache:
-      key: v4-dependencies-{{ checksum "package-lock.json" }}-{{ checksum "patches.hash" }}
+      key: v4-dependencies-{{ checksum "package-lock.json" }}
       paths:
         - node_modules
         - .npm-cache
