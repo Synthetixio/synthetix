@@ -18,29 +18,19 @@ function itCanOpenAndCloseShort({ ctx }) {
 		const amountToBorrow = parseEther('0.000001'); // sETH
 		const amountToExchange = parseEther('100'); // sUSD
 
-		let user, owner;
-		let CollateralShort, Synthetix, SynthsUSD, SystemSettings, interactionDelay, CollateralManager;
+		let user;
+		let CollateralShort, Synthetix, SynthsUSD, interactionDelay;
 
 		before('target contracts and users', () => {
-			({
-				CollateralShort,
-				Synthetix,
-				SynthsUSD,
-				SystemSettings,
-				CollateralManager,
-			} = ctx.contracts);
+			({ CollateralShort, Synthetix, SynthsUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
-			owner = ctx.users.owner;
 
 			CollateralShort = CollateralShort.connect(user);
-			SystemSettings = SystemSettings.connect(owner);
-			CollateralManager = CollateralManager.connect(owner);
 			Synthetix = Synthetix.connect(user);
 		});
 
 		before('ensure user should have sUSD', async () => {
-			await CollateralManager.addCollaterals([CollateralShort.address]);
 			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: amountOfsUSDRequired });
 		});
 
@@ -99,6 +89,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					tx = await CollateralShort.open(amountToDeposit, amountToBorrow, toBytes32('sETH'));
 
 					const { events } = await tx.wait();
+
 					const event = events.find(l => l.event === 'LoanCreated');
 					loanId = event.args.id;
 

@@ -48,7 +48,6 @@ contract('CollateralEth', async accounts => {
 		addressResolver,
 		sUSDSynth,
 		sETHSynth,
-		systemSettings,
 		systemStatus,
 		debtCache,
 		FEE_ADDRESS;
@@ -72,7 +71,6 @@ contract('CollateralEth', async accounts => {
 	const setupMultiCollateral = async () => {
 		synths = ['sUSD', 'sETH'];
 		({
-			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -94,7 +92,6 @@ contract('CollateralEth', async accounts => {
 				'ExchangeRates',
 				'Exchanger',
 				'SystemStatus',
-				'SystemSettings',
 				'Issuer',
 				'CollateralEth',
 				'CollateralUtil',
@@ -138,7 +135,7 @@ contract('CollateralEth', async accounts => {
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
 
-		await systemSettings.setIssueFeeRate(ceth.address, toUnit('0.001'), { from: owner });
+		await ceth.setIssueFeeRate(toUnit('0.001'), { from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
