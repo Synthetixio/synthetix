@@ -35,10 +35,6 @@ For a guide from the community, see [synthetix.community](https://synthetix.comm
 
 ## Repo Guide
 
-### Setup
-
-Run `npm run setup` script to install dependencies and set up the repository. Other than installing dependencies, it will also trigger postinstall scripts for dependencies which are whitelited inside allowlist and apply our custom patches for external dependencies if needed.
-
 ### Branching
 
 A note on the branches used in this repo.
