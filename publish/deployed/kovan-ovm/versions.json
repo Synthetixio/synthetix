@@ -454,43 +454,51 @@
 		"contracts": {
 			"SystemSettings": {
 				"address": "0xBF3EDB3810EabfFD350C8A1adc739Ef66A8cF2C8",
-				"status": "current",
-				"keccak256": "0xd471f984a13e6c400a542ca769d6bae657a43d59d55636fa83513acea87bc0ba"
+				"status": "replaced",
+				"keccak256": "0xd471f984a13e6c400a542ca769d6bae657a43d59d55636fa83513acea87bc0ba",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"Exchanger": {
 				"address": "0x58d6dF6bA7920560d2Ea89549c24e1dE0B0688eF",
-				"status": "current",
-				"keccak256": "0xa4c48741eeabce33c7af55d188b5fcd9240ed65c149856fdc68084458889d325"
+				"status": "replaced",
+				"keccak256": "0xa4c48741eeabce33c7af55d188b5fcd9240ed65c149856fdc68084458889d325",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"Issuer": {
 				"address": "0x2A0fde259165Aafda287C63C504C74894A731444",
-				"status": "current",
-				"keccak256": "0x4695800cf0b37140c2dcc972e94e08f1a3c8d0a96613303cf7866aa3dd2a5de0"
+				"status": "replaced",
+				"keccak256": "0x4695800cf0b37140c2dcc972e94e08f1a3c8d0a96613303cf7866aa3dd2a5de0",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"SynthsUSD": {
 				"address": "0xD3b981E24e121713240fF6f40A69C795464fe53F",
-				"status": "current",
-				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+				"status": "replaced",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"CollateralManager": {
 				"address": "0x0d413953280BFfa8103e672b91AaD28768FF6315",
-				"status": "current",
-				"keccak256": "0xd6c72b55b60d803f394b8d95a2e62846afcdbf42ba0c0da14c4fb85ca1616774"
+				"status": "replaced",
+				"keccak256": "0xd6c72b55b60d803f394b8d95a2e62846afcdbf42ba0c0da14c4fb85ca1616774",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"SynthsETH": {
 				"address": "0x736B4cECa1Ae698b880b49344Ce955eC67f6343e",
-				"status": "current",
-				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+				"status": "replaced",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"SynthsBTC": {
 				"address": "0x98a3d02b03a4d7BEd69b77647e189a026721E9a6",
-				"status": "current",
-				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+				"status": "replaced",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"SynthsLINK": {
 				"address": "0x9F725c12b7CeB106db565EA9ca3f639DB107B2F9",
-				"status": "current",
-				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+				"status": "replaced",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f",
+				"replaced_in": "v2.50.1-ovm-alpha"
 			},
 			"SynthsUNI": {
 				"address": "0x4d02d6540C789dF4464f4Bc6D8f0AA87a05a8F2b",
@@ -504,23 +512,97 @@
 			},
 			"SynthRedeemer": {
 				"address": "0x1f52fc46f0dFE4AA10F202d675035F5e6CD327D6",
+				"status": "replaced",
+				"keccak256": "0x4d31499235bb64ab5975313a6c9208fad376de17a3d78f8f11e530b6d0f4af0b",
+				"replaced_in": "v2.50.1-ovm-alpha"
+			},
+			"CollateralUtil": {
+				"address": "0xA0404c89D75Fe5C98d38bAf28C0E1beb536DCc25",
+				"status": "replaced",
+				"keccak256": "0xc78147a626fd87196c13e350d9c2a40a8f0fe239c739a18e34b95e5e252ca509",
+				"replaced_in": "v2.50.1-ovm-alpha"
+			},
+			"CollateralManagerState": {
+				"address": "0xC09CD84A42B6B3ef56C1615591207F9C8b0cE462",
+				"status": "replaced",
+				"keccak256": "0x543c31c6ce66e421d251f7f90b42c955a3e1adb19bc19bd1d0e11e375aa0c9c8",
+				"replaced_in": "v2.50.1-ovm-alpha"
+			},
+			"CollateralShort": {
+				"address": "0xa2e1aD41D7603d57Fd8055b892dAFfa49e35d9d1",
+				"status": "replaced",
+				"keccak256": "0x1de46cba39c2c4a780b020e54ee54a50fa8589932097172f7a5349a8924705ce",
+				"replaced_in": "v2.50.1-ovm-alpha"
+			}
+		}
+	},
+	"v2.50.1-ovm-alpha": {
+		"tag": "v2.50.1-ovm-alpha",
+		"fulltag": "v2.50.1-ovm-alpha",
+		"release": "Sargas",
+		"network": "kovan",
+		"date": "2021-09-29T11:05:57-04:00",
+		"commit": "a39751a9d840e51bad4459da3bc11c1f2da3dc37",
+		"contracts": {
+			"SystemSettings": {
+				"address": "0x3f1CCB8800FD8C51348478f898F552e816b10eb0",
+				"status": "current",
+				"keccak256": "0x26f8b512816941ad538d6a27f77653c1e9caa91588ede93601b33754ee7768c7"
+			},
+			"Exchanger": {
+				"address": "0x23ef16a1E0107358C6cf36fACCd95859DFe50347",
+				"status": "current",
+				"keccak256": "0x0817bbd7ae73f5989b342ff919647345a35d4c5675ad77562c1e9b48af804a2f"
+			},
+			"Issuer": {
+				"address": "0x22153604f8BF8348633cF54FeE2A91bC78760539",
+				"status": "current",
+				"keccak256": "0x98a99071e639c7b1979cb1a2d238b8104fb936f1275741e973726834ee157c5b"
+			},
+			"SynthsUSD": {
+				"address": "0x07E167caD6101C85732aC438Dd95691eE6DB6677",
+				"status": "current",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+			},
+			"CollateralManager": {
+				"address": "0x4BfD237d0360F2484D2f2Cb2F334Fe8681d49D07",
+				"status": "current",
+				"keccak256": "0xd6c72b55b60d803f394b8d95a2e62846afcdbf42ba0c0da14c4fb85ca1616774"
+			},
+			"SynthsETH": {
+				"address": "0xe16405163A959677577A395896D058ECd534e729",
+				"status": "current",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+			},
+			"SynthsBTC": {
+				"address": "0x8cAbC5744A35174A5F3834e4Bc176D2aaD1fB32A",
+				"status": "current",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+			},
+			"SynthsLINK": {
+				"address": "0xAE87BE0803d3Af9107c187F0353E67Fc88624784",
+				"status": "current",
+				"keccak256": "0x35dcf439abb5d7d4fe158f8f72fe2868789beaff403fc1a65bfbf07d1d6b927f"
+			},
+			"SynthRedeemer": {
+				"address": "0xE708b7A1675C1644e5B3BF654894d6A895cccDD5",
 				"status": "current",
 				"keccak256": "0x4d31499235bb64ab5975313a6c9208fad376de17a3d78f8f11e530b6d0f4af0b"
 			},
 			"CollateralUtil": {
-				"address": "0xA0404c89D75Fe5C98d38bAf28C0E1beb536DCc25",
+				"address": "0x48C1B3A40416F75c738434F679C681104779aC0a",
 				"status": "current",
-				"keccak256": "0xc78147a626fd87196c13e350d9c2a40a8f0fe239c739a18e34b95e5e252ca509"
+				"keccak256": "0xa4a8f1bfe0d3ba3c6248b9ef642ba1002247bcd61bb46bd76874379346d6e7f0"
 			},
 			"CollateralManagerState": {
-				"address": "0xC09CD84A42B6B3ef56C1615591207F9C8b0cE462",
+				"address": "0x79EefE01E4Aa8574cE78F553D4B44287A68e5978",
 				"status": "current",
 				"keccak256": "0x543c31c6ce66e421d251f7f90b42c955a3e1adb19bc19bd1d0e11e375aa0c9c8"
 			},
 			"CollateralShort": {
-				"address": "0xa2e1aD41D7603d57Fd8055b892dAFfa49e35d9d1",
+				"address": "0x60dFd902737057A31c76B67dfAd3D370FDb8D6De",
 				"status": "current",
-				"keccak256": "0x1de46cba39c2c4a780b020e54ee54a50fa8589932097172f7a5349a8924705ce"
+				"keccak256": "0xf6898428342fd57d2e05289492e64a8f43df82f663522718b5b32afe831795d9"
 			}
 		}
 	}
