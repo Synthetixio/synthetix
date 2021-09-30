@@ -50,6 +50,9 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"ExchangeRatesCircuitBreaker": {
+		"deploy": true
+	},
 	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
