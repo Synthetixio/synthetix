@@ -215,8 +215,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
             for (uint i = 0; i < rates.length; i++) {
                 uint longAmount = state.long(currencyKeys[i]).multiplyDecimal(rates[i]);
                 uint shortAmount = state.short(currencyKeys[i]).multiplyDecimal(rates[i]);
-                susdValue = susdValue.add(longAmount);
-                susdValue = susdValue.add(shortAmount);
+                susdValue = susdValue.add(longAmount).add(shortAmount);
                 if (invalid) {
                     anyRateIsInvalid = true;
                 }
