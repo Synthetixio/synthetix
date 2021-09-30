@@ -209,16 +209,12 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 					// lastExchangeRate, used for price deviations (SIP-65)
 					describe('lastExchangeRate is persisted during exchanges', () => {
 						it('initially has no entries', async () => {
-							assert.equal(await cicruitBreaker.lastExchangeRate(sUSD), '0');
 							assert.equal(await cicruitBreaker.lastExchangeRate(sETH), '0');
 							assert.equal(await cicruitBreaker.lastExchangeRate(sEUR), '0');
 						});
 						describe('when a user exchanges into sETH from sUSD', () => {
 							beforeEach(async () => {
 								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
-							});
-							it('then the source side has a rate persisted', async () => {
-								assert.bnEqual(await cicruitBreaker.lastExchangeRate(sUSD), toUnit('1'));
 							});
 							it('and the dest side has a rate persisted', async () => {
 								assert.bnEqual(
@@ -255,9 +251,6 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 											toUnit((baseRate * 1.1).toString())
 										);
 									});
-									it('and the dest side has a rate persisted', async () => {
-										assert.bnEqual(await cicruitBreaker.lastExchangeRate(sUSD), toUnit('1'));
-									});
 								});
 							});
 							describe('when the price of sETH is over a deviation', () => {
@@ -284,8 +277,8 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 											toUnit(baseRate.toString())
 										);
 									});
-									it('then the dest side has not persisted the rate', async () => {
-										assert.bnEqual(await cicruitBreaker.lastExchangeRate(sEUR), toUnit('2'));
+									it('then the dest side has persisted the rate', async () => {
+										assert.bnEqual(await cicruitBreaker.lastExchangeRate(sEUR), toUnit('1.9'));
 									});
 								});
 							});
