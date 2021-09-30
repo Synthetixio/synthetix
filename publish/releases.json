@@ -298,6 +298,7 @@
 			"layer": "ovm",
 			"sources": [
 				"CollateralManager",
+				"CollateralManagerState",
 				"CollateralShort",
 				"CollateralUtil",
 				"SynthsBTC",
@@ -604,7 +605,7 @@
 				"major": 2,
 				"minor": 50
 			},
-			"sips": [135, 142, 174]
+			"sips": [135, 174]
 		},
 		{
 			"name": "Kaus",
