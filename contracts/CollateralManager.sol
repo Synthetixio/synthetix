@@ -172,11 +172,11 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function totalLong() public view returns (uint susdValue, bool anyRateIsInvalid) {
-        bytes32[] memory synths = _synths.elements;
+        bytes32[] memory synths = _currencyKeys.elements;
 
         if (synths.length > 0) {
             for (uint i = 0; i < synths.length; i++) {
-                bytes32 synth = _synth(synths[i]).currencyKey();
+                bytes32 synth = synths[i];
                 if (synth == sUSD) {
                     susdValue = susdValue.add(state.long(synth));
                 } else {
@@ -400,6 +400,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
             if (_synths.contains(synths[i])) {
                 // Remove it from the the address set lib.
                 _synths.remove(synths[i]);
+                _currencyKeys.remove(synthKeys[i]);
                 delete synthsByKey[synthKeys[i]];
 
                 emit SynthRemoved(synths[i]);
