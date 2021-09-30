@@ -358,6 +358,13 @@ contract('CollateralManager', async accounts => {
 			assert.bnEqual(debt, toUnit(100));
 		});
 
+		it('should get the total long and short balance in sUSD correctly', async () => {
+			const total = await manager.totalLongAndShort();
+			const debt = total.susdValue;
+
+			assert.bnEqual(debt, toUnit(500));
+		});
+
 		it('should report if a rate is invalid', async () => {
 			await fastForward(await exchangeRates.rateStalePeriod());
 
