@@ -99,6 +99,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     // SIP-78
     function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
         require(rate > 0, "Rate must be above 0");
+        emit LastRateOverriden(currencyKey, _lastExchangeRate[currencyKey], rate);
         _lastExchangeRate[currencyKey] = rate;
     }
 
@@ -109,6 +110,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         require(!anyRateInvalid, "Rates for given synths not valid");
 
         for (uint i = 0; i < currencyKeys.length; i++) {
+            emit LastRateOverriden(currencyKeys[i], _lastExchangeRate[currencyKeys[i]], rates[i]);
             _lastExchangeRate[currencyKeys[i]] = rates[i];
         }
     }
@@ -162,4 +164,10 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         require(msg.sender == address(_exchangeRates), "Restricted to ExchangeRates");
         _;
     }
+
+    // ========== EVENTS ==========
+
+    // @notice signals that a the "last rate" was overriden by one of the admin methods
+    //   with a value that didn't come direclty from the ExchangeRates.getRates methods
+    event LastRateOverriden(bytes32 currencyKey, uint256 previousRate, uint256 newRate);
 }

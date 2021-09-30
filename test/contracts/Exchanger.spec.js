@@ -2957,42 +2957,6 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
-	const itSetsLastExchangeRateForSynth = () => {
-		describe('setLastExchangeRateForSynth() SIP-78', () => {
-			it('cannot be invoked by any user', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: exchanger.setLastExchangeRateForSynth,
-					args: [sEUR, toUnit('100')],
-					accounts,
-					reason: 'Restricted to ExchangeRates',
-				});
-			});
-
-			describe('when ExchangeRates is spoofed using an account', () => {
-				beforeEach(async () => {
-					await resolver.importAddresses([toBytes32('ExchangeRates')], [account1], {
-						from: owner,
-					});
-					await exchanger.rebuildCache();
-				});
-				it('reverts when invoked by ExchangeRates with a 0 rate', async () => {
-					await assert.revert(
-						exchanger.setLastExchangeRateForSynth(sEUR, '0', { from: account1 }),
-						'Rate must be above 0'
-					);
-				});
-				describe('when invoked with a real rate by ExchangeRates', () => {
-					beforeEach(async () => {
-						await exchanger.setLastExchangeRateForSynth(sEUR, toUnit('1.9'), { from: account1 });
-					});
-					it('then lastExchangeRate is set for the synth', async () => {
-						assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('1.9'));
-					});
-				});
-			});
-		});
-	};
-
 	const itPricesSpikeDeviation = () => {
 		describe('priceSpikeDeviation', () => {
 			const baseRate = 100;
@@ -3010,24 +2974,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					);
 				});
 			};
-
-			describe('resetLastExchangeRate() SIP-139', () => {
-				it('cannot be invoked by any user', async () => {
-					await onlyGivenAddressCanInvoke({
-						fnc: exchanger.resetLastExchangeRate,
-						args: [[sEUR, sAUD]],
-						accounts,
-						address: owner,
-						reason: 'Only the contract owner may perform this action',
-					});
-				});
-				it('when invoked without valid exchange rates, it reverts', async () => {
-					await assert.revert(
-						exchanger.resetLastExchangeRate([sEUR, sAUD, toBytes32('sUNKNOWN')], { from: owner }),
-						'Rates for given synths not valid'
-					);
-				});
-			});
 
 			describe(`when the price of sETH is ${baseRate}`, () => {
 				updateRate({ target: sETH, rate: baseRate });
@@ -3143,23 +3089,6 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 									it('and the dest side has not persisted the rate', async () => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
-									});
-
-									describe('when the owner invokes resetLastExchangeRate([sEUR, sETH])', () => {
-										beforeEach(async () => {
-											await exchanger.resetLastExchangeRate([sEUR, sETH], { from: owner });
-										});
-
-										it('then the sEUR last exchange rate is updated to the current price', async () => {
-											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
-										});
-
-										it('and the sETH rate has not changed', async () => {
-											assert.bnEqual(
-												await exchanger.lastExchangeRate(sETH),
-												toUnit((baseRate * 1.1).toString())
-											);
-										});
 									});
 								});
 							});
@@ -3919,8 +3848,6 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		itExchangesWithVirtual();
 
-		itSetsLastExchangeRateForSynth();
-
 		itPricesSpikeDeviation();
 
 		itSetsExchangeFeeRateForSynths();
@@ -4017,8 +3944,6 @@ contract('Exchanger (spec tests)', async accounts => {
 		itCalculatesAmountAfterSettlement();
 
 		itExchanges();
-
-		itSetsLastExchangeRateForSynth();
 
 		itPricesSpikeDeviation();
 
