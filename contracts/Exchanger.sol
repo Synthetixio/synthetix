@@ -572,6 +572,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
+        systemStatus().requireSystemActive();
         // SIP-65: Decentralized Circuit Breaker
         bool circuitBroken = exchangeRatesCircuitBreaker().suspendIfRateInvalid(currencyKey);
         require(circuitBroken, "Synth price is valid");

@@ -80,8 +80,15 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     /* ========== Mutating ========== */
 
     function suspendIfRateInvalid(bytes32 currencyKey) external returns (bool circuitBroken) {
-        // check status
-        systemStatus().requireSystemActive();
+        // check system status
+        if (systemStatus().systemSuspended()) {
+            // if system is inactive this call have no effect, but will neither revert,
+            // nor persist new rate, nor suspend the synth - because the system is inactive.
+            // not reverting is needed for performing admin operations during system suspension
+            // e.g. purging synths that use some exchanging functionality
+            return circuitBroken;
+        }
+
         // check input
         require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
         // get rate
@@ -94,6 +101,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             // store the last passing rate
             _lastExchangeRate[currencyKey] = rate;
         }
+        return circuitBroken;
     }
 
     // SIP-78

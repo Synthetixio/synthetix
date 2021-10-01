@@ -433,11 +433,14 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 							beforeEach(async () => {
 								await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 							});
-							it('then suspending a synth fails', async () => {
-								await assert.revert(
-									cicruitBreaker.suspendIfRateInvalid(synthWithNoRate),
-									'Operation prohibited'
-								);
+							it('then suspending a synth has no effect', async () => {
+								await cicruitBreaker.suspendIfRateInvalid(synthWithNoRate);
+								// did not suspend it
+								const status = await systemStatus.synthSuspension(synthWithNoRate);
+								assert.isFalse(status[0]);
+								// did not persist rate
+								const lastRate = await cicruitBreaker.lastExchangeRate(synthWithNoRate);
+								assert.equal(lastRate, 0);
 							});
 							describe(`when system is resumed`, () => {
 								beforeEach(async () => {
