@@ -12,13 +12,13 @@ interface IWrapper {
 
     function totalIssuedSynths() external view returns (uint);
 
-    function calculateMintFee(uint amount) external view returns (uint);
+    function calculateMintFee(uint amount) external view returns (uint, bool);
 
-    function calculateBurnFee(uint amount) external view returns (uint);
+    function calculateBurnFee(uint amount) external view returns (uint, bool);
 
     function maxTokenAmount() external view returns (uint256);
 
-    function mintFeeRate() external view returns (uint256);
+    function mintFeeRate() external view returns (int256);
 
-    function burnFeeRate() external view returns (uint256);
+    function burnFeeRate() external view returns (int256);
 }

@@ -521,12 +521,6 @@ const setupContract = async ({
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'totalIssuedSynths',
-						returns: ['0'],
-					}),
-					mockGenericContractFnc({
-						instance,
-						mock,
 						fncName: 'isWrapper',
 						returns: [false],
 					}),

@@ -46,8 +46,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
     uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
 
-    uint public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
-    uint public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
+    int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
+    int public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -162,13 +162,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP 182: Wrapper Factory
     // The fee for depositing token into the Wrapper.
-    function wrapperMintFeeRate(address wrapper) external view returns (uint) {
+    function wrapperMintFeeRate(address wrapper) external view returns (int) {
         return getWrapperMintFeeRate(wrapper);
     }
 
     // SIP 182: Wrapper Factory
     // The fee for burning synth and releasing token from the Wrapper.
-    function wrapperBurnFeeRate(address wrapper) external view returns (uint) {
+    function wrapperBurnFeeRate(address wrapper) external view returns (int) {
         return getWrapperBurnFeeRate(wrapper);
     }
 
@@ -339,13 +339,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
         emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
@@ -359,9 +359,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
-    function setWrapperMintFeeRate(address _wrapper, uint _rate) external onlyOwnerOrSelf {
+    function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
-        flexibleStorage().setUIntValue(
+        require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
+        flexibleStorage().setIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
             _rate
@@ -369,9 +370,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
-    function setWrapperBurnFeeRate(address _wrapper, uint _rate) external onlyOwnerOrSelf {
+    function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
-        flexibleStorage().setUIntValue(
+        require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
+        flexibleStorage().setIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),
             _rate
@@ -383,8 +385,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function setWrapperSettings(
         address _wrapper,
         uint _maxTokenAmount,
-        uint _mintFeeRate,
-        uint _burnFeeRate
+        int _mintFeeRate,
+        int _burnFeeRate
     ) external onlyOwner {
         this.setWrapperMaxTokenAmount(_wrapper, _maxTokenAmount);
         this.setWrapperMintFeeRate(_wrapper, _mintFeeRate);
@@ -472,8 +474,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
     event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
-    event WrapperMintFeeRateUpdated(address wrapper, uint rate);
-    event WrapperBurnFeeRateUpdated(address wrapper, uint rate);
+    event WrapperMintFeeRateUpdated(address wrapper, int rate);
+    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
     event MinCratioRatioUpdated(uint minCratio);
     event IssueFeeRateUpdated(uint issueFeeRate);
     event CollateralManagerUpdated(address newCollateralManager);

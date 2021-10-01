@@ -156,17 +156,17 @@ contract MixinSystemSettings is MixinResolver {
             );
     }
 
-    function getWrapperMintFeeRate(address wrapper) internal view returns (uint) {
+    function getWrapperMintFeeRate(address wrapper) internal view returns (int) {
         return
-            flexibleStorage().getUIntValue(
+            flexibleStorage().getIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, wrapper))
             );
     }
 
-    function getWrapperBurnFeeRate(address wrapper) internal view returns (uint) {
+    function getWrapperBurnFeeRate(address wrapper) internal view returns (int) {
         return
-            flexibleStorage().getUIntValue(
+            flexibleStorage().getIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, wrapper))
             );

@@ -27,9 +27,9 @@ interface ISystemSettings {
 
     function wrapperMaxTokenAmount(address wrapper) external view returns (uint);
 
-    function wrapperMintFeeRate(address wrapper) external view returns (uint);
+    function wrapperMintFeeRate(address wrapper) external view returns (int);
 
-    function wrapperBurnFeeRate(address wrapper) external view returns (uint);
+    function wrapperBurnFeeRate(address wrapper) external view returns (int);
 
     function etherWrapperMaxETH() external view returns (uint);
 

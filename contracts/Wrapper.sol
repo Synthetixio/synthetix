@@ -122,23 +122,35 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         return token.balanceOf(address(this));
     }
 
-    function calculateMintFee(uint amount) public view returns (uint) {
-        return amount.multiplyDecimalRound(mintFeeRate());
+    function calculateMintFee(uint amount) public view returns (uint, bool) {
+        int r = mintFeeRate();
+
+        if (r < 0) {
+            return (amount.multiplyDecimalRound(uint(-r)), true);
+        } else {
+            return (amount.multiplyDecimalRound(uint(r)), false);
+        }
     }
 
-    function calculateBurnFee(uint amount) public view returns (uint) {
-        return amount.multiplyDecimalRound(burnFeeRate());
+    function calculateBurnFee(uint amount) public view returns (uint, bool) {
+        int r = burnFeeRate();
+
+        if (r < 0) {
+            return (amount.multiplyDecimalRound(uint(-r)), true);
+        } else {
+            return (amount.multiplyDecimalRound(uint(r)), false);
+        }
     }
 
     function maxTokenAmount() public view returns (uint256) {
         return getWrapperMaxTokenAmount(address(this));
     }
 
-    function mintFeeRate() public view returns (uint256) {
+    function mintFeeRate() public view returns (int256) {
         return getWrapperMintFeeRate(address(this));
     }
 
-    function burnFeeRate() public view returns (uint256) {
+    function burnFeeRate() public view returns (int256) {
         return getWrapperBurnFeeRate(address(this));
     }
 
@@ -156,8 +168,8 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
         uint actualAmountIn = currentCapacity < amountIn ? currentCapacity : amountIn;
 
-        uint feeAmountTarget = calculateMintFee(actualAmountIn);
-        uint mintAmount = actualAmountIn.sub(feeAmountTarget);
+        (uint feeAmountTarget, bool negative) = calculateMintFee(actualAmountIn);
+        uint mintAmount = negative ? actualAmountIn.add(feeAmountTarget) : actualAmountIn.sub(feeAmountTarget);
 
         // Transfer token from user.
         token.transferFrom(msg.sender, address(this), actualAmountIn);
@@ -165,7 +177,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Mint tokens to user
         _mint(mintAmount);
 
-        emit Minted(msg.sender, mintAmount, feeAmountTarget, actualAmountIn);
+        emit Minted(msg.sender, mintAmount, negative ? 0 : feeAmountTarget, actualAmountIn);
     }
 
     // Burns `amountIn` synth for `amountIn - fees` amount of token.
@@ -175,10 +187,27 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         require(!exchangeRates().rateIsInvalid(currencyKey), "Currency rate is invalid");
         require(totalIssuedSynths() > 0, "Contract cannot burn for token, token balance is zero");
 
-        uint burnAmount =
-            targetSynthIssued < amountIn ? targetSynthIssued.add(calculateBurnFee(targetSynthIssued)) : amountIn;
-        uint amountOut = burnAmount.divideDecimal(SafeDecimalMath.unit().add(burnFeeRate()));
-        uint feeAmountTarget = burnAmount.sub(amountOut);
+        (uint burnFee, bool negative) = calculateBurnFee(targetSynthIssued);
+
+        uint burnAmount;
+        uint amountOut;
+        if (negative) {
+            burnAmount = targetSynthIssued < amountIn ? targetSynthIssued.sub(burnFee) : amountIn;
+
+            // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
+            amountOut = burnAmount.multiplyDecimal(
+                // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
+                uint(int(SafeDecimalMath.unit()) - burnFeeRate())
+            );
+        } else {
+            burnAmount = targetSynthIssued < amountIn ? targetSynthIssued.add(burnFee) : amountIn;
+            amountOut = burnAmount.divideDecimal(
+                // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
+                uint(int(SafeDecimalMath.unit()) + burnFeeRate())
+            );
+        }
+
+        uint feeAmountTarget = negative ? 0 : burnAmount.sub(amountOut);
 
         // Transfer token to user.
         token.transfer(msg.sender, amountOut);
@@ -201,7 +230,9 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _mint(uint amount) internal {
-        uint excessAmount = getReserves().sub(targetSynthIssued.add(amount));
+        uint reserves = getReserves();
+
+        uint excessAmount = reserves > targetSynthIssued.add(amount) ? reserves.sub(targetSynthIssued.add(amount)) : 0;
         uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
 
         // Mint `amount` to user.
@@ -210,12 +241,15 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Escrow fee.
         synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
 
-        _setTargetSynthIssued(targetSynthIssued.add(amount).add(excessAmount));
+        // in the case of a negative fee extra synths will be issued, billed to the snx stakers
+        _setTargetSynthIssued(reserves);
     }
 
     function _burn(uint amount) internal {
+        uint reserves = getReserves();
+
         // this is logically equivalent to getReserves() - (targetSynthIssued - amount), without going negative
-        uint excessAmount = getReserves().add(amount).sub(targetSynthIssued);
+        uint excessAmount = reserves.add(amount) > targetSynthIssued ? reserves.add(amount).sub(targetSynthIssued) : 0;
 
         uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
 
@@ -227,7 +261,8 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Escrow fee.
         synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
 
-        _setTargetSynthIssued(targetSynthIssued.add(excessAmount).sub(amount));
+        // in the case of a negative fee fewer synths will be burned, billed to the snx stakers
+        _setTargetSynthIssued(reserves);
     }
 
     function _setTargetSynthIssued(uint _targetSynthIssued) internal {
