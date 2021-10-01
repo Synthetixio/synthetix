@@ -194,15 +194,6 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"TokenStateiXTZ": {
-		"deploy": false
-	},
-	"ProxyiXTZ": {
-		"deploy": false
-	},
-	"SynthiXTZ": {
-		"deploy": false
-	},
 	"ProxyERC20sUSD": {
 		"deploy": false
 	},
