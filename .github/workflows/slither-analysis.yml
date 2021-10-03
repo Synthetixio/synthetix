@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload lint results
         if: always()
-        uses: github/codeql-action/upload-sarif@21830ef0c1f0f06f2d82ba3f1f07cb3ffe543ed7 # pin@codeql-bundle-20210517
+        uses: github/codeql-action/upload-sarif@7112cdaa06f3b661965fe3e2e93c9acaadbe85f3 # pin@codeql-bundle-20210921
         with:
           sarif_file: slither.sarif
         continue-on-error: true
