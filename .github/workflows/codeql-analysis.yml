@@ -20,14 +20,16 @@ jobs:
         password: ${{ secrets.GH_PACKAGES_READ_ONLY }}
 
     steps:
-      - uses: actions/checkout@v2
       - name: npm install
         run: |
           npm install
+      - name: Checkout
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
         with:
       - name: Run slither
         run: slither . --sarif slither.sarif || true
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v1
+      - name: Upload lint results
+        if: always()
+        uses: github/codeql-action/upload-sarif@21830ef0c1f0f06f2d82ba3f1f07cb3ffe543ed7 # pin@codeql-bundle-20210517
         with:
           sarif_file: "slither.sarif"
