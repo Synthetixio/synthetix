@@ -15,9 +15,6 @@ steps:
   - run:
       name: Install dependencies
       command: npm install --prefer-offline --no-audit
-  - run:
-      name: Run postinstall scripts for whitelisted dependencies
-      command: npx allow-scripts
   - save_cache:
       key: v4-dependencies-{{ checksum "package-lock.json" }}
       paths:
