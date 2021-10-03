@@ -3,13 +3,16 @@ name: Slither
 
 on:
   push:
-    branches: [develop, master]
   pull_request:
+    branches: [master, develop]
 
 jobs:
   slither:
     name: Slither Analysis
+    # run only on master/develop branch and pull requests
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+
     container:
       image: synthetixio/docker-sec-tools:14.17-ubuntu
 
