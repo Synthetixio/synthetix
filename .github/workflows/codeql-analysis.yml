@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: synthetixio/docker-sec-tools:14.17-ubuntu
+      image: ghcr.io/synthetixio/docker-node/ubuntu:14.17
 
     steps:
       - uses: actions/checkout@v2
