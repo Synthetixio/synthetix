@@ -24,14 +24,7 @@ jobs:
       - name: npm install
         run: |
           npm install
-      - name: Python 3.8
-        uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - name: Install slither
-        run: |
-          python3 -m pip install --upgrade pip 
-          python3 -m pip install slither-analyzer
       - name: Run slither
         run: slither . --sarif slither.sarif || true
       - name: Upload SARIF file
