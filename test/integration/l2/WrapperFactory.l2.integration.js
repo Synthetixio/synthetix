@@ -4,7 +4,7 @@ const { itCanWrapETH } = require('../behaviors/wrap.behavior');
 
 const { toBytes32 } = require('../../../index');
 
-describe('WrapperFactory integration tests (L2)', () => {
+describe.only('WrapperFactory integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
@@ -22,13 +22,16 @@ describe('WrapperFactory integration tests (L2)', () => {
 
 		console.log(etherWrapperCreateTx);
 
-		// extract address from events
-		const etherWrapperAddress = etherWrapperCreateTx.logs.find(l => l.event === 'WrapperCreated')
-			.args.wrapperAddress;
+		const { events } = await etherWrapperCreateTx.wait();
+		const event = events.find(l => l.event === 'WrapperCreated');
+		const etherWrapperAddress = event.args.wrapperAddress;
+		console.log(etherWrapperAddress);
 
-		wrapperOptions.Wrapper = await artifacts.require('Wrapper').at(etherWrapperAddress);
+		wrapperOptions.Wrapper = ctx.contracts.Wrapper; // await artifacts.require('Wrapper').at(etherWrapperAddress);
 		wrapperOptions.Synth = ctx.contracts.SynthsETH;
 		wrapperOptions.Token = ctx.contracts.WETH;
+
+		console.log(wrapperOptions.Wrapper.address);
 	});
 
 	itCanWrapETH({ ctx, wrapperOptions });
