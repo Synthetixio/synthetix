@@ -1,10 +1,12 @@
-const { artifacts } = require('hardhat');
+const fs = require('fs');
+const path = require('path');
+const ethers = require('ethers');
 const { bootstrapL2 } = require('../utils/bootstrap');
 const { itCanWrapETH } = require('../behaviors/wrap.behavior');
 
 const { toBytes32 } = require('../../../index');
 
-describe.only('WrapperFactory integration tests (L2)', () => {
+describe('WrapperFactory integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
@@ -20,19 +22,33 @@ describe.only('WrapperFactory integration tests (L2)', () => {
 			toBytes32('SynthsETH')
 		);
 
-		console.log(etherWrapperCreateTx);
-
 		const { events } = await etherWrapperCreateTx.wait();
 		const event = events.find(l => l.event === 'WrapperCreated');
 		const etherWrapperAddress = event.args.wrapperAddress;
-		console.log(etherWrapperAddress);
 
-		wrapperOptions.Wrapper = ctx.contracts.Wrapper; // await artifacts.require('Wrapper').at(etherWrapperAddress);
+		// load Wrapper abi
+		const wrapperDeploymentData = JSON.parse(
+			fs.readFileSync(path.join(__dirname, '../../../build-ovm/compiled/Wrapper.json'))
+		);
+
+		// instantiate the Wrapper contract
+		const wrapperContract = new ethers.Contract(
+			etherWrapperAddress,
+			wrapperDeploymentData.abi,
+			ctx.provider
+		);
+
+		// TODO: increase the amount of permitted WETH capacity
+		// const SystemSettings = ctx.contracts.SystemSettings.connect(ctx.users.owner);
+		// await SystemSettings.setWrapperMaxTokenAmount(
+		// 	etherWrapperAddress,
+		// 	ethers.utils.parseEther('10')
+		// );
+
+		wrapperOptions.Wrapper = wrapperContract;
 		wrapperOptions.Synth = ctx.contracts.SynthsETH;
 		wrapperOptions.Token = ctx.contracts.WETH;
-
-		console.log(wrapperOptions.Wrapper.address);
 	});
 
-	itCanWrapETH({ ctx, wrapperOptions });
+	itCanWrapETH({ ctx, wrapperOptions: () => wrapperOptions });
 });

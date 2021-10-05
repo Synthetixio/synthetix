@@ -13,7 +13,7 @@ function itCanWrapETH({ ctx, wrapperOptions }) {
 		const amountToMint = ethers.utils.parseEther('1');
 
 		before('target contracts and users', async () => {
-			({ Wrapper, Token, Synth } = wrapperOptions);
+			({ Wrapper, Token, Synth } = wrapperOptions());
 
 			user = ctx.users.someUser;
 		});

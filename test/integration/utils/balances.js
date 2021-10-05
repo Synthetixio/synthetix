@@ -68,6 +68,11 @@ async function _getWETH({ ctx, user, amount }) {
 		await _getETHFromOtherUsers({ ctx, user, amount: needed });
 	}
 
+	// TODO: remove this post OVM re-genesis
+	if (ctx.useOvm) {
+		return;
+	}
+
 	let { WETH } = ctx.contracts;
 	WETH = WETH.connect(user);
 
