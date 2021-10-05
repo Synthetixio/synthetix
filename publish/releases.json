@@ -703,7 +703,7 @@
 			"name": "Futures",
 			"version": {
 				"major": 2,
-				"minor": 55
+				"minor": 47
 			},
 			"sources": [
 				"Exchanger",
@@ -717,7 +717,7 @@
 			"name": "Futures (Optimism)",
 			"version": {
 				"major": 2,
-				"minor": 55
+				"minor": 47
 			},
 			"ovm": true,
 			"sources": [
