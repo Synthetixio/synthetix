@@ -182,8 +182,7 @@ contract('MultiCollateralSynth', accounts => {
 					'FeePool',
 					'FuturesMarketManager',
 					'CollateralManager',
-					'EtherCollateral',
-					'EtherCollateralsUSD',
+					'EtherWrapper',
 				].map(toBytes32)
 			);
 		});
