@@ -5,17 +5,15 @@ import "./Synth.sol";
 
 // Internal references
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
-import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
+    bytes32 public constant CONTRACT_NAME = "MultiCollateralSynth";
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateral";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
 
     /* ========== CONSTRUCTOR ========== */
@@ -37,25 +35,15 @@ contract MultiCollateralSynth is Synth {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETH_COLLATERAL));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
-    }
-
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[1] = CONTRACT_ETH_COLLATERAL;
-        newAddresses[2] = CONTRACT_ETH_COLLATERAL_SUSD;
-        newAddresses[3] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[1] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -81,13 +69,16 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== MODIFIERS ========== */
 
-    // Overrides the parent's internal contract to change the set of contracts accepted by onlyInternalContracts
-    function _isInternalContract(address account) internal view returns (bool) {
-        return
-            super._isInternalContract(account) ||
-            account == address(etherCollateral()) ||
-            account == address(etherCollateralsUSD()) ||
-            account == address(etherWrapper()) ||
-            collateralManager().hasCollateral(msg.sender);
+    // Contracts directly interacting with multiCollateralSynth to issue and burn
+    modifier onlyInternalContracts() {
+        bool isInternal = super._isInternalContract(msg.sender);
+        bool isEtherWrapper = msg.sender == address(etherWrapper());
+        bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
+
+        require(
+            isInternal || isEtherWrapper || isMultiCollateral,
+            "Only FeePool, Exchanger, Issuer, MultiCollateral contracts allowed"
+        );
+        _;
     }
 }

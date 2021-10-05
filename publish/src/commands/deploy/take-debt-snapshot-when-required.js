@@ -1,6 +1,7 @@
 'use strict';
 
 const { gray, yellow, red } = require('chalk');
+const axios = require('axios');
 const {
 	utils: { formatUnits },
 } = require('ethers');
@@ -13,6 +14,7 @@ module.exports = async ({
 	generateSolidity,
 	runStep,
 	useOvm,
+	useFork,
 }) => {
 	const { DebtCache } = deployer.deployedContracts;
 
@@ -39,11 +41,38 @@ module.exports = async ({
 		}
 	};
 
-	const checkSnapshot = async () => {
-		const [cacheInfo, currentDebt] = await Promise.all([
-			DebtCache.methods.cacheInfo().call(),
-			DebtCache.methods.currentDebt().call(),
-		]);
+	// This function is a workaround to pre-cache the CurrentDebt data if running in a fork.
+	// The original issue is that, in a forked environment, DebtCache.currentDebt() takes more than 120 secs which is the hardcoded timeout set in ether's web component
+	// So in order to prevent the call to take that long, we previously execute the call to cache the results and then let ethers do their job
+	// NOTE: This function should be removed once https://github.com/ethers-io/ethers.js/issues/1862 is resolved
+	const cacheCurrentDebtResults = async ({ contract, useFork }) => {
+		if (useFork) {
+			await axios.post(
+				contract.provider.connection.url,
+				{
+					method: 'eth_call',
+					params: [
+						{
+							from: contract.signer.address,
+							to: contract.address,
+							data: '0x759076e5',
+						},
+						'latest',
+					],
+					id: contract.provider._nextId,
+					jsonrpc: '2.0',
+				},
+				{ headers: { 'content-type': 'application/json' } }
+			);
+		}
+	};
+
+	const checkSnapshot = async ({ useFork }) => {
+		const cacheInfo = await DebtCache.cacheInfo();
+
+		// NOTE: This line be removed once https://github.com/ethers-io/ethers.js/issues/1862 is resolved. See comments at function's definition
+		await cacheCurrentDebtResults({ contract: DebtCache, useFork });
+		const currentDebt = await DebtCache.currentDebt();
 
 		// Check if the snapshot is stale and can be fixed.
 		if (cacheInfo.isStale && !currentDebt.anyRateIsInvalid) {
@@ -97,7 +126,7 @@ module.exports = async ({
 	};
 
 	try {
-		const performedSnapshot = await checkSnapshot();
+		const performedSnapshot = await checkSnapshot({ useFork });
 
 		if (performedSnapshot) {
 			console.log(gray('Snapshot complete.'));

@@ -55,8 +55,8 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 				{ frozenAtUpperLimit, frozenAtLowerLimit },
 			] = await Promise.all([
 				liveAggregator.latestAnswer(),
-				oldExrates.methods.rateForCurrency(toBytes32(currencyKey)).call(),
-				oldExrates.methods.inversePricing(toBytes32(currencyKey)).call(),
+				oldExrates.rateForCurrency(toBytes32(currencyKey)),
+				oldExrates.inversePricing(toBytes32(currencyKey)),
 			]);
 
 			let answer = (aggAnswerRaw / 1e8).toString();

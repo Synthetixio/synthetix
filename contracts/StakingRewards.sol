@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
@@ -56,7 +55,7 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
     function rewardPerToken() public view returns (uint256) {
@@ -130,11 +129,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
         emit RewardAdded(reward);
-    }
-
-    // End rewards emission earlier
-    function updatePeriodFinish(uint timestamp) external onlyOwner updateReward(address(0)) {
-        periodFinish = timestamp;
     }
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders

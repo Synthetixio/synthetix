@@ -21,27 +21,35 @@ function collectContractBytesCodes() {
 	//   artifacts/contracts/Synthetix.sol/
 	//   artifacts/contracts/Exchanger.sol/
 	//   ...
-	const contractsFolders = fs
-		.readdirSync(builtContractsPath)
-		.filter(folderName => path.extname(folderName) === '.sol');
 
-	// Read json files within each folder,
-	// and collect them in a combined object.
-	// Eg:
-	//   artifacts/contracts/Synthetix.sol/Synthetix.json
-	//   artifacts/contracts/Exchanger.sol/Exchanger.json
-	//   ...
 	const contractBytecodes = {};
-	for (const contractFolder of contractsFolders) {
-		const contractName = path.basename(contractFolder, '.sol');
 
-		const jsonFileName = `${contractName}.json`;
-		const jsonfilePath = path.resolve(builtContractsPath, contractFolder, jsonFileName);
-		const jsonFileContents = fs.readFileSync(jsonfilePath);
-		const artifacts = JSON.parse(jsonFileContents);
+	function searchRecurse({ entryPath }) {
+		const filesInDir = fs.readdirSync(entryPath);
 
-		contractBytecodes[contractName] = artifacts.bytecode;
+		for (const contractFolder of filesInDir) {
+			if (path.extname(contractFolder) === '.sol') {
+				// Read json files within each folder,
+				// and collect them in a combined object.
+				// Eg:
+				//   artifacts/contracts/Synthetix.sol/Synthetix.json
+				//   artifacts/contracts/Exchanger.sol/Exchanger.json
+				//   ...
+				const contractName = path.basename(contractFolder, '.sol');
+
+				const jsonFileName = `${contractName}.json`;
+				const jsonfilePath = path.resolve(entryPath, contractFolder, jsonFileName);
+				const jsonFileContents = fs.readFileSync(jsonfilePath);
+				const artifacts = JSON.parse(jsonFileContents);
+
+				contractBytecodes[contractName] = artifacts.bytecode;
+			} else {
+				searchRecurse({ entryPath: path.join(entryPath, contractFolder) });
+			}
+		}
 	}
+
+	searchRecurse({ entryPath: builtContractsPath });
 
 	return contractBytecodes;
 }
