@@ -75,10 +75,7 @@ contract MultiCollateralSynth is Synth {
         bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
 
-        require(
-            isInternal || isEtherWrapper || isMultiCollateral,
-            "Only FeePool, Exchanger, Issuer, MultiCollateral contracts allowed"
-        );
+        require(isInternal || isEtherWrapper || isMultiCollateral, "Only internal contracts allowed");
         _;
     }
 }
