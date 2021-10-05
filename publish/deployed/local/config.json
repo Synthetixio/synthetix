@@ -53,12 +53,6 @@
 	"ExchangeRatesCircuitBreaker": {
 		"deploy": true
 	},
-	"VirtualSynthMastercopy": {
-		"deploy": true
-	},
-	"ExchangeState": {
-		"deploy": true
-	},
 	"FeePool": {
 		"deploy": true
 	},

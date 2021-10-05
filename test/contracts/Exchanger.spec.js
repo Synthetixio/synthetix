@@ -889,6 +889,11 @@ contract('Exchanger (spec tests)', async accounts => {
 												it('and the debt cache sync is not called', async () => {
 													assert.equal(debtCacheSpy.smocked.updateCachedSynthDebts.calls.length, 0);
 												});
+												assert.equal(
+													txn.logs.length,
+													0,
+													'Must not emit any events as no settlement required'
+												);
 											});
 										});
 										it('when sEUR is attempted to be exchanged away by the user, it reverts', async () => {
@@ -1137,6 +1142,11 @@ contract('Exchanger (spec tests)', async accounts => {
 															synth: sEURContract,
 															expected: expectedSettlement,
 														});
+														it('then it succeeds, exchanging the entire amount plus the rebate', async () => {
+															const srcBalanceAfterExchange = await sEURContract.balanceOf(
+																account1
+															);
+															assert.equal(srcBalanceAfterExchange, '0');
 
 														decodedEventEqual({
 															log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
@@ -1152,7 +1162,19 @@ contract('Exchanger (spec tests)', async accounts => {
 											beforeEach(async () => {
 												await fastForward(5);
 
-												timestamp = await currentTime();
+													describe('when an exchange out of sEUR for some amount less than their balance before exchange', () => {
+														let txn;
+														beforeEach(async () => {
+															txn = await synthetix.exchange(sEUR, toUnit('10'), sBTC, {
+																from: account1,
+															});
+														});
+														it('then it succeeds, exchanging the amount plus the rebate', async () => {
+															const decodedLogs = await ensureTxnEmitsSettlementEvents({
+																hash: txn.tx,
+																synth: sEURContract,
+																expected: expectedSettlement,
+															});
 
 												await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 													from: oracle,
