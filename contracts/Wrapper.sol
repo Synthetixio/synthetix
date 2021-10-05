@@ -194,7 +194,6 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         if (negative) {
             burnAmount = targetSynthIssued < amountIn ? targetSynthIssued.sub(burnFee) : amountIn;
 
-            // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
             amountOut = burnAmount.multiplyDecimal(
                 // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
                 uint(int(SafeDecimalMath.unit()) - burnFeeRate())
