@@ -183,10 +183,7 @@ module.exports = async ({
 				readArg: addressOf(CollateralShort),
 				expected: input => (interactionDelay === '0' ? true : input !== '0'),
 				write: 'setInteractionDelay',
-				writeArg: [
-					CollateralShort.address,
-					(await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
-				],
+				writeArg: [CollateralShort.address, interactionDelay],
 				comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
 			});
 		}
