@@ -6,5 +6,20 @@
 	{
 		"name": "WAITING_PERIOD_SECS",
 		"value": "0"
+	},
+	{
+		"name": "RATE_STALE_PERIOD",
+		"value": "4200"
+	},
+	{
+		"name": "COLLATERAL_SHORT",
+		"value": {
+			"SYNTHS": ["sBTC", "sETH", "sLINK", "sUNI", "sAAVE"],
+			"MIN_CRATIO": "1200000000000000000",
+			"MIN_COLLATERAL": "0",
+			"ISSUE_FEE_RATE": "5000000000000000",
+			"INTERACTION_DELAY": "0",
+			"COLLAPSE_FEE_RATE": "0"
+		}
 	}
 ]

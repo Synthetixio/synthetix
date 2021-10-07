@@ -1,40 +1,37 @@
 'use strict';
 
-const { artifacts, contract } = require('hardhat');
+const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { toUnit, currentTime, fastForward } = require('../utils')();
 
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-let CollateralState;
-
 contract('CollateralManager', async accounts => {
-	const [deployerAccount, owner, oracle, , account1] = accounts;
+	const [, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
 	const sBTC = toBytes32('sBTC');
+
+	const name = 'Some name';
+	const symbol = 'TOKEN';
 
 	const INTERACTION_DELAY = 300;
 
 	const oneRenBTC = 100000000;
 
 	let ceth,
-		mcstate,
-		mcstateErc20,
 		cerc20,
-		proxy,
 		renBTC,
-		tokenState,
 		manager,
 		managerState,
 		addressResolver,
@@ -47,7 +44,6 @@ contract('CollateralManager', async accounts => {
 		synths,
 		maxDebt,
 		short,
-		shortState,
 		debtCache,
 		tx,
 		id;
@@ -55,48 +51,6 @@ contract('CollateralManager', async accounts => {
 	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
-	};
-
-	const deployEthCollateral = async ({
-		mcState,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-	}) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralEth',
-			args: [mcState, owner, manager, resolver, collatKey, minColat, minSize],
-		});
-	};
-
-	const deployErc20Collateral = async ({
-		mcState,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-		underCon,
-		decimals,
-	}) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralErc20',
-			args: [mcState, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
-		});
-	};
-
-	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
-		});
 	};
 
 	const issue = async (synth, issueAmount, receiver) => {
@@ -122,6 +76,23 @@ contract('CollateralManager', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
+	const deployCollateral = async ({
+		owner,
+		manager,
+		resolver,
+		collatKey,
+		minColat,
+		minSize,
+		underCon,
+		decimals,
+	}) => {
+		return setupContract({
+			accounts,
+			contract: 'CollateralErc20',
+			args: [owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
+		});
+	};
+
 	const setupManager = async () => {
 		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
 		({
@@ -135,6 +106,8 @@ contract('CollateralManager', async accounts => {
 			DebtCache: debtCache,
 			CollateralManager: manager,
 			CollateralManagerState: managerState,
+			CollateralEth: ceth,
+			CollateralShort: short,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -149,6 +122,8 @@ contract('CollateralManager', async accounts => {
 				'Exchanger',
 				'CollateralManager',
 				'CollateralManagerState',
+				'CollateralEth',
+				'CollateralShort',
 			],
 		}));
 
@@ -156,56 +131,14 @@ contract('CollateralManager', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		mcstate = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		({ token: renBTC } = await mockToken({
+			accounts,
+			name,
+			symbol,
+			supply: 1e6,
+		}));
 
-		ceth = await deployEthCollateral({
-			mcState: mcstate.address,
-			owner: owner,
-			manager: manager.address,
-			resolver: addressResolver.address,
-			collatKey: sETH,
-			minColat: toUnit(1.5),
-			minSize: toUnit(1),
-		});
-
-		await mcstate.setAssociatedContract(ceth.address, { from: owner });
-
-		mcstateErc20 = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const ProxyERC20 = artifacts.require(`ProxyERC20`);
-		const TokenState = artifacts.require(`TokenState`);
-
-		// the owner is the associated contract, so we can simulate
-		proxy = await ProxyERC20.new(owner, {
-			from: deployerAccount,
-		});
-		tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const PublicEST8Decimals = artifacts.require('PublicEST8Decimals');
-
-		renBTC = await PublicEST8Decimals.new(
-			proxy.address,
-			tokenState.address,
-			'Some Token',
-			'TOKEN',
-			toUnit('1000'),
-			owner,
-			{
-				from: deployerAccount,
-			}
-		);
-
-		await tokenState.setAssociatedContract(owner, { from: owner });
-		await tokenState.setBalanceOf(owner, toUnit('1000'), { from: owner });
-		await tokenState.setAssociatedContract(renBTC.address, { from: owner });
-
-		await proxy.setTarget(renBTC.address, { from: owner });
-
-		// Issue ren and set allowance
-		await renBTC.transfer(account1, toUnit(100), { from: owner });
-
-		cerc20 = await deployErc20Collateral({
-			mcState: mcstateErc20.address,
+		cerc20 = await deployCollateral({
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -216,21 +149,8 @@ contract('CollateralManager', async accounts => {
 			decimals: 8,
 		});
 
-		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
-
-		shortState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		short = await deployShort({
-			state: shortState.address,
-			owner: owner,
-			manager: manager.address,
-			resolver: addressResolver.address,
-			collatKey: sUSD,
-			minColat: toUnit(1.5),
-			minSize: toUnit(0.1),
-		});
-
-		await shortState.setAssociatedContract(short.address, { from: owner });
+		// Issue ren and set allowance
+		await renBTC.transfer(account1, toUnit(100), { from: owner });
 
 		await addressResolver.importAddresses(
 			[
@@ -280,21 +200,25 @@ contract('CollateralManager', async accounts => {
 		);
 
 		await manager.addShortableSynths(
-			[
-				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
-				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
-			],
-			['sBTC', 'sETH'].map(toBytes32),
+			[toBytes32('SynthsETH'), toBytes32('SynthsBTC')],
+			[sETH, sBTC],
 			{
 				from: owner,
 			}
 		);
 
-		// check synths are set and currencyKeys set
+		// check synths, currencies, and shortable synths are set
 		assert.isTrue(
 			await manager.areSynthsAndCurrenciesSet(
 				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
 				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+			)
+		);
+
+		assert.isTrue(
+			await manager.areShortableSynthsSet(
+				['SynthsBTC', 'SynthsETH'].map(toBytes32),
+				['sBTC', 'sETH'].map(toBytes32)
 			)
 		);
 
@@ -303,8 +227,6 @@ contract('CollateralManager', async accounts => {
 	};
 
 	before(async () => {
-		CollateralState = artifacts.require(`CollateralState`);
-
 		await setupManager();
 	});
 
@@ -333,6 +255,7 @@ contract('CollateralManager', async accounts => {
 			expected: [
 				'setUtilisationMultiplier',
 				'setMaxDebt',
+				'setMaxSkewRate',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
 				'getNewLoanId',
@@ -340,10 +263,11 @@ contract('CollateralManager', async accounts => {
 				'removeCollaterals',
 				'addSynths',
 				'removeSynths',
+				'accrueInterest',
 				'addShortableSynths',
 				'removeShortableSynths',
-				'updateBorrowRates',
-				'updateShortRates',
+				'updateBorrowRatesCollateral',
+				'updateShortRatesCollateral',
 				'incrementLongs',
 				'decrementLongs',
 				'incrementShorts',
@@ -434,6 +358,13 @@ contract('CollateralManager', async accounts => {
 			assert.bnEqual(debt, toUnit(100));
 		});
 
+		it('should get the total long and short balance in sUSD correctly', async () => {
+			const total = await manager.totalLongAndShort();
+			const debt = total.susdValue;
+
+			assert.bnEqual(debt, toUnit(500));
+		});
+
 		it('should report if a rate is invalid', async () => {
 			await fastForward(await exchangeRates.rateStalePeriod());
 
@@ -513,6 +444,29 @@ contract('CollateralManager', async accounts => {
 			});
 		});
 
+		describe('setMaxSkewRate', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						manager.setMaxSkewRate(toUnit(0.2), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
+				});
+				it('should update the max skew rate', async () => {
+					assert.bnEqual(await manager.maxSkewRate(), toUnit(0.2));
+				});
+				it('should allow the max skew rate to be 0', async () => {
+					await manager.setMaxSkewRate(toUnit(0), { from: owner });
+					assert.bnEqual(await manager.maxSkewRate(), toUnit(0));
+				});
+			});
+		});
+
 		describe('setBaseBorrowRate', async () => {
 			describe('revert condtions', async () => {
 				it('should fail if not called by the owner', async () => {
@@ -529,9 +483,78 @@ contract('CollateralManager', async accounts => {
 				it('should update the base interest rate', async () => {
 					assert.bnEqual(await manager.baseBorrowRate(), toUnit(2));
 				});
-				it('should allow the base interest rate to be  0', async () => {
+				it('should allow the base interest rate to be 0', async () => {
 					await manager.setBaseBorrowRate(toUnit(0), { from: owner });
 					assert.bnEqual(await manager.baseBorrowRate(), toUnit(0));
+				});
+			});
+		});
+
+		describe('setBaseShortRate', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						manager.setBaseShortRate(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await manager.setBaseShortRate(toUnit(2), { from: owner });
+				});
+				it('should update the base short rate', async () => {
+					assert.bnEqual(await manager.baseShortRate(), toUnit(2));
+				});
+				it('should allow the base short rate to be 0', async () => {
+					await manager.setBaseShortRate(toUnit(0), { from: owner });
+					assert.bnEqual(await manager.baseShortRate(), toUnit(0));
+				});
+			});
+		});
+
+		describe('updateBorrowRatesCollateral', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the collateral contract', async () => {
+					await assert.revert(
+						manager.updateBorrowRatesCollateral(toUnit(1), { from: owner }),
+						'Only collateral contracts'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				it('updateBorrowRatesCollateral() can only be invoked by collateral', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: manager.updateBorrowRatesCollateral,
+						accounts,
+						args: [toUnit(1)],
+						address: short.address,
+						skipPassCheck: true,
+						reason: 'Only collateral contracts',
+					});
+				});
+			});
+		});
+
+		describe('updateShortRatesCollateral', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the collateral contract', async () => {
+					await assert.revert(
+						manager.updateShortRatesCollateral(sETH, toUnit(1), { from: owner }),
+						'Only collateral contracts'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				it('updateShortRatesCollateral() can only be invoked by collateral', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: manager.updateShortRatesCollateral,
+						accounts,
+						args: [sETH, toUnit(1)],
+						address: short.address,
+						skipPassCheck: true,
+						reason: 'Only collateral contracts',
+					});
 				});
 			});
 		});
@@ -617,15 +640,12 @@ contract('CollateralManager', async accounts => {
 		});
 
 		describe('when a shortable synth is removed', async () => {
-			beforeEach(async () => {
-				await manager.removeShortableSynths([toBytes32('SynthsBTC')], { from: owner });
-			});
+			it('should emit the ShortableSynthRemoved event', async () => {
+				const txn = await manager.removeShortableSynths([toBytes32('SynthsBTC')], { from: owner });
 
-			it('should zero out the inverse mapping', async () => {
-				assert.equal(
-					await manager.synthToInverseSynth(toBytes32('SynthsBTC')),
-					'0x0000000000000000000000000000000000000000000000000000000000000000'
-				);
+				assert.eventEqual(txn, 'ShortableSynthRemoved', {
+					synth: toBytes32('SynthsBTC'),
+				});
 			});
 		});
 	});
