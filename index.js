@@ -160,8 +160,8 @@ const defaults = {
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
 
 	COLLATERAL_MANAGER: {
-		SYNTHS: ['sUSD', 'sBTC', 'sETH', 'sLINK'],
-		SHORTS: ['sBTC', 'sETH', 'sLINK'],
+		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
+		SHORTS: ['sBTC', 'sETH'],
 		MAX_DEBT: w3utils.toWei('75000000'), // 75 million sUSD
 		MAX_SKEW_RATE: w3utils.toWei('0.2'),
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
