@@ -14,7 +14,7 @@
 	{
 		"name": "COLLATERAL_MANAGER",
 		"value": {
-			"SYNTHS": ["sBTC", "sETH", "sLINK"],
+			"SYNTHS": ["sUSD", "sBTC", "sETH", "sLINK"],
 			"SHORTS": ["sBTC", "sETH", "sLINK"],
 			"MAX_DEBT": "75000000000000000000000000",
 			"MAX_SKEW_RATE": "200000000000000000",
