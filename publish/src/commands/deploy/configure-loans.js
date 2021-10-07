@@ -163,11 +163,12 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has all associated synths added',
 		});
 
+		const issueFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'];
 		await runStep({
 			contract: 'CollateralShort',
 			target: CollateralShort,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
+			expected: input => (issueFeeRate === '0' ? true : input !== '0'),
 			write: 'setIssueFeeRate',
 			writeArg: [(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE']],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
