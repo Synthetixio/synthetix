@@ -170,7 +170,7 @@ module.exports = async ({
 			read: 'issueFeeRate',
 			expected: input => (issueFeeRate === '0' ? true : input !== '0'),
 			write: 'setIssueFeeRate',
-			writeArg: [(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE']],
+			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
 
