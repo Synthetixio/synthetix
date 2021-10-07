@@ -51,4 +51,8 @@ interface IDebtCache {
     function purgeCachedSynthDebt(bytes32 currencyKey) external;
 
     function takeDebtSnapshot() external;
+
+    function increaseCachedsUSDDebt(uint amount) external;
+
+    function decreaseCachedsUSDDebt(uint amount) external;
 }
