@@ -381,10 +381,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Repay the loan with its collateral.
         (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
 
-        // 2. Record loan as closed.
+        // 2. Pay the service fee for collapsing the loan.
+        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
+        _payFees(serviceFee, sUSD);
+        collateral = collateral.sub(serviceFee);
+
+        // 3. Record loan as closed.
         _recordLoanAsClosed(loan);
 
-        // 3. Emit the event for the loan closed by repayment.
+        // 4. Emit the event for the loan closed by repayment.
         emit LoanClosedByRepayment(borrower, id, amount, collateral);
     }
 
@@ -538,21 +543,17 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 5. Reduce the collateral by the amount repaid (minus the exchange fees).
         loan.collateral = loan.collateral.sub(expectedAmount);
 
-        // 6. Pay the service fee for collapsing the loan.
-        uint serviceFee = expectedAmount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-        loan.collateral = loan.collateral.sub(serviceFee);
-
-        // 7. Process the payment and pay the fees.
+        // 6. Process the payment and pay the exchange fees if needed.
         _processPayment(loan, payment);
-        _payFees(fee.add(serviceFee), sUSD);
+        _payFees(fee, sUSD);
 
-        // 8. Update the last interaction time.
+        // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 9. Emit the event for the collateral repayment.
+        // 8. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        // 10. Return the amount repaid and the remaining collateral.
+        // 9. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
     }
 
