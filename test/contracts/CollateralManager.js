@@ -289,6 +289,26 @@ contract('CollateralManager', async accounts => {
 		it('should add the collaterals during construction', async () => {
 			assert.isTrue(await manager.hasCollateral(ceth.address));
 			assert.isTrue(await manager.hasCollateral(cerc20.address));
+			assert.isTrue(await manager.hasCollateral(short.address));
+		});
+	});
+
+	describe('adding synths', async () => {
+		it('should add the synths during construction', async () => {
+			assert.isTrue(await manager.isSynthManaged(sUSD));
+			assert.isTrue(await manager.isSynthManaged(sBTC));
+			assert.isTrue(await manager.isSynthManaged(sETH));
+		});
+		it('should not allow duplicate synths to be added', async () => {
+			manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('sUSD')], {
+				from: owner,
+			});
+			assert.isTrue(
+				await manager.areSynthsAndCurrenciesSet(
+					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+				)
+			);
 		});
 	});
 
