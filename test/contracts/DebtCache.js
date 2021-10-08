@@ -289,6 +289,8 @@ contract('DebtCache', async accounts => {
 				'updateCachedSynthDebtWithRate',
 				'updateCachedSynthDebtsWithRates',
 				'updateDebtCacheValidity',
+				'decreaseCachedsUSDDebt',
+				'increaseCachedsUSDDebt',
 			],
 		});
 	});
