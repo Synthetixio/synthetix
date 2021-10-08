@@ -154,5 +154,8 @@
 	},
 	"SynthRedeemer": {
 		"deploy": true
+	},
+	"SynthsLINK": {
+		"deploy": true
 	}
 }
