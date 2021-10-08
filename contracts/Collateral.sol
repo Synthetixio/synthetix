@@ -246,7 +246,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         bytes32 currency,
         bool short
     ) internal issuanceIsActive returns (uint id) {
-        // 0. Check if able to open loans and the rate is valid.
+        // 0. Check if able to open loans.
         require(canOpenLoans, "Open disabled");
 
         // 1. We can only issue certain synths.
