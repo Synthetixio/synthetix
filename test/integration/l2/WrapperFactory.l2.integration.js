@@ -14,17 +14,33 @@ describe('WrapperFactory integration tests (L2)', () => {
 	before(async () => {
 		const WrapperFactory = ctx.contracts.WrapperFactory.connect(ctx.users.owner);
 
-		const etherWrapperCreateTx = await WrapperFactory.createWrapper(
+		const wrapperCreatedEvent = new Promise((resolve, reject) => {
+			WrapperFactory.on('WrapperCreated', (token, currencyKey, wrapperAddress, event) => {
+				event.removeListener();
+
+				resolve({
+					token: token,
+					currencyKey: currencyKey,
+					wrapperAddress: wrapperAddress,
+				});
+			});
+
+			setTimeout(() => {
+				reject(new Error('timeout'));
+			}, 60000);
+		});
+
+		await WrapperFactory.createWrapper(
 			ctx.contracts.WETH.address,
 			toBytes32('sETH'),
 			toBytes32('SynthsETH')
 		);
 
-		console.log(etherWrapperCreateTx);
+		const event = await wrapperCreatedEvent;
+		console.log(event);
 
 		// extract address from events
-		const etherWrapperAddress = etherWrapperCreateTx.logs.find(l => l.event === 'WrapperCreated')
-			.args.wrapperAddress;
+		const etherWrapperAddress = event.wrapperAddress;
 
 		wrapperOptions.Wrapper = await artifacts.require('Wrapper').at(etherWrapperAddress);
 		wrapperOptions.Synth = ctx.contracts.SynthsETH;
