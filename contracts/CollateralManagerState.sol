@@ -14,8 +14,8 @@ contract CollateralManagerState is Owned, State {
     using SafeDecimalMath for uint;
 
     struct Balance {
-        uint128 long;
-        uint128 short;
+        uint long;
+        uint short;
     }
 
     uint public totalLoans;
@@ -40,32 +40,27 @@ contract CollateralManagerState is Owned, State {
     }
 
     function long(bytes32 synth) external view onlyAssociatedContract returns (uint) {
-        return uint(totalIssuedSynths[synth].long);
+        return totalIssuedSynths[synth].long;
     }
 
     function short(bytes32 synth) external view onlyAssociatedContract returns (uint) {
-        return uint(totalIssuedSynths[synth].short);
-    }
-
-    function longAndShort(bytes32 synth) external view onlyAssociatedContract returns (uint, uint) {
-        Balance memory b = totalIssuedSynths[synth];
-        return (uint(b.long), uint(b.short));
+        return totalIssuedSynths[synth].short;
     }
 
     function incrementLongs(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].long = uint128(uint(totalIssuedSynths[synth].long).add(amount));
+        totalIssuedSynths[synth].long = totalIssuedSynths[synth].long.add(amount);
     }
 
     function decrementLongs(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].long = uint128(uint(totalIssuedSynths[synth].long).sub(amount));
+        totalIssuedSynths[synth].long = totalIssuedSynths[synth].long.sub(amount);
     }
 
     function incrementShorts(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].short = uint128(uint(totalIssuedSynths[synth].short).add(amount));
+        totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.add(amount);
     }
 
     function decrementShorts(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].short = uint128(uint(totalIssuedSynths[synth].short).sub(amount));
+        totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.sub(amount);
     }
 
     // Borrow rates, one array here for all currencies.

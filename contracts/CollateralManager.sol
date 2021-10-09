@@ -213,8 +213,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         if (currencyKeys.length > 0) {
             (uint[] memory rates, bool invalid) = _exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
             for (uint i = 0; i < rates.length; i++) {
-                (uint longAmount, uint shortAmount) = state.longAndShort(currencyKeys[i]);
-                susdValue = susdValue.add(longAmount.multiplyDecimal(rates[i])).add(shortAmount.multiplyDecimal(rates[i]));
+                uint longAmount = state.long(currencyKeys[i]).multiplyDecimal(rates[i]);
+                uint shortAmount = state.short(currencyKeys[i]).multiplyDecimal(rates[i]);
+                susdValue = susdValue.add(longAmount).add(shortAmount);
                 if (invalid) {
                     anyRateIsInvalid = true;
                 }
