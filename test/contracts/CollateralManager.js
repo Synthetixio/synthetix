@@ -300,7 +300,7 @@ contract('CollateralManager', async accounts => {
 			assert.isTrue(await manager.isSynthManaged(sETH));
 		});
 		it('should not allow duplicate synths to be added', async () => {
-			manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('sUSD')], {
+			await manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('sUSD')], {
 				from: owner,
 			});
 			assert.isTrue(
@@ -308,6 +308,51 @@ contract('CollateralManager', async accounts => {
 					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
 					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
 				)
+			);
+		});
+		it('should revert when input array lengths dont match', async () => {
+			await assert.revert(
+				manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], [toBytes32('sUSD')], {
+					from: owner,
+				}),
+				'Input array length mismatch'
+			);
+		});
+	});
+
+	describe('removing synths', async () => {
+		after('restore removed synth', async () => {
+			await manager.addSynths([toBytes32('SynthsETH')], [toBytes32('sETH')], {
+				from: owner,
+			});
+			assert.isTrue(
+				await manager.areSynthsAndCurrenciesSet(
+					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+				)
+			);
+		});
+		it('should successfully remove a synth', async () => {
+			await manager.removeSynths([toBytes32('SynthsETH')], [toBytes32('sETH')], {
+				from: owner,
+			});
+			assert.isTrue(
+				await manager.areSynthsAndCurrenciesSet(
+					['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+					['sUSD', 'sBTC'].map(toBytes32)
+				)
+			);
+		});
+		it('should revert when input array lengths dont match', async () => {
+			await assert.revert(
+				manager.removeSynths(
+					[toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
+					[toBytes32('sUSD')],
+					{
+						from: owner,
+					}
+				),
+				'Input array length mismatch'
 			);
 		});
 	});
