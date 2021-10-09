@@ -151,8 +151,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     // The maximum number of synths issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
-        uint ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
-        return ratio.multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
+        return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
@@ -245,7 +244,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint amount,
         bytes32 currency,
         bool short
-    ) internal issuanceIsActive returns (uint id) {
+    ) internal rateIsValid issuanceIsActive returns (uint id) {
         // 0. Check if able to open loans.
         require(canOpenLoans, "Open disabled");
 
@@ -312,7 +311,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanCreated(msg.sender, id, amount, collateral, currency, issueFee);
     }
 
-    function _close(address borrower, uint id) internal issuanceIsActive returns (uint amount, uint collateral) {
+    function _close(address borrower, uint id) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
@@ -398,7 +397,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address account,
         uint id,
         uint amount
-    ) internal issuanceIsActive returns (uint, uint) {
+    ) internal rateIsValid issuanceIsActive returns (uint, uint) {
         // 0. They sent some value > 0
         require(amount > 0, "Deposit must be above 0");
 
@@ -421,7 +420,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function _withdraw(uint id, uint amount) internal issuanceIsActive returns (uint, uint) {
+    function _withdraw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
@@ -441,7 +440,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address borrower,
         uint id,
         uint payment
-    ) internal issuanceIsActive returns (uint collateralLiquidated) {
+    ) internal rateIsValid issuanceIsActive returns (uint collateralLiquidated) {
         require(payment > 0, "Payment must be above 0");
 
         // 0. Get the loan and accrue interest.
@@ -491,7 +490,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address repayer,
         uint id,
         uint payment
-    ) internal issuanceIsActive returns (uint, uint) {
+    ) internal rateIsValid issuanceIsActive returns (uint, uint) {
         // 0. Get the loan.
         // Owner is not important here, as it is a donation to repay the loan.
         Loan storage loan = loans[id];
@@ -525,7 +524,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address borrower,
         uint id,
         uint payment
-    ) internal issuanceIsActive returns (uint amount, uint collateral) {
+    ) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
         // 0. Get the loan to repay and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
@@ -558,7 +557,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (payment, loan.collateral);
     }
 
-    function _draw(uint id, uint amount) internal issuanceIsActive returns (uint, uint) {
+    function _draw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
@@ -681,6 +680,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // ========== MODIFIERS ==========
+
+    modifier rateIsValid() {
+        _requireRateIsValid();
+        _;
+    }
+
+    function _requireRateIsValid() private view {
+        require(!_exchangeRates().rateIsInvalid(collateralKey), "Invalid rate");
+    }
 
     modifier issuanceIsActive() {
         _requireIssuanceIsActive();
