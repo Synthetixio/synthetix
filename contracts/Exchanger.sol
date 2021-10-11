@@ -10,6 +10,7 @@ import "./interfaces/IExchanger.sol";
 import "./SafeDecimalMath.sol";
 import "./Math.sol";
 import "./SignedSafeDecimalMath.sol";
+import "./SimulatedLiquidityMath.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -807,71 +808,25 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // destinationAmount is the theoretical max the user could buy, if there were no
         // fees for slippage or exchanges.
 
+        // Levy exchange fee.
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
+
+        // SIP-181
+        // Levy a fee based on the simulated liquidity modelling of the asset.
+        (int openInterest, uint priceImpactFactor, uint maxOpenInterest) =
+            liquidityOracle().parameters(destinationCurrencyKey);
+        (, int quoteAmount) =
+            SimulatedLiquidityMath.getSimulatedQuote(
+                openInterest,
+                priceImpactFactor,
+                maxOpenInterest,
+                destinationRate,
+                int(amountReceived)
+            );
+        amountReceived = uint(quoteAmount);
+
         fee = destinationAmount.sub(amountReceived);
-    }
-
-    function _calculatePricePremiumIntegral(
-        int n,
-        uint delta,
-        uint lambda
-    ) public view returns (int) {
-        int num = int(delta) - n;
-        int denom = int(delta) + n;
-
-        if (denom <= 0) {
-            return -int(SafeDecimalMath.unit()) / 5; // -0.2
-        } else if (num <= 0) {
-            return int(SafeDecimalMath.unit()) / 5; // 0.2
-        }
-
-        // Math.ln accepts integers encoded with 27dp.
-        // This scales from the default UNIT of 18dp.
-        uint LN_SCALE_FACTOR = 10**9;
-        uint UNIT = SafeDecimalMath.unit();
-
-        return
-            int(lambda).multiplyDecimal(int(delta) - n).multiplyDecimal(
-                Math.ln(uint(num).divideDecimal(uint(denom)) * LN_SCALE_FACTOR) / int(LN_SCALE_FACTOR)
-            ) +
-            int(2 * UNIT).multiplyDecimal(int(delta)).multiplyDecimal(int(lambda)).multiplyDecimal(
-                Math.ln((delta + uint(n)) * LN_SCALE_FACTOR) / int(LN_SCALE_FACTOR)
-            );
-    }
-
-    function calculateQuotePrice(
-        int s,
-        int n,
-        uint _O,
-        uint lambda,
-        uint delta
-    ) internal view returns (int) {
-        if (s == 0) {
-            return int(_O);
-        }
-
-        return
-            int(_O) +
-            int(_O).divideDecimal(s).multiplyDecimal(
-                _calculatePricePremiumIntegral(n + s, delta, lambda) - _calculatePricePremiumIntegral(n, delta, lambda)
-            );
-    }
-
-    function getSimulatedPrice(
-        bytes32 destinationCurrencyKey,
-        uint destinationRate,
-        int amount
-    ) public view returns (int quotePrice, int quoteAmount) {
-        int openInterest = liquidityOracle().openInterest(destinationCurrencyKey);
-        uint lambda = liquidityOracle().priceImpactFactor(destinationCurrencyKey);
-        uint delta = liquidityOracle().maxOpenInterestDelta(destinationCurrencyKey);
-
-        // premium_ = premium(open_interest + amount, delta, lambda_)
-        // mark_price = rate * (1 + premium_)
-        quotePrice = calculateQuotePrice(amount, openInterest, destinationRate, lambda, delta);
-        quoteAmount = amount.multiplyDecimal(quotePrice);
-        return (quotePrice, quoteAmount);
     }
 
     function _getAmountReceivedForExchange(uint destinationAmount, uint exchangeFeeRate)

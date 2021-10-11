@@ -7,6 +7,15 @@ interface ILiquidityOracle {
 
     function openInterest(bytes32 asset) external view returns (int);
 
+    function parameters(bytes32 asset)
+        external
+        view
+        returns (
+            int openInterest,
+            uint priceImpact,
+            uint maxOpenInterest
+        );
+
     function resetOpenInterest(bytes32 asset) external;
 
     function updateOpenInterest(bytes32 asset, int amount) external;

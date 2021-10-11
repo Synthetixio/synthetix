@@ -12,23 +12,13 @@ library Math {
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
 
-    uint private constant SECONDS_PER_YEAR = 31536000;
     /// @dev Internally this library uses 27 decimals of precision
     uint private constant PRECISE_UNIT = 1e27;
     uint private constant LN_2_PRECISE = 693147180559945309417232122;
-    uint private constant SQRT_TWOPI = 2506628274631000502415765285;
-    /// @dev Below this value, return 0
-    int private constant MIN_CDF_STD_DIST_INPUT = (int(PRECISE_UNIT) * -45) / 10; // -4.5
-    /// @dev Above this value, return 1
-    int private constant MAX_CDF_STD_DIST_INPUT = int(PRECISE_UNIT) * 10;
     /// @dev Below this value, the result is always 0
     int private constant MIN_EXP = -63 * int(PRECISE_UNIT);
     /// @dev Above this value the a lot of precision is lost, and uint256s come close to not being able to handle the size
     uint private constant MAX_EXP = 100 * PRECISE_UNIT;
-    /// @dev Value to use to avoid any division by 0 or values near 0
-    uint private constant MIN_T_ANNUALISED = PRECISE_UNIT / SECONDS_PER_YEAR; // 1 second
-    uint private constant MIN_VOLATILITY = PRECISE_UNIT / 10000; // 0.001%
-    uint private constant VEGA_STANDARDISATION_MIN_DAYS = 7 days;
 
     /**
      * @dev Uses "exponentiation by squaring" algorithm where cost is 0(logN)

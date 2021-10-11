@@ -3937,20 +3937,5 @@ contract('Exchanger (spec tests)', async accounts => {
 		itPricesSpikeDeviation();
 
 		itSetsExchangeFeeRateForSynths();
-
-		describe('simulated slippage', async () => {
-			it('getSimulatedPrice', async () => {
-				const { quotePrice, quoteAmount } = await exchanger.getSimulatedPrice(
-					sETH,
-					toUnit('2000'),
-					toUnit('20000')
-				);
-				// console.log([quotePrice, quoteAmount].map(x => x.toString()));
-
-				// exchange ETH amount=20,000.000 rate=2000 premium=0.00537 mark_price=2,010.731 quote_price=2,005.349 take_amount=40,106,984.985
-				assert.bnClose(quotePrice, toUnit('2005.349'), toUnit('1'));
-				assert.bnClose(quoteAmount, toUnit('40106984.985'), toUnit('10'));
-			});
-		});
 	});
 });
