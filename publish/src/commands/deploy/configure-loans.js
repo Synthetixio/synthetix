@@ -163,13 +163,14 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has all associated synths added',
 		});
 
+		const issueFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'];
 		await runStep({
 			contract: 'CollateralShort',
 			target: CollateralShort,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
+			expected: input => (issueFeeRate === '0' ? true : input !== '0'),
 			write: 'setIssueFeeRate',
-			writeArg: [(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE']],
+			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
 
@@ -182,10 +183,7 @@ module.exports = async ({
 				readArg: addressOf(CollateralShort),
 				expected: input => (interactionDelay === '0' ? true : input !== '0'),
 				write: 'setInteractionDelay',
-				writeArg: [
-					CollateralShort.address,
-					(await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
-				],
+				writeArg: [CollateralShort.address, interactionDelay],
 				comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
 			});
 		}
