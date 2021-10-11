@@ -7,7 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IIssuer.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";

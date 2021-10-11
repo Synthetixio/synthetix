@@ -6,7 +6,7 @@ import "./State.sol";
 import "./interfaces/ISynthetixState.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
 contract SynthetixState is Owned, State, ISynthetixState {

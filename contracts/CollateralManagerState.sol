@@ -7,7 +7,7 @@ import "./Owned.sol";
 import "./State.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 contract CollateralManagerState is Owned, State {
     using SafeMath for uint;

@@ -7,7 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/ISystemSettings.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {

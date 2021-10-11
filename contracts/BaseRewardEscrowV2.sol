@@ -8,7 +8,7 @@ import "./LimitedSetup.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";

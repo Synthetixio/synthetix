@@ -5,7 +5,7 @@ import "./MixinResolver.sol";
 import "./interfaces/ISynthRedeemer.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";

@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 // Libraires
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";

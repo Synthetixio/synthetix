@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "../SafeDecimalMath.sol";
+import "../libraries/SafeDecimalMath.sol";
 
 contract MockEtherWrapper {
     using SafeMath for uint;

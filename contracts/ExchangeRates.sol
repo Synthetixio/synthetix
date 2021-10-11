@@ -7,7 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key

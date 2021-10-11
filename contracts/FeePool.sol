@@ -9,7 +9,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IFeePool.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";

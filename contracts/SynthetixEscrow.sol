@@ -6,7 +6,7 @@ import "./LimitedSetup.sol";
 import "./interfaces/IHasBalance.sol";
 
 // Libraires
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";

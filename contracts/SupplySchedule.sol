@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./interfaces/ISupplySchedule.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 import "./Math.sol";
 
 // Internal references

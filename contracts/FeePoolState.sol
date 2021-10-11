@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./LimitedSetup.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IFeePool.sol";
