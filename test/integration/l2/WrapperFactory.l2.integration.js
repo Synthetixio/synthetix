@@ -43,7 +43,7 @@ describe('WrapperFactory integration tests (L2)', () => {
 		// extract address from events
 		const etherWrapperAddress = event.wrapperAddress;
 
-		const Wrapper = await ethers.ContractFactory('Wrapper', {
+		const Wrapper = await ethers.getContractFactory('Wrapper', {
 			libraries: {
 				SafeDecimalMath: ctx.contracts.SafeDecimalMath.address,
 			},
