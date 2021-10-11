@@ -1,7 +1,7 @@
 // const { artifacts } = require('hardhat');
 const { bootstrapL2 } = require('../utils/bootstrap');
 const { itCanWrapETH } = require('../behaviors/wrap.behavior');
-const ethers = require('ethers');
+const { ethers } = require('hardhat');
 
 const { toBytes32 } = require('../../../index');
 
@@ -43,7 +43,7 @@ describe('WrapperFactory integration tests (L2)', () => {
 		// extract address from events
 		const etherWrapperAddress = event.wrapperAddress;
 
-		const Wrapper = await ethers.getContractFactory('Wrapper', {
+		const Wrapper = await ethers.ContractFactory('Wrapper', {
 			libraries: {
 				SafeDecimalMath: ctx.contracts.SafeDecimalMath.address,
 			},
