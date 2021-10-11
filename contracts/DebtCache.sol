@@ -71,7 +71,7 @@ contract DebtCache is BaseDebtCache {
     }
 
     function updateCachedsUSDDebt(int amount) external onlyIssuer {
-        uint delta = _abs(amount);
+        uint delta = SafeDecimalMath.abs(amount);
         if (amount > 0) {
             _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].add(delta);
             _cachedDebt = _cachedDebt.add(delta);
@@ -131,22 +131,6 @@ contract DebtCache is BaseDebtCache {
         if (anyRateIsInvalid) {
             _updateDebtCacheValidity(anyRateIsInvalid);
         }
-    }
-
-    /* ---------- Utilities ---------- */
-
-    /*
-     * Absolute value of the input, returned as a signed number.
-     */
-    function _signedAbs(int x) internal pure returns (int) {
-        return x < 0 ? -x : x;
-    }
-
-    /*
-     * Absolute value of the input, returned as an unsigned number.
-     */
-    function _abs(int x) internal pure returns (uint) {
-        return uint(_signedAbs(x));
     }
 
     /* ========== EVENTS ========== */
