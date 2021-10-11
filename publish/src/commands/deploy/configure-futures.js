@@ -57,7 +57,7 @@ module.exports = async ({
 	// thus require exchange rates to be fresh. We assume production networks
 	// have fresh funding rates at the time of deployment.
 	if (freshDeploy || network === 'local') {
-		const { timestamp } = await deployer.provider.ethers.provider.getBlock();
+		const { timestamp } = await deployer.provider.getBlock();
 		const DUMMY_PRICE = parseEther('1').toString();
 
 		console.log(gray(`Updating ExchangeRates for futures assets: ` + futuresAssets.join(', ')));
