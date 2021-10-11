@@ -15,7 +15,6 @@ contract DebtCache is BaseDebtCache {
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
-    bytes32 internal constant sUSD = "sUSD";
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -117,7 +116,7 @@ contract DebtCache is BaseDebtCache {
             _cachedSynthDebt[key] = currentSynthDebt;
         }
 
-        // Compute the difference and apply it to the snapshot
+        // Apply the debt update.
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
             // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
