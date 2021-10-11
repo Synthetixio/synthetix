@@ -48,9 +48,7 @@ interface IIssuerInternalDebtCache {
             bool isStale
         );
 
-    function increaseCachedsUSDDebt(uint amount) external;
-
-    function decreaseCachedsUSDDebt(uint amount) external;
+    function updateCachedsUSDDebt(int amount) external;
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/issuer
@@ -670,7 +668,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        debtCache().increaseCachedsUSDDebt(amount);
+        debtCache().updateCachedsUSDDebt(int(amount));
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -696,7 +694,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        debtCache().decreaseCachedsUSDDebt(amountBurnt);
+        debtCache().updateCachedsUSDDebt(-int(amountBurnt));
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);

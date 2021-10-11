@@ -52,7 +52,5 @@ interface IDebtCache {
 
     function takeDebtSnapshot() external;
 
-    function increaseCachedsUSDDebt(uint amount) external;
-
-    function decreaseCachedsUSDDebt(uint amount) external;
+    function updateCachedsUSDDebt(int amount) external;
 }

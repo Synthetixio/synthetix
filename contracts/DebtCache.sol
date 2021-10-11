@@ -71,15 +71,16 @@ contract DebtCache is BaseDebtCache {
         _updateDebtCacheValidity(currentlyInvalid);
     }
 
-    function increaseCachedsUSDDebt(uint amount) external onlyIssuer {
-        _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].add(amount);
-        _cachedDebt = _cachedDebt.add(amount);
-        emit DebtCacheUpdated(_cachedDebt);
-    }
+    function updateCachedsUSDDebt(int amount) external onlyIssuer {
+        uint delta = _abs(amount);
+        if (amount > 0) {
+            _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].add(delta);
+            _cachedDebt = _cachedDebt.add(delta);
+        } else {
+            _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].sub(delta);
+            _cachedDebt = _cachedDebt.sub(delta);
+        }
 
-    function decreaseCachedsUSDDebt(uint amount) external onlyIssuer {
-        _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].sub(amount);
-        _cachedDebt = _cachedDebt.sub(amount);
         emit DebtCacheUpdated(_cachedDebt);
     }
 
@@ -131,6 +132,22 @@ contract DebtCache is BaseDebtCache {
         if (anyRateIsInvalid) {
             _updateDebtCacheValidity(anyRateIsInvalid);
         }
+    }
+
+    /* ---------- Utilities ---------- */
+
+    /*
+     * Absolute value of the input, returned as a signed number.
+     */
+    function _signedAbs(int x) internal pure returns (int) {
+        return x < 0 ? -x : x;
+    }
+
+    /*
+     * Absolute value of the input, returned as an unsigned number.
+     */
+    function _abs(int x) internal pure returns (uint) {
+        return uint(_signedAbs(x));
     }
 
     /* ========== EVENTS ========== */
