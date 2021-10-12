@@ -165,7 +165,7 @@ function _buildOps({ opsPath }) {
 
 async function _start({ opsPath, opsDetached }) {
 	console.log(gray('  start ops'));
-	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached} -d`], {
+	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached}`], {
 		stdio: 'inherit',
 	});
 	await new Promise(() => {}); // Keeps the process open
