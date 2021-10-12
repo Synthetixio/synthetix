@@ -16,7 +16,16 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./Proxyable.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesCircuitBreaker
+/**
+ * Compares current exchange rate to previous, and suspends a synth if the
+ * difference is outside of deviation bounds.
+ * Stores last "good" rate for each synth on each invocation.
+ * Inteded use is to use in combination with ExchangeRates on mutative exchange-like
+ * methods.
+ * Suspend functionality is public, resume functionality is controlled by owner.
+ *
+ * https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesCircuitBreaker
+ */
 contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRatesCircuitBreaker {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -26,6 +35,9 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
+    // is internal to have lastExchangeRate getter in interface in solidity v0.5
+    // TODO: after upgrading solidity, switch to just public lastExchangeRate instead
+    //  of maintaining this internal one
     mapping(bytes32 => uint) internal _lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -47,6 +59,8 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
+    // Checks if current rate is out of deviation dounds w.r.t. to previously stored rate
+    // or if there is no valid stored rate, w.r.t. to previous 3 oracle rates.
     function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
         return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
     }
@@ -79,6 +93,14 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
 
     /* ========== Mutating ========== */
 
+    /**
+     * Checks rate deviation from previous, and if it's within deviation bounds, stores it and returns
+     * false (circuit not broken).
+     * If rate is outside of deviation bounds - doesn't store it, suspends the the synth, and returns
+     * true (circuit broken).
+     * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
+     * returns false (not broken), to prevent synths suspensions during maintenance.
+     */
     function suspendIfRateInvalid(bytes32 currencyKey) external returns (bool circuitBroken) {
         // check system status
         if (systemStatus().systemSuspended()) {
@@ -104,14 +126,28 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         return circuitBroken;
     }
 
-    // SIP-78
+    /**
+     * SIP-78
+     *
+     * sets the last-rate to an externally provided value
+     * access restricted to only the ExchageRates contract, and is used there in setInversePricing
+     * for iSynths
+     * emits LastRateOverriden
+     * TODO: deprecate when iSynths are removed from the system
+     */
     function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
         require(rate > 0, "Rate must be above 0");
         emit LastRateOverriden(currencyKey, _lastExchangeRate[currencyKey], rate);
         _lastExchangeRate[currencyKey] = rate;
     }
 
-    // SIP-139
+    /**
+     * SIP-139
+     * resets the stored value for _lastExchangeRate for multiple currencies to the latest rate
+     * can be used to un-suspends synths after a suspension happenned
+     * doesn't check deviations here, so believes that owner knows better
+     * emits LastRateOverriden
+     */
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
@@ -140,6 +176,12 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         return factor >= getPriceDeviationThresholdFactor();
     }
 
+    /**
+     * Rate is invalid if:
+     * - is outside of deviation bounds relative to previous non-zero rate
+     * - (warm up case) if previous rate was 0 (init), gets last 4 rates from oracle, and checks
+     * if rate is outside of deviation w.r.t any of the 3 previous ones (excluding the last one).
+     */
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
         if (currentRate == 0) {
             return true;
