@@ -5,6 +5,17 @@ const { ethers } = require('hardhat');
 
 const { toBytes32 } = require('../../../index');
 
+// Load Compiled
+const path = require('path');
+const {
+	constants: { BUILD_FOLDER },
+} = require('../../..');
+console.log('build:', BUILD_FOLDER);
+const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}-ovm`);
+console.log('buildPath', buildPath);
+const { loadCompiledFiles } = require('../../../publish/src/solidity');
+const { compiled } = loadCompiledFiles({ buildPath });
+
 describe('WrapperFactory integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
@@ -38,17 +49,17 @@ describe('WrapperFactory integration tests (L2)', () => {
 		);
 
 		const event = await wrapperCreatedEvent;
-		console.log(event);
 
 		// extract address from events
 		const etherWrapperAddress = event.wrapperAddress;
 
-		const Wrapper = await ethers.getContractFactory('Wrapper', {
-			libraries: {
-				SafeDecimalMath: ctx.contracts.SafeDecimalMath.address,
-			},
-		});
-		wrapperOptions.Wrapper = await Wrapper.attach(etherWrapperAddress);
+		ctx.contracts.Wrapper = new ethers.Contract(
+			etherWrapperAddress,
+			compiled.Wrapper.abi,
+			ctx.provider
+		);
+		console.log('Wrapper: ', ctx.contracts.Wrapper);
+		wrapperOptions.Wrapper = ctx.contracts.Wrapper;
 		wrapperOptions.Synth = ctx.contracts.SynthsETH;
 		wrapperOptions.Token = ctx.contracts.WETH;
 	});
