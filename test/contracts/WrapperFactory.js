@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, artifacts } = require('hardhat');
+const { contract, artifacts, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -100,6 +100,17 @@ contract('WrapperFactory', async accounts => {
 			assert.equal(
 				await addressResolver.getAddress(toBytes32('FlexibleStorage')),
 				flexibleStorage.address
+			);
+		});
+
+		it('should not be payable', async () => {
+			await assert.revert(
+				web3.eth.sendTransaction({
+					value: toUnit('1'),
+					from: owner,
+					to: instance.address,
+				}),
+				'Contract is not payable'
 			);
 		});
 	});

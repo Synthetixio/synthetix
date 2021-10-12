@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, artifacts } = require('hardhat');
+const { contract, artifacts, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -153,6 +153,17 @@ contract('Wrapper', async accounts => {
 			assert.equal(
 				await addressResolver.getAddress(toBytes32('WrapperFactory')),
 				wrapperFactory.address
+			);
+		});
+
+		it('should not be payable', async () => {
+			await assert.revert(
+				web3.eth.sendTransaction({
+					value: toUnit('1'),
+					from: owner,
+					to: instance.address,
+				}),
+				'Fallback disabled, use mint()'
 			);
 		});
 
