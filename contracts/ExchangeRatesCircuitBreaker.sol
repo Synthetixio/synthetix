@@ -59,10 +59,12 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    // Checks if current rate is out of deviation dounds w.r.t. to previously stored rate
+    // Returns rate and its "invalid" state.
+    // Checks if current rate is invalid or out of deviation dounds w.r.t. to previously stored rate
     // or if there is no valid stored rate, w.r.t. to previous 3 oracle rates.
-    function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
-        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
+    function rateWithInvalid(bytes32 currencyKey) external view returns (uint, bool) {
+        (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
+        return (rate, invalid || _isRateOutOfBounds(currencyKey, rate));
     }
 
     function isDeviationAboveThreshold(uint base, uint comparison) external view returns (bool) {
@@ -94,9 +96,9 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     /* ========== Mutating ========== */
 
     /**
-     * Checks rate deviation from previous, and if it's within deviation bounds, stores it and returns
-     * it and "false" (circuit not broken).
-     * If rate is outside of deviation bounds - doesn't store it, suspends the the synth, and returns
+     * Checks rate deviation from previous and its "invalid" oracle state.
+     * if it's valid and within deviation bounds, stores it and returns it and "false" (circuit not broken).
+     * If rate is invalid or outside of deviation bounds - doesn't store it, suspends the the synth, and returns
      * last rate and "true" (circuit broken).
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
      * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
@@ -111,10 +113,10 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             // not reverting is needed for performing admin operations during system suspension
             // e.g. purging synths that use some exchanging functionality
         } else {
-            // get new rate
-            uint rate = exchangeRates().rateForCurrency(currencyKey);
+            // get new rate and check oracle "invalid" state
+            (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
             // check and suspend
-            if (_isSynthRateInvalid(currencyKey, rate)) {
+            if (invalid || _isRateOutOfBounds(currencyKey, rate)) {
                 systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
                 circuitBroken = true;
             } else {
@@ -143,7 +145,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     /**
      * SIP-139
      * resets the stored value for _lastExchangeRate for multiple currencies to the latest rate
-     * can be used to un-suspends synths after a suspension happenned
+     * can be used to un-suspend synths after a suspension happenned
      * doesn't check deviations here, so believes that owner knows better
      * emits LastRateOverriden
      */
@@ -181,7 +183,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * - (warm up case) if previous rate was 0 (init), gets last 4 rates from oracle, and checks
      * if rate is outside of deviation w.r.t any of the 3 previous ones (excluding the last one).
      */
-    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
+    function _isRateOutOfBounds(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
         if (currentRate == 0) {
             return true;
         }
