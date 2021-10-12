@@ -14,7 +14,8 @@ const { toBytes32, wrap, networks } = require('../..');
 
 describe('deployments', () => {
 	networks
-		.filter(n => n !== 'local')
+		// do not test these networks as they are not supported by deployment script
+		.filter(n => !['local', 'local-ovm', 'kovan-ovm-futures'].includes(n))
 		.forEach(network => {
 			(['goerli'].indexOf(network) > -1 ? describe.skip : describe)(network, () => {
 				const { getTarget, getSource, getStakingRewards, getSynths } = wrap({
