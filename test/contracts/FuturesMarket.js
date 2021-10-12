@@ -2449,14 +2449,13 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
 			const maxSize = await futuresMarket.maxMarketSize();
-			let marketSkew = await futuresMarket.marketSkew();
-
+			const maxFundingRate = await futuresMarket.maxFundingRate();
 			// Market is 24 units long skewed (24 / 100000)
 			await futuresMarket.modifyPosition(toUnit('24'), { from: trader });
-			assert.bnClose(
+			let marketSkew = await futuresMarket.marketSkew();
+			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				divideDecimalRound(marketSkew, maxSize),
-				toUnit('0.01')
+				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
 			);
 
 			// 50% the other way ()
@@ -2464,8 +2463,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				divideDecimalRound(marketSkew, maxSize),
-				toUnit('0.01')
+				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
 			);
 
 			// Market is 100% skewed
@@ -2473,8 +2471,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				divideDecimalRound(marketSkew, maxSize),
-				toUnit('0.01')
+				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
 			);
 
 			// 100% the other way
@@ -2483,8 +2480,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				divideDecimalRound(marketSkew, maxSize),
-				toUnit('0.01')
+				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
 			);
 		});
 

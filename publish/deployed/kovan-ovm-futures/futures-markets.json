@@ -5,7 +5,7 @@
 		"makerFee": "0.001",
 		"closureFee": "0",
 		"maxLeverage": "10",
-		"maxMarketValue": "5000",
+		"maxMarketValue": "2000",
 		"maxFundingRate": "0.1",
 		"maxFundingRateSkew": "1",
 		"maxFundingRateDelta": "0.0125"

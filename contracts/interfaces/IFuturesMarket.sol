@@ -55,6 +55,8 @@ interface IFuturesMarket {
 
     function marketSizes() external view returns (uint long, uint short);
 
+    function maxMarketSize() external view returns (uint);
+
     function maxOrderSizes()
         external
         view
