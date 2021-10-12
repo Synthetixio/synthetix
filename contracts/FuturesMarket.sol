@@ -229,6 +229,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
+     * The max number of base units per market.
+     */
+    function maxMarketSize() external view returns (uint) {
+        return uint(_maxMarketValue(baseAsset));
+    }
+
+    /*
      * The remaining units on each side of the market left to be filled before hitting the cap.
      */
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
@@ -273,10 +280,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * The size of the skew relative to the size of the market. This value ranges between 0 and 1.
+     * The size of the skew relative to the size of the market OI cap. This value ranges between 0 and 1.
      */
     function _proportionalSkew() internal view returns (int) {
-        int signedSize = int(marketSize);
+        int signedSize = int(_maxMarketValue(baseAsset));
         if (signedSize == 0) {
             return 0;
         }

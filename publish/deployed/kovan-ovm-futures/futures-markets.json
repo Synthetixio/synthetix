@@ -5,7 +5,7 @@
 		"makerFee": "0.001",
 		"closureFee": "0",
 		"maxLeverage": "10",
-		"maxMarketValue": "1000000000",
+		"maxMarketValue": "5000",
 		"maxFundingRate": "0.1",
 		"maxFundingRateSkew": "1",
 		"maxFundingRateDelta": "0.0125"
@@ -16,7 +16,7 @@
 		"makerFee": "0.001",
 		"closureFee": "0",
 		"maxLeverage": "10",
-		"maxMarketValue": "1000000000",
+		"maxMarketValue": "20000",
 		"maxFundingRate": "0.1",
 		"maxFundingRateSkew": "1",
 		"maxFundingRateDelta": "0.0125"
@@ -27,7 +27,7 @@
 		"makerFee": "0.001",
 		"closureFee": "0",
 		"maxLeverage": "10",
-		"maxMarketValue": "1000000000",
+		"maxMarketValue": "1000000",
 		"maxFundingRate": "0.1",
 		"maxFundingRateSkew": "1",
 		"maxFundingRateDelta": "0.0125"
