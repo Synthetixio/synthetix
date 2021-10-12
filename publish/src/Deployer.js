@@ -219,8 +219,11 @@ class Deployer {
 			let gasUsed;
 			if (dryRun) {
 				this._dryRunCounter++;
-				// use the existing version of a contract in a dry run
-				deployedContract = this.makeContract({ abi: compiled.abi, address: existingAddress });
+				// use the existing version of a contract in a dry run, but deep clone it using JSON stringify
+				// to prevent issues with ethers and readonly
+				deployedContract = JSON.parse(
+					JSON.stringify(this.makeContract({ abi: compiled.abi, address: existingAddress }))
+				);
 				const { account } = this;
 				// but stub out all method calls except owner because it is needed to
 				// determine which actions can be performed directly or need to be added to ownerActions
