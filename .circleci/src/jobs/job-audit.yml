@@ -1,0 +1,12 @@
+# Bootstraps dependencies
+{{> job-header-sec-tools.yml}}
+steps:
+  - checkout
+  - run:
+      name: Audit dependencies
+      command: |
+        npm audit --audit-level=critical || true # Temporarily allow critical audits to pass
+  - run:
+      name: Lint lockfile
+      command: |
+        lockfile-lint -p package-lock.json --type npm --allowed-hosts npm github.com --allowed-schemes "https:" "git+ssh:"

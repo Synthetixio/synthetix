@@ -5,25 +5,25 @@ interface ICollateralErc20 {
         uint collateral,
         uint amount,
         bytes32 currency
-    ) external;
+    ) external returns (uint id);
 
-    function close(uint id) external;
+    function close(uint id) external returns (uint amount, uint collateral);
 
     function deposit(
         address borrower,
         uint id,
-        uint collateral
-    ) external;
+        uint amount
+    ) external returns (uint principal, uint collateral);
 
-    function withdraw(uint id, uint amount) external;
+    function withdraw(uint id, uint amount) external returns (uint principal, uint collateral);
 
     function repay(
         address borrower,
         uint id,
         uint amount
-    ) external;
+    ) external returns (uint principal, uint collateral);
 
-    function draw(uint id, uint amount) external;
+    function draw(uint id, uint amount) external returns (uint principal, uint collateral);
 
     function liquidate(
         address borrower,

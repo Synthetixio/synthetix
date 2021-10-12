@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('hardhat');
+const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -10,12 +10,7 @@ const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
-
-let CollateralState;
+const { toBytes32 } = require('../..');
 
 contract('CollateralUtil', async accounts => {
 	const sUSD = toBytes32('sUSD');
@@ -27,16 +22,14 @@ contract('CollateralUtil', async accounts => {
 	const fiveThousandsUSD = toUnit(5000);
 
 	let tx;
-	let loan;
 	let id;
 
 	const name = 'Some name';
 	const symbol = 'TOKEN';
 
-	const [deployerAccount, owner, oracle, , account1] = accounts;
+	const [, owner, oracle, , account1] = accounts;
 
 	let cerc20,
-		state,
 		managerState,
 		feePool,
 		exchangeRates,
@@ -85,7 +78,6 @@ contract('CollateralUtil', async accounts => {
 	};
 
 	const deployCollateral = async ({
-		state,
 		owner,
 		manager,
 		resolver,
@@ -98,7 +90,7 @@ contract('CollateralUtil', async accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
+			args: [owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
 		});
 	};
 
@@ -135,8 +127,6 @@ contract('CollateralUtil', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		({ token: renBTC } = await mockToken({
 			accounts,
 			name,
@@ -145,7 +135,6 @@ contract('CollateralUtil', async accounts => {
 		}));
 
 		cerc20 = await deployCollateral({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -155,8 +144,6 @@ contract('CollateralUtil', async accounts => {
 			underCon: renBTC.address,
 			decimals: 8,
 		});
-
-		await state.setAssociatedContract(cerc20.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralErc20'), toBytes32('CollateralManager')],
@@ -193,8 +180,6 @@ contract('CollateralUtil', async accounts => {
 	};
 
 	before(async () => {
-		CollateralState = artifacts.require(`CollateralState`);
-
 		await setupMultiCollateral();
 	});
 
@@ -219,8 +204,6 @@ contract('CollateralUtil', async accounts => {
 
 	describe('liquidation amount test', async () => {
 		let amountToLiquidate;
-		let minCratio;
-		let collateralKey;
 
 		/**
 		 * r = target issuance ratio
@@ -238,9 +221,6 @@ contract('CollateralUtil', async accounts => {
 			});
 
 			id = getid(tx);
-			loan = await state.getLoan(account1, id);
-			minCratio = await cerc20.minCratio();
-			collateralKey = await cerc20.collateralKey();
 		});
 
 		it('when we start at 200%, we can take a 25% reduction in collateral prices', async () => {
@@ -248,7 +228,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnEqual(amountToLiquidate, toUnit(0));
 		});
@@ -258,7 +238,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
 		});
@@ -268,7 +248,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(3750), '10000');
 		});
@@ -278,7 +258,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(5000), '10000');
 		});
