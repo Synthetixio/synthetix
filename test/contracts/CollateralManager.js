@@ -8,7 +8,7 @@ const { toUnit, currentTime, fastForward } = require('../utils')();
 
 const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const {
 	toBytes32,
@@ -358,6 +358,13 @@ contract('CollateralManager', async accounts => {
 			assert.bnEqual(debt, toUnit(100));
 		});
 
+		it('should get the total long and short balance in sUSD correctly', async () => {
+			const total = await manager.totalLongAndShort();
+			const debt = total.susdValue;
+
+			assert.bnEqual(debt, toUnit(500));
+		});
+
 		it('should report if a rate is invalid', async () => {
 			await fastForward(await exchangeRates.rateStalePeriod());
 
@@ -515,6 +522,18 @@ contract('CollateralManager', async accounts => {
 					);
 				});
 			});
+			describe('when it succeeds', async () => {
+				it('updateBorrowRatesCollateral() can only be invoked by collateral', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: manager.updateBorrowRatesCollateral,
+						accounts,
+						args: [toUnit(1)],
+						address: short.address,
+						skipPassCheck: true,
+						reason: 'Only collateral contracts',
+					});
+				});
+			});
 		});
 
 		describe('updateShortRatesCollateral', async () => {
@@ -524,6 +543,18 @@ contract('CollateralManager', async accounts => {
 						manager.updateShortRatesCollateral(sETH, toUnit(1), { from: owner }),
 						'Only collateral contracts'
 					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				it('updateShortRatesCollateral() can only be invoked by collateral', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: manager.updateShortRatesCollateral,
+						accounts,
+						args: [sETH, toUnit(1)],
+						address: short.address,
+						skipPassCheck: true,
+						reason: 'Only collateral contracts',
+					});
 				});
 			});
 		});

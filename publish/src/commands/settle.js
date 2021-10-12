@@ -144,10 +144,11 @@ const settle = async ({
 				return [];
 			}
 			console.log(gray('-> Fetching page of results from target', yellow(target.address)));
-			const pageOfResults = await target.getPastEvents('SynthExchange', {
-				fromBlock: startingBlock,
-				toBlock: startingBlock + pageSize - 1,
-			});
+			const pageOfResults = await target.queryFilter(
+				'SynthExchange',
+				startingBlock,
+				startingBlock + pageSize - 1
+			);
 			startingBlock += pageSize;
 			return [].concat(pageOfResults).concat(await innerFnc());
 		};
@@ -180,7 +181,7 @@ const settle = async ({
 
 	for (const {
 		blockNumber,
-		returnValues: { account, toCurrencyKey },
+		args: [account, , , toCurrencyKey],
 	} of exchanges) {
 		if (cache[account + toCurrencyKey]) continue;
 		cache[account + toCurrencyKey] = true;
@@ -278,11 +279,7 @@ const settle = async ({
 				if (reclaimAmount > 0) {
 					const synth = await Synthetix.synths(toCurrencyKey);
 
-					const Synth = new ethers.eth.Contract(
-						synth,
-						getSource({ contract: 'Synth' }).abi,
-						provider
-					);
+					const Synth = new ethers.Contract(synth, getSource({ contract: 'Synth' }).abi, provider);
 
 					const balance = await Synth.balanceOf(account);
 

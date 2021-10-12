@@ -45,3 +45,6 @@ optimism
 
 # python venv
 .venv/
+
+# sarif files
+slither.sarif
