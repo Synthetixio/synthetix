@@ -1,12 +1,16 @@
-// @unsupported: ovm
 pragma solidity ^0.5.16;
 
 import "../interfaces/IERC20.sol";
+import "../SafeDecimalMath.sol";
 
 contract WETH is IERC20 {
+    using SafeMath for uint256;
+
     string public name = "Wrapped Ether";
     string public symbol = "WETH";
     uint8 public decimals = 18;
+
+    uint256 private _totalSupply;
 
     event Approval(address indexed src, address indexed guy, uint wad);
     event Transfer(address indexed src, address indexed dst, uint wad);
@@ -22,18 +26,23 @@ contract WETH is IERC20 {
 
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
+        _totalSupply = _totalSupply.add(msg.value);
         emit Deposit(msg.sender, msg.value);
     }
 
     function withdraw(uint wad) public {
         require(balanceOf[msg.sender] >= wad);
         balanceOf[msg.sender] -= wad;
+        _totalSupply = _totalSupply.sub(wad);
         msg.sender.transfer(wad);
         emit Withdrawal(msg.sender, wad);
     }
 
     function totalSupply() public view returns (uint) {
-        return address(this).balance;
+        // Using _totalSupply instead of balanceOf[this]
+        // as it would cause error in OVM compile
+        // return address(this).balance;
+        return _totalSupply;
     }
 
     function approve(address guy, uint wad) public returns (bool) {
