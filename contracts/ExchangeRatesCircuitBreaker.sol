@@ -95,35 +95,34 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
 
     /**
      * Checks rate deviation from previous, and if it's within deviation bounds, stores it and returns
-     * false (circuit not broken).
+     * it and "false" (circuit not broken).
      * If rate is outside of deviation bounds - doesn't store it, suspends the the synth, and returns
-     * true (circuit broken).
+     * last rate and "true" (circuit broken).
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
-     * returns false (not broken), to prevent synths suspensions during maintenance.
+     * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
      */
-    function suspendIfRateInvalid(bytes32 currencyKey) external returns (bool circuitBroken) {
+    function rateWithCircuitBroken(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken) {
+        // check input
+        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
         // check system status
         if (systemStatus().systemSuspended()) {
             // if system is inactive this call have no effect, but will neither revert,
             // nor persist new rate, nor suspend the synth - because the system is inactive.
             // not reverting is needed for performing admin operations during system suspension
             // e.g. purging synths that use some exchanging functionality
-            return circuitBroken;
-        }
-
-        // check input
-        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
-        // get rate
-        uint rate = exchangeRates().rateForCurrency(currencyKey);
-        // check and suspend
-        if (_isSynthRateInvalid(currencyKey, rate)) {
-            systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            circuitBroken = true;
         } else {
-            // store the last passing rate
-            _lastExchangeRate[currencyKey] = rate;
+            // get new rate
+            uint rate = exchangeRates().rateForCurrency(currencyKey);
+            // check and suspend
+            if (_isSynthRateInvalid(currencyKey, rate)) {
+                systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+                circuitBroken = true;
+            } else {
+                // store the last passing rate
+                _lastExchangeRate[currencyKey] = rate;
+            }
         }
-        return circuitBroken;
+        return (_lastExchangeRate[currencyKey], circuitBroken);
     }
 
     /**
