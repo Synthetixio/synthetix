@@ -87,7 +87,6 @@ contract DebtCache is BaseDebtCache {
         }
     }
 
-    // Updated the global debt according to a rate/supply change in a subset of issued synths.
     function _updateCachedSynthDebtsWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
@@ -96,34 +95,24 @@ contract DebtCache is BaseDebtCache {
         uint numKeys = currencyKeys.length;
         require(numKeys == currentRates.length, "Input array lengths differ");
 
-        // Compute the cached and current debt sum for the subset of synths provided.
+        // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
+        uint excludedDebtSum = _cachedSynthDebt[EXCLUDED_DEBT_KEY];
         uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
 
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];
-
             cachedSum = cachedSum.add(_cachedSynthDebt[key]);
             currentSum = currentSum.add(currentSynthDebt);
-
             _cachedSynthDebt[key] = currentSynthDebt;
         }
 
-        // Compute the excluded debt (wrappers, etc.) if necessary.
-        uint excludedDebtSum = _cachedSynthDebt[EXCLUDED_DEBT_KEY];
-        if (recomputeExcludedDebt) {
-            (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
-            anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
-            excludedDebtSum = excludedDebt;
-        }
-
-        // Subtract excluded debt.
         cachedSum = cachedSum.floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
         currentSum = currentSum.floorsub(excludedDebtSum);
 
-        // Apply the debt update.
+        // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
             // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
@@ -134,7 +123,8 @@ contract DebtCache is BaseDebtCache {
             emit DebtCacheUpdated(debt);
         }
 
-        // Invalidate the cache if necessary
+        // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
+        // to re-validate it.
         if (anyRateIsInvalid) {
             _updateDebtCacheValidity(anyRateIsInvalid);
         }
