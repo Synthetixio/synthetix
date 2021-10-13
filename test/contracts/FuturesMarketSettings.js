@@ -29,7 +29,7 @@ contract('FuturesMarketSettings', accounts => {
 	const maxMarketValue = toUnit('100000');
 
 	const maxFundingRate = toUnit('0.1');
-	const maxFundingRateSkew = toUnit('1');
+	const minSkewScale = toUnit('100');
 	const maxFundingRateDelta = toUnit('0.0125');
 
 	before(async () => {
@@ -85,7 +85,7 @@ contract('FuturesMarketSettings', accounts => {
 				'setMaxLeverage',
 				'setMaxMarketValue',
 				'setMaxFundingRate',
-				'setMaxFundingRateSkew',
+				'setMinSkewScale',
 				'setMaxFundingRateDelta',
 				'setParameters',
 				'setLiquidationFee',
@@ -105,7 +105,7 @@ contract('FuturesMarketSettings', accounts => {
 				maxLeverage,
 				maxMarketValue,
 				maxFundingRate,
-				maxFundingRateSkew,
+				minSkewScale,
 				maxFundingRateDelta,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
