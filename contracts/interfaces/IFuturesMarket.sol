@@ -55,8 +55,6 @@ interface IFuturesMarket {
 
     function marketSizes() external view returns (uint long, uint short);
 
-    function maxMarketSize() external view returns (uint);
-
     function maxOrderSizes()
         external
         view
@@ -78,7 +76,7 @@ interface IFuturesMarket {
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
-            uint maxFundingRateSkew,
+            uint minSkewScale,
             uint maxFundingRateDelta
         );
 

@@ -7,7 +7,7 @@
 		"maxLeverage": "10",
 		"maxMarketValue": "1000000000",
 		"maxFundingRate": "0.1",
-		"maxFundingRateSkew": "1",
+		"minSkewScale": "100",
 		"maxFundingRateDelta": "0.0125"
 	},
 	{
@@ -18,7 +18,7 @@
 		"maxLeverage": "10",
 		"maxMarketValue": "1000000000",
 		"maxFundingRate": "0.1",
-		"maxFundingRateSkew": "1",
+		"minSkewScale": "2000",
 		"maxFundingRateDelta": "0.0125"
 	},
 	{
@@ -29,7 +29,7 @@
 		"maxLeverage": "10",
 		"maxMarketValue": "1000000000",
 		"maxFundingRate": "0.1",
-		"maxFundingRateSkew": "1",
+		"minSkewScale": "250000",
 		"maxFundingRateDelta": "0.0125"
 	}
 ]

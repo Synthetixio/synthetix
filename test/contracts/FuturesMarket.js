@@ -59,7 +59,7 @@ contract('FuturesMarket', accounts => {
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
-	const maxFundingRateSkew = toUnit('1');
+	const minSkewScale = toUnit('1000');
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
@@ -162,7 +162,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
-			assert.bnEqual(parameters.maxFundingRateSkew, maxFundingRateSkew);
+			assert.bnEqual(parameters.minSkewScale, minSkewScale);
 			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
 		});
 
@@ -176,7 +176,7 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('market size and skew', async () => {
-			const maxSize = await futuresMarket.maxMarketSize();
+			const minScale = (await futuresMarket.parameters()).minSkewScale;
 			let sizes = await futuresMarket.marketSizes();
 			let marketSkew = await futuresMarket.marketSkew();
 
@@ -203,7 +203,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('50'));
 			assert.bnEqual(
 				await futuresMarket.proportionalSkew(),
-				divideDecimalRound(marketSkew, maxSize)
+				divideDecimalRound(marketSkew, minScale)
 			);
 
 			await transferMarginAndModifyPosition({
@@ -222,7 +222,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('15'));
 			assert.bnClose(
 				await futuresMarket.proportionalSkew(),
-				divideDecimalRound(marketSkew, maxSize)
+				divideDecimalRound(marketSkew, minScale)
 			);
 
 			await closePositionAndWithdrawMargin({
@@ -239,7 +239,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('-35'));
 			assert.bnClose(
 				await futuresMarket.proportionalSkew(),
-				divideDecimalRound(marketSkew, maxSize)
+				divideDecimalRound(marketSkew, minScale)
 			);
 
 			await closePositionAndWithdrawMargin({
@@ -2448,14 +2448,14 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
-			const maxSize = await futuresMarket.maxMarketSize();
+			const minScale = (await futuresMarket.parameters()).minSkewScale;
 			const maxFundingRate = await futuresMarket.maxFundingRate();
 			// Market is 24 units long skewed (24 / 100000)
 			await futuresMarket.modifyPosition(toUnit('24'), { from: trader });
 			let marketSkew = await futuresMarket.marketSkew();
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// 50% the other way ()
@@ -2463,7 +2463,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// Market is 100% skewed
@@ -2471,7 +2471,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// 100% the other way
@@ -2480,7 +2480,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, maxSize), maxFundingRate.neg())
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
 			);
 		});
 
@@ -2504,7 +2504,7 @@ contract('FuturesMarket', accounts => {
 				sizeDelta: toUnit('-4'),
 			});
 
-			const expectedFunding = toUnit('-0.000008'); // 8/100,000 skew * 0.1 max funding rate
+			const expectedFunding = toUnit('-0.0008'); // 8/1000 skew * 0.1 max funding rate
 			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
 
 			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
@@ -2516,7 +2516,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
 		});
 
-		it('Altering the max funding rate skew has a proportional effect', async () => {
+		it('Altering the minSkewScale has a proportional effect', async () => {
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
@@ -2533,29 +2533,29 @@ contract('FuturesMarket', accounts => {
 				sizeDelta: toUnit('4'),
 			});
 
-			const expectedFunding = toUnit('0.000008'); // 8/100,000 skew * 0.1 max funding rate
+			const expectedFunding = toUnit('0.0008'); // 8/1000 skew * 0.1 max funding rate
 			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.5'), { from: owner });
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('500'), { from: owner });
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
 				multiplyDecimalRound(expectedFunding, toUnit('2'))
 			);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.25'), { from: owner });
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('250'), { from: owner });
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
 				multiplyDecimalRound(expectedFunding, toUnit('4'))
 			);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('2'), { from: owner });
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('2000'), { from: owner });
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
 				multiplyDecimalRound(expectedFunding, toUnit('0.5'))
 			);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * (4 + 12)
 		});
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
@@ -2597,7 +2597,7 @@ contract('FuturesMarket', accounts => {
 					const points = 5;
 
 					for (const maxFRSkew of ['1', '0.5', '0.3'].map(toUnit)) {
-						await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, maxFRSkew, {
+						await futuresMarketSettings.setMinSkewScale(baseAsset, maxFRSkew, {
 							from: owner,
 						});
 						// We will sample points linearly from proportionalSkew = 0 down to proportionalSkew = maxFRSkew,
@@ -2748,7 +2748,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.5'), {
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0.5'), {
 					from: owner,
 				});
 				time = await currentTime();
