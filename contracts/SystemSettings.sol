@@ -176,16 +176,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getMinCratio(collateral);
     }
 
-    function issueFeeRate(address collateral) external view returns (uint) {
-        return getIssueFeeRate(collateral);
-    }
-
     function collateralManager(address collateral) external view returns (address) {
         return getNewCollateralManager(collateral);
-    }
-
-    function canOpenLoans(address collateral) external view returns (bool) {
-        return getCanOpenLoans(collateral);
     }
 
     function interactionDelay(address collateral) external view returns (uint) {
@@ -408,15 +400,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit MinCratioRatioUpdated(_minCratio);
     }
 
-    function setIssueFeeRate(address _collateral, uint _issueFeeRate) external onlyOwner {
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, _collateral)),
-            _issueFeeRate
-        );
-        emit IssueFeeRateUpdated(_issueFeeRate);
-    }
-
     function setCollateralManager(address _collateral, address _newCollateralManager) external onlyOwner {
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
@@ -424,15 +407,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _newCollateralManager
         );
         emit CollateralManagerUpdated(_newCollateralManager);
-    }
-
-    function setCanOpenLoans(address _collateral, bool _canOpenLoans) external onlyOwner {
-        flexibleStorage().setBoolValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, _collateral)),
-            _canOpenLoans
-        );
-        emit CanOpenLoansUpdated(_canOpenLoans);
     }
 
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
@@ -477,9 +451,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event WrapperMintFeeRateUpdated(address wrapper, int rate);
     event WrapperBurnFeeRateUpdated(address wrapper, int rate);
     event MinCratioRatioUpdated(uint minCratio);
-    event IssueFeeRateUpdated(uint issueFeeRate);
     event CollateralManagerUpdated(address newCollateralManager);
-    event CanOpenLoansUpdated(bool canOpenLoans);
     event InteractionDelayUpdated(uint interactionDelay);
     event CollapseFeeRateUpdated(uint collapseFeeRate);
 }

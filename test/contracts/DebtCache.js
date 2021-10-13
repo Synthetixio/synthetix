@@ -141,7 +141,7 @@ contract('DebtCache', async accounts => {
 		await manager.rebuildCache();
 
 		// Set fees to 0.
-		await systemSettings.setIssueFeeRate(ceth.address, toUnit('0'), { from: owner });
+		await ceth.setIssueFeeRate(toUnit('0'), { from: owner });
 		await systemSettings.setExchangeFeeRateForSynths(
 			synths.map(toBytes32),
 			synths.map(s => toUnit('0')),
@@ -1317,7 +1317,7 @@ contract('DebtCache', async accounts => {
 
 				await setupShort();
 				await systemSettings.setMinCratio(short.address, toUnit(1.5), { from: owner });
-				await systemSettings.setIssueFeeRate(short.address, toUnit('0'), { from: owner });
+				await short.setIssueFeeRate(toUnit('0'), { from: owner });
 				await short.open(amount, oneETH, sETH, { from: account1 });
 			});
 

@@ -24,7 +24,7 @@ contract('SystemSettings', async accounts => {
 
 	let short, synths, systemSettings;
 
-	beforeEach(async () => {
+	const setupSettings = async () => {
 		synths = ['sUSD', 'sBTC', 'sETH'];
 		({ SystemSettings: systemSettings, CollateralShort: short } = await setupAllContracts({
 			accounts,
@@ -45,6 +45,10 @@ contract('SystemSettings', async accounts => {
 				'CollateralManagerState',
 			],
 		}));
+	};
+
+	before(async () => {
+		await setupSettings();
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -75,9 +79,7 @@ contract('SystemSettings', async accounts => {
 				'setWrapperBurnFeeRate',
 				'setWrapperSettings',
 				'setMinCratio',
-				'setIssueFeeRate',
 				'setCollateralManager',
-				'setCanOpenLoans',
 				'setInteractionDelay',
 				'setCollapseFeeRate',
 			],
@@ -400,29 +402,6 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setIssueFeeRate', async () => {
-		describe('revert condtions', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					systemSettings.setIssueFeeRate(short.address, toUnit(1), { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-			});
-		});
-		describe('when it succeeds', async () => {
-			beforeEach(async () => {
-				await systemSettings.setIssueFeeRate(short.address, toUnit(0.2), { from: owner });
-			});
-			it('should update the liquidation penalty', async () => {
-				assert.bnEqual(await systemSettings.issueFeeRate(short.address), toUnit(0.2));
-			});
-			it('should allow the issue fee rate to be 0', async () => {
-				await systemSettings.setIssueFeeRate(short.address, toUnit(0), { from: owner });
-				assert.bnEqual(await systemSettings.issueFeeRate(short.address), toUnit(0));
-			});
-		});
-	});
-
 	describe('setCollapseFeeRate', async () => {
 		describe('revert condtions', async () => {
 			it('should fail if not called by the owner', async () => {
@@ -490,25 +469,6 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setCanOpenLoans', async () => {
-		describe('revert condtions', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					systemSettings.setCanOpenLoans(short.address, false, { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-			});
-		});
-		describe('when it succeeds', async () => {
-			beforeEach(async () => {
-				await systemSettings.setCanOpenLoans(short.address, false, { from: owner });
-			});
-			it('should update the manager', async () => {
-				assert.isFalse(await systemSettings.canOpenLoans(short.address));
-			});
-		});
-	});
-
 	describe('setLiquidationDelay()', () => {
 		const day = 3600 * 24;
 
@@ -550,6 +510,9 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setLiquidationRatio()', () => {
+		before(async () => {
+			await setupSettings();
+		});
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setLiquidationRatio,

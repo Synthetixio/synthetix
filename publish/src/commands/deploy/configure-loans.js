@@ -35,8 +35,11 @@ module.exports = async ({
 
 	console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
 
-	if (CollateralEth && CollateralErc20 && CollateralShort) {
-		const CollateralsArg = [CollateralEth, CollateralErc20, CollateralShort].map(addressOf);
+	if (CollateralShort && CollateralManager) {
+		let CollateralsArg = [CollateralShort].map(addressOf);
+		if (CollateralEth && CollateralErc20) {
+			CollateralsArg = [CollateralEth, CollateralErc20, CollateralShort].map(addressOf);
+		}
 		await runStep({
 			contract: 'CollateralManager',
 			target: CollateralManager,
@@ -48,7 +51,7 @@ module.exports = async ({
 			comment: 'Ensure the CollateralManager has all Collateral contracts added',
 		});
 	}
-	if (CollateralEth && SystemSettings) {
+	if (CollateralEth && CollateralManager) {
 		await runStep({
 			contract: 'CollateralEth',
 			target: CollateralEth,
@@ -58,6 +61,7 @@ module.exports = async ({
 			writeArg: addressOf(CollateralManager),
 			comment: 'Ensure the CollateralEth is connected to the CollateralManager',
 		});
+
 		const CollateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
@@ -78,21 +82,17 @@ module.exports = async ({
 		});
 
 		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
+			contract: 'CollateralEth',
+			target: CollateralEth,
 			read: 'issueFeeRate',
-			readArg: addressOf(CollateralEth),
 			expected: input => input !== '0', // only change if zero,
 			write: 'setIssueFeeRate',
-			writeArg: [
-				CollateralEth.address,
-				(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
-			],
+			writeArg: [(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE']],
 			comment: 'Ensure the CollateralEth contract has its issue fee rate set',
 		});
 	}
 
-	if (CollateralErc20 && SystemSettings) {
+	if (CollateralErc20 && CollateralManager) {
 		await runStep({
 			contract: 'CollateralErc20',
 			target: CollateralErc20,
@@ -102,6 +102,7 @@ module.exports = async ({
 			writeArg: addressOf(CollateralManager),
 			comment: 'Ensure the CollateralErc20 contract is connected to the CollateralManager',
 		});
+
 		const CollateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
 		await runStep({
 			contract: 'CollateralErc20',
@@ -122,21 +123,17 @@ module.exports = async ({
 		});
 
 		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
+			contract: 'CollateralErc20',
+			target: CollateralErc20,
 			read: 'issueFeeRate',
-			readArg: addressOf(CollateralErc20),
 			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
-			writeArg: [
-				CollateralErc20.address,
-				(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
-			],
+			writeArg: [(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE']],
 			comment: 'Ensure the CollateralErc20 contract has its issue fee rate set',
 		});
 	}
 
-	if (CollateralShort && SystemSettings) {
+	if (CollateralShort && CollateralManager) {
 		await runStep({
 			contract: 'CollateralShort',
 			target: CollateralShort,
@@ -166,34 +163,30 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has all associated synths added',
 		});
 
-		const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
+		const issueFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'];
 		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
-			read: 'interactionDelay',
-			readArg: addressOf(CollateralShort),
-			expected: input => (interactionDelay === '0' ? true : input !== '0'),
-			write: 'setInteractionDelay',
-			writeArg: [
-				CollateralShort.address,
-				(await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
-			],
-			comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
-		});
-
-		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
+			contract: 'CollateralShort',
+			target: CollateralShort,
 			read: 'issueFeeRate',
-			readArg: addressOf(CollateralShort),
-			expected: input => input === addressOf(CollateralShort),
+			expected: input => (issueFeeRate === '0' ? true : input !== '0'),
 			write: 'setIssueFeeRate',
-			writeArg: [
-				CollateralShort.address,
-				(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
-			],
+			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
+
+		if (SystemSettings) {
+			const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
+			await runStep({
+				contract: 'SystemSettings',
+				target: SystemSettings,
+				read: 'interactionDelay',
+				readArg: addressOf(CollateralShort),
+				expected: input => (interactionDelay === '0' ? true : input !== '0'),
+				write: 'setInteractionDelay',
+				writeArg: [CollateralShort.address, interactionDelay],
+				comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
+			});
+		}
 
 		if (SystemSettings.collapseFeeRate) {
 			const collapseFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['COLLAPSE_FEE_RATE'];

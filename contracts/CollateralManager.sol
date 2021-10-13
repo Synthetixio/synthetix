@@ -43,6 +43,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The set of all collateral contracts.
     AddressSetLib.AddressSet internal _collaterals;
 
+    // The set of all available currency keys.
+    Bytes32SetLib.Bytes32Set internal _currencyKeys;
+
     // The set of all synths issuable by the various collateral contracts
     Bytes32SetLib.Bytes32Set internal _synths;
 
@@ -169,11 +172,11 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function totalLong() public view returns (uint susdValue, bool anyRateIsInvalid) {
-        bytes32[] memory synths = _synths.elements;
+        bytes32[] memory synths = _currencyKeys.elements;
 
         if (synths.length > 0) {
             for (uint i = 0; i < synths.length; i++) {
-                bytes32 synth = _synth(synths[i]).currencyKey();
+                bytes32 synth = synths[i];
                 if (synth == sUSD) {
                     susdValue = susdValue.add(state.long(synth));
                 } else {
@@ -197,6 +200,22 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
                 uint amount = state.short(synth).multiplyDecimal(rate);
                 susdValue = susdValue.add(amount);
+                if (invalid) {
+                    anyRateIsInvalid = true;
+                }
+            }
+        }
+    }
+
+    function totalLongAndShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
+        bytes32[] memory currencyKeys = _currencyKeys.elements;
+
+        if (currencyKeys.length > 0) {
+            (uint[] memory rates, bool invalid) = _exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+            for (uint i = 0; i < rates.length; i++) {
+                uint longAmount = state.long(currencyKeys[i]).multiplyDecimal(rates[i]);
+                uint shortAmount = state.short(currencyKeys[i]).multiplyDecimal(rates[i]);
+                susdValue = susdValue.add(longAmount).add(shortAmount);
                 if (invalid) {
                     anyRateIsInvalid = true;
                 }
@@ -277,17 +296,12 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         (entryRate, lastRate, lastUpdated, newIndex) = state.getShortRatesAndTime(currency, index);
     }
 
-    // This function might run into gas issues on L2 if there are too many synths
-    // since it iterates through both long and short synth arrays.
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid) {
         uint usdAmount = _exchangeRates().effectiveValue(currency, amount, sUSD);
 
-        (uint longValue, bool longInvalid) = totalLong();
-        (uint shortValue, bool shortInvalid) = totalShort();
+        (uint longAndShortValue, bool invalid) = totalLongAndShort();
 
-        anyRateIsInvalid = longInvalid || shortInvalid;
-
-        return (longValue.add(shortValue).add(usdAmount) <= maxDebt, anyRateIsInvalid);
+        return (longAndShortValue.add(usdAmount) <= maxDebt, invalid);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -348,14 +362,19 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
+        require(synthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+
         for (uint i = 0; i < synthNamesInResolver.length; i++) {
             if (!_synths.contains(synthNamesInResolver[i])) {
                 bytes32 synthName = synthNamesInResolver[i];
                 _synths.add(synthName);
+                _currencyKeys.add(synthKeys[i]);
                 synthsByKey[synthKeys[i]] = synthName;
                 emit SynthAdded(synthName);
             }
         }
+
+        rebuildCache();
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
@@ -379,14 +398,17 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return true;
     }
 
-    function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external onlyOwner {
-        for (uint i = 0; i < synths.length; i++) {
-            if (_synths.contains(synths[i])) {
+    function removeSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
+        require(synthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+
+        for (uint i = 0; i < synthNamesInResolver.length; i++) {
+            if (_synths.contains(synthNamesInResolver[i])) {
                 // Remove it from the the address set lib.
-                _synths.remove(synths[i]);
+                _synths.remove(synthNamesInResolver[i]);
+                _currencyKeys.remove(synthKeys[i]);
                 delete synthsByKey[synthKeys[i]];
 
-                emit SynthRemoved(synths[i]);
+                emit SynthRemoved(synthNamesInResolver[i]);
             }
         }
     }
