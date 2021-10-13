@@ -85,7 +85,7 @@ contract ExternStateToken is Owned, Proxyable {
         uint value
     ) internal returns (bool) {
         /* Only allow whitelisted address to transfer for testnet competition */
-        require(canTransfer(from), "Only whitelisted address can transfer");
+        require(canTransfer[from], "Only whitelisted address can transfer");
 
         /* Disallow transfers to irretrievable-addresses. */
         require(to != address(0) && to != address(this) && to != address(proxy), "Cannot transfer to this address");
