@@ -9,7 +9,6 @@ import "./interfaces/IERC20.sol";
 
 // Internal references
 import "./Pausable.sol";
-import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IDebtCache.sol";
 import "./interfaces/IWrapperFactory.sol";
@@ -27,12 +26,9 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant sUSD = "sUSD";
-    bytes32 internal constant ETH = "ETH";
-    bytes32 internal constant SNX = "SNX";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
-    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_WRAPPERFACTORY = "WrapperFactory";
@@ -62,13 +58,12 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_SYNTH_SUSD;
         newAddresses[1] = synthContractName;
         newAddresses[2] = CONTRACT_EXRATES;
-        newAddresses[3] = CONTRACT_ISSUER;
-        newAddresses[4] = CONTRACT_DEBTCACHE;
-        newAddresses[5] = CONTRACT_WRAPPERFACTORY;
+        newAddresses[3] = CONTRACT_DEBTCACHE;
+        newAddresses[4] = CONTRACT_WRAPPERFACTORY;
         addresses = combineArrays(existingAddresses, newAddresses);
         return addresses;
     }
@@ -84,10 +79,6 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
-    }
-
-    function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function debtCache() internal view returns (IDebtCache) {
