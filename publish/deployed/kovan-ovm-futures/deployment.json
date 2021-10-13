@@ -24133,7 +24133,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "maxFundingRateSkew",
+											"name": "minSkewScale",
 											"type": "uint256"
 										},
 										{
@@ -24279,7 +24279,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "maxFundingRateSkew",
+											"name": "minSkewScale",
 											"type": "uint256"
 										},
 										{
@@ -24566,7 +24566,7 @@
 								},
 								{
 									"internalType": "uint256",
-									"name": "maxFundingRateSkew",
+									"name": "minSkewScale",
 									"type": "uint256"
 								},
 								{
@@ -25098,7 +25098,7 @@
 							"type": "bytes32"
 						}
 					],
-					"name": "maxFundingRateSkew",
+					"name": "minSkewScale",
 					"outputs": [
 						{
 							"internalType": "uint256",
@@ -25262,7 +25262,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxFundingRateSkew",
+							"name": "_minSkewScale",
 							"type": "uint256"
 						},
 						{
@@ -25428,11 +25428,11 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxFundingRateSkew",
+							"name": "_minSkewScale",
 							"type": "uint256"
 						}
 					],
-					"name": "setMaxFundingRateSkew",
+					"name": "setMinSkewScale",
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
@@ -25537,7 +25537,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxFundingRateSkew",
+							"name": "_minSkewScale",
 							"type": "uint256"
 						},
 						{
@@ -26531,7 +26531,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "maxFundingRateSkew",
+							"name": "minSkewScale",
 							"type": "uint256"
 						},
 						{

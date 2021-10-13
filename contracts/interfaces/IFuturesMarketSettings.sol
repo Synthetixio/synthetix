@@ -8,7 +8,7 @@ interface IFuturesMarketSettings {
         uint maxLeverage;
         uint maxMarketValue;
         uint maxFundingRate;
-        uint maxFundingRateSkew;
+        uint minSkewScale;
         uint maxFundingRateDelta;
     }
 
@@ -24,7 +24,7 @@ interface IFuturesMarketSettings {
 
     function maxFundingRate(bytes32 _baseAsset) external view returns (uint);
 
-    function maxFundingRateSkew(bytes32 _baseAsset) external view returns (uint);
+    function minSkewScale(bytes32 _baseAsset) external view returns (uint);
 
     function maxFundingRateDelta(bytes32 _baseAsset) external view returns (uint);
 
@@ -38,7 +38,7 @@ interface IFuturesMarketSettings {
             uint _maxLeverage,
             uint _maxMarketValue,
             uint _maxFundingRate,
-            uint _maxFundingRateSkew,
+            uint _minSkewScale,
             uint _maxFundingRateDelta
         );
 
