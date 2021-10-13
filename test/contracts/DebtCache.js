@@ -688,7 +688,7 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
-		describe.only('Issuance, burning, exchange, settlement', () => {
+		describe('Issuance, burning, exchange, settlement', () => {
 			it('issuing sUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
 				const issued = (await debtCache.cacheInfo())[0];
