@@ -10,11 +10,13 @@ library DynamicFee {
     using SafeMath for uint;
 
     /// @notice Get threshold constant default 0.4%
+    /// @return uint threshold constant
     function threshold() public pure returns (uint) {
         return 4 * 10**uint(SafeDecimalMath.decimals() - 3);
     }
 
     /// @notice Get weight decay constant default 0.9
+    /// @return uint weight decay constant
     function weightDecay() public pure returns (uint) {
         return 9 * 10**uint(SafeDecimalMath.decimals() - 1);
     }
@@ -22,6 +24,7 @@ library DynamicFee {
     /// @notice Calculate price differential
     /// @param price Current round price
     /// @param previousPrice Previous round price
+    /// @return uint price differential
     function getPriceDifferential(uint price, uint previousPrice) public pure returns (uint) {
         int(price.divideDecimal(previousPrice)) - 1;
 
@@ -33,12 +36,14 @@ library DynamicFee {
     /// @notice Calculate Price Weight
     /// @param round A round number that go back from
     /// the current round from 0 to N
+    /// @return uint price weight
     function getPriceWeight(uint round) public pure returns (uint) {
         return weightDecay().powDecimal(round);
     }
 
     /// @notice Calculate dynamic fee based on preceding 10 price differential
     /// @param prices A list of prices from the current round to the previous rounds
+    /// @return uint dynamic fee
     function getDynamicFee(uint[] memory prices) public pure returns (uint dynamicFee) {
         uint size = prices.length;
         require(size >= 2, "Not enough prices");
