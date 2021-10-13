@@ -346,6 +346,7 @@ const deploy = async ({
 
 	await rebuildLegacyResolverCaches({
 		addressOf,
+		compiled,
 		deployer,
 		network,
 		runStep,

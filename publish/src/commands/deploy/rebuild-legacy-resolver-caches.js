@@ -1,15 +1,18 @@
 'use strict';
 
+const ethers = require('ethers');
 const { gray } = require('chalk');
 
-module.exports = async ({ addressOf, deployer, network, runStep, useOvm }) => {
+module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOvm }) => {
 	console.log(gray(`\n------ REBUILD LEGACY RESOLVER CACHES ------\n`));
 
 	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// Legacy contracts.
 	if (network === 'mainnet' && !useOvm) {
-		const legacyContracts = Object.values({
+		console.log(gray('Checking all legacy contracts using isResolverCached() return true'));
+
+		const legacyContracts = {
 			// v2.35.2 contracts, replaced in v2.36.
 			// These still hold some funds, so need to ensure they are up to date
 			CollateralEth: '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E',
@@ -63,12 +66,27 @@ module.exports = async ({ addressOf, deployer, network, runStep, useOvm }) => {
 			SynthsXRP: '0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5',
 			SynthsXTZ: '0x6F927644d55E32318629198081923894FbFe5c07',
 			SynthsYFI: '0x0F393ce493d8FB0b83915248a21a3104932ed97c',
-		});
+		};
+
+		const legacyContractsToRebuildCache = [];
+		// determine which need resolver caching
+		for (const [name, address] of Object.entries(legacyContracts)) {
+			const { abi } = compiled['MixinResolver'];
+
+			const target = new ethers.Contract(address, abi, deployer.provider);
+
+			const response = await target.isResolverCached();
+
+			if (!response) {
+				console.log(gray(name, 'is legacy and requires caching', address));
+				legacyContractsToRebuildCache.push(address);
+			}
+		}
 
 		const addressesChunkSize = useOvm ? 5 : 20;
 		let batchCounter = 1;
-		for (let i = 0; i < legacyContracts.length; i += addressesChunkSize) {
-			const chunk = legacyContracts.slice(i, i + addressesChunkSize);
+		for (let i = 0; i < legacyContractsToRebuildCache.length; i += addressesChunkSize) {
+			const chunk = legacyContractsToRebuildCache.slice(i, i + addressesChunkSize);
 			await runStep({
 				gasLimit: 7e6,
 				contract: `AddressResolver`,
@@ -77,23 +95,6 @@ module.exports = async ({ addressOf, deployer, network, runStep, useOvm }) => {
 				write: 'rebuildCaches',
 				writeArg: [chunk],
 				comment: `Rebuild the resolver caches of legacy contracts - batch ${batchCounter++}`,
-				// these updates are tricky to Soliditize, and aren't
-				// owner required and aren't critical to the core, so
-				// let's skip them in the migration script
-				// and a re-run of the deploy script will catch them
-				skipSolidity: true,
-			});
-		}
-
-		for (const [name, target] of legacyContracts) {
-			await runStep({
-				gasLimit: 7e6,
-				contract: name,
-				target,
-				read: 'isResolverCached',
-				expected: input => input,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildCache',
 				// these updates are tricky to Soliditize, and aren't
 				// owner required and aren't critical to the core, so
 				// let's skip them in the migration script
