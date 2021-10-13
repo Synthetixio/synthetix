@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Libraries
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // https://docs.synthetix.io/contracts/source/libraries/math
 library Math {

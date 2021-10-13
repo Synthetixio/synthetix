@@ -6,7 +6,7 @@ import "./interfaces/ISupplySchedule.sol";
 
 // Libraries
 import "./libraries/SafeDecimalMath.sol";
-import "./Math.sol";
+import "./libraries/Math.sol";
 
 // Internal references
 import "./Proxy.sol";
