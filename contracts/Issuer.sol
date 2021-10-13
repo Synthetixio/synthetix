@@ -7,6 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IIssuer.sol";
 
 // Libraries
+import "./SafeCast.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -668,7 +669,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        debtCache().updateCachedsUSDDebt(int(amount));
+        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -694,7 +695,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        debtCache().updateCachedsUSDDebt(-int(amountBurnt));
+        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountBurnt));
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);
