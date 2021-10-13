@@ -469,7 +469,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             ISynthRedeemer _synthRedeemer = synthRedeemer();
             synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
             // ensure the debt cache is aware of the new sUSD issued
-            debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
+            debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amountOfsUSD));
             _synthRedeemer.deprecate(IERC20(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem);
         }
 
