@@ -171,7 +171,8 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         uint mintAmount = negative ? actualAmountIn.add(feeAmountTarget) : actualAmountIn.sub(feeAmountTarget);
 
         // Transfer token from user.
-        token.transferFrom(msg.sender, address(this), actualAmountIn);
+        bool success = token.transferFrom(msg.sender, address(this), actualAmountIn);
+        require(success, "Transfer did not succeed");
 
         // Mint tokens to user
         _mint(mintAmount);
@@ -208,7 +209,8 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         uint feeAmountTarget = negative ? 0 : burnAmount.sub(amountOut);
 
         // Transfer token to user.
-        token.transfer(msg.sender, amountOut);
+        bool success = token.transfer(msg.sender, amountOut);
+        require(success, "Transfer did not succeed");
 
         // Burn
         _burn(burnAmount);

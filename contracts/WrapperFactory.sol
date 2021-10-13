@@ -91,7 +91,8 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
 
         if (amountSUSD > 0) {
             // Transfer sUSD to the fee pool
-            synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
+            bool success = synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
+            require(success, "Transfer did not succeed");
 
             // this is supposed to be done automatically by `transfer` but for some reason that doesn't happen
             feePool().recordFeePaid(amountSUSD);
