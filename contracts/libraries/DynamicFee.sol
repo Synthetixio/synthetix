@@ -7,6 +7,7 @@ import "./Math.sol";
 library DynamicFee {
     using SafeDecimalMath for uint;
     using Math for uint;
+    using SafeMath for uint;
 
     /// @notice Get threshold constant default 0.4%
     function threshold() public pure returns (uint) {
@@ -38,11 +39,13 @@ library DynamicFee {
 
     /// @notice Calculate dynamic fee based on preceding 10 price differential
     /// @param prices A list of prices from the current round to the previous rounds
-    function getDynamicFee(uint[] memory prices) public pure returns (uint) {
+    function getDynamicFee(uint[] memory prices) public pure returns (uint dynamicFee) {
         uint size = prices.length;
         require(size >= 2, "Not enough prices");
         for (uint i = 0; i < size - 1; i++) {
-            getPriceDifferential(prices[i], prices[i + 1]);
+            uint priceDifferential = getPriceDifferential(prices[i], prices[i + 1]);
+            uint priceWeight = getPriceWeight(i);
+            dynamicFee = dynamicFee.add(priceDifferential.multiplyDecimal(priceWeight));
         }
     }
 }
