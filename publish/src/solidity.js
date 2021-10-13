@@ -65,7 +65,7 @@ module.exports = {
 
 	compile({ sources, runs, useOvm }) {
 		// Note: require this here as silent error is detected on require that impacts pretty-error
-		const solc = useOvm ? require('@eth-optimism/solc') : require('solc');
+		const solc = require('solc');
 
 		const artifacts = [];
 		const output = JSON.parse(
