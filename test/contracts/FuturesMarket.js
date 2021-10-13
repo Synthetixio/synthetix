@@ -2516,7 +2516,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
 		});
 
-		it('Altering the minSkewScale has a proportional effect', async () => {
+		it('Altering the minSkewScale has a proportional effect when above market size', async () => {
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
@@ -2554,8 +2554,21 @@ contract('FuturesMarket', accounts => {
 				multiplyDecimalRound(expectedFunding, toUnit('0.5'))
 			);
 
+			// disable minSkewScale
 			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * (4 + 12)
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * 8 / (4 + 12)
+
+			// minSkewScale is below market size (so has no effect)
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('4'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * 8 / (4 + 12)
+
+			// minSkewScale is equal to market size (so has no effect)
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('16'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * 8 / (4 + 12)
+
+			// minSkewScale is double the size
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('32'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.025')); // 0.1 * 8 / (32)
 		});
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
