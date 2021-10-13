@@ -362,6 +362,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
+        require(synthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+
         for (uint i = 0; i < synthNamesInResolver.length; i++) {
             if (!_synths.contains(synthNamesInResolver[i])) {
                 bytes32 synthName = synthNamesInResolver[i];
@@ -371,6 +373,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 emit SynthAdded(synthName);
             }
         }
+
+        rebuildCache();
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
@@ -394,15 +398,17 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return true;
     }
 
-    function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external onlyOwner {
-        for (uint i = 0; i < synths.length; i++) {
-            if (_synths.contains(synths[i])) {
+    function removeSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
+        require(synthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+
+        for (uint i = 0; i < synthNamesInResolver.length; i++) {
+            if (_synths.contains(synthNamesInResolver[i])) {
                 // Remove it from the the address set lib.
-                _synths.remove(synths[i]);
+                _synths.remove(synthNamesInResolver[i]);
                 _currencyKeys.remove(synthKeys[i]);
                 delete synthsByKey[synthKeys[i]];
 
-                emit SynthRemoved(synths[i]);
+                emit SynthRemoved(synthNamesInResolver[i]);
             }
         }
     }
