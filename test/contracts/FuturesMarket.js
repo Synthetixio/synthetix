@@ -879,14 +879,14 @@ contract('FuturesMarket', accounts => {
 					event: 'Burned',
 					emittedFrom: sUSD.address,
 					args: [trader3, toUnit('1000')],
-					log: decodedLogs[2],
+					log: decodedLogs[1],
 				});
 
 				decodedEventEqual({
 					event: 'MarginTransferred',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toUnit('1000')],
-					log: decodedLogs[3],
+					log: decodedLogs[2],
 				});
 
 				decodedEventEqual({
@@ -902,7 +902,7 @@ contract('FuturesMarket', accounts => {
 						toBN('0'),
 						toBN('0'),
 					],
-					log: decodedLogs[4],
+					log: decodedLogs[3],
 				});
 
 				// Zero delta means no PositionModified, MarginTransferred, or sUSD events

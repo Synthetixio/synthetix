@@ -112,9 +112,9 @@ module.exports = async ({
 	// Now replace the relevant markets in the manager (if any)
 
 	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
-		const numManagerKnownMarkets = await futuresMarketManager.methods.numMarkets().call();
+		const numManagerKnownMarkets = await futuresMarketManager.numMarkets();
 		const managerKnownMarkets = Array.from(
-			await futuresMarketManager.methods.markets(0, numManagerKnownMarkets).call()
+			await futuresMarketManager.markets(0, numManagerKnownMarkets)
 		).sort();
 
 		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));

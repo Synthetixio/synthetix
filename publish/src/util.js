@@ -5,7 +5,6 @@ const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
-const w3utils = require('web3-utils');
 const { BigNumber } = require('ethers');
 
 const {
@@ -156,20 +155,23 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	if (network === 'local' || useFork) {
 		providerUrl = 'http://127.0.0.1:8545';
 	} else {
-		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
-			providerUrl = process.env.PROVIDER_URL_MAINNET;
+		if (useOvm) {
+			providerUrl = `https://${network}.optimism.io`;
 		} else {
-			providerUrl = process.env.PROVIDER_URL.replace('network', network);
+			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
+				providerUrl = process.env.PROVIDER_URL_MAINNET;
+			} else {
+				providerUrl = process.env.PROVIDER_URL.replace('network', network);
+			}
 		}
 	}
 
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl =
-		network === 'mainnet'
-			? 'https://api.etherscan.io/api'
-			: `https://api-${network}.etherscan.io/api`;
+	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+		useOvm ? '-optimistic' : ''
+	}.etherscan.io/api`;
 
 	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 
@@ -202,164 +204,6 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, explorerLi
 	};
 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
-};
-
-let _dryRunCounter = 0;
-/**
- * Run a single transaction step, first checking to see if the value needs
- * changing at all, and then whether or not its the owner running it.
- *
- * @returns transaction hash if successful, true if user completed, or falsy otherwise
- */
-const performTransactionalStepWeb3 = async ({
-	account,
-	contract,
-	target,
-	read,
-	readArg, // none, 1 or an array of args, array will be spread into params
-	expected,
-	write,
-	writeArg, // none, 1 or an array of args, array will be spread into params
-	gasLimit,
-	gasPrice,
-	generateSolidity,
-	explorerLinkPrefix,
-	ownerActions,
-	ownerActionsFile,
-	dryRun,
-	encodeABI,
-	nonceManager,
-	publiclyCallable,
-}) => {
-	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
-	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
-		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
-	)})`;
-
-	// check to see if action required
-	console.log(yellow(`Attempting action: ${action}`));
-
-	if (read) {
-		try {
-			// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-			const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-			const response = await target.methods[read](...argumentsForReadFunction).call();
-
-			if (expected(response)) {
-				console.log(gray(`Nothing required for this action.`));
-				return { noop: true };
-			}
-		} catch (err) {
-			catchMissingResolverWhenGeneratingSolidity({ contract, dryRun, err, generateSolidity });
-		}
-	}
-
-	// now if generate solidity mode, simply doing anything, a bit like a dry-run
-	if (generateSolidity) {
-		console.log(
-			green(
-				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
-			)
-		);
-		return {};
-	}
-
-	// otherwise check the owner
-	const owner = await target.methods.owner().call();
-	if (owner === account || publiclyCallable) {
-		// perform action
-		let hash;
-		let gasUsed = 0;
-		if (dryRun) {
-			_dryRunCounter++;
-			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
-		} else {
-			const params = {
-				from: account,
-				gas:
-					Number(gasLimit) ||
-					(await target.methods[write](...argumentsForWriteFunction).estimateGas()),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			};
-
-			if (nonceManager) {
-				params.nonce = await nonceManager.getNonce();
-			}
-
-			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
-
-			hash = txn.transactionHash;
-			gasUsed = txn.gasUsed;
-
-			if (nonceManager) {
-				nonceManager.incrementNonce();
-			}
-		}
-
-		console.log(
-			green(
-				`${
-					dryRun ? gray('[DRYRUN] ') : ''
-				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
-					2
-				)}m `
-			)
-		);
-
-		return { mined: true, hash };
-	} else {
-		console.log(gray(`  > Account ${account} is not owner ${owner}`));
-	}
-
-	let data;
-	if (ownerActions && ownerActionsFile) {
-		// append to owner actions if supplied
-		const appendOwnerAction = appendOwnerActionGenerator({
-			ownerActions,
-			ownerActionsFile,
-			explorerLinkPrefix,
-		});
-
-		data = target.methods[write](...argumentsForWriteFunction).encodeABI();
-
-		const ownerAction = {
-			key: action,
-			target: target.options.address,
-			action: `${write}(${argumentsForWriteFunction})`,
-			data: data,
-		};
-
-		if (dryRun) {
-			console.log(
-				gray(`[DRY RUN] Would append owner action of the following:\n${stringify(ownerAction)}`)
-			);
-		} else {
-			appendOwnerAction(ownerAction);
-		}
-		return { pending: true };
-	} else {
-		// otherwise wait for owner in real time
-		try {
-			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
-			if (encodeABI) {
-				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return { pending: true };
-			}
-
-			await confirmAction(
-				redBright(
-					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/${owner}/transactions` +
-						`to recipient ${target.options.address}` +
-						`with data: ${data}`
-				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
-			);
-
-			return { pending: true };
-		} catch (err) {
-			console.log(gray('Cancelled'));
-			return {};
-		}
-	}
 };
 
 const parameterNotice = props => {
@@ -399,10 +243,7 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 	err,
 	generateSolidity,
 }) => {
-	if (
-		(generateSolidity || dryRun) &&
-		/VM Exception while processing transaction: revert Missing address/.test(err.message)
-	) {
+	if ((generateSolidity || dryRun) && /Missing address:\s[\w]+/.test(err.message)) {
 		console.log(
 			gray(
 				`WARNING: Error thrown reading state from ${yellow(
@@ -425,7 +266,6 @@ module.exports = {
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
-	performTransactionalStepWeb3,
 	parameterNotice,
 	reportDeployedContracts,
 	catchMissingResolverWhenGeneratingSolidity,

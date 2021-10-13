@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
@@ -72,7 +71,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
     function rewardPerToken() public view returns (uint256) {
@@ -112,7 +111,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     }
 
     // this can be called by anyone on the short contract to claim the rewards.
-    function getReward(address account) external onlyShortContract nonReentrant updateReward(account) {
+    function getReward(address account) external nonReentrant updateReward(account) {
         uint256 reward = rewards[account];
         if (reward > 0) {
             rewards[account] = 0;

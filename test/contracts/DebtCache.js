@@ -55,9 +55,6 @@ contract('DebtCache', async accounts => {
 		synths,
 		addressResolver,
 		exchanger,
-		// EtherCollateral tests.
-		etherCollateral,
-		etherCollateralsUSD,
 		// MultiCollateral tests.
 		ceth,
 		// Short tests.
@@ -65,25 +62,16 @@ contract('DebtCache', async accounts => {
 		// Futures market
 		futuresMarketManager;
 
-	const deployCollateral = async ({
-		state,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-	}) => {
+	const deployCollateral = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+			args: [owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
 	const setupMultiCollateral = async () => {
 		const CollateralManager = artifacts.require(`CollateralManager`);
-		const CollateralState = artifacts.require(`CollateralState`);
 		const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		synths = ['sUSD', 'sETH', 'sAUD'];
@@ -103,6 +91,7 @@ contract('DebtCache', async accounts => {
 			maxDebt,
 			0,
 			0,
+			0,
 			{
 				from: deployerAccount,
 			}
@@ -110,11 +99,8 @@ contract('DebtCache', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		const cethState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		// Deploy ETH Collateral.
 		ceth = await deployCollateral({
-			state: cethState.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -122,8 +108,6 @@ contract('DebtCache', async accounts => {
 			minColat: toUnit('1.3'),
 			minSize: toUnit('2'),
 		});
-
-		await cethState.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -164,17 +148,16 @@ contract('DebtCache', async accounts => {
 		);
 	};
 
-	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
+	const deployShort = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+			args: [owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
 	const setupShort = async () => {
 		const CollateralManager = artifacts.require(`CollateralManager`);
-		const CollateralState = artifacts.require(`CollateralState`);
 		const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		const managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
@@ -188,6 +171,7 @@ contract('DebtCache', async accounts => {
 			owner,
 			addressResolver.address,
 			maxDebt,
+			0,
 			// 5% / 31536000 (seconds in common year)
 			1585489599,
 			0,
@@ -198,10 +182,7 @@ contract('DebtCache', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		short = await deployShort({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -209,8 +190,6 @@ contract('DebtCache', async accounts => {
 			minColat: toUnit(1.2),
 			minSize: toUnit(0.1),
 		});
-
-		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
@@ -229,13 +208,9 @@ contract('DebtCache', async accounts => {
 
 		await short.addSynths(['SynthsETH'].map(toBytes32), ['sETH'].map(toBytes32), { from: owner });
 
-		await manager.addShortableSynths(
-			[[toBytes32('SynthsETH'), toBytes32('SynthiETH')]],
-			['sETH'].map(toBytes32),
-			{
-				from: owner,
-			}
-		);
+		await manager.addShortableSynths(['SynthsETH'].map(toBytes32), [sETH], {
+			from: owner,
+		});
 
 		await sUSDContract.approve(short.address, toUnit(100000), { from: account1 });
 	};
@@ -258,8 +233,6 @@ contract('DebtCache', async accounts => {
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
-			EtherCollateral: etherCollateral,
-			EtherCollateralsUSD: etherCollateralsUSD,
 			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
@@ -280,8 +253,7 @@ contract('DebtCache', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
-				'EtherCollateral',
-				'EtherCollateralsUSD',
+				'CollateralUtil',
 				'FuturesMarketManager',
 			],
 		}));
@@ -751,24 +723,6 @@ contract('DebtCache', async accounts => {
 				});
 			});
 
-			it('issuing sUSD updates the debt total when non-snx excluded debt exceeds the sUSD total supply', async () => {
-				// create 200 sUSD worth of excluded-debt sETH, so that it will exceed the sUSD supply
-				await etherCollateral.setCollateralizationRatio(toUnit('100'), { from: owner });
-				await etherCollateral.openLoan({
-					value: twoETH,
-					from: account1,
-				});
-				assert.bnGt((await debtCache.totalNonSnxBackedDebt())[0], await sUSDContract.totalSupply());
-
-				// Issue some sUSD and ensure that it is properly accounted for.
-				await debtCache.takeDebtSnapshot();
-				const issued = (await debtCache.cacheInfo())[0];
-				await synthetix.transfer(account2, toUnit('5000'), { from: owner });
-				const toIssue = toUnit('10');
-				await synthetix.issueSynths(toIssue, { from: account2 });
-				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(toIssue));
-			});
-
 			it('burning sUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
 				const synthsToIssue = toUnit('10');
@@ -873,32 +827,41 @@ contract('DebtCache', async accounts => {
 					from: owner,
 				});
 				await sAUDContract.issue(account1, toUnit(100));
+
 				await debtCache.takeDebtSnapshot();
 
+				const cachedDebt = await debtCache.cachedDebt();
+
 				await synthetix.exchange(sAUD, toUnit(50), sEUR, { from: account1 });
+				// so there's now 100 - 25 sUSD left (25 of it was exchanged)
+				// and now there's 100 + (25 / 2 ) of sEUR = 112.5
+
+				await systemSettings.setWaitingPeriodSecs(60, { from: owner });
+				// set a high price deviation threshold factor to be sure it doesn't trigger here
+				await systemSettings.setPriceDeviationThresholdFactor(toUnit('99'), { from: owner });
 
 				await exchangeRates.updateRates([sAUD, sEUR], ['2', '1'].map(toUnit), await currentTime(), {
 					from: oracle,
 				});
 
-				const tx = await exchanger.settle(account1, sAUD);
+				await fastForward(100);
+
+				const tx = await exchanger.settle(account1, sEUR);
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [debtCache],
 				});
 
-				// AU$150 worth $75 became worth $300
-				// But the EUR debt does not change due to settlement,
-				// and remains at $200 + $25 from the exchange
-
+				// The A$75 does not change as we settled sEUR
+				// But the EUR changes from 112.5 + 87.5 rebate = 200
 				const results = await debtCache.cachedSynthDebts([sAUD, sEUR]);
-				assert.bnEqual(results[0], toUnit(300));
-				assert.bnEqual(results[1], toUnit(225));
+				assert.bnEqual(results[0], toUnit(75));
+				assert.bnEqual(results[1], toUnit(200));
 
 				decodedEventEqual({
 					event: 'DebtCacheUpdated',
 					emittedFrom: debtCache.address,
-					args: [toUnit(825)],
+					args: [cachedDebt.sub(toUnit('25'))], // deduct the 25 units of sAUD
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 			});
@@ -1273,60 +1236,6 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
-		describe('when EtherCollateral loans are opened', async () => {
-			let rate;
-
-			beforeEach(async () => {
-				({ rate } = await exchangeRates.rateAndInvalid(sETH));
-
-				// Collateralization is 100%, meaning we mint the full value in
-				// sETH.
-				await etherCollateral.setCollateralizationRatio(toUnit('100'), { from: owner });
-				await etherCollateral.openLoan({
-					value: oneETH,
-					from: account1,
-				});
-			});
-
-			it('increases non-SNX debt', async () => {
-				assert.bnEqual(
-					totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
-					await getTotalNonSnxBackedDebt()
-				);
-			});
-			it('is excluded from currentDebt', async () => {
-				assert.bnEqual(currentDebt, await debtCache.currentDebt());
-			});
-		});
-
-		describe('when EtherCollateralsUSD loans are opened', async () => {
-			let rate;
-			const amount = toUnit('1');
-
-			beforeEach(async () => {
-				// ETH rate must be updated.
-				await exchangeRates.updateRates([ETH], ['200'].map(toUnit), timestamp, { from: oracle });
-
-				({ rate } = await exchangeRates.rateAndInvalid(ETH));
-
-				// Collateralization is 100%, meaning we mint the full value in
-				// sETH.
-				await etherCollateralsUSD.setCollateralizationRatio(toUnit('100'), { from: owner });
-				await etherCollateralsUSD.setIssueFeeRate(toUnit('0'), { from: owner });
-				await etherCollateralsUSD.openLoan(amount, {
-					value: rate,
-					from: account1,
-				});
-			});
-
-			it('increases non-SNX debt', async () => {
-				assert.bnEqual(totalNonSnxBackedDebt.add(amount), await getTotalNonSnxBackedDebt());
-			});
-			it('is excluded from currentDebt', async () => {
-				assert.bnEqual(currentDebt, await debtCache.currentDebt());
-			});
-		});
-
 		describe('when shorts are opened', async () => {
 			let rate;
 			let amount;
@@ -1343,7 +1252,7 @@ contract('DebtCache', async accounts => {
 				await sETHContract.issue(account1, amount, { from: owner });
 
 				await setupShort();
-				await short.setMinCratio(toUnit(1.5), { from: owner });
+				await systemSettings.setMinCratio(short.address, toUnit(1.5), { from: owner });
 				await short.setIssueFeeRate(toUnit('0'), { from: owner });
 				await short.open(amount, oneETH, sETH, { from: account1 });
 			});

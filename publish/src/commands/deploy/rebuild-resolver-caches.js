@@ -1,9 +1,7 @@
 'use strict';
 
 const { gray, red, yellow, redBright } = require('chalk');
-const {
-	utils: { parseBytes32String },
-} = require('ethers');
+const ethers = require('ethers');
 const {
 	fromBytes32,
 	constants: { ZERO_ADDRESS },
@@ -20,11 +18,7 @@ module.exports = async ({
 	runStep,
 	useOvm,
 }) => {
-	const {
-		AddressResolver,
-		BinaryOptionMarketManager,
-		ReadProxyAddressResolver,
-	} = deployer.deployedContracts;
+	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// Legacy contracts.
 	if (network === 'mainnet' && !useOvm) {
@@ -39,12 +33,13 @@ module.exports = async ({
 			CollateralErc20,
 			CollateralShort,
 		}).map(([name, address]) => {
-			const target = new deployer.provider.web3.eth.Contract(
-				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
-				address
-			);
-			target.options.source = name;
-			target.options.address = address;
+			// Conbine MixinResolver + Owned abis
+			const abi1 = compiled['MixinResolver'].abi;
+			const abi2 = compiled['Owned'].abi.filter(e => e.type !== 'constructor'); // Avoid duplicate constructor entries
+			const abi = [...abi1, ...abi2];
+
+			const target = new ethers.Contract(address, abi, deployer.provider);
+			target.source = name;
 			return [`legacy_${name}`, target];
 		});
 
@@ -67,9 +62,9 @@ module.exports = async ({
 	}
 
 	const filterTargetsWith = ({ prop }) =>
-		Object.entries(deployer.deployedContracts).filter(([, target]) =>
-			target.options.jsonInterface.find(({ name }) => name === prop)
-		);
+		Object.entries(deployer.deployedContracts).filter(([, target]) => {
+			return target.functions[prop] !== undefined;
+		});
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
 
@@ -78,31 +73,39 @@ module.exports = async ({
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([id, contract]) => {
-				return limitPromise(() =>
-					contract.methods.resolverAddressesRequired().call()
-				).then(result => [contract.options.address, result]);
+				return limitPromise(() => contract.resolverAddressesRequired())
+					.then(result => [contract.address, result])
+					.catch(() => {
+						console.log(
+							yellow.bold(
+								`⚠ WARNING: Contract ${id} did not respond to resolverAddressesRequired()`
+							)
+						);
+					});
 			})
 		)
-	).reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
-		// side-effect
-		for (const contractDepName of requiredAddressesForContract) {
-			const contractDepNameParsed = parseBytes32String(contractDepName);
-			// collect all contract maps
-			contractToDepMap[contractDepNameParsed] = []
-				.concat(contractToDepMap[contractDepNameParsed] || [])
-				.concat(targetContractAddress);
-		}
-		return allAddresses.concat(
-			requiredAddressesForContract.filter(
-				contractAddress => !allAddresses.includes(contractAddress)
-			)
-		);
-	}, []);
+	)
+		.filter(e => e !== undefined)
+		.reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
+			// side-effect
+			for (const contractDepName of requiredAddressesForContract) {
+				const contractDepNameParsed = ethers.utils.parseBytes32String(contractDepName);
+				// collect all contract maps
+				contractToDepMap[contractDepNameParsed] = []
+					.concat(contractToDepMap[contractDepNameParsed] || [])
+					.concat(targetContractAddress);
+			}
+			return allAddresses.concat(
+				requiredAddressesForContract.filter(
+					contractAddress => !allAddresses.includes(contractAddress)
+				)
+			);
+		}, []);
 
 	// check which resolver addresses are imported
 	const resolvedAddresses = await Promise.all(
 		resolverAddressesRequired.map(id => {
-			return limitPromise(() => AddressResolver.methods.getAddress(id).call());
+			return limitPromise(() => AddressResolver.getAddress(id));
 		})
 	);
 	const isResolverAddressImported = {};
@@ -126,7 +129,7 @@ module.exports = async ({
 		// when running in solidity generation mode, we cannot expect
 		// the address resolver to have been updated. Thus we have to compile a list
 		// of all possible contracts to update rather than relying on "isResolverCached"
-		for (const newContract of Object.values(newContractsBeingAdded)) {
+		for (const { name: newContract } of Object.values(newContractsBeingAdded)) {
 			if (Array.isArray(contractToDepMap[newContract])) {
 				// when the new contract is required by others, add them
 				contractToDepMap[newContract].forEach(entry => contractsToRebuildCacheSet.add(entry));
@@ -135,9 +138,18 @@ module.exports = async ({
 		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
 	} else {
 		for (const [name, target] of contractsWithRebuildableCache) {
-			const isCached = await target.methods.isResolverCached().call();
+			let isCached = true;
+
+			try {
+				isCached = await target.isResolverCached();
+			} catch (err) {
+				console.log(
+					yellow.bold(`⚠ WARNING: Contract ${name} did not respond to isResolverCached()`)
+				);
+			}
+
 			if (!isCached) {
-				const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+				const requiredAddresses = await target.resolverAddressesRequired();
 
 				const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
 				if (unknownAddress) {
@@ -151,7 +163,7 @@ module.exports = async ({
 						)
 					);
 				} else {
-					contractsToRebuildCache.push(target.options.address);
+					contractsToRebuildCache.push(target.address);
 				}
 			}
 		}
@@ -174,7 +186,7 @@ module.exports = async ({
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
-		if (contractsToRebuildCache.includes(target.options.address)) {
+		if (contractsToRebuildCache.includes(target.address)) {
 			await runStep({
 				gasLimit: 500e3, // higher gas required
 				contract,
@@ -184,136 +196,6 @@ module.exports = async ({
 				publiclyCallable: true, // does not require owner
 				write: 'rebuildCache',
 				skipSolidity: true, // this is a double check - we don't want solidity output for this
-			});
-		}
-	}
-
-	// Now do binary option market cache rebuilding
-	if (BinaryOptionMarketManager) {
-		console.log(gray('Checking all binary option markets have rebuilt caches'));
-		let binaryOptionMarkets = [];
-		// now grab all possible binary option markets to rebuild caches as well
-		const binaryOptionsFetchPageSize = 100;
-		for (const marketType of ['Active', 'Matured']) {
-			const numBinaryOptionMarkets = Number(
-				await BinaryOptionMarketManager.methods[`num${marketType}Markets`]().call()
-			);
-			console.log(
-				gray('Found'),
-				yellow(numBinaryOptionMarkets),
-				gray(marketType, 'binary option markets')
-			);
-
-			if (numBinaryOptionMarkets > binaryOptionsFetchPageSize) {
-				console.log(
-					redBright(
-						'⚠⚠⚠ Warning: cannot fetch all',
-						marketType,
-						'binary option markets as there are',
-						numBinaryOptionMarkets,
-						'which is more than page size of',
-						binaryOptionsFetchPageSize
-					)
-				);
-			} else {
-				// fetch the list of markets
-				const marketAddresses = await BinaryOptionMarketManager.methods[
-					`${marketType.toLowerCase()}Markets`
-				](0, binaryOptionsFetchPageSize).call();
-
-				// wrap them in a contract via the deployer
-				const markets = marketAddresses.map(
-					binaryOptionMarket =>
-						new deployer.provider.web3.eth.Contract(
-							compiled['BinaryOptionMarket'].abi,
-							binaryOptionMarket
-						)
-				);
-
-				binaryOptionMarkets = binaryOptionMarkets.concat(markets);
-			}
-		}
-
-		// now figure out which binary option markets need their caches rebuilt
-		const binaryOptionMarketsToRebuildCacheOn = [];
-		for (const market of binaryOptionMarkets) {
-			try {
-				const isCached = await market.methods.isResolverCached().call();
-				if (!isCached) {
-					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
-				}
-				console.log(
-					gray('Binary option market'),
-					yellow(addressOf(market)),
-					gray('is newer and cache status'),
-					yellow(isCached)
-				);
-			} catch (err) {
-				// the challenge being that some used an older MixinResolver API
-				const oldBinaryOptionMarketABI = [
-					{
-						constant: true,
-						inputs: [
-							{
-								internalType: 'contract AddressResolver',
-								name: '_resolver',
-								type: 'address',
-							},
-						],
-						name: 'isResolverCached',
-						outputs: [
-							{
-								internalType: 'bool',
-								name: '',
-								type: 'bool',
-							},
-						],
-						payable: false,
-						stateMutability: 'view',
-						type: 'function',
-						signature: '0x631e1444',
-					},
-				];
-
-				const oldBinaryOptionMarket = new deployer.provider.web3.eth.Contract(
-					oldBinaryOptionMarketABI,
-					addressOf(market)
-				);
-
-				const isCached = await oldBinaryOptionMarket.methods
-					.isResolverCached(addressOf(ReadProxyAddressResolver))
-					.call();
-				if (!isCached) {
-					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
-				}
-
-				console.log(
-					gray('Binary option market'),
-					yellow(addressOf(market)),
-					gray('is older and cache status'),
-					yellow(isCached)
-				);
-			}
-		}
-
-		console.log(
-			gray('In total'),
-			yellow(binaryOptionMarketsToRebuildCacheOn.length),
-			gray('binary option markets need their caches rebuilt')
-		);
-
-		const addressesChunkSize = useOvm ? 7 : 20;
-		let binaryOptionBatchCounter = 1;
-		for (let i = 0; i < binaryOptionMarketsToRebuildCacheOn.length; i += addressesChunkSize) {
-			const chunk = binaryOptionMarketsToRebuildCacheOn.slice(i, i + addressesChunkSize);
-			await runStep({
-				gasLimit: 7e6,
-				contract: `BinaryOptionMarketManager`,
-				target: BinaryOptionMarketManager,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildMarketCaches',
-				writeArg: [chunk],
-				comment: `Rebuild the caches of existing Binary Option Markets - batch ${binaryOptionBatchCounter++}`,
 			});
 		}
 	}

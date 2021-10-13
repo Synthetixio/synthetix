@@ -5,7 +5,15 @@ const { toBytes32 } = require('../../../..');
 
 const { reportDeployedContracts } = require('../../util');
 
-module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, useOvm }) => {
+module.exports = async ({
+	addressOf,
+	continueEvenIfUnsuccessful,
+	deployer,
+	dryRun,
+	limitPromise,
+	runStep,
+	useOvm,
+}) => {
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -35,20 +43,22 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 		await Promise.all(
 			allContracts
 				// ignore adding contracts with the skipResolver option
-				.filter(([, contract]) => !contract.options.skipResolver)
+				.filter(([, contract]) => !contract.skipResolver)
 				.map(([name, contract]) => {
 					return limitPromise(async () => {
-						const isImported = await AddressResolver.methods
-							.areAddressesImported([toBytes32(name)], [contract.options.address])
-							.call();
+						const isImported = await AddressResolver.areAddressesImported(
+							[toBytes32(name)],
+							[contract.address]
+						);
 
 						if (!isImported) {
 							console.log(green(`${name} needs to be imported to the AddressResolver`));
 
 							addressArgs[0].push(toBytes32(name));
-							addressArgs[1].push(contract.options.address);
+							addressArgs[1].push(contract.address);
 
-							newContractsBeingAdded[contract.options.address] = name;
+							const { source, address } = contract;
+							newContractsBeingAdded[contract.address] = { name, source, address };
 						}
 					});
 				})
@@ -78,13 +88,18 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 
 		console.log(
 			yellow(
-				'⚠⚠⚠ WARNING: Addresses have not been imported into the resolver, owner actions must be performed before re-running the script.'
+				'⚠⚠⚠ WARNING: Addresses have not been imported into the resolver,' +
+					' owner actions need to be performed before subsequent actions can be performed.'
 			)
 		);
 
 		if (!dryRun) {
 			if (deployer.newContractsDeployed.length > 0) {
 				reportDeployedContracts({ deployer });
+			}
+			if (!continueEvenIfUnsuccessful) {
+				console.log(gray('Stopping.'));
+				process.exit();
 			}
 		}
 	} else {

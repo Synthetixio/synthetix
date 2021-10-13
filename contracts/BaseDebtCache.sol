@@ -14,8 +14,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IEtherCollateral.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
@@ -42,8 +40,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
@@ -54,16 +50,14 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](9);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[4] = CONTRACT_ETHERCOLLATERAL;
-        newAddresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
-        newAddresses[6] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[7] = CONTRACT_ETHER_WRAPPER;
-        newAddresses[8] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[4] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[5] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[6] = CONTRACT_FUTURESMARKETMANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -81,14 +75,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
-    }
-
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
@@ -203,26 +189,13 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
         // Calculate excluded debt.
-        // 1. Ether Collateral.
-        excludedDebt = excludedDebt.add(etherCollateralsUSD().totalIssuedSynths()); // Ether-backed sUSD
+        // 1. MultiCollateral long debt + short debt.
+        (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
+        (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
+        isInvalid = anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
+        excludedDebt = longValue.add(shortValue);
 
-        uint etherCollateralTotalIssuedSynths = etherCollateral().totalIssuedSynths();
-        // We check the supply > 0 as on L2, we may not yet have up-to-date rates for sETH.
-        if (etherCollateralTotalIssuedSynths > 0) {
-            (uint sETHRate, bool sETHRateIsInvalid) = exchangeRates().rateAndInvalid(sETH);
-            isInvalid = isInvalid || sETHRateIsInvalid;
-            excludedDebt = excludedDebt.add(etherCollateralTotalIssuedSynths.multiplyDecimalRound(sETHRate)); // Ether-backed sETH
-        }
-
-        // 2. MultiCollateral long debt + short debt.
-        ICollateralManager _collateralManager = collateralManager();
-        (uint longValue, bool anyTotalLongRateIsInvalid) = _collateralManager.totalLong();
-        (uint shortValue, bool anyTotalShortRateIsInvalid) = _collateralManager.totalShort();
-
-        isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
-        excludedDebt = excludedDebt.add(longValue).add(shortValue);
-
-        // 3. EtherWrapper.
+        // 2. EtherWrapper.
         // Subtract sETH and sUSD issued by EtherWrapper.
         excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
 
