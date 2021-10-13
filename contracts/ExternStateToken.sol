@@ -26,6 +26,8 @@ contract ExternStateToken is Owned, Proxyable {
     uint public totalSupply;
     uint8 public decimals;
 
+    mapping(address => bool) public canTransfer;
+
     constructor(
         address payable _proxy,
         TokenState _tokenState,
@@ -73,11 +75,18 @@ contract ExternStateToken is Owned, Proxyable {
         emitTokenStateUpdated(address(_tokenState));
     }
 
+    function addWhitelistCanTransfer(address _address) external optionalProxy_onlyOwner {
+        canTransfer[_address] = true;
+    }
+
     function _internalTransfer(
         address from,
         address to,
         uint value
     ) internal returns (bool) {
+        /* Only allow whitelisted address to transfer for testnet competition */
+        require(canTransfer(from), "Only whitelisted address can transfer");
+
         /* Disallow transfers to irretrievable-addresses. */
         require(to != address(0) && to != address(this) && to != address(proxy), "Cannot transfer to this address");
 
