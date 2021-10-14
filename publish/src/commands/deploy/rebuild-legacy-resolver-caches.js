@@ -83,7 +83,7 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 			}
 		}
 
-		const addressesChunkSize = useOvm ? 5 : 20;
+		const addressesChunkSize = 20;
 		let batchCounter = 1;
 		for (let i = 0; i < legacyContractsToRebuildCache.length; i += addressesChunkSize) {
 			const chunk = legacyContractsToRebuildCache.slice(i, i + addressesChunkSize);
