@@ -44,6 +44,7 @@ const importAddresses = require('./import-addresses');
 const importFeePeriods = require('./import-fee-periods');
 const performSafetyChecks = require('./perform-safety-checks');
 const rebuildResolverCaches = require('./rebuild-resolver-caches');
+const rebuildLegacyResolverCaches = require('./rebuild-legacy-resolver-caches');
 const systemAndParameterCheck = require('./system-and-parameter-check');
 const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
@@ -335,13 +336,19 @@ const deploy = async ({
 	});
 
 	await rebuildResolverCaches({
-		addressOf,
-		compiled,
 		deployer,
 		generateSolidity,
 		limitPromise,
-		network,
 		newContractsBeingAdded,
+		runStep,
+		useOvm,
+	});
+
+	await rebuildLegacyResolverCaches({
+		addressOf,
+		compiled,
+		deployer,
+		network,
 		runStep,
 		useOvm,
 	});
