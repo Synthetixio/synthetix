@@ -76,7 +76,11 @@
 				"ProxyFuturesMarketBTC",
 				"ProxyFuturesMarketETH",
 				"ProxyFuturesMarketLINK",
-				"ProxyFuturesMarketManager"
+				"ProxyFuturesMarketManager",
+				"SynthsETH",
+				"SynthsUSD",
+				"SynthsLINK",
+				"SynthsBTC"
 			]
 		},
 		{
