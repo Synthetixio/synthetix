@@ -273,14 +273,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * The size of the skew relative to the size of the market. This value ranges between 0 and 1.
+     * The size of the skew relative to the size of the market OI cap. This value ranges between 0 and 1.
+     * Scaler used for skew is at least minSkewScale to prevent extreme funding rates for small markets.
      */
     function _proportionalSkew() internal view returns (int) {
-        int signedSize = int(marketSize);
-        if (signedSize == 0) {
+        uint minScale = _minSkewScale(baseAsset);
+        // don't allow small market sizes to cause huge funding rates
+        uint skewScale = marketSize > minScale ? marketSize : minScale;
+        if (skewScale == 0) {
+            // parameters may not be set, don't divide by zero
             return 0;
         }
-        return marketSkew.divideDecimalRound(signedSize);
+        return marketSkew.divideDecimalRound(int(skewScale));
     }
 
     /*
@@ -296,7 +300,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
-            uint maxFundingRateSkew,
+            uint minSkewScale,
             uint maxFundingRateDelta
         )
     {
@@ -305,14 +309,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _currentFundingRate() internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(baseAsset));
-        int maxFundingRateSkew = int(_maxFundingRateSkew(baseAsset));
-        if (maxFundingRateSkew == 0) {
-            return maxFundingRate;
-        }
-
-        int functionFraction = _proportionalSkew().divideDecimalRound(maxFundingRateSkew);
         // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -functionFraction), _UNIT).multiplyDecimalRound(maxFundingRate);
+        return _min(_max(-_UNIT, -_proportionalSkew()), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
     /*

@@ -16,8 +16,12 @@ module.exports = async ({
 	config,
 	deployer,
 	freshDeploy,
+	deploymentPath,
+	generateSolidity,
 	network,
 	synths,
+	systemSuspended,
+	useFork,
 	yes,
 }) => {
 	// ----------------
@@ -73,7 +77,7 @@ module.exports = async ({
 		if (synthConfig.deploy) {
 			try {
 				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
-				originalTotalSupply = await oldSynth.methods.totalSupply().call();
+				originalTotalSupply = await oldSynth.totalSupply();
 			} catch (err) {
 				if (!freshDeploy) {
 					// only throw if not local - allows local environments to handle both new
@@ -84,23 +88,45 @@ module.exports = async ({
 		}
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
-			try {
-				await confirmAction(
+		if (synthConfig.deploy && originalTotalSupply > 0) {
+			if (!systemSuspended && !generateSolidity && !useFork) {
+				console.log(
 					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+						'⚠⚠⚠ WARNING: The system is not suspended! Adding a synth here without using a migration contract is potentially problematic.'
 					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
+						yellow(
+							`⚠⚠⚠ Please confirm - ${network}:\n` +
+								`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n` +
+								'NOTE: Deploying with this amount is dangerous when the system is not already suspended'
+						),
+					gray('-'.repeat(50)) + '\n'
 				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
+
+				if (!yes) {
+					try {
+						await confirmAction(gray('Do you want to continue? (y/n) '));
+					} catch (err) {
+						console.log(gray('Operation cancelled'));
+						process.exit();
+					}
+				}
 			}
 		}
 
-		const sourceContract = subclass || 'Synth';
+		let sourceContract = subclass || 'Synth';
+
+		// The Futures testnet only supports whitelisted transfers for synths, in order
+		// to correctly measure profits in the trading competition.
+		if (deploymentPath.includes('kovan-ovm-futures')) {
+			if (subclass) {
+				throw new Error(
+					'Whitelisted transfers is unimplemented for MultiCollateralSynths, please implement it.'
+				);
+			}
+
+			sourceContract = 'LimitedTransferSynth';
+		}
+
 		const synth = await deployer.deployContract({
 			name: `Synth${currencyKey}`,
 			source: sourceContract,

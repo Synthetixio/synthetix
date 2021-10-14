@@ -1,0 +1,6 @@
+working_directory: ~/repo
+docker:
+  - image: synthetixio/docker-node:14.17-ubuntu
+    auth:
+      username: $DOCKERHUB_USERNAME
+      password: $DOCKERHUB_TOKEN
