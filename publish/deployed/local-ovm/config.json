@@ -26,6 +26,9 @@
 	"ExchangeRatesCircuitBreaker": {
 		"deploy": true
 	},
+	"Exchanger": {
+		"deploy": true
+	},
 	"ExchangeState": {
 		"deploy": true
 	},
