@@ -225,15 +225,17 @@ module.exports = async ({
 		comment: 'Set the max amount of debt in the CollateralManager',
 	});
 
-	await runStep({
-		contract: 'CollateralManager',
-		target: CollateralManager,
-		read: 'maxSkewRate',
-		expected: input => input !== '0', // only change if zero
-		write: 'setMaxSkewRate',
-		writeArg: [collateralManagerDefaults['MAX_SKEW_RATE']],
-		comment: 'Set the max skew rate in the CollateralManager',
-	});
+	if (CollateralManager.maxSkewRate) {
+		await runStep({
+			contract: 'CollateralManager',
+			target: CollateralManager,
+			read: 'maxSkewRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setMaxSkewRate',
+			writeArg: [collateralManagerDefaults['MAX_SKEW_RATE']],
+			comment: 'Set the max skew rate in the CollateralManager',
+		});
+	}
 
 	await runStep({
 		contract: 'CollateralManager',
