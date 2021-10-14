@@ -9,7 +9,7 @@
 		"deploy": false
 	},
 	"DebtCache": {
-		"deploy": true
+		"deploy": false
 	},
 	"TradingRewards": {
 		"deploy": false
@@ -27,7 +27,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -45,7 +45,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -81,7 +81,7 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyERC20": {
 		"deploy": false
@@ -111,9 +111,6 @@
 		"deploy": false
 	},
 	"CollateralManager": {
-		"deploy": true
-	},
-	"RewardEscrowV2": {
 		"deploy": false
 	},
 	"TokenStatesETH": {
@@ -123,7 +120,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixBridgeToBase": {
 		"deploy": false
