@@ -104,11 +104,9 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
      */
     function rateWithCircuitBroken(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken) {
-        // check input
-        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
         // check system status
         if (systemStatus().systemSuspended()) {
-            // if system is inactive this call have no effect, but will neither revert,
+            // if system is inactive this call has no effect, but will neither revert,
             // nor persist new rate, nor suspend the synth - because the system is inactive.
             // not reverting is needed for performing admin operations during system suspension
             // e.g. purging synths that use some exchanging functionality
@@ -117,6 +115,8 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
             // check and suspend
             if (invalid || _isRateOutOfBounds(currencyKey, rate)) {
+                // check synth exists, to prevent spamming settings for non existant synths
+                require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
                 systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
                 circuitBroken = true;
             } else {
