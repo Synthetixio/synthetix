@@ -70,6 +70,9 @@
 				"FuturesMarketLINK",
 				"FuturesMarketManager",
 				"FuturesMarketSettings",
+				"Exchanger",
+				"Synthetix",
+				"SystemSettings",
 				"ProxyFuturesMarketBTC",
 				"ProxyFuturesMarketETH",
 				"ProxyFuturesMarketLINK",
@@ -720,21 +723,6 @@
 				"minor": 55
 			},
 			"ovm": true,
-			"sources": [
-				"Exchanger",
-				"FuturesMarketBTC",
-				"FuturesMarketData",
-				"FuturesMarketETH",
-				"FuturesMarketLINK",
-				"FuturesMarketManager",
-				"FuturesMarketSettings",
-				"ProxyFuturesMarketBTC",
-				"ProxyFuturesMarketETH",
-				"ProxyFuturesMarketLINK",
-				"ProxyFuturesMarketManager",
-				"Synthetix",
-				"SystemSettings"
-			],
 			"sips": [80]
 		}
 	]
