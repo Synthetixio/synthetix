@@ -168,6 +168,9 @@
 		"deploy": false
 	},
 	"WETH": {
-		"deploy": true
+		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": false
 	}
 }
