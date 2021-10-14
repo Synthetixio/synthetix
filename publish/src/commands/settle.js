@@ -7,7 +7,7 @@ const ethers = require('ethers');
 
 const { wrap, toBytes32 } = require('../../..');
 
-const { ensureNetwork, loadConnections, stringify, mixinGasOptions } = require('../util');
+const { ensureNetwork, loadConnections, stringify, assignGasOptions } = require('../util');
 
 // The block where Synthetix first had SIP-37 added (when ExchangeState was added)
 const fromBlockMap = {
@@ -101,13 +101,16 @@ const settle = async ({
 				yellow(wallet.address)
 			);
 
-			const params = {
-				to: user.address,
-				value: ethers.utils.parseUnits(ethToSeed),
-				gasLimit,
-			};
-
-			mixinGasOptions(params);
+			const params = assignGasOptions({
+				tx: {
+					to: user.address,
+					value: ethers.utils.parseUnits(ethToSeed),
+					gasLimit,
+				},
+				provider,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
+			});
 
 			const { transactionHash } = await wallet.sendTransaction(params);
 			console.log(gray(`${explorerLinkPrefix}/tx/${transactionHash}`));

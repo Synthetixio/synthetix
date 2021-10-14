@@ -3,7 +3,7 @@ const {
 	appendOwnerActionGenerator,
 	confirmAction,
 	stringify,
-	mixinGasOptions,
+	assignGasOptions,
 } = require('../util');
 const { gray, yellow, green, redBright } = require('chalk');
 
@@ -84,12 +84,12 @@ const performTransactionalStep = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const overrides = await mixinGasOptions(
-				{},
-				target.provider,
+			const overrides = await assignGasOptions({
+				tx: {},
+				provider: target.provider,
 				maxFeePerGas,
-				maxPriorityFeePerGas
-			);
+				maxPriorityFeePerGas,
+			});
 
 			if (nonceManager) {
 				overrides.nonce = await nonceManager.getNonce();

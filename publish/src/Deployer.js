@@ -4,7 +4,7 @@ const linker = require('solc/linker');
 const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const { stringify, getExplorerLinkPrefix, mixinGasOptions } = require('./util');
+const { stringify, getExplorerLinkPrefix, assignGasOptions } = require('./util');
 const { getVersions, getUsers } = require('../..');
 
 class Deployer {
@@ -115,16 +115,16 @@ class Deployer {
 	}
 
 	async sendDummyTx() {
-		const tx = await mixinGasOptions(
-			{
+		const tx = await assignGasOptions({
+			tx: {
 				to: '0x0000000000000000000000000000000000000001',
 				data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 				value: 0,
 			},
-			this.provider,
-			this.maxFeePerGas,
-			this.maxPriorityFeePerGas
-		);
+			provider: this.provider,
+			maxFeePerGas: this.maxFeePerGas,
+			maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+		});
 
 		const response = await this.signer.sendTransaction(tx);
 		await response.wait();
@@ -135,12 +135,12 @@ class Deployer {
 	}
 
 	async sendOverrides() {
-		const params = await mixinGasOptions(
-			{},
-			this.provider,
-			this.maxFeePerGas,
-			this.maxPriorityFeePerGas
-		);
+		const params = await assignGasOptions({
+			tx: {},
+			provider: this.provider,
+			maxFeePerGas: this.maxFeePerGas,
+			maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+		});
 
 		if (this.nonceManager) {
 			params.nonce = await this.nonceManager.getNonce();

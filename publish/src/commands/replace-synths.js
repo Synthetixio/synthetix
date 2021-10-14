@@ -22,7 +22,7 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
-	mixinGasOptions,
+	assignGasOptions,
 } = require('../util');
 const { performTransactionalStep } = require('../command-utils/transact');
 
@@ -263,12 +263,12 @@ const replaceSynths = async ({
 		});
 
 		// Ensure this new synth has its resolver cache set
-		const overrides = await mixinGasOptions(
-			{},
+		const overrides = await assignGasOptions({
+			tx: {},
 			provider,
-			this.maxFeePerGas,
-			this.maxPriorityFeePerGas
-		);
+			maxFeePerGas,
+			maxPriorityFeePerGas,
+		});
 
 		const tx = await replacementSynth.rebuildCache(overrides);
 		await tx.wait();

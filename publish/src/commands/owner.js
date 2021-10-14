@@ -17,7 +17,7 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
-	mixinGasOptions,
+	assignGasOptions,
 } = require('../util');
 
 const SafeBatchSubmitter = require('../SafeBatchSubmitter');
@@ -186,12 +186,15 @@ const owner = async ({
 		} else {
 			try {
 				await confirmOrEnd(yellow('Confirm: ') + `Submit ${bgYellow(black(key))} to (${target})`);
-				const params = {
-					to: target,
-					data,
-				};
-
-				mixinGasOptions(params);
+				const params = assignGasOptions({
+					tx: {
+						to: target,
+						data,
+					},
+					provider,
+					maxFeePerGas,
+					maxPriorityFeePerGas,
+				});
 
 				if (gasLimit) {
 					params.gasLimit = ethers.BigNumber.from(gasLimit);
@@ -249,12 +252,15 @@ const owner = async ({
 				try {
 					await confirmOrEnd(gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`));
 
-					const params = {
-						to: address,
-						data: encodedData,
-					};
-
-					mixinGasOptions(params);
+					const params = assignGasOptions({
+						tx: {
+							to: address,
+							data: encodedData,
+						},
+						provider,
+						maxFeePerGas,
+						maxPriorityFeePerGas,
+					});
 
 					if (gasLimit) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);

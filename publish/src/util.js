@@ -252,22 +252,23 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 	}
 };
 
-const mixinGasOptions = async (tx, provider, maxFeePerGas, maxPriorityFeePerGas) => {
+const assignGasOptions = async ({ tx, provider, maxFeePerGas, maxPriorityFeePerGas }) => {
 	// only add EIP-1559 options if the network supports EIP-1559
+	const gasOptions = {};
+
 	let feeData = {};
 	try {
 		feeData = await provider.getFeeData();
 	} catch (_) {} // network does not support the `getFeeData` rpc call
 	if (feeData.maxFeePerGas) {
-		tx.type = 2;
-		if (maxFeePerGas) tx.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
+		gasOptions.type = 2;
+		if (maxFeePerGas)
+			gasOptions.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
 		if (maxPriorityFeePerGas)
-			tx.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
-	} else {
-		// tx.type = 1;
+			gasOptions.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
 	}
 
-	return tx;
+	return Object.assign(gasOptions, tx);
 };
 
 module.exports = {
@@ -283,5 +284,5 @@ module.exports = {
 	parameterNotice,
 	reportDeployedContracts,
 	catchMissingResolverWhenGeneratingSolidity,
-	mixinGasOptions,
+	assignGasOptions,
 };
