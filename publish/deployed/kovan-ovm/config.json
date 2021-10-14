@@ -1,6 +1,6 @@
 {
 	"SystemSettings": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixBridgeToBase": {
 		"deploy": false
@@ -24,7 +24,7 @@
 		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -48,7 +48,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -57,7 +57,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -81,7 +81,7 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyERC20": {
 		"deploy": false
@@ -123,7 +123,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesBTC": {
 		"deploy": false
@@ -132,7 +132,7 @@
 		"deploy": false
 	},
 	"SynthsBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesLINK": {
 		"deploy": false
@@ -141,7 +141,7 @@
 		"deploy": false
 	},
 	"SynthsLINK": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesUNI": {
 		"deploy": false
@@ -163,35 +163,5 @@
 	},
 	"EtherWrapper": {
 		"deploy": false
-	},
-	"FuturesMarketBTC": {
-		"deploy": true
-	},
-	"FuturesMarketData": {
-		"deploy": true
-	},
-	"FuturesMarketETH": {
-		"deploy": true
-	},
-	"FuturesMarketLINK": {
-		"deploy": true
-	},
-	"FuturesMarketManager": {
-		"deploy": true
-	},
-	"FuturesMarketSettings": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketBTC": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketETH": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketLINK": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketManager": {
-		"deploy": true
 	}
 }
