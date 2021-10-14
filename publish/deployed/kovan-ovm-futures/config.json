@@ -11,9 +11,6 @@
 	"DebtCache": {
 		"deploy": false
 	},
-	"Depot": {
-		"deploy": false
-	},
 	"TradingRewards": {
 		"deploy": false
 	},
@@ -27,12 +24,6 @@
 		"deploy": false
 	},
 	"ExchangeState": {
-		"deploy": false
-	},
-	"EtherCollateral": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
 		"deploy": false
 	},
 	"FeePool": {
@@ -119,6 +110,12 @@
 	"TokenStatesUSD": {
 		"deploy": false
 	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
 	"TokenStatesETH": {
 		"deploy": false
 	},
@@ -131,7 +128,40 @@
 	"SynthetixBridgeToBase": {
 		"deploy": false
 	},
-	"CollateralManager": {
+	"TokenStatesBTC": {
+		"deploy": false
+	},
+	"ProxysBTC": {
+		"deploy": false
+	},
+	"SynthsBTC": {
+		"deploy": false
+	},
+	"TokenStatesLINK": {
+		"deploy": false
+	},
+	"ProxysLINK": {
+		"deploy": false
+	},
+	"SynthsLINK": {
+		"deploy": false
+	},
+	"TokenStatesUNI": {
+		"deploy": false
+	},
+	"ProxysUNI": {
+		"deploy": false
+	},
+	"SynthsUNI": {
+		"deploy": false
+	},
+	"TokenStatesAAVE": {
+		"deploy": false
+	},
+	"ProxysAAVE": {
+		"deploy": false
+	},
+	"SynthsAAVE": {
 		"deploy": false
 	},
 	"EtherWrapper": {
