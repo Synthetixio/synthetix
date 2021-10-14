@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed
@@ -24,12 +24,11 @@ pragma solidity ^0.8.0;
  *
  * [.hljs-theme-light.nopadding]
  * ```
- * /// @custom:oz-upgrades-unsafe-allow constructor
  * constructor() initializer {}
  * ```
  * ====
  */
-abstract contract Initializable {
+contract Initializable {
     /**
      * @dev Indicates that the contract has been initialized.
      */

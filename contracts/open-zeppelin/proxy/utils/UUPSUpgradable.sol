@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.16;
 
-import "./ERC1967/ERC1967UpgradeUpgradeable.sol";
+import "../ERC1967/ERC1967UpgradeUpgradeable.sol";
 import "./Initializable.sol";
 
 /**
@@ -17,7 +17,7 @@ import "./Initializable.sol";
  *
  * _Available since v4.1._
  */
-abstract contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
+contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
     function __UUPSUpgradeable_init() internal initializer {
         __ERC1967Upgrade_init_unchained();
         __UUPSUpgradeable_init_unchained();
@@ -26,7 +26,8 @@ abstract contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
     function __UUPSUpgradeable_init_unchained() internal initializer {}
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable state-variable-assignment
-    address private immutable __self = address(this);
+
+    address private __self = address(this);
 
     /**
      * @dev Check that the execution is being performed through a delegatecall call and that the execution context is
@@ -48,7 +49,7 @@ abstract contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
      *
      * Emits an {Upgraded} event.
      */
-    function upgradeTo(address newImplementation) external virtual onlyProxy {
+    function upgradeTo(address newImplementation) external onlyProxy {
         _authorizeUpgrade(newImplementation);
         _upgradeToAndCallSecure(newImplementation, new bytes(0), false);
     }
@@ -61,7 +62,7 @@ abstract contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
      *
      * Emits an {Upgraded} event.
      */
-    function upgradeToAndCall(address newImplementation, bytes memory data) external payable virtual onlyProxy {
+    function upgradeToAndCall(address newImplementation, bytes calldata data) external payable onlyProxy {
         _authorizeUpgrade(newImplementation);
         _upgradeToAndCallSecure(newImplementation, data, true);
     }
@@ -76,7 +77,7 @@ abstract contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
      * function _authorizeUpgrade(address) internal override onlyOwner {}
      * ```
      */
-    function _authorizeUpgrade(address newImplementation) internal virtual;
+    function _authorizeUpgrade(address newImplementation) internal;
 
     uint256[50] private __gap;
 }

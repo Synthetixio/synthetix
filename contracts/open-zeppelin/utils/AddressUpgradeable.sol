@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Collection of functions related to the address type
@@ -54,7 +54,7 @@ library AddressUpgradeable {
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success, ) = recipient.call.value(amount)("");
         require(success, "Address: unable to send value, recipient may have reverted");
     }
 
@@ -128,7 +128,7 @@ library AddressUpgradeable {
         require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
 
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        (bool success, bytes memory returndata) = target.call.value(value)(data);
         return verifyCallResult(success, returndata, errorMessage);
     }
 
