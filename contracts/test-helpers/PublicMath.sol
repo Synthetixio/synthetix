@@ -3,7 +3,7 @@
  */
 pragma solidity ^0.5.16;
 
-import "../libraries/Math.sol";
+import "../Math.sol";
 
 contract PublicMath {
     using Math for uint;

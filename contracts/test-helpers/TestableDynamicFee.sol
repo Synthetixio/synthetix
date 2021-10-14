@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Libraries
-import "../libraries/DynamicFee.sol";
+import "../DynamicFee.sol";
 
 contract TestableDynamicFee {
     function testThreshold() public pure returns (uint) {

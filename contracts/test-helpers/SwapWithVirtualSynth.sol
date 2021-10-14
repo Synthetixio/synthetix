@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20.sol";
 
 // Libraries
-import "../libraries/SafeDecimalMath.sol";
+import "../SafeDecimalMath.sol";
 
 // Internal references
 import "../interfaces/ISynthetix.sol";
