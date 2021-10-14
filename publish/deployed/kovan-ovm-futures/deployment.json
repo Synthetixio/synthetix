@@ -317,11 +317,11 @@
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
-			"address": "0xEfDEB829500f11FBe26A4382Cf45e0b0Fc4d31b5",
-			"source": "Synth",
-			"link": "https://kovan-explorer.optimism.io/address/0xEfDEB829500f11FBe26A4382Cf45e0b0Fc4d31b5",
-			"timestamp": "2021-07-23T01:30:04.000Z",
-			"txn": "https://kovan-explorer.optimism.io/tx/0x85d456834bde474e63381715473c954f81dd327460171ad59cf649cfcdc9f6a4",
+			"address": "0xb04fffC6159D1DFFf8C02C667f6f0B17fbb84955",
+			"source": "LimitedTransferSynth",
+			"link": "https://kovan-explorer.optimism.io/address/0xb04fffC6159D1DFFf8C02C667f6f0B17fbb84955",
+			"timestamp": "2021-10-14T06:39:26.187Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"TokenStatesETH": {
@@ -344,11 +344,11 @@
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
-			"address": "0xa6c4327E4DDFBBa461bFB0a831784919E3b9de0e",
-			"source": "Synth",
-			"link": "https://kovan-explorer.optimism.io/address/0xa6c4327E4DDFBBa461bFB0a831784919E3b9de0e",
-			"timestamp": "2021-07-23T01:30:04.000Z",
-			"txn": "https://kovan-explorer.optimism.io/tx/0x5bac2559124478d95c19888916e49bd0f9bc7069575b13081e5d2fa4af0a89f1",
+			"address": "0x939311f8a5CDFDF140397746a1d8cc0f06CF6e86",
+			"source": "LimitedTransferSynth",
+			"link": "https://kovan-explorer.optimism.io/address/0x939311f8a5CDFDF140397746a1d8cc0f06CF6e86",
+			"timestamp": "2021-10-14T06:39:33.880Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"Depot": {
