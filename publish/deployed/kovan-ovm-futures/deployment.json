@@ -257,8 +257,8 @@
 			"address": "0xcEFb0A69C203Dd6C033F62eB1398De85e00CE60f",
 			"source": "IssuerWithoutLiquidations",
 			"link": "https://kovan-explorer.optimism.io/address/0xcEFb0A69C203Dd6C033F62eB1398De85e00CE60f",
-			"timestamp": "2021-10-14T05:40:12.341Z",
-			"txn": "",
+			"timestamp": "2021-10-14T05:36:36.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0x5faca9d217769b1e25562b003572cfd0c8ad294c9271ecbe9ee41caf257931f3",
 			"network": "kovan"
 		},
 		"TradingRewards": {
@@ -527,8 +527,8 @@
 			"address": "0x777C22dc0796D6c5DB090246bFF7F53ea5cF34dc",
 			"source": "LimitedTransferSynth",
 			"link": "https://kovan-explorer.optimism.io/address/0x777C22dc0796D6c5DB090246bFF7F53ea5cF34dc",
-			"timestamp": "2021-10-14T05:15:52.948Z",
-			"txn": "",
+			"timestamp": "2021-10-14T05:11:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0xf3aaae216473699fe4550c9766e1fc8f613e292adc0d0b0ff04a9f50798b56bc",
 			"network": "kovan"
 		},
 		"TokenStatesLINK": {
