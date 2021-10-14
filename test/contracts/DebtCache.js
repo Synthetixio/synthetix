@@ -741,7 +741,7 @@ contract('DebtCache', async accounts => {
 				const issued = (await debtCache.cacheInfo())[0];
 
 				const synthsToIssue = toUnit('1000');
-				const cachedSynthsBefore = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const cachedSynths = (await debtCache.cachedSynthDebts([sUSD]))[0];
 
 				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
 
@@ -760,10 +760,7 @@ contract('DebtCache', async accounts => {
 				});
 
 				// cached sUSD increased by synth issued
-				assert.bnEqual(
-					await debtCache.cachedSynthDebts([sUSD]),
-					cachedSynthsBefore.add(synthsToIssue)
-				);
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.add(synthsToIssue));
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(synthsToIssue));
 			});
 
@@ -774,7 +771,7 @@ contract('DebtCache', async accounts => {
 				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
 				await synthetix.issueSynths(synthsToIssue, { from: account1 });
 
-				const cachedSynthsBefore = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const cachedSynths = (await debtCache.cachedSynthDebts([sUSD]))[0];
 				const issued = (await debtCache.cacheInfo())[0];
 				const synthsToBurn = toUnit('500');
 
@@ -793,10 +790,7 @@ contract('DebtCache', async accounts => {
 				});
 
 				// cached sUSD decreased by synth burned
-				assert.bnEqual(
-					await debtCache.cachedSynthDebts([sUSD]),
-					cachedSynthsBefore.sub(synthsToBurn)
-				);
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.sub(synthsToBurn));
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued.sub(synthsToBurn));
 			});
 
