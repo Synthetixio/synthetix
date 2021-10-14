@@ -71,12 +71,17 @@
 				"FuturesMarketManager",
 				"FuturesMarketSettings",
 				"Exchanger",
-				"Synthetix",
+				"Issuer",
+				"SynthRedeemer",
 				"SystemSettings",
 				"ProxyFuturesMarketBTC",
 				"ProxyFuturesMarketETH",
 				"ProxyFuturesMarketLINK",
-				"ProxyFuturesMarketManager"
+				"ProxyFuturesMarketManager",
+				"SynthsETH",
+				"SynthsUSD",
+				"SynthsLINK",
+				"SynthsBTC"
 			]
 		},
 		{
