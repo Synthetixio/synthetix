@@ -171,6 +171,6 @@
 		"deploy": false
 	},
 	"SynthRedeemer": {
-		"deploy": true
+		"deploy": false
 	}
 }
