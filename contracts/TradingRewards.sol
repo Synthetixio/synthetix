@@ -10,7 +10,7 @@ import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Libraries.
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references.
 import "./interfaces/ITradingRewards.sol";

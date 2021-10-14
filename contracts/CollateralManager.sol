@@ -9,7 +9,7 @@ import "./interfaces/ICollateralManager.sol";
 // Libraries
 import "./AddressSetLib.sol";
 import "./Bytes32SetLib.sol";
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./CollateralManagerState.sol";

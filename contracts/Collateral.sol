@@ -10,7 +10,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ICollateralUtil.sol";

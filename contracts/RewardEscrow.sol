@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./interfaces/IRewardEscrow.sol";
 
 // Libraries
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";

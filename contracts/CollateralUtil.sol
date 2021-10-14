@@ -9,7 +9,7 @@ import "./interfaces/ICollateralLoan.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./MixinSystemSettings.sol";
 
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings {
     /* ========== LIBRARIES ========== */

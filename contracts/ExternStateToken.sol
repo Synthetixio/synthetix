@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./Proxyable.sol";
 
 // Libraries
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./TokenState.sol";

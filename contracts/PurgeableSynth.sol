@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Synth.sol";
 
 // Libraries
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal References
 import "./interfaces/IExchangeRates.sol";

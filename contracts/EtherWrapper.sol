@@ -18,7 +18,7 @@ import "./MixinSystemSettings.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./libraries/SafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/etherwrapper
 contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IEtherWrapper {
