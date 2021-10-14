@@ -289,6 +289,71 @@ contract('CollateralManager', async accounts => {
 		it('should add the collaterals during construction', async () => {
 			assert.isTrue(await manager.hasCollateral(ceth.address));
 			assert.isTrue(await manager.hasCollateral(cerc20.address));
+			assert.isTrue(await manager.hasCollateral(short.address));
+		});
+	});
+
+	describe('adding synths', async () => {
+		it('should add the synths during construction', async () => {
+			assert.isTrue(await manager.isSynthManaged(sUSD));
+			assert.isTrue(await manager.isSynthManaged(sBTC));
+			assert.isTrue(await manager.isSynthManaged(sETH));
+		});
+		it('should not allow duplicate synths to be added', async () => {
+			await manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('sUSD')], {
+				from: owner,
+			});
+			assert.isTrue(
+				await manager.areSynthsAndCurrenciesSet(
+					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+				)
+			);
+		});
+		it('should revert when input array lengths dont match', async () => {
+			await assert.revert(
+				manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], [toBytes32('sUSD')], {
+					from: owner,
+				}),
+				'Input array length mismatch'
+			);
+		});
+	});
+
+	describe('removing synths', async () => {
+		after('restore removed synth', async () => {
+			await manager.addSynths([toBytes32('SynthsETH')], [toBytes32('sETH')], {
+				from: owner,
+			});
+			assert.isTrue(
+				await manager.areSynthsAndCurrenciesSet(
+					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+				)
+			);
+		});
+		it('should successfully remove a synth', async () => {
+			await manager.removeSynths([toBytes32('SynthsETH')], [toBytes32('sETH')], {
+				from: owner,
+			});
+			assert.isTrue(
+				await manager.areSynthsAndCurrenciesSet(
+					['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+					['sUSD', 'sBTC'].map(toBytes32)
+				)
+			);
+		});
+		it('should revert when input array lengths dont match', async () => {
+			await assert.revert(
+				manager.removeSynths(
+					[toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
+					[toBytes32('sUSD')],
+					{
+						from: owner,
+					}
+				),
+				'Input array length mismatch'
+			);
 		});
 	});
 

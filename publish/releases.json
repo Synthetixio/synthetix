@@ -298,6 +298,7 @@
 			"layer": "ovm",
 			"sources": [
 				"CollateralManager",
+				"CollateralManagerState",
 				"CollateralShort",
 				"CollateralUtil",
 				"SynthsBTC",
@@ -305,7 +306,8 @@
 				"SynthsLINK",
 				"SynthsUSD",
 				"SystemSettings"
-			]
+			],
+			"released": "ovm"
 		},
 		{
 			"sip": 136,
@@ -334,7 +336,7 @@
 		{
 			"sip": 142,
 			"layer": "both",
-			"released": "base",
+			"released": "both",
 			"sources": [
 				"DebtCache",
 				"FeePool",
@@ -369,7 +371,7 @@
 		{
 			"sip": 174,
 			"layer": "both",
-			"released": "base",
+			"released": "both",
 			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
 		},
 		{
@@ -604,7 +606,7 @@
 		{
 			"name": "Sargas (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 50
