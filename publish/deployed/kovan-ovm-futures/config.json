@@ -169,5 +169,8 @@
 	},
 	"WETH": {
 		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": true
 	}
 }
