@@ -39,6 +39,7 @@ contract('FuturesMarket', accounts => {
 		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
+		exchangeRatesCircuitBreaker,
 		addressResolver,
 		oracle,
 		sUSD,
@@ -68,10 +69,16 @@ contract('FuturesMarket', accounts => {
 
 	const initialFundingIndex = toBN(4);
 
-	async function setPrice(asset, price) {
+	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await exchangeRates.updateRates([asset], [price], await currentTime(), {
 			from: oracle,
 		});
+		// reset the last price to the new price, so that we don't trip the breaker
+		// on various tests that change prices beyond the allowed deviation
+		if (resetCircuitBreaker) {
+			// flag defaults to true because the circuit breaker is not tested in most tests
+			await exchangeRatesCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
+		}
 	}
 
 	async function transferMarginAndModifyPosition({
@@ -101,6 +108,7 @@ contract('FuturesMarket', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
+			ExchangeRatesCircuitBreaker: exchangeRatesCircuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
 			Synthetix: synthetix,
@@ -109,7 +117,7 @@ contract('FuturesMarket', accounts => {
 			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD'],
+			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
@@ -119,6 +127,7 @@ contract('FuturesMarket', accounts => {
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
+				'ExchangeRatesCircuitBreaker',
 				'SystemStatus',
 				'Synthetix',
 				'CollateralManager',
