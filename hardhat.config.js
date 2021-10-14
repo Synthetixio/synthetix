@@ -47,7 +47,6 @@ module.exports = {
 			blockGasLimit: 12e6,
 			allowUnlimitedContractSize: true,
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
-			// initialBaseFeePerGas: '10000000000',
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {

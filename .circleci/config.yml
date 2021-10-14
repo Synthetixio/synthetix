@@ -75,8 +75,6 @@ jobs:
       image: ubuntu-2004:202107-02
       docker_layer_caching: true
     resource_class: large
-    environment:
-      OPTIMISM_TEST_COMMIT: "08d1c86a7878900cc70be59aee70e724e680ec9e"
     steps:
       - checkout
       - attach_workspace:
