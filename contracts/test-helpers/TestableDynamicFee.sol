@@ -16,11 +16,11 @@ contract TestableDynamicFee {
         return DynamicFee.getPriceDifferential(price, previousPrice);
     }
 
-    function testGetPriceWeight(uint round) public view returns (uint) {
+    function testGetPriceWeight(uint round) public pure returns (uint) {
         return DynamicFee.getPriceWeight(round);
     }
 
-    function testGetDynamicFee(uint[] memory prices) public view returns (uint) {
+    function testGetDynamicFee(uint[] memory prices) public pure returns (uint) {
         return DynamicFee.getDynamicFee(prices);
     }
 }

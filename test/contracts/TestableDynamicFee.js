@@ -1,6 +1,6 @@
 const { contract, artifacts } = require('hardhat');
-const { assert } = require('../common');
-const { toUnit } = require('../../utils')();
+const { assert } = require('./common');
+const { toUnit } = require('../utils')();
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const DynamicFee = artifacts.require('DynamicFee');
 const TestableDynamicFee = artifacts.require('TestableDynamicFee');
