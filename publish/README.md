@@ -208,3 +208,19 @@ node publish release --version 2.22.0 --branch master --release Altair
 2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
 3. Run `deploy` as usual but add the `--add-new-synths` flag
 4. Run `verify` as usual.
+
+# `releases.json`
+
+## Purpose:
+
+- To document all the files changed by a SIP, on which layers, to aid with knowing which contracts need to be deployed and where.
+- To match up SIPs to releases.
+
+## How and when to update in PRs
+
+- Any PRs that involve a SIP must always add an entry to `sips` list.
+- However they should never allocate a SIP to a release (in `releases` list) - this is done once we are ready to promote a release to kovan (and thus staging), this way, your PRs are disconnected from releases as they should be.
+
+## Testing
+
+The fork-tests in CI will look for all sips that target the base layer and will attempt to deploy them and run the L1 integration tests on a fork.
