@@ -71,7 +71,7 @@
 				"FuturesMarketManager",
 				"FuturesMarketSettings",
 				"Exchanger",
-				"Synthetix",
+				"Issuer",
 				"SystemSettings",
 				"ProxyFuturesMarketBTC",
 				"ProxyFuturesMarketETH",

@@ -48,7 +48,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -183,15 +183,15 @@
 		"deploy": true
 	},
 	"ProxyFuturesMarketBTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketLINK": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketManager": {
-		"deploy": false
+		"deploy": true
 	}
 }
