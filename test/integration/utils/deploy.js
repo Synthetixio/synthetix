@@ -1,10 +1,6 @@
 const axios = require('axios');
 const { getLocalPrivateKey } = require('../../test-utils/wallets');
 
-const {
-	constants: { OVM_GAS_PRICE },
-} = require('../../..');
-
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
 	deploy: require('../../../publish/src/commands/deploy').deploy,
@@ -46,12 +42,9 @@ async function deployInstance({
 		addNewSynths,
 		buildPath,
 		concurrency: 1,
-		contractDeploymentGasLimit: useOvm ? undefined : 9500000,
 		freshDeploy,
-		gasPrice: useOvm ? OVM_GAS_PRICE : 1,
 		generateSolidity,
 		ignoreCustomParameters,
-		methodCallGasLimit: useOvm ? undefined : 3500000,
 		network,
 		privateKey,
 		providerUrl: `${providerUrl}:${providerPort}`,
@@ -76,8 +69,6 @@ async function connectInstances({ providerUrl, providerPortL1, providerPortL2, q
 		l2Messenger,
 		l1PrivateKey: privateKey,
 		l2PrivateKey: privateKey,
-		l1GasPrice: 1,
-		l2GasPrice: OVM_GAS_PRICE,
 		gasLimit: 8000000,
 		quiet,
 	});

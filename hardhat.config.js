@@ -13,11 +13,9 @@ const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
 } = require('.');
 
-const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
 
 module.exports = {
-	GAS_PRICE,
 	ovm: {
 		solcVersion: '0.5.16',
 	},
@@ -46,13 +44,9 @@ module.exports = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
-			gas: 12e6,
 			blockGasLimit: 12e6,
 			allowUnlimitedContractSize: true,
-			gasPrice: GAS_PRICE,
-			hardfork: 'london',
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
-			initialBaseFeePerGas: (1e9).toString(), // 1 GWEI
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
