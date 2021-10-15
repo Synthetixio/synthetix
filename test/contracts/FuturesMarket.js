@@ -3635,5 +3635,53 @@ contract('FuturesMarket', accounts => {
 
 			everythingReverts();
 		});
+
+		describe('exchangeRatesCircuitBreaker.lastExchangeRate is updated after transactions', () => {
+			const newPrice = toUnit('110');
+
+			beforeEach(async () => {
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// base rate of sETH is 100 from shared setup above
+				await setPrice(baseAsset, newPrice, false);
+			});
+
+			it('after transferMargin', async () => {
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+
+			it('after withdrawAllMargin', async () => {
+				await futuresMarket.withdrawAllMargin({ from: trader });
+				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+
+			it('after modifyPosition', async () => {
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+
+			it('after modifyPositionWithPriceBounds', async () => {
+				await futuresMarket.modifyPositionWithPriceBounds(
+					toUnit('1'),
+					toUnit('50'),
+					toUnit('200'),
+					{ from: trader }
+				);
+				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+
+			it('after closePosition', async () => {
+				await futuresMarket.closePosition({ from: trader });
+				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+
+			it('after closePositionWithPriceBounds reverts', async () => {
+				await futuresMarket.closePositionWithPriceBounds(toUnit('50'), toUnit('200'), {
+					from: trader,
+				});
+				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+		});
 	});
 });
