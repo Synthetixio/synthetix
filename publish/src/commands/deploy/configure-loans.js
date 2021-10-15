@@ -174,8 +174,8 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
 
-		if (SystemSettings) {
-			const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
+		const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
+		if (SystemSettings.interactionDelay) {
 			await runStep({
 				contract: 'SystemSettings',
 				target: SystemSettings,
@@ -185,6 +185,17 @@ module.exports = async ({
 				write: 'setInteractionDelay',
 				writeArg: [CollateralShort.address, interactionDelay],
 				comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
+			});
+		} else {
+			await runStep({
+				contract: 'CollateralShort',
+				target: CollateralShort,
+				read: 'interactionDelay',
+				expected: input => input !== '0', // only change if zero
+				write: 'setInteractionDelay',
+				writeArg: interactionDelay,
+				comment:
+					'Ensure the CollateralShort contract has an interaction delay to prevent frontrunning',
 			});
 		}
 
