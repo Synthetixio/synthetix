@@ -18,14 +18,12 @@ class Deployer {
 		compiled,
 		config,
 		configFile,
-		contractDeploymentGasLimit,
 		deployment,
 		deploymentFile,
 		dryRun,
 		gasPrice,
 		maxFeePerGas,
 		maxPriorityFeePerGas,
-		methodCallGasLimit,
 		network,
 		providerUrl,
 		privateKey,
@@ -43,9 +41,7 @@ class Deployer {
 		this.gasPrice = gasPrice;
 		this.maxFeePerGas = maxFeePerGas;
 		this.maxPriorityFeePerGas = maxPriorityFeePerGas;
-		this.methodCallGasLimit = methodCallGasLimit;
 		this.network = network;
-		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 		this.ignoreSafetyChecks = ignoreSafetyChecks;

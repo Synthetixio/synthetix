@@ -24,17 +24,14 @@ module.exports = async ({
 	addNewSynths,
 	concurrency,
 	config,
-	contractDeploymentGasLimit,
 	deployer,
 	deploymentPath,
 	dryRun,
 	earliestCompiledTimestamp,
 	freshDeploy,
-	gasPrice,
 	maxFeePerGas,
 	maxPriorityFeePerGas,
 	getDeployParameter,
-	methodCallGasLimit,
 	network,
 	oracleExrates,
 	providerUrl,
@@ -187,11 +184,10 @@ module.exports = async ({
 				? red('⚠ No -ovm folder suffix!')
 				: green('true')
 			: 'false',
-		'Gas Options': gasPrice
-			? `non eip-1559 gasPrice = ${gasPrice} GWEI`
-			: `eip-1559 base fee max = ${maxFeePerGas} GWEI, miner tip = ${maxPriorityFeePerGas} GWEI`,
-		'Method call gas limit': `${methodCallGasLimit} gas`,
-		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
+		'Gas Options':
+			maxFeePerGas || maxPriorityFeePerGas
+				? `provider default`
+				: `eip-1559 base fee max = ${maxFeePerGas} GWEI, miner tip = ${maxPriorityFeePerGas} GWEI`,
 		'Build Path': buildPath,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath

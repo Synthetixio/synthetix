@@ -29,8 +29,6 @@ const {
 
 const DEFAULTS = {
 	priorityGasPrice: '1',
-	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	rewardsToDeploy: [],
@@ -40,8 +38,6 @@ const deployStakingRewards = async ({
 	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
-	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
-	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	network = DEFAULTS.network,
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
@@ -133,14 +129,12 @@ const deployStakingRewards = async ({
 
 	const deployer = new Deployer({
 		compiled,
-		contractDeploymentGasLimit,
 		config,
 		configFile: null, // null configFile so it doesn't overwrite config.json
 		deployment,
 		deploymentFile,
 		maxFeePerGas,
 		maxPriorityFeePerGas,
-		methodCallGasLimit,
 		network,
 		privateKey,
 		providerUrl,
@@ -291,12 +285,6 @@ module.exports = {
 				DEFAULTS.buildPath
 			)
 			.option(
-				'-c, --contract-deployment-gas-limit <value>',
-				'Contract deployment gas limit',
-				parseInt,
-				DEFAULTS.contractDeploymentGasLimit
-			)
-			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
@@ -305,12 +293,6 @@ module.exports = {
 				'--max-priority-fee-per-gas <value>',
 				'Priority gas fee price in GWEI',
 				DEFAULTS.priorityGasPrice
-			)
-			.option(
-				'-m, --method-call-gas-limit <value>',
-				'Method call gas limit',
-				parseInt,
-				DEFAULTS.methodCallGasLimit
 			)
 			.option(
 				'-n, --network <value>',
