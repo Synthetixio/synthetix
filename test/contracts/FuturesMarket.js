@@ -3544,4 +3544,96 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 	});
+
+	describe('Price deviation scenarios', () => {
+		const everythingReverts = async () => {
+			it('then futuresMarketSettings parameter changes revert', async () => {
+				await assert.revert(
+					futuresMarketSettings.setMaxFundingRate(baseAsset, 0, { from: owner }),
+					'Invalid price'
+				);
+				await assert.revert(
+					futuresMarketSettings.setMinSkewScale(baseAsset, 0, { from: owner }),
+					'Invalid price'
+				);
+				await assert.revert(
+					futuresMarketSettings.setMaxFundingRateDelta(baseAsset, 0, { from: owner }),
+					'Invalid price'
+				);
+				await assert.revert(
+					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, { from: owner }),
+					'Invalid price'
+				);
+			});
+
+			it('then transferMargin reverts', async () => {
+				await assert.revert(
+					futuresMarket.transferMargin(toUnit('1000'), { from: trader }),
+					'Invalid price'
+				);
+			});
+
+			it('then withdrawAllMargin reverts', async () => {
+				await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), 'Invalid price');
+			});
+
+			it('then modifyPosition reverts', async () => {
+				await assert.revert(
+					futuresMarket.modifyPosition(toUnit('1'), { from: trader }),
+					'Invalid price'
+				);
+			});
+
+			it('then modifyPositionWithPriceBounds reverts', async () => {
+				await assert.revert(
+					futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), toUnit('0.9'), toUnit('1.2'), {
+						from: trader,
+					}),
+					'Invalid price'
+				);
+			});
+
+			it('then closePosition reverts', async () => {
+				await assert.revert(futuresMarket.closePosition({ from: trader }), 'Invalid price');
+			});
+
+			it('then closePositionWithPriceBounds reverts', async () => {
+				await assert.revert(
+					futuresMarket.closePositionWithPriceBounds(toUnit('0.9'), toUnit('1.2'), {
+						from: trader,
+					}),
+					'Invalid price'
+				);
+			});
+
+			it('then liquidatePosition reverts', async () => {
+				await assert.revert(
+					futuresMarket.liquidatePosition(trader, { from: trader }),
+					'Invalid price'
+				);
+			});
+		};
+
+		describe('when price spikes over the allowed threshold', () => {
+			beforeEach(async () => {
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// base rate of sETH is 100 from shared setup above
+				await setPrice(baseAsset, toUnit('300'), false);
+			});
+
+			everythingReverts();
+		});
+
+		describe('when price drops over the allowed threshold', () => {
+			beforeEach(async () => {
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// base rate of sETH is 100 from shared setup above
+				await setPrice(baseAsset, toUnit('30'), false);
+			});
+
+			everythingReverts();
+		});
+	});
 });
