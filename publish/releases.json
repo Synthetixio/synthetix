@@ -61,7 +61,7 @@
 		},
 		{
 			"sip": 80,
-			"layer": "ovm",
+			"layer": "kovan-ovm",
 			"released": false,
 			"sources": [
 				"FuturesMarketBTC",

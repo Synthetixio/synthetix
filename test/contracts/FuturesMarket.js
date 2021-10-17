@@ -44,7 +44,8 @@ contract('FuturesMarket', accounts => {
 		sUSD,
 		synthetix,
 		feePool,
-		debtCache;
+		debtCache,
+		systemStatus;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -105,6 +106,7 @@ contract('FuturesMarket', accounts => {
 			Synthetix: synthetix,
 			FeePool: feePool,
 			DebtCache: debtCache,
+			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -132,6 +134,15 @@ contract('FuturesMarket', accounts => {
 		for (const t of [trader, trader2, trader3]) {
 			await sUSD.issue(t, traderInitialBalance);
 		}
+
+		// allow ownder to suspend system or synths
+		await systemStatus.updateAccessControls(
+			[toBytes32('System'), toBytes32('Synth')],
+			[owner, owner],
+			[true, true],
+			[true, true],
+			{ from: owner }
+		);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -970,6 +981,51 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 
+		it('Reverts if the price is invalid', async () => {
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+			await fastForward(7 * 24 * 60 * 60);
+			await assert.revert(
+				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
+				'Invalid price'
+			);
+		});
+
+		it('Reverts if the system is suspended', async () => {
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+			// suspend
+			await systemStatus.suspendSystem('3', { from: owner });
+			// should revert
+			await assert.revert(
+				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
+				'Synthetix is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSystem({ from: owner });
+			// should work now
+			await futuresMarket.transferMargin(toUnit('-1000'), { from: trader });
+			assert.bnClose((await futuresMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+		});
+
+		it('Reverts if the synth is suspended', async () => {
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+			// suspend
+			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			// should revert
+			await assert.revert(
+				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
+				'Synth is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			// should work now
+			await futuresMarket.transferMargin(toUnit('-1000'), { from: trader });
+			assert.bnClose((await futuresMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+		});
+
 		describe('No position', async () => {
 			it('New margin', async () => {
 				assert.bnEqual((await futuresMarket.positions(trader)).margin, toBN(0));
@@ -1090,6 +1146,54 @@ contract('FuturesMarket', accounts => {
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(futuresMarket.modifyPosition(size, { from: trader }), 'Invalid price');
+		});
+
+		it('Cannot modify a position if the system is suspended', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.transferMargin(margin, { from: trader });
+			const size = toUnit('10');
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+
+			// suspend
+			await systemStatus.suspendSystem('3', { from: owner });
+			// should revert modifying position
+			await assert.revert(
+				futuresMarket.modifyPosition(size, { from: trader }),
+				'Synthetix is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSystem({ from: owner });
+			// should work now
+			await futuresMarket.modifyPosition(size, { from: trader });
+			const position = await futuresMarket.positions(trader);
+			assert.bnEqual(position.size, size);
+			assert.bnEqual(position.lastPrice, price);
+		});
+
+		it('Cannot modify a position if the synth is suspended', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.transferMargin(margin, { from: trader });
+			const size = toUnit('10');
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+
+			// suspend
+			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			// should revert modifying position
+			await assert.revert(
+				futuresMarket.modifyPosition(size, { from: trader }),
+				'Synth is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			// should work now
+			await futuresMarket.modifyPosition(size, { from: trader });
+			const position = await futuresMarket.positions(trader);
+			assert.bnEqual(position.size, size);
+			assert.bnEqual(position.lastPrice, price);
 		});
 
 		it('Empty orders fail', async () => {
@@ -2214,6 +2318,50 @@ contract('FuturesMarket', accounts => {
 					await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), 'Invalid price');
 				});
 
+				it('Reverts if the system is suspended', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+					// suspend
+					await systemStatus.suspendSystem('3', { from: owner });
+					// should revert
+					await assert.revert(
+						futuresMarket.withdrawAllMargin({ from: trader }),
+						'Synthetix is suspended'
+					);
+
+					// resume
+					await systemStatus.resumeSystem({ from: owner });
+					// should work now
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+
+				it('Reverts if the synth is suspended', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+					// suspend
+					await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+					// should revert
+					await assert.revert(
+						futuresMarket.withdrawAllMargin({ from: trader }),
+						'Synth is suspended'
+					);
+
+					// resume
+					await systemStatus.resumeSynth(baseAsset, { from: owner });
+					// should work now
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+
 				it('allows users to withdraw all their margin', async () => {
 					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 					await futuresMarket.transferMargin(toUnit('3000'), { from: trader2 });
@@ -3087,6 +3235,40 @@ contract('FuturesMarket', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
+			});
+
+			it('No liquidations while the system is suspended', async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
+				await setPrice(baseAsset, toUnit('25'));
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+				// suspend
+				await systemStatus.suspendSystem('3', { from: owner });
+				assert.isFalse(await futuresMarket.canLiquidate(trader));
+
+				// resume
+				await systemStatus.resumeSystem({ from: owner });
+				// should work now
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+			});
+
+			it('No liquidations while the synth is suspended', async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
+				await setPrice(baseAsset, toUnit('25'));
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+				// suspend
+				await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+				assert.isFalse(await futuresMarket.canLiquidate(trader));
+
+				// resume
+				await systemStatus.resumeSynth(baseAsset, { from: owner });
+				// should work now
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
 			});
 		});
 
