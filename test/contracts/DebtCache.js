@@ -688,6 +688,65 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
+		describe('updateCachedsUSDDebt()', () => {
+			beforeEach(async () => {
+				await addressResolver.importAddresses([toBytes32('Issuer')], [owner], {
+					from: owner,
+				});
+				await debtCache.rebuildCache();
+			});
+			it('when sUSD is increased by minting', async () => {
+				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const amount = toUnit('1000');
+				const tx = await debtCache.updateCachedsUSDDebt(amount, { from: owner });
+
+				assert.bnEqual((await debtCache.cacheInfo())[0], cachedSynthDebt.add(amount));
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynthDebt.add(amount));
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [cachedSynthDebt.add(amount)],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+			});
+			it('when sUSD cache is decreased by minting', async () => {
+				const amount = toUnit('1000');
+				await debtCache.updateCachedsUSDDebt(amount, { from: owner });
+
+				// cached Synth after increase
+				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				assert.bnEqual((await debtCache.cacheInfo())[0], amount);
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), amount);
+
+				// decrease the cached sUSD amount
+				const amountToReduce = toUnit('500');
+				const tx = await debtCache.updateCachedsUSDDebt(amountToReduce.neg(), { from: owner });
+
+				assert.bnEqual(
+					await debtCache.cachedSynthDebts([sUSD]),
+					cachedSynthDebt.sub(amountToReduce)
+				);
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [cachedSynthDebt.sub(amountToReduce)],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+			});
+		});
+
 		describe('Issuance, burning, exchange, settlement', () => {
 			it('issuing sUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
