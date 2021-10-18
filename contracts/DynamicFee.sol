@@ -30,7 +30,8 @@ library DynamicFee {
 
         int abs = int(price.divideDecimal(previousPrice)) - int(SafeDecimalMath.unit());
         abs = abs > 0 ? abs : -abs;
-        return abs > int(threshold()) ? uint(abs) : uint(0);
+        int priceDifferential = abs - int(threshold());
+        return priceDifferential > 0 ? uint(priceDifferential) : uint(0);
     }
 
     /// @notice Calculate Price Weight

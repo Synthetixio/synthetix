@@ -29,7 +29,7 @@ contract('TestableDynamicFee', () => {
 			toUnit('102'),
 			toUnit('101')
 		);
-		assert.bnEqual(priceDiff, '9900990099009900');
+		assert.bnEqual(priceDiff, '5900990099009900');
 	});
 
 	it('Can get price weight', async () => {
@@ -44,8 +44,19 @@ contract('TestableDynamicFee', () => {
 	});
 
 	it('Can get dynamic fee', async () => {
-		const prices = [toUnit('102'), toUnit('101'), toUnit('100')];
+		const prices = [
+			toUnit('49234.65005734'),
+			toUnit('49535.05178912'),
+			toUnit('49714.05205647'),
+			toUnit('49691.8024553899'),
+			toUnit('49714.05205647'),
+			toUnit('49722.83886705'),
+			toUnit('49838.87627216'),
+			toUnit('49842.74988613'),
+			toUnit('49933.34034209'),
+			toUnit('49871.92313713'),
+		];
 		const dynamicFee = await testableDynamicFee.testGetDynamicFee(prices);
-		assert.bnEqual(dynamicFee, '18900990099009900');
+		assert.bnEqual(dynamicFee, '2064427530203592');
 	});
 });
