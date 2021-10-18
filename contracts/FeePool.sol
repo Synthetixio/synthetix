@@ -24,7 +24,6 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IFuturesMarketManager.sol";
@@ -33,6 +32,8 @@ import "./interfaces/IFuturesMarketManager.sol";
 contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+
+    bytes32 public constant CONTRACT_NAME = "FeePool";
 
     // Where fees are pooled in sUSD.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
@@ -72,7 +73,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
@@ -95,7 +95,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_FEEPOOLSTATE;
@@ -105,11 +105,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
         newAddresses[7] = CONTRACT_REWARDESCROW_V2;
         newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
-        newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
-        newAddresses[11] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[12] = CONTRACT_ETHER_WRAPPER;
-        newAddresses[13] = CONTRACT_FUTURES_MARKET_MANAGER;
+        newAddresses[9] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[11] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[12] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -131,10 +130,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
@@ -737,7 +732,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return
             account == address(exchanger()) ||
             issuer().synthsByAddress(account) != bytes32(0) ||
-            account == address(etherCollateralsUSD()) ||
             collateralManager().hasCollateral(account) ||
             account == address(etherWrapper()) ||
             account == address(futuresMarketManager());

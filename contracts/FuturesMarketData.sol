@@ -7,8 +7,15 @@ import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/FuturesMarketData
+// A utility contract to allow the front end to query market data in a single call.
 contract FuturesMarketData {
     /* ========== TYPES ========== */
+
+    struct FuturesGlobals {
+        uint minInitialMargin;
+        uint liquidationFee;
+    }
 
     struct MarketSummary {
         address market;
@@ -41,13 +48,12 @@ contract FuturesMarketData {
 
     struct PriceDetails {
         uint price;
-        uint currentRoundId;
         bool invalid;
     }
 
     struct FundingParameters {
         uint maxFundingRate;
-        uint maxFundingRateSkew;
+        uint minSkewScale;
         uint maxFundingRateDelta;
     }
 
@@ -73,14 +79,14 @@ contract FuturesMarketData {
     }
 
     struct PositionData {
-        IFuturesMarket.Order order;
-        bool orderPending;
         IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
         int accruedFunding;
         uint remainingMargin;
+        uint accessibleMargin;
         uint liquidationPrice;
+        bool canLiquidatePosition;
     }
 
     /* ========== STORAGE VARIABLES ========== */
@@ -109,6 +115,11 @@ contract FuturesMarketData {
             );
     }
 
+    function globals() external view returns (FuturesGlobals memory) {
+        IFuturesMarketSettings settings = _futuresMarketSettings();
+        return FuturesGlobals(settings.minInitialMargin(), settings.liquidationFee());
+    }
+
     function parameters(bytes32 baseAsset) external view returns (IFuturesMarketSettings.Parameters memory) {
         return _parameters(baseAsset);
     }
@@ -121,7 +132,7 @@ contract FuturesMarketData {
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
-            uint maxFundingRateSkew,
+            uint minSkewScale,
             uint maxFundingRateDelta
         ) = _futuresMarketSettings().parameters(baseAsset);
         return
@@ -132,7 +143,7 @@ contract FuturesMarketData {
                 maxLeverage,
                 maxMarketValue,
                 maxFundingRate,
-                maxFundingRateSkew,
+                minSkewScale,
                 maxFundingRateDelta
             );
     }
@@ -181,7 +192,7 @@ contract FuturesMarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(params.maxFundingRate, params.maxFundingRateSkew, params.maxFundingRateDelta);
+        return FundingParameters(params.maxFundingRate, params.minSkewScale, params.maxFundingRateDelta);
     }
 
     function _marketSizes(IFuturesMarket market) internal view returns (Sides memory) {
@@ -204,7 +215,7 @@ contract FuturesMarketData {
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
-                PriceDetails(price, market.currentRoundId(), invalid)
+                PriceDetails(price, invalid)
             );
     }
 
@@ -214,6 +225,12 @@ contract FuturesMarketData {
 
     function marketDetailsForAsset(bytes32 asset) external view returns (MarketData memory) {
         return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)));
+    }
+
+    function _position(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Position memory) {
+        (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
+            market.positions(account);
+        return IFuturesMarket.Position(positionId, positionMargin, positionSize, positionEntryPrice, positionEntryIndex);
     }
 
     function _notionalValue(IFuturesMarket market, address account) internal view returns (int) {
@@ -236,25 +253,27 @@ contract FuturesMarketData {
         return value;
     }
 
-    function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
-        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
-        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
+    function _accessibleMargin(IFuturesMarket market, address account) internal view returns (uint) {
+        (uint value, ) = market.accessibleMargin(account);
+        return value;
+    }
+
+    function _liquidationPrice(IFuturesMarket market, address account) internal view returns (uint) {
+        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
+        return liquidationPrice;
     }
 
     function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
-        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
-            market.positions(account);
-        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
         return
             PositionData(
-                _order(market, account),
-                market.orderPending(account),
-                IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
+                _position(market, account),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
                 _remainingMargin(market, account),
-                liquidationPrice
+                _accessibleMargin(market, account),
+                _liquidationPrice(market, account),
+                market.canLiquidate(account)
             );
     }
 

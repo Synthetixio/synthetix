@@ -9,56 +9,18 @@ module.exports = async ({
 	deployer,
 	getDeployParameter,
 	runStep,
-	useEmptyCollateralManager,
 }) => {
 	console.log(gray(`\n------ CONFIGURING MULTI COLLATERAL ------\n`));
 
 	const {
+		SystemSettings,
 		CollateralErc20,
 		CollateralEth,
 		CollateralShort,
 		CollateralManager,
 		CollateralManagerState,
-		CollateralStateErc20,
-		CollateralStateEth,
-		CollateralStateShort,
 	} = deployer.deployedContracts;
 
-	if (CollateralStateShort && CollateralShort) {
-		await runStep({
-			contract: 'CollateralStateShort',
-			target: CollateralStateShort,
-			read: 'associatedContract',
-			expected: input => input === CollateralShort.options.address,
-			write: 'setAssociatedContract',
-			writeArg: CollateralShort.options.address,
-			comment: 'Ensure the CollateralShort contract can write to its state',
-		});
-	}
-
-	if (CollateralStateErc20 && CollateralErc20) {
-		await runStep({
-			contract: 'CollateralStateErc20',
-			target: CollateralStateErc20,
-			read: 'associatedContract',
-			expected: input => input === addressOf(CollateralErc20),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(CollateralErc20),
-			comment: 'Ensure the CollateralErc20 can write to its state',
-		});
-	}
-
-	if (CollateralStateEth && CollateralEth) {
-		await runStep({
-			contract: 'CollateralStateEth',
-			target: CollateralStateEth,
-			read: 'associatedContract',
-			expected: input => input === addressOf(CollateralEth),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(CollateralEth),
-			comment: 'Ensure the CollatearlEth contract can write to its state',
-		});
-	}
 	if (CollateralManagerState && CollateralManager) {
 		await runStep({
 			contract: 'CollateralManagerState',
@@ -73,8 +35,11 @@ module.exports = async ({
 
 	console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
 
-	if (CollateralEth && CollateralErc20 && CollateralShort) {
-		const CollateralsArg = [CollateralEth, CollateralErc20, CollateralShort].map(addressOf);
+	if (CollateralShort && CollateralManager) {
+		let CollateralsArg = [CollateralShort].map(addressOf);
+		if (CollateralEth && CollateralErc20) {
+			CollateralsArg = [CollateralEth, CollateralErc20, CollateralShort].map(addressOf);
+		}
 		await runStep({
 			contract: 'CollateralManager',
 			target: CollateralManager,
@@ -86,7 +51,7 @@ module.exports = async ({
 			comment: 'Ensure the CollateralManager has all Collateral contracts added',
 		});
 	}
-	if (CollateralEth) {
+	if (CollateralEth && CollateralManager) {
 		await runStep({
 			contract: 'CollateralEth',
 			target: CollateralEth,
@@ -96,6 +61,7 @@ module.exports = async ({
 			writeArg: addressOf(CollateralManager),
 			comment: 'Ensure the CollateralEth is connected to the CollateralManager',
 		});
+
 		const CollateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
@@ -119,14 +85,14 @@ module.exports = async ({
 			contract: 'CollateralEth',
 			target: CollateralEth,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
+			expected: input => input !== '0', // only change if zero,
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
-			comment: 'Ensure the CollateralEth has its issue fee rate set',
+			writeArg: [(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE']],
+			comment: 'Ensure the CollateralEth contract has its issue fee rate set',
 		});
 	}
 
-	if (CollateralErc20) {
+	if (CollateralErc20 && CollateralManager) {
 		await runStep({
 			contract: 'CollateralErc20',
 			target: CollateralErc20,
@@ -136,6 +102,7 @@ module.exports = async ({
 			writeArg: addressOf(CollateralManager),
 			comment: 'Ensure the CollateralErc20 contract is connected to the CollateralManager',
 		});
+
 		const CollateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
 		await runStep({
 			contract: 'CollateralErc20',
@@ -161,12 +128,12 @@ module.exports = async ({
 			read: 'issueFeeRate',
 			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+			writeArg: [(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE']],
 			comment: 'Ensure the CollateralErc20 contract has its issue fee rate set',
 		});
 	}
 
-	if (CollateralShort) {
+	if (CollateralShort && CollateralManager) {
 		await runStep({
 			contract: 'CollateralShort',
 			target: CollateralShort,
@@ -196,32 +163,48 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has all associated synths added',
 		});
 
-		const CollateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
-			'INTERACTION_DELAY'
-		];
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: CollateralShort,
-			read: 'interactionDelay',
-			expected: input => input !== '0', // only change if zero
-			write: 'setInteractionDelay',
-			writeArg: CollateralShortInteractionDelay,
-			comment:
-				'Ensure the CollateralShort contract has an interaction delay to prevent frontrunning',
-		});
 		await runStep({
 			contract: 'CollateralShort',
 			target: CollateralShort,
 			read: 'issueFeeRate',
 			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+			writeArg: [(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE']],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
-	}
 
-	if (!useEmptyCollateralManager) {
+		if (SystemSettings) {
+			const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
+			await runStep({
+				contract: 'SystemSettings',
+				target: SystemSettings,
+				read: 'interactionDelay',
+				readArg: addressOf(CollateralShort),
+				expected: input => (interactionDelay === '0' ? true : input !== '0'),
+				write: 'setInteractionDelay',
+				writeArg: [
+					CollateralShort.address,
+					(await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
+				],
+				comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
+			});
+		}
+
+		if (SystemSettings.collapseFeeRate) {
+			const collapseFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['COLLAPSE_FEE_RATE'];
+			await runStep({
+				contract: 'SystemSettings',
+				target: SystemSettings,
+				read: 'collapseFeeRate',
+				readArg: addressOf(CollateralShort),
+				expected: input => (collapseFeeRate === '0' ? true : input !== '0'),
+				write: 'setCollapseFeeRate',
+				writeArg: [CollateralShort.address, collapseFeeRate],
+				comment:
+					'Ensure the CollateralShort contract has its service fee set for collapsing loans (SIP-135)',
+			});
+		}
+
 		await runStep({
 			contract: 'CollateralManager',
 			target: CollateralManager,
@@ -230,6 +213,16 @@ module.exports = async ({
 			write: 'setMaxDebt',
 			writeArg: [collateralManagerDefaults['MAX_DEBT']],
 			comment: 'Set the max amount of debt in the CollateralManager',
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: CollateralManager,
+			read: 'maxSkewRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setMaxSkewRate',
+			writeArg: [collateralManagerDefaults['MAX_SKEW_RATE']],
+			comment: 'Set the max skew rate in the CollateralManager',
 		});
 
 		await runStep({
@@ -279,16 +272,14 @@ module.exports = async ({
 			target: CollateralManager,
 			read: 'areShortableSynthsSet',
 			readArg: [
-				CollateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
-				CollateralManagerShorts.map(({ long }) => toBytes32(long)),
+				CollateralManagerShorts.map(key => toBytes32(`Synth${key}`)),
+				CollateralManagerShorts.map(toBytes32),
 			],
 			expected: input => input,
 			write: 'addShortableSynths',
 			writeArg: [
-				CollateralManagerShorts.map(({ long, short }) =>
-					[`Synth${long}`, `Synth${short}`].map(toBytes32)
-				),
-				CollateralManagerShorts.map(({ long }) => toBytes32(long)),
+				CollateralManagerShorts.map(key => toBytes32(`Synth${key}`)),
+				CollateralManagerShorts.map(toBytes32),
 			],
 			comment: 'Ensure the CollateralManager contract has all associated short synths added',
 		});

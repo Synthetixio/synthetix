@@ -8,12 +8,12 @@
 
 Synthetix is a crypto-backed synthetic asset platform.
 
-It is a multi-token system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Mintr dApp](https://mintr.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/tokens/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://developer.synthetix.io/api/docs/deployed-contracts.html)
-Synths can be traded using [synthetix.exchange](https://synthetix.exchange)
+It is a multi-token system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Staking dApp](https://staking.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/synths/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://docs.synthetix.io/addresses/)
+Synths can be traded using [Kwenta](https://kwenta.io)
 
-Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Synthetix Improvement Proposal (SIP)](https://sips.synthetix.io/all-sip) system similar to the [EF's EIPs](https://eips.ethereum.org/all)
+Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Synthetix Improvement Proposal (SIP)](https://sips.synthetix.io/all-sip) system similar to the [EIPs](https://eips.ethereum.org/all)
 
-Prices are committed on chain by a trusted oracle. Moving to a decentralised oracle is phased in with the first phase completed for all forex prices using [Chainlink](https://feeds.chain.link/)
+Prices are committed on chain by a trusted oracle provided by [Chainlink](https://feeds.chain.link/).
 
 Please note that this repository is under development.
 
@@ -21,9 +21,9 @@ For the latest system documentation see [docs.synthetix.io](https://docs.synthet
 
 ## DApps
 
-- [mintr.synthetix.io](https://mintr.synthetix.io)
-- [synthetix.exchange](https://synthetix.exchange)
-- [dashboard.synthetix.io](https://dashboard.synthetix.io)
+- [staking.synthetix.io](https://staking.synthetix.io)
+- [kwenta.io](https://kwenta.io)
+- [stats.synthetix.io](https://stats.synthetix.io)
 
 ### Community
 
@@ -40,9 +40,6 @@ For a guide from the community, see [synthetix.community](https://synthetix.comm
 A note on the branches used in this repo.
 
 - `master` represents the contracts live on `mainnet` and all testnets.
-- `alpha` is for the newest version of contracts, and is reserved for deploys to `kovan`
-- `beta` is for promoted alpha contracts, and is reserved for deploys to `rinkeby`
-- `release-candidate` is for promoted beta contracts, and is reserved for deploys to `ropsten`
 
 When a new version of the contracts makes its way through all testnets, it eventually becomes promoted in `master`, with [semver](https://semver.org/) reflecting contract changes in the `major` or `minor` portion of the version (depending on backwards compatibility). `patch` changes are simply for changes to the JavaScript interface.
 
@@ -61,7 +58,7 @@ This repo may be installed via `npm install` to support both node.js scripting a
 
 ### Examples
 
-:100: Please see our walkthrus for code examples in both JavaScript and Solidity: [docs.synthetix.io/contracts/walkthrus](https://docs.synthetix.io/contracts/walkthrus)
+:100: Please see our walkthroughs for code examples in both JavaScript and Solidity: [docs.synthetix.io/integrations](https://docs.synthetix.io/integrations/)
 
 ### Solidity API
 
@@ -158,7 +155,6 @@ snx.getAST({ source: 'Synthetix.sol' });
      'contracts/interfaces/IERC20.sol',
      'contracts/interfaces/ISystemStatus.sol',
      'contracts/interfaces/IExchanger.sol',
-     'contracts/interfaces/IEtherCollateral.sol',
      'contracts/interfaces/IIssuer.sol',
      'contracts/interfaces/ISynthetixState.sol',
      'contracts/interfaces/IExchangeRates.sol',

@@ -36,34 +36,58 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     /* ---------- Getters ---------- */
 
+    /*
+     * The fee charged when opening a position on the heavy side of a futures market.
+     */
     function takerFee(bytes32 _baseAsset) external view returns (uint) {
         return _takerFee(_baseAsset);
     }
 
+    /*
+     * The fee charged when opening a position on the light side of a futures market.
+     */
     function makerFee(bytes32 _baseAsset) public view returns (uint) {
         return _makerFee(_baseAsset);
     }
 
+    /*
+     * The fee charged when reducing the size of a position.
+     */
     function closureFee(bytes32 _baseAsset) public view returns (uint) {
         return _closureFee(_baseAsset);
     }
 
+    /*
+     * The maximum allowable leverage in a market.
+     */
     function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
         return _maxLeverage(_baseAsset);
     }
 
+    /*
+     * The maximum allowable notional value on each side of a market.
+     */
     function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
         return _maxMarketValue(_baseAsset);
     }
 
+    /*
+     * The maximum theoretical funding rate per day charged by a market.
+     */
     function maxFundingRate(bytes32 _baseAsset) public view returns (uint) {
         return _maxFundingRate(_baseAsset);
     }
 
-    function maxFundingRateSkew(bytes32 _baseAsset) public view returns (uint) {
-        return _maxFundingRateSkew(_baseAsset);
+    /*
+     * The skew level at which the max funding rate will be charged.
+     */
+    function minSkewScale(bytes32 _baseAsset) public view returns (uint) {
+        return _minSkewScale(_baseAsset);
     }
 
+    /*
+     * The maximum speed that the funding rate can move per day.
+     */
     function maxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
         return _maxFundingRateDelta(_baseAsset);
     }
@@ -78,17 +102,25 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _maxLeverage,
             uint _maxMarketValue,
             uint _maxFundingRate,
-            uint _maxFundingRateSkew,
+            uint _minSkewScale,
             uint _maxFundingRateDelta
         )
     {
         return _parameters(_baseAsset);
     }
 
+    /*
+     * The amount of sUSD paid to a liquidator when they successfully liquidate a position.
+     * This quantity must be no greater than `minInitialMargin`.
+     */
     function liquidationFee() external view returns (uint) {
         return _liquidationFee();
     }
 
+    /*
+     * The minimum margin required to open a position.
+     * This quantity must be no less than `liquidationFee`.
+     */
     function minInitialMargin() external view returns (uint) {
         return _minInitialMargin();
     }
@@ -141,9 +173,9 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
     }
 
-    function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) public onlyOwner {
+    function setMinSkewScale(bytes32 _baseAsset, uint _minSkewScale) public onlyOwner {
         _recomputeFunding(_baseAsset);
-        _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW, _maxFundingRateSkew);
+        _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _minSkewScale);
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
@@ -159,7 +191,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _maxLeverage,
         uint _maxMarketValue,
         uint _maxFundingRate,
-        uint _maxFundingRateSkew,
+        uint _minSkewScale,
         uint _maxFundingRateDelta
     ) external onlyOwner {
         _recomputeFunding(_baseAsset);
@@ -169,7 +201,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValue(_baseAsset, _maxMarketValue);
         setMaxFundingRate(_baseAsset, _maxFundingRate);
-        setMaxFundingRateSkew(_baseAsset, _maxFundingRateSkew);
+        setMinSkewScale(_baseAsset, _minSkewScale);
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 

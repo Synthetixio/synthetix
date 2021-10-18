@@ -93,7 +93,7 @@ contract('FuturesMarketData', accounts => {
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
 				toWei('0.2'), // 20% max funding rate
-				toWei('0.5'), // 50% max funding rate skew
+				toWei('1000'), // 1000 units minSkewScale
 				toWei('0.025'), // 2.5% per hour max funding rate of change
 				{ from: owner }
 			);
@@ -112,33 +112,40 @@ contract('FuturesMarketData', accounts => {
 		await sUSD.issue(trader3, traderInitialBalance);
 
 		// The traders take positions on market
-		await futuresMarket.modifyMargin(toUnit('1000'), { from: trader1 });
-		await futuresMarket.submitOrder(toUnit('5'), { from: trader1 });
+		await futuresMarket.transferMargin(toUnit('1000'), { from: trader1 });
+		await futuresMarket.modifyPosition(toUnit('5'), { from: trader1 });
 
-		await futuresMarket.modifyMargin(toUnit('750'), { from: trader2 });
-		await futuresMarket.submitOrder(toUnit('-10'), { from: trader2 });
+		await futuresMarket.transferMargin(toUnit('750'), { from: trader2 });
+		await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 });
 
 		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
 			from: oracle,
 		});
-		await futuresMarket.confirmOrder(trader1);
-		await futuresMarket.confirmOrder(trader2);
-
-		await futuresMarket.modifyMargin(toUnit('4000'), { from: trader3 });
-		await futuresMarket.submitOrder(toUnit('1.25'), { from: trader3 });
+		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
+		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
 
 		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
 
-		await sethMarket.modifyMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.submitOrder(toUnit('4'), { from: trader3 });
+		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
+		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });
 		await exchangeRates.updateRates([newAsset], [toUnit('999')], await currentTime(), {
 			from: oracle,
 		});
-		await sethMarket.confirmOrder(trader3);
 	});
 
 	it('Resolver is properly set', async () => {
 		assert.equal(await futuresMarketData.resolverProxy(), addressResolver.address);
+	});
+
+	describe('Globals', () => {
+		it('Global futures settings are properly fetched', async () => {
+			const globals = await futuresMarketData.globals();
+
+			assert.bnEqual(await futuresMarketSettings.minInitialMargin(), globals.minInitialMargin);
+			assert.bnEqual(globals.minInitialMargin, toUnit('100'));
+			assert.bnEqual(await futuresMarketSettings.liquidationFee(), globals.liquidationFee);
+			assert.bnEqual(globals.liquidationFee, toUnit('20'));
+		});
 	});
 
 	describe('Market details', () => {
@@ -155,7 +162,7 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
 
 			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
-			assert.bnEqual(details.fundingParameters.maxFundingRateSkew, params.maxFundingRateSkew);
+			assert.bnEqual(details.fundingParameters.minSkewScale, params.minSkewScale);
 			assert.bnEqual(details.fundingParameters.maxFundingRateDelta, params.maxFundingRateDelta);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
@@ -168,7 +175,6 @@ contract('FuturesMarketData', accounts => {
 			const assetPrice = await futuresMarket.assetPrice();
 			assert.bnEqual(details.priceDetails.price, assetPrice.price);
 			assert.equal(details.priceDetails.invalid, assetPrice.invalid);
-			assert.bnEqual(details.priceDetails.currentRoundId, await futuresMarket.currentRoundId());
 		});
 
 		it('By asset', async () => {
@@ -182,13 +188,6 @@ contract('FuturesMarketData', accounts => {
 		it('By address', async () => {
 			const details = await futuresMarketData.positionDetails(futuresMarket.address, trader3);
 			const details2 = await futuresMarketData.positionDetails(futuresMarket.address, trader1);
-
-			const order = await futuresMarket.orders(trader3);
-			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
-			assert.bnEqual(details.order.id, order.id);
-			assert.bnEqual(details.order.leverage, order.leverage);
-			assert.bnEqual(details.order.fee, order.fee);
-			assert.bnEqual(details.order.roundId, order.roundId);
 
 			const position = await futuresMarket.positions(trader1);
 			assert.bnEqual(details2.position.margin, position.margin);
@@ -204,8 +203,11 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details2.accruedFunding, accruedFunding.funding);
 			const remaining = await futuresMarket.remainingMargin(trader1);
 			assert.bnEqual(details2.remainingMargin, remaining.marginRemaining);
+			const accessible = await futuresMarket.accessibleMargin(trader1);
+			assert.bnEqual(details2.accessibleMargin, accessible.marginAccessible);
 			const lp = await futuresMarket.liquidationPrice(trader1, true);
 			assert.bnEqual(details2.liquidationPrice, lp[0]);
+			assert.equal(details.canLiquidatePosition, await futuresMarket.canLiquidate(trader1));
 		});
 
 		it('By asset', async () => {

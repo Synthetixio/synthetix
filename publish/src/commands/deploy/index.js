@@ -13,9 +13,9 @@ const {
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
-	performTransactionalStepWeb3,
 	reportDeployedContracts,
 } = require('../../util');
+const { performTransactionalStep } = require('../../command-utils/transact');
 
 const {
 	constants: {
@@ -27,27 +27,27 @@ const {
 	},
 } = require('../../../..');
 
-const performSafetyChecks = require('./perform-safety-checks');
-const getDeployParameterFactory = require('./get-deploy-parameter-factory');
-const systemAndParameterCheck = require('./system-and-parameter-check');
-const deployCore = require('./deploy-core');
-const deploySynths = require('./deploy-synths');
-const deployLoans = require('./deploy-loans');
-const deployDappUtils = require('./deploy-dapp-utils.js');
-const deployBinaryOptions = require('./deploy-binary-options');
-const deployFutures = require('./deploy-futures');
-const importAddresses = require('./import-addresses');
-const rebuildResolverCaches = require('./rebuild-resolver-caches');
+const addSynthsToProtocol = require('./add-synths-to-protocol');
+const configureInverseSynths = require('./configure-inverse-synths');
 const configureLegacySettings = require('./configure-legacy-settings');
+const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureFutures = require('./configure-futures');
-const addSynthsToProtocol = require('./add-synths-to-protocol');
-const configureInverseSynths = require('./configure-inverse-synths');
 const configureSystemSettings = require('./configure-system-settings');
-const configureLoans = require('./configure-loans');
-const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+const deployCore = require('./deploy-core');
+const deployDappUtils = require('./deploy-dapp-utils.js');
+const deployFutures = require('./deploy-futures');
+const deployLoans = require('./deploy-loans');
+const deploySynths = require('./deploy-synths');
 const generateSolidityOutput = require('./generate-solidity-output');
+const getDeployParameterFactory = require('./get-deploy-parameter-factory');
+const importAddresses = require('./import-addresses');
+const importFeePeriods = require('./import-fee-periods');
+const performSafetyChecks = require('./perform-safety-checks');
+const rebuildResolverCaches = require('./rebuild-resolver-caches');
+const systemAndParameterCheck = require('./system-and-parameter-check');
+const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -117,8 +117,8 @@ const deploy = async ({
 
 	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
 
-	const addressOf = c => (c ? c.options.address : '');
-	const sourceOf = c => (c ? c.options.source : '');
+	const addressOf = c => (c ? c.address : '');
+	const sourceOf = c => (c ? c.source : '');
 
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {
@@ -218,9 +218,9 @@ const deploy = async ({
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account } = deployer;
+	const { account, signer } = deployer;
 
-	nonceManager.web3 = deployer.provider.web3;
+	nonceManager.provider = deployer.provider;
 	nonceManager.account = account;
 
 	const {
@@ -229,6 +229,7 @@ const deploy = async ({
 		currentWeekOfInflation,
 		oldExrates,
 		oracleAddress,
+		systemSuspended,
 	} = await systemAndParameterCheck({
 		account,
 		buildPath,
@@ -263,11 +264,11 @@ const deploy = async ({
 	const runSteps = [];
 
 	const runStep = async opts => {
-		const { noop, ...rest } = await performTransactionalStepWeb3({
+		const { noop, ...rest } = await performTransactionalStep({
 			...opts,
 			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
 			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
-			account,
+			signer,
 			dryRun,
 			explorerLinkPrefix,
 			gasPrice,
@@ -303,24 +304,22 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		deploymentPath,
+		generateSolidity,
 		network,
 		synths,
+		systemSuspended,
+		useFork,
 		yes,
 	});
 
-	const { useEmptyCollateralManager, collateralManagerDefaults } = await deployLoans({
+	const { collateralManagerDefaults } = await deployLoans({
 		account,
 		addressOf,
 		deployer,
 		getDeployParameter,
 		network,
 		useOvm,
-	});
-
-	await deployBinaryOptions({
-		account,
-		addressOf,
-		deployer,
 	});
 
 	await deployFutures({
@@ -330,6 +329,9 @@ const deploy = async ({
 		deployer,
 		runStep,
 		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
 	});
 
 	await deployDappUtils({
@@ -342,9 +344,9 @@ const deploy = async ({
 		addressOf,
 		deployer,
 		dryRun,
+		continueEvenIfUnsuccessful: generateSolidity,
 		limitPromise,
 		runStep,
-		useOvm,
 	});
 
 	await rebuildResolverCaches({
@@ -370,6 +372,18 @@ const deploy = async ({
 		useOvm,
 	});
 
+	await importFeePeriods({
+		deployer,
+		explorerLinkPrefix,
+		freshDeploy,
+		generateSolidity,
+		network,
+		runStep,
+		systemSuspended,
+		useFork,
+		yes,
+	});
+
 	await configureStandalonePriceFeeds({
 		deployer,
 		runStep,
@@ -378,6 +392,8 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
+		explorerLinkPrefix,
+		generateSolidity,
 		synths,
 		feeds,
 		deployer,
@@ -418,16 +434,17 @@ const deploy = async ({
 		deployer,
 		getDeployParameter,
 		runStep,
-		useEmptyCollateralManager,
 	});
 
 	await configureFutures({
 		addressOf,
 		deployer,
+		loadAndCheckRequiredSources,
 		runStep,
 		getDeployParameter,
 		useOvm,
 		freshDeploy,
+		deploymentPath,
 		network,
 	});
 
@@ -437,6 +454,7 @@ const deploy = async ({
 		generateSolidity,
 		runStep,
 		useOvm,
+		useFork,
 	});
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));

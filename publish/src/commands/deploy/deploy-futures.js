@@ -3,8 +3,22 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ account, addressOf, getDeployParameter, deployer, runStep, useOvm }) => {
+module.exports = async ({
+	account,
+	addressOf,
+	loadAndCheckRequiredSources,
+	deployer,
+	runStep,
+	deploymentPath,
+	network,
+	useOvm,
+}) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+
+	const { futuresMarkets } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
 	// ----------------
 	// Futures market setup
@@ -55,13 +69,12 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
-	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const deployedFuturesMarkets = [];
 
-	for (const asset of futuresAssets) {
-		const marketName = 'FuturesMarket' + asset;
+	for (const asset of futuresMarkets.map(x => x.asset)) {
+		const marketName = 'FuturesMarket' + asset.slice('1'); // remove s prefix
 		const proxyName = 'Proxy' + marketName;
-		const baseAsset = toBytes32('s' + asset);
+		const baseAsset = toBytes32(asset);
 
 		const proxyFuturesMarket = await deployer.deployContract({
 			name: proxyName,
@@ -99,9 +112,9 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 	// Now replace the relevant markets in the manager (if any)
 
 	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
-		const numManagerKnownMarkets = await futuresMarketManager.methods.numMarkets().call();
+		const numManagerKnownMarkets = await futuresMarketManager.numMarkets();
 		const managerKnownMarkets = Array.from(
-			await futuresMarketManager.methods.markets(0, numManagerKnownMarkets).call()
+			await futuresMarketManager.markets(0, numManagerKnownMarkets)
 		).sort();
 
 		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));

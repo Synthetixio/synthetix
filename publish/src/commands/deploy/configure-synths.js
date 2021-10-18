@@ -6,7 +6,15 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
+module.exports = async ({
+	addressOf,
+	explorerLinkPrefix,
+	generateSolidity,
+	synths,
+	feeds,
+	deployer,
+	runStep,
+}) => {
 	// now configure synths
 	console.log(gray(`\n------ CONFIGURE SYNTHS ------\n`));
 
@@ -22,6 +30,36 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 		const proxyForSynth = deployer.deployedContracts[`Proxy${currencyKey}`];
 		const proxyERC20ForSynth =
 			currencyKey === 'sUSD' ? deployer.deployedContracts[`ProxyERC20sUSD`] : undefined;
+
+		let ExistingSynth;
+		try {
+			ExistingSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
+		} catch (err) {
+			// ignore error as there is no existing synth to copy from
+		}
+		// when generating solidity only, ensure that this is run to copy across synth supply
+		if (synth && generateSolidity && ExistingSynth && ExistingSynth.address !== synth.address) {
+			const generateExplorerComment = ({ address }) =>
+				`// ${explorerLinkPrefix}/address/${address}`;
+
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				write: 'setTotalSupply',
+				writeArg: addressOf(synth),
+				comment: `Ensure the new synth has the totalSupply from the previous one`,
+				customSolidity: {
+					name: `copyTotalSupplyFrom_${currencyKey}`,
+					instructions: [
+						generateExplorerComment({ address: ExistingSynth.address }),
+						`Synth existingSynth = Synth(${ExistingSynth.address})`,
+						generateExplorerComment({ address: synth.address }),
+						`Synth newSynth = Synth(${synth.address})`,
+						`newSynth.setTotalSupply(existingSynth.totalSupply())`,
+					],
+				},
+			});
+		}
 
 		if (tokenStateForSynth && synth) {
 			await runStep({

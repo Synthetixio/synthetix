@@ -6,8 +6,6 @@ const abiDecoder = require('abi-decoder');
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
 	kovan: require('./publish/deployed/kovan'),
-	rinkeby: require('./publish/deployed/rinkeby'),
-	ropsten: require('./publish/deployed/ropsten'),
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
@@ -22,17 +20,11 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli', 'kovan-ovm-futures'];
+const networks = ['local', 'local-ovm', 'kovan', 'mainnet', 'goerli', 'kovan-ovm-futures'];
 
 const chainIdMapping = Object.entries({
 	1: {
 		network: 'mainnet',
-	},
-	3: {
-		network: 'ropsten',
-	},
-	4: {
-		network: 'rinkeby',
 	},
 	5: {
 		network: 'goerli',
@@ -90,6 +82,7 @@ const constants = {
 	AST_FOLDER: 'ast',
 
 	CONFIG_FILENAME: 'config.json',
+	RELEASES_FILENAME: 'releases.json',
 	PARAMS_FILENAME: 'params.json',
 	SYNTHS_FILENAME: 'synths.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
@@ -98,13 +91,14 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	OVM_GAS_PRICE_GWEI: '0.015',
+	OVM_GAS_PRICE_GWEI: '0.00001',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
@@ -124,8 +118,6 @@ const knownAccounts = {
 			address: '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B',
 		},
 	],
-	rinkeby: [],
-	kovan: [],
 };
 
 // The solidity defaults are managed here in the same format they will be stored, hence all
@@ -161,14 +153,11 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
-		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
 		'kovan-ovm-futures': constants.ZERO_ADDRESS,
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		kovan: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
-		rinkeby: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-		ropsten: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
@@ -177,16 +166,14 @@ const defaults = {
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
-	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
 
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
-		SHORTS: [
-			{ long: 'sBTC', short: 'iBTC' },
-			{ long: 'sETH', short: 'iETH' },
-		],
+		SHORTS: ['sBTC', 'sETH'],
 		MAX_DEBT: w3utils.toWei('75000000'), // 75 million sUSD
+		MAX_SKEW_RATE: w3utils.toWei('0.2'),
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
@@ -208,13 +195,13 @@ const defaults = {
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
 		INTERACTION_DELAY: '3600', // 1 hour in secs
+		COLLAPSE_FEE_RATE: '0',
 	},
 
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
-	FUTURES_ASSETS: ['BTC', 'ETH', 'LINK'],
 	FUTURES_LIQUIDATION_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
 };
@@ -437,6 +424,31 @@ const getSynths = ({
 	});
 };
 
+const getFuturesMarkets = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	if (!deploymentPath && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+	}
+
+	const pathToFuturesMarketsList = deploymentPath
+		? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				useOvm,
+				file: constants.FUTURES_MARKETS_FILENAME,
+		  });
+	if (!fs.existsSync(pathToFuturesMarketsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
+};
+
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
@@ -657,6 +669,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getFeeds',
 		'getSynths',
 		'getTarget',
+		'getFuturesMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -680,6 +693,7 @@ module.exports = {
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,
+	getFuturesMarkets,
 	getTarget,
 	getTokens,
 	getUsers,

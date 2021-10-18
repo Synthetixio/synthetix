@@ -1,5 +1,5 @@
 # Measures unit and spec test coverage
-{{> job-header.yml}}
+{{> job-header-sec-tools.yml}}
 steps:
   - checkout
   - attach_workspace:
@@ -8,4 +8,4 @@ steps:
       name: Upload coverage
       command: |
         cp -R /tmp/coverage/coverage-*.json .
-        bash <(curl -s https://codecov.io/bash)
+        codecov -t $CODECOV_TOKEN
