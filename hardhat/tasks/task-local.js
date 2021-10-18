@@ -4,22 +4,26 @@ const { yellow } = require('chalk');
 const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
-const { getSource, getTarget } = require('../../index');
+const {
+	getSource,
+	getTarget,
+	constants: { OVM_GAS_PRICE_GWEI },
+} = require('../../index');
 
 const { loadUsers } = require('../../test/integration/utils/users');
 const { ensureBalance } = require('../util/balances');
 
 function connectContracts({ ctx }) {
-	const { useOvm } = ctx;
+	const { useOvm, deploymentPath } = ctx;
 	const network = ctx.network;
 
-	const allTargets = getTarget({ fs, path, network, useOvm });
+	const allTargets = getTarget({ fs, path, network, useOvm, deploymentPath });
 
 	ctx.contracts = {};
 	Object.entries(allTargets).map(([name, target]) => {
 		ctx.contracts[name] = new ethers.Contract(
-			getTarget({ fs, path, network, useOvm, contract: name }).address,
-			getSource({ fs, path, network, useOvm, contract: target.source }).abi,
+			getTarget({ fs, path, network, useOvm, deploymentPath, contract: name }).address,
+			getSource({ fs, path, network, useOvm, deploymentPath, contract: target.source }).abi,
 			ctx.provider
 		);
 	});
@@ -39,32 +43,42 @@ async function fundAccounts({ ctx, accounts }) {
 
 		await ensureBalance({
 			ctx,
-			symbol: 'ETH',
-			user: { address: account },
-			balance: ethers.utils.parseEther('1000'),
-		});
-
-		await ensureBalance({
-			ctx,
 			symbol: 'SNX',
 			user: { address: account },
-			balance: ethers.utils.parseEther('100000000'),
+			balance: ethers.utils.parseEther('1000000000'),
 		});
 
 		await ensureBalance({
 			ctx,
 			symbol: 'sUSD',
 			user: { address: account },
-			balance: ethers.utils.parseEther('100000000'),
+			balance: ethers.utils.parseEther('1000000000'),
 		});
+	}
+}
+
+async function whitelistAccounts({ ctx }, accounts) {
+	let { SynthsUSD, SynthsETH } = ctx.contracts;
+
+	for (const account of accounts) {
+		SynthsUSD = SynthsUSD.connect(ctx.users.owner);
+		await SynthsUSD.addWhitelistCanTransfer(account);
+
+		SynthsETH = SynthsETH.connect(ctx.users.owner);
+		await SynthsETH.addWhitelistCanTransfer(account);
 	}
 }
 
 const defaultAccounts = [
 	// Hardhat account #1 (deployer)
-	'0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-	// futures trader
+	// '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+
+	// kovan-ovm-futures deployer
+	'0x19C6e6B49D529C2ae16dCC794f08a93dd813859D',
+	// futures keeper
 	'0x96D6C55a500782ba07aefb4f620dF2a94CDc7bA7',
+	// faucet
+	'0xC2ecD777d06FFDF8B3179286BEabF52B67E9d991',
 ];
 
 task('fund-local-accounts')
@@ -77,14 +91,17 @@ task('fund-local-accounts')
 	)
 	.addOptionalParam('privateKey', 'Private key to use to sign txs')
 	.addOptionalParam('account', 'The account to fund with ETH, SNX, sUSD')
+	.addOptionalParam('deploymentPath', 'Specify the path to the deployment data directory')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { account, providerUrl, targetNetwork, privateKey } = taskArguments;
+		const { account, providerUrl, targetNetwork, privateKey, deploymentPath } = taskArguments;
 
 		const ctx = {};
 		ctx.network = targetNetwork;
 		ctx.useOvm = true;
 		ctx.users = {};
+		ctx.deploymentPath = deploymentPath;
 		ctx.provider = _setupProvider({ url: providerUrl });
+		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
 
 		if (privateKey) {
 			ctx.users.owner = new ethers.Wallet(privateKey, ctx.provider);
@@ -95,6 +112,11 @@ task('fund-local-accounts')
 		connectContracts({ ctx });
 
 		console.log(`Using account ${ctx.users.owner.address}`);
+
+		await whitelistAccounts({ ctx }, [
+			ctx.users.owner.address,
+			'0xC2ecD777d06FFDF8B3179286BEabF52B67E9d991',
+		]);
 
 		await fundAccounts({
 			ctx,

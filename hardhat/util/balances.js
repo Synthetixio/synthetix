@@ -3,13 +3,16 @@ const { toBytes32 } = require('../..');
 
 async function ensureBalance({ ctx, symbol, user, balance }) {
 	const currentBalance = await _readBalance({ ctx, symbol, user });
-	console.log(`${user.address} ${symbol} ${ethers.utils.formatEther(currentBalance)}`);
+	console.log(`${symbol} old=${ethers.utils.formatEther(currentBalance)}`);
 
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
 
 		await _getAmount({ ctx, symbol, user, amount });
 	}
+
+	const newBalance = await _readBalance({ ctx, symbol, user });
+	console.log(`${symbol} new=${ethers.utils.formatEther(newBalance)}`);
 }
 
 async function _readBalance({ ctx, symbol, user }) {
