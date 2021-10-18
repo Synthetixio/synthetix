@@ -113,6 +113,12 @@
 	"CollateralManager": {
 		"deploy": false
 	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralUtil": {
+		"deploy": false
+	},
 	"TokenStatesETH": {
 		"deploy": false
 	},
@@ -192,9 +198,6 @@
 		"deploy": false
 	},
 	"FuturesMarketData": {
-		"deploy": false
-	},
-	"WETH": {
 		"deploy": false
 	},
 	"SynthRedeemer": {
