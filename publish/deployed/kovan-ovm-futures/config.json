@@ -200,9 +200,6 @@
 	"FuturesMarketData": {
 		"deploy": false
 	},
-	"WETH": {
-		"deploy": true
-	},
 	"SynthRedeemer": {
 		"deploy": false
 	}
