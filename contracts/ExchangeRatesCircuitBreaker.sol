@@ -1,20 +1,15 @@
-pragma solidity ^0.5.16;
+pragma solidity 0.8.4;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
+import "./MixinSystemSettingsSol8.sol";
 import "./interfaces/IExchangeRatesCircuitBreaker.sol";
-
-// Libraries
-import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./Proxyable.sol";
 
 /**
  * Compares current exchange rate to previous, and suspends a synth if the
@@ -26,10 +21,7 @@ import "./Proxyable.sol";
  *
  * https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesCircuitBreaker
  */
-contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRatesCircuitBreaker {
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
-
+contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettingsSol8, IExchangeRatesCircuitBreaker {
     bytes32 public constant CONTRACT_NAME = "ExchangeRatesCircuitBreaker";
 
     // SIP-65: Decentralized circuit breaker
@@ -46,12 +38,12 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettingsSol8(_resolver) {}
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettingsSol8.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
@@ -62,20 +54,20 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     // Returns rate and its "invalid" state.
     // Checks if current rate is invalid or out of deviation dounds w.r.t. to previously stored rate
     // or if there is no valid stored rate, w.r.t. to previous 3 oracle rates.
-    function rateWithInvalid(bytes32 currencyKey) external view returns (uint, bool) {
+    function rateWithInvalid(bytes32 currencyKey) external view override returns (uint, bool) {
         (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
         return (rate, invalid || _isRateOutOfBounds(currencyKey, rate));
     }
 
-    function isDeviationAboveThreshold(uint base, uint comparison) external view returns (bool) {
+    function isDeviationAboveThreshold(uint base, uint comparison) external view override returns (bool) {
         return _isDeviationAboveThreshold(base, comparison);
     }
 
-    function priceDeviationThresholdFactor() external view returns (uint) {
+    function priceDeviationThresholdFactor() external view override returns (uint) {
         return getPriceDeviationThresholdFactor();
     }
 
-    function lastExchangeRate(bytes32 currencyKey) external view returns (uint) {
+    function lastExchangeRate(bytes32 currencyKey) external view override returns (uint) {
         return _lastExchangeRate[currencyKey];
     }
 
@@ -103,7 +95,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
      * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
      */
-    function rateWithCircuitBroken(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken) {
+    function rateWithCircuitBroken(bytes32 currencyKey) external override returns (uint lastValidRate, bool circuitBroken) {
         // check system status
         if (systemStatus().systemSuspended()) {
             // if system is inactive this call has no effect, but will neither revert,
@@ -116,7 +108,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             // check and suspend
             if (invalid || _isRateOutOfBounds(currencyKey, rate)) {
                 // check synth exists, to prevent spamming settings for non existant synths
-                require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
+                require(issuer().synths(currencyKey) != ISynth(address(0)), "No such synth");
                 systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
                 circuitBroken = true;
             } else {
@@ -136,7 +128,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * emits LastRateOverriden
      * TODO: deprecate when iSynths are removed from the system
      */
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
+    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external override onlyExchangeRates {
         require(rate > 0, "Rate must be above 0");
         emit LastRateOverriden(currencyKey, _lastExchangeRate[currencyKey], rate);
         _lastExchangeRate[currencyKey] = rate;
@@ -149,7 +141,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * doesn't check deviations here, so believes that owner knows better
      * emits LastRateOverriden
      */
-    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
+    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external override onlyOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
         require(!anyRateInvalid, "Rates for given synths not valid");
@@ -162,6 +154,19 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
+    /**
+     * @return The result of safely dividing x and y. The return value is a high
+     * precision decimal.
+     *
+     * @dev y is divided after the product of x and the standard precision unit
+     * is evaluated, so the product of x and UNIT must be less than 2**256. As
+     * this is an integer division, the result is always rounded down.
+     * This helps save on gas. Rounding is more expensive on gas.
+     */
+    function divideDecimal(uint x, uint y) internal pure returns (uint) {
+        return (x * 10**18) / y;
+    }
+
     function _isDeviationAboveThreshold(uint base, uint comparison) internal view returns (bool) {
         if (base == 0 || comparison == 0) {
             return true;
@@ -169,9 +174,9 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
 
         uint factor;
         if (comparison > base) {
-            factor = comparison.divideDecimal(base);
+            factor = divideDecimal(comparison, base);
         } else {
-            factor = base.divideDecimal(comparison);
+            factor = divideDecimal(base, comparison);
         }
 
         return factor >= getPriceDeviationThresholdFactor();
