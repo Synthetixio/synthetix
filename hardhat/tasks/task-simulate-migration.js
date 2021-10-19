@@ -96,7 +96,7 @@ task(
 			provider.getSigner(getUsers({ network: 'mainnet', user: 'deployer' }).address)
 		);
 
-		const migration = await Factory.deploy({ gasPrice: ethers.utils.parseUnits('0') });
+		const migration = await Factory.deploy();
 
 		await migration.deployTransaction.wait();
 
@@ -115,7 +115,6 @@ task(
 
 		await nominate({
 			contracts,
-			gasPrice: '0',
 			network,
 			newOwner: migration.address,
 			useFork: true,
@@ -125,7 +124,6 @@ task(
 		console.log(gray(`Beginning the migration`));
 
 		const txn = await migration.migrate(ownerAddress, {
-			gasPrice: '0',
 			gasLimit: ethers.BigNumber.from(12e6),
 		});
 
@@ -136,7 +134,6 @@ task(
 		console.log(gray(`Running ownership actions to ensure migration relinquished all ownerships.`));
 
 		await owner({
-			gasPrice: '0',
 			network,
 			throwOnNotNominatedOwner: true,
 			useFork: true,
