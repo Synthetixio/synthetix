@@ -8,6 +8,8 @@ import "./Proxyable.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/proxy
 contract Proxy is Owned {
+    bytes32 public constant CONTRACT_NAME = "Proxy";
+
     Proxyable public target;
 
     constructor(address _owner) public Owned(_owner) {}
