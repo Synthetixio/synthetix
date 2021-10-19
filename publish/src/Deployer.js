@@ -4,7 +4,7 @@ const linker = require('solc/linker');
 const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const { stringify, getExplorerLinkPrefix } = require('./util');
+const { stringify, getExplorerLinkPrefix, assignGasOptions } = require('./util');
 const { getVersions, getUsers } = require('../..');
 
 class Deployer {
@@ -18,12 +18,12 @@ class Deployer {
 		compiled,
 		config,
 		configFile,
-		contractDeploymentGasLimit,
 		deployment,
 		deploymentFile,
 		dryRun,
 		gasPrice,
-		methodCallGasLimit,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		network,
 		providerUrl,
 		privateKey,
@@ -39,9 +39,9 @@ class Deployer {
 		this.deploymentFile = deploymentFile;
 		this.dryRun = dryRun;
 		this.gasPrice = gasPrice;
-		this.methodCallGasLimit = methodCallGasLimit;
+		this.maxFeePerGas = maxFeePerGas;
+		this.maxPriorityFeePerGas = maxPriorityFeePerGas;
 		this.network = network;
-		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
@@ -111,10 +111,16 @@ class Deployer {
 	}
 
 	async sendDummyTx() {
-		const tx = {
-			to: '0x4200000000000000000000000000000000000006',
-			value: 0,
-		};
+		const tx = await assignGasOptions({
+			tx: {
+				to: '0x0000000000000000000000000000000000000001',
+				data: '0x0000000000000000000000000000000000000000000000000000000000000000',
+				value: 0,
+			},
+			provider: this.provider,
+			maxFeePerGas: this.maxFeePerGas,
+			maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+		});
 
 		const response = await this.signer.sendTransaction(tx);
 		await response.wait();
@@ -124,17 +130,13 @@ class Deployer {
 		}
 	}
 
-	async sendOverrides(type = 'method-call') {
-		const gasLimit = this.useOvm
-			? undefined
-			: type === 'method-call'
-			? this.methodCallGasLimit
-			: this.contractDeploymentGasLimit;
-
-		const params = {
-			gasLimit,
-			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
-		};
+	async sendOverrides() {
+		const params = await assignGasOptions({
+			tx: {},
+			provider: this.provider,
+			maxFeePerGas: this.maxFeePerGas,
+			maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+		});
 
 		if (this.nonceManager) {
 			params.nonce = await this.nonceManager.getNonce();
@@ -278,7 +280,7 @@ class Deployer {
 
 				const factory = new ethers.ContractFactory(compiled.abi, bytecode, this.signer);
 
-				const overrides = await this.sendOverrides('contract-deployment');
+				const overrides = await this.sendOverrides();
 
 				deployedContract = await factory.deploy(...args, overrides);
 				const receipt = await deployedContract.deployTransaction.wait();

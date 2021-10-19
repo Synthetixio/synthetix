@@ -23,16 +23,15 @@ const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	network: 'kovan',
-	gasLimit: 3e6,
-	gasPrice: '1',
+	priorityGasPrice: '1',
 	batchSize: 15,
 };
 
 const purgeSynths = async ({
 	network = DEFAULTS.network,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
-	gasLimit = DEFAULTS.gasLimit,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	synthsToPurge = [],
 	dryRun = false,
 	yes,
@@ -98,7 +97,9 @@ const purgeSynths = async ({
 	}
 
 	console.log(gray(`Using account with public key ${wallet.address}`));
-	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
+	console.log(
+		gray(`Using max base fee of ${maxFeePerGas} GWEI miner tip ${maxPriorityFeePerGas} GWEI`)
+	);
 
 	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
 
@@ -209,8 +210,8 @@ const purgeSynths = async ({
 					target: Synth,
 					write: 'purge',
 					writeArg: [entries], // explicitly pass array of args so array not splat as params
-					gasLimit,
-					gasPrice,
+					maxFeePerGas,
+					maxPriorityFeePerGas,
 					explorerLinkPrefix,
 					encodeABI: network === 'mainnet',
 				});
@@ -251,8 +252,12 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
-			.option('-l, --gas-limit <value>', 'Gas limit', DEFAULTS.gasLimit)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option(
 				'-n, --network [value]',
 				'The network to run off.',

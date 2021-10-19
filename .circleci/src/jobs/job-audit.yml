@@ -5,8 +5,8 @@ steps:
   - run:
       name: Audit dependencies
       command: |
-        npm audit --audit-level=critical || true # Temporarily allow critical audits to pass
+        npm audit --audit-level=critical
   - run:
       name: Lint lockfile
       command: |
-        lockfile-lint -p package-lock.json --type npm --allowed-hosts npm github.com --allowed-schemes "https:" "git+ssh:"
+        lockfile-lint -p package-lock.json --type npm --allowed-hosts npm --validate-https --empty-hostname false
