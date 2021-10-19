@@ -159,7 +159,7 @@ const nominate = async ({
 				ownerActions,
 				ownerActionsFile,
 				signer: wallet,
-				target: address,
+				target: deployedContract,
 				write: nominationFnc,
 				writeArg: newOwner, // explicitly pass array of args so array not splat as params
 			});
