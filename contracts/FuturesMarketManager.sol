@@ -7,7 +7,7 @@ import "./Proxyable.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./AddressSetLib.sol";
 
 // Internal references

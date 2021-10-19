@@ -1,6 +1,6 @@
 pragma solidity ^0.8.4;
 
-import "./SignedSafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SignedSafeMath.sol";
 
 // TODO: Test suite
 

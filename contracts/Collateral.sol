@@ -2,7 +2,7 @@ pragma solidity ^0.8.4;
 
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // Inheritance
 import "./Owned.sol";
@@ -25,7 +25,6 @@ import "./interfaces/IShortingRewards.sol";
 
 contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
-    using SafeMath for uint;
     using SafeDecimalMath for uint;
     using SafeERC20 for IERC20;
 

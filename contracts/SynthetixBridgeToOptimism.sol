@@ -7,7 +7,7 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
 // Internal references
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";

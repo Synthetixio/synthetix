@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IDepot.sol";
 

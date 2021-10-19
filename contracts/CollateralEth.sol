@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./Collateral.sol";
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ICollateralEth.sol";
 
 // This contract handles the payable aspects of eth loans.

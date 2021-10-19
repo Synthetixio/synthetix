@@ -6,8 +6,8 @@ import "./MixinResolver.sol";
 import "./Owned.sol";
 
 // External dependencies.
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 // Libraries.
 import "./SafeDecimalMath.sol";
