@@ -15,7 +15,7 @@ contract ReadProxy is Owned {
         emit TargetUpdated(target);
     }
 
-    function() external {
+    fallback() external {
         // The basics of a proxy read call
         // Note that msg.sender in the underlying will always be the address of this contract.
         assembly {

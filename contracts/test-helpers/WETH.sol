@@ -8,15 +8,10 @@ contract WETH is IWETH {
     string public symbol = "WETH";
     uint8 public decimals = 18;
 
-    event Approval(address indexed src, address indexed guy, uint wad);
-    event Transfer(address indexed src, address indexed dst, uint wad);
-    event Deposit(address indexed dst, uint wad);
-    event Withdrawal(address indexed src, uint wad);
-
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
-    function() external payable {
+    receive() external payable {
         deposit();
     }
 
@@ -28,7 +23,7 @@ contract WETH is IWETH {
     function withdraw(uint wad) public {
         require(balanceOf[msg.sender] >= wad);
         balanceOf[msg.sender] -= wad;
-        msg.sender.transfer(wad);
+        payable(msg.sender).transfer(wad);
         emit Withdrawal(msg.sender, wad);
     }
 
@@ -53,7 +48,7 @@ contract WETH is IWETH {
     ) public returns (bool) {
         require(balanceOf[src] >= wad);
 
-        if (src != msg.sender && allowance[src][msg.sender] != uint(-1)) {
+        if (src != msg.sender && allowance[src][msg.sender] != type(uint).max) {
             require(allowance[src][msg.sender] >= wad);
             allowance[src][msg.sender] -= wad;
         }

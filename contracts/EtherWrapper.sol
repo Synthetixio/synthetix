@@ -200,7 +200,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
     /**
      * @notice Fallback function
      */
-    function() external payable {
+    fallback() external payable {
         revert("Fallback disabled, use mint()");
     }
 

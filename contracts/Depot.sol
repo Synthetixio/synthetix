@@ -118,7 +118,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     /**
      * @notice Fallback function (exchanges ETH to sUSD)
      */
-    function() external payable nonReentrant rateNotInvalid(ETH) notPaused {
+    fallback() external payable nonReentrant rateNotInvalid(ETH) notPaused {
         _exchangeEtherForSynths();
     }
 
@@ -236,7 +236,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         // Ok, if we're here and 'remainingToFulfill' isn't zero, then
         // we need to refund the remainder of their ETH back to them.
         if (remainingToFulfill > 0) {
-            msg.sender.transfer(remainingToFulfill.divideDecimal(exchangeRates().rateForCurrency(ETH)));
+            payable(msg.sender).transfer(remainingToFulfill.divideDecimal(exchangeRates().rateForCurrency(ETH)));
         }
 
         // How many did we actually give them?

@@ -84,7 +84,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         emit Burned(msg.sender, amount);
     }
 
-    function() external payable {
+    fallback() external payable {
         // Allow the WETH contract to send us ETH during
         // our call to WETH.deposit. The gas stipend it gives
         // is 2300 gas, so it's not possible to do much else here.
