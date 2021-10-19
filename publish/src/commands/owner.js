@@ -114,7 +114,10 @@ const owner = async ({
 			)
 		);
 	} catch (err) {
-		if (!/Safe Proxy contract is not deployed in the current network/.test(err.message)) {
+		if (
+			!/Safe Proxy contract is not deployed in the current network/.test(err.message) &&
+			!/Safe contracts not found in the current network/.test(err.message)
+		) {
 			throw err;
 		}
 
