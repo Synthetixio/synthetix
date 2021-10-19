@@ -174,6 +174,10 @@ module.exports = {
 			const clone = JSON.parse(JSON.stringify(abiEntry));
 			// remove the signature in the cases where it's in the parent ABI but not the subclass
 			delete clone.signature;
+			// remove params that are not in contract abstraction (what is returned by artifacts.require('Contract'))
+			// but are in contract instance that's being examined (what is returned by Contract.new())
+			delete clone.payable;
+			delete clone.constant;
 			// remove input and output named params
 			(clone.inputs || []).map(input => {
 				delete input.name;
