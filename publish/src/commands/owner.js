@@ -189,7 +189,7 @@ const owner = async ({
 		} else {
 			try {
 				await confirmOrEnd(yellow('Confirm: ') + `Submit ${bgYellow(black(key))} to (${target})`);
-				const params = assignGasOptions({
+				const params = await assignGasOptions({
 					tx: {
 						to: target,
 						data,
@@ -255,7 +255,7 @@ const owner = async ({
 				try {
 					await confirmOrEnd(gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`));
 
-					const params = assignGasOptions({
+					const params = await assignGasOptions({
 						tx: {
 							to: address,
 							data: encodedData,
