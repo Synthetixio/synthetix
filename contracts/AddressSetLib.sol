@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.8;
 
 // https://docs.synthetix.io/contracts/source/libraries/addresssetlib/
 library AddressSetLib {

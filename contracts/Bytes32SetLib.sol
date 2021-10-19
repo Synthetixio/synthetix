@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.8;
 
 // https://docs.synthetix.io/contracts/source/libraries/bytes32setlib/
 library Bytes32SetLib {

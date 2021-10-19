@@ -1,4 +1,4 @@
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.8;
 
 interface AggregatorV2V3Interface {
     function latestRound() external view returns (uint256);
