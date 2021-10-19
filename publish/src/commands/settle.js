@@ -101,7 +101,7 @@ const settle = async ({
 				yellow(wallet.address)
 			);
 
-			const params = assignGasOptions({
+			const params = await assignGasOptions({
 				tx: {
 					to: user.address,
 					value: ethers.utils.parseUnits(ethToSeed),
