@@ -31,8 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * wherever this is used.
  */
 
-pragma solidity ^0.5.16;
-
+pragma solidity ^0.8.4;
 
 /**
  * @title SignedSafeMath

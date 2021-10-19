@@ -1,6 +1,6 @@
 // Source adapted from  https://github.com/EthWorks/Doppelganger/blob/master/contracts/Doppelganger.sol
 
-pragma solidity ^0.5.16;
+pragma solidity ^0.8.4;
 
 contract GenericMock {
     mapping(bytes4 => bytes) public mockConfig;

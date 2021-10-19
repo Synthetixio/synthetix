@@ -1,7 +1,7 @@
 /* TokenExchanger.sol: Used for testing contract to contract calls on chain
  * with Synthetix for testing ERC20 compatability
  */
-pragma solidity ^0.5.16;
+pragma solidity ^0.8.4;
 
 import "../Owned.sol";
 import "../interfaces/ISynthetix.sol";

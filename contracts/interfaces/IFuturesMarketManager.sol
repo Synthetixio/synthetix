@@ -1,5 +1,4 @@
-pragma solidity ^0.5.16;
-
+pragma solidity ^0.8.4;
 
 interface IFuturesMarketManager {
     function markets(uint index, uint pageSize) external view returns (address[] memory);

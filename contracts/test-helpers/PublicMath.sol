@@ -1,7 +1,7 @@
 /* PublicMath.sol: expose the internal functions in Math library
  * for testing purposes.
  */
-pragma solidity ^0.5.16;
+pragma solidity ^0.8.4;
 
 import "../Math.sol";
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.16;
+pragma solidity ^0.8.4;
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
