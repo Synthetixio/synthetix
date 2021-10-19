@@ -373,6 +373,11 @@
 			"layer": "both",
 			"released": "both",
 			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+		},
+		{
+			"sip": 187,
+			"layer": "both",
+			"sources": ["DebtCache", "Issuer"]
 		}
 	],
 	"releases": [
