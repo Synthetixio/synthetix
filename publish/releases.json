@@ -620,7 +620,7 @@
 				"major": 2,
 				"minor": 51
 			},
-			"sips": [187]
+			"sips": []
 		},
 		{
 			"name": "Kaus (Optimism)",
@@ -630,7 +630,7 @@
 				"major": 2,
 				"minor": 51
 			},
-			"sips": [187]
+			"sips": []
 		},
 		{
 			"name": "Avior",
