@@ -254,6 +254,8 @@ const owner = async ({
 			} else {
 				try {
 					await confirmOrEnd(gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`));
+					console.log('address is', address);
+					console.log('encoded data is', encodedData);
 
 					const params = assignGasOptions({
 						tx: {
@@ -268,6 +270,8 @@ const owner = async ({
 					if (gasLimit) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);
 					}
+					
+					console.log('final params', params);
 
 					const tx = await signer.sendTransaction(params);
 					const receipt = await tx.wait();
