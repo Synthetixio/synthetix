@@ -575,7 +575,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address account,
         uint susdAmount,
         address liquidator
-    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+    ) external virtual onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
         // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
 

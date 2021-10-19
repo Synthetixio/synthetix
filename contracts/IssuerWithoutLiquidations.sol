@@ -11,5 +11,5 @@ contract IssuerWithoutLiquidations is Issuer {
         address account,
         uint susdAmount,
         address liquidator
-    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {}
+    ) external override onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {}
 }
