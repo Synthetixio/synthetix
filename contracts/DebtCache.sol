@@ -119,10 +119,9 @@ contract DebtCache is BaseDebtCache {
         // Apply the debt update.
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
-            // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
-            // debt snapshots.
-            require(cachedSum <= debt, "Cached synth sum exceeds total debt");
-            debt = debt.sub(cachedSum).add(currentSum);
+            // apply the delta between the cachedSum and currentSum
+            // add currentSum before sub cachedSum to prevent overflow as cachedSum > debt for large amount of excluded debt
+            debt = debt.add(currentSum).sub(cachedSum);
             _cachedDebt = debt;
             emit DebtCacheUpdated(debt);
         }
