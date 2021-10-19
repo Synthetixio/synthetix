@@ -60,16 +60,16 @@ contract Proxy is Owned {
 
         assembly {
             let free_ptr := mload(0x40)
-            calldatacopy(free_ptr, 0, calldatasize)
+            calldatacopy(free_ptr, 0, calldatasize())
 
             /* We must explicitly forward ether to the underlying contract as well. */
-            let result := call(gas, sload(target_slot), callvalue, free_ptr, calldatasize, 0, 0)
-            returndatacopy(free_ptr, 0, returndatasize)
+            let result := call(gas(), sload(target.slot), callvalue(), free_ptr, calldatasize(), 0, 0)
+            returndatacopy(free_ptr, 0, returndatasize())
 
             if iszero(result) {
-                revert(free_ptr, returndatasize)
+                revert(free_ptr, returndatasize())
             }
-            return(free_ptr, returndatasize)
+            return(free_ptr, returndatasize())
         }
     }
 

@@ -107,7 +107,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /**
      * @notice Get a particular schedule entry for an account.
-     * @return The vesting entry object and rate per second emission.
+     * @return endTime The vesting entry object end time.
+     * @return escrowAmount The vesting entry object escrowed amount.
      */
     function getVestingEntry(address account, uint256 entryID) external view returns (uint64 endTime, uint256 escrowAmount) {
         endTime = vestingSchedules[account][entryID].endTime;
