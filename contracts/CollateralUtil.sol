@@ -1,7 +1,5 @@
 pragma solidity ^0.8.4;
 
-pragma experimental ABIEncoderV2;
-
 // Inheritance
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ICollateralUtil.sol";
