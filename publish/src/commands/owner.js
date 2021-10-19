@@ -189,7 +189,7 @@ const owner = async ({
 		} else {
 			try {
 				await confirmOrEnd(yellow('Confirm: ') + `Submit ${bgYellow(black(key))} to (${target})`);
-				const params = assignGasOptions({
+				const params = await assignGasOptions({
 					tx: {
 						to: target,
 						data,
@@ -257,7 +257,7 @@ const owner = async ({
 					console.log('address is', address);
 					console.log('encoded data is', encodedData);
 
-					const params = assignGasOptions({
+					const params = await assignGasOptions({
 						tx: {
 							to: address,
 							data: encodedData,
