@@ -373,6 +373,11 @@
 			"layer": "both",
 			"released": "both",
 			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+		},
+		{
+			"sip": 187,
+			"layer": "both",
+			"sources": ["DebtCache", "Issuer"]
 		}
 	],
 	"releases": [
@@ -615,7 +620,7 @@
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Kaus (Optimism)",
@@ -625,7 +630,7 @@
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Avior",

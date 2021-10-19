@@ -262,7 +262,7 @@ contract('DebtCache', async accounts => {
 
 		await exchangeRates.updateRates(
 			[sAUD, sEUR, SNX, sETH, ETH, iETH],
-			['0.5', '1.25', '0.1', '200', '200', '200'].map(toUnit),
+			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -289,6 +289,7 @@ contract('DebtCache', async accounts => {
 				'updateCachedSynthDebtWithRate',
 				'updateCachedSynthDebtsWithRates',
 				'updateDebtCacheValidity',
+				'updateCachedsUSDDebt',
 			],
 		});
 	});
@@ -336,6 +337,15 @@ contract('DebtCache', async accounts => {
 				address: owner,
 				skipPassCheck: true,
 				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('updateCachedsUSDDebt() can only be invoked by the issuer', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: debtCache.updateCachedsUSDDebt,
+				args: [toUnit('1')],
+				accounts,
+				reason: 'Sender is not Issuer',
 			});
 		});
 	});
@@ -678,6 +688,65 @@ contract('DebtCache', async accounts => {
 			});
 		});
 
+		describe('updateCachedsUSDDebt()', () => {
+			beforeEach(async () => {
+				await addressResolver.importAddresses([toBytes32('Issuer')], [owner], {
+					from: owner,
+				});
+				await debtCache.rebuildCache();
+			});
+			it('when sUSD is increased by minting', async () => {
+				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const amount = toUnit('1000');
+				const tx = await debtCache.updateCachedsUSDDebt(amount, { from: owner });
+
+				assert.bnEqual((await debtCache.cacheInfo())[0], cachedSynthDebt.add(amount));
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynthDebt.add(amount));
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [cachedSynthDebt.add(amount)],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+			});
+			it('when sUSD cache is decreased by minting', async () => {
+				const amount = toUnit('1000');
+				await debtCache.updateCachedsUSDDebt(amount, { from: owner });
+
+				// cached Synth after increase
+				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				assert.bnEqual((await debtCache.cacheInfo())[0], amount);
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), amount);
+
+				// decrease the cached sUSD amount
+				const amountToReduce = toUnit('500');
+				const tx = await debtCache.updateCachedsUSDDebt(amountToReduce.neg(), { from: owner });
+
+				assert.bnEqual(
+					await debtCache.cachedSynthDebts([sUSD]),
+					cachedSynthDebt.sub(amountToReduce)
+				);
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [cachedSynthDebt.sub(amountToReduce)],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+			});
+		});
+
 		describe('Issuance, burning, exchange, settlement', () => {
 			it('issuing sUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
@@ -724,6 +793,64 @@ contract('DebtCache', async accounts => {
 					args: [issued.sub(synthsToBurn)],
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
+			});
+
+			it('issuing sUSD updates the total debt cached and sUSD cache', async () => {
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
+
+				const synthsToIssue = toUnit('1000');
+				const cachedSynths = (await debtCache.cachedSynthDebts([sUSD]))[0];
+
+				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
+
+				const tx = await synthetix.issueSynths(synthsToIssue, { from: account1 });
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [issued.add(synthsToIssue)],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+
+				// cached sUSD increased by synth issued
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.add(synthsToIssue));
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(synthsToIssue));
+			});
+
+			it('burning sUSD reduces the total debt and sUSD cache', async () => {
+				await debtCache.takeDebtSnapshot();
+
+				const synthsToIssue = toUnit('1000');
+				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
+				await synthetix.issueSynths(synthsToIssue, { from: account1 });
+
+				const cachedSynths = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const issued = (await debtCache.cacheInfo())[0];
+				const synthsToBurn = toUnit('500');
+
+				const tx = await synthetix.burnSynths(synthsToBurn, { from: account1 });
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [issued.sub(synthsToBurn)],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+				});
+
+				// cached sUSD decreased by synth burned
+				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.sub(synthsToBurn));
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.sub(synthsToBurn));
 			});
 
 			it('exchanging between synths updates the debt totals for those synths', async () => {

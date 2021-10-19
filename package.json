@@ -5,6 +5,7 @@
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
 	"scripts": {
+		"setup": "npm install && allow-scripts",
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"compile": "hardhat compile",
 		"coverage": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat coverage",
@@ -75,9 +76,10 @@
 		"@codechecks/client": "0.1.11",
 		"@eth-optimism/contracts": "0.3.4",
 		"@eth-optimism/core-utils": "~0.4.5",
-		"@eth-optimism/hardhat-ovm": "0.2.2",
-		"@eth-optimism/smock": "1.1.9",
+		"@eth-optimism/hardhat-ovm": "0.2.3",
+		"@eth-optimism/smock": "1.1.10",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
+		"@lavamoat/allow-scripts": "1.0.6",
 		"@gnosis.pm/safe-core-sdk": "~0.3.1",
 		"@gnosis.pm/safe-service-client": "~0.1.1",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -102,10 +104,10 @@
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
-		"ethers": "5.4.4",
+		"ethers": "5.4.6",
 		"execa": "^4.1.0",
 		"fs-extra": "9.0.1",
-		"hardhat": "2.5.0",
+		"hardhat": "2.6.4",
 		"hardhat-gas-reporter": "~1.0.4",
 		"husky": "^4.3.0",
 		"is-ci": "^2.0.0",
@@ -122,8 +124,8 @@
 		"semver": "7.3.2",
 		"solc": "0.5.16",
 		"solhint": "~3.3.4",
-		"solidifier": "git@github.com:synthetixio/solidifier#2.2.2",
-		"solidity-coverage": "^0.7.13",
+		"solidifier": "2.2.3",
+		"solidity-coverage": "^0.7.17",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
 		"web3": "1.3.3",
@@ -140,5 +142,22 @@
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
 		"web3-utils": "1.2.2"
+	},
+	"lavamoat": {
+		"allowScripts": {
+			"uglifyjs-webpack-plugin": false,
+			"fsevents": false,
+			"keccak": false,
+			"secp256k1": false,
+			"web3": false,
+			"web3-bzz": false,
+			"bufferutil": false,
+			"utf-8-validate": false,
+			"web3-shh": false,
+			"highlight.js": false,
+			"core-js-pure": false,
+			"husky": false,
+			"@lavamoat/preinstall-always-fail": false
+		}
 	}
 }

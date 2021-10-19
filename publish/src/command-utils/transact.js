@@ -1,5 +1,10 @@
 const ethers = require('ethers');
-const { appendOwnerActionGenerator, confirmAction, stringify } = require('../util');
+const {
+	appendOwnerActionGenerator,
+	confirmAction,
+	stringify,
+	assignGasOptions,
+} = require('../util');
 const { gray, yellow, green, redBright } = require('chalk');
 
 let _dryRunCounter = 0;
@@ -19,8 +24,8 @@ const performTransactionalStep = async ({
 	expected,
 	write,
 	writeArg, // none, 1 or an array of args, array will be spread into params
-	gasLimit,
-	gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas,
 	generateSolidity,
 	skipSolidity,
 	explorerLinkPrefix,
@@ -79,10 +84,12 @@ const performTransactionalStep = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const overrides = {
-				gasLimit,
-				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-			};
+			const overrides = await assignGasOptions({
+				tx: {},
+				provider: target.provider,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
+			});
 
 			if (nonceManager) {
 				overrides.nonce = await nonceManager.getNonce();

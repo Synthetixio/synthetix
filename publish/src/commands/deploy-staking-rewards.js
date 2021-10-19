@@ -28,9 +28,7 @@ const {
 } = require('../../../.');
 
 const DEFAULTS = {
-	gasPrice: '1',
-	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
+	priorityGasPrice: '1',
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	rewardsToDeploy: [],
@@ -38,9 +36,8 @@ const DEFAULTS = {
 
 const deployStakingRewards = async ({
 	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
-	gasPrice = DEFAULTS.gasPrice,
-	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
-	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	network = DEFAULTS.network,
 	buildPath = DEFAULTS.buildPath,
 	deploymentPath,
@@ -132,13 +129,12 @@ const deployStakingRewards = async ({
 
 	const deployer = new Deployer({
 		compiled,
-		contractDeploymentGasLimit,
 		config,
 		configFile: null, // null configFile so it doesn't overwrite config.json
 		deployment,
 		deploymentFile,
-		gasPrice,
-		methodCallGasLimit,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		network,
 		privateKey,
 		providerUrl,
@@ -150,7 +146,7 @@ const deployStakingRewards = async ({
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		Network: network,
-		'Gas price to use': `${gasPrice} GWEI`,
+		Gas: `Base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
@@ -289,21 +285,14 @@ module.exports = {
 				DEFAULTS.buildPath
 			)
 			.option(
-				'-c, --contract-deployment-gas-limit <value>',
-				'Contract deployment gas limit',
-				parseInt,
-				DEFAULTS.contractDeploymentGasLimit
-			)
-			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
 			.option(
-				'-m, --method-call-gas-limit <value>',
-				'Method call gas limit',
-				parseInt,
-				DEFAULTS.methodCallGasLimit
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
 			)
 			.option(
 				'-n, --network <value>',

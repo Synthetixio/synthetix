@@ -223,19 +223,6 @@ module.exports = async ({
 		});
 	}
 
-	if (useOvm && SynthetixState && FeePool) {
-		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
-		await runStep({
-			contract: 'SynthetixState',
-			target: SynthetixState,
-			read: 'feePool',
-			expected: input => input === addressOf(FeePool),
-			write: 'setFeePool',
-			writeArg: addressOf(FeePool),
-			comment: 'Ensure the FeePool contract can write to the SynthetixState contract',
-		});
-	}
-
 	if (RewardEscrow && Synthetix) {
 		await runStep({
 			contract: 'RewardEscrow',
