@@ -189,7 +189,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== VIEWS ========== */
 
     // Note: use public visibility so that it can be invoked in a subclass
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;

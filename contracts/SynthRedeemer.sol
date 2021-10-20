@@ -23,7 +23,7 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
 
     constructor(address _resolver) MixinResolver(_resolver) {}
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](2);
         addresses[0] = CONTRACT_ISSUER;
         addresses[1] = CONTRACT_SYNTHSUSD;

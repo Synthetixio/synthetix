@@ -89,7 +89,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     constructor(address _owner, address _resolver) Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYNTHETIX;

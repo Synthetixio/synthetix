@@ -75,15 +75,15 @@ contract VirtualToken is ERC20 {
         return IERC20(address(vSynth.synth())).balanceOf(address(this));
     }
 
-    function name() external view returns (string memory) {
+    function name() public view override returns (string memory) {
         return string(abi.encodePacked("Virtual Token ", targetToken.name()));
     }
 
-    function symbol() external view returns (string memory) {
+    function symbol() public view override returns (string memory) {
         return string(abi.encodePacked("v", targetToken.symbol()));
     }
 
-    function decimals() external view returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return IERC20Detailed(address(vSynth.synth())).decimals();
     }
 

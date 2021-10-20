@@ -44,7 +44,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
         addresses[0] = CONTRACT_SYNTHSUSD;
         addresses[1] = CONTRACT_FEEPOOL;

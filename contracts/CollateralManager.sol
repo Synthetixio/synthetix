@@ -102,7 +102,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         bytes32[] memory staticAddresses = new bytes32[](2);
         staticAddresses[0] = CONTRACT_ISSUER;
         staticAddresses[1] = CONTRACT_EXRATES;

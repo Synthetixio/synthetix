@@ -28,7 +28,7 @@ contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
 
     bytes32 private constant CONTRACT_VIRTUALSYNTH_MASTERCOPY = "VirtualSynthMastercopy";
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Exchanger.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_VIRTUALSYNTH_MASTERCOPY;

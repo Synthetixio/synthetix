@@ -50,7 +50,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;

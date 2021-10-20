@@ -48,7 +48,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         rewardsDistribution = _rewardsDistribution;
     }
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_SHORT;
     }

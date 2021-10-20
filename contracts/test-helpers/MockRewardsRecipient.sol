@@ -8,7 +8,7 @@ contract MockRewardsRecipient is RewardsDistributionRecipient {
 
     constructor(address _owner) Owned(_owner) {}
 
-    function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution {
+    function notifyRewardAmount(uint256 reward) external override onlyRewardsDistribution {
         rewardsAvailable = rewardsAvailable + reward;
         emit RewardAdded(reward);
     }

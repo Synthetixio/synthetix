@@ -48,7 +48,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_ISSUER;

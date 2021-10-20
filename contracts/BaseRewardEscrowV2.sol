@@ -84,7 +84,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     /* ========== VIEW FUNCTIONS ========== */
 
     // Note: use public visibility so that it can be invoked in a subclass
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
         addresses[0] = CONTRACT_SYNTHETIX;
         addresses[1] = CONTRACT_FEEPOOL;

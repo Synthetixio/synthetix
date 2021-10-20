@@ -39,7 +39,7 @@ contract MultiCollateralSynth is Synth {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;

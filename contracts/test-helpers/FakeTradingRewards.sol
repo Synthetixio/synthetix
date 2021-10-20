@@ -17,12 +17,12 @@ contract FakeTradingRewards is TradingRewards {
     }
 
     // Synthetix is mocked with an ERC20 token passed via the constructor.
-    function synthetix() internal view returns (IERC20) {
+    function synthetix() internal view override returns (IERC20) {
         return IERC20(_mockSynthetixToken);
     }
 
     // Return msg.sender so that onlyExchanger modifier can be bypassed.
-    function exchanger() internal view returns (IExchanger) {
+    function exchanger() internal view override returns (IExchanger) {
         return IExchanger(msg.sender);
     }
 }

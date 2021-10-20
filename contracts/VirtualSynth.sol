@@ -17,16 +17,14 @@ import "./interfaces/IExchanger.sol";
 //       On higher versions of solidity, it would be marked with the `abstract` keyword.
 //       This contracts implements logic that is only intended to be accessed behind a proxy.
 //       For the deployed "mastercopy" version, see VirtualSynthMastercopy.
-contract VirtualSynth is ERC20, IVirtualSynth {
+abstract contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    IERC20 public synth;
+    ISynth public synth;
     IAddressResolver public resolver;
 
     bool public settled = false;
-
-    uint8 public constant decimals = 18;
 
     // track initial supply so we can calculate the rate even after all supply is burned
     uint public initialSupply;
@@ -39,7 +37,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     bool public initialized = false;
 
     function initialize(
-        IERC20 _synth,
+        ISynth _synth,
         IAddressResolver _resolver,
         address _recipient,
         uint _amount,
@@ -116,11 +114,11 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     // VIEWS
 
-    function name() external view returns (string memory) {
+    function name() public view override returns (string memory) {
         return string(abi.encodePacked("Virtual Synth ", currencyKey));
     }
 
-    function symbol() external view returns (string memory) {
+    function symbol() public view override returns (string memory) {
         return string(abi.encodePacked("v", currencyKey));
     }
 

@@ -1,7 +1,6 @@
 pragma solidity ^0.8.8;
 
 // Inheritance
-import "./interfaces/IERC20.sol";
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
 import "./interfaces/ISynthetix.sol";
@@ -16,7 +15,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IVirtualSynth.sol";
 
-contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
+abstract contract BaseSynthetix is ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
@@ -48,7 +47,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== VIEWS ==========
 
     // Note: use public visibility so that it can be invoked in a subclass
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYNTHETIXSTATE;
         addresses[1] = CONTRACT_SYSTEMSTATUS;
@@ -198,6 +197,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function settle(bytes32 currencyKey)
         external
+        virtual
         optionalProxy
         returns (
             uint reclaimed,
@@ -310,42 +310,24 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         address,
         bytes32
-    ) external returns (uint amountReceived) {
-        _notImplemented();
-    }
+    ) external virtual returns (uint amountReceived) {}
 
     function exchangeWithVirtual(
         bytes32,
         uint,
         bytes32,
         bytes32
-    ) external returns (uint, IVirtualSynth) {
-        _notImplemented();
-    }
+    ) external virtual returns (uint, IVirtualSynth) {}
 
-    function mint() external returns (bool) {
-        _notImplemented();
-    }
+    function mint() external virtual returns (bool) {}
 
-    function liquidateDelinquentAccount(address, uint) external returns (bool) {
-        _notImplemented();
-    }
+    function liquidateDelinquentAccount(address, uint) external virtual returns (bool) {}
 
-    function mintSecondary(address, uint) external {
-        _notImplemented();
-    }
+    function mintSecondary(address, uint) external virtual {}
 
-    function mintSecondaryRewards(uint) external {
-        _notImplemented();
-    }
+    function mintSecondaryRewards(uint) external virtual {}
 
-    function burnSecondary(address, uint) external {
-        _notImplemented();
-    }
-
-    function _notImplemented() internal pure {
-        revert("Cannot be run on this layer");
-    }
+    function burnSecondary(address, uint) external virtual {}
 
     // ========== MODIFIERS ==========
 

@@ -29,7 +29,7 @@ contract Synthetix is BaseSynthetix {
         address _resolver
     ) BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_REWARD_ESCROW;
@@ -61,6 +61,7 @@ contract Synthetix is BaseSynthetix {
         bytes32 trackingCode
     )
         external
+        override
         exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
         optionalProxy
         returns (uint amountReceived, IVirtualSynth vSynth)
@@ -88,7 +89,13 @@ contract Synthetix is BaseSynthetix {
         bytes32 destinationCurrencyKey,
         address rewardAddress,
         bytes32 trackingCode
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+    )
+        external
+        override
+        exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
+        optionalProxy
+        returns (uint amountReceived)
+    {
         (amountReceived, ) = exchanger().exchange(
             messageSender,
             messageSender,
@@ -105,6 +112,7 @@ contract Synthetix is BaseSynthetix {
 
     function settle(bytes32 currencyKey)
         external
+        override
         optionalProxy
         returns (
             uint reclaimed,
@@ -115,7 +123,7 @@ contract Synthetix is BaseSynthetix {
         return exchanger().settle(messageSender, currencyKey);
     }
 
-    function mint() external issuanceActive returns (bool) {
+    function mint() external override issuanceActive returns (bool) {
         require(address(rewardsDistribution()) != address(0), "RewardsDistribution not set");
 
         ISupplySchedule _supplySchedule = supplySchedule();
@@ -154,6 +162,7 @@ contract Synthetix is BaseSynthetix {
 
     function liquidateDelinquentAccount(address account, uint susdAmount)
         external
+        override
         systemActive
         optionalProxy
         returns (bool)
