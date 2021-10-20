@@ -14,7 +14,7 @@ const {
 	releases,
 } = require('../../../.');
 
-const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
+const finalizeRelease = async ({ layer, release, versionTag }) => {
 	const isBase = layer === 'base' || layer === 'both';
 	const isOvm = layer === 'ovm' || layer === 'both';
 
@@ -26,10 +26,21 @@ const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
 		await versionsUpdate({ release, useOvm: true, versionTag });
 	}
 
+	const prerelease = semver.prerelease(versionTag) && semver.prerelease(versionTag)[0] !== 'ovm';
+
+	if (prerelease) {
+		console.log(
+			'Not updating the releases.json as this is a prerelease of',
+			semver.prerelease(versionTag)[0]
+		);
+		return;
+	}
+
 	// Now modify releases.json locally for the released version
 	const major = semver.major(versionTag);
 	const minor = semver.minor(versionTag);
 
+	let sips = [];
 	// Mark as released the ones that have the specified version and layer
 	for (const release of releases.releases) {
 		const versionMatch = release.version.major === major && release.version.minor === minor;
@@ -37,6 +48,28 @@ const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
 
 		if (versionMatch && layerMatch) {
 			release.released = true;
+			sips = sips.concat(release.sips);
+		}
+	}
+
+	// now mark all sips as released on that layer
+	for (const sipNumber of sips) {
+		const sip = releases.sips.find(s => s.sip === sipNumber);
+		if (!sip) {
+			console.log(
+				'WARNING: Cannot find entry for SIP',
+				sipNumber,
+				'and thus cannot update its releasability'
+			);
+			continue;
+		}
+		// when it's the first release of the sip, or if the new release is both, then
+		// use the given layer
+		if (!sip.released || layer === 'both') {
+			sip.released = layer;
+			// else when releasing the other layer, then mark both released
+		} else if (sip.released !== layer) {
+			sip.released = 'both';
 		}
 	}
 

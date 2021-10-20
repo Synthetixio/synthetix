@@ -294,6 +294,22 @@
 			"released": "base"
 		},
 		{
+			"sip": 135,
+			"layer": "ovm",
+			"sources": [
+				"CollateralManager",
+				"CollateralManagerState",
+				"CollateralShort",
+				"CollateralUtil",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsLINK",
+				"SynthsUSD",
+				"SystemSettings"
+			],
+			"released": "ovm"
+		},
+		{
 			"sip": 136,
 			"layer": "base",
 			"released": "base",
@@ -312,20 +328,29 @@
 			"sources": ["Exchanger"]
 		},
 		{
+			"sip": 140,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Synthetix"]
+		},
+		{
 			"sip": 142,
-			"layer": "base",
+			"layer": "both",
+			"released": "both",
 			"sources": [
 				"DebtCache",
 				"FeePool",
 				"Issuer",
 				"Synthetix",
 				"SynthsETH",
-				"SynthsUSD"
+				"SynthsUSD",
+				"SynthsBTC"
 			]
 		},
 		{
 			"sip": 145,
 			"layer": "base",
+			"released": "base",
 			"sources": ["DebtCache"]
 		},
 		{
@@ -337,8 +362,31 @@
 			}
 		},
 		{
+			"sip": 158,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 169,
+			"layer": "base",
+			"released": "base"
+		},
+		{
 			"sip": 170,
-			"layer": "base"
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 174,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+		},
+		{
+			"sip": 187,
+			"layer": "both",
+			"sources": ["DebtCache", "Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -548,79 +596,50 @@
 		},
 		{
 			"name": "Mirfak",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 48
 			},
-			"sips": []
-		},
-		{
-			"name": "Mirfak (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 48
-			},
-			"sips": []
+			"sips": [142, 145, 170, 174]
 		},
 		{
 			"name": "Wezen",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 49
 			},
-			"sips": []
-		},
-		{
-			"name": "Wezen (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 49
-			},
-			"sips": []
-		},
-		{
-			"name": "Sargas",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 50
-			},
-			"sips": []
+			"sips": [158, 169]
 		},
 		{
 			"name": "Sargas (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 50
 			},
-			"sips": []
+			"sips": [135, 142, 174]
 		},
 		{
 			"name": "Kaus",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Kaus (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Avior",

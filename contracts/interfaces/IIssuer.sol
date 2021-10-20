@@ -81,6 +81,12 @@ interface IIssuer {
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
 
+    function burnForRedemption(
+        address deprecatedSynthProxy,
+        address account,
+        uint balance
+    ) external;
+
     function liquidateDelinquentAccount(
         address account,
         uint susdAmount,

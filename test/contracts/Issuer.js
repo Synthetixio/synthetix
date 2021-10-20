@@ -60,7 +60,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 		debtCache,
 		issuer,
 		synths,
-		addressResolver;
+		addressResolver,
+		synthRedeemer,
+		exchanger;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -81,11 +83,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 			SynthsETH: sETHContract,
 			SynthsAUD: sAUDContract,
 			SynthsEUR: sEURContract,
+			Exchanger: exchanger,
 			FeePool: feePool,
 			DebtCache: debtCache,
 			Issuer: issuer,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
+			SynthRedeemer: synthRedeemer,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -104,6 +108,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'DelegateApprovals', // necessary for *OnBehalf functions
 				'FlexibleStorage',
 				'CollateralManager',
+				'SynthRedeemer',
 			],
 		}));
 	});
@@ -138,17 +143,18 @@ contract('Issuer (via Synthetix)', async accounts => {
 			expected: [
 				'addSynth',
 				'addSynths',
-				'issueSynths',
-				'issueSynthsOnBehalf',
-				'issueMaxSynths',
-				'issueMaxSynthsOnBehalf',
+				'burnForRedemption',
 				'burnSynths',
 				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
+				'issueMaxSynths',
+				'issueMaxSynthsOnBehalf',
+				'issueSynths',
+				'issueSynthsOnBehalf',
+				'liquidateDelinquentAccount',
 				'removeSynth',
 				'removeSynths',
-				'liquidateDelinquentAccount',
 			],
 		});
 	});
@@ -647,13 +653,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('when another synth is added with 0 supply', () => {
-					let currencyKey, synth;
+					let currencyKey, synth, synthProxy;
 
 					beforeEach(async () => {
 						const symbol = 'sBTC';
 						currencyKey = toBytes32(symbol);
 
-						({ token: synth } = await mockToken({
+						({ token: synth, proxy: synthProxy } = await mockToken({
 							synth: symbol,
 							accounts,
 							name: 'test',
@@ -700,42 +706,134 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 					});
 
-					describe('when that synth has issued', () => {
+					describe('when that synth has issued but has no rate', () => {
 						beforeEach(async () => {
 							await synth.issue(account1, toUnit('100'));
 						});
-						it('should disallow removing a Synth contract when it has an issued balance', async () => {
+						it('should disallow removing a Synth contract when it has an issued balance and no rate', async () => {
 							// Assert that we can't remove the synth now
 							await assert.revert(
 								issuer.removeSynth(currencyKey, { from: owner }),
-								'Synth supply exists'
+								'Cannot remove synth to redeem without rate'
 							);
 						});
+						describe('when the synth has a rate', () => {
+							beforeEach(async () => {
+								await exchangeRates.updateRates([currencyKey], [toUnit('2')], timestamp, {
+									from: oracle,
+								});
+							});
+
+							describe('when another user exchanges into the synth', () => {
+								beforeEach(async () => {
+									await sUSDContract.issue(account2, toUnit('1000'));
+									await synthetix.exchange(sUSD, toUnit('100'), currencyKey, { from: account2 });
+								});
+								describe('when the synth is removed', () => {
+									beforeEach(async () => {
+										await issuer.removeSynth(currencyKey, { from: owner });
+									});
+									it('then settling works as expected', async () => {
+										await synthetix.settle(currencyKey);
+
+										const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+										assert.equal(numEntries, '0');
+									});
+									describe('when the rate is also removed', () => {
+										beforeEach(async () => {
+											await exchangeRates.deleteRate(currencyKey, { from: oracle });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(currencyKey);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
+									});
+								});
+								describe('when the same user exchanges out of the synth', () => {
+									beforeEach(async () => {
+										await setExchangeWaitingPeriod({ owner, systemSettings, secs: 60 });
+										// pass through the waiting period so we can exchange again
+										await fastForward(90);
+										await synthetix.exchange(currencyKey, toUnit('1'), sUSD, { from: account2 });
+									});
+									describe('when the synth is removed', () => {
+										beforeEach(async () => {
+											await issuer.removeSynth(currencyKey, { from: owner });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(sUSD);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, sUSD);
+											assert.equal(numEntries, '0');
+										});
+										it('then settling from the original currency works too', async () => {
+											await synthetix.settle(currencyKey);
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
+										describe('when the rate is also removed', () => {
+											beforeEach(async () => {
+												await exchangeRates.deleteRate(currencyKey, { from: oracle });
+											});
+											it('then settling works as expected', async () => {
+												await synthetix.settle(currencyKey);
+
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
+											it('then settling from the original currency works too', async () => {
+												await synthetix.settle(currencyKey);
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
+										});
+									});
+								});
+							});
+
+							describe('when a debt snapshot is taken', () => {
+								let totalIssuedSynths;
+								beforeEach(async () => {
+									await debtCache.takeDebtSnapshot();
+
+									totalIssuedSynths = await issuer.totalIssuedSynths(sUSD, true);
+
+									// 100 sETH at 2 per sETH is 200 total debt
+									assert.bnEqual(totalIssuedSynths, toUnit('200'));
+								});
+								describe('when the synth is removed', () => {
+									let txn;
+									beforeEach(async () => {
+										// base conditions
+										assert.equal(await sUSDContract.balanceOf(synthRedeemer.address), '0');
+										assert.equal(await synthRedeemer.redemptions(synthProxy.address), '0');
+
+										// now do the removal
+										txn = await issuer.removeSynth(currencyKey, { from: owner });
+									});
+									it('emits an event', async () => {
+										assert.eventEqual(txn, 'SynthRemoved', [currencyKey, synth.address]);
+									});
+									it('issues the equivalent amount of sUSD', async () => {
+										const amountOfsUSDIssued = await sUSDContract.balanceOf(synthRedeemer.address);
+
+										// 100 units of sBTC at a rate of 2:1
+										assert.bnEqual(amountOfsUSDIssued, toUnit('200'));
+									});
+									it('it invokes deprecate on the redeemer via the proxy', async () => {
+										const redeemRate = await synthRedeemer.redemptions(synthProxy.address);
+
+										assert.bnEqual(redeemRate, toUnit('2'));
+									});
+									it('and total debt remains unchanged', async () => {
+										assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), totalIssuedSynths);
+									});
+								});
+							});
+						});
 					});
-				});
-
-				it('should disallow removing a Synth contract when requested by a non-owner', async () => {
-					// Note: This test depends on state in the migration script, that there are hooked up synths
-					// without balances
-					await assert.revert(issuer.removeSynth(sEUR, { from: account1 }));
-				});
-
-				it('should revert when requesting to remove a non-existent synth', async () => {
-					// Note: This test depends on state in the migration script, that there are hooked up synths
-					// without balances
-					const currencyKey = toBytes32('NOPE');
-
-					// Assert that we can't remove the synth
-					await assert.revert(issuer.removeSynth(currencyKey, { from: owner }));
-				});
-
-				it('should revert when requesting to remove sUSD', async () => {
-					// Note: This test depends on state in the migration script, that there are hooked up synths
-					// without balances
-					const currencyKey = toBytes32('sUSD');
-
-					// Assert that we can't remove the synth
-					await assert.revert(issuer.removeSynth(currencyKey, { from: owner }));
 				});
 
 				describe('multiple add/remove synths', () => {
@@ -803,25 +901,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.eventEqual(txn.logs[1], 'SynthAdded', [currencyKey2, synth2.address]);
 					});
 
-					it('should disallow adding Synth contracts if the user is not the owner', async () => {
-						const { token: synth } = await mockToken({
-							accounts,
-							synth: 'sXYZ',
-							skipInitialAllocation: true,
-							supply: 0,
-							name: 'XYZ',
-							symbol: 'XYZ',
-						});
-
-						await onlyGivenAddressCanInvoke({
-							fnc: issuer.addSynths,
-							accounts,
-							args: [[synth.address]],
-							address: owner,
-							reason: 'Only the contract owner may perform this action',
-						});
-					});
-
 					it('should disallow multi-adding the same Synth contract', async () => {
 						const { token: synth } = await mockToken({
 							accounts,
@@ -861,16 +940,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 							issuer.addSynths([synth1.address, synth2.address], { from: owner }),
 							'Synth exists'
 						);
-					});
-
-					it('should disallow removing Synths by a non-owner', async () => {
-						await onlyGivenAddressCanInvoke({
-							fnc: issuer.removeSynths,
-							args: [[currencyKey]],
-							accounts,
-							address: owner,
-							reason: 'Only the contract owner may perform this action',
-						});
 					});
 
 					it('should disallow removing non-existent synths', async () => {
@@ -918,28 +987,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 						// Assert events emitted
 						assert.eventEqual(tx.logs[0], 'SynthRemoved', [currencyKey, synth.address]);
 						assert.eventEqual(tx.logs[1], 'SynthRemoved', [currencyKey2, synth2.address]);
-					});
-
-					it('should disallow removing synths if any of them has a positive balance', async () => {
-						const symbol2 = 'sFOO';
-						const currencyKey2 = toBytes32(symbol2);
-
-						const { token: synth2 } = await mockToken({
-							synth: symbol2,
-							accounts,
-							name: 'foo',
-							symbol2,
-							supply: 0,
-							skipInitialAllocation: true,
-						});
-
-						await issuer.addSynth(synth2.address, { from: owner });
-						await synth2.issue(account1, toUnit('100'));
-
-						await assert.revert(
-							issuer.removeSynths([currencyKey, currencyKey2], { from: owner }),
-							'Synth supply exists'
-						);
 					});
 				});
 			});
@@ -2572,6 +2619,39 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await synthetix.totalIssuedSynths(sETH),
 							totalSupplyBefore.add(divideDecimalRound(amount, rate))
 						);
+					});
+				});
+			});
+
+			describe('burnForRedemption', () => {
+				it('only allowed by the synth redeemer', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: issuer.burnForRedemption,
+						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
+						accounts,
+						reason: 'Issuer: Only the SynthRedeemer contract can perform this action',
+					});
+				});
+				describe('when a user has 100 sETH', () => {
+					beforeEach(async () => {
+						await sETHContract.issue(account1, toUnit('100'));
+					});
+					describe('when burnForRedemption is invoked on the user for 75 sETH', () => {
+						beforeEach(async () => {
+							// spoof the synth redeemer
+							await addressResolver.importAddresses([toBytes32('SynthRedeemer')], [account6], {
+								from: owner,
+							});
+							// rebuild the resolver cache in the issuer
+							await issuer.rebuildCache();
+							// now invoke the burn
+							await issuer.burnForRedemption(await sETHContract.proxy(), account1, toUnit('75'), {
+								from: account6,
+							});
+						});
+						it('then the user has 25 sETH remaining', async () => {
+							assert.bnEqual(await sETHContract.balanceOf(account1), toUnit('25'));
+						});
 					});
 				});
 			});

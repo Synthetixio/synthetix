@@ -18,39 +18,32 @@ const {
 const { performTransactionalStep } = require('../../command-utils/transact');
 
 const {
-	constants: {
-		BUILD_FOLDER,
-		CONFIG_FILENAME,
-		SYNTHS_FILENAME,
-		DEPLOYMENT_FILENAME,
-		OVM_GAS_PRICE_GWEI,
-	},
+	constants: { BUILD_FOLDER, CONFIG_FILENAME, SYNTHS_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../../..');
 
-const performSafetyChecks = require('./perform-safety-checks');
-const getDeployParameterFactory = require('./get-deploy-parameter-factory');
-const systemAndParameterCheck = require('./system-and-parameter-check');
-const deployCore = require('./deploy-core');
-const deploySynths = require('./deploy-synths');
-const deployLoans = require('./deploy-loans');
-const deployDappUtils = require('./deploy-dapp-utils.js');
-const deployBinaryOptions = require('./deploy-binary-options');
-const importAddresses = require('./import-addresses');
-const rebuildResolverCaches = require('./rebuild-resolver-caches');
-const configureLegacySettings = require('./configure-legacy-settings');
-const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
-const configureSynths = require('./configure-synths');
 const addSynthsToProtocol = require('./add-synths-to-protocol');
 const configureInverseSynths = require('./configure-inverse-synths');
-const configureSystemSettings = require('./configure-system-settings');
+const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
-const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
+const configureSynths = require('./configure-synths');
+const configureSystemSettings = require('./configure-system-settings');
+const deployCore = require('./deploy-core');
+const deployDappUtils = require('./deploy-dapp-utils.js');
+const deployLoans = require('./deploy-loans');
+const deploySynths = require('./deploy-synths');
 const generateSolidityOutput = require('./generate-solidity-output');
+const getDeployParameterFactory = require('./get-deploy-parameter-factory');
+const importAddresses = require('./import-addresses');
+const importFeePeriods = require('./import-fee-periods');
+const performSafetyChecks = require('./perform-safety-checks');
+const rebuildResolverCaches = require('./rebuild-resolver-caches');
+const rebuildLegacyResolverCaches = require('./rebuild-legacy-resolver-caches');
+const systemAndParameterCheck = require('./system-and-parameter-check');
+const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
-	gasPrice: '1',
-	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6, // TODO split out into separate limits for different contracts, Proxys, Synths, Synthetix
+	priorityGasPrice: '1',
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', '..', BUILD_FOLDER),
@@ -60,17 +53,16 @@ const deploy = async ({
 	addNewSynths,
 	buildPath = DEFAULTS.buildPath,
 	concurrency,
-	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	deploymentPath,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	freshDeploy,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	generateSolidity = false,
 	ignoreCustomParameters,
 	ignoreSafetyChecks,
 	manageNonces,
-	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
 	network = DEFAULTS.network,
 	oracleExrates,
 	privateKey,
@@ -84,16 +76,6 @@ const deploy = async ({
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
-
-	// Gas price needs to be set to 0.015 gwei in Optimism,
-	// and gas limits need to be dynamically set by the provider.
-	// More info:
-	// https://www.notion.so/How-to-pay-Fees-in-Optimistic-Ethereum-f706f4e5b13e460fa5671af48ce9a695
-	if (useOvm) {
-		gasPrice = OVM_GAS_PRICE_GWEI;
-		methodCallGasLimit = undefined;
-		contractDeploymentGasLimit = undefined;
-	}
 
 	const limitPromise = pLimit(concurrency);
 
@@ -138,14 +120,13 @@ const deploy = async ({
 
 	performSafetyChecks({
 		config,
-		contractDeploymentGasLimit,
 		deployment,
 		deploymentPath,
 		freshDeploy,
 		ignoreSafetyChecks,
 		manageNonces,
-		methodCallGasLimit,
-		gasPrice,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		network,
 		useOvm,
 	});
@@ -199,13 +180,12 @@ const deploy = async ({
 
 	const deployer = new Deployer({
 		compiled,
-		contractDeploymentGasLimit,
 		config,
 		configFile,
 		deployment,
 		deploymentFile,
-		gasPrice,
-		methodCallGasLimit,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		network,
 		privateKey,
 		providerUrl,
@@ -227,21 +207,21 @@ const deploy = async ({
 		currentWeekOfInflation,
 		oldExrates,
 		oracleAddress,
+		systemSuspended,
 	} = await systemAndParameterCheck({
 		account,
 		buildPath,
 		addNewSynths,
 		concurrency,
 		config,
-		contractDeploymentGasLimit,
 		deployer,
 		deploymentPath,
 		dryRun,
 		earliestCompiledTimestamp,
 		freshDeploy,
-		gasPrice,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		getDeployParameter,
-		methodCallGasLimit,
 		network,
 		oracleExrates,
 		providerUrl,
@@ -263,12 +243,11 @@ const deploy = async ({
 	const runStep = async opts => {
 		const { noop, ...rest } = await performTransactionalStep({
 			...opts,
-			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
-			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
 			signer,
 			dryRun,
 			explorerLinkPrefix,
-			gasPrice,
+			maxFeePerGas,
+			maxPriorityFeePerGas,
 			generateSolidity,
 			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
@@ -301,24 +280,21 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		generateSolidity,
 		network,
 		synths,
+		systemSuspended,
+		useFork,
 		yes,
 	});
 
-	const { useEmptyCollateralManager, collateralManagerDefaults } = await deployLoans({
+	const { collateralManagerDefaults } = await deployLoans({
 		account,
 		addressOf,
 		deployer,
 		getDeployParameter,
 		network,
 		useOvm,
-	});
-
-	await deployBinaryOptions({
-		account,
-		addressOf,
-		deployer,
 	});
 
 	await deployDappUtils({
@@ -331,19 +307,25 @@ const deploy = async ({
 		addressOf,
 		deployer,
 		dryRun,
+		continueEvenIfUnsuccessful: generateSolidity,
 		limitPromise,
+		runStep,
+	});
+
+	await rebuildResolverCaches({
+		deployer,
+		generateSolidity,
+		limitPromise,
+		newContractsBeingAdded,
 		runStep,
 		useOvm,
 	});
 
-	await rebuildResolverCaches({
+	await rebuildLegacyResolverCaches({
 		addressOf,
 		compiled,
 		deployer,
-		generateSolidity,
-		limitPromise,
 		network,
-		newContractsBeingAdded,
 		runStep,
 		useOvm,
 	});
@@ -359,6 +341,18 @@ const deploy = async ({
 		useOvm,
 	});
 
+	await importFeePeriods({
+		deployer,
+		explorerLinkPrefix,
+		freshDeploy,
+		generateSolidity,
+		network,
+		runStep,
+		systemSuspended,
+		useFork,
+		yes,
+	});
+
 	await configureStandalonePriceFeeds({
 		deployer,
 		runStep,
@@ -367,6 +361,8 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
+		explorerLinkPrefix,
+		generateSolidity,
 		synths,
 		feeds,
 		deployer,
@@ -392,7 +388,6 @@ const deploy = async ({
 
 	await configureSystemSettings({
 		deployer,
-		methodCallGasLimit,
 		useOvm,
 		generateSolidity,
 		getDeployParameter,
@@ -407,7 +402,6 @@ const deploy = async ({
 		deployer,
 		getDeployParameter,
 		runStep,
-		useEmptyCollateralManager,
 	});
 
 	await takeDebtSnapshotWhenRequired({
@@ -455,12 +449,6 @@ module.exports = {
 				DEFAULTS.buildPath
 			)
 			.option(
-				'-c, --contract-deployment-gas-limit <value>',
-				'Contract deployment gas limit',
-				parseFloat,
-				DEFAULTS.contractDeploymentGasLimit
-			)
-			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
@@ -473,7 +461,12 @@ module.exports = {
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option('--generate-solidity', 'Whether or not to output the migration as a Solidity file')
 			.option(
 				'-h, --fresh-deploy',
@@ -497,12 +490,6 @@ module.exports = {
 			.option(
 				'-l, --oracle-gas-limit <value>',
 				'The address of the gas limit oracle for this network (default is use existing)'
-			)
-			.option(
-				'-m, --method-call-gas-limit <value>',
-				'Method call gas limit',
-				parseFloat,
-				DEFAULTS.methodCallGasLimit
 			)
 			.option(
 				'-n, --network <value>',

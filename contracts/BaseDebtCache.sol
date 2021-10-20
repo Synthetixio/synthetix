@@ -18,6 +18,18 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 
+//
+// The debt cache (SIP-91) caches the global debt and the debt of each synth in the system.
+// Debt is denominated by the synth supply multiplied by its current exchange rate.
+//
+// The cache can be invalidated when an exchange rate changes, and thereafter must be
+// updated by performing a debt snapshot, which recomputes the global debt sum using
+// current synth supplies and exchange rates. This is performed usually by a snapshot keeper.
+//
+// Some synths are backed by non-SNX collateral, such as sETH being backed by ETH
+// held in the EtherWrapper (SIP-112). This debt is called "excluded debt" and is
+// excluded from the global debt in `_cachedDebt`.
+//
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
@@ -113,6 +125,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
+    // Returns the USD-denominated supply of each synth in `currencyKeys`, according to `rates`.
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
         internal
         view
@@ -147,6 +160,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return (values, excludedDebt, isInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
+    // Returns the USD-denominated supply of each synth in `currencyKeys`, using current exchange rates.
     function currentSynthDebts(bytes32[] calldata currencyKeys)
         external
         view
@@ -172,11 +186,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cachedSynthDebts(currencyKeys);
     }
 
-    // Returns the total sUSD debt backed by non-SNX collateral.
-    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
-        return _totalNonSnxBackedDebt();
-    }
-
     function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
         // Calculate excluded debt.
         // 1. MultiCollateral long debt + short debt.
@@ -190,6 +199,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
 
         return (excludedDebt, isInvalid);
+    }
+
+    // Returns the total sUSD debt backed by non-SNX collateral.
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
+        return _totalNonSnxBackedDebt();
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
@@ -210,6 +224,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return (total, isInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
+    // Returns the current debt of the system, excluding non-SNX backed debt (eg. EtherWrapper).
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
         return _currentDebt();
     }

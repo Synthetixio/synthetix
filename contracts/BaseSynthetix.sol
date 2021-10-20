@@ -18,7 +18,6 @@ import "./interfaces/IVirtualSynth.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
-    bytes32 public constant CONTRACT_NAME = "Synthetix";
 
     // Available Synths which can be used with the system
     string public constant TOKEN_NAME = "Synthetix Network Token";

@@ -18,17 +18,37 @@ const BN = require('bn.js');
 const { toBN } = require('web3-utils');
 
 contract('SystemSettings', async accounts => {
-	const [, owner] = accounts;
+	const [, owner, account1] = accounts;
 	const oneWeek = toBN(7 * 24 * 60 * 60);
 	const ONE = toBN('1');
 
-	let systemSettings;
+	let short, synths, systemSettings;
 
-	beforeEach(async () => {
-		({ SystemSettings: systemSettings } = await setupAllContracts({
+	const setupSettings = async () => {
+		synths = ['sUSD', 'sBTC', 'sETH'];
+		({ SystemSettings: systemSettings, CollateralShort: short } = await setupAllContracts({
 			accounts,
-			contracts: ['SystemSettings'],
+			synths,
+			contracts: [
+				'Synthetix',
+				'FeePool',
+				'AddressResolver',
+				'Exchanger',
+				'ExchangeRates',
+				'SystemStatus',
+				'Issuer',
+				'DebtCache',
+				'SystemSettings',
+				'CollateralUtil',
+				'CollateralShort',
+				'CollateralManager',
+				'CollateralManagerState',
+			],
 		}));
+	};
+
+	before(async () => {
+		await setupSettings();
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -54,6 +74,10 @@ contract('SystemSettings', async accounts => {
 				'setEtherWrapperMaxETH',
 				'setEtherWrapperMintFeeRate',
 				'setEtherWrapperBurnFeeRate',
+				'setMinCratio',
+				'setCollateralManager',
+				'setInteractionDelay',
+				'setCollapseFeeRate',
 			],
 		});
 	});
@@ -68,7 +92,7 @@ contract('SystemSettings', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-		it('cannot esxceed the maximum ovm gas limit', async () => {
+		it('cannot exceed the maximum ovm gas limit', async () => {
 			const newLimit = 8.000001e6;
 			const gasLimitType = 0;
 			await assert.revert(
@@ -327,6 +351,98 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	describe('setMinCratio', async () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setMinCratio(short.address, toUnit(1), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+			it('should fail if the minimum is less than 1', async () => {
+				await assert.revert(
+					systemSettings.setMinCratio(short.address, toUnit(0.99), { from: owner }),
+					'Cratio must be above 1'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setMinCratio(short.address, toUnit(2), { from: owner });
+			});
+			it('should update the minCratio', async () => {
+				assert.bnEqual(await systemSettings.minCratio(short.address), toUnit(2));
+			});
+		});
+	});
+
+	describe('setCollapseFeeRate', async () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setCollapseFeeRate(short.address, toUnit(1), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setCollapseFeeRate(short.address, toUnit(0.15), { from: owner });
+			});
+			it('should update the collapse service fee', async () => {
+				assert.bnEqual(await systemSettings.collapseFeeRate(short.address), toUnit(0.15));
+			});
+			it('should allow the collapse fee rate to be 0', async () => {
+				await systemSettings.setCollapseFeeRate(short.address, toUnit(0), { from: owner });
+				assert.bnEqual(await systemSettings.collapseFeeRate(short.address), toUnit(0));
+			});
+		});
+	});
+
+	describe('setInteractionDelay', async () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setInteractionDelay(short.address, toUnit(1), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+			it('should fail if the owner passes to big of a value', async () => {
+				await assert.revert(
+					systemSettings.setInteractionDelay(short.address, toUnit(3601), { from: owner }),
+					'Max 1 hour'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setInteractionDelay(short.address, toUnit(50), { from: owner });
+			});
+			it('should update the interaction delay', async () => {
+				assert.bnEqual(await systemSettings.interactionDelay(short.address), toUnit(50));
+			});
+		});
+	});
+
+	describe('setCollateralManager', async () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setCollateralManager(short.address, ZERO_ADDRESS, { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setCollateralManager(short.address, ZERO_ADDRESS, { from: owner });
+			});
+			it('should update the manager', async () => {
+				assert.bnEqual(await systemSettings.collateralManager(short.address), ZERO_ADDRESS);
+			});
+		});
+	});
+
 	describe('setLiquidationDelay()', () => {
 		const day = 3600 * 24;
 
@@ -368,6 +484,9 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setLiquidationRatio()', () => {
+		before(async () => {
+			await setupSettings();
+		});
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setLiquidationRatio,

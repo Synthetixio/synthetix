@@ -11,7 +11,6 @@ const { setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
 let CollateralManager;
-let CollateralState;
 let CollateralManagerState;
 
 contract('ShortingRewards', accounts => {
@@ -39,7 +38,6 @@ contract('ShortingRewards', accounts => {
 		feePool,
 		synths,
 		short,
-		state,
 		sUSDSynth,
 		sBTCSynth,
 		sETHSynth,
@@ -104,11 +102,11 @@ contract('ShortingRewards', accounts => {
 		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
-	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
+	const deployShort = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+			args: [owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -116,7 +114,6 @@ contract('ShortingRewards', accounts => {
 
 	before(async () => {
 		CollateralManager = artifacts.require(`CollateralManager`);
-		CollateralState = artifacts.require(`CollateralState`);
 		CollateralManagerState = artifacts.require('CollateralManagerState');
 	});
 
@@ -164,6 +161,7 @@ contract('ShortingRewards', accounts => {
 			maxDebt,
 			0,
 			0,
+			0,
 			{
 				from: deployerAccount,
 			}
@@ -171,10 +169,7 @@ contract('ShortingRewards', accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		short = await deployShort({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -182,8 +177,6 @@ contract('ShortingRewards', accounts => {
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 		});
-
-		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
@@ -207,14 +200,9 @@ contract('ShortingRewards', accounts => {
 		);
 
 		await manager.addShortableSynths(
-			[
-				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
-				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
-			],
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
 			['sBTC', 'sETH'].map(toBytes32),
-			{
-				from: owner,
-			}
+			{ from: owner }
 		);
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });

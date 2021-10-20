@@ -2,11 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
 const { gray, red, yellow } = require('chalk');
-const {
-	wrap,
-	toBytes32,
-	constants: { OVM_GAS_PRICE_GWEI },
-} = require('../../..');
+const { wrap, toBytes32 } = require('../../..');
 const { confirmAction } = require('../util');
 const {
 	ensureNetwork,
@@ -29,7 +25,6 @@ const connectBridge = async ({
 	l1Messenger,
 	l2Messenger,
 	dryRun,
-	l1GasPrice,
 	l1GasLimit,
 	quiet,
 }) => {
@@ -85,7 +80,6 @@ const connectBridge = async ({
 	console.log(gray('* Connecting bridge on L1...'));
 	await connectLayer({
 		wallet: walletL1,
-		gasPrice: l1GasPrice,
 		gasLimit: l1GasLimit,
 		names: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'ovm:OwnerRelayOnOptimism'],
 		addresses: [l1Messenger, SynthetixBridgeToBase.address, OwnerRelayOnOptimism.address],
@@ -101,7 +95,6 @@ const connectBridge = async ({
 	console.log(gray('* Connecting bridge on L2...'));
 	await connectLayer({
 		wallet: walletL2,
-		gasPrice: OVM_GAS_PRICE_GWEI,
 		gasLimit: undefined,
 		names: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'base:OwnerRelayOnEthereum'],
 		addresses: [l2Messenger, SynthetixBridgeToOptimism.address, OwnerRelayOnEthereum.address],
@@ -115,7 +108,6 @@ const connectBridge = async ({
 
 const connectLayer = async ({
 	wallet,
-	gasPrice,
 	gasLimit,
 	names,
 	addresses,
@@ -149,9 +141,7 @@ const connectLayer = async ({
 	// Update AddressResolver if needed
 	// ---------------------------------
 
-	const params = {
-		gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-	};
+	const params = {};
 	if (gasLimit) {
 		params.gasLimit = gasLimit;
 	}
@@ -353,7 +343,6 @@ module.exports = {
 			.option('--l2-use-fork', 'Wether to use a fork for the L2 connection', false)
 			.option('--l1-messenger <value>', 'L1 cross domain messenger to use')
 			.option('--l2-messenger <value>', 'L2 cross domain messenger to use')
-			.option('--l1-gas-price <value>', 'Gas price to set when performing transfers in L1', 1)
 			.option('--l1-gas-limit <value>', 'Max gas to use when signing transactions to l1', 8000000)
 			.option('--dry-run', 'Do not execute any transactions')
 			.option('--quiet', 'Do not print stdout', false)

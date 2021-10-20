@@ -116,7 +116,16 @@
 	"TokenStatesETH": {
 		"deploy": true
 	},
+	"TokenStatesBTC": {
+		"deploy": true
+	},
 	"ProxysETH": {
+		"deploy": true
+	},
+	"ProxysBTC": {
+		"deploy": true
+	},
+	"SynthsBTC": {
 		"deploy": true
 	},
 	"SynthsETH": {
@@ -125,7 +134,16 @@
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralShort": {
 		"deploy": true
 	},
 	"EtherWrapper": {
@@ -135,6 +153,9 @@
 		"deploy": true
 	},
 	"OwnerRelayOnOptimism": {
+		"deploy": true
+	},
+	"SynthRedeemer": {
 		"deploy": true
 	}
 }

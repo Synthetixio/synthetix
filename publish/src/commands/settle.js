@@ -7,7 +7,7 @@ const ethers = require('ethers');
 
 const { wrap, toBytes32 } = require('../../..');
 
-const { ensureNetwork, loadConnections, stringify } = require('../util');
+const { ensureNetwork, loadConnections, stringify, assignGasOptions } = require('../util');
 
 // The block where Synthetix first had SIP-37 added (when ExchangeState was added)
 const fromBlockMap = {
@@ -45,7 +45,8 @@ const settle = async ({
 	fromBlock = fromBlockMap[network],
 	dryRun,
 	latest,
-	gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = '1',
 	gasLimit,
 	privateKey,
 	ethToSeed,
@@ -68,8 +69,8 @@ const settle = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	console.log(gray('gasPrice'), yellow(gasPrice));
-	gasPrice = ethers.utils.parseUnits(gasPrice, 'gwei');
+	console.log(gray('maxFeePerGas'), yellow(maxFeePerGas));
+	console.log(gray('maxPriorityFeePerGas'), yellow(maxPriorityFeePerGas));
 
 	let wallet;
 	if (!privateKey) {
@@ -99,12 +100,19 @@ const settle = async ({
 				green(`Sending ${yellow(ethToSeed)} ETH to address from`),
 				yellow(wallet.address)
 			);
-			const { transactionHash } = await wallet.sendTransaction({
-				to: user.address,
-				value: ethers.utils.parseUnits(ethToSeed),
-				gasLimit,
-				gasPrice,
+
+			const params = await assignGasOptions({
+				tx: {
+					to: user.address,
+					value: ethers.utils.parseUnits(ethToSeed),
+					gasLimit,
+				},
+				provider,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
 			});
+
+			const { transactionHash } = await wallet.sendTransaction(params);
 			console.log(gray(`${explorerLinkPrefix}/tx/${transactionHash}`));
 		}
 	}
@@ -139,10 +147,11 @@ const settle = async ({
 				return [];
 			}
 			console.log(gray('-> Fetching page of results from target', yellow(target.address)));
-			const pageOfResults = await target.getPastEvents('SynthExchange', {
-				fromBlock: startingBlock,
-				toBlock: startingBlock + pageSize - 1,
-			});
+			const pageOfResults = await target.queryFilter(
+				'SynthExchange',
+				startingBlock,
+				startingBlock + pageSize - 1
+			);
 			startingBlock += pageSize;
 			return [].concat(pageOfResults).concat(await innerFnc());
 		};
@@ -175,7 +184,7 @@ const settle = async ({
 
 	for (const {
 		blockNumber,
-		returnValues: { account, toCurrencyKey },
+		args: [account, , , toCurrencyKey],
 	} of exchanges) {
 		if (cache[account + toCurrencyKey]) continue;
 		cache[account + toCurrencyKey] = true;
@@ -273,11 +282,7 @@ const settle = async ({
 				if (reclaimAmount > 0) {
 					const synth = await Synthetix.synths(toCurrencyKey);
 
-					const Synth = new ethers.eth.Contract(
-						synth,
-						getSource({ contract: 'Synth' }).abi,
-						provider
-					);
+					const Synth = new ethers.Contract(synth, getSource({ contract: 'Synth' }).abi, provider);
 
 					const balance = await Synth.balanceOf(account);
 
@@ -323,7 +328,6 @@ const settle = async ({
 				try {
 					const tx = await Exchanger.settle(account, toCurrencyKey, {
 						gasLimit: Math.max(gasLimit * numEntries, 650e3),
-						gasPrice,
 						nonce: nonce++,
 					});
 					const { transactionHash } = await tx.wait();
@@ -359,7 +363,8 @@ module.exports = {
 			.option('-d, --show-debt', 'Whether or not to show debt pool impact (requires archive node)')
 			.option('-e, --eth-to-seed <value>', 'Amount of ETH to seed', '1')
 			.option('-f, --from-block <value>', 'Starting block number to listen to events from')
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',

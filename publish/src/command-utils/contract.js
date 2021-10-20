@@ -1,17 +1,30 @@
-'use strict';
+const fs = require('fs');
+const path = require('path');
 
 const ethers = require('ethers');
-const { red } = require('chalk');
 
-const getContract = ({ deployment, signer, contract }) => {
-	if (!deployment.targets[contract]) {
-		console.error(red(`Contract ${contract} not found in deployment targets!`));
-		process.exit(1);
-	}
+const { getSource, getTarget } = require('../../..');
 
-	const { address, source } = deployment.targets[contract];
-	const { abi } = deployment.sources[source];
-	return new ethers.Contract(address, abi, signer);
+const getContract = ({
+	contract,
+	source = contract,
+	network = 'mainnet',
+	useOvm = false,
+	deploymentPath = undefined,
+	wallet,
+	provider,
+}) => {
+	const target = getTarget({ path, fs, contract, network, useOvm, deploymentPath });
+	const sourceData = getSource({
+		path,
+		fs,
+		contract: source,
+		network,
+		useOvm,
+		deploymentPath,
+	});
+
+	return new ethers.Contract(target.address, sourceData.abi, wallet || provider);
 };
 
 module.exports = {
