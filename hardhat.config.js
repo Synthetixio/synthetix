@@ -6,6 +6,7 @@ const path = require('path');
 require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
+require('@openzeppelin/hardhat-upgrades');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
 

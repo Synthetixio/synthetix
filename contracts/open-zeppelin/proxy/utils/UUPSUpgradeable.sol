@@ -26,7 +26,6 @@ contract UUPSUpgradeable is Initializable, ERC1967UpgradeUpgradeable {
     function __UUPSUpgradeable_init_unchained() internal initializer {}
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable state-variable-assignment
-
     address private __self = address(this);
 
     /**

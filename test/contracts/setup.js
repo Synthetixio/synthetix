@@ -1,6 +1,7 @@
 'use strict';
 
-const { artifacts, web3, log } = require('hardhat');
+const { artifacts, web3, log, upgrades, ethers, truffle } = require('hardhat');
+const { deployProxy /*, upgradeProxy*/ } = require('@openzeppelin/truffle-upgrades');
 
 const { toWei } = web3.utils;
 const { toUnit, currentTime } = require('../utils')();
@@ -111,9 +112,16 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
+	// console.log('#### artifacts: ', artifacts);
+
+	// console.log('### source: ', source);
 	const artifact = artifacts.require(source || contract);
+	// console.log('### artifact.abi: ');
+	// console.log(JSON.stringify(artifact.abi, null, 4));
 
 	const create = ({ constructorArgs }) => {
+		// console.log('### constructorArgs: ', constructorArgs);
+		// console.log('### deployerAccount: ', deployerAccount);
 		return artifact.new(
 			...constructorArgs.concat({
 				from: deployerAccount,
@@ -145,6 +153,7 @@ const setupContract = async ({
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
+		AddressResolverUpgradeable: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [
@@ -254,9 +263,10 @@ const setupContract = async ({
 		],
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
-			tryGetAddressOf('ProxyFuturesMarketBTC'),
+			// tryGetAddressOf('ProxyFuturesMarketBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
+			// tryGetAddressOf('AddressResolverUpgradeable'),
 			toBytes32('sBTC'), // base asset
 		],
 		FuturesMarketETH: [
@@ -268,11 +278,38 @@ const setupContract = async ({
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};
 
+	// console.log('### contract: ', contract);
+
 	let instance;
+
+	// console.log(
+	// 	'### artifact -----------------------------------------------------------------------------------------------'
+	// );
+	// console.log(JSON.stringify(artifact, null, 4));
+
 	try {
-		instance = await create({
-			constructorArgs: args.length > 0 ? args : defaultArgs[contract],
-		});
+		// const specialContracts = ['FuturesMarket', 'AddressResolver'];
+		const specialContracts = ['FuturesMarket'];
+		if (specialContracts.includes(source || contract)) {
+			// The below works with ethers. But we want truffe
+			const FuturesMarketFactory = await ethers.getContractFactory('FuturesMarket');
+			const ethersInstance = await upgrades.deployProxy(
+				FuturesMarketFactory,
+				defaultArgs[contract],
+				{
+					deployer: deployerAccount,
+					kind: 'uups',
+					unsafeAllow: ['state-variable-immutable', 'state-variable-assignment', 'delegatecall'], // Remove when Sol 0.8.2+
+				}
+			);
+			await ethersInstance.deployed();
+			instance = await artifact.at(ethersInstance.address);
+		} else {
+			instance = await create({
+				constructorArgs: args.length > 0 ? args : defaultArgs[contract],
+			});
+			// console.log('#### instance: ', instance);
+		}
 		// Show contracts creating for debugging purposes
 		if (process.env.DEBUG) {
 			log(
@@ -284,6 +321,7 @@ const setupContract = async ({
 			);
 		}
 	} catch (err) {
+		console.error(err);
 		throw Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
@@ -519,9 +557,9 @@ const setupContract = async ({
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
-					from: owner,
-				}),
+				// instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
+				// 	from: owner,
+				// }),
 			]);
 		},
 		async FuturesMarketETH() {
@@ -893,8 +931,10 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
-			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
+			// source: 'TestableFuturesMarket',
+			source: 'FuturesMarket',
+			// deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
+			deps: ['AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{

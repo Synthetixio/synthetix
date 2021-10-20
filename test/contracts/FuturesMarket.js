@@ -36,6 +36,7 @@ const Status = {
 contract('FuturesMarket', accounts => {
 	let proxyFuturesMarket,
 		futuresMarketSettings,
+		futuresMarketSettingsUpgradeable,
 		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
@@ -96,7 +97,8 @@ contract('FuturesMarket', accounts => {
 	before(async () => {
 		({
 			ProxyFuturesMarketBTC: proxyFuturesMarket,
-			FuturesMarketSettings: futuresMarketSettings,
+			// FuturesMarketSettings: futuresMarketSettings,
+			FuturesMarketSettingsUpgradeable: futuresMarketSettingsUpgradeable,
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
@@ -111,6 +113,7 @@ contract('FuturesMarket', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
+				'FuturesMarketSettingsUpgradeable',
 				'ProxyFuturesMarketBTC',
 				'ProxyFuturesMarketETH',
 				'FuturesMarketBTC',
@@ -123,6 +126,9 @@ contract('FuturesMarket', accounts => {
 				'DebtCache',
 			],
 		}));
+
+		console.log('### futuresMarket: ', futuresMarket);
+		console.log('### sUSD: ', sUSD);
 
 		// Update the rate so that it is not invalid
 		oracle = await exchangeRates.oracle();
@@ -137,10 +143,12 @@ contract('FuturesMarket', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	describe('Basic parameters', () => {
-		it('Only expected functions are mutative', () => {
+		it.only('Only expected functions are mutative', () => {
+			// console.log('### futuresMarket: ', futuresMarket);
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarket.abi,
-				ignoreParents: ['Owned', 'Proxyable', 'MixinFuturesMarketSettings'],
+				// ignoreParents: ['Owned', 'Proxyable', 'MixinFuturesMarketSettings'],
+				ignoreParents: ['Owned', 'MixinFuturesMarketSettingsUpgradeable', 'UUPSUpgradeable'],
 				expected: [
 					'transferMargin',
 					'withdrawAllMargin',
@@ -150,6 +158,7 @@ contract('FuturesMarket', accounts => {
 					'closePositionWithPriceBounds',
 					'liquidatePosition',
 					'recomputeFunding',
+					'initialize',
 				],
 			});
 		});
