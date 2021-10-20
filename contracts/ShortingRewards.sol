@@ -13,7 +13,7 @@ import "./MixinResolver.sol";
 import "./interfaces/ICollateralErc20.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/stakingrewards
-contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable, MixinResolver {
+contract ShortingRewards is RewardsDistributionRecipient, ReentrancyGuard, Pausable, MixinResolver, IShortingRewards {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -119,7 +119,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution updateReward(address(0)) {
+    function notifyRewardAmount(uint256 reward) external override onlyRewardsDistribution updateReward(address(0)) {
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(rewardsDuration);
         } else {

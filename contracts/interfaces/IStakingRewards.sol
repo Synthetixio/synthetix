@@ -14,8 +14,6 @@ interface IStakingRewards {
 
     function rewardPerToken() external view returns (uint256);
 
-    function rewardsDistribution() external view returns (address);
-
     function rewardsToken() external view returns (address);
 
     function totalSupply() external view returns (uint256);
