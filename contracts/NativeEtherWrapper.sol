@@ -49,7 +49,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         require(amount > 0, "msg.value must be greater than 0");
 
         // Convert sent ETH into WETH.
-        weth().deposit.value(amount)();
+        weth().deposit{value: amount}();
 
         // Approve for the EtherWrapper.
         weth().approve(address(etherWrapper()), amount);
@@ -79,7 +79,8 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         // Convert WETH to ETH and send to msg.sender.
         weth.withdraw(weth.balanceOf(address(this)));
         // solhint-disable avoid-low-level-calls
-        msg.sender.call.value(address(this).balance)("");
+        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        require(success);
 
         emit Burned(msg.sender, amount);
     }

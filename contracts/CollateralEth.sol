@@ -67,7 +67,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
         // solhint-disable avoid-low-level-calls
-        (bool success, ) = msg.sender.call.value(amount)("");
+        (bool success, ) = msg.sender.call{value: amount}("");
         require(success, "Transfer failed");
     }
 }
