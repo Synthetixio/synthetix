@@ -6658,18 +6658,40 @@
 			},
 			"Issuer": {
 				"address": "0x26a2356A295bEa8bCA0440a88Eec8605234FdC29",
-				"status": "current",
-				"keccak256": "0x7bb8720e81ffb9193b8e2565e3b3a4824a210ed26fca933f063125e21ce796a3"
+				"status": "replaced",
+				"keccak256": "0x7bb8720e81ffb9193b8e2565e3b3a4824a210ed26fca933f063125e21ce796a3",
+				"replaced_in": "v2.51.0-alpha"
 			},
 			"DebtCache": {
 				"address": "0x45545Ab4a249E93Bd204329b295AFbeDF94E1Fa8",
-				"status": "current",
-				"keccak256": "0x97562d4d9a115f3c4d4233faae0c98120dd816737ddcef529c9723f35de09225"
+				"status": "replaced",
+				"keccak256": "0x97562d4d9a115f3c4d4233faae0c98120dd816737ddcef529c9723f35de09225",
+				"replaced_in": "v2.51.0-alpha"
 			},
 			"SynthRedeemer": {
 				"address": "0xFa01a0494913b150Dd37CbE1fF775B08f108dEEa",
 				"status": "current",
 				"keccak256": "0x4d31499235bb64ab5975313a6c9208fad376de17a3d78f8f11e530b6d0f4af0b"
+			}
+		}
+	},
+	"v2.51.0-alpha": {
+		"tag": "v2.51.0-alpha",
+		"fulltag": "v2.51.0-alpha",
+		"release": "Kaus",
+		"network": "kovan",
+		"date": "2021-10-19T19:44:53+11:00",
+		"commit": "7d7f7b5bf50b9e237fd462fd6b9c4cb844d449ac",
+		"contracts": {
+			"Issuer": {
+				"address": "0xd6EA9A708a95FdaE3f6dAE49F3131e833e671108",
+				"status": "current",
+				"keccak256": "0xe87fb6220cb9fb6abbce67a9489ee10f97d30e7e681acd533616a6983774d6cc"
+			},
+			"DebtCache": {
+				"address": "0xC32FE0748564F750084C8f39167A71a91B425417",
+				"status": "current",
+				"keccak256": "0x94dba5769ba43b0dcf0f8c1ce13d8fff6b9461bb16f3513b56255c702fe8b1f4"
 			}
 		}
 	}
