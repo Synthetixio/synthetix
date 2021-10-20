@@ -5,7 +5,7 @@ steps:
   - run:
       name: Audit dependencies
       command: |
-        npm audit --audit-level=critical || true # Temporarily allow critical audits to pass
+        npm audit --audit-level=critical
   - run:
       name: Lint lockfile
       command: |
