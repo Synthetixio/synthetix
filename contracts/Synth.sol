@@ -18,8 +18,6 @@ import "./interfaces/IFuturesMarketManager.sol";
 contract Synth is Owned, ExternStateToken, MixinResolver, ISynth {
     using SafeMath for uint;
 
-    bytes32 public immutable CONTRACT_NAME;
-
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system
@@ -53,7 +51,6 @@ contract Synth is Owned, ExternStateToken, MixinResolver, ISynth {
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
         MixinResolver(_resolver)
     {
-        CONTRACT_NAME = "Synth";
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != address(0), "_owner cannot be 0");
 
@@ -188,6 +185,10 @@ contract Synth is Owned, ExternStateToken, MixinResolver, ISynth {
     }
 
     /* ========== VIEWS ========== */
+    // solhint-disable func-name-mixedcase
+    function CONTRACT_NAME() external pure virtual returns (bytes32) {
+        return "Synth";
+    }
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {

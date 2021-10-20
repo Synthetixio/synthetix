@@ -20,7 +20,7 @@ import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
-contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
+abstract contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -249,17 +249,20 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     // Stub out all mutative functions as no-ops;
     // since they do nothing, there are no restrictions
 
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external virtual {}
 
-    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external virtual {}
 
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+        external
+        virtual
+    {}
 
-    function updateDebtCacheValidity(bool currentlyInvalid) external {}
+    function updateDebtCacheValidity(bool currentlyInvalid) external virtual {}
 
-    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
+    function purgeCachedSynthDebt(bytes32 currencyKey) external virtual {}
 
-    function takeDebtSnapshot() external {}
+    function takeDebtSnapshot() external virtual {}
 
     /* ========== MODIFIERS ========== */
 

@@ -21,12 +21,12 @@ contract DebtCache is BaseDebtCache {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // This function exists in case a synth is ever somehow removed without its snapshot being updated.
-    function purgeCachedSynthDebt(bytes32 currencyKey) external onlyOwner {
+    function purgeCachedSynthDebt(bytes32 currencyKey) external override onlyOwner {
         require(issuer().synths(currencyKey) == ISynth(address(0)), "Synth exists");
         delete _cachedSynthDebt[currencyKey];
     }
 
-    function takeDebtSnapshot() external requireSystemActiveIfNotOwner {
+    function takeDebtSnapshot() external override requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory values, uint futuresDebt, uint excludedDebt, bool isInvalid) = _currentSynthDebts(currencyKeys);
 
@@ -52,12 +52,12 @@ contract DebtCache is BaseDebtCache {
         _updateDebtCacheValidity(isInvalid);
     }
 
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external override requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid, false, false);
     }
 
-    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external override onlyIssuer {
         bytes32[] memory synthKeyArray = new bytes32[](1);
         synthKeyArray[0] = currencyKey;
         uint[] memory synthRateArray = new uint[](1);
@@ -67,12 +67,13 @@ contract DebtCache is BaseDebtCache {
 
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
+        override
         onlyIssuerOrExchanger
     {
         _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false, false, false);
     }
 
-    function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
+    function updateDebtCacheValidity(bool currentlyInvalid) external override onlyIssuer {
         _updateDebtCacheValidity(currentlyInvalid);
     }
 

@@ -29,6 +29,11 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== VIEWS ======================= */
 
+    // solhint-disable func-name-mixedcase
+    function CONTRACT_NAME() external pure override returns (bytes32) {
+        return "MultiCollateralSynth";
+    }
+
     function collateralManager() internal view returns (ICollateralManager) {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
@@ -38,7 +43,6 @@ contract MultiCollateralSynth is Synth {
     }
 
     function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
-        CONTRACT_NAME = "MultiCollateralSynth";
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;

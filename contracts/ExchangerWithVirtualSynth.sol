@@ -20,8 +20,11 @@ interface IVirtualSynthInternal {
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
 contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
-    constructor(address _owner, address _resolver) MinimalProxyFactory() Exchanger(_owner, _resolver) {
-        CONTRACT_NAME = "ExchangerWithVirtualSynth";
+    constructor(address _owner, address _resolver) MinimalProxyFactory() Exchanger(_owner, _resolver) {}
+
+    // solhint-disable func-name-mixedcase
+    function CONTRACT_NAME() external pure override returns (bytes32) {
+        return "ExchangerWithVirtualSynth";
     }
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
