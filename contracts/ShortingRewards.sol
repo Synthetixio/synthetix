@@ -43,7 +43,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         address _resolver,
         address _rewardsDistribution,
         address _rewardsToken
-    ) public Owned(_owner) MixinResolver(_resolver) {
+    ) Owned(_owner) MixinResolver(_resolver) {
         rewardsToken = IERC20(_rewardsToken);
         rewardsDistribution = _rewardsDistribution;
     }

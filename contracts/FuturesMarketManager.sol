@@ -40,7 +40,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         address payable _proxy,
         address _owner,
         address _resolver
-    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver) {}
+    ) Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */
 

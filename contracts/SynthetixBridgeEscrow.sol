@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract SynthetixBridgeEscrow is Owned, ISynthetixBridgeEscrow {
     using SafeERC20 for IERC20;
 
-    constructor(address _owner) public Owned(_owner) {}
+    constructor(address _owner) Owned(_owner) {}
 
     function approveBridge(
         address _token,

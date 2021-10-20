@@ -34,7 +34,7 @@ contract ExternStateToken is Owned, Proxyable {
         uint _totalSupply,
         uint8 _decimals,
         address _owner
-    ) public Owned(_owner) Proxyable(_proxy) {
+    ) Owned(_owner) Proxyable(_proxy) {
         tokenState = _tokenState;
 
         name = _name;

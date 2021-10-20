@@ -56,7 +56,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
         address _owner,
         uint _lastMintEvent,
         uint _currentWeek
-    ) public Owned(_owner) {
+    ) Owned(_owner) {
         lastMintEvent = _lastMintEvent;
         weekCounter = _currentWeek;
     }

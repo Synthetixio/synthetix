@@ -88,7 +88,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         uint _maxSkewRate,
         uint _baseBorrowRate,
         uint _baseShortRate
-    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
+    ) Owned(_owner) Pausable() MixinResolver(_resolver) {
         owner = msg.sender;
         state = _state;
 

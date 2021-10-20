@@ -49,7 +49,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         address owner,
         address periodController,
         address resolver
-    ) public Owned(owner) MixinResolver(resolver) {
+    ) Owned(owner) MixinResolver(resolver) {
         require(periodController != address(0), "Invalid period controller");
 
         _periodController = periodController;

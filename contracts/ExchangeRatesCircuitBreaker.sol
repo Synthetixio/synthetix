@@ -46,7 +46,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 

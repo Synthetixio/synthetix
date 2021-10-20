@@ -58,7 +58,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         address _resolver,
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
-    ) public Owned(_owner) MixinSystemSettings(_resolver) {
+    ) Owned(_owner) MixinSystemSettings(_resolver) {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
         oracle = _oracle;

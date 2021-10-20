@@ -10,7 +10,7 @@ interface ISynthetixEscrow {
 contract EscrowChecker {
     ISynthetixEscrow public synthetix_escrow;
 
-    constructor(ISynthetixEscrow _esc) public {
+    constructor(ISynthetixEscrow _esc) {
         synthetix_escrow = _esc;
     }
 

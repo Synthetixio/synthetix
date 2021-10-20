@@ -9,7 +9,7 @@ interface FlagsInterface {
 contract MockFlagsInterface is FlagsInterface {
     mapping(address => bool) public flags;
 
-    constructor() public {}
+    constructor() {}
 
     function getFlag(address aggregator) external view returns (bool) {
         return flags[aggregator];

@@ -21,7 +21,7 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
-    constructor(address _resolver) public MixinResolver(_resolver) {}
+    constructor(address _resolver) MixinResolver(_resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](2);

@@ -8,7 +8,7 @@ contract TestableFuturesMarket is FuturesMarket {
         address _owner,
         address _resolver,
         bytes32 _baseAsset
-    ) public FuturesMarket(_proxy, _owner, _resolver, _baseAsset) {}
+    ) FuturesMarket(_proxy, _owner, _resolver, _baseAsset) {}
 
     function entryDebtCorrection() external view returns (int) {
         return _entryDebtCorrection;

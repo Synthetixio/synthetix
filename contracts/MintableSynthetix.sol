@@ -15,7 +15,7 @@ contract MintableSynthetix is BaseSynthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
+    ) BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     /* ========== INTERNALS =================== */
     function _mintSecondary(address account, uint amount) internal {

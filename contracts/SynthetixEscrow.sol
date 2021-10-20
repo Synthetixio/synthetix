@@ -37,7 +37,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ISynthetix _synthetix) public Owned(_owner) {
+    constructor(address _owner, ISynthetix _synthetix) Owned(_owner) {
         synthetix = _synthetix;
     }
 

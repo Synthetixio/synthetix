@@ -19,7 +19,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
+    constructor(address _owner, address _resolver) Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 

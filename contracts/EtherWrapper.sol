@@ -52,7 +52,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         address _owner,
         address _resolver,
         address payable _WETH
-    ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
+    ) Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
         _weth = IWETH(_WETH);
     }
 

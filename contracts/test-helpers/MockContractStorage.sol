@@ -10,7 +10,7 @@ contract MockContractStorage is ContractStorage {
 
     mapping(bytes32 => mapping(bytes32 => SomeEntry)) public entries;
 
-    constructor(address _resolver) public ContractStorage(_resolver) {}
+    constructor(address _resolver) ContractStorage(_resolver) {}
 
     function getEntry(bytes32 contractName, bytes32 record) external view returns (uint value, bool flag) {
         SomeEntry storage entry = entries[hashes[contractName]][record];

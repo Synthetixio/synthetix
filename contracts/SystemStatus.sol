@@ -26,7 +26,7 @@ contract SystemStatus is Owned, ISystemStatus {
 
     mapping(bytes32 => Suspension) public synthSuspension;
 
-    constructor(address _owner) public Owned(_owner) {}
+    constructor(address _owner) Owned(_owner) {}
 
     /* ========== VIEWS ========== */
     function requireSystemActive() external view {

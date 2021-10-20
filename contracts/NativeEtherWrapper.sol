@@ -18,7 +18,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== PUBLIC FUNCTIONS ========== */
 

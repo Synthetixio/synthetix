@@ -22,7 +22,7 @@ interface IVirtualSynthInternal {
 contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
     bytes32 public constant CONTRACT_NAME = "ExchangerWithVirtualSynth";
 
-    constructor(address _owner, address _resolver) public MinimalProxyFactory() Exchanger(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) MinimalProxyFactory() Exchanger(_owner, _resolver) {}
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

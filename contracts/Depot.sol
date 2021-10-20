@@ -82,7 +82,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         address _owner,
         address payable _fundsWallet,
         address _resolver
-    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
+    ) Owned(_owner) Pausable() MixinResolver(_resolver) {
         fundsWallet = _fundsWallet;
     }
 

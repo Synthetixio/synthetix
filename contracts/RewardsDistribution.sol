@@ -52,7 +52,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
         address _synthetixProxy,
         address _rewardEscrow,
         address _feePoolProxy
-    ) public Owned(_owner) {
+    ) Owned(_owner) {
         authority = _authority;
         synthetixProxy = _synthetixProxy;
         rewardEscrow = _rewardEscrow;

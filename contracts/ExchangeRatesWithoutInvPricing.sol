@@ -11,7 +11,7 @@ contract ExchangeRatesWithoutInvPricing is ExchangeRates {
         address _resolver,
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
-    ) public ExchangeRates(_owner, _oracle, _resolver, _currencyKeys, _newRates) {}
+    ) ExchangeRates(_owner, _oracle, _resolver, _currencyKeys, _newRates) {}
 
     function setInversePricing(
         bytes32,

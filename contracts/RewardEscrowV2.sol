@@ -23,7 +23,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) BaseRewardEscrowV2(_owner, _resolver) {}
 
     /* ========== VIEWS ======================= */
 

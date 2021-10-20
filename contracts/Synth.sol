@@ -50,7 +50,6 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         uint _totalSupply,
         address _resolver
     )
-        public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
         MixinResolver(_resolver)
     {

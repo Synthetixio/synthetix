@@ -15,7 +15,7 @@ contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     mapping(bytes32 => mapping(bytes32 => bool)) internal boolStorage;
     mapping(bytes32 => mapping(bytes32 => bytes32)) internal bytes32Storage;
 
-    constructor(address _resolver) public ContractStorage(_resolver) {}
+    constructor(address _resolver) ContractStorage(_resolver) {}
 
     /* ========== INTERNAL FUNCTIONS ========== */
 

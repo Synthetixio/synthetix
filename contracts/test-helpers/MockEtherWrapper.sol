@@ -8,7 +8,7 @@ contract MockEtherWrapper {
 
     uint public totalIssuedSynths;
 
-    constructor() public {}
+    constructor() {}
 
     function setTotalIssuedSynths(uint value) external {
         totalIssuedSynths = value;

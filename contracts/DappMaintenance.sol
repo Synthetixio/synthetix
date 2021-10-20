@@ -17,7 +17,7 @@ contract DappMaintenance is Owned {
     /**
      * @dev Constructor
      */
-    constructor(address _owner) public Owned(_owner) {
+    constructor(address _owner) Owned(_owner) {
         require(_owner != address(0), "Owner address cannot be 0");
         owner = _owner;
         emit OwnerChanged(address(0), _owner);

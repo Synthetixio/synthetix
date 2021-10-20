@@ -10,7 +10,7 @@ import "./Proxyable.sol";
 contract Proxy is Owned {
     Proxyable public target;
 
-    constructor(address _owner) public Owned(_owner) {}
+    constructor(address _owner) Owned(_owner) {}
 
     function setTarget(Proxyable _target) external onlyOwner {
         target = _target;

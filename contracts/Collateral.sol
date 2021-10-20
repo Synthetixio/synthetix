@@ -81,7 +81,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Owned(_owner) MixinSystemSettings(_resolver) {
+    ) Owned(_owner) MixinSystemSettings(_resolver) {
         manager = _manager;
         collateralKey = _collateralKey;
         minCratio = _minCratio;

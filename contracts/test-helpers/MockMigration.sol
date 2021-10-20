@@ -4,7 +4,7 @@ import "../BaseMigration.sol";
 import "../Owned.sol";
 
 contract MockMigration is BaseMigration {
-    constructor(address _owner) public BaseMigration(_owner) {}
+    constructor(address _owner) BaseMigration(_owner) {}
 
     function canOnlyBeRunByDeployer() external onlyDeployer {}
 

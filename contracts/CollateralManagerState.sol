@@ -27,7 +27,7 @@ contract CollateralManagerState is Owned, State {
     // The total amount of long and short for a synth,
     mapping(bytes32 => Balance) public totalIssuedSynths;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
+    constructor(address _owner, address _associatedContract) Owned(_owner) State(_associatedContract) {
         borrowRates.push(0);
         borrowRatesLastUpdated = block.timestamp;
     }

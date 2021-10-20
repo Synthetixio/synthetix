@@ -6,7 +6,7 @@ import "../interfaces/ISynthetix.sol";
 contract MockThirdPartyExchangeContract {
     IAddressResolver public resolver;
 
-    constructor(IAddressResolver _resolver) public {
+    constructor(IAddressResolver _resolver) {
         resolver = _resolver;
     }
 

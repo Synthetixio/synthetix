@@ -10,7 +10,7 @@ contract TokenState is Owned, State {
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
+    constructor(address _owner, address _associatedContract) Owned(_owner) State(_associatedContract) {}
 
     /* ========== SETTERS ========== */
 

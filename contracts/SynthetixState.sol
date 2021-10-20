@@ -36,7 +36,7 @@ contract SynthetixState is Owned, State, ISynthetixState {
     // Global debt pool tracking
     uint[] public debtLedger;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
+    constructor(address _owner, address _associatedContract) Owned(_owner) State(_associatedContract) {}
 
     /* ========== SETTERS ========== */
 

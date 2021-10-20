@@ -149,7 +149,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         address _owner,
         address _resolver,
         bytes32 _baseAsset
-    ) public Owned(_owner) Proxyable(_proxy) MixinFuturesMarketSettings(_resolver) {
+    ) Owned(_owner) Proxyable(_proxy) MixinFuturesMarketSettings(_resolver) {
         baseAsset = _baseAsset;
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.

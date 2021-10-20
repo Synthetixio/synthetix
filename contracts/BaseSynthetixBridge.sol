@@ -21,7 +21,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
+    constructor(address _owner, address _resolver) Owned(_owner) MixinSystemSettings(_resolver) {
         initiationActive = true;
     }
 

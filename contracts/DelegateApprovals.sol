@@ -26,7 +26,7 @@ contract DelegateApprovals is Owned, IDelegateApprovals {
     /* ========== STATE VARIABLES ========== */
     EternalStorage public eternalStorage;
 
-    constructor(address _owner, EternalStorage _eternalStorage) public Owned(_owner) {
+    constructor(address _owner, EternalStorage _eternalStorage) Owned(_owner) {
         eternalStorage = _eternalStorage;
     }
 

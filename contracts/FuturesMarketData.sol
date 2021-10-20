@@ -94,7 +94,7 @@ contract FuturesMarketData {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(IAddressResolver _resolverProxy) public {
+    constructor(IAddressResolver _resolverProxy) {
         resolverProxy = _resolverProxy;
     }
 

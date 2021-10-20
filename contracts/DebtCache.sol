@@ -13,7 +13,7 @@ contract DebtCache is BaseDebtCache {
 
     bytes32 public constant CONTRACT_NAME = "DebtCache";
 
-    constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
     bytes32 internal constant FUTURES_DEBT_KEY = "FUTURES_DEBT";

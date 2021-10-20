@@ -27,7 +27,7 @@ contract MultiCollateralSynth is Synth {
         bytes32 _currencyKey,
         uint _totalSupply,
         address _resolver
-    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
+    ) Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
 
     /* ========== VIEWS ======================= */
 

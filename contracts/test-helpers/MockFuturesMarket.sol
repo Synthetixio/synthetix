@@ -17,7 +17,7 @@ contract MockFuturesMarket {
         bytes32 _baseAsset,
         uint _debt,
         bool _invalid
-    ) public {
+    ) {
         manager = _manager;
         baseAsset = _baseAsset;
         debt = _debt;

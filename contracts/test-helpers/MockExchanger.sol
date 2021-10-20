@@ -10,7 +10,7 @@ contract MockExchanger {
 
     ISynthetix public synthetix;
 
-    constructor(ISynthetix _synthetix) public {
+    constructor(ISynthetix _synthetix) {
         synthetix = _synthetix;
     }
 

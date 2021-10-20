@@ -59,7 +59,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
+    constructor(address _owner, address _resolver) Owned(_owner) MixinResolver(_resolver) {
         nextEntryId = 1;
     }
 

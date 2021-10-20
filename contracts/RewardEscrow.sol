@@ -47,7 +47,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
         address _owner,
         ISynthetix _synthetix,
         IFeePool _feePool
-    ) public Owned(_owner) {
+    ) Owned(_owner) {
         synthetix = _synthetix;
         feePool = _feePool;
     }

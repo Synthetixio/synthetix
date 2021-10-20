@@ -35,7 +35,7 @@ contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings
         return IExchangeRates(resolver.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates contract"));
     }
 
-    constructor(address _resolver) public MixinSystemSettings(_resolver) {}
+    constructor(address _resolver) MixinSystemSettings(_resolver) {}
 
     /* ========== UTILITY VIEW FUNCS ========== */
 

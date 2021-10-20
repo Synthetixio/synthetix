@@ -12,7 +12,7 @@ contract FakeTradingRewards is TradingRewards {
         address periodController,
         address resolver,
         address mockSynthetixToken
-    ) public TradingRewards(owner, periodController, resolver) {
+    ) TradingRewards(owner, periodController, resolver) {
         _mockSynthetixToken = IERC20(mockSynthetixToken);
     }
 

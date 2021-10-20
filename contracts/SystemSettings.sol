@@ -46,7 +46,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
     uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
 

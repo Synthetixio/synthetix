@@ -6,7 +6,7 @@ import "../Owned.sol";
 contract MockRewardsRecipient is RewardsDistributionRecipient {
     uint256 public rewardsAvailable;
 
-    constructor(address _owner) public Owned(_owner) {}
+    constructor(address _owner) Owned(_owner) {}
 
     function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution {
         rewardsAvailable = rewardsAvailable + reward;

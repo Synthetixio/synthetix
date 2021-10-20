@@ -19,7 +19,7 @@ contract MockSynth is ExternStateToken {
         uint _totalSupply,
         address _owner,
         bytes32 _currencyKey
-    ) public ExternStateToken(_proxy, _tokenState, _name, _symbol, _totalSupply, 18, _owner) {
+    ) ExternStateToken(_proxy, _tokenState, _name, _symbol, _totalSupply, 18, _owner) {
         currencyKey = _currencyKey;
     }
 

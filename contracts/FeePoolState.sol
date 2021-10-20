@@ -30,7 +30,7 @@ contract FeePoolState is Owned, LimitedSetup {
     // The IssuanceData activity that's happened in a fee period.
     mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public accountIssuanceLedger;
 
-    constructor(address _owner, IFeePool _feePool) public Owned(_owner) LimitedSetup(6 weeks) {
+    constructor(address _owner, IFeePool _feePool) Owned(_owner) LimitedSetup(6 weeks) {
         feePool = address(_feePool);
     }
 

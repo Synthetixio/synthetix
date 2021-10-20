@@ -46,7 +46,7 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
 
     mapping(uint => Entry) public entries;
 
-    constructor() public {}
+    constructor() {}
 
     // Mock setup function
     function setLatestAnswer(int256 answer, uint256 timestamp) external {

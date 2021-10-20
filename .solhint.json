@@ -5,6 +5,7 @@
 		"avoid-call-value": "off",
 		"compiler-version": ["error", "^0.8.0"],
 		"const-name-snakecase": "off",
+		"func-visibility": ["warn", { "ignoreConstructors": true }],
 		"func-order": "off",
 		"func-param-name-mixedcase": "off",
 		"imports-on-top": "off",

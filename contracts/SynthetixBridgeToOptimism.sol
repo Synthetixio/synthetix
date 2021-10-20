@@ -24,7 +24,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public BaseSynthetixBridge(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) BaseSynthetixBridge(_owner, _resolver) {}
 
     // ========== INTERNALS ============
 

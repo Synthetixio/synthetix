@@ -27,7 +27,7 @@ contract Synthetix is BaseSynthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
+    ) BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();

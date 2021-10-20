@@ -12,7 +12,7 @@ contract TokenExchanger is Owned {
     address public integrationProxy;
     address public synthetix;
 
-    constructor(address _owner, address _integrationProxy) public Owned(_owner) {
+    constructor(address _owner, address _integrationProxy) Owned(_owner) {
         integrationProxy = _integrationProxy;
     }
 
