@@ -9,11 +9,11 @@ contract LimitedSetup {
      * @param setupDuration The time the setup period will last for.
      */
     constructor(uint setupDuration) internal {
-        setupExpiryTime = now + setupDuration;
+        setupExpiryTime = block.timestamp + setupDuration;
     }
 
     modifier onlyDuringSetup {
-        require(now < setupExpiryTime, "Can only perform this action during setup");
+        require(block.timestamp < setupExpiryTime, "Can only perform this action during setup");
         _;
     }
 }

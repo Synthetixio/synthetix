@@ -9,6 +9,9 @@ import "./interfaces/IFeePool.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
 contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
+
     IFeePool public feePool;
 
     // Import state

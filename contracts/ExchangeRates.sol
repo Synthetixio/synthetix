@@ -64,9 +64,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         oracle = _oracle;
 
         // The sUSD rate is always 1 and is never stale.
-        _setRate("sUSD", SafeDecimalMath.unit(), now);
+        _setRate("sUSD", SafeDecimalMath.unit(), block.timestamp);
 
-        internalUpdateRates(_currencyKeys, _newRates, now);
+        internalUpdateRates(_currencyKeys, _newRates, block.timestamp);
     }
 
     /* ========== SETTERS ========== */
@@ -487,7 +487,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint timeSent
     ) internal returns (bool) {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
-        require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
+        require(timeSent < (block.timestamp + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -688,7 +688,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _rateIsStaleWithTime(uint _rateStalePeriod, uint _time) internal view returns (bool) {
-        return _time.add(_rateStalePeriod) < now;
+        return _time.add(_rateStalePeriod) < block.timestamp;
     }
 
     function _rateIsFrozen(bytes32 currencyKey) internal view returns (bool) {

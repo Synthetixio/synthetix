@@ -186,7 +186,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
         require(scheduleLength <= MAX_VESTING_ENTRIES, "Vesting schedule is too long");
 
         /* Escrow the tokens for 1 year. */
-        uint time = now + 52 weeks;
+        uint time = block.timestamp + 52 weeks;
 
         if (scheduleLength == 0) {
             totalEscrowedAccountBalance[account] = quantity;
@@ -202,7 +202,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
 
         vestingSchedules[account].push([time, quantity]);
 
-        emit VestingEntryCreated(account, now, quantity);
+        emit VestingEntryCreated(account, block.timestamp, quantity);
     }
 
     /**
@@ -227,7 +227,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
         for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);
             /* The list is sorted; when we reach the first future time, bail out. */
-            if (time > now) {
+            if (time > block.timestamp) {
                 break;
             }
             uint qty = getVestingQuantity(msg.sender, i);
@@ -242,7 +242,7 @@ contract RewardEscrow is Owned, IRewardEscrow {
             totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].add(total);
             IERC20(address(synthetix)).transfer(msg.sender, total);
-            emit Vested(msg.sender, now, total);
+            emit Vested(msg.sender, block.timestamp, total);
         }
     }
 

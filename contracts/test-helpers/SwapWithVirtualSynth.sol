@@ -65,7 +65,7 @@ contract VirtualToken is ERC20 {
         IVirtualSynth _vSynth,
         ICurvePool _pool,
         IERC20Detailed _targetToken
-    ) public ERC20() {
+    ) public ERC20("", "") {
         vSynth = _vSynth;
         pool = _pool;
         targetToken = _targetToken;

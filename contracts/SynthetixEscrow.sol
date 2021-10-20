@@ -154,7 +154,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
         uint quantity
     ) public onlyOwner onlyDuringSetup {
         /* No empty or already-passed vesting entries allowed. */
-        require(now < time, "Time must be in the future");
+        require(block.timestamp < time, "Time must be in the future");
         require(quantity != 0, "Quantity cannot be zero");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
@@ -209,7 +209,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
         for (uint i = 0; i < numEntries; i++) {
             uint time = getVestingTime(msg.sender, i);
             /* The list is sorted; when we reach the first future time, bail out. */
-            if (time > now) {
+            if (time > block.timestamp) {
                 break;
             }
             uint qty = getVestingQuantity(msg.sender, i);
@@ -223,7 +223,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
             totalVestedBalance = totalVestedBalance.sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].sub(total);
             IERC20(address(synthetix)).transfer(msg.sender, total);
-            emit Vested(msg.sender, now, total);
+            emit Vested(msg.sender, block.timestamp, total);
         }
     }
 

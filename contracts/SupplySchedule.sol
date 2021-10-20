@@ -139,7 +139,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     function weeksSinceLastIssuance() public view returns (uint) {
         // Get weeks since lastMintEvent
         // If lastMintEvent not set or 0, then start from inflation start date.
-        uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(INFLATION_START_DATE);
+        uint timeDiff = lastMintEvent > 0 ? block.timestamp.sub(lastMintEvent) : block.timestamp.sub(INFLATION_START_DATE);
         return timeDiff.div(MINT_PERIOD_DURATION);
     }
 
@@ -148,7 +148,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * has passed since the lastMintEvent.
      * */
     function isMintable() public view returns (bool) {
-        if (now - lastMintEvent > MINT_PERIOD_DURATION) {
+        if (block.timestamp - lastMintEvent > MINT_PERIOD_DURATION) {
             return true;
         }
         return false;
@@ -172,7 +172,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
         // 1 day time buffer is added so inflation is minted after feePeriod closes
         lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION)).add(MINT_BUFFER);
 
-        emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, now);
+        emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, block.timestamp);
         return true;
     }
 

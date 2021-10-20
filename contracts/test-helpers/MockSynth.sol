@@ -6,6 +6,8 @@ import "../interfaces/ISystemStatus.sol";
 // Mock synth that also adheres to system status
 
 contract MockSynth is ExternStateToken {
+    using SafeMath for uint;
+
     ISystemStatus private systemStatus;
     bytes32 public currencyKey;
 

@@ -174,7 +174,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             /* update totalBalancePendingMigration for account */
             totalBalancePendingMigration[account] = escrowedAmount;
 
-            emit MigratedAccountEscrow(account, escrowedAmount, vestedAmount, now);
+            emit MigratedAccountEscrow(account, escrowedAmount, vestedAmount, block.timestamp);
         }
     }
 

@@ -673,11 +673,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
         uint _waitingPeriodSecs = getWaitingPeriodSecs();
-        if (timestamp == 0 || now >= timestamp.add(_waitingPeriodSecs)) {
+        if (timestamp == 0 || block.timestamp >= timestamp.add(_waitingPeriodSecs)) {
             return 0;
         }
 
-        return timestamp.add(_waitingPeriodSecs).sub(now);
+        return timestamp.add(_waitingPeriodSecs).sub(block.timestamp);
     }
 
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
@@ -784,7 +784,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             dest,
             amountReceived,
             exchangeFeeRate,
-            now,
+            block.timestamp,
             roundIdForSrc,
             roundIdForDest
         );

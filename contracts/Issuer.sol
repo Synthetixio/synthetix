@@ -239,7 +239,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
-        return now >= _lastIssueEvent(account).add(getMinimumStakeTime());
+        return block.timestamp >= _lastIssueEvent(account).add(getMinimumStakeTime());
     }
 
     function _lastIssueEvent(address account) internal view returns (uint) {

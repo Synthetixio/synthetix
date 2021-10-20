@@ -89,7 +89,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
-        _recentFeePeriodsStorage(0).startTime = uint64(now);
+        _recentFeePeriodsStorage(0).startTime = uint64(block.timestamp);
     }
 
     /* ========== VIEWS ========== */
@@ -254,7 +254,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      */
     function closeCurrentFeePeriod() external issuanceActive {
         require(getFeePeriodDuration() > 0, "Fee Period Duration not set");
-        require(_recentFeePeriodsStorage(0).startTime <= (now - getFeePeriodDuration()), "Too early to close fee period");
+        require(
+            _recentFeePeriodsStorage(0).startTime <= (block.timestamp - getFeePeriodDuration()),
+            "Too early to close fee period"
+        );
 
         etherWrapper().distributeFees();
 
@@ -286,7 +289,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // Increment periodId from the recent closed period feePeriodId
         _recentFeePeriodsStorage(0).feePeriodId = uint64(uint256(_recentFeePeriodsStorage(1).feePeriodId).add(1));
         _recentFeePeriodsStorage(0).startingDebtIndex = uint64(synthetixState().debtLedgerLength());
-        _recentFeePeriodsStorage(0).startTime = uint64(now);
+        _recentFeePeriodsStorage(0).startTime = uint64(block.timestamp);
 
         emitFeePeriodClosed(_recentFeePeriodsStorage(1).feePeriodId);
     }

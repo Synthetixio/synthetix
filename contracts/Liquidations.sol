@@ -126,7 +126,7 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
     function _deadlinePassed(uint deadline) internal view returns (bool) {
         // check deadline is set > 0
         // check now > deadline
-        return deadline > 0 && now > deadline;
+        return deadline > 0 && block.timestamp > deadline;
     }
 
     /**
@@ -180,7 +180,7 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
             "Account issuance ratio is less than liquidation ratio"
         );
 
-        uint deadline = now.add(getLiquidationDelay());
+        uint deadline = block.timestamp.add(getLiquidationDelay());
 
         _storeLiquidationEntry(account, deadline, msg.sender);
 
@@ -230,7 +230,7 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         // delete liquidation caller
         eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
 
-        emit AccountRemovedFromLiquidation(_account, now);
+        emit AccountRemovedFromLiquidation(_account, block.timestamp);
     }
 
     /* ========== MODIFIERS ========== */
