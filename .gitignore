@@ -42,3 +42,4 @@ process.yml
 .db
 
 optimism
+.openzeppelin/

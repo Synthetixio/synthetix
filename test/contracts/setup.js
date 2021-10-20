@@ -289,10 +289,11 @@ const setupContract = async ({
 
 	try {
 		// const specialContracts = ['FuturesMarket', 'AddressResolver'];
-		const specialContracts = ['FuturesMarket'];
+		const specialContracts = ['TestableFuturesMarket'];
 		if (specialContracts.includes(source || contract)) {
 			// The below works with ethers. But we want truffe
-			const FuturesMarketFactory = await ethers.getContractFactory('FuturesMarket');
+			const contractName = source || contract;
+			const FuturesMarketFactory = await ethers.getContractFactory(contractName);
 			const ethersInstance = await upgrades.deployProxy(
 				FuturesMarketFactory,
 				defaultArgs[contract],
@@ -931,9 +932,7 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
-			// source: 'TestableFuturesMarket',
-			source: 'FuturesMarket',
-			// deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
+			source: 'TestableFuturesMarket',
 			deps: ['AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },

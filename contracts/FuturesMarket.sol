@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./OwnedUpgradeable.sol";
-// import "./Proxyable.sol";
 import "./MixinFuturesMarketSettingsUpgradeable.sol";
 import "./interfaces/IFuturesMarket.sol";
 
@@ -935,8 +934,7 @@ contract FuturesMarket is
         fundingSequence.push(funding);
         fundingLastRecomputed = block.timestamp;
 
-        // TODO: Figure events out
-        // emitFundingRecomputed(funding);
+        emit FundingRecomputed(funding);
 
         return sequenceLength;
     }
@@ -1029,23 +1027,21 @@ contract FuturesMarket is
             }
         }
 
-        // TODO: Figure events out
-
         // Emit relevant events
-        // if (marginDelta != 0) {
-        //     emitMarginTransferred(sender, marginDelta);
-        // }
+        if (marginDelta != 0) {
+            emit MarginTransferred(sender, marginDelta);
+        }
 
-        // emitPositionModified(
-        //     position.id,
-        //     sender,
-        //     margin,
-        //     positionSize,
-        //     0,
-        //     positionSize != 0 ? price : position.lastPrice,
-        //     positionSize != 0 ? fundingIndex : position.fundingIndex,
-        //     0
-        // );
+        emit PositionModified(
+            position.id,
+            sender,
+            margin,
+            positionSize,
+            0,
+            positionSize != 0 ? price : position.lastPrice,
+            positionSize != 0 ? fundingIndex : position.fundingIndex,
+            0
+        );
     }
 
     /*
@@ -1109,8 +1105,7 @@ contract FuturesMarket is
             delete position.lastPrice;
             delete position.fundingIndex;
             // Note we still emit the old position id in the event to indicate that it's closing.
-            // TODO: Figure this out
-            // emitPositionModified(oldPosition.id, sender, newPosition.margin, 0, sizeDelta, 0, 0, fee);
+            emit PositionModified(oldPosition.id, sender, newPosition.margin, 0, sizeDelta, 0, 0, fee);
         } else {
             uint id;
             if (oldPosition.size == 0) {
@@ -1125,8 +1120,7 @@ contract FuturesMarket is
             position.size = newPosition.size;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            // TODO: Figure this out
-            // emitPositionModified(id, sender, newPosition.margin, newPosition.size, sizeDelta, price, fundingIndex, fee);
+            emit PositionModified(id, sender, newPosition.margin, newPosition.size, sizeDelta, price, fundingIndex, fee);
         }
     }
 
@@ -1201,7 +1195,7 @@ contract FuturesMarket is
 
         // Record updates to market size and debt.
         int positionSize = position.size;
-        // uint positionId = position.id;
+        uint positionId = position.id;
         marketSkew = marketSkew.sub(positionSize);
         marketSize = marketSize.sub(_abs(positionSize));
 
@@ -1217,9 +1211,8 @@ contract FuturesMarket is
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        // TODO: Figure out events
-        // emitPositionModified(positionId, account, 0, 0, 0, 0, 0, 0);
-        // emitPositionLiquidated(positionId, account, liquidator, positionSize, lPrice, liquidationFee);
+        emit PositionModified(positionId, account, 0, 0, 0, 0, 0, 0);
+        emit PositionLiquidated(positionId, account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
     /*
@@ -1246,10 +1239,6 @@ contract FuturesMarket is
     event MarginTransferred(address indexed account, int marginDelta);
     bytes32 internal constant SIG_MARGINTRANSFERRED = keccak256("MarginTransferred(address,int256)");
 
-    // function emitMarginTransferred(address account, int marginDelta) internal {
-    //     proxy._emit(abi.encode(marginDelta), 2, SIG_MARGINTRANSFERRED, addressToBytes32(account), 0, 0);
-    // }
-
     event PositionModified(
         uint indexed id,
         address indexed account,
@@ -1261,29 +1250,6 @@ contract FuturesMarket is
         uint fee
     );
 
-    // bytes32 internal constant SIG_POSITIONMODIFIED =
-    //     keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
-
-    // function emitPositionModified(
-    //     uint id,
-    //     address account,
-    //     uint margin,
-    //     int size,
-    //     int tradeSize,
-    //     uint lastPrice,
-    //     uint fundingIndex,
-    //     uint fee
-    // ) internal {
-    //     proxy._emit(
-    //         abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
-    //         3,
-    //         SIG_POSITIONMODIFIED,
-    //         bytes32(id),
-    //         addressToBytes32(account),
-    //         0
-    //     );
-    // }
-
     event PositionLiquidated(
         uint indexed id,
         address indexed account,
@@ -1292,31 +1258,6 @@ contract FuturesMarket is
         uint price,
         uint fee
     );
-    bytes32 internal constant SIG_POSITIONLIQUIDATED =
-        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
-
-    // function emitPositionLiquidated(
-    //     uint id,
-    //     address account,
-    //     address liquidator,
-    //     int size,
-    //     uint price,
-    //     uint fee
-    // ) internal {
-    //     proxy._emit(
-    //         abi.encode(size, price, fee),
-    //         4,
-    //         SIG_POSITIONLIQUIDATED,
-    //         bytes32(id),
-    //         addressToBytes32(account),
-    //         addressToBytes32(liquidator)
-    //     );
-    // }
 
     event FundingRecomputed(int funding);
-    bytes32 internal constant SIG_FUNDINGRECOMPUTED = keccak256("FundingRecomputed(int256)");
-
-    // function emitFundingRecomputed(int funding) internal {
-    //     proxy._emit(abi.encode(funding), 1, SIG_FUNDINGRECOMPUTED, 0, 0, 0);
-    // }
 }
