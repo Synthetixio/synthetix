@@ -9,6 +9,8 @@ import "./interfaces/ISystemStatus.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract RewardEscrowV2 is BaseRewardEscrowV2 {
+    using SafeMath for uint;
+
     mapping(address => uint256) public totalBalancePendingMigration;
 
     uint public migrateEntriesThresholdAmount = SafeDecimalMath.unit() * 1000; // Default 1000 SNX

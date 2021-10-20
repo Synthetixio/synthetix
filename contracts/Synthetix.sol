@@ -10,6 +10,8 @@ import "./interfaces/ISupplySchedule.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetix
 contract Synthetix is BaseSynthetix {
+    using SafeMath for uint;
+
     bytes32 public constant CONTRACT_NAME = "Synthetix";
 
     // ========== ADDRESS RESOLVER CONFIGURATION ==========

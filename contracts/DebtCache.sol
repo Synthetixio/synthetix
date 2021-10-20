@@ -8,6 +8,7 @@ import "./BaseDebtCache.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract DebtCache is BaseDebtCache {
+    using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     bytes32 public constant CONTRACT_NAME = "DebtCache";

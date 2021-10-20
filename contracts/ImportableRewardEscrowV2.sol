@@ -5,6 +5,8 @@ import "./BaseRewardEscrowV2.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
+    using SafeMath for uint;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_BASE = "SynthetixBridgeToBase";
 

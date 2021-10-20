@@ -7,6 +7,8 @@ import "./interfaces/ICollateralEth.sol";
 
 // This contract handles the payable aspects of eth loans.
 contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
+    using SafeMath for uint;
+
     mapping(address => uint) public pendingWithdrawals;
 
     constructor(

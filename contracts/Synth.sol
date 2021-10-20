@@ -16,6 +16,8 @@ import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
+    using SafeMath for uint;
+
     bytes32 public constant CONTRACT_NAME = "Synth";
 
     /* ========== STATE VARIABLES ========== */

@@ -5,6 +5,8 @@ import "./BaseSynthetix.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mintablesynthetix
 contract MintableSynthetix is BaseSynthetix {
+    using SafeMath for uint;
+
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";
 
     constructor(

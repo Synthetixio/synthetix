@@ -1,6 +1,7 @@
 pragma solidity ^0.8.8;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Inheritance
 import "./Owned.sol";
@@ -24,7 +25,7 @@ import "./interfaces/IShortingRewards.sol";
 contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeDecimalMath for uint;
-    using SafeERC20 for IERC20;
+    using SafeMath for uint;
 
     /* ========== CONSTANTS ========== */
 
@@ -275,7 +276,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 10. Create the loan struct.
         loans[id] = Loan({
             id: id,
-            account: msg.sender,
+            account: payable(msg.sender),
             collateral: collateral,
             currency: currency,
             amount: amount,
