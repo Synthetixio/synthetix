@@ -198,7 +198,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * */
     function setSynthetixProxy(ISynthetix _synthetixProxy) external onlyOwner {
         require(address(_synthetixProxy) != address(0), "Address cannot be 0");
-        synthetixProxy = address(uint160(address(_synthetixProxy)));
+        synthetixProxy = payable(address(_synthetixProxy));
         emit SynthetixProxyUpdated(synthetixProxy);
     }
 
@@ -209,7 +209,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * */
     modifier onlySynthetix() {
         require(
-            msg.sender == address(Proxy(address(synthetixProxy)).target()),
+            msg.sender == address(Proxy(payable(synthetixProxy)).target()),
             "Only the synthetix contract can perform this action"
         );
         _;

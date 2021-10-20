@@ -524,7 +524,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 array[i] = array[array.length - 1];
 
                 // Decrease the size of the array by one.
-                array.length--;
+                array.pop();
 
                 return true;
             }
