@@ -16,7 +16,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
+abstract contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -367,31 +367,27 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
-    function migrateVestingSchedule(address) external {
-        _notImplemented();
-    }
+    function migrateVestingSchedule(address) external virtual {}
 
     function migrateAccountEscrowBalances(
         address[] calldata,
         uint256[] calldata,
         uint256[] calldata
-    ) external {
-        _notImplemented();
-    }
+    ) external virtual {}
 
     /* ========== L2 MIGRATION ========== */
 
-    function burnForMigration(address, uint[] calldata) external returns (uint256, VestingEntries.VestingEntry[] memory) {
-        _notImplemented();
-    }
+    function burnForMigration(address, uint[] calldata)
+        external
+        virtual
+        returns (uint256, VestingEntries.VestingEntry[] memory)
+    {}
 
     function importVestingEntries(
         address,
         uint256,
         VestingEntries.VestingEntry[] calldata
-    ) external {
-        _notImplemented();
-    }
+    ) external virtual {}
 
     /* ========== INTERNALS ========== */
 

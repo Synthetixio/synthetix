@@ -20,27 +20,27 @@ contract ExchangeRatesWithoutInvPricing is ExchangeRates {
         uint,
         bool,
         bool
-    ) external onlyOwner {
+    ) external override onlyOwner {
         _notImplemented();
     }
 
-    function removeInversePricing(bytes32) external onlyOwner {
+    function removeInversePricing(bytes32) external override onlyOwner {
         _notImplemented();
     }
 
-    function freezeRate(bytes32) external {
+    function freezeRate(bytes32) external override {
         _notImplemented();
     }
 
-    function canFreezeRate(bytes32) external view returns (bool) {
+    function canFreezeRate(bytes32) external view override returns (bool) {
         return false;
     }
 
-    function rateIsFrozen(bytes32) external view returns (bool) {
+    function rateIsFrozen(bytes32) external view override returns (bool) {
         return false;
     }
 
-    function _rateIsFrozen(bytes32) internal view returns (bool) {
+    function _rateIsFrozen(bytes32) internal view override returns (bool) {
         return false;
     }
 

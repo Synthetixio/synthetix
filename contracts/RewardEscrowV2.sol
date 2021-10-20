@@ -62,7 +62,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     }
 
     /* Function to allow any address to migrate vesting entries from previous reward escrow */
-    function migrateVestingSchedule(address addressToMigrate) external systemActive {
+    function migrateVestingSchedule(address addressToMigrate) external override systemActive {
         /* Ensure account escrow balance pending migration is not zero */
         /* Ensure account escrowed balance is not zero - should have been migrated */
         require(totalBalancePendingMigration[addressToMigrate] > 0, "No escrow migration pending");
@@ -152,7 +152,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         address[] calldata accounts,
         uint256[] calldata escrowBalances,
         uint256[] calldata vestedBalances
-    ) external onlyDuringSetup onlyOwner {
+    ) external override onlyDuringSetup onlyOwner {
         require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
         require(accounts.length == vestedBalances.length, "Number of accounts and vestedBalances don't match");
 
@@ -190,6 +190,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     function burnForMigration(address account, uint[] calldata entryIDs)
         external
+        override
         onlySynthetixBridge
         returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
     {

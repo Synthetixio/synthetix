@@ -28,7 +28,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     address public oracle;
 
     // Decentralized oracle networks that feed into pricing aggregators
-    mapping(bytes32 => AggregatorV2V3Interface) public aggregators;
+    mapping(bytes32 => address) public aggregators;
 
     mapping(bytes32 => uint8) public currencyKeyDecimals;
 
@@ -103,7 +103,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint lowerLimit,
         bool freezeAtUpperLimit,
         bool freezeAtLowerLimit
-    ) external onlyOwner {
+    ) external virtual onlyOwner {
         // 0 < lowerLimit < entryPoint => 0 < entryPoint
         require(lowerLimit > 0, "lowerLimit must be above 0");
         require(upperLimit > entryPoint, "upperLimit must be above the entryPoint");
@@ -148,7 +148,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
     }
 
-    function removeInversePricing(bytes32 currencyKey) external onlyOwner {
+    function removeInversePricing(bytes32 currencyKey) external virtual onlyOwner {
         require(inversePricing[currencyKey].entryPoint > 0, "No inverted price exists");
 
         delete inversePricing[currencyKey];
@@ -172,7 +172,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         if (address(aggregators[currencyKey]) == address(0)) {
             aggregatorKeys.push(currencyKey);
         }
-        aggregators[currencyKey] = aggregator;
+        aggregators[currencyKey] = address(aggregator);
         currencyKeyDecimals[currencyKey] = decimals;
         emit AggregatorAdded(currencyKey, address(aggregator));
     }
@@ -191,7 +191,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     // SIP-75 Public keeper function to freeze a synth that is out of bounds
-    function freezeRate(bytes32 currencyKey) external {
+    function freezeRate(bytes32 currencyKey) external virtual {
         InversePricing storage inverse = inversePricing[currencyKey];
         require(inverse.entryPoint > 0, "Cannot freeze non-inverse rate");
         require(!inverse.frozenAtUpperLimit && !inverse.frozenAtLowerLimit, "The rate is already frozen");
@@ -219,7 +219,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     // SIP-75 View to determine if freezeRate can be called safely
-    function canFreezeRate(bytes32 currencyKey) external view returns (bool) {
+    function canFreezeRate(bytes32 currencyKey) external view virtual returns (bool) {
         InversePricing memory inverse = inversePricing[currencyKey];
         if (inverse.entryPoint == 0 || inverse.frozenAtUpperLimit || inverse.frozenAtLowerLimit) {
             return false;
@@ -415,7 +415,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _rateIsStale(currencyKey, getRateStalePeriod());
     }
 
-    function rateIsFrozen(bytes32 currencyKey) external view returns (bool) {
+    function rateIsFrozen(bytes32 currencyKey) external view virtual returns (bool) {
         return _rateIsFrozen(currencyKey);
     }
 
@@ -587,7 +587,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
-        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        AggregatorV2V3Interface aggregator = AggregatorV2V3Interface(aggregators[currencyKey]);
 
         if (aggregator != AggregatorV2V3Interface(address(0))) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
@@ -614,7 +614,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        AggregatorV2V3Interface aggregator = AggregatorV2V3Interface(aggregators[currencyKey]);
 
         if (aggregator != AggregatorV2V3Interface(address(0))) {
             return aggregator.latestRound();
@@ -624,7 +624,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        AggregatorV2V3Interface aggregator = AggregatorV2V3Interface(aggregators[currencyKey]);
 
         if (aggregator != AggregatorV2V3Interface(address(0))) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
@@ -691,7 +691,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _time.add(_rateStalePeriod) < block.timestamp;
     }
 
-    function _rateIsFrozen(bytes32 currencyKey) internal view returns (bool) {
+    function _rateIsFrozen(bytes32 currencyKey) internal view virtual returns (bool) {
         InversePricing memory inverse = inversePricing[currencyKey];
         return inverse.frozenAtUpperLimit || inverse.frozenAtLowerLimit;
     }

@@ -76,7 +76,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint timestamp;
     }
 
-    bytes32 public constant CONTRACT_NAME = "Exchanger";
+    bytes32 public immutable CONTRACT_NAME;
 
     bytes32 private constant sUSD = "sUSD";
 
@@ -93,11 +93,13 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeRatesCircuitBreaker";
 
-    constructor(address _owner, address _resolver) Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) Owned(_owner) MixinSystemSettings(_resolver) {
+        CONTRACT_NAME = "Exchanger";
+    }
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](10);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
@@ -557,7 +559,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address,
         uint,
         bytes32
-    ) internal returns (IVirtualSynth) {
+    ) internal virtual returns (IVirtualSynth) {
         revert("Cannot be run on this layer");
     }
 

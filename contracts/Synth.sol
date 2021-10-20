@@ -15,10 +15,10 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
-contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
+contract Synth is Owned, ExternStateToken, MixinResolver, ISynth {
     using SafeMath for uint;
 
-    bytes32 public constant CONTRACT_NAME = "Synth";
+    bytes32 public immutable CONTRACT_NAME;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -53,6 +53,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
         MixinResolver(_resolver)
     {
+        CONTRACT_NAME = "Synth";
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != address(0), "_owner cannot be 0");
 
@@ -157,11 +158,11 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return true;
     }
 
-    function issue(address account, uint amount) external onlyInternalContracts {
+    function issue(address account, uint amount) external virtual onlyInternalContracts {
         _internalIssue(account, amount);
     }
 
-    function burn(address account, uint amount) external onlyInternalContracts {
+    function burn(address account, uint amount) external virtual onlyInternalContracts {
         _internalBurn(account, amount);
     }
 
@@ -189,7 +190,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== VIEWS ========== */
 
     // Note: use public visibility so that it can be invoked in a subclass
-    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
@@ -266,7 +267,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(futuresMarketManager());
     }
 
-    modifier onlyInternalContracts() {
+    modifier onlyInternalContracts() virtual {
         require(_isInternalContract(msg.sender), "Only internal contracts allowed");
         _;
     }

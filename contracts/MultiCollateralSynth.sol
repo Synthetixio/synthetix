@@ -9,8 +9,6 @@ import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
-    bytes32 public constant CONTRACT_NAME = "MultiCollateralSynth";
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
@@ -40,6 +38,7 @@ contract MultiCollateralSynth is Synth {
     }
 
     function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
+        CONTRACT_NAME = "MultiCollateralSynth";
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;
@@ -54,7 +53,7 @@ contract MultiCollateralSynth is Synth {
      * @param account Account to issue synths to
      * @param amount Number of synths
      */
-    function issue(address account, uint amount) external onlyInternalContracts {
+    function issue(address account, uint amount) external override onlyInternalContracts {
         super._internalIssue(account, amount);
     }
 
@@ -63,14 +62,14 @@ contract MultiCollateralSynth is Synth {
      * @param account Account to burn synths from
      * @param amount Number of synths
      */
-    function burn(address account, uint amount) external onlyInternalContracts {
+    function burn(address account, uint amount) external override onlyInternalContracts {
         super._internalBurn(account, amount);
     }
 
     /* ========== MODIFIERS ========== */
 
     // Contracts directly interacting with multiCollateralSynth to issue and burn
-    modifier onlyInternalContracts() {
+    modifier onlyInternalContracts() override {
         bool isInternal = super._isInternalContract(msg.sender);
         bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);

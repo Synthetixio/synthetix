@@ -16,7 +16,7 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== VIEWS ======================= */
 
-    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseRewardEscrowV2.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE_BASE;
@@ -33,7 +33,7 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
-    ) external onlySynthetixBridge {
+    ) external override onlySynthetixBridge {
         // There must be enough balance in the contract to provide for the escrowed balance.
         totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
         require(

@@ -20,9 +20,9 @@ interface IVirtualSynthInternal {
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
 contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
-    bytes32 public constant CONTRACT_NAME = "ExchangerWithVirtualSynth";
-
-    constructor(address _owner, address _resolver) MinimalProxyFactory() Exchanger(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) MinimalProxyFactory() Exchanger(_owner, _resolver) {
+        CONTRACT_NAME = "ExchangerWithVirtualSynth";
+    }
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -46,7 +46,7 @@ contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
         address recipient,
         uint amount,
         bytes32 currencyKey
-    ) internal returns (IVirtualSynth) {
+    ) internal override returns (IVirtualSynth) {
         // prevent inverse synths from being allowed due to purgeability
         require(currencyKey[0] != 0x69, "Cannot virtualize this synth");
 

@@ -37,7 +37,7 @@ abstract contract MixinFuturesMarketSettings is MixinResolver {
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view virtual override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_FLEXIBLESTORAGE;
     }

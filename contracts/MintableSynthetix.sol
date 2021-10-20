@@ -49,17 +49,17 @@ contract MintableSynthetix is BaseSynthetix {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function mintSecondary(address account, uint amount) external onlyBridge {
+    function mintSecondary(address account, uint amount) external override onlyBridge {
         _mintSecondary(account, amount);
     }
 
-    function mintSecondaryRewards(uint amount) external onlyBridge {
+    function mintSecondaryRewards(uint amount) external override onlyBridge {
         IRewardsDistribution _rewardsDistribution = rewardsDistribution();
         _mintSecondary(address(_rewardsDistribution), amount);
         _rewardsDistribution.distributeRewards(amount);
     }
 
-    function burnSecondary(address account, uint amount) external onlyBridge systemActive {
+    function burnSecondary(address account, uint amount) external override onlyBridge systemActive {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         emitTransfer(account, address(0), amount);
         totalSupply = totalSupply.sub(amount);
