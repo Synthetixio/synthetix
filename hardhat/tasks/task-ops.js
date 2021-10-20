@@ -19,7 +19,6 @@ task('ops', 'Run Optimism chain')
 	.addFlag('buildOps', 'Build fresh docker images for the chain')
 	.addFlag('start', 'Start the latest build')
 	.addFlag('stop', 'Stop optimism chain')
-	.addFlag('detached', 'Detach the chain from the console')
 	.addOptionalParam('optimismPath', 'Path to optmism repository folder', './optimism')
 	.addOptionalParam('optimismBranch', 'Branch to checkout', 'master')
 	.addOptionalParam(
@@ -33,7 +32,6 @@ task('ops', 'Run Optimism chain')
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
 		const opsBranch = taskArguments.optimismBranch;
 		const opsCommit = taskArguments.optimismCommit;
-		const opsDetached = taskArguments.detached ? '-d' : '';
 
 		console.log(gray('optimism branch:', opsBranch));
 		console.log(gray('optimism commit:', opsCommit));
@@ -88,7 +86,7 @@ task('ops', 'Run Optimism chain')
 				_build({ opsPath, opsCommit, opsBranch });
 				_buildOps({ opsPath });
 			}
-			await _start({ opsPath, opsDetached });
+			await _start({ opsPath });
 		}
 	});
 
@@ -163,9 +161,9 @@ function _buildOps({ opsPath }) {
 	]);
 }
 
-async function _start({ opsPath, opsDetached }) {
+async function _start({ opsPath }) {
 	console.log(gray('  start ops'));
-	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached} -d`], {
+	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up -d`], {
 		stdio: 'inherit',
 	});
 	await new Promise(() => {}); // Keeps the process open
