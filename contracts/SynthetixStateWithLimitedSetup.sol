@@ -18,7 +18,6 @@ contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
     uint public importedDebtAmount;
 
     constructor(address _owner, address _associatedContract)
-        public
         SynthetixState(_owner, _associatedContract)
         LimitedSetup(1 weeks)
     {}

@@ -116,7 +116,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             // check and suspend
             if (invalid || _isRateOutOfBounds(currencyKey, rate)) {
                 // check synth exists, to prevent spamming settings for non existant synths
-                require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
+                require(issuer().synths(currencyKey) != ISynth(address(0)), "No such synth");
                 systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
                 circuitBroken = true;
             } else {

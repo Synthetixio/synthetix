@@ -449,7 +449,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
             emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = SynthDepositEntry({user: msg.sender, amount: amount});
+            deposits[depositEndIndex] = SynthDepositEntry({user: payable(msg.sender), amount: amount});
             emit SynthDeposit(msg.sender, amount, depositEndIndex);
 
             // Walk our index forward as well.
@@ -462,7 +462,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
         addresses[0] = CONTRACT_SYNTHSUSD;
         addresses[1] = CONTRACT_EXRATES;

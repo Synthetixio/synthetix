@@ -6,7 +6,7 @@ import "./MixinResolver.sol";
 import "./interfaces/IFlexibleStorage.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/MixinFuturesMarketSettings
-contract MixinFuturesMarketSettings is MixinResolver {
+abstract contract MixinFuturesMarketSettings is MixinResolver {
     /* ========== CONSTANTS ========== */
 
     bytes32 internal constant SETTING_CONTRACT_NAME = "FuturesMarketSettings";
@@ -33,11 +33,11 @@ contract MixinFuturesMarketSettings is MixinResolver {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) internal MixinResolver(_resolver) {}
+    constructor(address _resolver) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view override returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_FLEXIBLESTORAGE;
     }

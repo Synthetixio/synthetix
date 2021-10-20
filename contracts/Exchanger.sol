@@ -425,13 +425,13 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
         if (sourceAmountAfterSettlement == 0) {
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, IVirtualSynth(address(0)));
         }
 
         // SIP-65: Decentralized Circuit Breaker
         // check both currencies unless they're sUSD, since its rate is never invalid (gas savings)
         if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, IVirtualSynth(address(0)));
         }
 
         uint exchangeFeeRate;
@@ -459,7 +459,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
 
         // When using a virtual synth, it becomes the destinationAddress for event and settlement tracking
-        if (vSynth != IVirtualSynth(0)) {
+        if (vSynth != IVirtualSynth(address(0))) {
             destinationAddress = address(vSynth);
         }
 

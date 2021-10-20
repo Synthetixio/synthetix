@@ -4,12 +4,12 @@ pragma solidity ^0.8.8;
 import "./AddressResolver.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinresolver
-contract MixinResolver {
+abstract contract MixinResolver {
     AddressResolver public resolver;
 
     mapping(bytes32 => address) private addressCache;
 
-    constructor(address _resolver) internal {
+    constructor(address _resolver) {
         resolver = AddressResolver(_resolver);
     }
 
@@ -34,7 +34,7 @@ contract MixinResolver {
     /* ========== PUBLIC FUNCTIONS ========== */
 
     // Note: this function is public not external in order for it to be overridden and invoked via super in subclasses
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {}
+    function resolverAddressesRequired() public view virtual returns (bytes32[] memory addresses) {}
 
     function rebuildCache() public {
         bytes32[] memory requiredAddresses = resolverAddressesRequired();

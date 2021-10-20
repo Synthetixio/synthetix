@@ -424,7 +424,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function _addSynth(ISynth synth) internal {
         bytes32 currencyKey = synth.currencyKey();
-        require(synths[currencyKey] == ISynth(0), "Synth exists");
+        require(synths[currencyKey] == ISynth(address(0)), "Synth exists");
         require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
 
         availableSynths.push(synth);

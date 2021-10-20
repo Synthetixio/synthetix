@@ -22,7 +22,7 @@ contract DebtCache is BaseDebtCache {
 
     // This function exists in case a synth is ever somehow removed without its snapshot being updated.
     function purgeCachedSynthDebt(bytes32 currencyKey) external onlyOwner {
-        require(issuer().synths(currencyKey) == ISynth(0), "Synth exists");
+        require(issuer().synths(currencyKey) == ISynth(address(0)), "Synth exists");
         delete _cachedSynthDebt[currencyKey];
     }
 

@@ -4,12 +4,12 @@ pragma solidity ^0.8.8;
 import "./Owned.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/state
-contract State is Owned {
+abstract contract State is Owned {
     // the address of the contract that can modify variables
     // this can only be changed by the owner of this contract
     address public associatedContract;
 
-    constructor(address _associatedContract) internal {
+    constructor(address _associatedContract) {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
 

@@ -2,10 +2,10 @@ pragma solidity ^0.8.8;
 
 import "./Owned.sol";
 
-contract BaseMigration is Owned {
+abstract contract BaseMigration is Owned {
     address public deployer;
 
-    constructor(address _owner) internal Owned(_owner) {
+    constructor(address _owner) Owned(_owner) {
         deployer = msg.sender;
     }
 

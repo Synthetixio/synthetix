@@ -4,12 +4,12 @@ pragma solidity ^0.8.8;
 import "./interfaces/IAddressResolver.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/contractstorage
-contract ContractStorage {
+abstract contract ContractStorage {
     IAddressResolver public resolverProxy;
 
     mapping(bytes32 => bytes32) public hashes;
 
-    constructor(address _resolver) internal {
+    constructor(address _resolver) {
         // ReadProxyAddressResolver
         resolverProxy = IAddressResolver(_resolver);
     }

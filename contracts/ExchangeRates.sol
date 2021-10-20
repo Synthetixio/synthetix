@@ -454,7 +454,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         FlagsInterface _flags = FlagsInterface(getAggregatorWarningFlags());
 
         // fetch all flags at once
-        if (_flags != FlagsInterface(0)) {
+        if (_flags != FlagsInterface(address(0))) {
             address[] memory _aggregators = new address[](currencyKeys.length);
 
             for (uint i = 0; i < currencyKeys.length; i++) {
@@ -589,7 +589,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorV2V3Interface(0)) {
+        if (aggregator != AggregatorV2V3Interface(address(0))) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
             // so let's call it low-level to suppress any reverts
             bytes memory payload = abi.encodeWithSignature("latestRoundData()");
@@ -616,7 +616,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorV2V3Interface(0)) {
+        if (aggregator != AggregatorV2V3Interface(address(0))) {
             return aggregator.latestRound();
         } else {
             return currentRoundForRate[currencyKey];
@@ -626,7 +626,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
-        if (aggregator != AggregatorV2V3Interface(0)) {
+        if (aggregator != AggregatorV2V3Interface(address(0))) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
             // so let's call it low-level to suppress any reverts
             bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)", roundId);
@@ -701,7 +701,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         if (currencyKey == "sUSD") return false;
         address aggregator = address(aggregators[currencyKey]);
         // when no aggregator or when the flags haven't been setup
-        if (aggregator == address(0) || flags == FlagsInterface(0)) {
+        if (aggregator == address(0) || flags == FlagsInterface(address(0))) {
             return false;
         }
         return flags.getFlag(aggregator);

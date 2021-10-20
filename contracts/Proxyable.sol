@@ -7,7 +7,7 @@ import "./Owned.sol";
 import "./Proxy.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/proxyable
-contract Proxyable is Owned {
+abstract contract Proxyable is Owned {
     // This contract should be treated like an abstract contract
 
     /* The proxy this contract exists behind. */
@@ -19,7 +19,7 @@ contract Proxyable is Owned {
      * optionalProxy modifiers, otherwise their invocations can use stale values. */
     address public messageSender;
 
-    constructor(address payable _proxy) internal {
+    constructor(address payable _proxy) {
         // This contract is abstract, and thus cannot be instantiated directly
         require(owner != address(0), "Owner must be set");
 
@@ -46,7 +46,10 @@ contract Proxyable is Owned {
     }
 
     function _onlyProxy() private view {
-        require(Proxy(msg.sender) == proxy || Proxy(msg.sender) == integrationProxy, "Only the proxy can call");
+        require(
+            Proxy(payable(msg.sender)) == proxy || Proxy(payable(msg.sender)) == integrationProxy,
+            "Only the proxy can call"
+        );
     }
 
     modifier optionalProxy {
@@ -55,7 +58,11 @@ contract Proxyable is Owned {
     }
 
     function _optionalProxy() private {
-        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
+        if (
+            Proxy(payable(msg.sender)) != proxy &&
+            Proxy(payable(msg.sender)) != integrationProxy &&
+            messageSender != msg.sender
+        ) {
             messageSender = msg.sender;
         }
     }
@@ -67,7 +74,11 @@ contract Proxyable is Owned {
 
     // solhint-disable-next-line func-name-mixedcase
     function _optionalProxy_onlyOwner() private {
-        if (Proxy(msg.sender) != proxy && Proxy(msg.sender) != integrationProxy && messageSender != msg.sender) {
+        if (
+            Proxy(payable(msg.sender)) != proxy &&
+            Proxy(payable(msg.sender)) != integrationProxy &&
+            messageSender != msg.sender
+        ) {
             messageSender = msg.sender;
         }
         require(messageSender == owner, "Owner only function");
