@@ -780,8 +780,9 @@
 			},
 			"DebtCache": {
 				"address": "0xCF4a31F3C7E245F8de884907aEFF1841C042cF41",
-				"status": "current",
-				"keccak256": "0xae968c154901fa69caaf12425ed4e635e09088e30acaf662601152febf985914"
+				"status": "replaced",
+				"keccak256": "0xae968c154901fa69caaf12425ed4e635e09088e30acaf662601152febf985914",
+				"replaced_in": "v2.51.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0x15e7Aa4Cd2C74750b5DCaC9B8B21B9189552BBaD",
@@ -790,8 +791,9 @@
 			},
 			"Issuer": {
 				"address": "0xc0a0770299202A0eAC59628e1514c250C76F78C7",
-				"status": "current",
-				"keccak256": "0x98a99071e639c7b1979cb1a2d238b8104fb936f1275741e973726834ee157c5b"
+				"status": "replaced",
+				"keccak256": "0x98a99071e639c7b1979cb1a2d238b8104fb936f1275741e973726834ee157c5b",
+				"replaced_in": "v2.51.0-alpha"
 			},
 			"SynthsUSD": {
 				"address": "0x2c91bBa7AeE2fBF210BDc42BA667ED0eB8Fa667C",
@@ -837,6 +839,26 @@
 				"address": "0xD170549da4115c39EC42D6101eAAE5604F26150d",
 				"status": "current",
 				"keccak256": "0xf6898428342fd57d2e05289492e64a8f43df82f663522718b5b32afe831795d9"
+			}
+		}
+	},
+	"v2.51.0-alpha": {
+		"tag": "v2.51.0-alpha",
+		"fulltag": "v2.51.0-alpha",
+		"release": "Kaus",
+		"network": "kovan",
+		"date": "2021-10-19T19:44:53+11:00",
+		"commit": "7d7f7b5bf50b9e237fd462fd6b9c4cb844d449ac",
+		"contracts": {
+			"DebtCache": {
+				"address": "0xE73EB48B9E725E563775fF38cb67Ae09bF34c791",
+				"status": "current",
+				"keccak256": "0x94dba5769ba43b0dcf0f8c1ce13d8fff6b9461bb16f3513b56255c702fe8b1f4"
+			},
+			"Issuer": {
+				"address": "0x319D190584248280e3084A4692C6472A8dA5CA26",
+				"status": "current",
+				"keccak256": "0x694aa53c6e06991326d54e2a63c075ef5c500f4a43d977ce0f8560cacbcd125a"
 			}
 		}
 	}
