@@ -1,4 +1,4 @@
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.9;
 
 // Stub functions required by the DebtCache and FeePool contracts.
 // https://docs.synthetix.io/contracts/source/contracts/etherwrapper

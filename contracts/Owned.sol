@@ -1,4 +1,4 @@
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.9;
 
 // https://docs.synthetix.io/contracts/source/contracts/owned
 contract Owned {

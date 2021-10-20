@@ -1,7 +1,7 @@
 /* PublicSafeDecimalMath.sol: expose the internal functions in SafeDecimalMath
  * for testing purposes.
  */
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.9;
 
 import "../SafeDecimalMath.sol";
 

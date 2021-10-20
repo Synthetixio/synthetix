@@ -1,4 +1,4 @@
-pragma solidity ^0.8.8;
+pragma solidity ^0.8.9;
 
 interface FlagsInterface {
     function getFlag(address) external view returns (bool);

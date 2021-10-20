@@ -124,7 +124,7 @@
 		"pretty-quick": "~2.0.2",
 		"rlp": "^2.2.6",
 		"semver": "7.3.2",
-		"solc": "0.8.8",
+		"solc": "0.8.9",
 		"solhint": "~3.3.4",
 		"solidifier": "2.2.3",
 		"solidity-coverage": "^0.7.13",
