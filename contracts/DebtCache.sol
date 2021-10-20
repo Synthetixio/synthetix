@@ -78,6 +78,19 @@ contract DebtCache is BaseDebtCache {
         _excludedIssuedDebt[currencyKey] = uint(newExcludedDebt);
     }
 
+    function updateCachedsUSDDebt(int amount) external onlyIssuer {
+        uint delta = SafeDecimalMath.abs(amount);
+        if (amount > 0) {
+            _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].add(delta);
+            _cachedDebt = _cachedDebt.add(delta);
+        } else {
+            _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].sub(delta);
+            _cachedDebt = _cachedDebt.sub(delta);
+        }
+
+        emit DebtCacheUpdated(_cachedDebt);
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _updateDebtCacheValidity(bool currentlyInvalid) internal {
@@ -115,10 +128,9 @@ contract DebtCache is BaseDebtCache {
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
-            // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
-            // debt snapshots.
-            require(cachedSum <= debt, "Cached synth sum exceeds total debt");
-            debt = debt.sub(cachedSum).add(currentSum);
+            // apply the delta between the cachedSum and currentSum
+            // add currentSum before sub cachedSum to prevent overflow as cachedSum > debt for large amount of excluded debt
+            debt = debt.add(currentSum).sub(cachedSum);
             _cachedDebt = debt;
             emit DebtCacheUpdated(debt);
         }

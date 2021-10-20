@@ -378,6 +378,12 @@
 			"sip": 182,
 			"layer": "ovm",
 			"sources": ["DebtCache", "FeePool", "SystemSettings", "WrapperFactory"]
+		},
+		{
+			"sip": 187,
+			"layer": "both",
+			"sources": ["DebtCache", "Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -615,22 +621,22 @@
 		},
 		{
 			"name": "Kaus",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Kaus (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Avior",
