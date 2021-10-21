@@ -17,6 +17,7 @@ import "./interfaces/IExchanger.sol";
 //       On higher versions of solidity, it would be marked with the `abstract` keyword.
 //       This contracts implements logic that is only intended to be accessed behind a proxy.
 //       For the deployed "mastercopy" version, see VirtualSynthMastercopy.
+// context: https://sips.synthetix.io/sips/sip-127/
 abstract contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
