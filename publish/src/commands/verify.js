@@ -121,9 +121,11 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			console.log(gray(' - Constructor arguments', constructorArguments));
 
 			const readFlattened = () => {
+				// Find the correct path for the contract from the compilationTarget.
 				const sourcePath = Object.entries(
 					deployment.sources[source].metadata.settings.compilationTarget
-				).find(([key, value]) => value === source)[0];
+				).find(([filepath, contractName]) => contractName === source)[0];
+
 				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, sourcePath);
 				try {
 					return fs.readFileSync(flattenedFilename).toString();
