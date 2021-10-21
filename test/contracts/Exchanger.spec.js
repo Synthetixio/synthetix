@@ -2825,7 +2825,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						describe('with the new virtual synth', () => {
 							let vSynth;
 							beforeEach(async () => {
-								vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
+								vSynth = await artifacts.require('TestableVirtualSynth').at(vSynthAddress);
 							});
 							it('and the balance of the vSynth is the whole amount', async () => {
 								assert.bnEqual(await sAUDContract.balanceOf(vSynth.address), amountReceived);

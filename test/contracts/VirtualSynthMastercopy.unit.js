@@ -11,14 +11,14 @@ const {
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
 } = require('../..');
 
-const VirtualSynth = artifacts.require('VirtualSynth');
+const TestableVirtualSynth = artifacts.require('TestableVirtualSynth');
 const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
 contract('VirtualSynthMastercopy (unit tests)', async accounts => {
 	const [, owner, mockResolver, mockSynth] = accounts;
 
 	it('ensure same functions as VirtualSynth are mutative', () => {
-		for (const abi of [VirtualSynth.abi, VirtualSynthMastercopy.abi]) {
+		for (const abi of [TestableVirtualSynth.abi, VirtualSynthMastercopy.abi]) {
 			ensureOnlyExpectedMutativeFunctions({
 				abi,
 				ignoreParents: ['ERC20'],

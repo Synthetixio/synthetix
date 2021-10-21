@@ -13,14 +13,14 @@ const {
 
 const { divideDecimal } = require('../utils')();
 
-const VirtualSynth = artifacts.require('VirtualSynth');
+const TestableVirtualSynth = artifacts.require('TestableVirtualSynth');
 
 contract('VirtualSynth (unit tests)', async accounts => {
 	const [, owner, alice] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: VirtualSynth.abi,
+			abi: TestableVirtualSynth.abi,
 			ignoreParents: ['ERC20'],
 			expected: ['initialize', 'settle'],
 		});

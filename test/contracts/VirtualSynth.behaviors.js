@@ -6,7 +6,7 @@ const { toBytes32 } = require('../..');
 
 const { prepareSmocks } = require('./helpers');
 
-const VirtualSynth = artifacts.require('VirtualSynth');
+const TestableVirtualSynth = artifacts.require('TestableVirtualSynth');
 
 // note: cannot use fat-arrow here otherwise this function will be bound to this outer context
 module.exports = function({ accounts }) {
@@ -23,7 +23,7 @@ module.exports = function({ accounts }) {
 		whenInstantiated: ({ amount, user, synth = 'sETH' }, cb) => {
 			describe(`when instantiated for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
-					this.instance = await VirtualSynth.new();
+					this.instance = await TestableVirtualSynth.new();
 					await this.instance.initialize(
 						this.mocks.Synth.address,
 						this.resolver.address,

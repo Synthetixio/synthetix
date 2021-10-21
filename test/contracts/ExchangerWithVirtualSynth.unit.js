@@ -131,7 +131,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 														describe('when interrogating the Virtual Synths', () => {
 															let vSynth;
 															beforeEach(async () => {
-																const VirtualSynth = artifacts.require('VirtualSynth');
+																const VirtualSynth = artifacts.require('TestableVirtualSynth');
 																vSynth = await VirtualSynth.at(
 																	getEventByName({ tx: txn, name: 'VirtualSynthCreated' }).args
 																		.vSynth
