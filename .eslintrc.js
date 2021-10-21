@@ -6,6 +6,9 @@ module.exports = {
 		node: true,
 	},
 	plugins: ['havven', 'no-only-tests'],
+	parserOptions: {
+		ecmaVersion: 2020,
+	},
 	rules: {
 		'havven/no-assert-revert-without-await': 'error',
 		'havven/no-assert-invalid-opcode-without-await': 'error',
