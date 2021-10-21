@@ -7,6 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IIssuer.sol";
 
 // Libraries
+import "./SafeCast.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -47,6 +48,8 @@ interface IIssuerInternalDebtCache {
             bool isInvalid,
             bool isStale
         );
+
+    function updateCachedsUSDDebt(int amount) external;
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/issuer
@@ -466,7 +469,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             ISynthRedeemer _synthRedeemer = synthRedeemer();
             synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
             // ensure the debt cache is aware of the new sUSD issued
-            debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
+            debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amountOfsUSD));
             _synthRedeemer.deprecate(IERC20(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem);
         }
 
@@ -666,7 +669,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
+        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
 
         // Store their locked SNX amount to determine their fee % for the period
         _appendAccountIssuanceRecord(from);
@@ -692,7 +695,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[sUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
+        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountBurnt));
 
         // Store their debtRatio against a fee period to determine their fee/rewards % for the period
         _appendAccountIssuanceRecord(debtAccount);

@@ -7,10 +7,10 @@ on:
     branches: [master, develop]
     paths-ignore:
       - node_modules
-      - '**/*.md'
-      - '**/*.txt'
+      - "**/*.md"
+      - "**/*.txt"
   schedule:
-    - cron: '0 6 * * 3'
+    - cron: "0 6 * * 3"
 
 jobs:
   analyze:

@@ -1,6 +1,7 @@
 const ethers = require('ethers');
 const { ensureBalance } = require('./balances');
 const { toBytes32 } = require('../../../index');
+const { updateCache } = require('../utils/rates');
 
 async function exchangeSomething({ ctx }) {
 	let { Synthetix } = ctx.contracts;
@@ -8,6 +9,8 @@ async function exchangeSomething({ ctx }) {
 
 	const sUSDAmount = ethers.utils.parseEther('10');
 	await ensureBalance({ ctx, symbol: 'sUSD', user: ctx.users.owner, balance: sUSDAmount });
+
+	await updateCache({ ctx });
 
 	const tx = await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'));
 	await tx.wait();

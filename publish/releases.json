@@ -373,6 +373,12 @@
 			"layer": "both",
 			"released": "both",
 			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+		},
+		{
+			"sip": 187,
+			"layer": "both",
+			"sources": ["DebtCache", "Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -610,22 +616,22 @@
 		},
 		{
 			"name": "Kaus",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Kaus (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 51
 			},
-			"sips": []
+			"sips": [187]
 		},
 		{
 			"name": "Avior",
