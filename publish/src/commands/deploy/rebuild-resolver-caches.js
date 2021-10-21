@@ -8,58 +8,16 @@ const {
 } = require('../../../..');
 
 module.exports = async ({
-	addressOf,
-	compiled,
 	deployer,
 	generateSolidity,
 	limitPromise,
-	network,
 	newContractsBeingAdded,
 	runStep,
 	useOvm,
 }) => {
-	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
+	console.log(gray(`\n------ REBUILD RESOLVER CACHES ------\n`));
 
-	// Legacy contracts.
-	if (network === 'mainnet' && !useOvm) {
-		// v2.35.2 contracts.
-		// TODO  -fetch these from getVersions()
-		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
-		const CollateralErc20 = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46'; // REN
-		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
-
-		const legacyContracts = Object.entries({
-			CollateralEth,
-			CollateralErc20,
-			CollateralShort,
-		}).map(([name, address]) => {
-			// Conbine MixinResolver + Owned abis
-			const abi1 = compiled['MixinResolver'].abi;
-			const abi2 = compiled['Owned'].abi.filter(e => e.type !== 'constructor'); // Avoid duplicate constructor entries
-			const abi = [...abi1, ...abi2];
-
-			const target = new ethers.Contract(address, abi, deployer.provider);
-			target.source = name;
-			return [`legacy_${name}`, target];
-		});
-
-		for (const [name, target] of legacyContracts) {
-			await runStep({
-				gasLimit: 7e6,
-				contract: name,
-				target,
-				read: 'isResolverCached',
-				expected: input => input,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildCache',
-				// these updates are tricky to Soliditize, and aren't
-				// owner required and aren't critical to the core, so
-				// let's skip them in the migration script
-				// and a re-run of the deploy script will catch them
-				skipSolidity: true,
-			});
-		}
-	}
+	const { AddressResolver } = deployer.deployedContracts;
 
 	const filterTargetsWith = ({ prop }) =>
 		Object.entries(deployer.deployedContracts).filter(([, target]) => {
@@ -169,7 +127,7 @@ module.exports = async ({
 		}
 	}
 
-	const addressesChunkSize = useOvm ? 7 : 20;
+	const addressesChunkSize = useOvm ? 5 : 20;
 	let batchCounter = 1;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
@@ -198,45 +156,6 @@ module.exports = async ({
 				skipSolidity: true, // this is a double check - we don't want solidity output for this
 			});
 		}
-	}
-
-	// Now perform a sync of legacy contracts that have not been replaced in Shaula (v2.35.x)
-	// EtherCollateral, EtherCollateralsUSD
-	console.log(gray('Checking all legacy contracts with setResolverAndSyncCache() are rebuilt...'));
-	const contractsWithLegacyResolverCaching = filterTargetsWith({
-		prop: 'setResolverAndSyncCache',
-	});
-	for (const [contract, target] of contractsWithLegacyResolverCaching) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract,
-			target,
-			read: 'isResolverCached',
-			readArg: addressOf(ReadProxyAddressResolver),
-			expected: input => input,
-			write: 'setResolverAndSyncCache',
-			writeArg: addressOf(ReadProxyAddressResolver),
-			comment:
-				'Rebuild the resolver cache of contracts that use the legacy "setResolverAndSyncCache" function',
-		});
-	}
-
-	// Finally set resolver on contracts even older than legacy (Depot)
-	console.log(gray('Checking all legacy contracts with setResolver() are rebuilt...'));
-	const contractsWithLegacyResolverNoCache = filterTargetsWith({
-		prop: 'setResolver',
-	});
-	for (const [contract, target] of contractsWithLegacyResolverNoCache) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract,
-			target,
-			read: 'resolver',
-			expected: input => addressOf(ReadProxyAddressResolver),
-			write: 'setResolver',
-			writeArg: addressOf(ReadProxyAddressResolver),
-			comment: 'Rebuild the resolver cache of contracts that use the legacy "setResolver" function',
-		});
 	}
 
 	console.log(gray('All caches are rebuilt. '));

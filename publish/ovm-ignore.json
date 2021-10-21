@@ -1,8 +1,6 @@
 [
-	"Collateral",
 	"CollateralErc20",
 	"CollateralEth",
-	"CollateralShort",
 	"ExchangerWithFeeReclamationAlternatives",
 	"FakeTradingRewards",
 	"Synthetix",

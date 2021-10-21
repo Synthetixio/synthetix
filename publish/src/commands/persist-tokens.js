@@ -16,7 +16,6 @@ const pinataSDK = require('@pinata/sdk');
 const { getTokens, networkToChainId } = require('../../..');
 
 const DEFAULTS = {
-	gasPrice: '50',
 	gasLimit: 2e5, // 200,000
 	network: 'mainnet',
 };
@@ -27,14 +26,7 @@ const uploadFileToIPFS = async ({ body }) => {
 	return result.IpfsHash;
 };
 
-const persistTokens = async ({
-	network,
-	yes,
-	privateKey,
-	assetsVersion,
-	gasPrice = DEFAULTS.gasPrice,
-	gasLimit = DEFAULTS.gasLimit,
-}) => {
+const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 	ensureNetwork(network);
 
 	const { privateKey: envPrivateKey } = loadConnections({
@@ -169,7 +161,6 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option(
 				'-p, --private-key [value]',

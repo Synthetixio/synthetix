@@ -14,13 +14,13 @@ const DEFAULTS = {
 const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 // Get unreleased releases
-const getReleasesNotYetReleased = (useOvm = false) =>
+const getReleasesNotYetReleased = ({ useOvm = false }) =>
 	releases.releases.filter(
 		release => !release.released && !!release.ovm === useOvm && release.sips.length > 0
 	);
 
 // Get unreleased sips
-const getSips = (useOvm = false) => {
+const getSips = ({ useOvm = false }) => {
 	const layers = ['both', useOvm ? 'ovm' : 'base'];
 	return releases.sips.filter(
 		({ layer, released }) => layers.includes(layer) && !layers.includes(released)
@@ -28,7 +28,7 @@ const getSips = (useOvm = false) => {
 };
 
 // Get defined source files from the given sip, or an empty Array
-const getSipSources = (sip, useOvm = false) => {
+const getSipSources = ({ sip, useOvm = false }) => {
 	if (!sip.sources) return [];
 	if (Array.isArray(sip.sources)) return sip.sources;
 	const baseSources = sip.sources.base || [];
@@ -70,21 +70,21 @@ const prepareDeploy = async ({
 	let sources;
 	if (useSips) {
 		// Pick unreleased sips that have sources that need to be prepared
-		const sips = getSips();
-		sources = sips.flatMap(sip => getSipSources(sip, useOvm));
+		const sips = getSips({ useOvm });
+		sources = sips.flatMap(sip => getSipSources({ sip, useOvm }));
 
 		if (sources.length > 0) {
 			console.log(gray(`Preparing SIPs: ${sips.map(({ sip }) => sip).join(', ')}`));
 		}
 	} else if (useReleases) {
 		// Get all the sources coming from the SIPs from the release on the required layer
-		const unreleased = getReleasesNotYetReleased();
+		const unreleased = getReleasesNotYetReleased({ useOvm });
 		sources = unreleased
 			.flatMap(({ sips }) => sips)
 			.flatMap(sipNumber => {
 				const sip = releases.sips.find(sip => sip.sip === sipNumber);
 				if (!sip) throw new Error(`Invalid SIP number "${sipNumber}"`);
-				return getSipSources(sip, useOvm);
+				return getSipSources({ sip, useOvm });
 			});
 
 		if (sources.length > 0) {

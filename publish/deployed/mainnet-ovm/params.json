@@ -10,5 +10,27 @@
 	{
 		"name": "RATE_STALE_PERIOD",
 		"value": "4200"
+	},
+	{
+		"name": "COLLATERAL_MANAGER",
+		"value": {
+			"SYNTHS": ["sUSD", "sBTC", "sETH", "sLINK"],
+			"SHORTS": ["sBTC", "sETH", "sLINK"],
+			"MAX_DEBT": "75000000000000000000000000",
+			"MAX_SKEW_RATE": "200000000000000000",
+			"BASE_BORROW_RATE": "158443823",
+			"BASE_SHORT_RATE": "158443823"
+		}
+	},
+	{
+		"name": "COLLATERAL_SHORT",
+		"value": {
+			"SYNTHS": ["sBTC", "sETH", "sLINK"],
+			"MIN_CRATIO": "1200000000000000000",
+			"MIN_COLLATERAL": "100000000000000000000",
+			"ISSUE_FEE_RATE": "4000000000000000",
+			"INTERACTION_DELAY": "0",
+			"COLLAPSE_FEE_RATE": "0"
+		}
 	}
 ]

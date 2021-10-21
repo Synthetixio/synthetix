@@ -30,6 +30,10 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ETHER_WRAPPER_MAX_ETH = "etherWrapperMaxETH";
     bytes32 internal constant SETTING_ETHER_WRAPPER_MINT_FEE_RATE = "etherWrapperMintFeeRate";
     bytes32 internal constant SETTING_ETHER_WRAPPER_BURN_FEE_RATE = "etherWrapperBurnFeeRate";
+    bytes32 internal constant SETTING_MIN_CRATIO = "minCratio";
+    bytes32 internal constant SETTING_NEW_COLLATERAL_MANAGER = "newCollateralManager";
+    bytes32 internal constant SETTING_INTERACTION_DELAY = "interactionDelay";
+    bytes32 internal constant SETTING_COLLAPSE_FEE_RATE = "collapseFeeRate";
     bytes32 internal constant SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK = "atomicMaxVolumePerBlock";
     bytes32 internal constant SETTING_ATOMIC_TWAP_WINDOW = "atomicTwapWindow";
     bytes32 internal constant SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING = "atomicEquivalentForDexPricing";
@@ -144,6 +148,38 @@ contract MixinSystemSettings is MixinResolver {
 
     function getEtherWrapperBurnFeeRate() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE);
+    }
+
+    function getMinCratio(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral))
+            );
+    }
+
+    function getNewCollateralManager(address collateral) internal view returns (address) {
+        return
+            flexibleStorage().getAddressValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral))
+            );
+    }
+
+    function getInteractionDelay(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, collateral))
+            );
+    }
+
+    function getCollapseFeeRate(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, collateral))
+            );
     }
 
     function getAtomicMaxVolumePerBlock() internal view returns (uint) {

@@ -1,21 +1,15 @@
 'use strict';
 
-const {
-	constants: { OVM_GAS_PRICE_GWEI },
-	nonUpgradeable,
-} = require('../../../..');
+const { nonUpgradeable } = require('../../../..');
 
 module.exports = ({
 	config,
-	contractDeploymentGasLimit,
 	deployment,
 	deploymentPath,
 	freshDeploy,
 	ignoreSafetyChecks,
 	manageNonces,
-	methodCallGasLimit,
 	network,
-	gasPrice,
 	useOvm,
 }) => {
 	if (!ignoreSafetyChecks) {
@@ -45,22 +39,6 @@ module.exports = ({
 					}
 				});
 			});
-		}
-
-		// Gas price needs to be set to 0.015 gwei in Optimism,
-		// and gas limits need to be dynamically set by the provider.
-		// More info:
-		// https://www.notion.so/How-to-pay-Fees-in-Optimistic-Ethereum-f706f4e5b13e460fa5671af48ce9a695
-		if (useOvm) {
-			if (contractDeploymentGasLimit || methodCallGasLimit) {
-				throw new Error(
-					'Gas limits should not be set by the user in Optimism. Please use dynamic values.'
-				);
-			}
-
-			if (gasPrice !== OVM_GAS_PRICE_GWEI) {
-				throw new Error(`Gas price needs to be ${OVM_GAS_PRICE_GWEI} when targeting Optimism.`);
-			}
 		}
 
 		// Deploying on OVM and not using an OVM deployment path?

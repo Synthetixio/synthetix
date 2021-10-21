@@ -237,17 +237,33 @@ const setupContract = async ({
 			toUnit(50000000),
 			0,
 			0,
+			0,
 		],
 		CollateralUtil: [tryGetAddressOf('AddressResolver')],
 		Collateral: [
-			tryGetAddressOf('CollateralState'),
+			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			'sUSD',
-			1.2,
-			100,
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
 		],
-		CollateralState: [owner, tryGetAddressOf('Collateral')],
+		CollateralEth: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'),
+			toUnit(1.3),
+			toUnit(2),
+		],
+		CollateralShort: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
+		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
 	};
@@ -853,7 +869,15 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Collateral',
-			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
+			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralEth',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralShort',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
 	];
 
