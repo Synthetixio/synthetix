@@ -70,10 +70,18 @@
 				"FuturesMarketLINK",
 				"FuturesMarketManager",
 				"FuturesMarketSettings",
+				"Exchanger",
+				"Issuer",
+				"SynthRedeemer",
+				"SystemSettings",
 				"ProxyFuturesMarketBTC",
 				"ProxyFuturesMarketETH",
 				"ProxyFuturesMarketLINK",
-				"ProxyFuturesMarketManager"
+				"ProxyFuturesMarketManager",
+				"SynthsETH",
+				"SynthsUSD",
+				"SynthsLINK",
+				"SynthsBTC"
 			]
 		},
 		{
@@ -720,21 +728,6 @@
 				"minor": 47
 			},
 			"ovm": true,
-			"sources": [
-				"Exchanger",
-				"FuturesMarketBTC",
-				"FuturesMarketData",
-				"FuturesMarketETH",
-				"FuturesMarketLINK",
-				"FuturesMarketManager",
-				"FuturesMarketSettings",
-				"ProxyFuturesMarketBTC",
-				"ProxyFuturesMarketETH",
-				"ProxyFuturesMarketLINK",
-				"ProxyFuturesMarketManager",
-				"Synthetix",
-				"SystemSettings"
-			],
 			"sips": [80]
 		}
 	]
