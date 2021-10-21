@@ -647,7 +647,7 @@ contract('CollateralEth', async accounts => {
 				await issuesUSDToAccount(toUnit(1000), account1);
 				await assert.revert(
 					ceth.repay(account1, id, toUnit(1000), { from: account1 }),
-					"VM Exception while processing transaction: reverted with reason string 'SafeMath: subtraction overflow'"
+					'Arithmetic operation underflowed or overflowed'
 				);
 			});
 		});

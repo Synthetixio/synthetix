@@ -174,10 +174,7 @@ contract('NativeEtherWrapper', async accounts => {
 		});
 		describe('when called with 0 sETH balance', async () => {
 			it('reverts', async () => {
-				await assert.revert(
-					nativeEtherWrapper.burn('1', { from: account1 }),
-					'SafeMath: subtraction overflow'
-				);
+				await assert.revert(nativeEtherWrapper.burn('1', { from: account1 }), 'overflow');
 			});
 		});
 		describe('when called with sETH balance', async () => {

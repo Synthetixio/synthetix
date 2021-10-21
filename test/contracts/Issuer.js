@@ -350,7 +350,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						it('and in an unknown currency, reverts', async () => {
 							await assert.revert(
 								synthetix.totalIssuedSynths(toBytes32('XYZ')),
-								'SafeMath: division by zero'
+								'division by zero'
 							);
 						});
 					});
@@ -386,7 +386,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						it('and in an unknown currency, reverts', async () => {
 							await assert.revert(
 								synthetix.totalIssuedSynths(toBytes32('XYZ')),
-								'SafeMath: division by zero'
+								'division by zero'
 							);
 						});
 					});
@@ -1374,10 +1374,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.ok(!debtBefore.isNeg());
 
 					// Burning any amount of sUSD beyond what is owned will cause a revert
-					await assert.revert(
-						synthetix.burnSynths('1', { from: account1 }),
-						'SafeMath: subtraction overflow'
-					);
+					await assert.revert(synthetix.burnSynths('1', { from: account1 }), 'overflow');
 				});
 
 				it("should only burn up to a user's actual debt level", async () => {
@@ -1594,7 +1591,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await assert.revert(
 							synthetix.issueSynths(issuedSynths1, { from: account1 }),
-							'SafeMath: division by zero'
+							'division by zero'
 						);
 					});
 				});
@@ -1702,10 +1699,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							assert.bnEqual(maxIssuableSynths, toUnit('16000'));
 						});
 						it('then calling burnSynthsToTarget() reverts', async () => {
-							await assert.revert(
-								synthetix.burnSynthsToTarget({ from: account1 }),
-								'SafeMath: subtraction overflow'
-							);
+							await assert.revert(synthetix.burnSynthsToTarget({ from: account1 }), 'overflow');
 						});
 					});
 				});

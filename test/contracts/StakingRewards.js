@@ -531,7 +531,7 @@ contract('StakingRewards', accounts => {
 
 	describe('withdraw()', () => {
 		it('cannot withdraw if nothing staked', async () => {
-			await assert.revert(stakingRewards.withdraw(toUnit('100')), 'SafeMath: subtraction overflow');
+			await assert.revert(stakingRewards.withdraw(toUnit('100')), 'overflow');
 		});
 
 		it('should increases lp token balance and decreases staking balance', async () => {

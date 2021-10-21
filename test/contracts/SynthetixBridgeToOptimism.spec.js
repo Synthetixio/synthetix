@@ -85,7 +85,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				it('the deposit should fail', async () => {
 					await assert.revert(
 						synthetixBridgeToOptimism.deposit(amountToDeposit, { from: owner }),
-						'SafeMath: subtraction overflow'
+						'overflow'
 					);
 				});
 			});
@@ -133,7 +133,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				it('the deposit should fail', async () => {
 					await assert.revert(
 						synthetixBridgeToOptimism.depositTo(randomAddress, amountToDeposit, { from: owner }),
-						'SafeMath: subtraction overflow'
+						'overflow'
 					);
 				});
 			});

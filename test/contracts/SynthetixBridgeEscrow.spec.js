@@ -35,7 +35,7 @@ contract('SynthetixBridgeEscrow (spec tests) @ovm-skip', accounts => {
 							synthetix.transferFrom(synthetixBridgeEscrow.address, user, amount, {
 								from: snxBridgeToOptimism,
 							}),
-							'SafeMath: subtraction overflow'
+							'overflow'
 						);
 					});
 				});

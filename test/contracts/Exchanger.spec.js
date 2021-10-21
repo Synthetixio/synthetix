@@ -1934,7 +1934,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							synthetix.exchange(sAUD, toUnit('1'), sUSD, {
 								from: account1,
 							}),
-							'SafeMath: subtraction overflow'
+							'overflow'
 						);
 					});
 
@@ -1943,7 +1943,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							synthetix.exchange(sUSD, toUnit('1001'), sAUD, {
 								from: account1,
 							}),
-							'SafeMath: subtraction overflow'
+							'overflow'
 						);
 					});
 

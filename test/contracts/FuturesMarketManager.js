@@ -295,7 +295,10 @@ contract('FuturesMarketManager', accounts => {
 			await market.burnSUSD(owner, toUnit('7'));
 
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
-			await assert.revert(market.burnSUSD(owner, toUnit('1')), 'SafeMath: subtraction overflow');
+			await assert.revert(
+				market.burnSUSD(owner, toUnit('1')),
+				'Arithmetic operation underflowed or overflowed'
+			);
 		});
 
 		it('burning respects settlement', async () => {
