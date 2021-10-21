@@ -114,7 +114,7 @@ contract FeePoolState is Owned, LimitedSetup {
      * @notice Pushes down the entire array of debt ratios per fee period
      */
     function issuanceDataIndexOrder(address account) private {
-        for (uint i = FEE_PERIOD_LENGTH - 2; i < FEE_PERIOD_LENGTH; i--) {
+        for (uint i = FEE_PERIOD_LENGTH - 2; i > 0; i--) {
             uint next = i + 1;
             accountIssuanceLedger[account][next].debtPercentage = accountIssuanceLedger[account][i].debtPercentage;
             accountIssuanceLedger[account][next].debtEntryIndex = accountIssuanceLedger[account][i].debtEntryIndex;
