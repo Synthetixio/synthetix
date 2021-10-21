@@ -210,6 +210,7 @@ contract Migration_${releaseName} is BaseMigration {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
 		${Object.entries(newContractsBeingAdded)
+			.filter(([, { name }]) => !/^Proxy/.test(name)) // ignore the check for proxies
 			.map(
 				([address, { name, source }]) =>
 					`require(ISynthetixNamedContract(${newContractVariableFunctor(

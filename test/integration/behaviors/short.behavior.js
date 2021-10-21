@@ -9,6 +9,7 @@ const { toBytes32 } = require('../../../index');
 const { getLoan, getShortInteractionDelay, setShortInteractionDelay } = require('../utils/loans');
 const { ensureBalance } = require('../utils/balances');
 const { exchangeSynths } = require('../utils/exchanging');
+const { updateCache } = require('../utils/rates');
 const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
@@ -141,6 +142,8 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 				describe('closing a loan', () => {
 					before('exchange synths', async () => {
+						await updateCache({ ctx });
+
 						await exchangeSynths({
 							ctx,
 							src: 'sUSD',

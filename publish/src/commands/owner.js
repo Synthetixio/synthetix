@@ -17,12 +17,13 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
+	assignGasOptions,
 } = require('../util');
 
 const SafeBatchSubmitter = require('../SafeBatchSubmitter');
 
 const DEFAULTS = {
-	gasPrice: '15',
+	priorityGasPrice: '1',
 	gasLimit: 2e5, // 200,000
 };
 
@@ -30,7 +31,8 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
 	yes,
@@ -112,7 +114,10 @@ const owner = async ({
 			)
 		);
 	} catch (err) {
-		if (!/Safe Proxy contract is not deployed in the current network/.test(err.message)) {
+		if (
+			!/Safe Proxy contract is not deployed in the current network/.test(err.message) &&
+			!/Safe contracts not found in the current network/.test(err.message)
+		) {
 			throw err;
 		}
 
@@ -137,7 +142,7 @@ const owner = async ({
 			}
 		}
 
-		console.log(gray(`Gas Price: ${gasPrice} gwei`));
+		console.log(gray(`Gas: base fee${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
 	}
 
 	const confirmOrEnd = async message => {
@@ -184,11 +189,16 @@ const owner = async ({
 		} else {
 			try {
 				await confirmOrEnd(yellow('Confirm: ') + `Submit ${bgYellow(black(key))} to (${target})`);
-				const params = {
-					to: target,
-					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-					data,
-				};
+				const params = await assignGasOptions({
+					tx: {
+						to: target,
+						data,
+					},
+					provider,
+					maxFeePerGas,
+					maxPriorityFeePerGas,
+				});
+
 				if (gasLimit) {
 					params.gasLimit = ethers.BigNumber.from(gasLimit);
 				}
@@ -245,11 +255,15 @@ const owner = async ({
 				try {
 					await confirmOrEnd(gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`));
 
-					const params = {
-						to: address,
-						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-						data: encodedData,
-					};
+					const params = await assignGasOptions({
+						tx: {
+							to: address,
+							data: encodedData,
+						},
+						provider,
+						maxFeePerGas,
+						maxPriorityFeePerGas,
+					});
 
 					if (gasLimit) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);
@@ -334,7 +348,8 @@ module.exports = {
 				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')

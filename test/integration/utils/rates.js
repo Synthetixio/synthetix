@@ -111,6 +111,10 @@ async function _updateCache({ ctx }) {
 	await tx.wait();
 }
 
+async function updateCache({ ctx }) {
+	await _updateCache({ ctx });
+}
+
 async function getRate({ ctx, symbol }) {
 	const { ExchangeRates } = ctx.contracts;
 
@@ -120,4 +124,5 @@ async function getRate({ ctx, symbol }) {
 module.exports = {
 	updateExchangeRatesIfNeeded,
 	getRate,
+	updateCache,
 };
