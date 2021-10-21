@@ -15,6 +15,7 @@ contract('FuturesMarketData', accounts => {
 		futuresMarketSettings,
 		futuresMarketData,
 		exchangeRates,
+		exchangeRatesCircuitBreaker,
 		oracle,
 		sUSD,
 		baseAsset;
@@ -26,6 +27,18 @@ contract('FuturesMarketData', accounts => {
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
 
+	async function setPrice(asset, price, resetCircuitBreaker = true) {
+		await exchangeRates.updateRates([asset], [price], await currentTime(), {
+			from: oracle,
+		});
+		// reset the last price to the new price, so that we don't trip the breaker
+		// on various tests that change prices beyond the allowed deviation
+		if (resetCircuitBreaker) {
+			// flag defaults to true because the circuit breaker is not tested in most tests
+			await exchangeRatesCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
+		}
+	}
+
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
@@ -34,10 +47,11 @@ contract('FuturesMarketData', accounts => {
 			FuturesMarketSettings: futuresMarketSettings,
 			FuturesMarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
+			ExchangeRatesCircuitBreaker: exchangeRatesCircuitBreaker,
 			SynthsUSD: sUSD,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD'],
+			synths: ['sUSD', 'sBTC', 'sETH', 'sLINK'],
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
@@ -46,6 +60,7 @@ contract('FuturesMarketData', accounts => {
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
+				'ExchangeRatesCircuitBreaker',
 				'SystemStatus',
 				'Synthetix',
 				'CollateralManager',
@@ -80,9 +95,7 @@ contract('FuturesMarketData', accounts => {
 			await addressResolver.rebuildCaches([market.address], { from: owner });
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
-			await exchangeRates.updateRates([toBytes32(key)], [toUnit(1000)], await currentTime(), {
-				from: oracle,
-			});
+			await setPrice(toBytes32(key), toUnit(1000));
 
 			// Now that the market exists we can set the all its parameters
 			await futuresMarketSettings.setParameters(
@@ -102,9 +115,7 @@ contract('FuturesMarketData', accounts => {
 		baseAsset = await futuresMarket.baseAsset();
 
 		// Update the rates to ensure they aren't stale
-		await exchangeRates.updateRates([baseAsset], [toUnit(100)], await currentTime(), {
-			from: oracle,
-		});
+		await setPrice(baseAsset, toUnit(100));
 
 		// Issue the traders some sUSD
 		await sUSD.issue(trader1, traderInitialBalance);
@@ -118,9 +129,7 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.transferMargin(toUnit('750'), { from: trader2 });
 		await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 });
 
-		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
-			from: oracle,
-		});
+		await setPrice(baseAsset, toUnit('100'));
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
 		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
 
@@ -128,9 +137,7 @@ contract('FuturesMarketData', accounts => {
 
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
 		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });
-		await exchangeRates.updateRates([newAsset], [toUnit('999')], await currentTime(), {
-			from: oracle,
-		});
+		await setPrice(newAsset, toUnit('999'));
 	});
 
 	it('Resolver is properly set', async () => {

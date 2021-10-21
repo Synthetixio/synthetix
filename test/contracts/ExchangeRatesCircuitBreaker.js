@@ -348,25 +348,34 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 						});
 					});
 
-					describe('the isSynthRateInvalid() view correctly returns status', () => {
+					describe('the rateWithInvalid() view correctly returns status', () => {
+						let res;
 						it('when called with a synth with only a single rate, returns false', async () => {
-							assert.equal(await cicruitBreaker.isSynthRateInvalid(sETH), false);
+							res = await cicruitBreaker.rateWithInvalid(sETH);
+							assert.bnEqual(res[0], toUnit(baseRate));
+							assert.equal(res[1], false);
 						});
 						it('when called with a synth with no rate (i.e. 0), returns true', async () => {
-							assert.equal(await cicruitBreaker.isSynthRateInvalid(toBytes32('XYZ')), true);
+							res = await cicruitBreaker.rateWithInvalid(toBytes32('XYZ'));
+							assert.bnEqual(res[0], 0);
+							assert.equal(res[1], true);
 						});
 						describe('when a synth rate changes outside of the range', () => {
 							updateRate({ target: sETH, rate: baseRate * 2 });
 
 							it('when called with that synth, returns true', async () => {
-								assert.equal(await cicruitBreaker.isSynthRateInvalid(sETH), true);
+								res = await cicruitBreaker.rateWithInvalid(sETH);
+								assert.bnEqual(res[0], toUnit(baseRate * 2));
+								assert.equal(res[1], true);
 							});
 
 							describe('when the synth rate changes back into the range', () => {
 								updateRate({ target: sETH, rate: baseRate });
 
 								it('then when called with the target, still returns true', async () => {
-									assert.equal(await cicruitBreaker.isSynthRateInvalid(sETH), true);
+									res = await cicruitBreaker.rateWithInvalid(sETH);
+									assert.bnEqual(res[0], toUnit(baseRate));
+									assert.equal(res[1], true);
 								});
 							});
 						});
@@ -380,7 +389,9 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 								updateRate({ target: sETH, rate: baseRate * 1.2 });
 
 								it('then when called with the target, returns false', async () => {
-									assert.equal(await cicruitBreaker.isSynthRateInvalid(sETH), false);
+									res = await cicruitBreaker.rateWithInvalid(sETH);
+									assert.bnEqual(res[0], toUnit(baseRate * 1.2));
+									assert.equal(res[1], false);
 								});
 							});
 						});
@@ -396,7 +407,9 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 								updateRate({ target: sETH, rate: baseRate * 1.2 });
 
 								it('then when called with the target, returns false', async () => {
-									assert.equal(await cicruitBreaker.isSynthRateInvalid(sETH), false);
+									res = await cicruitBreaker.rateWithInvalid(sETH);
+									assert.bnEqual(res[0], toUnit(baseRate * 1.2));
+									assert.equal(res[1], false);
 								});
 							});
 						});

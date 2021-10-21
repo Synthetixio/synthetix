@@ -1158,6 +1158,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													from: oracle,
 												});
 											});
+
 											it('then settlement rebateAmount shows a rebate of half the entire balance of sEUR', async () => {
 												const expected = calculateExpectedSettlementAmount({
 													amount: amountOfSrcExchanged,

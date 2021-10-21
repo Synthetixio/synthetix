@@ -321,7 +321,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
-        return exchangeRatesCircuitBreaker().isSynthRateInvalid(currencyKey);
+        (, bool invalid) = exchangeRatesCircuitBreaker().rateWithInvalid(currencyKey);
+        return invalid;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
