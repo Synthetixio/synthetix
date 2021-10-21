@@ -298,5 +298,33 @@ module.exports = async ({
 			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
 			comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
 		});
+		/* ========== Exchange Fees Related ========== */
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'getExchangeDynamicFeeThreshold',
+			expected: input => input !== '0', // only change if zero
+			write: 'setExchangeDynamicFeeThreshold',
+			writeArg: await getDeployParameter('DYNAMIC_FEE_THRESHOLD'),
+			comment: 'Set exchange dynamic fee threshold (SIP-184)',
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'getExchangeDynamicFeeWeightDecay',
+			expected: input => input !== '0', // only change if zero
+			write: 'setExchangeDynamicFeeWeightDecay',
+			writeArg: await getDeployParameter('DYNAMIC_FEE_WEIGHT_DECAY'),
+			comment: 'Set exchange dynamic fee weight decay (SIP-184)',
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'getExchangeDynamicFeeRounds',
+			expected: input => input !== '0', // only change if zero
+			write: 'setExchangeDynamicFeeRounds',
+			writeArg: await getDeployParameter('DYNAMIC_FEE_WEIGHT_DECAY'),
+			comment: 'Set exchange dynamic fee weight decay (SIP-184)',
+		});
 	}
 };

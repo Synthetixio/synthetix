@@ -4,23 +4,18 @@ pragma solidity ^0.5.16;
 import "../DynamicFee.sol";
 
 contract TestableDynamicFee {
-    function testThreshold() public pure returns (uint) {
-        return DynamicFee.threshold();
+    uint public threshold = 4 * 10**uint(SafeDecimalMath.decimals() - 3);
+    uint public weightDecay = 9 * 10**uint(SafeDecimalMath.decimals() - 1);
+
+    function testGetPriceDifferential(uint price, uint previousPrice) public view returns (uint) {
+        return DynamicFee.getPriceDifferential(price, previousPrice, threshold);
     }
 
-    function testWeightDecay() public pure returns (uint) {
-        return DynamicFee.weightDecay();
+    function testGetPriceWeight(uint round) public view returns (uint) {
+        return DynamicFee.getPriceWeight(round, weightDecay);
     }
 
-    function testGetPriceDifferential(uint price, uint previousPrice) public pure returns (uint) {
-        return DynamicFee.getPriceDifferential(price, previousPrice);
-    }
-
-    function testGetPriceWeight(uint round) public pure returns (uint) {
-        return DynamicFee.getPriceWeight(round);
-    }
-
-    function testGetDynamicFee(uint[] memory prices) public pure returns (uint) {
-        return DynamicFee.getDynamicFee(prices);
+    function testGetDynamicFee(uint[] memory prices) public view returns (uint) {
+        return DynamicFee.getDynamicFee(prices, threshold, weightDecay);
     }
 }

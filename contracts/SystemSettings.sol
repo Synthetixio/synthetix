@@ -271,6 +271,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit RateStalePeriodUpdated(period);
     }
 
+    /* ========== Exchange Fees Related ========== */
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
         external
         onlyOwner
@@ -285,6 +286,36 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             );
             emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
+    }
+
+    /// @notice Set exchange dynamic fee threshold constant default 40bps
+    /// @return uint threshold constant
+    function setExchangeDynamicFeeThreshold(uint threshold) external onlyOwner {
+        require(threshold != 0, "Threshold cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_THRESHOLD, threshold);
+
+        emit ExchangeDynamicFeeThresholdUpdated(threshold);
+    }
+
+    /// @notice Set exchange dynamic fee weight decay constant default 0.9
+    /// @return uint weight decay constant
+    function setExchangeDynamicFeeWeightDecay(uint weightDecay) external onlyOwner {
+        require(weightDecay != 0, "Weight decay cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_WEIGHT_DECAY, weightDecay);
+
+        emit ExchangeDynamicFeeWeightDecayUpdated(weightDecay);
+    }
+
+    /// @notice Set exchange dynamic fee last N rounds constant default to 10
+    /// @return uint dynamic fee last N rounds
+    function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
+        require(rounds != 0, "rounds cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_ROUNDS, rounds);
+
+        emit ExchangeDynamicFeeRoundsUpdated(rounds);
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
@@ -371,7 +402,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
+    /* ========== Exchange Fees Related ========== */
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event ExchangeDynamicFeeThresholdUpdated(uint dynamicFeeThreshold);
+    event ExchangeDynamicFeeWeightDecayUpdated(uint dynamicFeeWeightDecay);
+    event ExchangeDynamicFeeRoundsUpdated(uint dynamicFeeRounds);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);

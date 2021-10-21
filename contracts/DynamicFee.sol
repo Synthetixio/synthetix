@@ -9,48 +9,48 @@ library DynamicFee {
     using Math for uint;
     using SafeMath for uint;
 
-    /// @notice Get threshold constant default 0.4%
-    /// @return uint threshold constant
-    function threshold() public pure returns (uint) {
-        return 4 * 10**uint(SafeDecimalMath.decimals() - 3);
-    }
-
-    /// @notice Get weight decay constant default 0.9
-    /// @return uint weight decay constant
-    function weightDecay() public pure returns (uint) {
-        return 9 * 10**uint(SafeDecimalMath.decimals() - 1);
-    }
-
     /// @notice Calculate price differential
     /// @param price Current round price
     /// @param previousPrice Previous round price
+    /// @param threshold Threshold constant
     /// @return uint price differential
-    function getPriceDifferential(uint price, uint previousPrice) public pure returns (uint) {
+    function getPriceDifferential(
+        uint price,
+        uint previousPrice,
+        uint threshold
+    ) public pure returns (uint) {
         int(price.divideDecimal(previousPrice)) - 1;
 
         int abs = int(price.divideDecimal(previousPrice)) - int(SafeDecimalMath.unit());
         abs = abs > 0 ? abs : -abs;
-        int priceDifferential = abs - int(threshold());
+        int priceDifferential = abs - int(threshold);
         return priceDifferential > 0 ? uint(priceDifferential) : uint(0);
     }
 
     /// @notice Calculate Price Weight
     /// @param round A round number that go back from
     /// the current round from 0 to N
+    /// @param weightDecay Weight decay constant
     /// @return uint price weight
-    function getPriceWeight(uint round) public pure returns (uint) {
-        return weightDecay().powDecimal(round);
+    function getPriceWeight(uint round, uint weightDecay) public pure returns (uint) {
+        return weightDecay.powDecimal(round);
     }
 
     /// @notice Calculate dynamic fee based on preceding 10 price differential
     /// @param prices A list of prices from the current round to the previous rounds
+    /// @param threshold A threshold to determine the price differential
+    /// @param weightDecay A weight decay constant
     /// @return uint dynamic fee
-    function getDynamicFee(uint[] memory prices) public pure returns (uint dynamicFee) {
+    function getDynamicFee(
+        uint[] memory prices,
+        uint threshold,
+        uint weightDecay
+    ) public pure returns (uint dynamicFee) {
         uint size = prices.length;
         require(size >= 2, "Not enough prices");
         for (uint i = 0; i < size - 1; i++) {
-            uint priceDifferential = getPriceDifferential(prices[i], prices[i + 1]);
-            uint priceWeight = getPriceWeight(i);
+            uint priceDifferential = getPriceDifferential(prices[i], prices[i + 1], threshold);
+            uint priceWeight = getPriceWeight(i, weightDecay);
             dynamicFee = dynamicFee.add(priceDifferential.multiplyDecimal(priceWeight));
         }
     }

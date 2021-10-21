@@ -18,7 +18,11 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
+    /* ========== Exchange Fees Related ========== */
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
+    bytes32 internal constant SETTING_DYNAMIC_FEE_THRESHOLD = "dynamicFeeThreshold";
+    bytes32 internal constant SETTING_DYNAMIC_FEE_WEIGHT_DECAY = "dynamicFeeWeightDecay";
+    bytes32 internal constant SETTING_DYNAMIC_FEE_ROUNDS = "dynamicFeeRounds";
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
@@ -111,12 +115,31 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD);
     }
 
+    /* ========== Exchange Related Fees ========== */
     function getExchangeFeeRate(bytes32 currencyKey) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, currencyKey))
             );
+    }
+
+    /// @notice Get exchange dynamic fee threshold constant default 40bps
+    /// @return uint threshold constant
+    function getExchangeDynamicFeeThreshold() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_THRESHOLD);
+    }
+
+    /// @notice Get exchange dynamic fee weight decay constant default 0.9
+    /// @return uint weight decay constant
+    function getExchangeDynamicFeeWeightDecay() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_WEIGHT_DECAY);
+    }
+
+    /// @notice Get exchange dynamic fee rounds default to 10 rounds
+    /// @return uint last N round
+    function getExchangeDynamicFeeRounds() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_ROUNDS);
     }
 
     function getMinimumStakeTime() internal view returns (uint) {

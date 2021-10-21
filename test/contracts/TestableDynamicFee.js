@@ -9,19 +9,11 @@ contract('TestableDynamicFee', () => {
 	let testableDynamicFee;
 
 	before(async () => {
-		DynamicFee.link(await SafeDecimalMath.new());
+		const safeDecimalMath = await SafeDecimalMath.new();
+		DynamicFee.link(safeDecimalMath);
+		TestableDynamicFee.link(safeDecimalMath);
 		TestableDynamicFee.link(await DynamicFee.new());
 		testableDynamicFee = await TestableDynamicFee.new();
-	});
-
-	it('Can get threshold', async () => {
-		const threshold = await testableDynamicFee.testThreshold();
-		assert.bnEqual(threshold, toUnit('0.004'));
-	});
-
-	it('Can get weight decay', async () => {
-		const weightDecay = await testableDynamicFee.testWeightDecay();
-		assert.bnEqual(weightDecay, toUnit('0.9'));
 	});
 
 	it('Can get price differential', async () => {

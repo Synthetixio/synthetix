@@ -8,6 +8,7 @@ import "./interfaces/IExchanger.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
+import "./DynamicFee.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -715,6 +716,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return timestamp.add(_waitingPeriodSecs).sub(now);
     }
 
+    /* ========== Exchange Related Fees ========== */
+    /// @notice public function to get the fee for a given exchange
+    /// @param sourceCurrencyKey The source currency key
+    /// @param destinationCurrencyKey The destination currency key
+    /// @return The exchange fee rate
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         external
         view
@@ -723,6 +729,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
+    /// @notice Calculate the exchange fee for a given source and destination currency key
+    /// @param sourceCurrencyKey The source currency key
+    /// @param destinationCurrencyKey The destination currency key
+    /// @return The exchange fee rate
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         internal
         view
@@ -731,9 +741,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Get the exchange fee rate as per destination currencyKey
         exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
 
-        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
-            return exchangeFeeRate;
-        }
+        // Get the exchange dynamic fee rate as per destination currencyKey
+        uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
 
         // Is this a swing trade? long to short or short to long skipping sUSD.
         if (
@@ -742,9 +751,24 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         ) {
             // Double the exchange fee
             exchangeFeeRate = exchangeFeeRate.mul(2);
+
+            // Double the exchange dynamic fee
+            exchangeDynamicFeeRate = exchangeDynamicFeeRate.mul(2);
         }
 
-        return exchangeFeeRate;
+        return exchangeFeeRate.add(exchangeDynamicFeeRate);
+    }
+
+    /// @notice Get dynamic fee for a given currency key
+    /// @param currencyKey The given currency key
+    /// @return The dyanmic fee
+    function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {
+        uint threshold = getExchangeDynamicFeeThreshold();
+        uint weightDecay = getExchangeDynamicFeeWeightDecay();
+        uint rounds = getExchangeDynamicFeeRounds();
+        uint[] memory prices;
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds);
+        dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
     }
 
     function getAmountsForExchange(

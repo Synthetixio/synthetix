@@ -136,6 +136,9 @@ const defaults = {
 		crypto: w3utils.toWei('0.01'),
 		index: w3utils.toWei('0.01'),
 	},
+	DYNAMIC_FEE_THRESHOLD: w3utils.toWei('0.004'), // 40 bps
+	DYNAMIC_FEE_WEIGHT_DECAY: w3utils.toWei('0.9'), // dynamic fee weight decay for each round
+	DYNAMIC_FEE_ROUNDS: '10', // dynamic fee rounds
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
