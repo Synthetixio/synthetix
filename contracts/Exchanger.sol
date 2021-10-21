@@ -429,7 +429,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // SIP-65: Decentralized Circuit Breaker
-        // check both currencies unless they're sUSD, since its rate is never invalid (gas savings)
         if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
             return (0, 0, IVirtualSynth(0));
         }
@@ -519,9 +518,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         if (destinationCurrencyKey != sUSD) {
             // we're not skipping the suspension check if the circuit was broken already
-            // this is not terribly important, but is more consistent (results don't depend on which is source
-            // which is destination)
-            // circuitBroken is ORed last to prevent shortcircuiting the check and suspension
+            // this is not terribly important, but is more consistent (so that results don't
+            // depend on which synth is source and which is destination)
             bool destCircuitBroken;
             (, destCircuitBroken) = exchangeRatesCircuitBreaker().rateWithCircuitBroken(destinationCurrencyKey);
             circuitBroken = circuitBroken || destCircuitBroken;

@@ -60,8 +60,10 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     }
 
     // Returns rate and its "invalid" state.
-    // Checks if current rate is invalid or out of deviation dounds w.r.t. to previously stored rate
-    // or if there is no valid stored rate, w.r.t. to previous 3 oracle rates.
+    // Rate can be invalid either due to:
+    //  1. Returned as invalid from ExchangeRates - due to being stale, or flagged by oracle.
+    //  2, Out of deviation dounds w.r.t. to previously stored rate or if there is no
+    //  valid stored rate, w.r.t. to previous 3 oracle rates.
     function rateWithInvalid(bytes32 currencyKey) external view returns (uint, bool) {
         (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
         return (rate, invalid || _isRateOutOfBounds(currencyKey, rate));
@@ -96,7 +98,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     /* ========== Mutating ========== */
 
     /**
-     * Checks rate deviation from previous and its "invalid" oracle state.
+     * Checks rate deviation from previous and its "invalid" oracle state (stale rate, of flagged by oracle).
      * if it's valid and within deviation bounds, stores it and returns it and "false" (circuit not broken).
      * If rate is invalid or outside of deviation bounds - doesn't store it, suspends the the synth, and returns
      * last rate and "true" (circuit broken).
@@ -116,6 +118,9 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             // check and suspend
             if (invalid || _isRateOutOfBounds(currencyKey, rate)) {
                 // check synth exists, to prevent spamming settings for non existant synths
+                // gas savings: check here instead of every call, because synth existance is only
+                //  important if we want to suspend it, and most regular calls don't need to incur
+                //  the extra gas costs of another external call
                 require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
                 systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
                 circuitBroken = true;
