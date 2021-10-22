@@ -15,7 +15,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IVirtualSynth.sol";
 
-abstract contract BaseSynthetix is ExternStateToken, MixinResolver, ISynthetix {
+contract BaseSynthetix is ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
@@ -310,24 +310,42 @@ abstract contract BaseSynthetix is ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         address,
         bytes32
-    ) external virtual returns (uint amountReceived) {}
+    ) external virtual returns (uint amountReceived) {
+        _notImplemented();
+    }
 
     function exchangeWithVirtual(
         bytes32,
         uint,
         bytes32,
         bytes32
-    ) external virtual returns (uint, IVirtualSynth) {}
+    ) external virtual returns (uint, IVirtualSynth) {
+        _notImplemented();
+    }
 
-    function mint() external virtual returns (bool) {}
+    function mint() external virtual returns (bool) {
+        _notImplemented();
+    }
 
-    function liquidateDelinquentAccount(address, uint) external virtual returns (bool) {}
+    function liquidateDelinquentAccount(address, uint) external virtual returns (bool) {
+        _notImplemented();
+    }
 
-    function mintSecondary(address, uint) external virtual {}
+    function mintSecondary(address, uint) external virtual {
+        _notImplemented();
+    }
 
-    function mintSecondaryRewards(uint) external virtual {}
+    function mintSecondaryRewards(uint) external virtual {
+        _notImplemented();
+    }
 
-    function burnSecondary(address, uint) external virtual {}
+    function burnSecondary(address, uint) external virtual {
+        _notImplemented();
+    }
+
+    function _notImplemented() internal pure {
+        revert("Cannot be run on this layer");
+    }
 
     // ========== MODIFIERS ==========
 

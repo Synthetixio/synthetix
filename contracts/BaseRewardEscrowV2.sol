@@ -367,13 +367,17 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
-    function migrateVestingSchedule(address) external virtual {}
+    function migrateVestingSchedule(address) external virtual {
+        _notImplemented();
+    }
 
     function migrateAccountEscrowBalances(
         address[] calldata,
         uint256[] calldata,
         uint256[] calldata
-    ) external virtual {}
+    ) external virtual {
+        _notImplemented();
+    }
 
     /* ========== L2 MIGRATION ========== */
 
@@ -381,13 +385,17 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         external
         virtual
         returns (uint256, VestingEntries.VestingEntry[] memory)
-    {}
+    {
+        _notImplemented();
+    }
 
     function importVestingEntries(
         address,
         uint256,
         VestingEntries.VestingEntry[] calldata
-    ) external virtual {}
+    ) external virtual {
+        _notImplemented();
+    }
 
     /* ========== INTERNALS ========== */
 
