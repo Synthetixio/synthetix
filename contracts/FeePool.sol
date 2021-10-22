@@ -386,8 +386,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         uint feesPaid;
         // Start at the oldest period and record the amount, moving to newer periods
         // until we've exhausted the amount.
-        // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+        for (uint offset = FEE_PERIOD_LENGTH; offset > 0; offset--) {
+            uint i = offset - 1;
             uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed;
             uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
 
@@ -425,8 +425,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
         // Start at the oldest period and record the amount, moving to newer periods
         // until we've exhausted the amount.
-        // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+        for (uint offset = FEE_PERIOD_LENGTH; offset > 0; offset--) {
+            uint i = offset - 1;
             uint toDistribute =
                 _recentFeePeriodsStorage(i).rewardsToDistribute.sub(_recentFeePeriodsStorage(i).rewardsClaimed);
 
