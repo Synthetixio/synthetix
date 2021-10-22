@@ -49,8 +49,8 @@ module.exports = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
-			gas: 12e6,
-			blockGasLimit: 12e6,
+			gas: 15e6,
+			blockGasLimit: 15e6,
 			allowUnlimitedContractSize: true,
 			gasPrice: GAS_PRICE,
 			hardfork: 'london',
@@ -59,8 +59,8 @@ module.exports = {
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
-			gas: 12e6,
-			blockGasLimit: 12e6,
+			gas: 15e6,
+			blockGasLimit: 15e6,
 			url: 'http://localhost:8545',
 		},
 	},

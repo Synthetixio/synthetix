@@ -163,7 +163,7 @@ contract('SynthetixState', async accounts => {
 			await synthetixState.setAssociatedContract(account1, { from: owner });
 
 			// Nothing in the array, so we should revert on invalid opcode
-			await assert.invalidOpcode(synthetixState.lastDebtLedgerEntry());
+			await assert.revert(synthetixState.lastDebtLedgerEntry(), 'overflow');
 			await synthetixState.appendDebtLedgerValue(toUnit('0.1'), { from: account1 });
 			assert.bnEqual(await synthetixState.lastDebtLedgerEntry(), toUnit('0.1'));
 		});

@@ -1081,7 +1081,7 @@ contract('Exchange Rates', async accounts => {
 			assert.equal(false, await instance.rateIsFrozen(sEUR));
 		});
 		it('and list of invertedKeys is empty', async () => {
-			await assert.invalidOpcode(instance.invertedKeys(0));
+			await assert.revert(instance.invertedKeys(0), 'without a reason string');
 		});
 		describe('when attempting to add inverse synths', () => {
 			it('ensure only the owner can invoke', async () => {
@@ -1399,7 +1399,7 @@ contract('Exchange Rates', async accounts => {
 			it('and the list of invertedKeys lists them both', async () => {
 				assert.equal('iBTC', bytesToString(await instance.invertedKeys(0)));
 				assert.equal('iETH', bytesToString(await instance.invertedKeys(1)));
-				await assert.invalidOpcode(instance.invertedKeys(2));
+				await assert.revert(instance.invertedKeys(2), 'without a reason string');
 			});
 			it('rateIsFrozen must be false for both', async () => {
 				assert.equal(false, await instance.rateIsFrozen(iBTC));
@@ -1701,7 +1701,7 @@ contract('Exchange Rates', async accounts => {
 						it('and the list of invertedKeys still lists them both', async () => {
 							assert.equal('iBTC', bytesToString(await instance.invertedKeys(0)));
 							assert.equal('iETH', bytesToString(await instance.invertedKeys(1)));
-							await assert.invalidOpcode(instance.invertedKeys(2));
+							await assert.revert(instance.invertedKeys(2), 'without a reason string');
 						});
 
 						describe('when a price is received within bounds', () => {
@@ -1839,7 +1839,7 @@ contract('Exchange Rates', async accounts => {
 					});
 					it('and the list of invertedKeys contains only iETH', async () => {
 						assert.equal('iETH', bytesToString(await instance.invertedKeys(0)));
-						await assert.invalidOpcode(instance.invertedKeys(1));
+						await assert.revert(instance.invertedKeys(1), 'without a reason string');
 					});
 
 					it('and inversePricing for iBTC returns an empty struct', async () => {
@@ -1900,7 +1900,7 @@ contract('Exchange Rates', async accounts => {
 
 			describe('when a user queries the first entry in aggregatorKeys', () => {
 				it('then it is empty', async () => {
-					await assert.invalidOpcode(instance.aggregatorKeys(0));
+					await assert.revert(instance.aggregatorKeys(0), 'without a reason string');
 				});
 			});
 
@@ -1938,7 +1938,7 @@ contract('Exchange Rates', async accounts => {
 
 				it('then the list of aggregatorKeys lists it', async () => {
 					assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
-					await assert.invalidOpcode(instance.aggregatorKeys(1));
+					await assert.revert(instance.aggregatorKeys(1), 'without a reason string');
 				});
 
 				it('and the AggregatorAdded event is emitted', () => {
@@ -1997,7 +1997,7 @@ contract('Exchange Rates', async accounts => {
 					it('then the list of aggregatorKeys lists it also', async () => {
 						assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
 						assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(1)));
-						await assert.invalidOpcode(instance.aggregatorKeys(2));
+						await assert.revert(instance.aggregatorKeys(2), 'without a reason string');
 					});
 
 					it('and the AggregatorAdded event is emitted', () => {
@@ -2181,7 +2181,7 @@ contract('Exchange Rates', async accounts => {
 								describe('when a user queries the aggregatorKeys', () => {
 									it('then only sXTZ is left', async () => {
 										assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
-										await assert.invalidOpcode(instance.aggregatorKeys(1));
+										await assert.revert(instance.aggregatorKeys(1), 'without a reason string');
 									});
 								});
 								describe('when the ratesAndInvalidForCurrencies is queried', () => {
@@ -2452,7 +2452,7 @@ contract('Exchange Rates', async accounts => {
 							});
 							describe('when a user queries the first entry in aggregatorKeys', () => {
 								it('then they are empty', async () => {
-									await assert.invalidOpcode(instance.aggregatorKeys(0));
+									await assert.revert(instance.aggregatorKeys(0), 'without a reason string');
 								});
 							});
 							describe('when the price is inspected for sJPY', () => {
