@@ -18,6 +18,9 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
+		DYNAMIC_FEE_THRESHOLD,
+		DYNAMIC_FEE_WEIGHT_DECAY,
+		DYNAMIC_FEE_ROUNDS,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
@@ -121,7 +124,13 @@ const setupContract = async ({
 
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
-		await artifact.link(await artifacts.require('SafeDecimalMath').new());
+		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		await artifact.link(safeDecimalMath);
+		if (contract === 'Exchanger') {
+			const DynamicFee = artifacts.require('DynamicFee');
+			DynamicFee.link(safeDecimalMath);
+			await artifact.link(await DynamicFee.new());
+		}
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -1013,6 +1022,13 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(DYNAMIC_FEE_THRESHOLD, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(DYNAMIC_FEE_WEIGHT_DECAY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(DYNAMIC_FEE_ROUNDS, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,

@@ -4,7 +4,10 @@ const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
 const { setExchangeFeeRateForSynths, getDecodedLogs, decodedEventEqual } = require('./helpers');
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
+} = require('../..');
 
 /*
  * This tests the TradingRewards contract's integration
@@ -103,9 +106,11 @@ contract('TradingRewards', accounts => {
 			const oracle = account1;
 			const timestamp = await currentTime();
 
-			await exchangeRates.updateRates([sETH, sBTC], Object.values(rates), timestamp, {
-				from: oracle,
-			});
+			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+				await exchangeRates.updateRates([sETH, sBTC], Object.values(rates), timestamp, {
+					from: oracle,
+				});
+			}
 
 			await setExchangeFeeRateForSynths({
 				owner,

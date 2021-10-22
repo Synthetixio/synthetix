@@ -19,6 +19,8 @@ library DynamicFee {
         uint previousPrice,
         uint threshold
     ) public pure returns (uint) {
+        require(price > 0, "Price cannot be 0");
+        require(previousPrice > 0, "Previous price cannot be 0");
         int(price.divideDecimal(previousPrice)) - 1;
 
         int abs = int(price.divideDecimal(previousPrice)) - int(SafeDecimalMath.unit());
