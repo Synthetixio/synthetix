@@ -15,8 +15,6 @@ import "./interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
-    bytes32 public constant CONTRACT_NAME = "Synth";
-
     /* ========== STATE VARIABLES ========== */
 
     // Currency key which identifies this Synth to the Synthetix system
@@ -184,6 +182,10 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     /* ========== VIEWS ========== */
+    // solhint-disable func-name-mixedcase
+    function CONTRACT_NAME() external pure returns (bytes32) {
+        return "Synth";
+    }
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -239,7 +241,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         uint value
     ) internal returns (bool) {
         // Skip allowance update in case of infinite allowance
-        if (tokenState.allowance(from, messageSender) != uint(-1)) {
+        if (tokenState.allowance(from, messageSender) != type(uint).max) {
             // Reduce the allowance by the amount we're transferring.
             // The safeSub call will handle an insufficient allowance.
             tokenState.setAllowance(from, messageSender, tokenState.allowance(from, messageSender).sub(value));

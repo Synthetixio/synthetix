@@ -114,7 +114,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
         for (uint i = index; i < distributions.length - 1; i++) {
             distributions[i] = distributions[i + 1];
         }
-        distributions.length--;
+        distributions.pop();
 
         // Since this function must shift all later entries down to fill the
         // gap from the one it removed, it could in principle consume an

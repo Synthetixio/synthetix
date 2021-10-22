@@ -21,7 +21,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    IERC20 public synth;
+    ISynth public synth;
     IAddressResolver public resolver;
 
     bool public settled = false;
@@ -39,7 +39,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     bool public initialized = false;
 
     function initialize(
-        IERC20 _synth,
+        ISynth _synth,
         IAddressResolver _resolver,
         address _recipient,
         uint _amount,

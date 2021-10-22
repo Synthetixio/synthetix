@@ -75,8 +75,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint timestamp;
     }
 
-    bytes32 public constant CONTRACT_NAME = "Exchanger";
-
     bytes32 private constant sUSD = "sUSD";
 
     // SIP-65: Decentralized circuit breaker
@@ -113,6 +111,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
         addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    // solhint-disable func-name-mixedcase
+    function CONTRACT_NAME() external pure returns (bytes32) {
+        return "Exchanger";
     }
 
     function systemStatus() internal view returns (ISystemStatus) {

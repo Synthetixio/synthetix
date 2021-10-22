@@ -484,7 +484,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
                 availableSynths[i] = availableSynths[availableSynths.length - 1];
 
                 // Decrease the size of the array by one.
-                availableSynths.length--;
+                availableSynths.pop();
 
                 break;
             }

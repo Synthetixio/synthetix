@@ -9,8 +9,6 @@ import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
-    bytes32 public constant CONTRACT_NAME = "MultiCollateralSynth";
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
@@ -30,6 +28,11 @@ contract MultiCollateralSynth is Synth {
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
 
     /* ========== VIEWS ======================= */
+
+    // solhint-disable func-name-mixedcase
+    function CONTRACT_NAME() external pure returns (bytes32) {
+        return "MultiCollateralSynth";
+    }
 
     function collateralManager() internal view returns (ICollateralManager) {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
