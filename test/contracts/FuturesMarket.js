@@ -838,7 +838,7 @@ contract('FuturesMarket', accounts => {
 				const preBalance = await sUSD.balanceOf(trader);
 				await assert.revert(
 					futuresMarket.transferMargin(preBalance.add(toUnit('1')), { from: trader }),
-					'subtraction overflow'
+					'overflow'
 				);
 			});
 
