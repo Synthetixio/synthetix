@@ -105,7 +105,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
      * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
      */
-    function rateWithCircuitBroken(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken) {
+    function rateWithBreakCircuit(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken) {
         // check system status
         if (systemStatus().systemSuspended()) {
             // if system is inactive this call has no effect, but will neither revert,

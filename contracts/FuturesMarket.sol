@@ -915,7 +915,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
-        (uint price, bool circuitBroken) = _exchangeRatesCircuitBreaker().rateWithCircuitBroken(baseAsset);
+        (uint price, bool circuitBroken) = _exchangeRatesCircuitBreaker().rateWithBreakCircuit(baseAsset);
         // revert if price is invalid or circuit was broken
         _revertIfError(circuitBroken, Status.InvalidPrice);
         return price;

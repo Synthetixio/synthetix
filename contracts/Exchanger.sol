@@ -513,7 +513,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         // check both currencies unless they're sUSD, since its rate is never invalid (gas savings)
         if (sourceCurrencyKey != sUSD) {
-            (, circuitBroken) = exchangeRatesCircuitBreaker().rateWithCircuitBroken(sourceCurrencyKey);
+            (, circuitBroken) = exchangeRatesCircuitBreaker().rateWithBreakCircuit(sourceCurrencyKey);
         }
 
         if (destinationCurrencyKey != sUSD) {
@@ -521,7 +521,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // this is not terribly important, but is more consistent (so that results don't
             // depend on which synth is source and which is destination)
             bool destCircuitBroken;
-            (, destCircuitBroken) = exchangeRatesCircuitBreaker().rateWithCircuitBroken(destinationCurrencyKey);
+            (, destCircuitBroken) = exchangeRatesCircuitBreaker().rateWithBreakCircuit(destinationCurrencyKey);
             circuitBroken = circuitBroken || destCircuitBroken;
         }
     }
@@ -575,7 +575,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
         // SIP-65: Decentralized Circuit Breaker
-        (, bool circuitBroken) = exchangeRatesCircuitBreaker().rateWithCircuitBroken(currencyKey);
+        (, bool circuitBroken) = exchangeRatesCircuitBreaker().rateWithBreakCircuit(currencyKey);
         require(circuitBroken, "Synth price is valid");
     }
 

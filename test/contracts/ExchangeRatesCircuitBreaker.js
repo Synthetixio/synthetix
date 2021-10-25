@@ -415,20 +415,20 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 						});
 					});
 
-					describe('suspension invoked by anyone via rateWithCircuitBroken()', () => {
+					describe('suspension invoked by anyone via rateWithBreakCircuit()', () => {
 						// sTRX relies on the fact that sTRX is a valid synth but never given a rate in the setup code
 						// above
 						const synthWithNoRate = toBytes32('sTRX');
 						it('when called with invalid synth, then reverts', async () => {
 							await assert.revert(
-								cicruitBreaker.rateWithCircuitBroken(toBytes32('XYZ')),
+								cicruitBreaker.rateWithBreakCircuit(toBytes32('XYZ')),
 								'No such synth'
 							);
 						});
 						describe('when called with a synth with no price', () => {
 							let logs;
 							beforeEach(async () => {
-								const { tx: hash } = await cicruitBreaker.rateWithCircuitBroken(synthWithNoRate);
+								const { tx: hash } = await cicruitBreaker.rateWithBreakCircuit(synthWithNoRate);
 								logs = await getDecodedLogs({
 									hash,
 									contracts: [synthetix, exchanger, systemStatus],
@@ -447,7 +447,7 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 								await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 							});
 							it('then suspending a synth has no effect', async () => {
-								await cicruitBreaker.rateWithCircuitBroken(synthWithNoRate);
+								await cicruitBreaker.rateWithBreakCircuit(synthWithNoRate);
 								// did not suspend it
 								const status = await systemStatus.synthSuspension(synthWithNoRate);
 								assert.isFalse(status[0]);
@@ -460,7 +460,7 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 									await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 								});
 								it('then suspension works as expected', async () => {
-									await cicruitBreaker.rateWithCircuitBroken(synthWithNoRate);
+									await cicruitBreaker.rateWithBreakCircuit(synthWithNoRate);
 									const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
 									assert.ok(suspended);
 									assert.equal(reason, '65');

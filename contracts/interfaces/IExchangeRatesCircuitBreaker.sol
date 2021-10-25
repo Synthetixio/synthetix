@@ -18,5 +18,5 @@ interface IExchangeRatesCircuitBreaker {
 
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
 
-    function rateWithCircuitBroken(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken);
+    function rateWithBreakCircuit(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken);
 }
