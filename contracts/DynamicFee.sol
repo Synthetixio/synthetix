@@ -9,11 +9,14 @@ library DynamicFee {
     using Math for uint;
     using SafeMath for uint;
 
-    /// @notice Calculate price differential
+    /// @notice Calculate price differential -
+    /// The difference between the current price and the previous price
     /// @param price Current round price
     /// @param previousPrice Previous round price
-    /// @param threshold Threshold constant
-    /// @return uint price differential
+    /// @param threshold Threshold constant -
+    /// A system constant for the price differential default to 40 bps
+    /// @return uint price differential with 18 decimals
+    /// only return if non-zero value, otherwise return 0
     function getPriceDifferential(
         uint price,
         uint previousPrice,
@@ -21,7 +24,6 @@ library DynamicFee {
     ) public pure returns (uint) {
         require(price > 0, "Price cannot be 0");
         require(previousPrice > 0, "Previous price cannot be 0");
-        int(price.divideDecimal(previousPrice)) - 1;
 
         int abs = int(price.divideDecimal(previousPrice)) - int(SafeDecimalMath.unit());
         abs = abs > 0 ? abs : -abs;

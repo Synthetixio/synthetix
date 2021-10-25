@@ -759,7 +759,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return exchangeFeeRate.add(exchangeDynamicFeeRate);
     }
 
-    /// @notice Get dynamic fee for a given currency key
+    /// @notice Get dynamic fee for a given currency key (SIP-184)
     /// @param currencyKey The given currency key
     /// @return The dyanmic fee
     function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {

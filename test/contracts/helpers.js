@@ -6,7 +6,10 @@ const { smockit } = require('@eth-optimism/smock');
 const { assert } = require('./common');
 
 const { currentTime, toUnit } = require('../utils')();
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
+} = require('../..');
 
 module.exports = {
 	/**
@@ -93,14 +96,16 @@ module.exports = {
 			'ETH',
 		].map(toBytes32);
 
-		await exchangeRates.updateRates(
-			[SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH],
-			['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			await exchangeRates.updateRates(
+				[SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH],
+				['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit),
+				timestamp,
+				{
+					from: oracle,
+				}
+			);
+		}
 
 		await debtCache.takeDebtSnapshot();
 	},
