@@ -12,7 +12,7 @@ import "./SignedSafeMath.sol";
 import "./SignedSafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IExchangeRatesCircuitBreaker.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
@@ -137,7 +137,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeRatesCircuitBreaker";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -175,15 +175,19 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_EXRATES;
+        newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[2] = CONTRACT_FUTURESMARKETSETTINGS;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    function _exchangeRatesCircuitBreaker() internal view returns (IExchangeRatesCircuitBreaker) {
+        return IExchangeRatesCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    }
+
+    function _systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -200,30 +204,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /* ---------- Market Details ---------- */
 
-    function _assetPrice(IExchangeRates exchangeRates) internal view returns (uint price, bool invalid) {
-        (uint _price, bool _invalid) = exchangeRates.rateAndInvalid(baseAsset);
+    function _assetPrice() internal view returns (uint price, bool invalid) {
+        (uint price, bool invalid) = _exchangeRatesCircuitBreaker().rateWithInvalid(baseAsset);
         // Ensure we catch uninitialised rates or suspended state / synth
-        _invalid = _invalid || _price == 0 || systemStatus().synthSuspended(baseAsset);
-        return (_price, _invalid);
-    }
-
-    /*
-     * The current base price, reverting if it is invalid, or if system or synth is suspended.
-     */
-    function _assetPriceRequireChecks() internal view returns (uint) {
-        // check that synth is active, and wasn't suspended, revert with appropriate message
-        systemStatus().requireSynthActive(baseAsset);
-        // check if price is invalid
-        (uint price, bool invalid) = _assetPrice(_exchangeRates());
-        _revertIfError(invalid, Status.InvalidPrice);
-        return price;
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
+        return (price, invalid);
     }
 
     /*
      * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
      */
     function assetPrice() external view returns (uint price, bool invalid) {
-        return _assetPrice(_exchangeRates());
+        return _assetPrice();
     }
 
     function _marketSizes() internal view returns (uint long, uint short) {
@@ -260,7 +252,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             bool invalid
         )
     {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         (uint longSize, uint shortSize) = _maxOrderSizes(price);
         return (longSize, shortSize, isInvalid);
     }
@@ -279,7 +271,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The total market debt is equivalent to the sum of remaining margins in all open positions.
      */
     function marketDebt() external view returns (uint debt, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_marketDebt(price), isInvalid);
     }
 
@@ -349,7 +341,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * been persisted in the funding sequence.
      */
     function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_unrecordedFunding(price), isInvalid);
     }
 
@@ -390,7 +382,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * If endIndex is equal to the funding sequence length, then unrecorded funding will be included.
      */
     function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_netFundingPerUnit(startIndex, endIndex, fundingSequence.length, price), isInvalid);
     }
 
@@ -450,7 +442,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The notional value of a position is its size multiplied by the current price. Margin and leverage are ignored.
      */
     function notionalValue(address account) external view returns (int value, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_notionalValue(positions[account], price), isInvalid);
     }
 
@@ -463,7 +455,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The PnL of a position is the change in its notional value. Funding is not taken into account.
      */
     function profitLoss(address account) external view returns (int pnl, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_profitLoss(positions[account], price), isInvalid);
     }
 
@@ -484,7 +476,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The funding accrued in a position since it was opened; this does not include PnL.
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_accruedFunding(positions[account], fundingSequence.length, price), isInvalid);
     }
 
@@ -540,7 +532,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The initial margin plus profit and funding; returns zero balance if losses exceed the initial margin.
      */
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
@@ -578,7 +570,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * true value slightly.
      */
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
@@ -639,7 +631,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * can be omitted by passing false to includeFunding.
      */
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
-        (uint aPrice, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint aPrice, bool isInvalid) = _assetPrice();
         return (_liquidationPrice(positions[account], includeFunding, fundingSequence.length, aPrice), isInvalid);
     }
 
@@ -661,7 +653,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * True if and only if a position is ready to be liquidated.
      */
     function canLiquidate(address account) external view returns (bool) {
-        (uint price, bool invalid) = _assetPrice(_exchangeRates());
+        (uint price, bool invalid) = _assetPrice();
         return !invalid && _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length, price);
     }
 
@@ -682,7 +674,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Equivalent to the position's notional value divided by its remaining margin.
      */
     function currentLeverage(address account) external view returns (int leverage, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         Position storage position = positions[account];
         uint remainingMargin_ = _remainingMargin(position, fundingSequence.length, price);
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
@@ -746,7 +738,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * expensive than ones that decrease it; closing positions implies a different fee rate.
      */
     function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint price, bool isInvalid) = _assetPrice();
         int positionSize = positions[account].size;
         return (_orderFee(positionSize.add(sizeDelta), positionSize, price), isInvalid);
     }
@@ -835,7 +827,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         )
     {
         bool invalid;
-        (price, invalid) = _assetPrice(_exchangeRates());
+        (price, invalid) = _assetPrice();
         if (invalid) {
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
         }
@@ -914,6 +906,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Market Operations ---------- */
+
+    /*
+     * The current base price, reverting if it is invalid, or if system or synth is suspended.
+     * This is mutative because the circuit breaker stores the last price on every invocation.
+     */
+    function _assetPriceRequireChecks() internal returns (uint) {
+        // check that synth is active, and wasn't suspended, revert with appropriate message
+        _systemStatus().requireSynthActive(baseAsset);
+        // check if circuit breaker if price is within deviation tolerance and system & synth is active
+        (uint price, bool circuitBroken) = _exchangeRatesCircuitBreaker().rateWithBreakCircuit(baseAsset);
+        // revert if price is invalid or circuit was broken
+        _revertIfError(circuitBroken, Status.InvalidPrice);
+        return price;
+    }
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLength = fundingSequence.length;

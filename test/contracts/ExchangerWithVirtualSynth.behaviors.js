@@ -20,6 +20,7 @@ module.exports = function({ accounts }) {
 				'DebtCache',
 				'DelegateApprovals',
 				'ExchangeRates',
+				'ExchangeRatesCircuitBreaker',
 				'ExchangeState',
 				'FeePool',
 				'FlexibleStorage',
