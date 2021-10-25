@@ -4,6 +4,7 @@ const { contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const {
 	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
 	constants: { ZERO_BYTES32 },
 } = require('../..');
 const { toUnit, currentTime } = require('../utils')();
@@ -51,9 +52,11 @@ contract('SynthUtil', accounts => {
 
 	beforeEach(async () => {
 		timestamp = await currentTime();
-		await exchangeRates.updateRates([sBTC, iBTC], ['5000', '5000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			await exchangeRates.updateRates([sBTC, iBTC], ['5000', '5000'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		}
 		await debtCache.takeDebtSnapshot();
 
 		// set a 0% default exchange fee rate for test purpose

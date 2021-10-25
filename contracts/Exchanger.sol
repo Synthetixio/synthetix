@@ -763,6 +763,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param currencyKey The given currency key
     /// @return The dyanmic fee
     function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {
+        // No dynamic fee for sUSD
+        if (currencyKey == sUSD) {
+            return 0;
+        }
         uint threshold = getExchangeDynamicFeeThreshold();
         uint weightDecay = getExchangeDynamicFeeWeightDecay();
         uint rounds = getExchangeDynamicFeeRounds();
