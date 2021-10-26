@@ -437,6 +437,9 @@
 	"EtherWrapper": {
 		"deploy": true
 	},
+	"NativeEtherWrapper": {
+		"deploy": true
+	},
 	"WrapperFactory": {
 		"deploy": true
 	},

@@ -326,13 +326,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
         emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }

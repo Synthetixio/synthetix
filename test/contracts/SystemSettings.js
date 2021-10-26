@@ -77,7 +77,6 @@ contract('SystemSettings', async accounts => {
 				'setWrapperMaxTokenAmount',
 				'setWrapperMintFeeRate',
 				'setWrapperBurnFeeRate',
-				'setWrapperSettings',
 				'setMinCratio',
 				'setCollateralManager',
 				'setInteractionDelay',
@@ -945,11 +944,11 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_MINT_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_MINT_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_WRAPPER_MINT_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_MINT_FEE_RATE()).add(ONE);
 			await assert.revert(
 				systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE'
+				'rate > MAX_WRAPPER_MINT_FEE_RATE'
 			);
 		});
 
@@ -980,11 +979,11 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_BURN_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_BURN_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_WRAPPER_BURN_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_BURN_FEE_RATE()).add(ONE);
 			await assert.revert(
 				systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE'
+				'rate > MAX_WRAPPER_BURN_FEE_RATE'
 			);
 		});
 
@@ -1143,42 +1142,6 @@ contract('SystemSettings', async accounts => {
 			});
 			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
 				assert.eventEqual(txn, 'WrapperBurnFeeRateUpdated', [testWrapperAddress, newValue]);
-			});
-		});
-	});
-
-	describe('setWrapperSettings()', () => {
-		it('can only be invoked by owner', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setWrapperSettings,
-				args: [testWrapperAddress, 1, 1, 1],
-				address: owner,
-				accounts,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		describe('when successfully invoked', () => {
-			const newValue = toUnit('0.1');
-			beforeEach(async () => {
-				await systemSettings.setWrapperSettings(
-					testWrapperAddress,
-					newValue,
-					newValue.muln(2),
-					newValue.muln(3),
-					{ from: owner }
-				);
-			});
-			it('then it changes all values as expected', async () => {
-				assert.bnEqual(await systemSettings.wrapperMaxTokenAmount(testWrapperAddress), newValue);
-				assert.bnEqual(
-					await systemSettings.wrapperMintFeeRate(testWrapperAddress),
-					newValue.muln(2)
-				);
-				assert.bnEqual(
-					await systemSettings.wrapperBurnFeeRate(testWrapperAddress),
-					newValue.muln(3)
-				);
 			});
 		});
 	});
