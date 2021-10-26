@@ -337,7 +337,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
-    function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwnerOrSelf {
+    function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper)),
@@ -346,7 +346,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
-    function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwnerOrSelf {
+    function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
         require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
         require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
         
@@ -364,7 +364,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
-    function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwnerOrSelf {
+    function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
         require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
         require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
         
@@ -380,23 +380,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _rate
         );
         emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
-    }
-
-    // Convenience function for setting all wrapper settings at once
-    function setWrapperSettings(
-        address _wrapper,
-        uint _maxTokenAmount,
-        int _mintFeeRate,
-        int _burnFeeRate
-    ) external onlyOwner {
-        this.setWrapperMaxTokenAmount(_wrapper, _maxTokenAmount);
-        this.setWrapperMintFeeRate(_wrapper, _mintFeeRate);
-        this.setWrapperBurnFeeRate(_wrapper, _burnFeeRate);
-    }
-
-    modifier onlyOwnerOrSelf {
-        require(msg.sender == owner || msg.sender == address(this), "Only the contract owner may perform this action");
-        _;
     }
 
     function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
