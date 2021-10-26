@@ -354,6 +354,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
         require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
+        
+        // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperBurnFeeRate(_wrapper), "-rate > wrapperBurnFeeRate");
+        }
+
         flexibleStorage().setIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
@@ -365,6 +372,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
         require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
+        
+        // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperMintFeeRate(_wrapper), "-rate > wrapperMintFeeRate");
+        }
+
         flexibleStorage().setIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),

@@ -11,6 +11,7 @@ import "./interfaces/IERC20.sol";
 import "./Pausable.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IDebtCache.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
@@ -31,6 +32,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     bytes32 private constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_WRAPPERFACTORY = "WrapperFactory";
 
     // ========== STATE VARIABLES ==========
@@ -58,12 +60,13 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_SYNTH_SUSD;
         newAddresses[1] = synthContractName;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_DEBTCACHE;
-        newAddresses[4] = CONTRACT_WRAPPERFACTORY;
+        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[5] = CONTRACT_WRAPPERFACTORY;
         addresses = combineArrays(existingAddresses, newAddresses);
         return addresses;
     }
@@ -83,6 +86,10 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     function debtCache() internal view returns (IDebtCache) {
         return IDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -148,7 +155,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     // Transfers `amountIn` token to mint `amountIn - fees` of currencyKey.
     // `amountIn` is inclusive of fees, calculable via `calculateMintFee`.
-    function mint(uint amountIn) external notPaused {
+    function mint(uint amountIn) external notPaused issuanceActive {
         require(amountIn <= token.allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amountIn <= token.balanceOf(msg.sender), "Balance is too low");
         require(!exchangeRates().rateIsInvalid(currencyKey), "Currency rate is invalid");
@@ -162,7 +169,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         uint mintAmount = negative ? actualAmountIn.add(feeAmountTarget) : actualAmountIn.sub(feeAmountTarget);
 
         // Transfer token from user.
-        bool success = token.transferFrom(msg.sender, address(this), actualAmountIn);
+        bool success = _safeTransferFrom(address(token), msg.sender, address(this), actualAmountIn);
         require(success, "Transfer did not succeed");
 
         // Mint tokens to user
@@ -173,7 +180,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     // Burns `amountIn` synth for `amountIn - fees` amount of token.
     // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
-    function burn(uint amountIn) external notPaused {
+    function burn(uint amountIn) external notPaused issuanceActive {
         require(amountIn <= IERC20(address(synth())).balanceOf(msg.sender), "Balance is too low");
         require(!exchangeRates().rateIsInvalid(currencyKey), "Currency rate is invalid");
         require(totalIssuedSynths() > 0, "Contract cannot burn for token, token balance is zero");
@@ -190,7 +197,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
                 uint(int(SafeDecimalMath.unit()) - burnFeeRate())
             );
         } else {
-            burnAmount = targetSynthIssued < amountIn ? targetSynthIssued.add(burnFee) : amountIn;
+            burnAmount = targetSynthIssued.add(burnFee) < amountIn ? targetSynthIssued.add(burnFee) : amountIn;
             amountOut = burnAmount.divideDecimal(
                 // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
                 uint(int(SafeDecimalMath.unit()) + burnFeeRate())
@@ -200,7 +207,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         uint feeAmountTarget = negative ? 0 : burnAmount.sub(amountOut);
 
         // Transfer token to user.
-        bool success = token.transfer(msg.sender, amountOut);
+        bool success = _safeTransferFrom(address(token), address(this), msg.sender, amountOut);
         require(success, "Transfer did not succeed");
 
         // Burn
@@ -230,7 +237,9 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         synth().issue(msg.sender, amount);
 
         // Escrow fee.
-        synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
+        if (excessAmountUsd > 0) {
+            synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
+        }
 
         // in the case of a negative fee extra synths will be issued, billed to the snx stakers
         _setTargetSynthIssued(reserves);
@@ -250,7 +259,9 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // We use burn/issue instead of burning the principal and transferring the fee.
         // This saves an approval and is cheaper.
         // Escrow fee.
-        synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
+        if (excessAmountUsd > 0) {
+            synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
+        }
 
         // in the case of a negative fee fewer synths will be burned, billed to the snx stakers
         _setTargetSynthIssued(reserves);
@@ -260,6 +271,41 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         debtCache().recordExcludedDebtChange(currencyKey, int256(_targetSynthIssued) - int256(targetSynthIssued));
 
         targetSynthIssued = _targetSynthIssued;
+    }
+
+    function _safeTransferFrom(address _tokenAddress, address _from, address _to, uint256 _value) internal returns (bool success) {
+        // note: both of these could be replaced with manual mstore's to reduce cost if desired
+        bytes memory msgData = abi.encodeWithSignature("transferFrom(address,address,uint256)", _from, _to, _value);
+        uint msgSize = msgData.length;
+
+        assembly {
+            // pre-set scratch space to all bits set
+            mstore(0x00, 0xff)
+
+            // note: this requires tangerine whistle compatible EVM
+            if iszero(call(gas(), _tokenAddress, 0, add(msgData, 0x20), msgSize, 0x00, 0x20)) { revert(0, 0) }
+            
+            switch mload(0x00)
+            case 0xff {
+                // token is not fully ERC20 compatible, didn't return anything, assume it was successful
+                success := 1
+            }
+            case 0x01 {
+                success := 1
+            }
+            case 0x00 {
+                success := 0
+            }
+            default {
+                // unexpected value, what could this be?
+                revert(0, 0)
+            }
+        }
+    }
+
+    modifier issuanceActive {
+        systemStatus().requireIssuanceActive();
+        _;
     }
 
     /* ========== EVENTS ========== */

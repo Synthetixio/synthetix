@@ -1056,10 +1056,22 @@ contract('SystemSettings', async accounts => {
 			);
 		});
 
+		it('should revert if the fee is negative and burn fee is not at least positive and greater in magnitude', async () => {
+			const newValue = toUnit('-0.06');
+			await assert.revert(
+				systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, { from: owner }),
+				'-rate > wrapperBurnFeeRate'
+			);
+		});
+
 		describe('when successfully invoked', () => {
 			let txn;
-			const newValue = toUnit('0.06');
+			const newValue = toUnit('-0.02');
 			beforeEach(async () => {
+				await systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue.mul(toBN(2)).neg(), {
+					from: owner,
+				});
+
 				txn = await systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, {
 					from: owner,
 				});
@@ -1095,10 +1107,22 @@ contract('SystemSettings', async accounts => {
 			);
 		});
 
+		it('should revert if the fee is negative and burn fee is not at least positive and greater in magnitude', async () => {
+			const newValue = toUnit('-0.06');
+			await assert.revert(
+				systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, { from: owner }),
+				'-rate > wrapperMintFeeRate'
+			);
+		});
+
 		describe('when successfully invoked', () => {
 			let txn;
-			const newValue = toUnit('0.06');
+			const newValue = toUnit('-0.02');
 			beforeEach(async () => {
+				await systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue.mul(toBN(2)).neg(), {
+					from: owner,
+				});
+
 				txn = await systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, {
 					from: owner,
 				});
