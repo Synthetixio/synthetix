@@ -165,7 +165,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
 
-        return (values, excludedDebt, isInvalid || isAnyNonSnxDebtRateInvalid);
+        return (values, excludedDebt, isAnyNonSnxDebtRateInvalid);
     }
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
@@ -248,7 +248,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         }
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isInvalid || isAnyNonSnxDebtRateInvalid);
+        return (total, isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
