@@ -377,7 +377,7 @@
 		{
 			"sip": 182,
 			"layer": "ovm",
-			"sources": ["DebtCache", "FeePool", "Synths.*", "SystemSettings", "WrapperFactory"]
+			"sources": ["DebtCache", "FeePool", "Issuer", "Synths.*", "SystemSettings", "WrapperFactory"]
 		},
 		{
 			"sip": 187,
@@ -639,15 +639,6 @@
 			"sips": [187]
 		},
 		{
-			"name": "Avior",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 52
-			},
-			"sips": []
-		},
-		{
 			"name": "Avior (Optimism)",
 			"ovm": true,
 			"released": false,
@@ -655,7 +646,7 @@
 				"major": 2,
 				"minor": 52
 			},
-			"sips": []
+			"sips": [182]
 		},
 		{
 			"name": "Alkaid",
