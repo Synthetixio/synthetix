@@ -375,6 +375,11 @@
 			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
 		},
 		{
+			"sip": 182,
+			"layer": "ovm",
+			"sources": ["DebtCache", "FeePool", "Synths.*", "SystemSettings", "WrapperFactory"]
+		},
+		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
