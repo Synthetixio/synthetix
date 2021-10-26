@@ -30,7 +30,7 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME },
+	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME, DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
@@ -118,12 +118,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 	beforeEach(async () => {
 		timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sETH],
-			['0.5', '1.25', '0.1', '200'].map(toUnit),
-			timestamp,
-			{ from: oracle }
-		);
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			await exchangeRates.updateRates(
+				[sAUD, sEUR, SNX, sETH],
+				['0.5', '1.25', '0.1', '200'].map(toUnit),
+				timestamp,
+				{ from: oracle }
+			);
+		}
 
 		// set a 0.3% default exchange fee rate
 		const exchangeFeeRate = toUnit('0.003');
@@ -719,9 +721,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 						describe('when the synth has a rate', () => {
 							beforeEach(async () => {
-								await exchangeRates.updateRates([currencyKey], [toUnit('2')], timestamp, {
-									from: oracle,
-								});
+								for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+									await exchangeRates.updateRates([currencyKey], [toUnit('2')], timestamp, {
+										from: oracle,
+									});
+								}
 							});
 
 							describe('when another user exchanges into the synth', () => {

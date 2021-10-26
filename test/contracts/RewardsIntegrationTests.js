@@ -4,7 +4,10 @@ const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
+} = require('../..');
 
 const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
 
@@ -64,14 +67,16 @@ contract('Rewards Integration Tests', accounts => {
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
-			['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			await exchangeRates.updateRates(
+				[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
+				['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
+				timestamp,
+				{
+					from: oracle,
+				}
+			);
+		}
 
 		await debtCache.takeDebtSnapshot();
 	};
