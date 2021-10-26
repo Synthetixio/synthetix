@@ -377,7 +377,7 @@
 		{
 			"sip": 182,
 			"layer": "ovm",
-			"sources": ["DebtCache", "FeePool", "SystemSettings", "WrapperFactory"]
+			"sources": ["DebtCache", "FeePool", "Synths.*", "SystemSettings", "WrapperFactory"]
 		},
 		{
 			"sip": 187,
