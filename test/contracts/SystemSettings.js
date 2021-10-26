@@ -1068,9 +1068,13 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('-0.02');
 			beforeEach(async () => {
-				await systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue.mul(toBN(2)).neg(), {
-					from: owner,
-				});
+				await systemSettings.setWrapperBurnFeeRate(
+					testWrapperAddress,
+					newValue.mul(toBN(2)).neg(),
+					{
+						from: owner,
+					}
+				);
 
 				txn = await systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, {
 					from: owner,
@@ -1119,9 +1123,13 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('-0.02');
 			beforeEach(async () => {
-				await systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue.mul(toBN(2)).neg(), {
-					from: owner,
-				});
+				await systemSettings.setWrapperMintFeeRate(
+					testWrapperAddress,
+					newValue.mul(toBN(2)).neg(),
+					{
+						from: owner,
+					}
+				);
 
 				txn = await systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, {
 					from: owner,
