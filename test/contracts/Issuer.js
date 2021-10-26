@@ -2578,14 +2578,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe('when EtherWrapper is set', async () => {
+			describe('when Wrapper is set', async () => {
 				it('should have zero totalIssuedSynths', async () => {
 					assert.bnEqual(
 						await synthetix.totalIssuedSynths(sUSD),
 						await synthetix.totalIssuedSynthsExcludeOtherCollateral(sUSD)
 					);
 				});
-				describe('depositing WETH on the EtherWrapper to issue sETH', async () => {
+				describe('depositing WETH on the Wrapper to issue sETH', async () => {
 					let etherWrapper;
 					beforeEach(async () => {
 						// mock etherWrapper
@@ -2607,7 +2607,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await etherWrapper.setTotalIssuedSynths(amount, { from: account1 });
 
-						// totalSupply of synths should exclude EtherWrapper issued sETH
+						// totalSupply of synths should exclude Wrapper issued sETH
 						assert.bnEqual(
 							totalSupplyBefore,
 							await synthetix.totalIssuedSynthsExcludeOtherCollateral(sETH)
