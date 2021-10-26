@@ -19,6 +19,18 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IWrapperFactory.sol";
 
+//
+// The debt cache (SIP-91) caches the global debt and the debt of each synth in the system.
+// Debt is denominated by the synth supply multiplied by its current exchange rate.
+//
+// The cache can be invalidated when an exchange rate changes, and thereafter must be
+// updated by performing a debt snapshot, which recomputes the global debt sum using
+// current synth supplies and exchange rates. This is performed usually by a snapshot keeper.
+//
+// Some synths are backed by non-SNX collateral, such as sETH being backed by ETH
+// held in the EtherWrapper (SIP-112). This debt is called "excluded debt" and is
+// excluded from the global debt in `_cachedDebt`.
+//
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
