@@ -2,15 +2,6 @@
 	"AddressResolver": {
 		"deploy": false
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": false
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": false
-	},
-	"BinaryOptionMarketData": {
-		"deploy": false
-	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
@@ -27,9 +18,6 @@
 		"deploy": false
 	},
 	"EscrowChecker": {
-		"deploy": false
-	},
-	"EtherCollateral": {
 		"deploy": false
 	},
 	"ExchangeRates": {

@@ -14,18 +14,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		args: [account, account, addressOf(ReadProxyAddressResolver)],
 	});
 
-	await deployer.deployContract({
-		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
-		name: 'EtherCollateral',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
-	});
-	await deployer.deployContract({
-		name: 'EtherCollateralsUSD',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
-	});
-
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
 
 	if (network === 'local') {
@@ -37,8 +25,8 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			name: 'WETH',
 			source: useOvm ? 'MockWETH' : 'WETH',
 		});
-		weth.options.skipResolver = true;
-		WETH_ADDRESS = weth.options.address;
+		weth.skipResolver = true;
+		WETH_ADDRESS = weth.address;
 	}
 
 	if (!WETH_ADDRESS) {
@@ -68,37 +56,32 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
+	await deployer.deployContract({
+		name: 'CollateralUtil',
+		args: [addressOf(ReadProxyAddressResolver)],
+	});
+
 	const collateralManagerState = await deployer.deployContract({
 		name: 'CollateralManagerState',
 		args: [account, account],
 	});
 
-	const useEmptyCollateralManager = useOvm;
 	const collateralManager = await deployer.deployContract({
 		name: 'CollateralManager',
-		source: useEmptyCollateralManager ? 'EmptyCollateralManager' : 'CollateralManager',
-		args: useEmptyCollateralManager
-			? []
-			: [
-					addressOf(collateralManagerState),
-					account,
-					addressOf(ReadProxyAddressResolver),
-					collateralManagerDefaults['MAX_DEBT'],
-					collateralManagerDefaults['BASE_BORROW_RATE'],
-					collateralManagerDefaults['BASE_SHORT_RATE'],
-			  ],
-	});
-
-	const collateralStateEth = await deployer.deployContract({
-		name: 'CollateralStateEth',
-		source: 'CollateralState',
-		args: [account, account],
+		args: [
+			addressOf(collateralManagerState),
+			account,
+			addressOf(ReadProxyAddressResolver),
+			collateralManagerDefaults['MAX_DEBT'],
+			collateralManagerDefaults['MAX_SKEW_RATE'],
+			collateralManagerDefaults['BASE_BORROW_RATE'],
+			collateralManagerDefaults['BASE_SHORT_RATE'],
+		],
 	});
 
 	await deployer.deployContract({
 		name: 'CollateralEth',
 		args: [
-			addressOf(collateralStateEth),
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
@@ -106,12 +89,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
 		],
-	});
-
-	const collateralStateErc20 = await deployer.deployContract({
-		name: 'CollateralStateErc20',
-		source: 'CollateralState',
-		args: [account, account],
 	});
 
 	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
@@ -127,14 +104,13 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		});
 
 		// this could be undefined in an env where MockToken is not listed in the config flags
-		RENBTC_ADDRESS = renBTC ? renBTC.options.address : undefined;
+		RENBTC_ADDRESS = renBTC ? renBTC.address : undefined;
 	}
 
 	await deployer.deployContract({
 		name: 'CollateralErc20',
 		source: 'CollateralErc20',
 		args: [
-			addressOf(collateralStateErc20),
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
@@ -146,16 +122,9 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		],
 	});
 
-	const collateralStateShort = await deployer.deployContract({
-		name: 'CollateralStateShort',
-		source: 'CollateralState',
-		args: [account, account],
-	});
-
 	await deployer.deployContract({
 		name: 'CollateralShort',
 		args: [
-			addressOf(collateralStateShort),
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
@@ -167,6 +136,5 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	return {
 		collateralManagerDefaults,
-		useEmptyCollateralManager,
 	};
 };

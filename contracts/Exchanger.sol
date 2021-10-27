@@ -11,8 +11,10 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IExchangeRatesCircuitBreaker.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
@@ -20,10 +22,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
-
-// Note: use OZ's IERC20 here as using ours will complain about conflicting names
-// during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
@@ -82,11 +80,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     bytes32 private constant sUSD = "sUSD";
 
-    // SIP-65: Decentralized circuit breaker
-    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
-
-    mapping(bytes32 => uint) public lastExchangeRate;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -98,6 +91,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeRatesCircuitBreaker";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -105,7 +99,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](9);
+        bytes32[] memory newAddresses = new bytes32[](10);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -115,6 +109,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
+        newAddresses[9] = CONTRACT_CIRCUIT_BREAKER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -128,6 +123,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    }
+
+    function exchangeRatesCircuitBreaker() internal view returns (IExchangeRatesCircuitBreaker) {
+        return IExchangeRatesCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -168,6 +167,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function priceDeviationThresholdFactor() external view returns (uint) {
         return getPriceDeviationThresholdFactor();
+    }
+
+    function lastExchangeRate(bytes32 currencyKey) external view returns (uint) {
+        return exchangeRatesCircuitBreaker().lastExchangeRate(currencyKey);
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -222,7 +225,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
-            if (!_isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived)) {
+            bool sip65condition =
+                exchangeRatesCircuitBreaker().isDeviationAboveThreshold(
+                    exchangeEntry.amountReceived,
+                    amountShouldHaveReceived
+                );
+            if (!sip65condition) {
                 if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
                     // if they received more than they should have, add to the reclaim tally
                     reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
@@ -313,7 +321,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
-        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
+        (, bool invalid) = exchangeRatesCircuitBreaker().rateWithInvalid(currencyKey);
+        return invalid;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -353,15 +362,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
                 amountReceived,
                 fee
             );
-        }
-    }
-
-    function _suspendIfRateInvalid(bytes32 currencyKey, uint rate) internal returns (bool circuitBroken) {
-        if (_isSynthRateInvalid(currencyKey, rate)) {
-            systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            circuitBroken = true;
-        } else {
-            lastExchangeRate[currencyKey] = rate;
         }
     }
 
@@ -428,6 +428,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
+        // SIP-65: Decentralized Circuit Breaker
+        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
+            return (0, 0, IVirtualSynth(0));
+        }
+
         uint exchangeFeeRate;
         uint sourceRate;
         uint destinationRate;
@@ -438,14 +443,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             sourceCurrencyKey,
             destinationCurrencyKey
         );
-
-        // SIP-65: Decentralized Circuit Breaker
-        if (
-            _suspendIfRateInvalid(sourceCurrencyKey, sourceRate) ||
-            _suspendIfRateInvalid(destinationCurrencyKey, destinationRate)
-        ) {
-            return (0, 0, IVirtualSynth(0));
-        }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -509,6 +506,26 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
+    // SIP-65: Decentralized Circuit Breaker
+    function _exchangeRatesCircuitBroken(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        returns (bool circuitBroken)
+    {
+        // check both currencies unless they're sUSD, since its rate is never invalid (gas savings)
+        if (sourceCurrencyKey != sUSD) {
+            (, circuitBroken) = exchangeRatesCircuitBreaker().rateWithBreakCircuit(sourceCurrencyKey);
+        }
+
+        if (destinationCurrencyKey != sUSD) {
+            // we're not skipping the suspension check if the circuit was broken already
+            // this is not terribly important, but is more consistent (so that results don't
+            // depend on which synth is source and which is destination)
+            bool destCircuitBroken;
+            (, destCircuitBroken) = exchangeRatesCircuitBreaker().rateWithBreakCircuit(destinationCurrencyKey);
+            circuitBroken = circuitBroken || destCircuitBroken;
+        }
+    }
+
     function _convert(
         bytes32 sourceCurrencyKey,
         address from,
@@ -557,26 +574,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
-        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
-        require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey)), "Synth price is valid");
-        systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-    }
-
-    // SIP-78
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
-        require(rate > 0, "Rate must be above 0");
-        lastExchangeRate[currencyKey] = rate;
-    }
-
-    // SIP-139
-    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
-        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-
-        require(!anyRateInvalid, "Rates for given synths not valid");
-
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            lastExchangeRate[currencyKeys[i]] = rates[i];
-        }
+        // SIP-65: Decentralized Circuit Breaker
+        (, bool circuitBroken) = exchangeRatesCircuitBreaker().rateWithBreakCircuit(currencyKey);
+        require(circuitBroken, "Synth price is valid");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -593,46 +593,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         synthKeys[0] = sourceCurrencyKey;
         synthKeys[1] = destinationCurrencyKey;
         require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate invalid or not found");
-    }
-
-    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
-        if (currentRate == 0) {
-            return true;
-        }
-
-        uint lastRateFromExchange = lastExchangeRate[currencyKey];
-
-        if (lastRateFromExchange > 0) {
-            return _isDeviationAboveThreshold(lastRateFromExchange, currentRate);
-        }
-
-        // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
-        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
-
-        // start at index 1 to ignore current rate
-        for (uint i = 1; i < rates.length; i++) {
-            // ignore any empty rates in the past (otherwise we will never be able to get validity)
-            if (rates[i] > 0 && _isDeviationAboveThreshold(rates[i], currentRate)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    function _isDeviationAboveThreshold(uint base, uint comparison) internal view returns (bool) {
-        if (base == 0 || comparison == 0) {
-            return true;
-        }
-
-        uint factor;
-        if (comparison > base) {
-            factor = comparison.divideDecimal(base);
-        } else {
-            factor = base.divideDecimal(comparison);
-        }
-
-        return factor >= getPriceDeviationThresholdFactor();
     }
 
     function _internalSettle(
@@ -660,7 +620,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             refund(from, currencyKey, refunded);
         }
 
-        if (updateCache) {
+        // by checking a reclaim or refund we also check that the currency key is still a valid synth,
+        // as the deviation check will return 0 if the synth has been removed.
+        if (updateCache && (reclaimed > 0 || refunded > 0)) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
             debtCache().updateCachedSynthDebts(key);
@@ -867,12 +829,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
-        _;
-    }
-
-    modifier onlyExchangeRates() {
-        IExchangeRates _exchangeRates = exchangeRates();
-        require(msg.sender == address(_exchangeRates), "Restricted to ExchangeRates");
         _;
     }
 

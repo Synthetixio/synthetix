@@ -168,7 +168,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 
 					// no change in user balance
 					assert.bnEqual(await Synthetix.balanceOf(user.address), userBalanceL2);
-					//
+
 					assert.bnEqual(
 						await Synthetix.balanceOf(RewardEscrowV2.address),
 						rewardEscrowBalanceL2.add(escrowEntriesData.totalEscrowed)

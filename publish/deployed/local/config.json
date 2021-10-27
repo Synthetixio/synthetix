@@ -14,15 +14,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": true
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": true
-	},
-	"BinaryOptionMarketData": {
-		"deploy": true
-	},
 	"CollateralManager": {
 		"deploy": true
 	},
@@ -38,13 +29,7 @@
 	"CollateralShort": {
 		"deploy": true
 	},
-	"CollateralStateErc20": {
-		"deploy": true
-	},
-	"CollateralStateEth": {
-		"deploy": true
-	},
-	"CollateralStateShort": {
+	"CollateralUtil": {
 		"deploy": true
 	},
 	"DebtCache": {
@@ -65,16 +50,13 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"ExchangeRatesCircuitBreaker": {
+		"deploy": true
+	},
 	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
 	"ExchangeState": {
-		"deploy": true
-	},
-	"EtherCollateral": {
-		"deploy": true
-	},
-	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {
@@ -465,6 +447,9 @@
 		"deploy": true
 	},
 	"WETH": {
+		"deploy": true
+	},
+	"SynthRedeemer": {
 		"deploy": true
 	}
 }

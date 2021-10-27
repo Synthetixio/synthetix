@@ -49,7 +49,7 @@ interface IIssuer {
 
     function synthsByAddress(address synthAddress) external view returns (bytes32);
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint);
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint);
 
     function transferableSynthetixAndAnyRateIsInvalid(address account, uint balance)
         external
@@ -80,6 +80,12 @@ interface IIssuer {
     function burnSynthsToTarget(address from) external;
 
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
+
+    function burnForRedemption(
+        address deprecatedSynthProxy,
+        address account,
+        uint balance
+    ) external;
 
     function liquidateDelinquentAccount(
         address account,

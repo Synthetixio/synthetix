@@ -189,6 +189,13 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'ExchangeRatesCircuitBreaker',
+		source: 'ExchangeRatesCircuitBreaker',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
 		name: 'VirtualSynthMastercopy',
 	});
 
@@ -240,5 +247,11 @@ module.exports = async ({
 		name: 'SynthetixBridgeEscrow',
 		deps: ['AddressResolver'],
 		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'SynthRedeemer',
+		deps: ['AddressResolver'],
+		args: [addressOf(readProxyForResolver)],
 	});
 };

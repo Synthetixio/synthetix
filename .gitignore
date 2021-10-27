@@ -43,3 +43,9 @@ process.yml
 
 optimism
 .openzeppelin/
+
+# python venv
+.venv/
+
+# sarif files
+slither.sarif

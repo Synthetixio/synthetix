@@ -51,7 +51,9 @@ module.exports = {
 			blockGasLimit: 12e6,
 			allowUnlimitedContractSize: true,
 			gasPrice: GAS_PRICE,
+			hardfork: 'london',
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
+			initialBaseFeePerGas: (1e9).toString(), // 1 GWEI
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
@@ -68,7 +70,8 @@ module.exports = {
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
 		outputFile: 'test-gas-used.log',
 	},
+
 	mocha: {
-		timeout: 60e3, // 60s
+		timeout: 90e3, // 90s
 	},
 };

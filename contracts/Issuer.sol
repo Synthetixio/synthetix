@@ -17,16 +17,16 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IEtherCollateral.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
+import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/ISynthRedeemer.sol";
+import "./Proxyable.sol";
 
-interface IRewardEscrowV2 {
-    // Views
-    function balanceOf(address account) external view returns (uint);
+interface IProxy {
+    function target() external view returns (address);
 }
 
 interface IIssuerInternalDebtCache {
@@ -54,6 +54,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "Issuer";
+
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
@@ -67,7 +69,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     // Flexible storage names
 
-    bytes32 public constant CONTRACT_NAME = "Issuer";
     bytes32 internal constant LAST_ISSUE_EVENT = "lastIssueEvent";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -78,33 +79,31 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
         newAddresses[4] = CONTRACT_FEEPOOL;
         newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
-        newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
-        newAddresses[8] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
-        newAddresses[10] = CONTRACT_LIQUIDATIONS;
-        newAddresses[11] = CONTRACT_DEBTCACHE;
-        newAddresses[12] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[6] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
+        newAddresses[8] = CONTRACT_LIQUIDATIONS;
+        newAddresses[9] = CONTRACT_DEBTCACHE;
+        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -136,14 +135,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
-    }
-
     function collateralManager() internal view returns (ICollateralManager) {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
@@ -158,6 +149,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
         return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+
+    function synthRedeemer() internal view returns (ISynthRedeemer) {
+        return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -336,8 +331,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(_availableCurrencyKeysWithOptionalSNX(true));
     }
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
-        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint totalIssued) {
+        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeOtherCollateral);
     }
 
     function lastIssueEvent(address account) external view returns (uint) {
@@ -460,8 +455,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function _removeSynth(bytes32 currencyKey) internal {
         address synthToRemove = address(synths[currencyKey]);
         require(synthToRemove != address(0), "Synth does not exist");
-        require(IERC20(synthToRemove).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
+
+        uint synthSupply = IERC20(synthToRemove).totalSupply();
+
+        if (synthSupply > 0) {
+            (uint amountOfsUSD, uint rateToRedeem, ) =
+                exchangeRates().effectiveValueAndRates(currencyKey, synthSupply, "sUSD");
+            require(rateToRedeem > 0, "Cannot remove synth to redeem without rate");
+            ISynthRedeemer _synthRedeemer = synthRedeemer();
+            synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
+            // ensure the debt cache is aware of the new sUSD issued
+            debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
+            _synthRedeemer.deprecate(IERC20(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem);
+        }
 
         // Remove the synth from the availableSynths array.
         for (uint i = 0; i < availableSynths.length; i++) {
@@ -554,6 +561,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
         _requireCanBurnOnBehalf(burnForAddress, from);
         _voluntaryBurnSynths(burnForAddress, 0, true);
+    }
+
+    function burnForRedemption(
+        address deprecatedSynthProxy,
+        address account,
+        uint balance
+    ) external onlySynthRedeemer {
+        ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
     }
 
     function liquidateDelinquentAccount(
@@ -825,6 +840,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     modifier onlySynthetix() {
         _onlySynthetix(); // Use an internal function to save code size.
+        _;
+    }
+
+    function _onlySynthRedeemer() internal view {
+        require(msg.sender == address(synthRedeemer()), "Issuer: Only the SynthRedeemer contract can perform this action");
+    }
+
+    modifier onlySynthRedeemer() {
+        _onlySynthRedeemer();
         _;
     }
 

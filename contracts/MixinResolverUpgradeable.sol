@@ -1,11 +1,7 @@
 pragma solidity ^0.5.16;
 
-// Inheritance
-import "./OwnedUpgradeable.sol";
-
 // Internal references
 import "./AddressResolver.sol";
-import "./ReadProxy.sol";
 
 import "./open-zeppelin/proxy/utils/Initializable.sol";
 

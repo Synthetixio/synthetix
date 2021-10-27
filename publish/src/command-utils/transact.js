@@ -11,7 +11,7 @@ let _dryRunCounter = 0;
  * @returns transaction hash if successful, true if user completed, or falsy otherwise
  */
 const performTransactionalStep = async ({
-	account,
+	signer,
 	contract,
 	target,
 	read,
@@ -21,6 +21,8 @@ const performTransactionalStep = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
+	generateSolidity,
+	skipSolidity,
 	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
@@ -39,16 +41,37 @@ const performTransactionalStep = async ({
 
 	if (read) {
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target[read](...argumentsForReadFunction);
+		let response = await target[read](...argumentsForReadFunction);
+
+		// Ethers returns uints as BigNumber objects, while web3 stringified them.
+		// This can cause BigNumber(0) !== '0' and make runStep think there is nothing to do
+		// in some edge cases.
+		// To avoid using .toString() on runStep calls, we do the check here.
+		if (ethers.BigNumber.isBigNumber(response)) {
+			response = response.toString();
+		}
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
 			return { noop: true };
 		}
 	}
+
+	// now if generate solidity mode, simply doing anything, a bit like a dry-run
+	if (generateSolidity) {
+		if (!skipSolidity) {
+			console.log(
+				green(
+					`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
+				)
+			);
+		}
+		return {};
+	}
+
 	// otherwise check the owner
 	const owner = await target.owner();
-	if (owner === account.address || publiclyCallable) {
+	if (owner === signer.address || publiclyCallable) {
 		// perform action
 		let hash;
 		let gasUsed = 0;
@@ -56,18 +79,18 @@ const performTransactionalStep = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const params = {
+			const overrides = {
 				gasLimit,
 				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 			};
 
 			if (nonceManager) {
-				params.nonce = await nonceManager.getNonce();
+				overrides.nonce = await nonceManager.getNonce();
 			}
 
-			target = target.connect(account);
+			target = target.connect(signer);
 
-			const tx = await target[write](...argumentsForWriteFunction, params);
+			const tx = await target[write](...argumentsForWriteFunction, overrides);
 			const receipt = await tx.wait();
 
 			hash = receipt.transactionHash;
@@ -90,7 +113,7 @@ const performTransactionalStep = async ({
 
 		return { mined: true, hash };
 	} else {
-		console.log(gray(`  > Account ${account.address} is not owner ${owner}`));
+		console.log(gray(`  > Account ${signer.address} is not owner ${owner}`));
 	}
 
 	let data;

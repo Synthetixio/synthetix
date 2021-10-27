@@ -7,9 +7,10 @@ const ethers = require('ethers');
 const {
 	toBytes32,
 	getUsers,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, ZERO_ADDRESS },
 } = require('../../..');
 
+const { getContract } = require('../command-utils/contract');
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -80,8 +81,8 @@ const removeSynths = async ({
 		useFork,
 	});
 
-	// allow local deployments to use the private key passed as a CLI option
-	if (network !== 'local' || !privateKey) {
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey && !useFork) {
 		privateKey = envPrivateKey;
 	}
 
@@ -117,17 +118,33 @@ const removeSynths = async ({
 		}
 	}
 
-	const Synthetix = new ethers.Contract(
-		deployment.targets['Synthetix'].address,
-		deployment.sources['Synthetix'].abi,
-		wallet
-	);
+	const Synthetix = getContract({
+		contract: 'Synthetix',
+		network,
+		deploymentPath,
+		wallet,
+	});
 
-	const Issuer = new ethers.Contract(
-		deployment.targets['Issuer'].address,
-		deployment.sources['Issuer'].abi,
-		wallet
-	);
+	const Issuer = getContract({
+		contract: 'Issuer',
+		network,
+		deploymentPath,
+		wallet,
+	});
+
+	const ExchangeRates = getContract({
+		contract: 'ExchangeRates',
+		network,
+		deploymentPath,
+		wallet,
+	});
+
+	const SystemStatus = getContract({
+		contract: 'SystemStatus',
+		network,
+		deploymentPath,
+		wallet,
+	});
 
 	// deep clone these configurations so we can mutate and persist them
 	const updatedConfig = JSON.parse(JSON.stringify(config));
@@ -158,15 +175,25 @@ const removeSynths = async ({
 		// now check total supply (is required in Synthetix.removeSynth)
 		const totalSupply = ethers.utils.formatEther(await Synth.totalSupply());
 		if (Number(totalSupply) > 0) {
-			console.error(
-				red(
-					`Cannot remove as Synth${currencyKey}.totalSupply is non-zero: ${yellow(
-						totalSupply
-					)}\nThe Synth must be purged of holders.`
+			const totalSupplyInUSD = ethers.utils.formatEther(
+				await ExchangeRates.effectiveValue(
+					toBytes32(currencyKey),
+					ethers.utils.parseEther(totalSupply),
+					toBytes32('sUSD')
 				)
 			);
-			process.exitCode = 1;
-			return;
+			try {
+				await confirmAction(
+					cyan(
+						`Synth${currencyKey}.totalSupply is non-zero: ${yellow(totalSupply)} which is $${yellow(
+							totalSupplyInUSD
+						)}\n${red(`THIS WILL DEPRECATE THE SYNTH BY ITS PROXY. ARE YOU SURE???.`)}`
+					) + '\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
 		}
 
 		// perform transaction if owner of Synthetix or append to owner actions list
@@ -174,7 +201,7 @@ const removeSynths = async ({
 			console.log(green('Would attempt to remove the synth:', currencyKey));
 		} else {
 			await performTransactionalStep({
-				account: wallet,
+				signer: wallet,
 				contract: 'Issuer',
 				target: Issuer,
 				write: 'removeSynth',
@@ -199,6 +226,50 @@ const removeSynths = async ({
 			// and update the synths.json file
 			updatedSynths = updatedSynths.filter(({ name }) => name !== currencyKey);
 			fs.writeFileSync(synthsFile, stringify(updatedSynths));
+		}
+
+		// now try to remove rate
+		if (dryRun) {
+			console.log(green('Would attempt to remove the aggregator:', currencyKey));
+		} else {
+			await performTransactionalStep({
+				signer: wallet,
+				contract: 'ExchangeRates',
+				target: ExchangeRates,
+				read: 'aggregators',
+				readArg: toBytes32(currencyKey),
+				expected: input => input === ZERO_ADDRESS,
+				write: 'removeAggregator',
+				writeArg: toBytes32(currencyKey),
+				gasLimit,
+				gasPrice,
+				explorerLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				encodeABI: network === 'mainnet',
+			});
+		}
+
+		// now try to unsuspend the synth
+		if (dryRun) {
+			console.log(green('Would attempt to remove the synth:', currencyKey));
+		} else {
+			await performTransactionalStep({
+				signer: wallet,
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				read: 'synthSuspension',
+				readArg: toBytes32(currencyKey),
+				expected: input => !input.suspended,
+				write: 'resumeSynth',
+				writeArg: toBytes32(currencyKey),
+				gasLimit,
+				gasPrice,
+				explorerLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				encodeABI: network === 'mainnet',
+			});
 		}
 	}
 };

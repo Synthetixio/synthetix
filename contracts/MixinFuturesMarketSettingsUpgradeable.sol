@@ -23,7 +23,7 @@ contract MixinFuturesMarketSettingsUpgradeable is Initializable, MixinResolverUp
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValue";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_SKEW = "maxFundingRateSkew";
+    bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "minSkewScale";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
 
     // Global settings
@@ -77,12 +77,12 @@ contract MixinFuturesMarketSettingsUpgradeable is Initializable, MixinResolverUp
         return _parameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE);
     }
 
-    function _maxFundingRate(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
+    function _minSkewScale(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE);
     }
 
-    function _maxFundingRateSkew(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW);
+    function _maxFundingRate(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
     }
 
     function _maxFundingRateDelta(bytes32 _baseAsset) internal view returns (uint) {
@@ -99,7 +99,7 @@ contract MixinFuturesMarketSettingsUpgradeable is Initializable, MixinResolverUp
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
-            uint maxFundingRateSkew,
+            uint minSkewScale,
             uint maxFundingRateDelta
         )
     {
@@ -109,7 +109,7 @@ contract MixinFuturesMarketSettingsUpgradeable is Initializable, MixinResolverUp
         maxLeverage = _maxLeverage(_baseAsset);
         maxMarketValue = _maxMarketValue(_baseAsset);
         maxFundingRate = _maxFundingRate(_baseAsset);
-        maxFundingRateSkew = _maxFundingRateSkew(_baseAsset);
+        minSkewScale = _minSkewScale(_baseAsset);
         maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 

@@ -204,7 +204,7 @@ const purgeSynths = async ({
 				console.log(green('Would attempt to purge:', entries));
 			} else {
 				await performTransactionalStep({
-					account: wallet,
+					signer: wallet,
 					contract: `Synth${currencyKey}`,
 					target: Synth,
 					write: 'purge',
