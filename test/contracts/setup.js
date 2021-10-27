@@ -126,7 +126,8 @@ const setupContract = async ({
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
 		await artifact.link(safeDecimalMath);
-		if (contract === 'Exchanger') {
+		// eslint-disable-next-line no-constant-condition
+		if (contract === 'Exchanger' || 'ExchangerWithVirtualSynth') {
 			const DynamicFee = artifacts.require('DynamicFee');
 			DynamicFee.link(safeDecimalMath);
 			await artifact.link(await DynamicFee.new());
