@@ -141,6 +141,16 @@ contract('Wrapper', async accounts => {
 			assert.equal(await instance.resolver(), addressResolver.address);
 		});
 
+		it('should set the wrapper token approval', async () => {
+			const allowance = await weth.allowance(instance.address, instance.address);
+			assert.bnEqual(
+				allowance,
+				web3.utils.toBN(
+					'115792089237316195423570985008687907853269984665640564039457584007913129639935'
+				) // uint256(-1)
+			);
+		});
+
 		it('should access its dependencies via the address resolver', async () => {
 			assert.equal(await addressResolver.getAddress(toBytes32('SynthsETH')), sETHSynth.address);
 			assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
