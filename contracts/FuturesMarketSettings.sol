@@ -110,11 +110,26 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     /*
-     * The amount of sUSD paid to a liquidator when they successfully liquidate a position.
+     * The minimum amount of sUSD paid to a liquidator when they successfully liquidate a position.
      * This quantity must be no greater than `minInitialMargin`.
      */
     function minLiquidationFee() external view returns (uint) {
         return _minLiquidationFee();
+    }
+
+    /*
+     * Liquidation fee basis points paid to liquidator.
+     * Use together with minLiquidationFee() to calculate the actual fee paid.
+     */
+    function liquidationFeeBPs() external view returns (uint) {
+        return _liquidationFeeBPs();
+    }
+
+    /*
+     * Liquidation price buffer in basis points to prevent negative margin on liquidation.
+     */
+    function liquidationBufferBPs() external view returns (uint) {
+        return _liquidationBufferBPs();
     }
 
     /*
@@ -212,6 +227,16 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         emit LiquidationFeeUpdated(_sUSD);
     }
 
+    function setLiquidationFeeBPs(uint _bps) external onlyOwner {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_BPS, _bps);
+        emit LiquidationFeeBPsUpdated(_bps);
+    }
+
+    function setLiquidationBufferBPs(uint _bps) external onlyOwner {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_BPS, _bps);
+        emit LiquidationBufferBPsUpdated(_bps);
+    }
+
     function setMinInitialMargin(uint _minMargin) external onlyOwner {
         require(_minLiquidationFee() <= _minMargin, "min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
@@ -222,5 +247,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
     event LiquidationFeeUpdated(uint sUSD);
+    event LiquidationFeeBPsUpdated(uint bps);
+    event LiquidationBufferBPsUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
 }

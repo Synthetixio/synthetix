@@ -89,6 +89,8 @@ contract('FuturesMarketSettings', accounts => {
 				'setMaxFundingRateDelta',
 				'setParameters',
 				'setMinLiquidationFee',
+				'setLiquidationFeeBPs',
+				'setLiquidationBufferBPs',
 				'setMinInitialMargin',
 			],
 		});
