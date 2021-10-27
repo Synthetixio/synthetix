@@ -30,7 +30,7 @@ const { setupAllContracts } = require('./setup');
 
 const {
 	toBytes32,
-	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
+	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD, DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('FeePool', async accounts => {
@@ -40,9 +40,11 @@ contract('FeePool', async accounts => {
 	const updateRatesWithDefaults = async () => {
 		const timestamp = await currentTime();
 
-		await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		}
 		await debtCache.takeDebtSnapshot();
 	};
 
@@ -751,13 +753,9 @@ contract('FeePool', async accounts => {
 			});
 
 			it('should disallow closing the current fee period too early', async () => {
-				const feePeriodDuration = await feePool.feePeriodDuration();
-
 				// Close the current one so we know exactly what we're dealing with
 				await closeFeePeriod();
 
-				// Try to close the new fee period 5 seconds early
-				await fastForward(feePeriodDuration.sub(web3.utils.toBN('5')));
 				await assert.revert(
 					feePool.closeCurrentFeePeriod({ from: account1 }),
 					'Too early to close fee period'
