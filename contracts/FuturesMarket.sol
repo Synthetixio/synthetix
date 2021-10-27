@@ -12,9 +12,9 @@ import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
-
 import "./interfaces/IERC20.sol";
 
+// Modified Open Zeppelin UUPS contracts
 import "./open-zeppelin/proxy/utils/UUPSUpgradeable.sol";
 import "./open-zeppelin/proxy/utils/Initializable.sol";
 
@@ -80,7 +80,6 @@ interface IFuturesMarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
-// contract FuturesMarket is Initializable, OwnedUpgradeable, UUPSUpgradeable, MixinFuturesMarketSettingsUpgradeable {
 contract FuturesMarket is
     Initializable,
     OwnedUpgradeable,
@@ -99,7 +98,7 @@ contract FuturesMarket is
     // This is the same unit as used inside `SignedSafeDecimalMath`.
     int private constant _UNIT = int(10**uint(18));
 
-    // /* ========== STATE VARIABLES ========== */
+    /* ========== STATE VARIABLES ========== */
 
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
     bytes32 public baseAsset;
@@ -139,7 +138,6 @@ contract FuturesMarket is
     int internal _entryDebtCorrection;
 
     // This increments for each position; zero reflects a position that does not exist.
-    // // uint internal _nextPositionId = 1;
     uint internal _nextPositionId;
 
     // Holds the revert message for each type of error.
@@ -154,10 +152,9 @@ contract FuturesMarket is
     /* ========== CONSTRUCTOR ========== */
 
     function initialize(
-        // address payable _proxy,
         address _owner,
         address _resolver,
-        bytes32 _baseAsset // ) public initializer {
+        bytes32 _baseAsset
     ) public initializer {
         _nextPositionId = 1;
 
@@ -184,7 +181,6 @@ contract FuturesMarket is
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
     }
 
-    //
     function _authorizeUpgrade(address newImplementation) internal onlyOwner {}
 
     /* ========== VIEWS ========== */
@@ -1050,7 +1046,6 @@ contract FuturesMarket is
      * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
-    // function transferMargin(int marginDelta) external optionalProxy {
     function transferMargin(int marginDelta) external {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
@@ -1061,7 +1056,6 @@ contract FuturesMarket is
      * Withdraws all accessible margin in a position. This will leave some remaining margin
      * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
      */
-    // function withdrawAllMargin() external optionalProxy {
     function withdrawAllMargin() external {
         address sender = msg.sender;
         uint price = _assetPriceRequireNotInvalid();
@@ -1128,7 +1122,6 @@ contract FuturesMarket is
      * Adjust the sender's position size.
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
-    // function modifyPosition(int sizeDelta) external optionalProxy {
     function modifyPosition(int sizeDelta) external {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);

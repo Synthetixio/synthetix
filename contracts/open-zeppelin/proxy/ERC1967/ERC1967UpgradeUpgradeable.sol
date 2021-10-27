@@ -14,10 +14,12 @@ import "../utils/Initializable.sol";
  *
  */
 contract ERC1967UpgradeUpgradeable is Initializable {
+    // solhint-disable-next-line
     function __ERC1967Upgrade_init() internal initializer {
         __ERC1967Upgrade_init_unchained();
     }
 
+    // solhint-disable-next-line
     function __ERC1967Upgrade_init_unchained() internal initializer {}
 
     // This is the keccak-256 hash of "eip1967.proxy.rollback" subtracted by 1
@@ -101,20 +103,29 @@ contract ERC1967UpgradeUpgradeable is Initializable {
             _functionDelegateCall(newImplementation, data);
         }
 
-        bool rollbackTesting;
+        uint256 rollbackTesting = 0;
 
         // Get the rollback slot
+
         // solhint-disable-next-line no-inline-assembly
         assembly {
             rollbackTesting := sload(_ROLLBACK_SLOT)
         }
 
         // Perform rollback test if not already in progress
-        if (!rollbackTesting) {
+        if (rollbackTesting == 0) {
             // Trigger rollback using upgradeTo from the new implementation
-            rollbackTesting = true;
+
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                sstore(_ROLLBACK_SLOT, 1)
+            }
+
             _functionDelegateCall(newImplementation, abi.encodeWithSignature("upgradeTo(address)", oldImplementation));
-            rollbackTesting = false;
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                sstore(_ROLLBACK_SLOT, 0)
+            }
             // Check rollback was effective
             require(oldImplementation == _getImplementation(), "ERC1967Upgrade: upgrade breaks further upgrades");
             // Finally reset to the new implementation and log the upgrade

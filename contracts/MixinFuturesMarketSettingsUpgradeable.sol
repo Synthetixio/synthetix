@@ -5,6 +5,7 @@ import "./MixinResolverUpgradeable.sol";
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
+// Modified Open Zeppelin UUPS contracts
 import "./open-zeppelin/proxy/utils/Initializable.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/MixinFuturesMarketSettings

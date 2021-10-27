@@ -1,7 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log, upgrades, ethers, truffle } = require('hardhat');
-const { deployProxy /*, upgradeProxy*/ } = require('@openzeppelin/truffle-upgrades');
+const { artifacts, web3, log, upgrades, ethers } = require('hardhat');
 
 const { toWei } = web3.utils;
 const { toUnit, currentTime } = require('../utils')();
@@ -112,16 +111,9 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
-	// console.log('#### artifacts: ', artifacts);
-
-	// console.log('### source: ', source);
 	const artifact = artifacts.require(source || contract);
-	// console.log('### artifact.abi: ');
-	// console.log(JSON.stringify(artifact.abi, null, 4));
 
 	const create = ({ constructorArgs }) => {
-		// console.log('### constructorArgs: ', constructorArgs);
-		// console.log('### deployerAccount: ', deployerAccount);
 		return artifact.new(
 			...constructorArgs.concat({
 				from: deployerAccount,
@@ -153,7 +145,6 @@ const setupContract = async ({
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
-		AddressResolverUpgradeable: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [
@@ -263,10 +254,8 @@ const setupContract = async ({
 		],
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
-			// tryGetAddressOf('ProxyFuturesMarketBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			// tryGetAddressOf('AddressResolverUpgradeable'),
 			toBytes32('sBTC'), // base asset
 		],
 		FuturesMarketETH: [
@@ -278,20 +267,12 @@ const setupContract = async ({
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};
 
-	// console.log('### contract: ', contract);
-
 	let instance;
 
-	// console.log(
-	// 	'### artifact -----------------------------------------------------------------------------------------------'
-	// );
-	// console.log(JSON.stringify(artifact, null, 4));
-
 	try {
-		// const specialContracts = ['FuturesMarket', 'AddressResolver'];
+		// TODO: Use a more generic and scalable way to deploy OZ UUPS contracts
 		const specialContracts = ['TestableFuturesMarket'];
 		if (specialContracts.includes(source || contract)) {
-			// The below works with ethers. But we want truffe
 			const contractName = source || contract;
 			const FuturesMarketFactory = await ethers.getContractFactory(contractName);
 			const ethersInstance = await upgrades.deployProxy(
@@ -306,10 +287,10 @@ const setupContract = async ({
 			await ethersInstance.deployed();
 			instance = await artifact.at(ethersInstance.address);
 		} else {
+			// Not an OZ UUPS contract so just create.
 			instance = await create({
 				constructorArgs: args.length > 0 ? args : defaultArgs[contract],
 			});
-			// console.log('#### instance: ', instance);
 		}
 		// Show contracts creating for debugging purposes
 		if (process.env.DEBUG) {
@@ -322,7 +303,6 @@ const setupContract = async ({
 			);
 		}
 	} catch (err) {
-		console.error(err);
 		throw Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
@@ -558,9 +538,6 @@ const setupContract = async ({
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
-				// instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
-				// 	from: owner,
-				// }),
 			]);
 		},
 		async FuturesMarketETH() {

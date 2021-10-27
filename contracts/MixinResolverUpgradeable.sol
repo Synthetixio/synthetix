@@ -4,7 +4,6 @@ pragma solidity ^0.5.16;
 import "./OwnedUpgradeable.sol";
 
 // Internal references
-// import "./AddressResolverUpgradeable.sol";
 import "./AddressResolver.sol";
 import "./ReadProxy.sol";
 
@@ -12,17 +11,11 @@ import "./open-zeppelin/proxy/utils/Initializable.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinresolver
 contract MixinResolverUpgradeable is Initializable {
-    // AddressResolverUpgradeable public resolver;
     AddressResolver public resolver;
 
     mapping(bytes32 => address) private addressCache;
 
-    // constructor(address _resolver) internal {
-    //     resolver = AddressResolverUpgradeable(_resolver);
-    // }
-
     function initialize(address _resolver) internal initializer {
-        // resolver = AddressResolverUpgradeable(_resolver);
         resolver = AddressResolver(_resolver);
     }
 

@@ -190,7 +190,6 @@ module.exports = {
 			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
 			.map(removeExcessParams);
 
-		console.log('### abi: ', abi);
 		const fncs = abi
 			.filter(
 				({ type, stateMutability }) =>
