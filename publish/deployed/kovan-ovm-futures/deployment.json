@@ -24342,7 +24342,7 @@
 								},
 								{
 									"internalType": "uint256",
-									"name": "liquidationFee",
+									"name": "minLiquidationFee",
 									"type": "uint256"
 								}
 							],
@@ -25280,7 +25280,7 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "liquidationFee",
+					"name": "minLiquidationFee",
 					"outputs": [
 						{
 							"internalType": "uint256",
@@ -25602,7 +25602,7 @@
 							"type": "uint256"
 						}
 					],
-					"name": "setLiquidationFee",
+					"name": "setMinLiquidationFee",
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",

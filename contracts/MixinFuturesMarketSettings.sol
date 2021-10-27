@@ -24,7 +24,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
 
     // Global settings
-    bytes32 internal constant SETTING_LIQUIDATION_FEE = "futuresLiquidationFee";
+    bytes32 internal constant SETTING_MIN_LIQUIDATION_FEE = "futuresMinLiquidationFee";
     bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -108,8 +108,8 @@ contract MixinFuturesMarketSettings is MixinResolver {
         maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 
-    function _liquidationFee() internal view returns (uint) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE);
+    function _minLiquidationFee() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE);
     }
 
     function _minInitialMargin() internal view returns (uint) {

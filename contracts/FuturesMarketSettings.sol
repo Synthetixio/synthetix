@@ -113,13 +113,13 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
      * The amount of sUSD paid to a liquidator when they successfully liquidate a position.
      * This quantity must be no greater than `minInitialMargin`.
      */
-    function liquidationFee() external view returns (uint) {
-        return _liquidationFee();
+    function minLiquidationFee() external view returns (uint) {
+        return _minLiquidationFee();
     }
 
     /*
      * The minimum margin required to open a position.
-     * This quantity must be no less than `liquidationFee`.
+     * This quantity must be no less than `minLiquidationFee`.
      */
     function minInitialMargin() external view returns (uint) {
         return _minInitialMargin();
@@ -206,14 +206,14 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
-    function setLiquidationFee(uint _sUSD) external onlyOwner {
+    function setMinLiquidationFee(uint _sUSD) external onlyOwner {
         require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE, _sUSD);
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE, _sUSD);
         emit LiquidationFeeUpdated(_sUSD);
     }
 
     function setMinInitialMargin(uint _minMargin) external onlyOwner {
-        require(_liquidationFee() <= _minMargin, "min margin < liquidation fee");
+        require(_minLiquidationFee() <= _minMargin, "min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
         emit MinInitialMarginUpdated(_minMargin);
     }

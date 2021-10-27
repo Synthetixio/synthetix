@@ -44,10 +44,10 @@ module.exports = async ({
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
-		read: 'liquidationFee',
+		read: 'minLiquidationFee',
 		expected: input => input !== '0', // only change if zero
-		write: 'setLiquidationFee',
-		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
+		write: 'setMinLiquidationFee',
+		writeArg: await getDeployParameter('FUTURES_MIN_LIQUIDATION_FEE'),
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 

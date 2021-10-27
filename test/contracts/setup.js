@@ -27,7 +27,7 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
-		FUTURES_LIQUIDATION_FEE,
+		FUTURES_MIN_LIQUIDATION_FEE,
 		FUTURES_MIN_INITIAL_MARGIN,
 	},
 } = require('../../');
@@ -1143,7 +1143,7 @@ const setupAllContracts = async ({
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setLiquidationFee(FUTURES_LIQUIDATION_FEE, {
+				returnObj['FuturesMarketSettings'].setMinLiquidationFee(FUTURES_MIN_LIQUIDATION_FEE, {
 					from: owner,
 				}),
 			];

@@ -64,7 +64,7 @@ contract('FuturesMarket', accounts => {
 	const skewScaleUSD = toUnit('100000');
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
-	const liquidationFee = toUnit('20');
+	const minLiquidationFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
 
 	const initialFundingIndex = toBN(4);
@@ -3096,7 +3096,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setMinLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -3109,7 +3109,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setLiquidationFee(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setMinLiquidationFee(toUnit('0'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -3379,7 +3379,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.lastPrice, toUnit(0));
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
-				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
+				assert.bnEqual(await sUSD.balanceOf(noBalance), minLiquidationFee);
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
@@ -3387,7 +3387,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'Issued',
 					emittedFrom: sUSD.address,
-					args: [noBalance, liquidationFee],
+					args: [noBalance, minLiquidationFee],
 					log: decodedLogs[1],
 				});
 				decodedEventEqual({
@@ -3408,7 +3408,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader, noBalance, positionSize, price, minLiquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
@@ -3430,7 +3430,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.lastPrice, toUnit(0));
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
-				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
+				assert.bnEqual(await sUSD.balanceOf(noBalance), minLiquidationFee);
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
@@ -3438,7 +3438,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'Issued',
 					emittedFrom: sUSD.address,
-					args: [noBalance, liquidationFee],
+					args: [noBalance, minLiquidationFee],
 					log: decodedLogs[1],
 				});
 				decodedEventEqual({
@@ -3459,7 +3459,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader3, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader3, noBalance, positionSize, price, minLiquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
@@ -3475,7 +3475,7 @@ contract('FuturesMarket', accounts => {
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 
 				// raise the liquidation fee
-				await futuresMarketSettings.setLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setMinLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				price = (await futuresMarket.liquidationPrice(trader, true)).price;
