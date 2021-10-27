@@ -31,7 +31,7 @@ contract FuturesMarketData {
 
     struct MarketLimits {
         uint maxLeverage;
-        uint maxMarketValue;
+        uint maxMarketValueUSD;
     }
 
     struct Sides {
@@ -130,7 +130,7 @@ contract FuturesMarketData {
             uint makerFee,
             uint closureFee,
             uint maxLeverage,
-            uint maxMarketValue,
+            uint maxMarketValueUSD,
             uint maxFundingRate,
             uint minSkewScale,
             uint maxFundingRateDelta
@@ -141,7 +141,7 @@ contract FuturesMarketData {
                 makerFee,
                 closureFee,
                 maxLeverage,
-                maxMarketValue,
+                maxMarketValueUSD,
                 maxFundingRate,
                 minSkewScale,
                 maxFundingRateDelta
@@ -212,7 +212,7 @@ contract FuturesMarketData {
                 address(market),
                 baseAsset,
                 FeeRates(params.takerFee, params.makerFee),
-                MarketLimits(params.maxLeverage, params.maxMarketValue),
+                MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, invalid)

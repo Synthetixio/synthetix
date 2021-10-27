@@ -67,8 +67,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /*
      * The maximum allowable notional value on each side of a market.
      */
-    function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
-        return _maxMarketValue(_baseAsset);
+    function maxMarketValueUSD(bytes32 _baseAsset) public view returns (uint) {
+        return _maxMarketValueUSD(_baseAsset);
     }
 
     /*
@@ -100,7 +100,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _makerFee,
             uint _closureFee,
             uint _maxLeverage,
-            uint _maxMarketValue,
+            uint _maxMarketValueUSD,
             uint _maxFundingRate,
             uint _minSkewScale,
             uint _maxFundingRateDelta
@@ -157,8 +157,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) public onlyOwner {
-        _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
+    function setMaxMarketValueUSD(bytes32 _baseAsset, uint _maxMarketValueUSD) public onlyOwner {
+        _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
@@ -189,7 +189,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _makerFee,
         uint _closureFee,
         uint _maxLeverage,
-        uint _maxMarketValue,
+        uint _maxMarketValueUSD,
         uint _maxFundingRate,
         uint _minSkewScale,
         uint _maxFundingRateDelta
@@ -199,7 +199,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMakerFee(_baseAsset, _makerFee);
         setClosureFee(_baseAsset, _closureFee);
         setMaxLeverage(_baseAsset, _maxLeverage);
-        setMaxMarketValue(_baseAsset, _maxMarketValue);
+        setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
         setMaxFundingRate(_baseAsset, _maxFundingRate);
         setMinSkewScale(_baseAsset, _minSkewScale);
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);

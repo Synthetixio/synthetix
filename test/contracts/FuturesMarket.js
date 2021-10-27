@@ -59,7 +59,7 @@ contract('FuturesMarket', accounts => {
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const maxLeverage = toUnit('10');
-	const maxMarketValue = toUnit('100000');
+	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
 	const minSkewScale = toUnit('1000');
 	const maxFundingRateDelta = toUnit('0.0125');
@@ -180,7 +180,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
-			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
+			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
 			assert.bnEqual(parameters.minSkewScale, minSkewScale);
 			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
@@ -1378,16 +1378,16 @@ contract('FuturesMarket', accounts => {
 			it('properly reports the max order size on each side', async () => {
 				let maxOrderSizes = await futuresMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimalRound(maxMarketValue, initialPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValue, initialPrice));
+				assert.bnEqual(maxOrderSizes.long, divideDecimalRound(maxMarketValueUSD, initialPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValueUSD, initialPrice));
 
 				let newPrice = toUnit('193');
 				await setPrice(baseAsset, newPrice);
 
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimalRound(maxMarketValue, newPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValue, newPrice));
+				assert.bnEqual(maxOrderSizes.long, divideDecimalRound(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValueUSD, newPrice));
 
 				// Submit order on one side, leaving part of what's left.
 
@@ -1404,9 +1404,9 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValue, newPrice).sub(toUnit('400'))
+					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('400'))
 				);
-				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValue, newPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValueUSD, newPrice));
 
 				// Submit order on the other side, removing all available supply.
 				await transferMarginAndModifyPosition({
@@ -1420,7 +1420,7 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValue, newPrice).sub(toUnit('400'))
+					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('400'))
 				); // Long side is unaffected
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
@@ -1436,7 +1436,7 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValue, newPrice).sub(toUnit('600'))
+					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
@@ -1452,11 +1452,11 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValue, newPrice).sub(toUnit('600'))
+					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnClose(
 					maxOrderSizes.short,
-					divideDecimalRound(maxMarketValue, newPrice).sub(toUnit('666.73333')),
+					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('666.73333')),
 					toUnit('0.001')
 				);
 			});
@@ -1467,7 +1467,7 @@ contract('FuturesMarket', accounts => {
 					const leverage = side === 'long' ? toUnit('10') : toUnit('-10');
 
 					beforeEach(async () => {
-						await futuresMarketSettings.setMaxMarketValue(baseAsset, toUnit('10000'), {
+						await futuresMarketSettings.setMaxMarketValueUSD(baseAsset, toUnit('10000'), {
 							from: owner,
 						});
 						await setPrice(baseAsset, toUnit('1'));
@@ -2733,7 +2733,7 @@ contract('FuturesMarket', accounts => {
 
 			describe(`${side}`, () => {
 				beforeEach(async () => {
-					await futuresMarketSettings.setMaxMarketValue(baseAsset, toUnit('100000'), {
+					await futuresMarketSettings.setMaxMarketValueUSD(baseAsset, toUnit('100000'), {
 						from: owner,
 					});
 				});

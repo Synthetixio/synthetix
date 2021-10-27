@@ -26,7 +26,7 @@ contract('FuturesMarketSettings', accounts => {
 	const makerFee = toUnit('0.001');
 	const closureFee = toUnit('0');
 	const maxLeverage = toUnit('10');
-	const maxMarketValue = toUnit('100000');
+	const maxMarketValueUSD = toUnit('100000');
 
 	const maxFundingRate = toUnit('0.1');
 	const minSkewScale = toUnit('100');
@@ -83,7 +83,7 @@ contract('FuturesMarketSettings', accounts => {
 				'setMakerFee',
 				'setClosureFee',
 				'setMaxLeverage',
-				'setMaxMarketValue',
+				'setMaxMarketValueUSD',
 				'setMaxFundingRate',
 				'setMinSkewScale',
 				'setMaxFundingRateDelta',
@@ -103,7 +103,7 @@ contract('FuturesMarketSettings', accounts => {
 				makerFee,
 				closureFee,
 				maxLeverage,
-				maxMarketValue,
+				maxMarketValueUSD,
 				maxFundingRate,
 				minSkewScale,
 				maxFundingRateDelta,

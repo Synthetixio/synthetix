@@ -166,7 +166,7 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
-			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
+			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
 			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
 			assert.bnEqual(details.fundingParameters.minSkewScale, params.minSkewScale);

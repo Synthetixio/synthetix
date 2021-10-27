@@ -236,7 +236,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
         (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(_maxMarketValue(baseAsset)).divideDecimalRound(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimalRound(int(price));
         return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
     }
 
@@ -301,7 +301,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint makerFee,
             uint closureFee,
             uint maxLeverage,
-            uint maxMarketValue,
+            uint maxMarketValueUSD,
             uint maxFundingRate,
             uint minSkewScale,
             uint maxFundingRateDelta
@@ -800,7 +800,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValue(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
+                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
                 oldPos.size,
                 newPos.size
             )
