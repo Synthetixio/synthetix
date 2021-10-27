@@ -24404,7 +24404,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "maxMarketValue",
+											"name": "maxMarketValueUSD",
 											"type": "uint256"
 										}
 									],
@@ -24549,7 +24549,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "maxMarketValue",
+											"name": "maxMarketValueUSD",
 											"type": "uint256"
 										}
 									],
@@ -24840,7 +24840,7 @@
 								},
 								{
 									"internalType": "uint256",
-									"name": "maxMarketValue",
+									"name": "maxMarketValueUSD",
 									"type": "uint256"
 								},
 								{
@@ -25385,7 +25385,7 @@
 							"type": "bytes32"
 						}
 					],
-					"name": "maxMarketValue",
+					"name": "maxMarketValueUSD",
 					"outputs": [
 						{
 							"internalType": "uint256",
@@ -25511,7 +25511,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxMarketValue",
+							"name": "_maxMarketValueUSD",
 							"type": "uint256"
 						},
 						{
@@ -25698,11 +25698,11 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxMarketValue",
+							"name": "_maxMarketValueUSD",
 							"type": "uint256"
 						}
 					],
-					"name": "setMaxMarketValue",
+					"name": "setMaxMarketValueUSD",
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
@@ -25773,7 +25773,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxMarketValue",
+							"name": "_maxMarketValueUSD",
 							"type": "uint256"
 						},
 						{
@@ -26724,7 +26724,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "maxMarketValue",
+							"name": "maxMarketValueUSD",
 							"type": "uint256"
 						},
 						{
