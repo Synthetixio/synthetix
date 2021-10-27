@@ -85,7 +85,7 @@ module.exports = async ({
 			maxLeverage,
 			maxMarketValueUSD,
 			maxFundingRate,
-			minSkewScale,
+			minSkewScaleUSD,
 			maxFundingRateDelta,
 		} = market;
 
@@ -100,7 +100,7 @@ module.exports = async ({
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
 			maxFundingRate: w3utils.toWei(maxFundingRate),
-			minSkewScale: w3utils.toWei(minSkewScale),
+			minSkewScaleUSD: w3utils.toWei(minSkewScaleUSD),
 			maxFundingRateDelta: w3utils.toWei(maxFundingRateDelta),
 		};
 

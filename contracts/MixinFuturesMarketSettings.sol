@@ -20,7 +20,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
-    bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "minSkewScale";
+    bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "minSkewScaleUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
 
     // Global settings
@@ -72,7 +72,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
         return _parameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE);
     }
 
-    function _minSkewScale(bytes32 _baseAsset) internal view returns (uint) {
+    function _minSkewScaleUSD(bytes32 _baseAsset) internal view returns (uint) {
         return _parameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE);
     }
 
@@ -94,7 +94,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScale,
+            uint minSkewScaleUSD,
             uint maxFundingRateDelta
         )
     {
@@ -104,7 +104,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
         maxLeverage = _maxLeverage(_baseAsset);
         maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
         maxFundingRate = _maxFundingRate(_baseAsset);
-        minSkewScale = _minSkewScale(_baseAsset);
+        minSkewScaleUSD = _minSkewScaleUSD(_baseAsset);
         maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 

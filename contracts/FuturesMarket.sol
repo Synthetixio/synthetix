@@ -10,6 +10,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SignedSafeMath.sol";
 import "./SignedSafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRatesCircuitBreaker.sol";
@@ -84,6 +85,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     using SafeMath for uint;
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
+    using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
 
@@ -205,7 +207,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /* ---------- Market Details ---------- */
 
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (uint price, bool invalid) = _exchangeRatesCircuitBreaker().rateWithInvalid(baseAsset);
+        (price, invalid) = _exchangeRatesCircuitBreaker().rateWithInvalid(baseAsset);
         // Ensure we catch uninitialised rates or suspended state / synth
         invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
         return (price, invalid);
@@ -277,12 +279,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /*
      * The size of the skew relative to the size of the market OI cap. This value ranges between 0 and 1.
-     * Scaler used for skew is at least minSkewScale to prevent extreme funding rates for small markets.
+     * Scaler used for skew is at least minSkewScaleUSD to prevent extreme funding rates for small markets.
      */
-    function _proportionalSkew() internal view returns (int) {
-        uint minScale = _minSkewScale(baseAsset);
+    function _proportionalSkew(uint price) internal view returns (int) {
+        // marketSize is in baseAsset units so we need to convert from USD units
+        require(price > 0, "price can't be zero");
+        uint minScaleBaseAsset = _minSkewScaleUSD(baseAsset).divideDecimalRound(price);
         // don't allow small market sizes to cause huge funding rates
-        uint skewScale = marketSize > minScale ? marketSize : minScale;
+        uint skewScale = marketSize > minScaleBaseAsset ? marketSize : minScaleBaseAsset;
         if (skewScale == 0) {
             // parameters may not be set, don't divide by zero
             return 0;
@@ -303,17 +307,17 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScale,
+            uint minSkewScaleUSD,
             uint maxFundingRateDelta
         )
     {
         return _parameters(baseAsset);
     }
 
-    function _currentFundingRate() internal view returns (int) {
+    function _currentFundingRate(uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(baseAsset));
         // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -_proportionalSkew()), _UNIT).multiplyDecimalRound(maxFundingRate);
+        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
     /*
@@ -321,19 +325,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
      */
     function currentFundingRate() external view returns (int) {
-        return _currentFundingRate();
+        (uint price, ) = _assetPrice();
+        return _currentFundingRate(price);
     }
 
     /*
      * The current funding rate, rescaled to a percentage per second.
      */
-    function _currentFundingRatePerSecond() internal view returns (int) {
-        return _currentFundingRate() / 1 days;
+    function _currentFundingRatePerSecond(uint price) internal view returns (int) {
+        return _currentFundingRate(price) / 1 days;
     }
 
     function _unrecordedFunding(uint price) internal view returns (int funding) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
-        return _currentFundingRatePerSecond().multiplyDecimalRound(int(price)).mul(elapsed);
+        return _currentFundingRatePerSecond(price).multiplyDecimalRound(int(price)).mul(elapsed);
     }
 
     /*

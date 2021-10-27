@@ -1163,7 +1163,7 @@ const setupAllContracts = async ({
 						toWei('10'), // 10x max leverage
 						toWei('100000'), // 100000 max market debt
 						toWei('0.1'), // 10% max funding rate
-						toWei('1000'), // 1000 units minSkewScale
+						toWei('100000'), // 100000 USD minSkewScaleUSD
 						toWei('0.0125'), // 1.25% per hour max funding rate of change
 						{ from: owner }
 					),
