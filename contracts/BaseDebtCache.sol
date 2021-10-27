@@ -206,7 +206,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _excludedIssuedDebts(currencyKeys);
     }
 
-    // Returns the total sUSD debt backed by non-SNX collateral, excluding debts recorded with _excludedIssuedDebt
+    // Returns the total sUSD debt backed by non-SNX collateral.
     function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory rates, bool ratesAreInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
@@ -214,7 +214,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _totalNonSnxBackedDebt(currencyKeys, rates, ratesAreInvalid);
     }
 
-    function _totalNonSnxBackedDebt(bytes32[] memory currencyKeys, uint[] memory rates, bool ratesAreInvalid) internal view returns (uint excludedDebt, bool isInvalid) {
+    function _totalNonSnxBackedDebt(
+        bytes32[] memory currencyKeys,
+        uint[] memory rates,
+        bool ratesAreInvalid
+    ) internal view returns (uint excludedDebt, bool isInvalid) {
         // Calculate excluded debt.
         // 1. MultiCollateral long debt + short debt.
         (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
@@ -226,6 +230,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         // Subtract sETH and sUSD issued by EtherWrapper.
         excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
 
+        // 3. WrapperFactory.
+        // Get the debt issued by the Wrappers.
         for (uint i = 0; i < currencyKeys.length; i++) {
             excludedDebt = excludedDebt.add(_excludedIssuedDebt[currencyKeys[i]].multiplyDecimalRound(rates[i]));
         }

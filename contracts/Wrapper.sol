@@ -55,6 +55,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         currencyKey = _currencyKey;
         synthContractName = _synthContractName;
         targetSynthIssued = 0;
+        token.approve(address(this), uint256(-1));
     }
 
     /* ========== VIEWS ========== */
@@ -273,7 +274,12 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         targetSynthIssued = _targetSynthIssued;
     }
 
-    function _safeTransferFrom(address _tokenAddress, address _from, address _to, uint256 _value) internal returns (bool success) {
+    function _safeTransferFrom(
+        address _tokenAddress,
+        address _from,
+        address _to,
+        uint256 _value
+    ) internal returns (bool success) {
         // note: both of these could be replaced with manual mstore's to reduce cost if desired
         bytes memory msgData = abi.encodeWithSignature("transferFrom(address,address,uint256)", _from, _to, _value);
         uint msgSize = msgData.length;
@@ -283,23 +289,25 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
             mstore(0x00, 0xff)
 
             // note: this requires tangerine whistle compatible EVM
-            if iszero(call(gas(), _tokenAddress, 0, add(msgData, 0x20), msgSize, 0x00, 0x20)) { revert(0, 0) }
-            
-            switch mload(0x00)
-            case 0xff {
-                // token is not fully ERC20 compatible, didn't return anything, assume it was successful
-                success := 1
-            }
-            case 0x01 {
-                success := 1
-            }
-            case 0x00 {
-                success := 0
-            }
-            default {
-                // unexpected value, what could this be?
+            if iszero(call(gas(), _tokenAddress, 0, add(msgData, 0x20), msgSize, 0x00, 0x20)) {
                 revert(0, 0)
             }
+
+            switch mload(0x00)
+                case 0xff {
+                    // token is not fully ERC20 compatible, didn't return anything, assume it was successful
+                    success := 1
+                }
+                case 0x01 {
+                    success := 1
+                }
+                case 0x00 {
+                    success := 0
+                }
+                default {
+                    // unexpected value, what could this be?
+                    revert(0, 0)
+                }
         }
     }
 
