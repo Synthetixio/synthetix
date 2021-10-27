@@ -582,6 +582,7 @@ module.exports = ({ web3 } = {}) => {
 
 		toUnit,
 		fromUnit,
+		toBN,
 
 		toPreciseUnit,
 		fromPreciseUnit,

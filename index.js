@@ -204,8 +204,8 @@ const defaults = {
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
 	FUTURES_MIN_LIQUIDATION_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
-	FUTURES_LIQUIDATION_FEE_BPS: w3utils.toWei('35'), // 35 basis points liquidation incentive
-	FUTURES_LIQUIDATION_BUFFER_BPS: w3utils.toWei('25'), // 25 basis points liquidation buffer
+	FUTURES_LIQUIDATION_FEE_BPS: w3utils.toBN('35'), // 35 basis points liquidation incentive
+	FUTURES_LIQUIDATION_BUFFER_BPS: w3utils.toBN('25'), // 25 basis points liquidation buffer
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
 };
 

@@ -1,7 +1,7 @@
 const { artifacts, contract } = require('hardhat');
 
 const { toBytes32 } = require('../..');
-const { toUnit } = require('../utils')();
+const { toUnit, toBN } = require('../utils')();
 
 const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
@@ -290,8 +290,76 @@ contract('FuturesMarketSettings', accounts => {
 			const txn = await futuresMarketSettings.setMinLiquidationFee(minLiquidationFee, {
 				from: owner,
 			});
-			assert.eventEqual(txn, 'LiquidationFeeUpdated', {
+			assert.eventEqual(txn, 'MinLiquidationFeeUpdated', {
 				sUSD: minLiquidationFee,
+			});
+		});
+	});
+
+	describe('setLiquidationFeeBPs()', () => {
+		let liquidationFeeBPs;
+		beforeEach(async () => {
+			liquidationFeeBPs = await futuresMarketSettings.liquidationFeeBPs();
+		});
+		it('should be able to change liquidationFeeBPs', async () => {
+			const originalValue = await futuresMarketSettings.liquidationFeeBPs();
+			await futuresMarketSettings.setLiquidationFeeBPs(originalValue.mul(toBN(2)), { from: owner });
+			const newValue = await futuresMarketSettings.liquidationFeeBPs.call();
+			assert.bnEqual(newValue, originalValue.mul(toBN(2)));
+		});
+
+		it('only owner is permitted to change liquidationFeeBPs', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketSettings.setLiquidationFeeBPs,
+				args: [liquidationFeeBPs.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful liquidationFeeBPs change', async () => {
+			const newValue = toBN(100);
+			const txn = await futuresMarketSettings.setLiquidationFeeBPs(newValue, {
+				from: owner,
+			});
+			assert.eventEqual(txn, 'LiquidationFeeBPsUpdated', {
+				bps: newValue,
+			});
+		});
+	});
+
+	describe('setLiquidationBufferBPs()', () => {
+		let liquidationBufferBPs;
+		beforeEach(async () => {
+			liquidationBufferBPs = await futuresMarketSettings.liquidationBufferBPs();
+		});
+		it('should be able to change liquidationBufferBPs', async () => {
+			const originalValue = await futuresMarketSettings.liquidationBufferBPs();
+			await futuresMarketSettings.setLiquidationBufferBPs(originalValue.mul(toBN(2)), {
+				from: owner,
+			});
+			const newValue = await futuresMarketSettings.liquidationBufferBPs.call();
+			assert.bnEqual(newValue, originalValue.mul(toBN(2)));
+		});
+
+		it('only owner is permitted to change liquidationBufferBPs', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketSettings.setLiquidationBufferBPs,
+				args: [liquidationBufferBPs.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful liquidationBufferBPs change', async () => {
+			const newValue = toBN(100);
+			const txn = await futuresMarketSettings.setLiquidationBufferBPs(newValue, {
+				from: owner,
+			});
+			assert.eventEqual(txn, 'LiquidationBufferBPsUpdated', {
+				bps: newValue,
 			});
 		});
 	});

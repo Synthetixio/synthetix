@@ -224,7 +224,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     function setMinLiquidationFee(uint _sUSD) external onlyOwner {
         require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE, _sUSD);
-        emit LiquidationFeeUpdated(_sUSD);
+        emit MinLiquidationFeeUpdated(_sUSD);
     }
 
     function setLiquidationFeeBPs(uint _bps) external onlyOwner {
@@ -246,7 +246,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
-    event LiquidationFeeUpdated(uint sUSD);
+    event MinLiquidationFeeUpdated(uint sUSD);
     event LiquidationFeeBPsUpdated(uint bps);
     event LiquidationBufferBPsUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
