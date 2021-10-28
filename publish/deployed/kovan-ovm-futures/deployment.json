@@ -24421,7 +24421,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "minSkewScaleUSD",
+											"name": "skewScaleUSD",
 											"type": "uint256"
 										},
 										{
@@ -24566,7 +24566,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "minSkewScaleUSD",
+											"name": "skewScaleUSD",
 											"type": "uint256"
 										},
 										{
@@ -24850,7 +24850,7 @@
 								},
 								{
 									"internalType": "uint256",
-									"name": "minSkewScaleUSD",
+									"name": "skewScaleUSD",
 									"type": "uint256"
 								},
 								{
@@ -25421,7 +25421,7 @@
 							"type": "bytes32"
 						}
 					],
-					"name": "minSkewScaleUSD",
+					"name": "skewScaleUSD",
 					"outputs": [
 						{
 							"internalType": "uint256",
@@ -25521,7 +25521,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_minSkewScaleUSD",
+							"name": "_skewScaleUSD",
 							"type": "uint256"
 						},
 						{
@@ -25733,11 +25733,11 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_minSkewScaleUSD",
+							"name": "_skewScaleUSD",
 							"type": "uint256"
 						}
 					],
-					"name": "setMinSkewScaleUSD",
+					"name": "setSkewScaleUSD",
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
@@ -25783,7 +25783,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_minSkewScaleUSD",
+							"name": "_skewScaleUSD",
 							"type": "uint256"
 						},
 						{
@@ -26734,7 +26734,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "minSkewScaleUSD",
+							"name": "skewScaleUSD",
 							"type": "uint256"
 						},
 						{

@@ -81,8 +81,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /*
      * The skew level at which the max funding rate will be charged.
      */
-    function minSkewScaleUSD(bytes32 _baseAsset) public view returns (uint) {
-        return _minSkewScaleUSD(_baseAsset);
+    function skewScaleUSD(bytes32 _baseAsset) public view returns (uint) {
+        return _skewScaleUSD(_baseAsset);
     }
 
     /*
@@ -102,7 +102,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,
-            uint _minSkewScaleUSD,
+            uint _skewScaleUSD,
             uint _maxFundingRateDelta
         )
     {
@@ -173,9 +173,9 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
     }
 
-    function setMinSkewScaleUSD(bytes32 _baseAsset, uint _minSkewScaleUSD) public onlyOwner {
+    function setSkewScaleUSD(bytes32 _baseAsset, uint _skewScaleUSD) public onlyOwner {
         _recomputeFunding(_baseAsset);
-        _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _minSkewScaleUSD);
+        _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
@@ -191,7 +191,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _maxLeverage,
         uint _maxMarketValueUSD,
         uint _maxFundingRate,
-        uint _minSkewScaleUSD,
+        uint _skewScaleUSD,
         uint _maxFundingRateDelta
     ) external onlyOwner {
         _recomputeFunding(_baseAsset);
@@ -201,7 +201,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
         setMaxFundingRate(_baseAsset, _maxFundingRate);
-        setMinSkewScaleUSD(_baseAsset, _minSkewScaleUSD);
+        setSkewScaleUSD(_baseAsset, _skewScaleUSD);
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 

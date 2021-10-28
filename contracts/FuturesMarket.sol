@@ -279,12 +279,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /*
      * The size of the skew relative to the size of the market OI cap. This value ranges between 0 and 1.
-     * Scaler used for skew is at least minSkewScaleUSD to prevent extreme funding rates for small markets.
+     * Scaler used for skew is at least skewScaleUSD to prevent extreme funding rates for small markets.
      */
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint minScaleBaseAsset = _minSkewScaleUSD(baseAsset).divideDecimalRound(price);
+        uint minScaleBaseAsset = _skewScaleUSD(baseAsset).divideDecimalRound(price);
         // don't allow small market sizes to cause huge funding rates
         uint skewScale = marketSize > minScaleBaseAsset ? marketSize : minScaleBaseAsset;
         if (skewScale == 0) {
@@ -307,7 +307,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScaleUSD,
+            uint skewScaleUSD,
             uint maxFundingRateDelta
         )
     {

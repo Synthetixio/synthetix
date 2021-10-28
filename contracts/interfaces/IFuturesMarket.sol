@@ -76,7 +76,7 @@ interface IFuturesMarket {
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScaleUSD,
+            uint skewScaleUSD,
             uint maxFundingRateDelta
         );
 
