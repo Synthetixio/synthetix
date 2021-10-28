@@ -30,12 +30,16 @@ module.exports = {
 	// Assert against decoded logs
 	decodedEventEqual({ event, emittedFrom, args, log, bnCloseVariance = '10' }) {
 		assert.equal(log.name, event);
-		assert.equal(log.address, emittedFrom);
+		assert.equal(log.address, emittedFrom, 'log emission address does not match');
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
 
 			if (type === 'address') {
-				assert.equal(web3.utils.toChecksumAddress(value), web3.utils.toChecksumAddress(arg));
+				assert.equal(
+					web3.utils.toChecksumAddress(value),
+					web3.utils.toChecksumAddress(arg),
+					`arg '${arg}' does not match`
+				);
 			} else if (/^u?int/.test(type)) {
 				assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
 			} else {

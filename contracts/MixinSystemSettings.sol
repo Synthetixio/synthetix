@@ -30,6 +30,9 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ETHER_WRAPPER_MAX_ETH = "etherWrapperMaxETH";
     bytes32 internal constant SETTING_ETHER_WRAPPER_MINT_FEE_RATE = "etherWrapperMintFeeRate";
     bytes32 internal constant SETTING_ETHER_WRAPPER_BURN_FEE_RATE = "etherWrapperBurnFeeRate";
+    bytes32 internal constant SETTING_WRAPPER_MAX_TOKEN_AMOUNT = "wrapperMaxTokens";
+    bytes32 internal constant SETTING_WRAPPER_MINT_FEE_RATE = "wrapperMintFeeRate";
+    bytes32 internal constant SETTING_WRAPPER_BURN_FEE_RATE = "wrapperBurnFeeRate";
     bytes32 internal constant SETTING_MIN_CRATIO = "minCratio";
     bytes32 internal constant SETTING_NEW_COLLATERAL_MANAGER = "newCollateralManager";
     bytes32 internal constant SETTING_INTERACTION_DELAY = "interactionDelay";
@@ -141,6 +144,30 @@ contract MixinSystemSettings is MixinResolver {
 
     function getEtherWrapperBurnFeeRate() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE);
+    }
+
+    function getWrapperMaxTokenAmount(address wrapper) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, wrapper))
+            );
+    }
+
+    function getWrapperMintFeeRate(address wrapper) internal view returns (int) {
+        return
+            flexibleStorage().getIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, wrapper))
+            );
+    }
+
+    function getWrapperBurnFeeRate(address wrapper) internal view returns (int) {
+        return
+            flexibleStorage().getIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, wrapper))
+            );
     }
 
     function getMinCratio(address collateral) internal view returns (uint) {
