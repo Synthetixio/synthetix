@@ -174,6 +174,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     function setSkewScaleUSD(bytes32 _baseAsset, uint _skewScaleUSD) public onlyOwner {
+        require(_skewScaleUSD > 0, "cannot set skew scale 0");
         _recomputeFunding(_baseAsset);
         _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }

@@ -140,6 +140,15 @@ contract('FuturesMarketSettings', accounts => {
 					'closure fee greater than 1'
 				);
 			});
+
+			it('should revert if setSkewScaleUSD is 0', async () => {
+				await assert.revert(
+					futuresMarketSettings.setSkewScaleUSD(baseAsset, 0, {
+						from: owner,
+					}),
+					'cannot set skew scale 0'
+				);
+			});
 		});
 
 		describe('Setting the params', async () => {

@@ -2722,10 +2722,6 @@ contract('FuturesMarket', accounts => {
 				multiplyDecimalRound(expectedFunding, toUnit('0.5'))
 			);
 
-			// disable skewScaleUSD
-			await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('0'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0')); // skew scale 0 results in no proportional skew
-
 			// skewScaleUSD is below market size
 			await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit(4 * price), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1')); // max funding rate
@@ -3545,7 +3541,7 @@ contract('FuturesMarket', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setSkewScaleUSD(baseAsset, 0, { from: owner }),
+					futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('100'), { from: owner }),
 					'Invalid price'
 				);
 				await assert.revert(
