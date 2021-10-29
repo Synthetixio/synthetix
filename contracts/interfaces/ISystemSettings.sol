@@ -31,13 +31,17 @@ interface ISystemSettings {
 
     function tradingRewardsEnabled() external view returns (bool);
 
-    // function crossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) external view returns (uint);
+    function wrapperMaxTokenAmount(address wrapper) external view returns (uint);
+
+    function wrapperMintFeeRate(address wrapper) external view returns (int);
+
+    function wrapperBurnFeeRate(address wrapper) external view returns (int);
 
     function etherWrapperMaxETH() external view returns (uint);
 
-    function etherWrapperBurnFeeRate() external view returns (uint);
-
     function etherWrapperMintFeeRate() external view returns (uint);
+
+    function etherWrapperBurnFeeRate() external view returns (uint);
 
     function minCratio(address collateral) external view returns (uint);
 

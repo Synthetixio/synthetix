@@ -55,35 +55,38 @@ contract('SystemSettings', async accounts => {
 			abi: systemSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'setWaitingPeriodSecs',
-				'setPriceDeviationThresholdFactor',
-				'setIssuanceRatio',
-				'setTargetThreshold',
-				'setFeePeriodDuration',
-				'setLiquidationDelay',
-				'setLiquidationRatio',
-				'setLiquidationPenalty',
-				'setRateStalePeriod',
-				'setExchangeFeeRateForSynths',
-				'setMinimumStakeTime',
 				'setAggregatorWarningFlags',
-				'setTradingRewardsEnabled',
-				'setDebtSnapshotStaleTime',
-				'setCrossDomainMessageGasLimit',
-				'setEtherWrapperMaxETH',
-				'setEtherWrapperMintFeeRate',
-				'setEtherWrapperBurnFeeRate',
-				'setMinCratio',
-				'setCollateralManager',
-				'setInteractionDelay',
-				'setCollapseFeeRate',
-				'setAtomicMaxVolumePerBlock',
-				'setAtomicTwapWindow',
 				'setAtomicEquivalentForDexPricing',
 				'setAtomicExchangeFeeRate',
+				'setAtomicMaxVolumePerBlock',
 				'setAtomicPriceBuffer',
+				'setAtomicTwapWindow',
 				'setAtomicVolatilityConsiderationWindow',
 				'setAtomicVolatilityUpdateThreshold',
+				'setCollapseFeeRate',
+				'setCollateralManager',
+				'setCrossDomainMessageGasLimit',
+				'setDebtSnapshotStaleTime',
+				'setEtherWrapperBurnFeeRate',
+				'setEtherWrapperMaxETH',
+				'setEtherWrapperMintFeeRate',
+				'setExchangeFeeRateForSynths',
+				'setFeePeriodDuration',
+				'setInteractionDelay',
+				'setIssuanceRatio',
+				'setLiquidationDelay',
+				'setLiquidationPenalty',
+				'setLiquidationRatio',
+				'setMinCratio',
+				'setMinimumStakeTime',
+				'setPriceDeviationThresholdFactor',
+				'setRateStalePeriod',
+				'setTargetThreshold',
+				'setTradingRewardsEnabled',
+				'setWaitingPeriodSecs',
+				'setWrapperBurnFeeRate',
+				'setWrapperMaxTokenAmount',
+				'setWrapperMintFeeRate',
 			],
 		});
 	});
@@ -947,11 +950,11 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_MINT_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_MINT_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_WRAPPER_MINT_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_MINT_FEE_RATE()).add(ONE);
 			await assert.revert(
 				systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE'
+				'rate > MAX_WRAPPER_MINT_FEE_RATE'
 			);
 		});
 
@@ -982,11 +985,11 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_BURN_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_BURN_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_WRAPPER_BURN_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_BURN_FEE_RATE()).add(ONE);
 			await assert.revert(
 				systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE'
+				'rate > MAX_WRAPPER_BURN_FEE_RATE'
 			);
 		});
 
@@ -1358,6 +1361,149 @@ contract('SystemSettings', async accounts => {
 			it('allows to be reset to zero', async () => {
 				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 0, { from: owner });
 				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), 0);
+			});
+		});
+	});
+
+	const testWrapperAddress = ZERO_ADDRESS;
+
+	describe('setWrapperMaxTokenAmount()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setWrapperMaxTokenAmount,
+				args: [testWrapperAddress, 1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			const newValue = toUnit('6000');
+			beforeEach(async () => {
+				txn = await systemSettings.setWrapperMaxTokenAmount(testWrapperAddress, newValue, {
+					from: owner,
+				});
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.wrapperMaxTokenAmount(testWrapperAddress), newValue);
+			});
+			it('does not change value for different address', async () => {
+				assert.bnEqual(await systemSettings.wrapperMaxTokenAmount(systemSettings.address), 0);
+			});
+			it('and emits a WrapperMaxTokenAmountUpdated event', async () => {
+				assert.eventEqual(txn, 'WrapperMaxTokenAmountUpdated', [testWrapperAddress, newValue]);
+			});
+		});
+	});
+
+	describe('setWrapperMintFeeRate()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setWrapperMintFeeRate,
+				args: [testWrapperAddress, 1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if the rate exceeds MAX_WRAPPER_MINT_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_MINT_FEE_RATE()).add(ONE);
+			await assert.revert(
+				systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, { from: owner }),
+				'rate > MAX_WRAPPER_MINT_FEE_RATE'
+			);
+		});
+
+		it('should revert if the fee is negative and burn fee is not at least positive and greater in magnitude', async () => {
+			const newValue = toUnit('-0.06');
+			await assert.revert(
+				systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, { from: owner }),
+				'-rate > wrapperBurnFeeRate'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			const newValue = toUnit('-0.02');
+			beforeEach(async () => {
+				await systemSettings.setWrapperBurnFeeRate(
+					testWrapperAddress,
+					newValue.mul(toBN(2)).neg(),
+					{
+						from: owner,
+					}
+				);
+
+				txn = await systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, {
+					from: owner,
+				});
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.wrapperMintFeeRate(testWrapperAddress), newValue);
+			});
+			it('does not change value for different address', async () => {
+				assert.bnEqual(await systemSettings.wrapperMintFeeRate(systemSettings.address), 0);
+			});
+			it('and emits an WrapperMintFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'WrapperMintFeeRateUpdated', [testWrapperAddress, newValue]);
+			});
+		});
+	});
+
+	describe('setWrapperBurnFeeRate()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setWrapperBurnFeeRate,
+				args: [testWrapperAddress, 1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if the rate exceeds MAX_WRAPPER_BURN_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_BURN_FEE_RATE()).add(ONE);
+			await assert.revert(
+				systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, { from: owner }),
+				'rate > MAX_WRAPPER_BURN_FEE_RATE'
+			);
+		});
+
+		it('should revert if the fee is negative and burn fee is not at least positive and greater in magnitude', async () => {
+			const newValue = toUnit('-0.06');
+			await assert.revert(
+				systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, { from: owner }),
+				'-rate > wrapperMintFeeRate'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			const newValue = toUnit('-0.02');
+			beforeEach(async () => {
+				await systemSettings.setWrapperMintFeeRate(
+					testWrapperAddress,
+					newValue.mul(toBN(2)).neg(),
+					{
+						from: owner,
+					}
+				);
+
+				txn = await systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, {
+					from: owner,
+				});
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.wrapperBurnFeeRate(testWrapperAddress), newValue);
+			});
+			it('does not change value for different address', async () => {
+				assert.bnEqual(await systemSettings.wrapperBurnFeeRate(systemSettings.address), 0);
+			});
+			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'WrapperBurnFeeRateUpdated', [testWrapperAddress, newValue]);
 			});
 		});
 	});
