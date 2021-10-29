@@ -55,6 +55,8 @@ contract('DebtCache', async accounts => {
 		synths,
 		addressResolver,
 		exchanger,
+		wrapperFactory,
+		weth,
 		// MultiCollateral tests.
 		ceth,
 		// Short tests.
@@ -120,6 +122,7 @@ contract('DebtCache', async accounts => {
 		await debtCache.rebuildCache();
 		await feePool.rebuildCache();
 		await issuer.rebuildCache();
+		await wrapperFactory.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 
@@ -213,6 +216,25 @@ contract('DebtCache', async accounts => {
 		await sUSDContract.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
+	const setupDebtIssuer = async () => {
+		const etherWrapperCreateTx = await wrapperFactory.createWrapper(
+			weth.address,
+			sETH,
+			toBytes32('SynthsETH'),
+			{ from: owner }
+		);
+
+		// extract address from events
+		const etherWrapperAddress = etherWrapperCreateTx.logs.find(l => l.event === 'WrapperCreated')
+			.args.wrapperAddress;
+
+		await systemSettings.setWrapperMaxTokenAmount(etherWrapperAddress, toUnit('1000000'), {
+			from: owner,
+		});
+
+		return artifacts.require('Wrapper').at(etherWrapperAddress);
+	};
+
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
 	before(async () => {
@@ -231,6 +253,8 @@ contract('DebtCache', async accounts => {
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
+			WrapperFactory: wrapperFactory,
+			WETH: weth,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -251,6 +275,8 @@ contract('DebtCache', async accounts => {
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
 				'CollateralUtil',
+				'WrapperFactory',
+				'WETH',
 			],
 		}));
 	});
@@ -284,6 +310,7 @@ contract('DebtCache', async accounts => {
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'takeDebtSnapshot',
+				'recordExcludedDebtChange',
 				'purgeCachedSynthDebt',
 				'updateCachedSynthDebts',
 				'updateCachedSynthDebtWithRate',
@@ -337,6 +364,17 @@ contract('DebtCache', async accounts => {
 				address: owner,
 				skipPassCheck: true,
 				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('recordExcludedDebtChange() can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: debtCache.recordExcludedDebtChange,
+				accounts,
+				args: [sAUD, toUnit('1')],
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only debt issuers may call this',
 			});
 		});
 
@@ -597,6 +635,37 @@ contract('DebtCache', async accounts => {
 				);
 				await debtCache.takeDebtSnapshot({ from: owner });
 			});
+
+			describe('when debts are excluded', async () => {
+				let beforeExcludedDebts;
+
+				beforeEach(async () => {
+					beforeExcludedDebts = await debtCache.currentDebt();
+
+					// cause debt CollateralManager
+					await setupMultiCollateral();
+					await ceth.open(oneETH, sETH, {
+						value: toUnit('10'),
+						from: account1,
+					});
+
+					// cause debt from WrapperFactory
+					const etherWrapper = await setupDebtIssuer();
+					const wrapperAmount = toUnit('1');
+
+					await weth.deposit({ from: account1, value: wrapperAmount });
+					await weth.approve(etherWrapper.address, wrapperAmount, { from: account1 });
+					await etherWrapper.mint(wrapperAmount, { from: account1 });
+
+					// test function
+					await debtCache.takeDebtSnapshot({ from: owner });
+				});
+
+				it('current debt is correct', async () => {
+					// debt shouldn't have changed since SNX holders have not issued any more debt
+					assert.bnEqual(await debtCache.currentDebt(), beforeExcludedDebts);
+				});
+			});
 		});
 
 		describe('updateCachedSynthDebts()', () => {
@@ -685,6 +754,23 @@ contract('DebtCache', async accounts => {
 					'Synthetix is suspended'
 				);
 				await debtCache.updateCachedSynthDebts([sAUD, sEUR], { from: owner });
+			});
+		});
+
+		describe('recordExcludedDebtChange()', () => {
+			it('does not work if delta causes excludedDebt goes negative', async () => {
+				await assert.revert(
+					debtCache.recordExcludedDebtChange(sETH, toUnit('-1'), { from: owner }),
+					'Excluded debt cannot become negative'
+				);
+			});
+
+			it('executed successfully', async () => {
+				await debtCache.recordExcludedDebtChange(sETH, toUnit('1'), { from: owner });
+				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('1'));
+
+				await debtCache.recordExcludedDebtChange(sETH, toUnit('-0.2'), { from: owner });
+				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('0.8'));
 			});
 		});
 

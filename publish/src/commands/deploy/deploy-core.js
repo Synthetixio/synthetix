@@ -260,4 +260,11 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 		args: [addressOf(readProxyForResolver)],
 	});
+
+	await deployer.deployContract({
+		name: 'WrapperFactory',
+		source: 'WrapperFactory',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
 };
