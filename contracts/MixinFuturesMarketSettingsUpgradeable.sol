@@ -6,7 +6,7 @@ import "./MixinResolverUpgradeable.sol";
 import "./interfaces/IFlexibleStorage.sol";
 
 // Modified Open Zeppelin UUPS contracts
-import "./open-zeppelin/proxy/utils/Initializable.sol";
+import "./open-zeppelin/Initializable.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/MixinFuturesMarketSettings
 contract MixinFuturesMarketSettingsUpgradeable is Initializable, MixinResolverUpgradeable {

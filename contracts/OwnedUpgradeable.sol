@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "./open-zeppelin/proxy/utils/Initializable.sol";
+import "./open-zeppelin/Initializable.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/owned
 contract OwnedUpgradeable is Initializable {

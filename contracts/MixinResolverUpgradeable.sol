@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Internal references
 import "./AddressResolver.sol";
 
-import "./open-zeppelin/proxy/utils/Initializable.sol";
+import "./open-zeppelin/Initializable.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinresolver
 contract MixinResolverUpgradeable is Initializable {

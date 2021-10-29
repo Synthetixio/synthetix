@@ -16,7 +16,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 // Modified Open Zeppelin UUPS contracts
-import "./open-zeppelin/proxy/utils/Initializable.sol";
+import "./open-zeppelin/Initializable.sol";
 
 /*
  * Synthetic Futures

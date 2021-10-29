@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "../FuturesMarket.sol";
-import "../open-zeppelin/proxy/utils/Initializable.sol";
+import "../open-zeppelin/Initializable.sol";
 import "./TestableFuturesMarket.sol";
 
 contract TestableUpgradeableFuturesMarket is TestableFuturesMarket {
