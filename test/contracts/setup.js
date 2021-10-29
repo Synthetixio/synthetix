@@ -214,6 +214,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
+		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
@@ -525,6 +526,15 @@ const setupContract = async ({
 					fncName: 'totalIssuedSynths',
 					returns: ['0'],
 				});
+			} else if (mock === 'WrapperFactory') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'isWrapper',
+						returns: [false],
+					}),
+				]);
 			} else if (mock === 'FeePool') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -665,6 +675,11 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
 		},
 		{
+			contract: 'WrapperFactory',
+			mocks: [],
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
+		{
 			contract: 'SynthRedeemer',
 			mocks: ['Issuer'],
 			deps: ['AddressResolver'],
@@ -684,6 +699,7 @@ const setupAllContracts = async ({
 				'FeePool',
 				'DelegateApprovals',
 				'FlexibleStorage',
+				'WrapperFactory',
 				'EtherWrapper',
 				'SynthRedeemer',
 			],
@@ -705,7 +721,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper', 'WrapperFactory'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
@@ -808,6 +824,7 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'CollateralManager',
 				'EtherWrapper',
+				'WrapperFactory',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},

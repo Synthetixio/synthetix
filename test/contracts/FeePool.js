@@ -80,6 +80,7 @@ contract('FeePool', async accounts => {
 		delegateApprovals,
 		sUSDContract,
 		addressResolver,
+		wrapperFactory,
 		synths;
 
 	before(async () => {
@@ -96,6 +97,7 @@ contract('FeePool', async accounts => {
 			SystemSettings: systemSettings,
 			SynthsUSD: sUSDContract,
 			SystemStatus: systemStatus,
+			WrapperFactory: wrapperFactory,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -114,6 +116,7 @@ contract('FeePool', async accounts => {
 				'RewardEscrowV2',
 				'DelegateApprovals',
 				'CollateralManager',
+				'WrapperFactory',
 			],
 		}));
 
@@ -465,7 +468,7 @@ contract('FeePool', async accounts => {
 			assert.bnEqual(feesAvailable[0], 0);
 		});
 
-		describe('closeFeePeriod()', () => {
+		describe('closeCurrentFeePeriod()', () => {
 			describe('fee period duration not set', () => {
 				beforeEach(async () => {
 					const storage = await FlexibleStorage.new(addressResolver.address, {
@@ -769,6 +772,20 @@ contract('FeePool', async accounts => {
 				await fastForward(feePeriodDuration.mul(web3.utils.toBN('500')));
 				await updateRatesWithDefaults();
 				await feePool.closeCurrentFeePeriod({ from: account1 });
+			});
+
+			it('should receive fees from WrapperFactory', async () => {
+				// Close the current one so we know exactly what we're dealing with
+				await closeFeePeriod();
+
+				// Wrapper Factory collects 100 sUSD in fees
+				const collectedFees = toUnit(100);
+				await sUSDContract.issue(wrapperFactory.address, collectedFees);
+
+				await closeFeePeriod();
+
+				const period = await feePool.recentFeePeriods(1);
+				assert.bnEqual(period.feesToDistribute, collectedFees);
 			});
 		});
 

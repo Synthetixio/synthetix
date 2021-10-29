@@ -17,13 +17,14 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
 
 	if (network === 'local') {
-		// On local, deploy a mock WETH token.
 		// OVM already has a deployment of WETH, however since we use
 		// Hardhat for the local-ovm environment, we must deploy
 		// our own.
+		// Using WETH for OVM as well since we need the payable deposit function
+		// for the Wrapper Factory integration test
 		const weth = await deployer.deployContract({
 			name: 'WETH',
-			source: useOvm ? 'MockWETH' : 'WETH',
+			source: 'WETH',
 		});
 		weth.skipResolver = true;
 		WETH_ADDRESS = weth.address;

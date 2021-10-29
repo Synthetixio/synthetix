@@ -17,6 +17,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/IWrapperFactory.sol";
 
 //
 // The debt cache (SIP-91) caches the global debt and the debt of each synth in the system.
@@ -37,6 +38,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     uint internal _cachedDebt;
     mapping(bytes32 => uint) internal _cachedSynthDebt;
+    mapping(bytes32 => uint) internal _excludedIssuedDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
 
@@ -53,6 +55,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -60,13 +63,14 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         newAddresses[4] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[5] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[5] = CONTRACT_WRAPPER_FACTORY;
+        newAddresses[6] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -92,6 +96,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function wrapperFactory() internal view returns (IWrapperFactory) {
+        return IWrapperFactory(requireAndGetAddress(CONTRACT_WRAPPER_FACTORY));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -125,7 +133,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
-    // Returns the USD-denominated supply of each synth in `currencyKeys`, according to `rates`.
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
         internal
         view
@@ -156,11 +163,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
-        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
-        return (values, excludedDebt, isInvalid || isAnyNonSnxDebtRateInvalid);
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
+
+        return (values, excludedDebt, isAnyNonSnxDebtRateInvalid);
     }
 
-    // Returns the USD-denominated supply of each synth in `currencyKeys`, using current exchange rates.
     function currentSynthDebts(bytes32[] calldata currencyKeys)
         external
         view
@@ -186,24 +193,50 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cachedSynthDebts(currencyKeys);
     }
 
-    function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
+    function _excludedIssuedDebts(bytes32[] memory currencyKeys) internal view returns (uint[] memory) {
+        uint numKeys = currencyKeys.length;
+        uint[] memory debts = new uint[](numKeys);
+        for (uint i = 0; i < numKeys; i++) {
+            debts[i] = _excludedIssuedDebt[currencyKeys[i]];
+        }
+        return debts;
+    }
+
+    function excludedIssuedDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory excludedDebts) {
+        return _excludedIssuedDebts(currencyKeys);
+    }
+
+    // Returns the total sUSD debt backed by non-SNX collateral.
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
+        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
+        (uint[] memory rates, bool ratesAreInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+
+        return _totalNonSnxBackedDebt(currencyKeys, rates, ratesAreInvalid);
+    }
+
+    function _totalNonSnxBackedDebt(
+        bytes32[] memory currencyKeys,
+        uint[] memory rates,
+        bool ratesAreInvalid
+    ) internal view returns (uint excludedDebt, bool isInvalid) {
         // Calculate excluded debt.
         // 1. MultiCollateral long debt + short debt.
         (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
         (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
-        isInvalid = anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
+        isInvalid = ratesAreInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
         excludedDebt = longValue.add(shortValue);
 
         // 2. EtherWrapper.
         // Subtract sETH and sUSD issued by EtherWrapper.
         excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
 
-        return (excludedDebt, isInvalid);
-    }
+        // 3. WrapperFactory.
+        // Get the debt issued by the Wrappers.
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            excludedDebt = excludedDebt.add(_excludedIssuedDebt[currencyKeys[i]].multiplyDecimalRound(rates[i]));
+        }
 
-    // Returns the total sUSD debt backed by non-SNX collateral.
-    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
-        return _totalNonSnxBackedDebt();
+        return (excludedDebt, isInvalid);
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
@@ -212,7 +245,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
         // Sum all issued synth values based on their supply.
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
-        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
 
         uint numValues = values.length;
         uint total;
@@ -221,10 +254,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         }
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isInvalid || isAnyNonSnxDebtRateInvalid);
+        return (total, isAnyNonSnxDebtRateInvalid);
     }
 
-    // Returns the current debt of the system, excluding non-SNX backed debt (eg. EtherWrapper).
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
         return _currentDebt();
     }
@@ -260,6 +292,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function takeDebtSnapshot() external {}
 
+    function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external {}
+
     /* ========== MODIFIERS ========== */
 
     function _requireSystemActiveIfNotOwner() internal view {
@@ -288,6 +322,20 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     modifier onlyIssuerOrExchanger() {
         _onlyIssuerOrExchanger();
+        _;
+    }
+
+    function _onlyDebtIssuer() internal view {
+        bool isWrapper = wrapperFactory().isWrapper(msg.sender);
+
+        // owner included for debugging and fixing in emergency situation
+        bool isOwner = msg.sender == owner;
+
+        require(isOwner || isWrapper, "Only debt issuers may call this");
+    }
+
+    modifier onlyDebtIssuer() {
+        _onlyDebtIssuer();
         _;
     }
 }

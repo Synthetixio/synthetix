@@ -4,6 +4,5 @@
 	"ExchangerWithVirtualSynth",
 	"FakeTradingRewards",
 	"Synthetix",
-	"NativeEtherWrapper",
-	"WETH"
+	"NativeEtherWrapper"
 ]

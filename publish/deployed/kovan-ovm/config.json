@@ -175,5 +175,8 @@
 	},
 	"CollateralManagerState": {
 		"deploy": false
+	},
+	"WrapperFactory": {
+		"deploy": false
 	}
 }
