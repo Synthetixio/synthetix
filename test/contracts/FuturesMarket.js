@@ -178,7 +178,7 @@ contract('FuturesMarket', accounts => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarket.abi,
-				ignoreParents: ['Owned', 'MixinFuturesMarketSettingsUpgradeable', 'UUPSUpgradeable'],
+				ignoreParents: ['Owned', 'MixinFuturesMarketSettingsUpgradeable'],
 				expected: [
 					'transferMargin',
 					'withdrawAllMargin',
