@@ -9,8 +9,9 @@ contract OwnedUpgradeable is Initializable {
 
     // solhint-disable-next-line
     function __Owned_init(address _owner) internal initializer {
-        nominatedOwner = _owner;
-        emit OwnerNominated(_owner);
+        require(_owner != address(0), "Owner address cannot be 0");
+        owner = _owner;
+        emit OwnerChanged(address(0), _owner);
     }
 
     function nominateNewOwner(address _owner) external onlyOwner {

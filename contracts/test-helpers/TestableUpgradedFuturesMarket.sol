@@ -7,8 +7,8 @@ import "./TestableFuturesMarket.sol";
 contract TestableUpgradeableFuturesMarket is TestableFuturesMarket {
     int internal _privateInteger;
 
-    function initialize() internal initializer {
-        _privateInteger = 1009;
+    function setPrivateInteger(int newValue) public {
+        _privateInteger = newValue;
     }
 
     function getPrivateInteger() public view returns (int) {

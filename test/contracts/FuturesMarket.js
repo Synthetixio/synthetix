@@ -157,39 +157,22 @@ contract('FuturesMarket', accounts => {
 	describe('Basic parameters', () => {
 		// Currently fails due to the modified OZ UUPS contracts not yet working
 		it('simple upgrade', async () => {
-			const Box = await ethers.getContractFactory('FuturesMarket');
-			const BoxV2 = await ethers.getContractFactory('TestableUpgradeableFuturesMarket');
-
-			const instance = await upgrades.deployProxy(
-				Box,
-				[
-					'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-					'0x5FbDB2315678afecb367f032d93F642f64180aa3',
-					'0x7342544300000000000000000000000000000000000000000000000000000000',
-				],
-				{
-					kind: 'uups',
-					unsafeAllow: [
-						'state-variable-immutable',
-						'state-variable-assignment',
-						'delegatecall',
-						'constructor',
-					], // Remove when Sol 0.8.2+
-				}
+			const futuresMarketContract = await ethers.getContractFactory('FuturesMarket');
+			const futuresMarketContractV2 = await ethers.getContractFactory(
+				'TestableUpgradeableFuturesMarket'
 			);
-			await instance.deployed();
-			const upgraded = await upgrades.upgradeProxy(instance.address, BoxV2, {
-				kind: 'uups',
-				unsafeAllow: [
-					'state-variable-immutable',
-					'state-variable-assignment',
-					'delegatecall',
-					'constructor',
-				], // Remove when Sol 0.8.2+
-			});
 
-			const value = await upgraded.value();
-			assert.equal(value.toString(), '42');
+			const instance = await upgrades.deployProxy(futuresMarketContract, [
+				owner,
+				'0x5FbDB2315678afecb367f032d93F642f64180aa3',
+				'0x7342544300000000000000000000000000000000000000000000000000000000',
+			]);
+			await instance.deployed();
+			const upgraded = await upgrades.upgradeProxy(instance.address, futuresMarketContractV2);
+
+			await upgraded.setPrivateInteger(1009);
+			const value = await upgraded.getPrivateInteger();
+			assert.equal(value.toString(), '1009');
 		});
 
 		it('Only expected functions are mutative', () => {

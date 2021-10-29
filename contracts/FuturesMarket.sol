@@ -16,7 +16,6 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 // Modified Open Zeppelin UUPS contracts
-import "./open-zeppelin/proxy/utils/UUPSUpgradeable.sol";
 import "./open-zeppelin/proxy/utils/Initializable.sol";
 
 /*
@@ -81,13 +80,7 @@ interface IFuturesMarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
-contract FuturesMarket is
-    Initializable,
-    OwnedUpgradeable,
-    UUPSUpgradeable,
-    MixinFuturesMarketSettingsUpgradeable,
-    IFuturesMarket
-{
+contract FuturesMarket is Initializable, OwnedUpgradeable, MixinFuturesMarketSettingsUpgradeable, IFuturesMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -162,7 +155,6 @@ contract FuturesMarket is
 
         // Invoke all relevant initializers
         OwnedUpgradeable.__Owned_init(_owner);
-        UUPSUpgradeable.__UUPSUpgradeable_init();
         MixinFuturesMarketSettingsUpgradeable.initialize(_resolver);
 
         baseAsset = _baseAsset;
@@ -182,8 +174,6 @@ contract FuturesMarket is
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
     }
-
-    function _authorizeUpgrade(address newImplementation) internal onlyOwner {}
 
     /* ========== VIEWS ========== */
 

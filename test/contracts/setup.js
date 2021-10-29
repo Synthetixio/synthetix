@@ -293,8 +293,6 @@ const setupContract = async ({
 				defaultArgs[contract],
 				{
 					deployer: deployerAccount,
-					kind: 'uups',
-					unsafeAllow: ['state-variable-immutable', 'state-variable-assignment', 'delegatecall'], // Remove when Sol 0.8.2+
 				}
 			);
 			await ethersInstance.deployed();
