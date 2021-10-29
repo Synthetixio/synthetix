@@ -6,13 +6,8 @@ import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 
 // Internal references
+import "./interfaces/IOwnerRelayOnOptimism.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-
-interface IOwnerRelayOnOptimism {
-    function finalizeRelay(address target, bytes calldata payload) external;
-
-    function finalizeRelayBatch(address[] calldata target, bytes[] calldata payloads) external;
-}
 
 contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -34,7 +29,7 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM);
     }
 
-    function _getxGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
+    function _getCrossDomainGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
         // Use specified crossDomainGasLimit if specified value is not zero.
         // otherwise use the default in SystemSettings.
         return
@@ -63,7 +58,7 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         IOwnerRelayOnOptimism ownerRelayOnOptimism;
         bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelay.selector, target, payload);
 
-        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getxGasLimit(crossDomainGasLimit));
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getCrossDomainGasLimit(crossDomainGasLimit));
 
         emit RelayInitiated(target, payload);
     }
@@ -80,7 +75,7 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         bytes memory messageData =
             abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelayBatch.selector, targets, payloads);
 
-        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getxGasLimit(crossDomainGasLimit));
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getCrossDomainGasLimit(crossDomainGasLimit));
 
         emit RelayBatchInitiated(targets, payloads);
     }

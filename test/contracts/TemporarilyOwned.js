@@ -26,6 +26,15 @@ contract('TemporarilyOwned', accounts => {
 		});
 	});
 
+	describe('when attempting to deploy with 0 duration', () => {
+		it('reverts', async () => {
+			await assert.revert(
+				TestableTempOwnedFactory.new(temporaryOwner, '0', { from: deployerAccount }),
+				'Duration cannot be 0'
+			);
+		});
+	});
+
 	describe('when deploying with valid parameters', () => {
 		let ownershipDuration;
 

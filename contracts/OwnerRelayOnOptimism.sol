@@ -4,11 +4,12 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./MixinResolver.sol";
 import "./TemporarilyOwned.sol";
+import "./interfaces/IOwnerRelayOnOptimism.sol";
 
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
+contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned, IOwnerRelayOnOptimism {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
