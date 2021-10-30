@@ -95,7 +95,7 @@ const deploy = async ({
 		freshDeploy,
 	});
 
-	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
+	const getDeployParameter = getDeployParameterFactory({ params, ignoreCustomParameters });
 
 	const addressOf = c => (c ? c.address : '');
 	const sourceOf = c => (c ? c.source : '');
