@@ -516,7 +516,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         uint uMargin = uint(newMargin);
         int positionSize = position.size;
-        if (positionSize != 0 && uMargin <= _liquidationFee()) {
+        // minimum margin beyond which position can be liqudiated
+        uint lMargin = _liquidationMargin(positionSize, price);
+        if (positionSize != 0 && uMargin <= lMargin) {
             return (uMargin, Status.CanLiquidate);
         }
 
@@ -585,27 +587,28 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         bool includeFunding,
         uint fundingIndex,
         uint currentPrice
-    ) internal view returns (uint liqPrice, uint liqFee) {
+    ) internal view returns (uint) {
         // A position can be liquidated whenever:
-        //     remainingMargin <= liquidationFee
+        //     remainingMargin <= liquidationMargin
         // Hence, expanding the definition of remainingMargin the exact price
         // at which a position can first be liquidated is:
-        //     margin + profitLoss + funding  =  liquidationFee
-        //     price                          =  lastPrice + (liquidationFee - margin) / positionSize - netFundingPerUnit
+        //     margin + profitLoss + funding  =  liquidationMargin
+        //     price                          =  lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
         // This is straightforward if we neglect the funding term.
 
         int positionSize = position.size;
 
         if (positionSize == 0) {
-            return (0, 0);
+            return 0;
         }
-        liqFee = _liquidationFee();
+        // minimum margin beyond which position can be liqudiated
+        uint liqMargin = _liquidationMargin(position.size, currentPrice);
 
-        int result = int(position.lastPrice).add(int(liqFee).sub(int(position.margin)).divideDecimalRound(positionSize));
+        int result = int(position.lastPrice).add(int(liqMargin).sub(int(position.margin)).divideDecimalRound(positionSize));
 
         if (includeFunding) {
             // If we pay attention to funding, we have to expanding netFundingPerUnit and solve again for the price:
-            //     price         =  (lastPrice + (liquidationFee - margin) / positionSize - netAccrued) / (1 + netUnrecorded)
+            //     price         =  (lastPrice + (liquidationMargin - margin) / positionSize - netAccrued) / (1 + netUnrecorded)
             // Where, if fundingIndex == sequenceLength:
             //     netAccrued    =  fundingSequence[fundingSequenceLength - 1] - fundingSequence[position.fundingIndex]
             //     netUnrecorded =  currentFundingRate * (block.timestamp - fundingLastRecomputed)
@@ -623,17 +626,53 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
                 .sub(_netFundingPerUnit(position.fundingIndex, fundingIndex, sequenceLength, currentPrice))
                 .divideDecimalRound(denominator);
         }
-        liqPrice = uint(_max(0, result));
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
-        return (liqPrice, liqFee);
+        return uint(_max(0, result));
     }
 
-    /*
-     * The fee charged from the margin during liquidation
+    /**
+     * The fee charged from the margin during liquidation. Fee is proportional to position size
+     * but is at least the _minLiquidationFee() of sUSD to prevent underincentivising
+     * liquidations of small positions.
+     * @param positionSize size of position in fixed point decimal baseAsset units
+     * @param price price of single baseAsset unit in sUSD fixed point decimal units
+     * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
      */
-    function _liquidationFee() internal view returns (uint lFee) {
-        return _minLiquidationFee();
+    function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
+        uint absPositionSize = positionSize < 0 ? uint(-positionSize) : uint(positionSize);
+        // size * price * fee-BPs / 10000
+        // the first multiplication is decimal because price is fixed point decimal, but BPs and 10000 are plain int
+        uint proportionalFee = absPositionSize.multiplyDecimalRound(price).mul(_liquidationFeeBPs()).div(10000);
+        uint minFee = _minLiquidationFee();
+        // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
+        return proportionalFee > minFee ? proportionalFee : minFee;
+    }
+
+    /**
+     * The margin buffer to maintain above the liquidation fee. The buffer is proportional to the position
+     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * so that stakers would not leak value to liquidators through minting rewards that are not from the
+     * account's margin.
+     * @param positionSize size of position in fixed point decimal baseAsset units
+     * @param price price of single baseAsset unit in sUSD fixed point decimal units
+     * @return lBuffer liquidation buffer to be paid to liquidator in sUSD fixed point decimal units
+     */
+    function _liquidationBuffer(int positionSize, uint price) internal view returns (uint lBuffer) {
+        uint absPositionSize = positionSize < 0 ? uint(-positionSize) : uint(positionSize);
+        // size * price * buffer-BPs / 10000
+        // the first multiplication is decimal because price is fixed point decimal, but BPs and 10000 are plain int
+        return absPositionSize.multiplyDecimalRound(price).mul(_liquidationBufferBPs()).div(10000);
+    }
+
+    /**
+     * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee
+     * @param positionSize size of position in fixed point decimal baseAsset units
+     * @param price price of single baseAsset unit in sUSD fixed point decimal units
+     * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
+     */
+    function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
+        return _liquidationBuffer(positionSize, price).add(_liquidationFee(positionSize, price));
     }
 
     /*
@@ -646,8 +685,24 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice();
-        (uint liqPrice, ) = _liquidationPrice(positions[account], includeFunding, fundingSequence.length, aPrice);
+        uint liqPrice = _liquidationPrice(positions[account], includeFunding, fundingSequence.length, aPrice);
         return (liqPrice, isInvalid);
+    }
+
+    /**
+     * The fee paid to liquidator in the event of successful liquidation of an account.
+     * Returns 0 if account cannot be liquidated right now.
+     * @param account address of the trader's account
+     * @return fee that will be paid for liquidating the account if it can be liquidated
+     *  in sUSD fixed point decimal units or 0 if account is not liquidatable.
+     */
+    function liquidationFee(address account) external view returns (uint) {
+        (uint price, bool invalid) = _assetPrice();
+        if (!invalid && _canLiquidate(positions[account], fundingSequence.length, price)) {
+            return _liquidationFee(positions[account].size, price);
+        } else {
+            return 0;
+        }
     }
 
     function _canLiquidate(
@@ -660,7 +715,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             return false;
         }
 
-        return _remainingMargin(position, fundingIndex, price) <= _liquidationFee();
+        return _remainingMargin(position, fundingIndex, price) <= _liquidationMargin(position.size, price);
     }
 
     /*
@@ -850,7 +905,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         (Position memory newPosition, uint fee_, Status status_) =
             _postTradeDetails(positions[sender], sizeDelta, price, fundingIndex);
 
-        (uint liqPrice, ) = _liquidationPrice(newPosition, true, fundingIndex, newPosition.lastPrice);
+        liqPrice = _liquidationPrice(newPosition, true, fundingIndex, newPosition.lastPrice);
         return (newPosition.margin, newPosition.size, newPosition.lastPrice, liqPrice, fee_, status_);
     }
 
@@ -1174,7 +1229,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         Position storage position = positions[account];
 
         // Retrieve the liquidation price before we close the order.
-        (uint liqPrice, uint liqFee) = _liquidationPrice(position, true, fundingIndex, price);
+        uint liqPrice = _liquidationPrice(position, true, fundingIndex, price);
 
         // Record updates to market size and debt.
         int positionSize = position.size;
@@ -1192,6 +1247,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         delete positions[account];
 
         // Issue the reward to the liquidator.
+        uint liqFee = _liquidationFee(positionSize, price);
         _manager().issueSUSD(liquidator, liqFee);
 
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);

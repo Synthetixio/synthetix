@@ -102,6 +102,8 @@ interface IFuturesMarket {
 
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid);
 
+    function liquidationFee(address account) external view returns (uint);
+
     function canLiquidate(address account) external view returns (bool);
 
     function currentLeverage(address account) external view returns (int leverage, bool invalid);
