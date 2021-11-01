@@ -99,7 +99,7 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	OVM_GAS_PRICE_GWEI: '0.000000001',
+	OVM_GAS_PRICE_GWEI: '0.00001',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
