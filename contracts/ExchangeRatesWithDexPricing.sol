@@ -78,7 +78,9 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             destinationCurrencyKey
         );
         // Derive P_CLBUF from highest configured buffer between source and destination synth
-        uint priceBuffer = Math.max(getAtomicPriceBuffer(sourceCurrencyKey), getAtomicPriceBuffer(destinationCurrencyKey));
+        uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
+        uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
+        uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
         uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
@@ -99,7 +101,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint pDexValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
 
         // Final value is minimum output between P_CLBUF and P_TWAP
-        value = Math.min(pClbufValue, pDexValue);
+        value = pClbufValue < pDexValue ? pClbufValue : pDexValue; // min
     }
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool) {

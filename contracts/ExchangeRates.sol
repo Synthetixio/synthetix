@@ -7,7 +7,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // Libraries
-import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
