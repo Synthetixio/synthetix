@@ -16,15 +16,7 @@ const {
 	confirmAction,
 } = require('../util');
 
-const {
-	getSafeInstance,
-	getSafeNonce,
-	getSafeTransactions,
-	checkExistingPendingTx,
-	getNewTransactionHash,
-	saveTransactionToApi,
-	getSafeSignature,
-} = require('../safe-utils');
+const SafeBatchSubmitter = require('../SafeBatchSubmitter');
 
 const { getContract } = require('../command-utils/contract');
 const { getBatchCallData } = require('../command-utils/bridge');
