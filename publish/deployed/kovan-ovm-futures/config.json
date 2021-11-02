@@ -176,9 +176,6 @@
 	"CollateralManagerState": {
 		"deploy": false
 	},
-	"WrapperFactory": {
-		"deploy": true
-	},
 	"FuturesMarketBTC": {
 		"deploy": false
 	},
