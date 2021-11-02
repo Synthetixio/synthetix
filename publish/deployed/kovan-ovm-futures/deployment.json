@@ -24404,7 +24404,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "maxMarketValueUSD",
+											"name": "maxMarketValue",
 											"type": "uint256"
 										}
 									],
@@ -24421,7 +24421,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "skewScaleUSD",
+											"name": "minSkewScale",
 											"type": "uint256"
 										},
 										{
@@ -24549,7 +24549,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "maxMarketValueUSD",
+											"name": "maxMarketValue",
 											"type": "uint256"
 										}
 									],
@@ -24566,7 +24566,7 @@
 										},
 										{
 											"internalType": "uint256",
-											"name": "skewScaleUSD",
+											"name": "minSkewScale",
 											"type": "uint256"
 										},
 										{
@@ -24840,7 +24840,7 @@
 								},
 								{
 									"internalType": "uint256",
-									"name": "maxMarketValueUSD",
+									"name": "maxMarketValue",
 									"type": "uint256"
 								},
 								{
@@ -24850,7 +24850,7 @@
 								},
 								{
 									"internalType": "uint256",
-									"name": "skewScaleUSD",
+									"name": "minSkewScale",
 									"type": "uint256"
 								},
 								{
@@ -25385,7 +25385,7 @@
 							"type": "bytes32"
 						}
 					],
-					"name": "maxMarketValueUSD",
+					"name": "maxMarketValue",
 					"outputs": [
 						{
 							"internalType": "uint256",
@@ -25421,7 +25421,7 @@
 							"type": "bytes32"
 						}
 					],
-					"name": "skewScaleUSD",
+					"name": "minSkewScale",
 					"outputs": [
 						{
 							"internalType": "uint256",
@@ -25511,7 +25511,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxMarketValueUSD",
+							"name": "_maxMarketValue",
 							"type": "uint256"
 						},
 						{
@@ -25521,7 +25521,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_skewScaleUSD",
+							"name": "_minSkewScale",
 							"type": "uint256"
 						},
 						{
@@ -25698,11 +25698,11 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxMarketValueUSD",
+							"name": "_maxMarketValue",
 							"type": "uint256"
 						}
 					],
-					"name": "setMaxMarketValueUSD",
+					"name": "setMaxMarketValue",
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
@@ -25733,11 +25733,11 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_skewScaleUSD",
+							"name": "_minSkewScale",
 							"type": "uint256"
 						}
 					],
-					"name": "setSkewScaleUSD",
+					"name": "setMinSkewScale",
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
@@ -25773,7 +25773,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_maxMarketValueUSD",
+							"name": "_maxMarketValue",
 							"type": "uint256"
 						},
 						{
@@ -25783,7 +25783,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "_skewScaleUSD",
+							"name": "_minSkewScale",
 							"type": "uint256"
 						},
 						{
@@ -26724,7 +26724,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "maxMarketValueUSD",
+							"name": "maxMarketValue",
 							"type": "uint256"
 						},
 						{
@@ -26734,7 +26734,7 @@
 						},
 						{
 							"internalType": "uint256",
-							"name": "skewScaleUSD",
+							"name": "minSkewScale",
 							"type": "uint256"
 						},
 						{
