@@ -935,8 +935,8 @@ contract('FuturesMarket', accounts => {
 						toUnit('1000'),
 						toBN('0'),
 						toBN('0'),
-						toBN('0'),
-						toBN('0'),
+						(await futuresMarket.assetPrice()).price,
+						await futuresMarket.fundingSequenceLength(),
 						toBN('0'),
 					],
 					log: decodedLogs[3],
@@ -981,8 +981,8 @@ contract('FuturesMarket', accounts => {
 						toUnit('0'),
 						toBN('0'),
 						toBN('0'),
-						toBN('0'),
-						toBN('0'),
+						(await futuresMarket.assetPrice()).price,
+						await futuresMarket.fundingSequenceLength(),
 						toBN('0'),
 					],
 					log: decodedLogs[3],
@@ -1638,8 +1638,8 @@ contract('FuturesMarket', accounts => {
 						toUnit('2000'),
 						toBN('0'),
 						toUnit('-10'),
-						toBN('0'),
-						toBN('0'),
+						(await futuresMarket.assetPrice()).price,
+						await futuresMarket.fundingSequenceLength(),
 						toBN('0'),
 					],
 					log: decodedLogs[1],
@@ -1718,7 +1718,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(positionId, toBN('1'));
 			});
 
-			it('closing a position deletes the id but emits in in the event', async () => {
+			it('closing a position deletes the id but emits it in the event', async () => {
 				await setPrice(baseAsset, toUnit('100'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
@@ -3432,7 +3432,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						positionId,
+						trader,
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						(await futuresMarket.assetPrice()).price,
+						await futuresMarket.fundingSequenceLength(),
+						toBN('0'),
+					],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({
@@ -3474,7 +3483,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader3, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						positionId,
+						trader3,
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						(await futuresMarket.assetPrice()).price,
+						await futuresMarket.fundingSequenceLength(),
+						toBN('0'),
+					],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({
@@ -3511,7 +3529,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						positionId,
+						trader,
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						(await futuresMarket.assetPrice()).price,
+						await futuresMarket.fundingSequenceLength(),
+						toBN('0'),
+					],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({

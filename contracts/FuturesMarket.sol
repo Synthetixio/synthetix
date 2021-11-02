@@ -987,10 +987,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
 
         Position storage position = positions[sender];
-        Position memory _position = position;
+        Position memory oldPosition = position;
 
         // Determine new margin, ensuring that the result is positive.
-        (uint margin, Status status) = _realisedMargin(_position, fundingIndex, price, marginDelta);
+        (uint margin, Status status) = _realisedMargin(oldPosition, fundingIndex, price, marginDelta);
         _revertIfError(status);
 
         // Update the debt correction.
@@ -1024,16 +1024,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (marginDelta != 0) {
             emitMarginTransferred(sender, marginDelta);
         }
-        emitPositionModified(
-            position.id,
-            sender,
-            margin,
-            positionSize,
-            0,
-            positionSize != 0 ? price : position.lastPrice,
-            positionSize != 0 ? fundingIndex : position.fundingIndex,
-            0
-        );
+        emitPositionModified(position.id, sender, margin, positionSize, 0, price, fundingIndex, 0);
     }
 
     /*
@@ -1088,30 +1079,26 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _applyDebtCorrection(newPosition, oldPosition);
 
         // Record the trade
+        uint id = oldPosition.id;
         if (newPosition.size == 0) {
             // If the position is being closed, we no longer need to track these details.
             delete position.id;
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
-            // Note we still emit the old position id in the event to indicate that it's closing.
-            emitPositionModified(oldPosition.id, sender, newPosition.margin, 0, sizeDelta, 0, 0, fee);
         } else {
-            uint id;
             if (oldPosition.size == 0) {
                 // New positions get new ids.
                 id = _nextPositionId;
                 _nextPositionId += 1;
-                position.id = id;
-            } else {
-                // If an existing position is just being modified, reuse the existing id.
-                id = newPosition.id;
             }
+            position.id = id;
             position.size = newPosition.size;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(id, sender, newPosition.margin, newPosition.size, sizeDelta, price, fundingIndex, fee);
         }
+        // emit the modification event
+        emitPositionModified(id, sender, position.margin, position.size, sizeDelta, price, fundingIndex, fee);
     }
 
     /*
@@ -1200,7 +1187,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emitPositionModified(positionId, account, 0, 0, 0, 0, 0, 0);
+        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
         emitPositionLiquidated(positionId, account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
