@@ -388,6 +388,7 @@ const deploy = async ({
 	});
 
 	await configureSystemSettings({
+		addressOf,
 		deployer,
 		useOvm,
 		generateSolidity,
