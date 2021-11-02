@@ -703,7 +703,7 @@ describe('publish scripts', () => {
 					// make sure exchange rates has prices for specific assets
 
 					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
-						synths.map(({ inverted, asset }) => {
+						synths.map(({ asset }) => {
 							// as the same assets are used for long and shorts, search by asset rather than
 							// name (currencyKey) here so that we don't accidentially override an inverse with
 							// another rate
@@ -720,13 +720,6 @@ describe('publish scripts', () => {
 								return {
 									asset,
 									rate: 0.000001,
-								};
-							} else if (asset === 'BNB') {
-								// ensure iBNB is not frozen
-								return {
-									asset,
-									rate: synths.find(synth => synth.inverted && synth.asset === asset).inverted
-										.entryPoint,
 								};
 							} else if (asset === 'XTZ') {
 								// ensure iXTZ is frozen at upper limit
