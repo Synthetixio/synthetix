@@ -183,7 +183,7 @@ module.exports = async ({
 
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
-		source: useOvm ? 'Exchanger' : 'ExchangerWithFeeReclamationAlternatives',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithFeeRecAlternatives',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});

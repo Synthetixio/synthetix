@@ -13,17 +13,15 @@ const {
 
 const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
-let ExchangerWithFeeReclamationAlternatives;
+let ExchangerWithFeeRecAlternatives;
 
 module.exports = function({ accounts }) {
 	before(async () => {
-		ExchangerWithFeeReclamationAlternatives = artifacts.require(
-			'ExchangerWithFeeReclamationAlternatives'
-		);
+		ExchangerWithFeeRecAlternatives = artifacts.require('ExchangerWithFeeRecAlternatives');
 	});
 
 	before(async () => {
-		ExchangerWithFeeReclamationAlternatives.link(await artifacts.require('SafeDecimalMath').new());
+		ExchangerWithFeeRecAlternatives.link(await artifacts.require('SafeDecimalMath').new());
 	});
 
 	beforeEach(async () => {
@@ -89,10 +87,7 @@ module.exports = function({ accounts }) {
 		whenInstantiated: ({ owner }, cb) => {
 			describe(`when instantiated`, () => {
 				beforeEach(async () => {
-					this.instance = await ExchangerWithFeeReclamationAlternatives.new(
-						owner,
-						this.resolver.address
-					);
+					this.instance = await ExchangerWithFeeRecAlternatives.new(owner, this.resolver.address);
 					await this.instance.rebuildCache();
 				});
 				cb();

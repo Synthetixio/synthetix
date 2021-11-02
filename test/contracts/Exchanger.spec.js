@@ -4048,7 +4048,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
-	describe('With L1 configuration (Synthetix, ExchangerWithFeeReclamationAlternatives, ExchangeRatesWithDexPricing)', () => {
+	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
@@ -4077,7 +4077,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				contracts: [
 					// L1 specific
 					'Synthetix',
-					'ExchangerWithFeeReclamationAlternatives',
+					'ExchangerWithFeeRecAlternatives',
 					'ExchangeRatesWithDexPricing',
 					// Same between L1 and L2
 					'ExchangeState',

@@ -19,8 +19,8 @@ interface IVirtualSynthInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerwithfeereclamationalternatives
-contract ExchangerWithFeeReclamationAlternatives is MinimalProxyFactory, Exchanger {
-    bytes32 public constant CONTRACT_NAME = "ExchangerWithFeeReclamationAlts";
+contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
+    bytes32 public constant CONTRACT_NAME = "ExchangerWithFeeRecAlternatives";
 
     using SafeMath for uint;
 
