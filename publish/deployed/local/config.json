@@ -251,51 +251,6 @@
 	"SynthsXTZ": {
 		"deploy": true
 	},
-	"TokenStateiBTC": {
-		"deploy": true
-	},
-	"ProxyiBTC": {
-		"deploy": true
-	},
-	"SynthiBTC": {
-		"deploy": true
-	},
-	"TokenStateiETH": {
-		"deploy": true
-	},
-	"ProxyiETH": {
-		"deploy": true
-	},
-	"SynthiETH": {
-		"deploy": true
-	},
-	"TokenStateiBNB": {
-		"deploy": true
-	},
-	"ProxyiBNB": {
-		"deploy": true
-	},
-	"SynthiBNB": {
-		"deploy": true
-	},
-	"TokenStateiTRX": {
-		"deploy": true
-	},
-	"ProxyiTRX": {
-		"deploy": true
-	},
-	"SynthiTRX": {
-		"deploy": true
-	},
-	"TokenStateiXTZ": {
-		"deploy": true
-	},
-	"ProxyiXTZ": {
-		"deploy": true
-	},
-	"SynthiXTZ": {
-		"deploy": true
-	},
 	"TokenStatesCEX": {
 		"deploy": true
 	},
@@ -303,15 +258,6 @@
 		"deploy": true
 	},
 	"SynthsCEX": {
-		"deploy": true
-	},
-	"TokenStateiCEX": {
-		"deploy": true
-	},
-	"ProxyiCEX": {
-		"deploy": true
-	},
-	"SynthiCEX": {
 		"deploy": true
 	},
 	"TokenStatesXRP": {
@@ -402,15 +348,6 @@
 		"deploy": true
 	},
 	"SynthsDEFI": {
-		"deploy": true
-	},
-	"TokenStateiDEFI": {
-		"deploy": true
-	},
-	"ProxyiDEFI": {
-		"deploy": true
-	},
-	"SynthiDEFI": {
 		"deploy": true
 	},
 	"TokenStatesFTSE": {
