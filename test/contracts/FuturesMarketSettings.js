@@ -26,10 +26,10 @@ contract('FuturesMarketSettings', accounts => {
 	const makerFee = toUnit('0.001');
 	const closureFee = toUnit('0');
 	const maxLeverage = toUnit('10');
-	const maxMarketValue = toUnit('100000');
+	const maxMarketValueUSD = toUnit('100000');
 
 	const maxFundingRate = toUnit('0.1');
-	const minSkewScale = toUnit('100');
+	const skewScaleUSD = toUnit('10000');
 	const maxFundingRateDelta = toUnit('0.0125');
 
 	before(async () => {
@@ -83,9 +83,9 @@ contract('FuturesMarketSettings', accounts => {
 				'setMakerFee',
 				'setClosureFee',
 				'setMaxLeverage',
-				'setMaxMarketValue',
+				'setMaxMarketValueUSD',
 				'setMaxFundingRate',
-				'setMinSkewScale',
+				'setSkewScaleUSD',
 				'setMaxFundingRateDelta',
 				'setParameters',
 				'setLiquidationFee',
@@ -103,9 +103,9 @@ contract('FuturesMarketSettings', accounts => {
 				makerFee,
 				closureFee,
 				maxLeverage,
-				maxMarketValue,
+				maxMarketValueUSD,
 				maxFundingRate,
-				minSkewScale,
+				skewScaleUSD,
 				maxFundingRateDelta,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
@@ -138,6 +138,15 @@ contract('FuturesMarketSettings', accounts => {
 						from: owner,
 					}),
 					'closure fee greater than 1'
+				);
+			});
+
+			it('should revert if setSkewScaleUSD is 0', async () => {
+				await assert.revert(
+					futuresMarketSettings.setSkewScaleUSD(baseAsset, 0, {
+						from: owner,
+					}),
+					'cannot set skew scale 0'
 				);
 			});
 		});

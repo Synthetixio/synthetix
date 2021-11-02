@@ -106,7 +106,7 @@ contract('FuturesMarketData', accounts => {
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
 				toWei('0.2'), // 20% max funding rate
-				toWei('1000'), // 1000 units minSkewScale
+				toWei('100000'), // 100000 USD skewScaleUSD
 				toWei('0.025'), // 2.5% per hour max funding rate of change
 				{ from: owner }
 			);
@@ -166,10 +166,10 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
-			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
+			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
 			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
-			assert.bnEqual(details.fundingParameters.minSkewScale, params.minSkewScale);
+			assert.bnEqual(details.fundingParameters.skewScaleUSD, params.skewScaleUSD);
 			assert.bnEqual(details.fundingParameters.maxFundingRateDelta, params.maxFundingRateDelta);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());

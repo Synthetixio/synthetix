@@ -83,9 +83,9 @@ module.exports = async ({
 			makerFee,
 			closureFee,
 			maxLeverage,
-			maxMarketValue,
+			maxMarketValueUSD,
 			maxFundingRate,
-			minSkewScale,
+			skewScaleUSD,
 			maxFundingRateDelta,
 		} = market;
 
@@ -98,9 +98,9 @@ module.exports = async ({
 			makerFee: w3utils.toWei(makerFee),
 			closureFee: w3utils.toWei(closureFee),
 			maxLeverage: w3utils.toWei(maxLeverage),
-			maxMarketValue: w3utils.toWei(maxMarketValue),
+			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
 			maxFundingRate: w3utils.toWei(maxFundingRate),
-			minSkewScale: w3utils.toWei(minSkewScale),
+			skewScaleUSD: w3utils.toWei(skewScaleUSD),
 			maxFundingRateDelta: w3utils.toWei(maxFundingRateDelta),
 		};
 

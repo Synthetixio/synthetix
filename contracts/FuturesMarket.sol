@@ -10,6 +10,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SignedSafeMath.sol";
 import "./SignedSafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRatesCircuitBreaker.sol";
@@ -84,6 +85,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     using SafeMath for uint;
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
+    using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
 
@@ -205,7 +207,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /* ---------- Market Details ---------- */
 
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (uint price, bool invalid) = _exchangeRatesCircuitBreaker().rateWithInvalid(baseAsset);
+        (price, invalid) = _exchangeRatesCircuitBreaker().rateWithInvalid(baseAsset);
         // Ensure we catch uninitialised rates or suspended state / synth
         invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
         return (price, invalid);
@@ -236,7 +238,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
         (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(_maxMarketValue(baseAsset)).divideDecimalRound(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimalRound(int(price));
         return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
     }
 
@@ -276,18 +278,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * The size of the skew relative to the size of the market OI cap. This value ranges between 0 and 1.
-     * Scaler used for skew is at least minSkewScale to prevent extreme funding rates for small markets.
+     * The size of the skew relative to the size of the market skew scaler.
+     * This value can be outside of [-1, 1] values.
+     * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
      */
-    function _proportionalSkew() internal view returns (int) {
-        uint minScale = _minSkewScale(baseAsset);
-        // don't allow small market sizes to cause huge funding rates
-        uint skewScale = marketSize > minScale ? marketSize : minScale;
-        if (skewScale == 0) {
-            // parameters may not be set, don't divide by zero
+    function _proportionalSkew(uint price) internal view returns (int) {
+        // marketSize is in baseAsset units so we need to convert from USD units
+        require(price > 0, "price can't be zero");
+        uint skewScaleBaseAsset = _skewScaleUSD(baseAsset).divideDecimalRound(price);
+
+        // parameters may not be set, don't divide by zero
+        if (skewScaleBaseAsset == 0) {
             return 0;
         }
-        return marketSkew.divideDecimalRound(int(skewScale));
+
+        return marketSkew.divideDecimalRound(int(skewScaleBaseAsset));
     }
 
     /*
@@ -301,19 +306,19 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint makerFee,
             uint closureFee,
             uint maxLeverage,
-            uint maxMarketValue,
+            uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScale,
+            uint skewScaleUSD,
             uint maxFundingRateDelta
         )
     {
         return _parameters(baseAsset);
     }
 
-    function _currentFundingRate() internal view returns (int) {
+    function _currentFundingRate(uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(baseAsset));
         // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -_proportionalSkew()), _UNIT).multiplyDecimalRound(maxFundingRate);
+        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
     /*
@@ -321,19 +326,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
      */
     function currentFundingRate() external view returns (int) {
-        return _currentFundingRate();
+        (uint price, ) = _assetPrice();
+        return _currentFundingRate(price);
     }
 
     /*
      * The current funding rate, rescaled to a percentage per second.
      */
-    function _currentFundingRatePerSecond() internal view returns (int) {
-        return _currentFundingRate() / 1 days;
+    function _currentFundingRatePerSecond(uint price) internal view returns (int) {
+        return _currentFundingRate(price) / 1 days;
     }
 
     function _unrecordedFunding(uint price) internal view returns (int funding) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
-        return _currentFundingRatePerSecond().multiplyDecimalRound(int(price)).mul(elapsed);
+        return _currentFundingRatePerSecond(price).multiplyDecimalRound(int(price)).mul(elapsed);
     }
 
     /*
@@ -800,7 +806,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValue(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
+                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
                 oldPos.size,
                 newPos.size
             )
