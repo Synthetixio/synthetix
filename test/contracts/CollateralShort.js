@@ -194,16 +194,7 @@ contract('CollateralShort', async accounts => {
 		await debtCache.takeDebtSnapshot();
 	});
 
-	it('should set constructor params on deployment', async () => {
-		assert.equal(await short.owner(), owner);
-		assert.equal(await short.resolver(), addressResolver.address);
-		assert.equal(await short.collateralKey(), sUSD);
-		assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
-		assert.equal(await short.synths(1), toBytes32('SynthsETH'));
-		assert.bnEqual(await short.minCratio(), toUnit(1.2));
-	});
-
-	it('should ensure only expected functions are mutative', async () => {
+	it('should ensure only expected functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: short.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
@@ -219,6 +210,15 @@ contract('CollateralShort', async accounts => {
 				'draw',
 			],
 		});
+	});
+
+	it('should set constructor params on deployment', async () => {
+		assert.equal(await short.owner(), owner);
+		assert.equal(await short.resolver(), addressResolver.address);
+		assert.equal(await short.collateralKey(), sUSD);
+		assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
+		assert.equal(await short.synths(1), toBytes32('SynthsETH'));
+		assert.bnEqual(await short.minCratio(), toUnit(1.2));
 	});
 
 	it('should access its dependencies via the address resolver', async () => {
