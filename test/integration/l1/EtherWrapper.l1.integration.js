@@ -5,5 +5,13 @@ describe('EtherWrapper integration tests (L1)', () => {
 	const ctx = this;
 	bootstrapL1({ ctx });
 
-	itCanWrapETH({ ctx });
+	const wrapperOptions = {};
+
+	before(() => {
+		wrapperOptions.Wrapper = ctx.contracts.EtherWrapper;
+		wrapperOptions.Synth = ctx.contracts.SynthsETH;
+		wrapperOptions.Token = ctx.contracts.WETH;
+	});
+
+	itCanWrapETH({ ctx, wrapperOptions });
 });

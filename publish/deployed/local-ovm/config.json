@@ -149,6 +149,9 @@
 	"EtherWrapper": {
 		"deploy": true
 	},
+	"WrapperFactory": {
+		"deploy": true
+	},
 	"WETH": {
 		"deploy": true
 	},
