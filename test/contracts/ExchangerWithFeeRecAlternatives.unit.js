@@ -48,7 +48,6 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 				'resetLastExchangeRate',
 				'settle',
 				'suspendSynthWithInvalidRate',
-				'setLastExchangeRateForSynth',
 			],
 		});
 	});

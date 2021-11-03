@@ -241,12 +241,6 @@ module.exports = function({ accounts }) {
 							).toString();
 						}
 					);
-
-					for (const [asset, lastRate] of lastExchangeRates) {
-						await this.instance.setLastExchangeRateForSynth(asset, lastRate, {
-							from: this.mocks.ExchangeRates.address,
-						});
-					}
 				});
 
 				cb();
