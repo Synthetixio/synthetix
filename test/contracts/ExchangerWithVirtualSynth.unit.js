@@ -25,13 +25,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ExchangerWithVirtualSynth.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: [
-				'exchange',
-				'resetLastExchangeRate',
-				'settle',
-				'suspendSynthWithInvalidRate',
-				'setLastExchangeRateForSynth',
-			],
+			expected: ['exchange', 'resetLastExchangeRate', 'settle', 'suspendSynthWithInvalidRate'],
 		});
 	});
 
