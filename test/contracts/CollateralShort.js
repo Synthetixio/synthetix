@@ -168,11 +168,6 @@ contract('CollateralShort', async accounts => {
 
 	before(async () => {
 		await setupShort();
-	});
-
-	addSnapshotBeforeRestoreAfterEach();
-
-	beforeEach(async () => {
 		await updateRatesWithDefaults();
 
 		// set a 0.3% default exchange fee rate
@@ -193,6 +188,8 @@ contract('CollateralShort', async accounts => {
 
 		await debtCache.takeDebtSnapshot();
 	});
+
+	addSnapshotBeforeRestoreAfterEach();
 
 	it('should ensure only expected functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
