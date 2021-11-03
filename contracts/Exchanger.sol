@@ -744,6 +744,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Get the exchange dynamic fee rate as per destination currencyKey
         uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
 
+        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
+            return exchangeFeeRate.add(exchangeDynamicFeeRate);
+        }
+
         // Is this a swing trade? long to short or short to long skipping sUSD.
         if (
             (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69) ||
@@ -816,6 +820,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             sourceAmount,
             destinationCurrencyKey
         );
+
+        // Return when invalid rate
+        if (destinationAmount == 0 && destinationRate == 0) {
+            return (destinationAmount, 0, 0, sourceRate, destinationRate);
+        }
+
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
@@ -826,6 +836,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         pure
         returns (uint amountReceived)
     {
+        // Cap max exchangeFeeRate to 100%
+        exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 

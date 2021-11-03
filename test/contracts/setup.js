@@ -122,12 +122,11 @@ const setupContract = async ({
 		);
 	};
 
-	// if it needs library linking
+	// Linking library if needed
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
 		await artifact.link(safeDecimalMath);
-		// eslint-disable-next-line no-constant-condition
-		if (/Exchanger|ExchangerWithVirtualSynth/.test(contract)) {
+		if (/^Exchanger$|^ExchangerWithVirtualSynth$/.test(artifact._json.contractName)) {
 			const DynamicFee = artifacts.require('DynamicFee');
 			DynamicFee.link(safeDecimalMath);
 			await artifact.link(await DynamicFee.new());

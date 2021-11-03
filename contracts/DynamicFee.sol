@@ -31,12 +31,12 @@ library DynamicFee {
         return priceDifferential > 0 ? uint(priceDifferential) : uint(0);
     }
 
-    /// @notice Calculate Price Weight
-    /// @param round A round number that go back from
-    /// the current round from 0 to N
+    /// @notice Calculate decay based on round
+    /// @param round A round number that go back
+    /// from the current round from 0 to N
     /// @param weightDecay Weight decay constant
-    /// @return uint price weight
-    function getPriceWeight(uint round, uint weightDecay) public pure returns (uint) {
+    /// @return uint decay with 18 decimals
+    function getRoundDecay(uint round, uint weightDecay) public pure returns (uint) {
         return weightDecay.powDecimal(round);
     }
 
@@ -52,10 +52,10 @@ library DynamicFee {
     ) public pure returns (uint dynamicFee) {
         uint size = prices.length;
         require(size >= 2, "Not enough prices");
-        for (uint i = 0; i < size - 1; i++) {
-            uint priceDifferential = getPriceDifferential(prices[i], prices[i + 1], threshold);
-            uint priceWeight = getPriceWeight(i, weightDecay);
-            dynamicFee = dynamicFee.add(priceDifferential.multiplyDecimal(priceWeight));
+        for (uint i = prices.length - 1; i > 0; i--) {
+            uint priceDifferential = getPriceDifferential(prices[i - 1], prices[i], threshold);
+            uint roundDecay = getRoundDecay(i, weightDecay);
+            dynamicFee = (dynamicFee.multiplyDecimal(roundDecay)).add(priceDifferential);
         }
     }
 }

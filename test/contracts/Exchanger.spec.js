@@ -22,7 +22,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 const BN = require('bn.js');
@@ -2333,7 +2333,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 											const balanceFromExchange = prevBalance ? balance.sub(prevBalance) : balance;
 
-											assert.bnEqual(balanceFromExchange, effectiveValueMinusFees);
+											assert.bnClose(balanceFromExchange, effectiveValueMinusFees);
 
 											// check logs
 											const synthExchangeEvent = txn.logs.find(
@@ -2344,7 +2344,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												fromCurrencyKey: from,
 												fromAmount: amountExchanged,
 												toCurrencyKey: to,
-												toAmount: effectiveValueMinusFees,
+												toAmount: balanceFromExchange,
 												toAddress: account1,
 											});
 										};
@@ -2667,7 +2667,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set a 0 rate to prevent invalid rate from causing a revert on exchange
-						await aggregator.setLatestAnswer('0', await currentTime());
+						for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+							await aggregator.setLatestAnswer('0', await currentTime());
+						}
 					});
 
 					describe('when exchanging into that synth', () => {
@@ -3563,7 +3565,8 @@ contract('Exchanger (spec tests)', async accounts => {
 															rebateAmount,
 															numEntries,
 														} = await exchanger.settlementOwing(account1, sETH);
-														assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
+														// Reclaim dropped from 0.25 to 0.2 as fees increased by introducing dynamic fee
+														assert.bnClose(reclaimAmount, toUnit('0.2'), (1e16).toString());
 														assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 														assert.equal(numEntries, '2');
 													});
@@ -3582,7 +3585,8 @@ contract('Exchanger (spec tests)', async accounts => {
 																	rebateAmount,
 																	numEntries,
 																} = await exchanger.settlementOwing(account1, sETH);
-																assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
+																// Reclaim dropped from 0.25 to 0.2 as fees increased by introducing dynamic fee
+																assert.bnClose(reclaimAmount, toUnit('0.2'), (1e16).toString());
 																assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 																assert.equal(numEntries, '3');
 															});
@@ -3607,10 +3611,12 @@ contract('Exchanger (spec tests)', async accounts => {
 
 								describe('and the aggregator has a rate (so the exchange succeeds)', () => {
 									beforeEach(async () => {
-										await aggregator.setLatestAnswer(
-											convertToAggregatorPrice(100),
-											await currentTime()
-										);
+										for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+											await aggregator.setLatestAnswer(
+												convertToAggregatorPrice(100),
+												await currentTime()
+											);
+										}
 									});
 									describe('when a user exchanges out of the aggregated rate into sUSD', () => {
 										beforeEach(async () => {
@@ -3879,15 +3885,17 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			timestamp = await currentTime();
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
+			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+				timestamp = await currentTime();
+				await exchangeRates.updateRates(
+					[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
+					['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
+					timestamp,
+					{
+						from: oracle,
+					}
+				);
+			}
 
 			// set a 0.5% exchange fee rate (1/200)
 			exchangeFeeRate = toUnit('0.005');
@@ -3981,14 +3989,16 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		beforeEach(async () => {
 			timestamp = await currentTime();
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
+			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+				await exchangeRates.updateRates(
+					[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
+					['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
+					timestamp,
+					{
+						from: oracle,
+					}
+				);
+			}
 
 			// set a 0.5% exchange fee rate (1/200)
 			exchangeFeeRate = toUnit('0.005');

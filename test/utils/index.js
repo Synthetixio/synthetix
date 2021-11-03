@@ -371,11 +371,11 @@ module.exports = ({ web3 } = {}) => {
 
 		assert.ok(
 			actual.gte(expected.sub(variance)),
-			`Number is too small to be close (Delta between actual and expected is ${actualDelta.toString()}, but variance was only ${variance.toString()}`
+			`${expected.toString()} is too small to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()}`
 		);
 		assert.ok(
 			actual.lte(expected.add(variance)),
-			`Number is too large to be close (Delta between actual and expected is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
+			`${expected.toString()} is too large to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
 		);
 	};
 
