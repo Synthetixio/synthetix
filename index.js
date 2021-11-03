@@ -410,9 +410,6 @@ const getSynths = ({
 			synth = Object.assign({ feed }, synth);
 		}
 
-		if (synth.inverted) {
-			synth.description = `Inverse ${synth.description}`;
-		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
@@ -614,7 +611,6 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
 					.address,
 				index: synth.index,
-				inverted: synth.inverted,
 				decimals: 18,
 				feed: synth.feed,
 			}))

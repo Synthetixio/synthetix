@@ -57,7 +57,7 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'ExchangeRates',
-		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRatesWithDexPricing',
+		source: useOvm ? 'ExchangeRates' : 'ExchangeRatesWithDexPricing',
 		args: [account, oracleAddress, addressOf(readProxyForResolver), [], []],
 	});
 

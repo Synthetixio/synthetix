@@ -22,7 +22,6 @@ const {
 } = require('../../../..');
 
 const addSynthsToProtocol = require('./add-synths-to-protocol');
-const configureInverseSynths = require('./configure-inverse-synths');
 const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
@@ -55,7 +54,6 @@ const deploy = async ({
 	concurrency,
 	deploymentPath,
 	dryRun = false,
-	forceUpdateInverseSynthsOnTestnet = false,
 	freshDeploy,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
@@ -205,7 +203,6 @@ const deploy = async ({
 		currentSynthetixSupply,
 		currentLastMintEvent,
 		currentWeekOfInflation,
-		oldExrates,
 		oracleAddress,
 		systemSuspended,
 	} = await systemAndParameterCheck({
@@ -377,16 +374,6 @@ const deploy = async ({
 		synthsToAdd,
 	});
 
-	await configureInverseSynths({
-		addressOf,
-		deployer,
-		forceUpdateInverseSynthsOnTestnet,
-		network,
-		oldExrates,
-		runStep,
-		synths,
-	});
-
 	await configureSystemSettings({
 		addressOf,
 		deployer,
@@ -523,10 +510,6 @@ module.exports = {
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
-			)
-			.option(
-				'-u, --force-update-inverse-synths-on-testnet',
-				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option(
 				'-x, --specify-contracts <value>',
