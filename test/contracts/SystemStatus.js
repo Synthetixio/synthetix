@@ -103,6 +103,12 @@ contract('SystemStatus', async accounts => {
 				await systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH'));
 			});
 
+			it('and all the bool views are correct', async () => {
+				assert.isFalse(await systemStatus.systemSuspended());
+				assert.isFalse(await systemStatus.synthSuspended(toBytes32('sETH')));
+				assert.isFalse(await systemStatus.synthSuspended(toBytes32('sBTC')));
+			});
+
 			it('can only be invoked by the owner initially', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: systemStatus.suspendSystem,
@@ -144,6 +150,12 @@ contract('SystemStatus', async accounts => {
 						systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
 						reason
 					);
+				});
+
+				it('and all the bool views are correct', async () => {
+					assert.isTrue(await systemStatus.systemSuspended());
+					assert.isTrue(await systemStatus.synthSuspended(toBytes32('sETH')));
+					assert.isTrue(await systemStatus.synthSuspended(toBytes32('sBTC')));
 				});
 			});
 
@@ -1023,7 +1035,13 @@ contract('SystemStatus', async accounts => {
 							'Synth is suspended. Operation prohibited'
 						);
 					});
-					it('but not the others', async () => {
+					it('and the synth bool view is as expected', async () => {
+						assert.isTrue(await systemStatus.synthSuspended(sBTC));
+					});
+					it('but not other synth bool view', async () => {
+						assert.isFalse(await systemStatus.synthSuspended(toBytes32('sETH')));
+					});
+					it('but others do not revert', async () => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireIssuanceActive();
 					});
