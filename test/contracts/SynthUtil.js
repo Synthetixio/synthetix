@@ -2,10 +2,7 @@
 
 const { contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const {
-	toBytes32,
-	constants: { ZERO_BYTES32 },
-} = require('../..');
+const { toBytes32 } = require('../..');
 const { toUnit, currentTime } = require('../utils')();
 const { setExchangeFeeRateForSynths } = require('./helpers');
 
@@ -90,31 +87,6 @@ contract('SynthUtil', accounts => {
 					[toUnit('50'), effectiveValue, 0],
 					[toUnit('50'), toUnit('50'), 0],
 				]);
-			});
-		});
-		describe('frozenSynths', () => {
-			it('should not return any currency keys when no synths are frozen', async () => {
-				assert.deepEqual(
-					await synthUtil.frozenSynths(),
-					synthKeys.map(synth => ZERO_BYTES32)
-				);
-			});
-			it('should return currency keys of frozen synths', async () => {
-				await exchangeRates.setInversePricing(
-					iBTC,
-					toUnit('100'),
-					toUnit('150'),
-					toUnit('90'),
-					true,
-					false,
-					{
-						from: ownerAccount,
-					}
-				);
-				assert.deepEqual(
-					await synthUtil.frozenSynths(),
-					synthKeys.map(synth => (synth === iBTC ? iBTC : ZERO_BYTES32))
-				);
 			});
 		});
 		describe('synthsRates', () => {

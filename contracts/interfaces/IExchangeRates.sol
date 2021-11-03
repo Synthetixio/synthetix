@@ -8,22 +8,12 @@ interface IExchangeRates {
         uint40 time;
     }
 
-    struct InversePricing {
-        uint entryPoint;
-        uint upperLimit;
-        uint lowerLimit;
-        bool frozenAtUpperLimit;
-        bool frozenAtLowerLimit;
-    }
-
     // Views
     function aggregators(bytes32 currencyKey) external view returns (address);
 
     function aggregatorWarningFlags() external view returns (address);
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
-
-    function canFreezeRate(bytes32 currencyKey) external view returns (bool);
 
     function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
 
@@ -65,17 +55,6 @@ interface IExchangeRates {
         uint timediff
     ) external view returns (uint);
 
-    function inversePricing(bytes32 currencyKey)
-        external
-        view
-        returns (
-            uint entryPoint,
-            uint upperLimit,
-            uint lowerLimit,
-            bool frozenAtUpperLimit,
-            bool frozenAtLowerLimit
-        );
-
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256);
 
     function oracle() external view returns (address);
@@ -89,8 +68,6 @@ interface IExchangeRates {
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 
     function rateIsFlagged(bytes32 currencyKey) external view returns (bool);
-
-    function rateIsFrozen(bytes32 currencyKey) external view returns (bool);
 
     function rateIsInvalid(bytes32 currencyKey) external view returns (bool);
 
@@ -109,7 +86,4 @@ interface IExchangeRates {
         returns (uint[] memory rates, bool anyRateInvalid);
 
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory);
-
-    // Mutative functions
-    function freezeRate(bytes32 currencyKey) external;
 }

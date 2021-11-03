@@ -52,7 +52,7 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 	const output = {
 		name: 'Synthetix',
 		logoURI: `${baseURI}/snx/SNX.svg`,
-		keywords: ['synthetix', 'defi', 'derivatives', 'synths', 'isynths', 'synthetics'],
+		keywords: ['synthetix', 'defi', 'derivatives', 'synths', 'synthetics'],
 		timestamp: new Date().toISOString(),
 		tags: {
 			synth: {
@@ -60,10 +60,6 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 				description:
 					'A synthetic asset within the Synthetix protocol which can at any time ' +
 					'be exchanged in its entirety into any other synth within Synthetix.',
-			},
-			inverse: {
-				name: 'Inverse Synth',
-				description: 'Tokens that track inverted price movement of an underlying asset.',
 			},
 			index: {
 				name: 'Index Synth',
@@ -78,17 +74,14 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 			minor: Number(minor),
 			patch: Number(patch),
 		},
-		tokens: tokens.map(({ address, symbol, name, decimals, index, inverted }) => ({
+		tokens: tokens.map(({ address, symbol, name, decimals, index }) => ({
 			chainId,
 			address,
 			symbol,
 			name: symbol === 'SNX' ? 'Synthetix Network Token' : `Synth ${name}`,
 			decimals,
 			logoURI: baseURI + (symbol === 'SNX' ? '/snx/SNX.svg' : `/synths/${symbol}.svg`),
-			tags: []
-				.concat(index ? 'index' : [])
-				.concat(inverted ? 'inverse' : [])
-				.concat(symbol !== 'SNX' ? 'synth' : []),
+			tags: [].concat(index ? 'index' : []).concat(symbol !== 'SNX' ? 'synth' : []),
 		})),
 	};
 
@@ -141,7 +134,7 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 	console.log(red('setContent not emitted. Not supported at the moment.'));
 	console.log(yellow(`Next step is to manually set content on ${ensName} to ${content} `));
 
-	/* Web3 fails to set the content via code ens.setContenthash(). 
+	/* Web3 fails to set the content via code ens.setContenthash().
 	setContent can be done using ethers.js CLI or we can interact with ENS contract to set the content.
 	TODO: implement ens.setContenthash() replacement using ethers and use it here
 	*/
