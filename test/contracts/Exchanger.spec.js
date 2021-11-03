@@ -456,7 +456,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			});
 			it('for two inverse synths, returns the regular exchange fee', async () => {
-				const actualFeeRate = await exchanger.feeRateForExchange(iBTC, iETH);
+				const actualFeeRate = await exchanger.feeRateForExchange(iETH, iBTC);
 				assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 			});
 			it('for an inverse synth and sUSD, returns the regular exchange fee', async () => {
