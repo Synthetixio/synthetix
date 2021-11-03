@@ -1,6 +1,6 @@
 working_directory: ~/repo
 docker:
-  - image: synthetixio/docker-sec-tools:14.18-ubuntu
+  - image: synthetixio/docker-sec-tools:16.13-ubuntu
     auth:
       username: $DOCKERHUB_USERNAME
       password: $DOCKERHUB_TOKEN
