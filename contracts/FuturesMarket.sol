@@ -13,6 +13,7 @@ import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 /*
@@ -139,6 +140,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
+    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -172,15 +174,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](3);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_EXRATES;
         newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[2] = CONTRACT_FUTURESMARKETSETTINGS;
+        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    }
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function _manager() internal view returns (IFuturesMarketManagerInternal) {
@@ -195,14 +202,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _assetPrice(IExchangeRates exchangeRates) internal view returns (uint price, bool invalid) {
         (uint _price, bool _invalid) = exchangeRates.rateAndInvalid(baseAsset);
-        // Ensure we catch uninitialised rates
-        return (_price, _invalid || _price == 0);
+        // Ensure we catch uninitialised rates or suspended state / synth
+        _invalid = _invalid || _price == 0 || systemStatus().synthSuspended(baseAsset);
+        return (_price, _invalid);
     }
 
     /*
-     * The current base price, reverting if it is invalid.
+     * The current base price, reverting if it is invalid, or if system or synth is suspended.
      */
-    function _assetPriceRequireNotInvalid() internal view returns (uint) {
+    function _assetPriceRequireChecks() internal view returns (uint) {
+        // check that synth is active, and wasn't suspended, revert with appropriate message
+        systemStatus().requireSynthActive(baseAsset);
+        // check if price is invalid
         (uint price, bool invalid) = _assetPrice(_exchangeRates());
         _revertIfError(invalid, Status.InvalidPrice);
         return price;
@@ -273,14 +284,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * The size of the skew relative to the size of the market. This value ranges between 0 and 1.
+     * The size of the skew relative to the size of the market OI cap. This value ranges between 0 and 1.
+     * Scaler used for skew is at least minSkewScale to prevent extreme funding rates for small markets.
      */
     function _proportionalSkew() internal view returns (int) {
-        int signedSize = int(marketSize);
-        if (signedSize == 0) {
+        uint minScale = _minSkewScale(baseAsset);
+        // don't allow small market sizes to cause huge funding rates
+        uint skewScale = marketSize > minScale ? marketSize : minScale;
+        if (skewScale == 0) {
+            // parameters may not be set, don't divide by zero
             return 0;
         }
-        return marketSkew.divideDecimalRound(signedSize);
+        return marketSkew.divideDecimalRound(int(skewScale));
     }
 
     /*
@@ -296,7 +311,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
-            uint maxFundingRateSkew,
+            uint minSkewScale,
             uint maxFundingRateDelta
         )
     {
@@ -305,14 +320,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _currentFundingRate() internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(baseAsset));
-        int maxFundingRateSkew = int(_maxFundingRateSkew(baseAsset));
-        if (maxFundingRateSkew == 0) {
-            return maxFundingRate;
-        }
-
-        int functionFraction = _proportionalSkew().divideDecimalRound(maxFundingRateSkew);
         // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -functionFraction), _UNIT).multiplyDecimalRound(maxFundingRate);
+        return _min(_max(-_UNIT, -_proportionalSkew()), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
     /*
@@ -922,7 +931,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function recomputeFunding() external returns (uint lastIndex) {
         _revertIfError(msg.sender != _settings(), Status.NotPermitted);
-        return _recomputeFunding(_assetPriceRequireNotInvalid());
+        return _recomputeFunding(_assetPriceRequireChecks());
     }
 
     /*
@@ -1028,7 +1037,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
         _transferMargin(marginDelta, price, fundingIndex, messageSender);
     }
@@ -1039,7 +1048,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function withdrawAllMargin() external optionalProxy {
         address sender = messageSender;
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
         int marginDelta = -int(_accessibleMargin(positions[sender], fundingIndex, price));
         _transferMargin(marginDelta, price, fundingIndex, sender);
@@ -1104,7 +1113,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
     function modifyPosition(int sizeDelta) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
         _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
     }
@@ -1128,7 +1137,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint minPrice,
         uint maxPrice
     ) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
         uint fundingIndex = _recomputeFunding(price);
         _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
@@ -1140,7 +1149,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function closePosition() external optionalProxy {
         int size = positions[messageSender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
     }
 
@@ -1150,7 +1159,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external optionalProxy {
         int size = positions[messageSender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
         _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
     }
@@ -1195,7 +1204,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
     function liquidatePosition(address account) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
+        uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
 
         uint liquidationFee = _liquidationFee();

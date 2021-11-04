@@ -61,7 +61,7 @@
 		},
 		{
 			"sip": 80,
-			"layer": "ovm",
+			"layer": "kovan-ovm",
 			"released": false,
 			"sources": [
 				"FuturesMarketBTC",
@@ -70,10 +70,18 @@
 				"FuturesMarketLINK",
 				"FuturesMarketManager",
 				"FuturesMarketSettings",
+				"Exchanger",
+				"Issuer",
+				"SynthRedeemer",
+				"SystemSettings",
 				"ProxyFuturesMarketBTC",
 				"ProxyFuturesMarketETH",
 				"ProxyFuturesMarketLINK",
-				"ProxyFuturesMarketManager"
+				"ProxyFuturesMarketManager",
+				"SynthsETH",
+				"SynthsUSD",
+				"SynthsLINK",
+				"SynthsBTC"
 			]
 		},
 		{

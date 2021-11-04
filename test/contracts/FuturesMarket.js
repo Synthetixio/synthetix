@@ -44,7 +44,8 @@ contract('FuturesMarket', accounts => {
 		sUSD,
 		synthetix,
 		feePool,
-		debtCache;
+		debtCache,
+		systemStatus;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -59,7 +60,7 @@ contract('FuturesMarket', accounts => {
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
-	const maxFundingRateSkew = toUnit('1');
+	const minSkewScale = toUnit('1000');
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
@@ -105,6 +106,7 @@ contract('FuturesMarket', accounts => {
 			Synthetix: synthetix,
 			FeePool: feePool,
 			DebtCache: debtCache,
+			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -132,6 +134,15 @@ contract('FuturesMarket', accounts => {
 		for (const t of [trader, trader2, trader3]) {
 			await sUSD.issue(t, traderInitialBalance);
 		}
+
+		// allow ownder to suspend system or synths
+		await systemStatus.updateAccessControls(
+			[toBytes32('System'), toBytes32('Synth')],
+			[owner, owner],
+			[true, true],
+			[true, true],
+			{ from: owner }
+		);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -162,7 +173,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
-			assert.bnEqual(parameters.maxFundingRateSkew, maxFundingRateSkew);
+			assert.bnEqual(parameters.minSkewScale, minSkewScale);
 			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
 		});
 
@@ -176,7 +187,10 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('market size and skew', async () => {
+			const minScale = (await futuresMarket.parameters()).minSkewScale;
 			let sizes = await futuresMarket.marketSizes();
+			let marketSkew = await futuresMarket.marketSkew();
+
 			assert.bnEqual(sizes[0], toUnit('0'));
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
@@ -192,11 +206,16 @@ contract('FuturesMarket', accounts => {
 			});
 
 			sizes = await futuresMarket.marketSizes();
+			marketSkew = await futuresMarket.marketSkew();
+
 			assert.bnEqual(sizes[0], toUnit('50'));
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('50'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('50'));
-			assert.bnEqual(await futuresMarket.proportionalSkew(), toUnit('1'));
+			assert.bnEqual(
+				await futuresMarket.proportionalSkew(),
+				divideDecimalRound(marketSkew, minScale)
+			);
 
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
@@ -207,11 +226,15 @@ contract('FuturesMarket', accounts => {
 			});
 
 			sizes = await futuresMarket.marketSizes();
+			marketSkew = await futuresMarket.marketSkew();
 			assert.bnEqual(sizes[0], toUnit('50'));
 			assert.bnEqual(sizes[1], toUnit('35'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('85'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('15'));
-			assert.bnClose(await futuresMarket.proportionalSkew(), toUnit(15 / 85), toUnit('0.0001'));
+			assert.bnClose(
+				await futuresMarket.proportionalSkew(),
+				divideDecimalRound(marketSkew, minScale)
+			);
 
 			await closePositionAndWithdrawMargin({
 				market: futuresMarket,
@@ -220,11 +243,15 @@ contract('FuturesMarket', accounts => {
 			});
 
 			sizes = await futuresMarket.marketSizes();
+			marketSkew = await futuresMarket.marketSkew();
 			assert.bnEqual(sizes[0], toUnit('0'));
 			assert.bnEqual(sizes[1], toUnit('35'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('35'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('-35'));
-			assert.bnClose(await futuresMarket.proportionalSkew(), toUnit('-1'));
+			assert.bnClose(
+				await futuresMarket.proportionalSkew(),
+				divideDecimalRound(marketSkew, minScale)
+			);
 
 			await closePositionAndWithdrawMargin({
 				market: futuresMarket,
@@ -233,6 +260,7 @@ contract('FuturesMarket', accounts => {
 			});
 
 			sizes = await futuresMarket.marketSizes();
+			marketSkew = await futuresMarket.marketSkew();
 			assert.bnEqual(sizes[0], toUnit('0'));
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
@@ -953,6 +981,51 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 
+		it('Reverts if the price is invalid', async () => {
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+			await fastForward(7 * 24 * 60 * 60);
+			await assert.revert(
+				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
+				'Invalid price'
+			);
+		});
+
+		it('Reverts if the system is suspended', async () => {
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+			// suspend
+			await systemStatus.suspendSystem('3', { from: owner });
+			// should revert
+			await assert.revert(
+				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
+				'Synthetix is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSystem({ from: owner });
+			// should work now
+			await futuresMarket.transferMargin(toUnit('-1000'), { from: trader });
+			assert.bnClose((await futuresMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+		});
+
+		it('Reverts if the synth is suspended', async () => {
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+			// suspend
+			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			// should revert
+			await assert.revert(
+				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
+				'Synth is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			// should work now
+			await futuresMarket.transferMargin(toUnit('-1000'), { from: trader });
+			assert.bnClose((await futuresMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+		});
+
 		describe('No position', async () => {
 			it('New margin', async () => {
 				assert.bnEqual((await futuresMarket.positions(trader)).margin, toBN(0));
@@ -1073,6 +1146,54 @@ contract('FuturesMarket', accounts => {
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(futuresMarket.modifyPosition(size, { from: trader }), 'Invalid price');
+		});
+
+		it('Cannot modify a position if the system is suspended', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.transferMargin(margin, { from: trader });
+			const size = toUnit('10');
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+
+			// suspend
+			await systemStatus.suspendSystem('3', { from: owner });
+			// should revert modifying position
+			await assert.revert(
+				futuresMarket.modifyPosition(size, { from: trader }),
+				'Synthetix is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSystem({ from: owner });
+			// should work now
+			await futuresMarket.modifyPosition(size, { from: trader });
+			const position = await futuresMarket.positions(trader);
+			assert.bnEqual(position.size, size);
+			assert.bnEqual(position.lastPrice, price);
+		});
+
+		it('Cannot modify a position if the synth is suspended', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.transferMargin(margin, { from: trader });
+			const size = toUnit('10');
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+
+			// suspend
+			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			// should revert modifying position
+			await assert.revert(
+				futuresMarket.modifyPosition(size, { from: trader }),
+				'Synth is suspended'
+			);
+
+			// resume
+			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			// should work now
+			await futuresMarket.modifyPosition(size, { from: trader });
+			const position = await futuresMarket.positions(trader);
+			assert.bnEqual(position.size, size);
+			assert.bnEqual(position.lastPrice, price);
 		});
 
 		it('Empty orders fail', async () => {
@@ -2197,6 +2318,50 @@ contract('FuturesMarket', accounts => {
 					await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), 'Invalid price');
 				});
 
+				it('Reverts if the system is suspended', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+					// suspend
+					await systemStatus.suspendSystem('3', { from: owner });
+					// should revert
+					await assert.revert(
+						futuresMarket.withdrawAllMargin({ from: trader }),
+						'Synthetix is suspended'
+					);
+
+					// resume
+					await systemStatus.resumeSystem({ from: owner });
+					// should work now
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+
+				it('Reverts if the synth is suspended', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+					// suspend
+					await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+					// should revert
+					await assert.revert(
+						futuresMarket.withdrawAllMargin({ from: trader }),
+						'Synth is suspended'
+					);
+
+					// resume
+					await systemStatus.resumeSynth(baseAsset, { from: owner });
+					// should work now
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+
 				it('allows users to withdraw all their margin', async () => {
 					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 					await futuresMarket.transferMargin(toUnit('3000'), { from: trader2 });
@@ -2431,22 +2596,40 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
-			// Market is 50% skewed
+			const minScale = (await futuresMarket.parameters()).minSkewScale;
+			const maxFundingRate = await futuresMarket.maxFundingRate();
+			// Market is 24 units long skewed (24 / 100000)
 			await futuresMarket.modifyPosition(toUnit('24'), { from: trader });
-			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('-0.05'), toUnit('0.01'));
+			let marketSkew = await futuresMarket.marketSkew();
+			assert.bnEqual(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+			);
 
-			// 50% the other way
+			// 50% the other way ()
 			await futuresMarket.modifyPosition(toUnit('-32'), { from: trader });
-			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.05'), toUnit('0.01'));
+			marketSkew = await futuresMarket.marketSkew();
+			assert.bnClose(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+			);
 
 			// Market is 100% skewed
 			await futuresMarket.closePosition({ from: trader });
-			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.1'), toUnit('0.01'));
+			marketSkew = await futuresMarket.marketSkew();
+			assert.bnClose(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+			);
 
 			// 100% the other way
 			await futuresMarket.modifyPosition(toUnit('4'), { from: trader });
 			await futuresMarket.closePosition({ from: trader2 });
-			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('-0.1'), toUnit('0.01'));
+			marketSkew = await futuresMarket.marketSkew();
+			assert.bnClose(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+			);
 		});
 
 		it('Altering the max funding has a proportional effect', async () => {
@@ -2469,15 +2652,19 @@ contract('FuturesMarket', accounts => {
 				sizeDelta: toUnit('-4'),
 			});
 
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('-0.05'));
+			const expectedFunding = toUnit('-0.0008'); // 8/1000 skew * 0.1 max funding rate
+			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
 
 			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('-0.1'));
+			assert.bnEqual(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(expectedFunding, toUnit(2))
+			);
 			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
 		});
 
-		it('Altering the max funding rate skew has a proportional effect', async () => {
+		it('Altering the minSkewScale has a proportional effect when above market size', async () => {
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
@@ -2494,32 +2681,62 @@ contract('FuturesMarket', accounts => {
 				sizeDelta: toUnit('4'),
 			});
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.5'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
+			const expectedFunding = toUnit('0.0008'); // 8/1000 skew * 0.1 max funding rate
+			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.75'), { from: owner });
-			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.2').div(toBN(3)));
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('500'), { from: owner });
+			assert.bnEqual(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(expectedFunding, toUnit('2'))
+			);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.25'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('250'), { from: owner });
+			assert.bnEqual(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(expectedFunding, toUnit('4'))
+			);
 
-			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('2000'), { from: owner });
+			assert.bnEqual(
+				await futuresMarket.currentFundingRate(),
+				multiplyDecimalRound(expectedFunding, toUnit('0.5'))
+			);
+
+			// disable minSkewScale
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * 8 / (4 + 12)
+
+			// minSkewScale is below market size (so has no effect)
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('4'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * 8 / (4 + 12)
+
+			// minSkewScale is equal to market size (so has no effect)
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('16'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.05')); // 0.1 * 8 / (4 + 12)
+
+			// minSkewScale is double the size
+			await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('32'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.025')); // 0.1 * 8 / (32)
 		});
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
 			const side = parseInt(leverage.toString()) > 0 ? 'long' : 'short';
 
 			describe(`${side}`, () => {
+				beforeEach(async () => {
+					await futuresMarketSettings.setMaxMarketValue(baseAsset, toUnit('100000'), {
+						from: owner,
+					});
+				});
 				it('100% skew induces maximum funding rate', async () => {
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
-						marginDelta: toUnit('1000'),
+						fillPrice: toUnit('1'),
+						marginDelta: toUnit('1000000'),
 						sizeDelta: divideDecimalRound(
-							multiplyDecimalRound(leverage, toUnit('1000')),
-							toUnit('100')
+							multiplyDecimalRound(leverage, toUnit('1000000')),
+							toUnit('10')
 						),
 					});
 
@@ -2529,6 +2746,9 @@ contract('FuturesMarket', accounts => {
 				});
 
 				it('Different skew rates induce proportional funding levels', async () => {
+					// no minSkewScale
+					await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
@@ -2540,73 +2760,43 @@ contract('FuturesMarket', accounts => {
 
 					const points = 5;
 
-					for (const maxFRSkew of ['1', '0.5', '0.3'].map(toUnit)) {
-						await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, maxFRSkew, {
-							from: owner,
-						});
-						// We will sample points linearly from proportionalSkew = 0 down to proportionalSkew = maxFRSkew,
-						// So that the funding rate will go from 0 to maxFR.
-						// 0 skew is achieved when oppLev = -leverage.
-						// But when does proportionalSkew = maxFRSkew?
-						// Choose oppLev = k*lev,
-						// maxFRSkew is achieved when
-						//    (lev - k*lev)/(lev + k*lev) = maxFRSkew
-						// => k = (1-maxFRSkew)/(1+maxFRSkew)
-						// E.g. if maxFRSkew = 0.5, then k = 0.5/1.5 = 1/3
-						//      So we sample oppLev from leverage to 1/3*leverage
+					setPrice(baseAsset, toUnit('100'));
 
-						const k = toUnit(1)
-							.sub(maxFRSkew)
-							.mul(toUnit(1))
-							.div(toUnit(1).add(maxFRSkew));
+					for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
+						await futuresMarketSettings.setMaxFundingRate(baseAsset, maxFR, { from: owner });
 
-						setPrice(baseAsset, toUnit('100'));
+						for (let i = points; i >= 0; i--) {
+							// now lerp from leverage*k to leverage
+							const frac = leverage.mul(toBN(i)).div(toBN(points));
+							const oppLev = frac.neg();
+							const size = oppLev.mul(toBN('10'));
+							if (size.abs().gt(toBN('0'))) {
+								await futuresMarket.modifyPosition(size, { from: trader2 });
+							}
 
-						for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
-							await futuresMarketSettings.setMaxFundingRate(baseAsset, maxFR, { from: owner });
+							// oppLev = lev*k + lev*(1 - k)*i/points
+							// The skew is (lev - lev*k - lev*(1-k)*i/points)/(lev + lev*k + lev*(1-k)*i/points)
+							//           = (1 - k - (1-k)*i/points)/(1 + k + (1-k)*i/points)
+							//           = (1 - i/points)/(1 + i/points + 2k/(1-k))
+							//           = (points - i)/(points + i + points*(1/maxFRSkew - 1))
 
-							const lowLev = leverage.mul(k).div(toUnit(1));
+							const maxFRSkewCorrection = toUnit(1)
+								.sub(toUnit(1))
+								.mul(toBN(points));
+							let expected = maxFR
+								.mul(toUnit(points - i))
+								.div(toUnit(points + i).add(maxFRSkewCorrection))
+								.mul(leverage.div(leverage.abs()))
+								.neg();
 
-							for (let i = points; i >= 0; i--) {
-								// now lerp from leverage*k to leverage
-								const frac = leverage
-									.sub(lowLev)
-									.mul(toBN(i))
-									.div(toBN(points));
-								const oppLev = lowLev.add(frac).neg();
-								const size = oppLev.mul(toBN('10'));
-								if (size.abs().gt(toBN('0'))) {
-									await futuresMarket.modifyPosition(size, { from: trader2 });
-								}
+							if (expected.gt(maxFR)) {
+								expected = maxFR;
+							}
 
-								// oppLev = lev*k + lev*(1 - k)*i/points
-								// The skew is (lev - lev*k - lev*(1-k)*i/points)/(lev + lev*k + lev*(1-k)*i/points)
-								//           = (1 - k - (1-k)*i/points)/(1 + k + (1-k)*i/points)
-								//           = (1 - i/points)/(1 + i/points + 2k/(1-k))
-								//           = (points - i)/(points + i + points*(1/maxFRSkew - 1))
+							assert.bnClose(await futuresMarket.currentFundingRate(), expected, toUnit('0.01'));
 
-								const maxFRSkewCorrection = toUnit(1)
-									.mul(toUnit(1))
-									.div(maxFRSkew)
-									.sub(toUnit(1))
-									.mul(toBN(points));
-								let expected = maxFR
-									.mul(toUnit(1))
-									.div(maxFRSkew)
-									.mul(toUnit(points - i))
-									.div(toUnit(points + i).add(maxFRSkewCorrection))
-									.mul(leverage.div(leverage.abs()))
-									.neg();
-
-								if (expected.gt(maxFR)) {
-									expected = maxFR;
-								}
-
-								assert.bnClose(await futuresMarket.currentFundingRate(), expected, toUnit('0.01'));
-
-								if (size.abs().gt(toBN(0))) {
-									await futuresMarket.closePosition({ from: trader2 });
-								}
+							if (size.abs().gt(toBN(0))) {
+								await futuresMarket.closePosition({ from: trader2 });
 							}
 						}
 					}
@@ -2661,9 +2851,12 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+				// no minSkewScale
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+
 				assert.bnEqual(
 					await futuresMarket.fundingSequenceLength(),
-					initialFundingIndex.add(toBN(5))
+					initialFundingIndex.add(toBN(6))
 				);
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('100'));
@@ -2674,11 +2867,11 @@ contract('FuturesMarket', accounts => {
 
 				assert.bnEqual(
 					await futuresMarket.fundingSequenceLength(),
-					initialFundingIndex.add(toBN(6))
+					initialFundingIndex.add(toBN(7))
 				);
 				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
 				assert.bnClose(
-					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(5))),
+					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(6))),
 					toUnit('-5'),
 					toUnit('0.01')
 				);
@@ -2692,27 +2885,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.5'), {
-					from: owner,
-				});
-				time = await currentTime();
-
-				assert.bnEqual(
-					await futuresMarket.fundingSequenceLength(),
-					initialFundingIndex.add(toBN(7))
-				);
-				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
-				assert.bnClose(
-					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(6))),
-					toUnit('-25'),
-					toUnit('0.01')
-				);
-
-				await fastForward(24 * 60 * 60);
-				await setPrice(baseAsset, toUnit('300'));
-				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-60'), toUnit('0.01'));
-
-				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, toUnit('0.05'), {
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), {
 					from: owner,
 				});
 				time = await currentTime();
@@ -2724,7 +2897,27 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
 				assert.bnClose(
 					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(7))),
-					toUnit('-85'),
+					toUnit('-25'),
+					toUnit('0.01')
+				);
+
+				await fastForward(24 * 60 * 60);
+				await setPrice(baseAsset, toUnit('300'));
+				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-30'), toUnit('0.01'));
+
+				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, toUnit('0.05'), {
+					from: owner,
+				});
+				time = await currentTime();
+
+				assert.bnEqual(
+					await futuresMarket.fundingSequenceLength(),
+					initialFundingIndex.add(toBN(9))
+				);
+				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
+				assert.bnClose(
+					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(8))),
+					toUnit('-55'),
 					toUnit('0.01')
 				);
 			});
@@ -2941,6 +3134,9 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Liquidation price is accurate with funding', async () => {
+				// no minSkewScale
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+
 				await setPrice(baseAsset, toUnit('250'));
 				// Submit orders that induce -0.05 funding rate
 				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
@@ -2970,6 +3166,9 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {
+				// no minSkewScale
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('30'), { from: trader });
@@ -3037,6 +3236,40 @@ contract('FuturesMarket', accounts => {
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 			});
+
+			it('No liquidations while the system is suspended', async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
+				await setPrice(baseAsset, toUnit('25'));
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+				// suspend
+				await systemStatus.suspendSystem('3', { from: owner });
+				assert.isFalse(await futuresMarket.canLiquidate(trader));
+
+				// resume
+				await systemStatus.resumeSystem({ from: owner });
+				// should work now
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+			});
+
+			it('No liquidations while the synth is suspended', async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
+				await setPrice(baseAsset, toUnit('25'));
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+				// suspend
+				await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+				assert.isFalse(await futuresMarket.canLiquidate(trader));
+
+				// resume
+				await systemStatus.resumeSynth(baseAsset, { from: owner });
+				// should work now
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+			});
 		});
 
 		describe('liquidatePosition', () => {
@@ -3059,6 +3292,9 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Liquidation properly affects the overall market parameters (long case)', async () => {
+				// no minSkewScale
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
 				const size = await futuresMarket.marketSize();
@@ -3115,6 +3351,9 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
+				// no minSkewScale
+				await futuresMarketSettings.setMinSkewScale(baseAsset, toUnit('0'), { from: owner });
+
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
 				const size = await futuresMarket.marketSize();

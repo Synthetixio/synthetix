@@ -304,6 +304,7 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		deploymentPath,
 		generateSolidity,
 		network,
 		synths,

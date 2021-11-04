@@ -19,6 +19,8 @@ interface ISystemStatus {
 
     function requireSystemActive() external view;
 
+    function systemSuspended() external view returns (bool);
+
     function requireIssuanceActive() external view;
 
     function requireExchangeActive() external view;
@@ -26,6 +28,8 @@ interface ISystemStatus {
     function requireExchangeBetweenSynthsAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 
     function requireSynthActive(bytes32 currencyKey) external view;
+
+    function synthSuspended(bytes32 currencyKey) external view returns (bool);
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 

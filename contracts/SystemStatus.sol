@@ -33,6 +33,10 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireSystemActive();
     }
 
+    function systemSuspended() external view returns (bool) {
+        return systemSuspension.suspended;
+    }
+
     function requireIssuanceActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
@@ -53,6 +57,10 @@ contract SystemStatus is Owned, ISystemStatus {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
         _internalRequireSynthExchangeActive(currencyKey);
+    }
+
+    function synthSuspended(bytes32 currencyKey) external view returns (bool) {
+        return systemSuspension.suspended || synthSuspension[currencyKey].suspended;
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {

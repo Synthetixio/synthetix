@@ -17,4 +17,8 @@ contract TestableFuturesMarket is FuturesMarket {
     function proportionalSkew() external view returns (int) {
         return _proportionalSkew();
     }
+
+    function maxFundingRate() external view returns (uint) {
+        return _maxFundingRate(baseAsset);
+    }
 }
