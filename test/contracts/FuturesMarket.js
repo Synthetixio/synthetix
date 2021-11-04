@@ -3140,16 +3140,17 @@ contract('FuturesMarket', accounts => {
 				await fastForward(24 * 60 * 60);
 
 				// trader 1 pays 30 * -0.05 = -1.5 base units of funding, and a $22.5 trading fee
-				// liquidation price = (20 - (1500 - 22.5) + 30 * 250) / (30 - 1.5) = 212.018...
+				// liquidation price = pLast + (mLiq - m) / s + fPerUnit
+				// liquidation price = 250 + (20 - (1500 - 22.5)) / 30 + 0.05 * 250 = 213.917
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(212.018), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(213.917), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader, false);
 				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.001));
 
 				// trader2 receives -10 * -0.05 = 0.5 base units of funding, and a $2.5 trading fee
-				// liquidation price = (20 - (500 - 2.5) - 10 * 250) / (-10 + 0.5) = 312.894...
+				// liquidation price = 250 + (20 - (500 - 2.5)) / 10 + 0.05 * 250 = 310.25
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(313.421), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(310.25), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader2, false);
 				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.001));
 			});
@@ -3171,15 +3172,15 @@ contract('FuturesMarket', accounts => {
 
 				// funding rate = -10/50 * 0.1 = -0.02
 				// trader 1 pays 30 * 7 * -0.02 = -4.2 units of funding, pays $22.5 exchange fee
-				// Remaining margin = (20 - (1500 - 22.5) + 30 * 250) / (30 - 4.2) = 234.205...
+				// Remaining margin = 250 + (20 - (1500 - 22.5))/30 - (- 7 * 0.02) * 250) = 236.41666
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(234.205), toUnit(0.01));
+				assert.bnClose(lPrice[0], toUnit(236.41666), toUnit(0.01));
 				assert.isTrue(lPrice[1]);
 
 				// trader 2 receives -20 * 7 * -0.02 = 2.8 units of funding, pays $5 exchange fee
-				// Remaining margin = (20 - (1000 - 5) - 20 * 250) / (-20 + 2.8) = 346.802...
+				// Remaining margin = 250 + (20 - (100 - 5)) / (-20) - (- 7 * 0.02) * 250) = 333.75
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(347.383), toUnit(0.01));
+				assert.bnClose(lPrice[0], toUnit(333.75), toUnit(0.01));
 				assert.isTrue(lPrice[1]);
 			});
 
