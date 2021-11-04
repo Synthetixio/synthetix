@@ -559,12 +559,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
 
-    // SIP-78
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
-        require(rate > 0, "Rate must be above 0");
-        lastExchangeRate[currencyKey] = rate;
-    }
-
     // SIP-139
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
@@ -866,12 +860,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
-        _;
-    }
-
-    modifier onlyExchangeRates() {
-        IExchangeRates _exchangeRates = exchangeRates();
-        require(msg.sender == address(_exchangeRates), "Restricted to ExchangeRates");
         _;
     }
 
