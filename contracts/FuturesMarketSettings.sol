@@ -67,8 +67,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /*
      * The maximum allowable notional value on each side of a market.
      */
-    function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
-        return _maxMarketValue(_baseAsset);
+    function maxMarketValueUSD(bytes32 _baseAsset) public view returns (uint) {
+        return _maxMarketValueUSD(_baseAsset);
     }
 
     /*
@@ -81,8 +81,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /*
      * The skew level at which the max funding rate will be charged.
      */
-    function minSkewScale(bytes32 _baseAsset) public view returns (uint) {
-        return _minSkewScale(_baseAsset);
+    function skewScaleUSD(bytes32 _baseAsset) public view returns (uint) {
+        return _skewScaleUSD(_baseAsset);
     }
 
     /*
@@ -100,9 +100,9 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _makerFee,
             uint _closureFee,
             uint _maxLeverage,
-            uint _maxMarketValue,
+            uint _maxMarketValueUSD,
             uint _maxFundingRate,
-            uint _minSkewScale,
+            uint _skewScaleUSD,
             uint _maxFundingRateDelta
         )
     {
@@ -157,8 +157,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) public onlyOwner {
-        _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
+    function setMaxMarketValueUSD(bytes32 _baseAsset, uint _maxMarketValueUSD) public onlyOwner {
+        _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
@@ -173,9 +173,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
     }
 
-    function setMinSkewScale(bytes32 _baseAsset, uint _minSkewScale) public onlyOwner {
+    function setSkewScaleUSD(bytes32 _baseAsset, uint _skewScaleUSD) public onlyOwner {
+        require(_skewScaleUSD > 0, "cannot set skew scale 0");
         _recomputeFunding(_baseAsset);
-        _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _minSkewScale);
+        _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
@@ -189,9 +190,9 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _makerFee,
         uint _closureFee,
         uint _maxLeverage,
-        uint _maxMarketValue,
+        uint _maxMarketValueUSD,
         uint _maxFundingRate,
-        uint _minSkewScale,
+        uint _skewScaleUSD,
         uint _maxFundingRateDelta
     ) external onlyOwner {
         _recomputeFunding(_baseAsset);
@@ -199,9 +200,9 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMakerFee(_baseAsset, _makerFee);
         setClosureFee(_baseAsset, _closureFee);
         setMaxLeverage(_baseAsset, _maxLeverage);
-        setMaxMarketValue(_baseAsset, _maxMarketValue);
+        setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
         setMaxFundingRate(_baseAsset, _maxFundingRate);
-        setMinSkewScale(_baseAsset, _minSkewScale);
+        setSkewScaleUSD(_baseAsset, _skewScaleUSD);
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
