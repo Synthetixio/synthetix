@@ -676,7 +676,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      */
     function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(positions[account].size > 0, "0 size position");
+        require(positions[account].size != 0, "0 size position");
         (uint price, ) = _assetPrice();
         return _liquidationMargin(positions[account].size, price);
     }
