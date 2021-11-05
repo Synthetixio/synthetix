@@ -13,7 +13,6 @@ module.exports = async ({
 	console.log(gray(`\n------ CONFIGURING MULTI COLLATERAL ------\n`));
 
 	const {
-		SystemSettings,
 		CollateralErc20,
 		CollateralEth,
 		CollateralShort,
@@ -174,19 +173,9 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
 
-		const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
-		if (SystemSettings.interactionDelay) {
-			await runStep({
-				contract: 'SystemSettings',
-				target: SystemSettings,
-				read: 'interactionDelay',
-				readArg: addressOf(CollateralShort),
-				expected: input => (interactionDelay === '0' ? true : input !== '0'),
-				write: 'setInteractionDelay',
-				writeArg: [CollateralShort.address, interactionDelay],
-				comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
-			});
-		} else {
+		if (CollateralShort.interactionDelay) {
+			const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
+
 			await runStep({
 				contract: 'CollateralShort',
 				target: CollateralShort,
@@ -196,21 +185,6 @@ module.exports = async ({
 				writeArg: interactionDelay,
 				comment:
 					'Ensure the CollateralShort contract has an interaction delay to prevent frontrunning',
-			});
-		}
-
-		if (SystemSettings.collapseFeeRate) {
-			const collapseFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['COLLAPSE_FEE_RATE'];
-			await runStep({
-				contract: 'SystemSettings',
-				target: SystemSettings,
-				read: 'collapseFeeRate',
-				readArg: addressOf(CollateralShort),
-				expected: input => (collapseFeeRate === '0' ? true : input !== '0'),
-				write: 'setCollapseFeeRate',
-				writeArg: [CollateralShort.address, collapseFeeRate],
-				comment:
-					'Ensure the CollateralShort contract has its service fee set for collapsing loans (SIP-135)',
 			});
 		}
 	}
