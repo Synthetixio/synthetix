@@ -435,6 +435,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											[sETH, lastRate],
 											[sBTC, lastRate],
 										],
+										owner,
 									},
 									() => {
 										behaviors.whenMockedWithVolatileSynth({ synth: sETH, volatile: true }, () => {
@@ -519,6 +520,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 														[sUSD, lastRate],
 														[sETH, lastRate],
 													],
+													owner,
 												},
 												() => {
 													beforeEach('attempt exchange', async () => {
@@ -553,6 +555,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 														[sUSD, lastRate],
 														[sETH, lastRate],
 													],
+													owner,
 												},
 												() => {
 													beforeEach('attempt exchange', async () => {
@@ -587,6 +590,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 														[sUSD, lastRate],
 														[sETH, lastRate],
 													],
+													owner,
 												},
 												() => {
 													it('reverts exchange', async () => {
@@ -628,6 +632,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													[sUSD, unit],
 													[sETH, lastEthRate],
 												],
+												owner,
 											},
 											() => {
 												behaviors.whenMockedWithUintSystemSetting(

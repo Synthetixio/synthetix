@@ -205,6 +205,7 @@ module.exports = function({ accounts }) {
 				systemDestinationRate,
 				deviationFactor,
 				lastExchangeRates,
+				owner,
 			},
 			cb
 		) => {
@@ -239,6 +240,20 @@ module.exports = function({ accounts }) {
 								multiplyDecimal(sourceAmount, sourceRate),
 								destinationRate
 							).toString();
+						}
+					);
+
+					// mock last rates
+					this.mocks.ExchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with([
+						lastExchangeRates.map(([, rate]) => require('ethers').BigNumber.from(rate.toString())),
+						false,
+					]);
+
+					// tell exchanger to update last rates
+					await this.instance.resetLastExchangeRate(
+						lastExchangeRates.map(([asset]) => asset),
+						{
+							from: owner,
 						}
 					);
 				});
