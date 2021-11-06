@@ -21,14 +21,21 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     /* ========== SETTERS ========== */
 
     function setDexPriceAggregator(IDexPriceAggregator _dexPriceAggregator) external onlyOwner {
-        flexibleStorage().setAddressValue(CONTRACT_NAME, SETTING_DEX_PRICE_AGGREGATOR, address(_dexPriceAggregator));
+        flexibleStorage().setAddressValue(
+            ExchangeRates.CONTRACT_NAME,
+            SETTING_DEX_PRICE_AGGREGATOR,
+            address(_dexPriceAggregator)
+        );
         emit DexPriceAggregatorUpdated(address(_dexPriceAggregator));
     }
 
     /* ========== VIEWS ========== */
 
     function dexPriceAggregator() public view returns (IDexPriceAggregator) {
-        return IDexPriceAggregator(flexibleStorage().getAddressValue(CONTRACT_NAME, SETTING_DEX_PRICE_AGGREGATOR));
+        return
+            IDexPriceAggregator(
+                flexibleStorage().getAddressValue(ExchangeRates.CONTRACT_NAME, SETTING_DEX_PRICE_AGGREGATOR)
+            );
     }
 
     function atomicTwapWindow() external view returns (uint) {

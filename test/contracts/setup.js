@@ -631,13 +631,11 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['Exchanger'],
 		},
 		{
 			contract: 'ExchangeRatesWithDexPricing',
 			resolverAlias: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['Exchanger'],
 		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },

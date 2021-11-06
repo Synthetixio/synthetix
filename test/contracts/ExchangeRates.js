@@ -82,10 +82,7 @@ contract('Exchange Rates', async accounts => {
 		const baseFunctions = [
 			'addAggregator',
 			'deleteRate',
-			'freezeRate',
 			'removeAggregator',
-			'removeInversePricing',
-			'setInversePricing',
 			'setOracle',
 			'updateRates',
 		];
