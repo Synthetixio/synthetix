@@ -6,10 +6,14 @@ const { toBytes32 } = require('../..');
 const { prepareSmocks } = require('./helpers');
 
 let ExchangerWithVirtualSynth;
+let SafeDecimalMath;
+let DynamicFee;
 
 module.exports = function({ accounts }) {
 	before(async () => {
 		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+		SafeDecimalMath = artifacts.require('SafeDecimalMath');
+		DynamicFee = artifacts.require('DynamicFee');
 	});
 
 	beforeEach(async () => {
@@ -37,7 +41,10 @@ module.exports = function({ accounts }) {
 	});
 
 	before(async () => {
-		ExchangerWithVirtualSynth.link(await artifacts.require('SafeDecimalMath').new());
+		const safeDecimalMath = await SafeDecimalMath.new();
+		DynamicFee.link(safeDecimalMath);
+		ExchangerWithVirtualSynth.link(safeDecimalMath);
+		ExchangerWithVirtualSynth.link(await DynamicFee.new());
 	});
 
 	return {
