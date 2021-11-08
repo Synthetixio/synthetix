@@ -2,7 +2,6 @@
 	"CollateralErc20",
 	"CollateralEth",
 	"ExchangerWithFeeRecAlternatives",
-	"ExchangeRatesWithDexPricing",
 	"FakeTradingRewards",
 	"Synthetix",
 	"NativeEtherWrapper"

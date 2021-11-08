@@ -22,7 +22,7 @@ module.exports = async ({
 	runStep,
 	synths,
 }) => {
-	const { CollateralShort, SystemSettings } = deployer.deployedContracts;
+	const { CollateralShort, SystemSettings, ExchangeRates } = deployer.deployedContracts;
 
 	// then ensure the defaults of SystemSetting
 	// are set (requires FlexibleStorage to have been correctly configured)
@@ -358,6 +358,20 @@ module.exports = async ({
 				writeArg: [CollateralShort.address, collapseFeeRate],
 				comment:
 					'Ensure the CollateralShort contract has its service fee set for collapsing loans (SIP-135)',
+			});
+		}
+
+		if (ExchangeRates.dexPriceAggregator) {
+			const dexPriceAggregator = getDeployParameter('DEX_PRICE_AGGREGATOR');
+
+			// set up DEX price oracle for exchange rates
+			await runStep({
+				contract: `ExchangeRates`,
+				target: ExchangeRates,
+				read: 'dexPriceAggregator',
+				expected: input => input === dexPriceAggregator,
+				write: 'setDexPriceAggregator',
+				writeArg: [dexPriceAggregator],
 			});
 		}
 	} catch (err) {
