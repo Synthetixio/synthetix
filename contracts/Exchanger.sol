@@ -5,6 +5,7 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/IExchanger.sol";
+import "hardhat/console.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -220,6 +221,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
+            console.log("currencyKey: %i:");
+            console.logBytes32(currencyKey);
+            console.log("destinationAmount: %i:", destinationAmount);
+            console.log("exchangeEntry.amountReceived: %i:", exchangeEntry.amountReceived);
+            console.log("amountShouldHaveReceived: %i:", amountShouldHaveReceived);
             if (!_isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived)) {
                 if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
                     // if they received more than they should have, add to the reclaim tally
@@ -745,7 +751,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
 
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
-            return exchangeFeeRate.add(exchangeDynamicFeeRate);
+            exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
+            // Cap max exchangeFeeRate to 100%
+            exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
+            console.log("total exchangeFeeRate: %i", exchangeFeeRate);
+            return exchangeFeeRate;
         }
 
         // Is this a swing trade? long to short or short to long skipping sUSD.
@@ -760,7 +770,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             exchangeDynamicFeeRate = exchangeDynamicFeeRate.mul(2);
         }
 
-        return exchangeFeeRate.add(exchangeDynamicFeeRate);
+        exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
+        // Cap max exchangeFeeRate to 100%
+        exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
+        console.log("total exchangeFeeRate: %i", exchangeFeeRate);
     }
 
     /// @notice Get dynamic fee for a given currency key (SIP-184)
@@ -836,8 +849,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         pure
         returns (uint amountReceived)
     {
-        // Cap max exchangeFeeRate to 100%
-        exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 

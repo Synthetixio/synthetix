@@ -643,14 +643,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		return multiplyDecimal(amountToExchange, exchangeFeeRate);
 	};
 
-	const amountAfterExchangeFee = ({ amount }) => {
-		return multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate));
-	};
-
-	const calculateExpectedSettlementAmount = ({ amount, oldRate, newRate }) => {
-		// Note: exchangeFeeRate is in a parent scope. Tests may mutate it in beforeEach and
-		// be assured that this function, when called in a test, will use that mutated value
-		const result = multiplyDecimal(amountAfterExchangeFee({ amount }), oldRate.sub(newRate));
+	const calculateExpectedSettlementAmount = ({ amountReceived, amountShouldHaveReceived }) => {
+		const result = amountReceived.sub(amountShouldHaveReceived);
+		console.log('result :', result.toString());
+		console.log('result.isNeg(): ', result.isNeg());
 		return {
 			reclaimAmount: result.isNeg() ? new web3.utils.BN(0) : result,
 			rebateAmount: result.isNeg() ? result.abs() : new web3.utils.BN(0),
@@ -667,15 +663,20 @@ contract('Exchanger (spec tests)', async accounts => {
 		const currencyKey = await synth.currencyKey();
 		// Can only either be reclaim or rebate - not both
 		const isReclaim = !expected.reclaimAmount.isZero();
+		console.log('isReclaim:', isReclaim);
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
+		console.log('expectedAmount:', expectedAmount.toString());
 
 		const eventName = `Exchange${isReclaim ? 'Reclaim' : 'Rebate'}`;
+		console.log('eventName:', eventName);
+		console.log('logs:', logs);
 		decodedEventEqual({
 			log: logs.find(({ name }) => name === eventName), // logs[0] is individual reclaim/rebate events, logs[1] is either an Issued or Burned event
 			event: eventName,
 			emittedFrom: await synthetix.proxy(),
 			args: [account1, currencyKey, expectedAmount],
-			bnCloseVariance,
+			// bnCloseVariance,
+			bnCloseVariance: (1e13).toString(), // 0.00001
 		});
 
 		// return all logs for any other usage
@@ -731,12 +732,12 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 				});
 			});
-			describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
+			describe('given the sEUR rate is 2, and sETH is 100, sBTC is 5000', () => {
 				beforeEach(async () => {
-					// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 9000:1
+					// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 5000:1
 					await exchangeRates.updateRates(
 						[sEUR, sETH, sBTC],
-						['2', '100', '9000'].map(toUnit),
+						['2', '100', '5000'].map(toUnit),
 						timestamp,
 						{
 							from: oracle,
@@ -797,6 +798,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												exchangeFeeRate,
 											} = await exchanger.getAmountsForExchange(amountOfSrcExchanged, sUSD, sEUR);
 
+											console.log('exchangeFeeRate beforeEach:', exchangeFeeRate.toString());
 											const logs = await getDecodedLogs({
 												hash: exchangeTransaction.tx,
 												contracts: [
@@ -922,20 +924,20 @@ contract('Exchanger (spec tests)', async accounts => {
 												);
 											});
 										});
-										describe('when the price doubles for sUSD:sEUR to 4:1', () => {
+										describe('when the price doubles for sUSD:sEUR to 2.1:1', () => {
 											beforeEach(async () => {
 												await fastForward(5);
 												timestamp = await currentTime();
 
-												await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
+												const { amountReceived } = await exchanger.getAmountsForExchange(
+													amountOfSrcExchanged,
+													sUSD,
+													sEUR
+												);
+												console.log('amountReceived 0:', amountReceived.toString());
+
+												await exchangeRates.updateRates([sEUR], ['2.001'].map(toUnit), timestamp, {
 													from: oracle,
-												});
-											});
-											it('then settlement reclaimAmount shows a reclaim of half the entire balance of sEUR', async () => {
-												const expected = calculateExpectedSettlementAmount({
-													amount: amountOfSrcExchanged,
-													oldRate: divideDecimal(1, 2),
-													newRate: divideDecimal(1, 4),
 												});
 
 												const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
@@ -943,9 +945,23 @@ contract('Exchanger (spec tests)', async accounts => {
 													sEUR
 												);
 
-												assert.bnEqual(rebateAmount, expected.rebateAmount);
-												assert.bnEqual(reclaimAmount, expected.reclaimAmount);
+												const {
+													amountReceived: amountShouldHaveReceivedSecond,
+												} = await exchanger.getAmountsForExchange(amountOfSrcExchanged, sUSD, sEUR);
+												console.log(
+													'amountShouldHaveReceivedSecond 0:',
+													amountShouldHaveReceivedSecond.toString()
+												);
+
+												const expected = calculateExpectedSettlementAmount({
+													amountReceived: amountReceived,
+													amountShouldHaveReceived: amountShouldHaveReceivedSecond,
+												});
+
+												assert.bnClose(rebateAmount, expected.rebateAmount, (1e13).toString()); // 0.00001
+												assert.bnClose(reclaimAmount, expected.reclaimAmount, (1e13).toString()); // 0.00001
 											});
+
 											describe('when settle() is invoked', () => {
 												it('then it reverts as the waiting period has not ended', async () => {
 													await assert.revert(
@@ -962,11 +978,17 @@ contract('Exchanger (spec tests)', async accounts => {
 													await fastForward(60);
 													srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
 
-													expectedSettlement = calculateExpectedSettlementAmount({
-														amount: amountOfSrcExchanged,
-														oldRate: divideDecimal(1, 2),
-														newRate: divideDecimal(1, 4),
-													});
+													const {
+														amountReceived: amountShouldHaveReceivedSecond,
+													} = await exchanger.getAmountsForExchange(
+														amountOfSrcExchanged,
+														sUSD,
+														sEUR
+													);
+													console.log(
+														'amountShouldHaveReceivedSecond 0:',
+														amountShouldHaveReceivedSecond.toString()
+													);
 												});
 												describe('when settle() is invoked', () => {
 													let transaction;
@@ -1159,8 +1181,15 @@ contract('Exchanger (spec tests)', async accounts => {
 												});
 											});
 											it('then settlement rebateAmount shows a rebate of half the entire balance of sEUR', async () => {
+												const { exchangeFeeRate } = await exchanger.getAmountsForExchange(
+													amountOfSrcExchanged,
+													sUSD,
+													sEUR
+												);
+
 												const expected = calculateExpectedSettlementAmount({
 													amount: amountOfSrcExchanged,
+													exchangeFeeRate: exchangeFeeRate,
 													oldRate: divideDecimal(1, 2),
 													newRate: divideDecimal(1, 1),
 												});
@@ -1198,15 +1227,22 @@ contract('Exchanger (spec tests)', async accounts => {
 															let expectedSettlementRebate;
 															beforeEach(async () => {
 																await fastForward(60);
+																const { exchangeFeeRate } = await exchanger.getAmountsForExchange(
+																	amountOfSrcExchanged,
+																	sUSD,
+																	sEUR
+																);
 
 																expectedSettlementRebate = calculateExpectedSettlementAmount({
 																	amount: amountOfSrcExchanged,
+																	exchangeFeeRate: exchangeFeeRate,
 																	oldRate: divideDecimal(1, 2),
 																	newRate: divideDecimal(1, 1),
 																});
 
 																expectedSettlementReclaim = calculateExpectedSettlementAmount({
 																	amount: amountOfSrcExchanged,
+																	exchangeFeeRate: exchangeFeeRate,
 																	oldRate: divideDecimal(1, 1),
 																	newRate: divideDecimal(1, 2),
 																});
@@ -1286,8 +1322,15 @@ contract('Exchanger (spec tests)', async accounts => {
 														await fastForward(60);
 														srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
 
+														const { exchangeFeeRate } = await exchanger.getAmountsForExchange(
+															amountOfSrcExchanged,
+															sUSD,
+															sEUR
+														);
+
 														expectedSettlement = calculateExpectedSettlementAmount({
 															amount: amountOfSrcExchanged,
+															exchangeFeeRate: exchangeFeeRate,
 															oldRate: divideDecimal(1, 2),
 															newRate: divideDecimal(1, 1),
 														});
@@ -1461,6 +1504,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											let amountOfSrcExchanged;
 											beforeEach(async () => {
 												amountOfSrcExchanged = toUnit('100');
+
 												await synthetix.exchange(sEUR, amountOfSrcExchanged, sBTC, {
 													from: account1,
 												});
@@ -1475,26 +1519,48 @@ contract('Exchanger (spec tests)', async accounts => {
 													'Must be one entry in the settlement queue'
 												);
 											});
-											describe('when the price doubles for sUSD:sEUR to 4:1', () => {
-												beforeEach(async () => {
+											describe('when the price increased for sUSD:sEUR to 3:1', () => {
+												it('then settlement shows a rebate rebateAmount', async () => {
 													await fastForward(5);
 													timestamp = await currentTime();
 
-													await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
+													const { amountReceived } = await exchanger.getAmountsForExchange(
+														amountOfSrcExchanged,
+														sEUR,
+														sBTC
+													);
+													console.log('amountReceived 0:', amountReceived.toString());
+
+													await exchangeRates.updateRates([sEUR], ['3'].map(toUnit), timestamp, {
 														from: oracle,
 													});
-												});
-												it('then settlement shows a rebate rebateAmount', async () => {
+
 													const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 														account1,
 														sBTC
 													);
 
+													const {
+														amountReceived: amountShouldHaveReceived,
+													} = await exchanger.getAmountsForExchange(
+														amountOfSrcExchanged,
+														sEUR,
+														sBTC
+													);
+													console.log(
+														'amountShouldHaveReceived 0:',
+														amountShouldHaveReceived.toString()
+													);
+
 													const expected = calculateExpectedSettlementAmount({
-														amount: amountOfSrcExchanged,
-														oldRate: divideDecimal(2, 9000),
-														newRate: divideDecimal(4, 9000),
+														amountReceived: amountReceived,
+														amountShouldHaveReceived: amountShouldHaveReceived,
 													});
+
+													console.log('reclaimAmount: ', reclaimAmount.toString());
+													console.log('rebateAmount: ', rebateAmount.toString());
+													console.log('expected reclaim', expected.reclaimAmount.toString());
+													console.log('expected rebate', expected.rebateAmount.toString());
 
 													assert.bnClose(rebateAmount, expected.rebateAmount, bnCloseVariance);
 													assert.bnEqual(reclaimAmount, expected.reclaimAmount);
@@ -1508,29 +1574,54 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 												});
 												describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
-													beforeEach(async () => {
+													it('then the reclaimAmount is whats left when subtracting the rebate', async () => {
 														await fastForward(5);
 														timestamp = await currentTime();
+
+														const { amountReceived } = await exchanger.getAmountsForExchange(
+															amountOfSrcExchanged,
+															sEUR,
+															sBTC
+														);
+														console.log('amountOfSrcExchanged 0:', amountOfSrcExchanged.toString());
+														console.log('amountReceived 0:', amountReceived.toString());
+
 														await exchangeRates.updateRates(
 															[sBTC],
-															['20000'].map(toUnit),
+															['5020'].map(toUnit),
 															timestamp,
 															{
 																from: oracle,
 															}
 														);
-													});
-													it('then the reclaimAmount is whats left when subtracting the rebate', async () => {
+
 														const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 															account1,
 															sBTC
 														);
 
+														const {
+															amountReceived: amountShouldHaveReceived,
+														} = await exchanger.getAmountsForExchange(
+															amountOfSrcExchanged,
+															sEUR,
+															sBTC
+														);
+														console.log('amountOfSrcExchanged 1:', amountOfSrcExchanged.toString());
+														console.log(
+															'amountShouldHaveReceived 1:',
+															amountShouldHaveReceived.toString()
+														);
+
 														const expected = calculateExpectedSettlementAmount({
-															amount: amountOfSrcExchanged,
-															oldRate: divideDecimal(2, 9000),
-															newRate: divideDecimal(4, 20000),
+															amountReceived: amountReceived,
+															amountShouldHaveReceived: amountShouldHaveReceived,
 														});
+
+														console.log('reclaimAmount: ', reclaimAmount.toString());
+														console.log('rebateAmount: ', rebateAmount.toString());
+														console.log('expected reclaim', expected.reclaimAmount.toString());
+														console.log('expected rebate', expected.rebateAmount.toString());
 
 														assert.bnEqual(rebateAmount, expected.rebateAmount);
 														assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
@@ -1544,17 +1635,40 @@ contract('Exchanger (spec tests)', async accounts => {
 															});
 														});
 														it('then the reclaimAmount is unchanged', async () => {
+															const { amountReceived } = await exchanger.getAmountsForExchange(
+																amountOfSrcExchanged,
+																sEUR,
+																sBTC
+															);
+															console.log('amountReceived 0:', amountReceived.toString());
+
 															const {
 																reclaimAmount,
 																rebateAmount,
 																numEntries,
 															} = await exchanger.settlementOwing(account1, sBTC);
 
+															const {
+																amountReceived: amountShouldHaveReceived,
+															} = await exchanger.getAmountsForExchange(
+																amountOfSrcExchanged,
+																sEUR,
+																sBTC
+															);
+															console.log(
+																'amountShouldHaveReceived 1:',
+																amountShouldHaveReceived.toString()
+															);
+
 															const expected = calculateExpectedSettlementAmount({
-																amount: amountOfSrcExchanged,
-																oldRate: divideDecimal(2, 9000),
-																newRate: divideDecimal(4, 20000),
+																amountReceived: amountReceived,
+																amountShouldHaveReceived: amountShouldHaveReceived,
 															});
+
+															console.log('reclaimAmount: ', reclaimAmount.toString());
+															console.log('rebateAmount: ', rebateAmount.toString());
+															console.log('expected reclaim', expected.reclaimAmount.toString());
+															console.log('expected rebate', expected.rebateAmount.toString());
 
 															assert.bnEqual(rebateAmount, expected.rebateAmount);
 															assert.bnClose(
@@ -1575,31 +1689,87 @@ contract('Exchanger (spec tests)', async accounts => {
 																await fastForward(5);
 																timestamp = await currentTime();
 
+																const { amountReceived } = await exchanger.getAmountsForExchange(
+																	amountOfSrcExchanged,
+																	sEUR,
+																	sBTC
+																);
+																console.log('amountReceived 0:', amountReceived.toString());
+
 																await exchangeRates.updateRates(
 																	[sBTC],
-																	['10000'].map(toUnit),
+																	['5010'].map(toUnit),
 																	timestamp,
 																	{
 																		from: oracle,
 																	}
 																);
 
+																const {
+																	amountReceived: amountShouldHaveReceivedFirst,
+																} = await exchanger.getAmountsForExchange(
+																	amountOfSrcExchanged,
+																	sEUR,
+																	sBTC
+																);
+																console.log(
+																	'amountShouldHaveReceivedFirst 0:',
+																	amountShouldHaveReceivedFirst.toString()
+																);
+
 																expectedFromFirst = calculateExpectedSettlementAmount({
-																	amount: amountOfSrcExchanged,
-																	oldRate: divideDecimal(2, 9000),
-																	newRate: divideDecimal(4, 10000),
+																	amountReceived: amountReceived,
+																	amountShouldHaveReceived: amountShouldHaveReceivedFirst,
 																});
-																expectedFromSecond = calculateExpectedSettlementAmount({
-																	amount: amountOfSrcExchangedSecondary,
-																	oldRate: divideDecimal(1, 20000),
-																	newRate: divideDecimal(1, 10000),
-																});
-															});
-															it('then the rebateAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
+
+																await exchangeRates.updateRates(
+																	[sBTC],
+																	['4990'].map(toUnit),
+																	timestamp,
+																	{
+																		from: oracle,
+																	}
+																);
 																const {
 																	reclaimAmount,
 																	rebateAmount,
 																} = await exchanger.settlementOwing(account1, sBTC);
+
+																const {
+																	amountReceived: amountShouldHaveReceivedSecond,
+																} = await exchanger.getAmountsForExchange(
+																	amountOfSrcExchanged,
+																	sEUR,
+																	sBTC
+																);
+																console.log(
+																	'amountShouldHaveReceivedSecond 1:',
+																	amountShouldHaveReceivedSecond.toString()
+																);
+
+																expectedFromSecond = calculateExpectedSettlementAmount({
+																	amountReceived: amountReceived,
+																	amountShouldHaveReceived: amountShouldHaveReceivedSecond,
+																});
+
+																console.log('reclaimAmount: ', reclaimAmount.toString());
+																console.log('rebateAmount: ', rebateAmount.toString());
+																console.log(
+																	'expectedFromFirst reclaim',
+																	expectedFromFirst.reclaimAmount.toString()
+																);
+																console.log(
+																	'expectedFromFirst rebate',
+																	expectedFromFirst.rebateAmount.toString()
+																);
+																console.log(
+																	'expectedFromSecond reclaim',
+																	expectedFromSecond.reclaimAmount.toString()
+																);
+																console.log(
+																	'expectedFromSecond rebate',
+																	expectedFromSecond.rebateAmount.toString()
+																);
 
 																assert.equal(reclaimAmount, '0');
 
@@ -1608,30 +1778,40 @@ contract('Exchanger (spec tests)', async accounts => {
 																	expectedFromFirst.rebateAmount.add(
 																		expectedFromSecond.rebateAmount
 																	),
-																	bnCloseVariance
+																	(1e13).toString() // 0.00001
 																);
 															});
-															describe('when another minute passes', () => {
-																beforeEach(async () => {
-																	await fastForward(60);
+															it('then the rebateAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
+																await fastForward(60);
+																const txn = await synthetix.settle(sBTC, {
+																	from: account1,
 																});
-																describe('when settle() is invoked for sBTC', () => {
-																	it('then it settles with a rebate @gasprofile', async () => {
-																		const txn = await synthetix.settle(sBTC, {
-																			from: account1,
-																		});
 
-																		await ensureTxnEmitsSettlementEvents({
-																			hash: txn.tx,
-																			synth: sBTCContract,
-																			expected: {
-																				reclaimAmount: new web3.utils.BN(0),
-																				rebateAmount: expectedFromFirst.rebateAmount.add(
-																					expectedFromSecond.rebateAmount
-																				),
-																			},
-																		});
-																	});
+																console.log(
+																	'expectedFromFirst reclaim',
+																	expectedFromFirst.reclaimAmount.toString()
+																);
+																console.log(
+																	'expectedFromFirst rebate',
+																	expectedFromFirst.rebateAmount.toString()
+																);
+																console.log(
+																	'expectedFromSecond reclaim',
+																	expectedFromSecond.reclaimAmount.toString()
+																);
+																console.log(
+																	'expectedFromSecond rebate',
+																	expectedFromSecond.rebateAmount.toString()
+																);
+																await ensureTxnEmitsSettlementEvents({
+																	hash: txn.tx,
+																	synth: sBTCContract,
+																	expected: {
+																		reclaimAmount: new web3.utils.BN(0),
+																		rebateAmount: expectedFromFirst.rebateAmount.add(
+																			expectedFromSecond.rebateAmount
+																		),
+																	},
 																});
 															});
 															describe('when another minute passes and the exchange fee rate has increased', () => {

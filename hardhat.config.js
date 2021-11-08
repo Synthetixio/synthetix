@@ -56,12 +56,12 @@ module.exports = {
 		},
 	},
 	gasReporter: {
-		enabled: false,
+		enabled: true,
 		showTimeSpent: true,
 		gasPrice: 20,
 		currency: 'USD',
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
-		outputFile: 'test-gas-used.log',
+		// outputFile: 'test-gas-used.log',
 	},
 	mocha: {
 		timeout: 90e3, // 90s

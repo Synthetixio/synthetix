@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Libraries
 import "./SafeDecimalMath.sol";
 import "./Math.sol";
+import "hardhat/console.sol";
 
 library DynamicFee {
     using SafeDecimalMath for uint;
@@ -49,10 +50,12 @@ library DynamicFee {
         uint[] memory prices,
         uint threshold,
         uint weightDecay
-    ) public pure returns (uint dynamicFee) {
+    ) public view returns (uint dynamicFee) {
         uint size = prices.length;
         require(size >= 2, "Not enough prices");
         for (uint i = prices.length - 1; i > 0; i--) {
+            console.log("current price: ");
+            console.log(prices[i - 1]);
             uint priceDifferential = getPriceDifferential(prices[i - 1], prices[i], threshold);
             uint roundDecay = getRoundDecay(i, weightDecay);
             dynamicFee = (dynamicFee.multiplyDecimal(roundDecay)).add(priceDifferential);
