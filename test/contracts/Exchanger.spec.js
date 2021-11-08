@@ -210,6 +210,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									new web3.utils.BN(1),
 									new web3.utils.BN(2),
 								],
+								bnCloseVariance,
 							});
 						});
 
@@ -690,6 +691,8 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe(`when ${section} is suspended`, () => {
 						beforeEach(async () => {
 							await setStatus({ owner, systemStatus, section, suspend: true, synth });
+							// Disable Dynamic Fee by setting rounds to 0
+							await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 						});
 						it('then calling settle() reverts', async () => {
 							await assert.revert(
@@ -742,6 +745,8 @@ contract('Exchanger (spec tests)', async accounts => {
 							from: oracle,
 						}
 					);
+					// Disable Dynamic Fee by setting rounds to 0
+					await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 				});
 				describe('and the exchange fee rate is 1% for easier human consumption', () => {
 					beforeEach(async () => {

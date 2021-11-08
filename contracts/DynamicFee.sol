@@ -51,7 +51,10 @@ library DynamicFee {
         uint weightDecay
     ) public pure returns (uint dynamicFee) {
         uint size = prices.length;
-        require(size >= 2, "Not enough prices");
+        // 0/disable dynamic fee when price feeds less than 2 rounds
+        if (size < 2) {
+            return dynamicFee;
+        }
         for (uint i = prices.length - 1; i > 0; i--) {
             uint priceDifferential = getPriceDifferential(prices[i - 1], prices[i], threshold);
             uint roundDecay = getRoundDecay(i, weightDecay);

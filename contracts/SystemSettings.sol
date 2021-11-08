@@ -327,7 +327,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     /// @notice Set exchange dynamic fee last N rounds constant default to 10
     /// @return uint dynamic fee last N rounds
     function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
-        require(rounds != 0, "rounds cannot be 0");
+        // Allowing to be 0 as a flag to disable Dynamic Fee
+        // require(rounds != 0, "rounds cannot be 0");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_ROUNDS, rounds);
 
@@ -380,7 +381,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
         require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
         require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
-        
+
         // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
         // otherwise risk of flash loan attack
         if (_rate < 0) {
@@ -398,7 +399,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
         require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
         require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
-        
+
         // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
         // otherwise risk of flash loan attack
         if (_rate < 0) {
