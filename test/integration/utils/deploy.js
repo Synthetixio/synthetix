@@ -46,6 +46,7 @@ async function deployInstance({
 		generateSolidity,
 		ignoreCustomParameters,
 		network,
+		nonceManager: useOvm,
 		privateKey,
 		providerUrl: `${providerUrl}:${providerPort}`,
 		skipFeedChecks,
