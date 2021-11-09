@@ -92,21 +92,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
         uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
-        // refactired due to stack too deep
-        uint pDexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
-
-        // Final value is minimum output between P_CLBUF and P_TWAP
-        value = pClbufValue < pDexValue ? pClbufValue : pDexValue; // min
-    }
-
-    function _dexPriceDestinationValue(
-        IERC20 sourceEquivalent,
-        IERC20 destEquivalent,
-        uint sourceAmount
-    ) internal view returns (uint) {
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
-        uint sourceAmountInEquivalent =
-            (sourceAmount.mul(10**uint(sourceEquivalent.decimals()))).div(SafeDecimalMath.unit());
+        uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
 
         uint twapWindow = getAtomicTwapWindow();
         require(twapWindow != 0, "Uninitialized atomic twap window");
@@ -118,10 +105,12 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
                 address(destEquivalent),
                 twapWindow
             );
-        require(twapValueInEquivalent > 0, "dex price returned 0");
 
         // Similar to source amount, normalize decimals back to internal unit for output amount
-        return (twapValueInEquivalent.mul(SafeDecimalMath.unit())).div(10**uint(destEquivalent.decimals()));
+        uint pDexValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
+
+        // Final value is minimum output between P_CLBUF and P_TWAP
+        value = pClbufValue < pDexValue ? pClbufValue : pDexValue; // min
     }
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool) {

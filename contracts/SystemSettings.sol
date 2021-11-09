@@ -489,7 +489,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
-        require(_equivalent != address(0), "Atomic equivalent is 0 address");
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, _currencyKey)),

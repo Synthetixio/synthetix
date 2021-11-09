@@ -2795,7 +2795,7 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('synthTooVolatileForAtomicExchange', async () => {
-			const minute = 60;
+			const minute = 60 * 60;
 			const synth = sETH;
 			let aggregator;
 
@@ -2856,8 +2856,7 @@ contract('Exchange Rates', async accounts => {
 						volatile,
 					}) {
 						beforeEach('set aggregator updates', async () => {
-							// JS footgun: .sort() sorts numbers as strings!
-							oracleUpdateTimesFromNow.sort((a, b) => b - a); // ensure the update times go from farthest to most recent
+							oracleUpdateTimesFromNow.sort().reverse(); // ensure the update times go from farthest to most recent
 							const now = await currentTime();
 							for (const timeFromNow of oracleUpdateTimesFromNow) {
 								await aggregator.setLatestAnswer(convertToDecimals(1, 8), now - timeFromNow);
