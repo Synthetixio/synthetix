@@ -8,19 +8,19 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - restore_cache:
-      keys:
-        - v6-optimism-build-{{ checksum "package-lock.json" }}
+  # - restore_cache:
+  #     keys:
+  #       - v6-optimism-build-{{ checksum "package-lock.json" }}
   - run:
       name: Build docker containers if necessary
       command: |
         if [ ! -d ./optimism ]; then
           npx hardhat ops --fresh --build --build-ops
         fi;
-  - save_cache:
-      key: v6-optimism-build-{{ checksum "package-lock.json" }}
-      paths:
-        - ./optimism
+  # - save_cache:
+  #     key: v6-optimism-build-{{ checksum "package-lock.json" }}
+  #     paths:
+  #       - ./optimism
   - run:
       name: Start docker chains
       background: true
