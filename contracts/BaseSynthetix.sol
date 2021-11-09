@@ -311,7 +311,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         address,
         bytes32
-    ) external returns (uint amountReceived) {
+    ) external returns (uint) {
         _notImplemented();
     }
 
@@ -419,35 +419,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
             SYNTH_EXCHANGE_SIG,
-            addressToBytes32(account),
-            0,
-            0
-        );
-    }
-
-    event AtomicSynthExchange(
-        address indexed account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
-    );
-    bytes32 internal constant ATOMIC_SYNTH_EXCHANGE_SIG =
-        keccak256("AtomicSynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
-
-    function emitAtomicSynthExchange(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
-    ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
-            2,
-            ATOMIC_SYNTH_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0
