@@ -191,12 +191,6 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
-	/***********************************
-	 * TODO (SIP-120): spec atomic configuration *
-	 ***********************************/
-	DEX_PRICE_AGGREGATOR: {
-		mainnet: '0xf120F029Ac143633d1942e48aE2Dfa2036C5786c',
-	},
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
 	ATOMIC_TWAP_WINDOW: '3600', // 1 hour
 	/**
