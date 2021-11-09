@@ -361,9 +361,8 @@ module.exports = async ({
 			});
 		}
 
-		if (ExchangeRates.dexPriceAggregator) {
-			const dexPriceAggregator = getDeployParameter('DEX_PRICE_AGGREGATOR');
-
+		const dexPriceAggregator = await getDeployParameter('DEX_PRICE_AGGREGATOR');
+		if (ExchangeRates.dexPriceAggregator && dexPriceAggregator) {
 			// set up DEX price oracle for exchange rates
 			await runStep({
 				contract: `ExchangeRates`,
@@ -371,7 +370,7 @@ module.exports = async ({
 				read: 'dexPriceAggregator',
 				expected: input => input === dexPriceAggregator,
 				write: 'setDexPriceAggregator',
-				writeArg: [dexPriceAggregator],
+				writeArg: dexPriceAggregator,
 			});
 		}
 	} catch (err) {
