@@ -2535,18 +2535,8 @@ contract('Exchanger (spec tests)', async accounts => {
 			describe('when a user has 1000 sUSD', () => {
 				describe('when the necessary configuration been set', () => {
 					const ethOnDex = toUnit('0.005'); // this should be chosen over the 100 (0.01) specified by default
-					const ethOnCL = toUnit('200'); // 1 over the ethOnDex
 
 					beforeEach(async () => {
-						// CL aggregator with past price data
-						const aggregator = await MockAggregator.new({ from: owner });
-						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
-						// set prices with no valatility
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 20 * 60);
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 15 * 60);
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 10 * 60);
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 5 * 60);
-
 						// DexPriceAggregator
 						const dexPriceAggregator = await MockDexPriceAggregator.new();
 						await dexPriceAggregator.setAssetToAssetRate(ethOnDex);
@@ -2569,16 +2559,6 @@ contract('Exchanger (spec tests)', async accounts => {
 								from: owner,
 							}
 						);
-						await systemSettings.setAtomicVolatilityConsiderationWindow(
-							sETH,
-							web3.utils.toBN(600), // 10 minutes
-							{
-								from: owner,
-							}
-						);
-						await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, web3.utils.toBN(2), {
-							from: owner,
-						});
 					});
 
 					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {
