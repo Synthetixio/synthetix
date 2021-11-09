@@ -193,21 +193,14 @@ const defaults = {
 
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
 	ATOMIC_TWAP_WINDOW: '3600', // 1 hour
-	/**
-	 * Do these need defaults?
-	ATOMIC_EQUIVALENTS_ON_DEX: {
-	},
-	ATOMIC_EXCHANGE_FEE_RATES: {
-		crypto: w3utils.toWei('0.01'),
-	},
-	ATOMIC_PRICE_BUFFERS: {
-		crypto: w3utils.toWei('0.0025'), // 25 bps
-	},
-	ATOMIC_VOLATILITY_CONSIDERATION_WINDOWS: {
-	},
-	ATOMIC_VOLATILITY_UPDATE_THRESHOLD: {
-	},
-	*/
+	// ,
+	// 	ATOMIC_PRICE_BUFFERS: {
+	// 		crypto: w3utils.toWei('0.0025'), // 25 bps
+	// 	},
+	// 	ATOMIC_VOLATILITY_CONSIDERATION_WINDOWS: {
+	// 	},
+	// 	ATOMIC_VOLATILITY_UPDATE_THRESHOLD: {
+	// 	},
 };
 
 /**

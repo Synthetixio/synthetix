@@ -305,7 +305,6 @@ module.exports = async ({
 		});
 
 		// SIP-120 Atomic swap settings
-
 		if (SystemSettings.atomicMaxVolumePerBlock) {
 			// TODO (SIP-120): finish configuring new atomic exchange system settings
 			const atomicMaxVolumePerBlock = await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK');
@@ -328,6 +327,36 @@ module.exports = async ({
 				write: 'setAtomicTwapWindow',
 				writeArg: await getDeployParameter('ATOMIC_TWAP_WINDOW'),
 			});
+		}
+
+		const dexEquivalents = await getDeployParameter('ATOMIC_EQUIVALENTS_ON_DEX');
+		if (SystemSettings.atomicEquivalentForDexPricing && dexEquivalents) {
+			for (const { currencyKey, equivalent } of Object.values(dexEquivalents)) {
+				await runStep({
+					contract: 'SystemSettings',
+					target: SystemSettings,
+					read: 'atomicEquivalentForDexPricing',
+					readArg: currencyKey,
+					expected: input => input !== ZERO_ADDRESS, // only change if zero
+					write: 'setAtomicEquivalentForDexPricing',
+					writeArg: [currencyKey, equivalent],
+				});
+			}
+		}
+
+		const atomicExchangeFeeRates = await getDeployParameter('ATOMIC_EXCHANGE_FEE_RATES');
+		if (SystemSettings.atomicExchangeFeeRates && atomicExchangeFeeRates) {
+			for (const [currencyKey, rate] of Object.entries(atomicExchangeFeeRates)) {
+				await runStep({
+					contract: 'SystemSettings',
+					target: SystemSettings,
+					read: 'atomicExchangeFeeRate',
+					readArg: currencyKey,
+					expected: input => input !== 0, // only change if zero
+					write: 'setAtomicExchangeFeeRate',
+					writeArg: [currencyKey, rate],
+				});
+			}
 		}
 
 		// SIP-135 Shorting settings

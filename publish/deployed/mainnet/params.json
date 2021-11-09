@@ -2,5 +2,33 @@
 	{
 		"name": "DEX_PRICE_AGGREGATOR",
 		"value": "0xf120f029ac143633d1942e48ae2dfa2036c5786c"
+	},
+	{
+		"name": "ATOMIC_EQUIVALENTS_ON_DEX",
+		"value": {
+			"sUSD": {
+				"currencyKey": "sUSD",
+				"equivalent": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+				"token": "USDC"
+			},
+			"sETH": {
+				"currencyKey": "sETH",
+				"equivalent": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+				"token": "WETH"
+			},
+			"sBTC": {
+				"currencyKey": "sBTC",
+				"equivalent": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+				"token": "WBTC"
+			}
+		}
+	},
+	{
+		"name": "ATOMIC_EXCHANGE_FEE_RATES",
+		"value": {
+			"sUSD": "10000000000000000",
+			"sETH": "10000000000000000",
+			"sBTC": "10000000000000000"
+		}
 	}
 ]
