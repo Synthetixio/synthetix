@@ -82,7 +82,7 @@ contract('Synthetix', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: synthetix.abi,
 			ignoreParents: ['BaseSynthetix'],
-			expected: ['migrateEscrowBalanceToRewardEscrowV2'],
+			expected: ['emitAtomicSynthExchange', 'migrateEscrowBalanceToRewardEscrowV2'],
 		});
 	});
 
