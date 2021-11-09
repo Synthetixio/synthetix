@@ -1,1 +1,6 @@
-[]
+[
+	{
+		"name": "DYNAMIC_FEE_ROUNDS",
+		"value": "0"
+	}
+]
