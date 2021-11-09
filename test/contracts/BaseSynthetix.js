@@ -86,7 +86,6 @@ contract('BaseSynthetix', async accounts => {
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
 				'emitSynthExchange',
-				'emitAtomicSynthExchange',
 				'emitExchangeRebate',
 				'emitExchangeReclaim',
 				'emitExchangeTracking',
