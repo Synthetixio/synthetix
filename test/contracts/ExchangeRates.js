@@ -2257,6 +2257,32 @@ contract('Exchange Rates', async accounts => {
 			});
 		});
 
+		describe('src/dest do not have an atomic equivalent for dex pricing', () => {
+			beforeEach(async () => {
+				const MockToken = artifacts.require('MockToken');
+				const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
+				// set sETH equivalent but don't set sUSD equivalent
+				await systemSettings.setAtomicEquivalentForDexPricing(
+					sETH,
+					sethDexEquivalentToken.address,
+					{ from: owner }
+				);
+			});
+
+			it('reverts on src not having equivalent', async () => {
+				await assert.revert(
+					instance.effectiveAtomicValueAndRates(sUSD, toUnit('1'), sETH),
+					'No atomic equivalent for src'
+				);
+			});
+			it('reverts on dest not having equivalent', async () => {
+				await assert.revert(
+					instance.effectiveAtomicValueAndRates(sETH, toUnit('1'), sUSD),
+					'No atomic equivalent for dest'
+				);
+			});
+		});
+
 		describe('effectiveAtomicValueAndRates', () => {
 			const MockToken = artifacts.require('MockToken');
 			const one = toUnit('1');
@@ -2382,36 +2408,15 @@ contract('Exchange Rates', async accounts => {
 				);
 			});
 
-			describe('src/dest do not have an atomic equivalent for dex pricing', () => {
-				beforeEach(async () => {
-					await systemSettings.setAtomicEquivalentForDexPricing(sUSD, ZERO_ADDRESS, {
-						from: owner,
-					});
-				});
-				it('reverts on src not having equivalent', async () => {
-					await assert.revert(
-						instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
-						'No atomic equivalent for src'
-					);
-				});
-				it('reverts on dest not having equivalent', async () => {
-					await assert.revert(
-						instance.effectiveAtomicValueAndRates(sETH, one, sUSD),
-						'No atomic equivalent for dest'
-					);
-				});
-			});
-
 			describe('aggregator reverts on latestRoundData', () => {
 				beforeEach(async () => {
 					await ethAggregator.setLatestRoundDataShouldRevert(true);
 				});
-				it('returns zero rates', async () => {
-					const rates = await instance.effectiveAtomicValueAndRates(sUSD, one, sETH);
-					assert.bnEqual(rates.value, '0');
-					assert.bnEqual(rates.systemValue, '0');
-					assert.bnEqual(rates.systemSourceRate, one); // sUSD rate is always 1
-					assert.bnEqual(rates.systemDestinationRate, '0');
+				it('reverts due to zero rates', async () => {
+					await assert.revert(
+						instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
+						'dex price returned 0'
+					);
 				});
 			});
 
@@ -2795,7 +2800,7 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('synthTooVolatileForAtomicExchange', async () => {
-			const minute = 60 * 60;
+			const minute = 60;
 			const synth = sETH;
 			let aggregator;
 
@@ -2856,7 +2861,8 @@ contract('Exchange Rates', async accounts => {
 						volatile,
 					}) {
 						beforeEach('set aggregator updates', async () => {
-							oracleUpdateTimesFromNow.sort().reverse(); // ensure the update times go from farthest to most recent
+							// JS footgun: .sort() sorts numbers as strings!
+							oracleUpdateTimesFromNow.sort((a, b) => b - a); // ensure the update times go from farthest to most recent
 							const now = await currentTime();
 							for (const timeFromNow of oracleUpdateTimesFromNow) {
 								await aggregator.setLatestAnswer(convertToDecimals(1, 8), now - timeFromNow);
