@@ -634,10 +634,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
      */
     function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
-        uint absPositionSize = positionSize < 0 ? uint(-positionSize) : uint(positionSize);
         // size * price * fee-BPs / 10000
         // the first multiplication is decimal because price is fixed point decimal, but BPs and 10000 are plain int
-        uint proportionalFee = absPositionSize.multiplyDecimalRound(price).mul(_liquidationFeeBPs()).div(10000);
+        uint proportionalFee = _abs(positionSize).multiplyDecimalRound(price).mul(_liquidationFeeBPs()).div(10000);
         uint minFee = _minLiquidationFee();
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
         return proportionalFee > minFee ? proportionalFee : minFee;
@@ -653,10 +652,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * @return lBuffer liquidation buffer to be paid to liquidator in sUSD fixed point decimal units
      */
     function _liquidationBuffer(int positionSize, uint price) internal view returns (uint lBuffer) {
-        uint absPositionSize = positionSize < 0 ? uint(-positionSize) : uint(positionSize);
         // size * price * buffer-BPs / 10000
         // the first multiplication is decimal because price is fixed point decimal, but BPs and 10000 are plain int
-        return absPositionSize.multiplyDecimalRound(price).mul(_liquidationBufferBPs()).div(10000);
+        return _abs(positionSize).multiplyDecimalRound(price).mul(_liquidationBufferBPs()).div(10000);
     }
 
     /**
