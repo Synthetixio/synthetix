@@ -27,28 +27,32 @@
 		"name": "ATOMIC_EXCHANGE_FEE_RATES",
 		"value": {
 			"sETH": "3000000000000000",
-			"sBTC": "3000000000000000"
+			"sBTC": "3000000000000000",
+			"sUSD": "3000000000000000"
 		}
 	},
 	{
 		"name": "ATOMIC_PRICE_BUFFER",
 		"value": {
 			"sETH": "1500000000000000",
-			"sBTC": "1500000000000000"
+			"sBTC": "1500000000000000",
+			"sUSD": "1500000000000000"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_CONSIDERATION_WINDOW",
 		"value": {
 			"sETH": "600",
-			"sBTC": "600"
+			"sBTC": "600",
+			"sUSD": "600"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_UPDATE_THRESHOLD",
 		"value": {
 			"sETH": "3",
-			"sBTC": "3"
+			"sBTC": "3",
+			"sUSD": "3"
 		}
 	}
 ]
