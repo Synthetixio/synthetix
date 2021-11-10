@@ -1145,9 +1145,17 @@ contract('SystemSettings', async accounts => {
 				);
 			});
 
+			it('cannot be set to 0 address', async () => {
+				await assert.revert(
+					systemSettings.setAtomicEquivalentForDexPricing(sETH, ZERO_ADDRESS, { from: owner }),
+					'Atomic equivalent is 0 address'
+				);
+			});
+
 			it('allows to be reset', async () => {
-				await systemSettings.setAtomicEquivalentForDexPricing(sETH, ZERO_ADDRESS, { from: owner });
-				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), ZERO_ADDRESS);
+				// using account1 (although it's EOA) for simplicity
+				await systemSettings.setAtomicEquivalentForDexPricing(sETH, account1, { from: owner });
+				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), account1);
 			});
 		});
 	});
