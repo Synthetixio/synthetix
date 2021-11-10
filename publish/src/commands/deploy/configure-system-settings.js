@@ -336,10 +336,10 @@ module.exports = async ({
 					contract: 'SystemSettings',
 					target: SystemSettings,
 					read: 'atomicEquivalentForDexPricing',
-					readArg: currencyKey,
+					readArg: toBytes32(currencyKey),
 					expected: input => input !== ZERO_ADDRESS, // only change if zero
 					write: 'setAtomicEquivalentForDexPricing',
-					writeArg: [currencyKey, equivalent],
+					writeArg: [toBytes32(currencyKey), equivalent],
 				});
 			}
 		}
@@ -351,12 +351,74 @@ module.exports = async ({
 					contract: 'SystemSettings',
 					target: SystemSettings,
 					read: 'atomicExchangeFeeRate',
-					readArg: currencyKey,
+					readArg: toBytes32(currencyKey),
 					expected: input => input !== 0, // only change if zero
 					write: 'setAtomicExchangeFeeRate',
-					writeArg: [currencyKey, rate],
+					writeArg: [toBytes32(currencyKey), rate],
 				});
 			}
+		}
+
+		const atomicPriceBuffer = await getDeployParameter('ATOMIC_PRICE_BUFFER');
+		if (SystemSettings.atomicPriceBuffer && atomicPriceBuffer) {
+			for (const [currencyKey, buffer] of Object.entries(atomicPriceBuffer)) {
+				await runStep({
+					contract: 'SystemSettings',
+					target: SystemSettings,
+					read: 'atomicPriceBuffer',
+					readArg: toBytes32(currencyKey),
+					expected: input => input !== 0, // only change if zero
+					write: 'setAtomicPriceBuffer',
+					writeArg: [toBytes32(currencyKey), buffer],
+				});
+			}
+		}
+
+		const atomicVolatilityConsiderationWindow = await getDeployParameter(
+			'ATOMIC_VOLATILITY_CONSIDERATION_WINDOW'
+		);
+		if (SystemSettings.atomicVolatilityConsiderationWindow && atomicVolatilityConsiderationWindow) {
+			for (const [currencyKey, seconds] of Object.entries(atomicVolatilityConsiderationWindow)) {
+				await runStep({
+					contract: 'SystemSettings',
+					target: SystemSettings,
+					read: 'atomicVolatilityConsiderationWindow',
+					readArg: toBytes32(currencyKey),
+					expected: input => input !== 0, // only change if zero
+					write: 'setAtomicVolatilityConsiderationWindow',
+					writeArg: [toBytes32(currencyKey), seconds],
+				});
+			}
+		}
+
+		const atomicVolatilityUpdateThreshold = await getDeployParameter(
+			'ATOMIC_VOLATILITY_UPDATE_THRESHOLD'
+		);
+		if (SystemSettings.atomicVolatilityUpdateThreshold && atomicVolatilityUpdateThreshold) {
+			for (const [currencyKey, threshold] of Object.entries(atomicVolatilityUpdateThreshold)) {
+				await runStep({
+					contract: 'SystemSettings',
+					target: SystemSettings,
+					read: 'atomicVolatilityUpdateThreshold',
+					readArg: toBytes32(currencyKey),
+					expected: input => input !== 0, // only change if zero
+					write: 'setAtomicVolatilityUpdateThreshold',
+					writeArg: [toBytes32(currencyKey), threshold],
+				});
+			}
+		}
+
+		const dexPriceAggregator = await getDeployParameter('DEX_PRICE_AGGREGATOR');
+		if (ExchangeRates.dexPriceAggregator && dexPriceAggregator) {
+			// set up DEX price oracle for exchange rates
+			await runStep({
+				contract: `ExchangeRates`,
+				target: ExchangeRates,
+				read: 'dexPriceAggregator',
+				expected: input => input === dexPriceAggregator,
+				write: 'setDexPriceAggregator',
+				writeArg: dexPriceAggregator,
+			});
 		}
 
 		// SIP-135 Shorting settings
@@ -387,19 +449,6 @@ module.exports = async ({
 				writeArg: [CollateralShort.address, collapseFeeRate],
 				comment:
 					'Ensure the CollateralShort contract has its service fee set for collapsing loans (SIP-135)',
-			});
-		}
-
-		const dexPriceAggregator = await getDeployParameter('DEX_PRICE_AGGREGATOR');
-		if (ExchangeRates.dexPriceAggregator && dexPriceAggregator) {
-			// set up DEX price oracle for exchange rates
-			await runStep({
-				contract: `ExchangeRates`,
-				target: ExchangeRates,
-				read: 'dexPriceAggregator',
-				expected: input => input === dexPriceAggregator,
-				write: 'setDexPriceAggregator',
-				writeArg: dexPriceAggregator,
 			});
 		}
 	} catch (err) {

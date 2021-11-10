@@ -191,16 +191,9 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
-	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
-	ATOMIC_TWAP_WINDOW: '3600', // 1 hour
-	// ,
-	// 	ATOMIC_PRICE_BUFFERS: {
-	// 		crypto: w3utils.toWei('0.0025'), // 25 bps
-	// 	},
-	// 	ATOMIC_VOLATILITY_CONSIDERATION_WINDOWS: {
-	// 	},
-	// 	ATOMIC_VOLATILITY_UPDATE_THRESHOLD: {
-	// 	},
+	// SIP-120
+	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${5e5}`), // 500k
+	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
 };
 
 /**
