@@ -31,6 +31,15 @@ function itCanOpenAndCloseShort({ ctx }) {
 			Synthetix = Synthetix.connect(user);
 		});
 
+		before('skip if opening shorts disabled', async function() {
+			const canOpenLoans = await CollateralShort.canOpenLoans();
+
+			if (!canOpenLoans) {
+				console.log(chalk.yellow('> Skipping collateral checks because loan opening is closed.'));
+				this.skip();
+			}
+		});
+
 		before('ensure user should have sUSD', async () => {
 			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: amountOfsUSDRequired });
 		});
