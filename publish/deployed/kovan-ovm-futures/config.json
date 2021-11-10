@@ -2,16 +2,19 @@
 	"SystemSettings": {
 		"deploy": false
 	},
+	"SynthetixBridgeToBase": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
-	"DebtCache": {
+	"TradingRewards": {
 		"deploy": false
 	},
-	"TradingRewards": {
+	"DebtCache": {
 		"deploy": false
 	},
 	"EscrowChecker": {
@@ -62,9 +65,6 @@
 	"RewardEscrow": {
 		"deploy": false
 	},
-	"RewardEscrowV2": {
-		"deploy": false
-	},
 	"RewardsDistribution": {
 		"deploy": false
 	},
@@ -113,10 +113,7 @@
 	"CollateralManager": {
 		"deploy": false
 	},
-	"CollateralManagerState": {
-		"deploy": false
-	},
-	"CollateralUtil": {
+	"RewardEscrowV2": {
 		"deploy": false
 	},
 	"TokenStatesETH": {
@@ -126,9 +123,6 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": false
-	},
-	"SynthetixBridgeToBase": {
 		"deploy": false
 	},
 	"TokenStatesBTC": {
@@ -170,25 +164,28 @@
 	"EtherWrapper": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketBTC": {
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralUtil": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
 		"deploy": false
 	},
 	"FuturesMarketBTC": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketETH": {
+	"FuturesMarketData": {
 		"deploy": false
 	},
 	"FuturesMarketETH": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketLINK": {
-		"deploy": false
-	},
 	"FuturesMarketLINK": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketManager": {
 		"deploy": false
 	},
 	"FuturesMarketManager": {
@@ -197,10 +194,16 @@
 	"FuturesMarketSettings": {
 		"deploy": false
 	},
-	"FuturesMarketData": {
+	"ProxyFuturesMarketBTC": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
+	"ProxyFuturesMarketETH": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketLINK": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketManager": {
 		"deploy": false
 	}
 }
