@@ -29,7 +29,6 @@ class Deployer {
 		privateKey,
 		useFork,
 		useOvm,
-		ignoreSafetyChecks,
 		nonceManager,
 	}) {
 		this.compiled = compiled;
@@ -44,7 +43,6 @@ class Deployer {
 		this.network = network;
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
-		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
@@ -183,24 +181,6 @@ class Deployer {
 				);
 			}
 
-			if (!this.ignoreSafetyChecks) {
-				const compilerVersion = compiled.metadata.compiler.version;
-				const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
-				const compilerMismatch =
-					(this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
-				if (compilerMismatch) {
-					if (this.useOvm) {
-						throw new Error(
-							`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-						);
-					} else {
-						throw new Error(
-							`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-						);
-					}
-				}
-			}
-
 			// Any contract after SafeDecimalMath can automatically get linked.
 			// Doing this with bytecode that doesn't require the library is a no-op.
 			let bytecode = compiled.evm.bytecode.object;
@@ -241,43 +221,6 @@ class Deployer {
 				});
 				deployedContract.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
 			} else {
-				// If the contract creation will result in an address that's unsafe for OVM,
-				// increment the tx nonce until its not.
-				// Quite commonly, deployed contract addresses will be used as constructor arguments of
-				// other contracts.
-				if (this.useOvm) {
-					let addressIsSafe = false;
-
-					while (!addressIsSafe) {
-						const calculatedAddress = await this.evaluateNextDeployedContractAddress();
-						addressIsSafe = this.checkBytesAreSafeForOVM(calculatedAddress);
-
-						if (!addressIsSafe) {
-							console.log(
-								yellow(
-									`⚠ WARNING: Deploying this contract would result in the unsafe ${calculatedAddress} address for OVM. Sending a dummy transaction to increase the nonce...`
-								)
-							);
-
-							await this.sendDummyTx();
-						}
-					}
-				}
-
-				// Check if the deployment parameters are safe in OVM
-				// (No need to check the metadata hash since its stripped with the OVM compiler)
-				if (this.useOvm) {
-					const encodedParameters = this.getEncodedDeploymentParameters({
-						abi: compiled.abi,
-						params: args,
-					});
-					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
-						throw new Error(
-							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. Encoded parameters: ${encodedParameters} - parameters: ${args}`
-						);
-					}
-				}
-
 				const factory = new ethers.ContractFactory(compiled.abi, bytecode, this.signer);
 
 				const overrides = await this.sendOverrides();
