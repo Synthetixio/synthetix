@@ -10,9 +10,7 @@ const path = require('path');
 const {
 	constants: { BUILD_FOLDER },
 } = require('../../..');
-console.log('build:', BUILD_FOLDER);
 const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}-ovm`);
-console.log('buildPath', buildPath);
 const { loadCompiledFiles } = require('../../../publish/src/solidity');
 const { compiled } = loadCompiledFiles({ buildPath });
 
@@ -58,7 +56,6 @@ describe('WrapperFactory integration tests (L2)', () => {
 			compiled.Wrapper.abi,
 			ctx.provider
 		);
-		console.log('Wrapper: ', ctx.contracts.Wrapper);
 		wrapperOptions.Wrapper = ctx.contracts.Wrapper;
 		wrapperOptions.Synth = ctx.contracts.SynthsETH;
 		wrapperOptions.Token = ctx.contracts.WETH;
