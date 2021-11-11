@@ -6,6 +6,7 @@ const { ensureBalance } = require('../utils/balances');
 // Load Compiled
 const path = require('path');
 const {
+	toBytes32,
 	constants: { BUILD_FOLDER },
 } = require('../../..');
 console.log('build:', BUILD_FOLDER);
@@ -39,8 +40,8 @@ function itCanWrapETH({ ctx }) {
 
 		await WrapperFactory.createWrapper(
 			ctx.contracts.WETH.address,
-			ethers.utils.toBytes32('sETH'),
-			ethers.utils.toBytes32('SynthsETH')
+			toBytes32('sETH'),
+			toBytes32('SynthsETH')
 		);
 
 		const event = await wrapperCreatedEvent;
