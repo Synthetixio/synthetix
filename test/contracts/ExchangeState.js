@@ -38,7 +38,6 @@ contract('ExchangeState', accounts => {
 		dest = sBTC,
 		amountReceived = toUnit('99'),
 		exchangeFeeRate = toUnit('0.01'),
-		exchangeDynamicFeeRate = toUnit('0.01'),
 		timestamp = '0',
 		roundIdForSrc = '0',
 		roundIdForDest = '0',
@@ -50,7 +49,6 @@ contract('ExchangeState', accounts => {
 			dest,
 			amountReceived,
 			exchangeFeeRate,
-			exchangeDynamicFeeRate,
 			timestamp,
 			roundIdForSrc,
 			roundIdForDest,
@@ -96,18 +94,7 @@ contract('ExchangeState', accounts => {
 		it('only the associated contract can invoke appendExchangeEntry()', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: exchangeState.appendExchangeEntry,
-				args: [
-					account1,
-					sUSD,
-					toUnit('1'),
-					sBTC,
-					toUnit('1'),
-					toUnit('0.01'),
-					toUnit('0.01'),
-					'0',
-					'0',
-					'0',
-				],
+				args: [account1, sUSD, toUnit('1'), sBTC, toUnit('1'), toUnit('0.01'), '0', '0', '0'],
 				address: simulatedAssociatedContract,
 				accounts,
 			});

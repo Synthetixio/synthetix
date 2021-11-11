@@ -258,7 +258,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             bytes32 dest,
             uint amountReceived,
             uint exchangeFeeRate,
-            uint exchangeDynamicFeeRate,
             uint timestamp,
             uint roundIdForSrc,
             uint roundIdForDest
@@ -271,7 +270,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
                 dest: dest,
                 amountReceived: amountReceived,
                 exchangeFeeRate: exchangeFeeRate,
-                exchangeDynamicFeeRate: exchangeDynamicFeeRate,
                 timestamp: timestamp,
                 roundIdForSrc: roundIdForSrc,
                 roundIdForDest: roundIdForDest
@@ -428,34 +426,21 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        // Using struct ExchangeEntry here to fix stack too deep error
-        IExchangeState.ExchangeEntry memory entry =
-            IExchangeState.ExchangeEntry({
-                src: 0,
-                amount: 0,
-                dest: 0,
-                amountReceived: 0,
-                exchangeFeeRate: 0,
-                exchangeDynamicFeeRate: 0,
-                timestamp: 0,
-                roundIdForSrc: 0, // sourceRate
-                roundIdForDest: 0 // destinationRate
-            });
+        uint exchangeFeeRate;
+        uint sourceRate;
+        uint destinationRate;
 
         // Note: `fee` is denominated in the destinationCurrencyKey.
-        (
-            amountReceived,
-            fee,
-            entry.exchangeFeeRate,
-            entry.exchangeDynamicFeeRate,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
-        ) = _getAmountsForExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
+        (amountReceived, fee, exchangeFeeRate, sourceRate, destinationRate) = _getAmountsForExchangeMinusFees(
+            sourceAmountAfterSettlement,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
 
         // SIP-65: Decentralized Circuit Breaker
         if (
-            _suspendIfRateInvalid(sourceCurrencyKey, entry.roundIdForSrc) ||
-            _suspendIfRateInvalid(destinationCurrencyKey, entry.roundIdForDest)
+            _suspendIfRateInvalid(sourceCurrencyKey, sourceRate) ||
+            _suspendIfRateInvalid(destinationCurrencyKey, destinationRate)
         ) {
             return (0, 0, IVirtualSynth(0));
         }
@@ -496,10 +481,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
-        _updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [entry.roundIdForSrc, entry.roundIdForDest]
-        );
+        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
@@ -520,8 +502,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
                 sourceAmountAfterSettlement,
                 destinationCurrencyKey,
                 amountReceived,
-                entry.exchangeFeeRate,
-                entry.exchangeDynamicFeeRate
+                exchangeFeeRate
             );
         }
     }
@@ -745,18 +726,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint exchangeFeeRate)
     {
-        (exchangeFeeRate, ) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
     /// @param sourceCurrencyKey The source currency key
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate
-    /// @return The exchange dynamic fee rate
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         internal
         view
-        returns (uint exchangeFeeRate, uint exchangeDynamicFeeRate)
+        returns (uint exchangeFeeRate)
     {
         // Get the exchange fee rate as per destination currencyKey
         exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
@@ -768,7 +748,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
             // Cap max exchangeFeeRate to 100%
             exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
-            return (exchangeFeeRate, exchangeDynamicFeeRate);
+            return exchangeFeeRate;
         }
 
         // Is this a swing trade? long to short or short to long skipping sUSD.
@@ -817,7 +797,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForExchangeMinusFees(
+        (amountReceived, fee, exchangeFeeRate, , ) = _getAmountsForExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -835,7 +815,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint amountReceived,
             uint fee,
             uint exchangeFeeRate,
-            uint exchangeDynamicFeeRate,
             uint sourceRate,
             uint destinationRate
         )
@@ -849,10 +828,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Return when invalid rate
         if (destinationAmount == 0 && destinationRate == 0) {
-            return (destinationAmount, 0, 0, 0, sourceRate, destinationRate);
+            return (destinationAmount, 0, 0, sourceRate, destinationRate);
         }
 
-        (exchangeFeeRate, exchangeDynamicFeeRate) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
@@ -871,8 +850,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint amount,
         bytes32 dest,
         uint amountReceived,
-        uint exchangeFeeRate,
-        uint exchangeDynamicFeeRate
+        uint exchangeFeeRate
     ) internal {
         IExchangeRates exRates = exchangeRates();
         uint roundIdForSrc = exRates.getCurrentRoundId(src);
@@ -884,7 +862,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             dest,
             amountReceived,
             exchangeFeeRate,
-            exchangeDynamicFeeRate,
             now,
             roundIdForSrc,
             roundIdForDest
