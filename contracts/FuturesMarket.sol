@@ -516,7 +516,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         uint uMargin = uint(newMargin);
         int positionSize = position.size;
-        // minimum margin beyond which position can be liqudiated
+        // minimum margin beyond which position can be liquidated
         uint lMargin = _liquidationMargin(positionSize, price);
         if (positionSize != 0 && uMargin <= lMargin) {
             return (uMargin, Status.CanLiquidate);
@@ -639,7 +639,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint proportionalFee = _abs(positionSize).multiplyDecimalRound(price).mul(_liquidationFeeBPs()).div(10000);
         uint minFee = _minLiquidationFee();
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
-        return proportionalFee > minFee ? proportionalFee : minFee;
+        return proportionalFee > minFee ? proportionalFee : minFee; // not using _max() helper because it's for signed ints
     }
 
     /**
@@ -705,6 +705,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (!invalid && _canLiquidate(positions[account], fundingSequence.length, price)) {
             return _liquidationFee(positions[account].size, price);
         } else {
+            // theoretically we can calculate a value, but this value is always incorrect because
+            // it's for a price at which liquidation cannot happen - so is misleading, because
+            // it won't be paid, and what will be paid is a different fee (for a different price)
             return 0;
         }
     }
