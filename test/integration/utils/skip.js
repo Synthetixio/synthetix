@@ -33,11 +33,15 @@ async function skipMinimumStakeTime({ ctx }) {
 async function _dualFastForward({ ctx, seconds }) {
 	const l1Ctx = ctx.l1mock || ctx;
 
+	console.log('ff');
 	await fastForward({ seconds: parseInt(seconds), provider: l1Ctx.provider });
+	console.log('wait');
 
 	await wait({ seconds: 6 });
+	console.log('update exchange');
 
 	await updateExchangeRatesIfNeeded({ ctx });
+	console.log('after update exchange');
 }
 
 module.exports = {

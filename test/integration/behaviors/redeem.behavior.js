@@ -34,15 +34,20 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before('ensure the user has sUSD', async () => {
+			console.log('before ensure susd');
+
 			await ensureBalance({
 				ctx,
 				symbol: 'sUSD',
 				user: someUser,
 				balance: ethers.utils.parseEther('100'),
 			});
+			console.log('after ensure sUSD');
 		});
 
 		before(`ensure the user has some of the target synth`, async () => {
+			console.log('before ensure target');
+
 			Synthetix = Synthetix.connect(someUser);
 			const tx = await Synthetix.exchange(
 				toBytes32('sUSD'),
@@ -50,10 +55,13 @@ function itCanRedeem({ ctx }) {
 				toBytes32(synth)
 			);
 			await tx.wait();
+			console.log('after ensure target');
 		});
 
 		before('skip waiting period', async () => {
+			console.log('before waiting');
 			await skipWaitingPeriod({ ctx });
+			console.log('after waiting');
 		});
 
 		before('update rates and take snapshot if needed', async () => {
