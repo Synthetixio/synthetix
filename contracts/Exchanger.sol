@@ -762,7 +762,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
 
         // Get the exchange dynamic fee rate as per destination currencyKey
-        uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
+        exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
 
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
