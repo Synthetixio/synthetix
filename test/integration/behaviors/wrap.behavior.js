@@ -3,8 +3,18 @@ const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 
-function itCanWrapETH({ ctx }) {
+// Load Compiled
+const path = require('path');
+const {
+	constants: { BUILD_FOLDER },
+} = require('../../..');
+console.log('build:', BUILD_FOLDER);
+const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}-ovm`);
+console.log('buildPath', buildPath);
+const { loadCompiledFiles } = require('../../../publish/src/solidity');
+const { compiled } = loadCompiledFiles({ buildPath });
 
+function itCanWrapETH({ ctx }) {
 	// deploy a test wrapper
 	const wrapperOptions = { Wrapper: null, Synth: null, Token: null };
 
@@ -29,8 +39,8 @@ function itCanWrapETH({ ctx }) {
 
 		await WrapperFactory.createWrapper(
 			ctx.contracts.WETH.address,
-			toBytes32('sETH'),
-			toBytes32('SynthsETH')
+			ethers.utils.toBytes32('sETH'),
+			ethers.utils.toBytes32('SynthsETH')
 		);
 
 		const event = await wrapperCreatedEvent;

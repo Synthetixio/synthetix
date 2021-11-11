@@ -6,5 +6,5 @@ describe('WrapperFactory integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
-	itCanWrapETH({ ctx, wrapperOptions });
+	itCanWrapETH({ ctx });
 });
