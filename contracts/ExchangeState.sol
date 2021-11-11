@@ -28,6 +28,7 @@ contract ExchangeState is Owned, State, IExchangeState {
         bytes32 dest,
         uint amountReceived,
         uint exchangeFeeRate,
+        uint exchangeDynamicFeeRate,
         uint timestamp,
         uint roundIdForSrc,
         uint roundIdForDest
@@ -41,6 +42,7 @@ contract ExchangeState is Owned, State, IExchangeState {
                 dest: dest,
                 amountReceived: amountReceived,
                 exchangeFeeRate: exchangeFeeRate,
+                exchangeDynamicFeeRate: exchangeDynamicFeeRate,
                 timestamp: timestamp,
                 roundIdForSrc: roundIdForSrc,
                 roundIdForDest: roundIdForDest
@@ -71,6 +73,7 @@ contract ExchangeState is Owned, State, IExchangeState {
             bytes32 dest,
             uint amountReceived,
             uint exchangeFeeRate,
+            uint exchangeDynamicFeeRate,
             uint timestamp,
             uint roundIdForSrc,
             uint roundIdForDest
@@ -83,6 +86,7 @@ contract ExchangeState is Owned, State, IExchangeState {
             entry.dest,
             entry.amountReceived,
             entry.exchangeFeeRate,
+            entry.exchangeDynamicFeeRate,
             entry.timestamp,
             entry.roundIdForSrc,
             entry.roundIdForDest

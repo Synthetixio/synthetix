@@ -9,6 +9,7 @@ interface IExchangeState {
         bytes32 dest;
         uint amountReceived;
         uint exchangeFeeRate;
+        uint exchangeDynamicFeeRate;
         uint timestamp;
         uint roundIdForSrc;
         uint roundIdForDest;
@@ -29,6 +30,7 @@ interface IExchangeState {
             bytes32 dest,
             uint amountReceived,
             uint exchangeFeeRate,
+            uint exchangeDynamicFeeRate,
             uint timestamp,
             uint roundIdForSrc,
             uint roundIdForDest
@@ -44,6 +46,7 @@ interface IExchangeState {
         bytes32 dest,
         uint amountReceived,
         uint exchangeFeeRate,
+        uint exchangeDynamicFeeRate,
         uint timestamp,
         uint roundIdForSrc,
         uint roundIdForDest
