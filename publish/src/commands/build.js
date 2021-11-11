@@ -140,7 +140,6 @@ const build = async ({
 				[contract]: sources[contract],
 			},
 			runs,
-			useOvm,
 		});
 
 		Object.assign(allArtifacts, artifacts);
