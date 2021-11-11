@@ -10,7 +10,7 @@ const {
 	constants: { BUILD_FOLDER },
 } = require('../../..');
 console.log('build:', BUILD_FOLDER);
-const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}-ovm`);
+const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}`);
 console.log('buildPath', buildPath);
 const { loadCompiledFiles } = require('../../../publish/src/solidity');
 const { compiled } = loadCompiledFiles({ buildPath });
