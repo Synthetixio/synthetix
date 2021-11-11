@@ -138,14 +138,19 @@ async function _getsUSD({ ctx, user, amount }) {
 
 	let tx;
 
+	console.log('getSNX before');
 	const requiredSNX = await _getSNXAmountRequiredForsUSDAmount({ ctx, amount });
 	await ensureBalance({ ctx, symbol: 'SNX', user, balance: requiredSNX });
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
+	console.log('issue before');
+
 	tx = await Synthetix.issueSynths(amount);
 	await tx.wait();
 
 	SynthsUSD = SynthsUSD.connect(ctx.users.owner);
+	console.log('transfer before');
+
 	tx = await SynthsUSD.transfer(user.address, amount);
 	await tx.wait();
 }
