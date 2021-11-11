@@ -3,7 +3,52 @@ const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 
-function itCanWrapETH({ ctx, wrapperOptions }) {
+function itCanWrapETH({ ctx }) {
+
+	// deploy a test wrapper
+	const wrapperOptions = { Wrapper: null, Synth: null, Token: null };
+
+	before(async () => {
+		const WrapperFactory = ctx.contracts.WrapperFactory.connect(ctx.users.owner);
+
+		const wrapperCreatedEvent = new Promise((resolve, reject) => {
+			WrapperFactory.on('WrapperCreated', (token, currencyKey, wrapperAddress, event) => {
+				event.removeListener();
+
+				resolve({
+					token: token,
+					currencyKey: currencyKey,
+					wrapperAddress: wrapperAddress,
+				});
+			});
+
+			setTimeout(() => {
+				reject(new Error('timeout'));
+			}, 60000);
+		});
+
+		await WrapperFactory.createWrapper(
+			ctx.contracts.WETH.address,
+			toBytes32('sETH'),
+			toBytes32('SynthsETH')
+		);
+
+		const event = await wrapperCreatedEvent;
+
+		// extract address from events
+		const etherWrapperAddress = event.wrapperAddress;
+
+		ctx.contracts.Wrapper = new ethers.Contract(
+			etherWrapperAddress,
+			compiled.Wrapper.abi,
+			ctx.provider
+		);
+		console.log('Wrapper: ', ctx.contracts.Wrapper);
+		wrapperOptions.Wrapper = ctx.contracts.Wrapper;
+		wrapperOptions.Synth = ctx.contracts.SynthsETH;
+		wrapperOptions.Token = ctx.contracts.WETH;
+	});
+
 	describe('ether wrapping', () => {
 		let user;
 		let balanceToken, balanceSynth;
