@@ -44,20 +44,20 @@ module.exports = async ({
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
-		read: 'liquidationFeeBPs',
+		read: 'liquidationFeeRatio',
 		expected: input => input !== '0', // only change if zero
-		write: 'setLiquidationFeeBPs',
-		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE_BPS'),
+		write: 'setLiquidationFeeRatio',
+		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE_RATIO'),
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
-		read: 'liquidationBufferBPs',
+		read: 'liquidationBufferRatio',
 		expected: input => input !== '0', // only change if zero
-		write: 'setLiquidationBufferBPs',
-		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_BUFFER_BPS'),
+		write: 'setLiquidationBufferRatio',
+		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_BUFFER_RATIO'),
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 

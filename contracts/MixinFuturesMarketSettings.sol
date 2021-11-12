@@ -27,9 +27,9 @@ contract MixinFuturesMarketSettings is MixinResolver {
     // minimum liquidation fee payable to liquidator
     bytes32 internal constant SETTING_MIN_LIQUIDATION_FEE = "futuresMinLiquidationFee";
     // liquidation fee basis points payed to liquidator
-    bytes32 internal constant SETTING_LIQUIDATION_FEE_BPS = "futuresLiquidationFeeBPs";
+    bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "futuresLiquidationFeeRatio";
     // liquidation buffer to prevent negative margin upon liquidation
-    bytes32 internal constant SETTING_LIQUIDATION_BUFFER_BPS = "futuresLiquidationBufferBPs";
+    bytes32 internal constant SETTING_LIQUIDATION_BUFFER_RATIO = "futuresLiquidationBufferRatio";
     bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -117,12 +117,12 @@ contract MixinFuturesMarketSettings is MixinResolver {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE);
     }
 
-    function _liquidationFeeBPs() internal view returns (uint) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_BPS);
+    function _liquidationFeeRatio() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_RATIO);
     }
 
-    function _liquidationBufferBPs() internal view returns (uint) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_BPS);
+    function _liquidationBufferRatio() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_RATIO);
     }
 
     function _minInitialMargin() internal view returns (uint) {

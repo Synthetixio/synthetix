@@ -28,8 +28,8 @@ const {
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
 		FUTURES_MIN_LIQUIDATION_FEE,
-		FUTURES_LIQUIDATION_FEE_BPS,
-		FUTURES_LIQUIDATION_BUFFER_BPS,
+		FUTURES_LIQUIDATION_FEE_RATIO,
+		FUTURES_LIQUIDATION_BUFFER_RATIO,
 		FUTURES_MIN_INITIAL_MARGIN,
 	},
 } = require('../../');
@@ -1148,12 +1148,15 @@ const setupAllContracts = async ({
 				returnObj['FuturesMarketSettings'].setMinLiquidationFee(FUTURES_MIN_LIQUIDATION_FEE, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setLiquidationFeeBPs(FUTURES_LIQUIDATION_FEE_BPS, {
+				returnObj['FuturesMarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setLiquidationBufferBPs(FUTURES_LIQUIDATION_BUFFER_BPS, {
-					from: owner,
-				}),
+				returnObj['FuturesMarketSettings'].setLiquidationBufferRatio(
+					FUTURES_LIQUIDATION_BUFFER_RATIO,
+					{
+						from: owner,
+					}
+				),
 			];
 
 			// TODO: fetch settings per-market programmatically

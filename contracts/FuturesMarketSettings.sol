@@ -121,15 +121,15 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
      * Liquidation fee basis points paid to liquidator.
      * Use together with minLiquidationFee() to calculate the actual fee paid.
      */
-    function liquidationFeeBPs() external view returns (uint) {
-        return _liquidationFeeBPs();
+    function liquidationFeeRatio() external view returns (uint) {
+        return _liquidationFeeRatio();
     }
 
     /*
      * Liquidation price buffer in basis points to prevent negative margin on liquidation.
      */
-    function liquidationBufferBPs() external view returns (uint) {
-        return _liquidationBufferBPs();
+    function liquidationBufferRatio() external view returns (uint) {
+        return _liquidationBufferRatio();
     }
 
     /*
@@ -227,14 +227,14 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         emit MinLiquidationFeeUpdated(_sUSD);
     }
 
-    function setLiquidationFeeBPs(uint _bps) external onlyOwner {
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_BPS, _bps);
-        emit LiquidationFeeBPsUpdated(_bps);
+    function setLiquidationFeeRatio(uint _ratio) external onlyOwner {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_RATIO, _ratio);
+        emit LiquidationFeeRatioUpdated(_ratio);
     }
 
-    function setLiquidationBufferBPs(uint _bps) external onlyOwner {
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_BPS, _bps);
-        emit LiquidationBufferBPsUpdated(_bps);
+    function setLiquidationBufferRatio(uint _ratio) external onlyOwner {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_RATIO, _ratio);
+        emit LiquidationBufferRatioUpdated(_ratio);
     }
 
     function setMinInitialMargin(uint _minMargin) external onlyOwner {
@@ -247,7 +247,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
     event MinLiquidationFeeUpdated(uint sUSD);
-    event LiquidationFeeBPsUpdated(uint bps);
-    event LiquidationBufferBPsUpdated(uint bps);
+    event LiquidationFeeRatioUpdated(uint bps);
+    event LiquidationBufferRatioUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
 }

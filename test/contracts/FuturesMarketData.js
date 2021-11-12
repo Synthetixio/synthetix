@@ -1,7 +1,7 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toWei } = web3.utils;
 const { toBytes32 } = require('../../');
-const { currentTime, toUnit, toBN } = require('../utils')();
+const { currentTime, toUnit } = require('../utils')();
 const { setupContract, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 
@@ -152,13 +152,16 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(globals.minInitialMargin, toUnit('100'));
 			assert.bnEqual(await futuresMarketSettings.minLiquidationFee(), globals.minLiquidationFee);
 			assert.bnEqual(globals.minLiquidationFee, toUnit('20'));
-			assert.bnEqual(await futuresMarketSettings.liquidationFeeBPs(), globals.liquidationFeeBPs);
-			assert.bnEqual(globals.liquidationFeeBPs, toBN('35'));
 			assert.bnEqual(
-				await futuresMarketSettings.liquidationBufferBPs(),
-				globals.liquidationBufferBPs
+				await futuresMarketSettings.liquidationFeeRatio(),
+				globals.liquidationFeeRatio
 			);
-			assert.bnEqual(globals.liquidationBufferBPs, toBN('25'));
+			assert.bnEqual(globals.liquidationFeeRatio, toUnit('0.0035'));
+			assert.bnEqual(
+				await futuresMarketSettings.liquidationBufferRatio(),
+				globals.liquidationBufferRatio
+			);
+			assert.bnEqual(globals.liquidationBufferRatio, toUnit('0.0025'));
 		});
 	});
 

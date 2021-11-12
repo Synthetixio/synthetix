@@ -62,8 +62,6 @@ contract('FuturesMarket', accounts => {
 	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
 	const skewScaleUSD = toUnit('100000');
-	// const liquidationFeeBPs = toBN('35');
-	// const liquidationBufferBPs = toBN('25');
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const minLiquidationFee = toUnit('20');
@@ -3127,7 +3125,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setLiquidationFeeBPs(toBN('300'), { from: owner });
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit('0.03'), { from: owner });
 				// liqMargin = max(100, 250 * 20 *0.03) + 250 * 20*0.0025 = 150 + 12.5 = 162.5
 				// liqPrice = 250 + (162.5 − (1000 - 15))÷(20) = 208.875
 				assert.bnClose(
@@ -3142,7 +3140,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setLiquidationBufferBPs(toBN('300'), { from: owner });
+				await futuresMarketSettings.setLiquidationBufferRatio(toUnit('0.03'), { from: owner });
 				// liqMargin = max(100, 250 * 20 *0.03) + 250 * 20*0.0025 = 150 + 150 = 300
 				// liqPrice = 250 + (300 − (1000 - 15))÷(20) = 215.75
 				assert.bnClose(
@@ -3158,8 +3156,8 @@ contract('FuturesMarket', accounts => {
 				);
 
 				await futuresMarketSettings.setMinLiquidationFee(toUnit('0'), { from: owner });
-				await futuresMarketSettings.setLiquidationFeeBPs(toBN('0'), { from: owner });
-				await futuresMarketSettings.setLiquidationBufferBPs(toBN('0'), { from: owner });
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setLiquidationBufferRatio(toUnit('0'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -3462,7 +3460,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
 				const liquidationFee = multiplyDecimalRound(
-					(await futuresMarketSettings.liquidationFeeBPs()).mul(newPrice).div(toBN(10000)),
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(40) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3519,7 +3517,7 @@ contract('FuturesMarket', accounts => {
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
 				const liquidationFee = multiplyDecimalRound(
-					(await futuresMarketSettings.liquidationFeeBPs()).mul(newPrice).div(toBN(10000)),
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(40) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3565,7 +3563,7 @@ contract('FuturesMarket', accounts => {
 
 				// in this case, proportional fee is smaller than minimum fee
 				const liquidationFee = multiplyDecimalRound(
-					(await futuresMarketSettings.liquidationFeeBPs()).mul(newPrice).div(toBN(10000)),
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(20) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3620,7 +3618,7 @@ contract('FuturesMarket', accounts => {
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
 				const liquidationFee = multiplyDecimalRound(
-					(await futuresMarketSettings.liquidationFeeBPs()).mul(newPrice).div(toBN(10000)),
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(20) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3744,7 +3742,7 @@ contract('FuturesMarket', accounts => {
 
 				// increase BPs
 				// minimum liquidation fee > 30, 0.02 * 1500 * 2 = 60
-				await futuresMarketSettings.setLiquidationFeeBPs(toBN(200), { from: owner });
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
 				assert.bnEqual(await futuresMarket.liquidationFee(trader2), toUnit(60));
 			});
 		});
@@ -3778,13 +3776,13 @@ contract('FuturesMarket', accounts => {
 
 				// change fee BPs
 				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.0025 = 67.5
-				await futuresMarketSettings.setLiquidationFeeBPs(toBN(200), { from: owner });
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
 				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('67.5'));
 				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('67.5'));
 
 				// change buffer BPs
 				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.03 = 150
-				await futuresMarketSettings.setLiquidationBufferBPs(toBN(300), { from: owner });
+				await futuresMarketSettings.setLiquidationBufferRatio(toUnit(0.03), { from: owner });
 				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('150'));
 				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('150'));
 			});
