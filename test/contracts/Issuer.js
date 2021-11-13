@@ -155,6 +155,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'liquidateDelinquentAccount',
 				'removeSynth',
 				'removeSynths',
+				'setCurrentPeriodId',
 			],
 		});
 	});

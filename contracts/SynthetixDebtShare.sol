@@ -2,155 +2,223 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./interfaces/ISynthetixDebtShare.sol";
+import "./MixinResolver.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixdebtshare
-contract ExternStateToken is Owned {
+contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    struct PeriodBalance {
+        uint amount;
+        uint periodId;
+    }
+
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+
+    uint internal constant MAX_PERIOD_ITERATE = 10;
+
     /* ========== STATE VARIABLES ========== */
 
-    mapping(address => uint256) public balanceOf;
+    mapping(address => bool) public authorizedBrokers;
+
+    mapping(address => PeriodBalance[]) public balances;
+
+    mapping(uint => uint) totalSupplyOnPeriod;
+
+    uint public currentPeriodId;
 
     /* ERC20 fields. */
     string public name;
     string public symbol;
-    uint public totalSupply;
     uint8 public decimals;
 
-    constructor() public Owned(_owner) Proxyable(_proxy) {
+    bool public isInitialized = false;
+
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
         name = "Synthetix Debt Shares";
         symbol = "SDS";
-        totalSupply = 0;
         decimals = 18;
-    }
 
-    function importAddresses(address[] calldata accounts, uint256[] calldata amounts) public onlyOwner onlySetup virtual {
-        for (uint i = 0; i < accounts.length; i++) {
-            mint(accounts[i], amounts[i]);
-        }
+        currentPeriodId = 0;
+    }
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_ISSUER;
     }
 
     /* ========== VIEWS ========== */
 
-    /**
-     * @notice Returns the ERC20 allowance of one party to spend on behalf of another.
-     * @param owner The party authorising spending of their funds.
-     * @param spender The party spending tokenOwner's funds.
-     */
-    function allowance(address owner, address spender) public view returns (uint) {
-        return tokenState.allowance(owner, spender);
+    function balanceOf(address account) public view returns (uint) {
+        uint accountPeriodHistoryCount = balances[account].length;
+
+        if (accountPeriodHistoryCount == 0) {
+            return 0;
+        }
+
+        return balances[account][accountPeriodHistoryCount - 1].amount;
     }
 
-    /**
-     * @notice Returns the ERC20 token balance of a given account.
-     */
-    function balanceOf(address account) external view returns (uint) {
-        return tokenState.balanceOf(account);
+    function balanceOfOnPeriod(address account, uint periodId) public view returns (uint) {
+        uint accountPeriodHistoryCount = balances[account].length;
+        for (int i = int(accountPeriodHistoryCount) - 1;i >= int(MAX_PERIOD_ITERATE < accountPeriodHistoryCount ? accountPeriodHistoryCount - MAX_PERIOD_ITERATE : 0);i--) {
+            if (balances[account][uint(i)].periodId <= periodId) {
+                return balances[account][uint(i)].amount;
+            }
+        }
+    }
+
+    function totalSupply() public view returns (uint) {
+        return totalSupplyOnPeriod[currentPeriodId];
+    }
+
+    function sharePercent(address account) public view returns (uint) {
+        uint balance = balanceOf(account);
+
+        if (balance == 0) {
+            return 0;
+        }
+
+        return balance.divideDecimal(totalSupply());
+    }
+
+    function sharePercentOnPeriod(address account, uint periodId) public view returns (uint) {
+        uint balance = balanceOfOnPeriod(account, periodId);
+        
+        if (balance == 0) {
+            return 0;
+        }
+        
+        return balance.divideDecimal(totalSupplyOnPeriod[currentPeriodId]);
+    }
+
+    function sharePercentToBalance(uint sharePercent) public view returns (uint) {
+        return sharePercent.multiplyDecimal(totalSupply());
+    }
+
+    function allowance(address account, address spender) public view returns (uint) {
+        if (authorizedBrokers[spender]) {
+            return uint(-1);
+        }
+        else {
+            return 0;
+        }
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /**
-     * @notice Set the address of the TokenState contract.
-     * @dev This can be used to "pause" transfer functionality, by pointing the tokenState at 0x000..
-     * as balances would be unreachable.
-     */
-    function setTokenState(TokenState _tokenState) external optionalProxy_onlyOwner {
-        tokenState = _tokenState;
-        emitTokenStateUpdated(address(_tokenState));
+    function setCurrentPeriodId(uint newPeriodId) external onlyIssuer {
+        totalSupplyOnPeriod[newPeriodId] = totalSupplyOnPeriod[currentPeriodId];
+        currentPeriodId = newPeriodId;
+    }
+        
+    function mintShare(address account, uint256 amount) public onlyIssuer {
+        require(account != address(0), "ERC20: mint to the zero address");
+
+        _supplyBalance(account, amount);
+
+        totalSupplyOnPeriod[currentPeriodId] = totalSupplyOnPeriod[currentPeriodId].add(amount);
+
+        emit Transfer(address(0), account, amount);
+        emit Mint(account, amount);
     }
 
-    function _internalTransfer(
-        address from,
-        address to,
-        uint value
-    ) internal returns (bool) {
-        /* Disallow transfers to irretrievable-addresses. */
-        require(to != address(0) && to != address(this) && to != address(proxy), "Cannot transfer to this address");
+    function burnShare(address account, uint256 amount) public onlyIssuer {
+        require(account != address(0), "ERC20: mint to the zero address");
 
-        // Insufficient balance will be handled by the safe subtraction.
-        tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(value));
-        tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(value));
+        _deductBalance(account, amount);
 
-        // Emit a standard ERC20 transfer event
-        emitTransfer(from, to, value);
-
-        return true;
+        totalSupplyOnPeriod[currentPeriodId] = totalSupplyOnPeriod[currentPeriodId].sub(amount);
+        emit Transfer(account, address(0), amount);
+        emit Burn(account, amount);
+    }
+        
+    function mintSharePercentage(address account, uint256 sharePercent) external onlyIssuer {
+        mintShare(account, sharePercentToBalance(sharePercent));
+    }
+        
+    function burnSharePercentage(address account, uint256 sharePercent) external onlyIssuer {
+        burnShare(account, sharePercentToBalance(sharePercent));
     }
 
-    /**
-     * @dev Perform an ERC20 token transfer. Designed to be called by transfer functions possessing
-     * the onlyProxy or optionalProxy modifiers.
-     */
-    function _transferByProxy(
-        address from,
-        address to,
-        uint value
-    ) internal returns (bool) {
-        return _internalTransfer(from, to, value);
+    function approve(address spender, uint256 amount) external {
+        revert("debt shares are not transferrable");
     }
 
-    /*
-     * @dev Perform an ERC20 token transferFrom. Designed to be called by transferFrom functions
-     * possessing the optionalProxy or optionalProxy modifiers.
-     */
-    function _transferFromByProxy(
-        address sender,
-        address from,
-        address to,
-        uint value
-    ) internal returns (bool) {
-        /* Insufficient allowance will be handled by the safe subtraction. */
-        tokenState.setAllowance(from, sender, tokenState.allowance(from, sender).sub(value));
-        return _internalTransfer(from, to, value);
+    function transfer(address to, uint256 amount) external {
+        revert("debt shares are not transferrable");
     }
 
-    /**
-     * @notice Approves spender to transfer on the message sender's behalf.
-     */
-    function approve(address spender, uint value) public optionalProxy returns (bool) {
-        address sender = messageSender;
+    function transferFrom(address from, address to, uint256 amount) external onlyAuthorizedBrokers {
+        _deductBalance(from, amount);
+        _supplyBalance(to, amount);
 
-        tokenState.setAllowance(sender, spender, value);
-        emitApproval(sender, spender, value);
-        return true;
+        emit Transfer(address(from), address(to), amount);
+    }
+
+    function importAddresses(address[] memory accounts, uint256[] memory amounts) public onlyOwner onlySetup {
+        for (uint i = 0; i < accounts.length; i++) {
+            mintShare(accounts[i], amounts[i]);
+        }
+    }
+
+    function finishSetup() public onlyOwner {
+        isInitialized = true;
+    }
+
+    /* ========== INTERNAL FUNCTIONS ======== */
+    function _supplyBalance(address account, uint amount) internal {
+        uint accountBalanceCount = balances[account].length;
+
+        if (accountBalanceCount == 0) {
+            balances[account].push(PeriodBalance(amount, currentPeriodId));
+        }
+        else if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
+            balances[account].push(PeriodBalance(balances[account][accountBalanceCount - 1].amount.add(amount), currentPeriodId));
+        }
+        else {
+            balances[account][accountBalanceCount - 1].amount = balances[account][accountBalanceCount - 1].amount.add(amount);
+        }
+    }
+
+    function _deductBalance(address account, uint amount) internal {
+        uint accountBalanceCount = balances[account].length;
+
+        if (accountBalanceCount == 0) {
+            revert("SynthetixDebtShare: account has no share to deduct");
+        }
+
+        if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
+            balances[account].push(PeriodBalance(balances[account][accountBalanceCount - 1].amount.sub(amount), currentPeriodId));
+        }
+        else {
+            balances[account][accountBalanceCount - 1].amount = balances[account][accountBalanceCount - 1].amount.sub(amount);
+        }
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyIssuer() {
+        require(msg.sender == requireAndGetAddress(CONTRACT_ISSUER), "SynthetixDebtShare: only issuer can mint/burn");
+        _;
+    }
+
+    modifier onlyAuthorizedBrokers() {
+        require(authorizedBrokers[msg.sender], "SynthetixDebtShare: only brokers can transferFrom");
+        _;
+    }
+
+    modifier onlySetup() {
+        require(!isInitialized, "SynthetixDebt: only callable while still initializing");
+        _;
     }
 
     /* ========== EVENTS ========== */
-    function addressToBytes32(address input) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(input)));
-    }
-
+    event Mint(address indexed account, uint amount);
+    event Burn(address indexed account, uint amount);
     event Transfer(address indexed from, address indexed to, uint value);
-    bytes32 internal constant TRANSFER_SIG = keccak256("Transfer(address,address,uint256)");
-
-    function emitTransfer(
-        address from,
-        address to,
-        uint value
-    ) internal {
-        proxy._emit(abi.encode(value), 3, TRANSFER_SIG, addressToBytes32(from), addressToBytes32(to), 0);
-    }
-
-    event Approval(address indexed owner, address indexed spender, uint value);
-    bytes32 internal constant APPROVAL_SIG = keccak256("Approval(address,address,uint256)");
-
-    function emitApproval(
-        address owner,
-        address spender,
-        uint value
-    ) internal {
-        proxy._emit(abi.encode(value), 3, APPROVAL_SIG, addressToBytes32(owner), addressToBytes32(spender), 0);
-    }
-
-    event TokenStateUpdated(address newTokenState);
-    bytes32 internal constant TOKENSTATEUPDATED_SIG = keccak256("TokenStateUpdated(address)");
-
-    function emitTokenStateUpdated(address newTokenState) internal {
-        proxy._emit(abi.encode(newTokenState), 1, TOKENSTATEUPDATED_SIG, 0, 0, 0);
-    }
 }

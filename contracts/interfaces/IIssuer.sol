@@ -92,4 +92,6 @@ interface IIssuer {
         uint susdAmount,
         address liquidator
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
+
+    function setCurrentPeriodId(uint periodId) external;
 }

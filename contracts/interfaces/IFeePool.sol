@@ -26,13 +26,6 @@ interface IFeePool {
 
     function closeCurrentFeePeriod() external;
 
-    // Restricted: used internally to Synthetix
-    function appendAccountIssuanceRecord(
-        address account,
-        uint lockedAmount,
-        uint debtEntryIndex
-    ) external;
-
     function recordFeePaid(uint sUSDAmount) external;
 
     function setRewardsToDistribute(uint amount) external;
