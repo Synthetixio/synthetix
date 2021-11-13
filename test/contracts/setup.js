@@ -152,7 +152,6 @@ const setupContract = async ({
 			[toBytes32('SNX')],
 			[toWei('0.2', 'ether')],
 		],
-		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
@@ -164,6 +163,7 @@ const setupContract = async ({
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
+		SynthetixDebtShare: [owner, tryGetAddressOf('AddressResolver')],
 		BaseSynthetix: [
 			tryGetAddressOf('ProxyERC20BaseSynthetix'),
 			tryGetAddressOf('TokenStateBaseSynthetix'),
@@ -205,7 +205,6 @@ const setupContract = async ({
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
-		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
@@ -282,18 +281,6 @@ const setupContract = async ({
 	}
 
 	const postDeployTasks = {
-		async Issuer() {
-			await Promise.all(
-				[].concat(
-					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-					tryInvocationIfNotMocked({
-						name: 'SynthetixState',
-						fncName: 'setAssociatedContract',
-						args: [instance.address],
-					}) || []
-				)
-			);
-		},
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
@@ -439,13 +426,6 @@ const setupContract = async ({
 						tryInvocationIfNotMocked({
 							name: 'ProxyFeePool',
 							fncName: 'setTarget',
-							args: [instance.address],
-						}) || []
-					)
-					.concat(
-						tryInvocationIfNotMocked({
-							name: 'FeePoolState',
-							fncName: 'setFeePool',
 							args: [instance.address],
 						}) || []
 					)
@@ -609,7 +589,7 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemSettings'],
 			mocks: ['Exchanger'],
 		},
-		{ contract: 'SynthetixState' },
+		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
@@ -641,7 +621,6 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
-		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
@@ -684,7 +663,6 @@ const setupAllContracts = async ({
 			mocks: [
 				'CollateralManager',
 				'Synthetix',
-				'SynthetixState',
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
@@ -693,7 +671,7 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'SynthRedeemer',
 			],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache', 'SynthetixDebtShare'],
 		},
 		{
 			contract: 'Exchanger',
@@ -727,7 +705,6 @@ const setupAllContracts = async ({
 			],
 			deps: [
 				'Issuer',
-				'SynthetixState',
 				'Proxy',
 				'ProxyERC20',
 				'AddressResolver',
@@ -748,7 +725,6 @@ const setupAllContracts = async ({
 			],
 			deps: [
 				'Issuer',
-				'SynthetixState',
 				'Proxy',
 				'ProxyERC20',
 				'AddressResolver',
@@ -775,7 +751,6 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
-				'SynthetixState',
 			],
 		},
 		{
@@ -805,7 +780,6 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'Exchanger',
 				'Issuer',
-				'SynthetixState',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'DelegateApprovals',
@@ -816,7 +790,7 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'WrapperFactory',
 			],
-			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
+			deps: ['SystemStatus', 'SynthetixDebtShare', 'AddressResolver'],
 		},
 		{
 			contract: 'CollateralState',
