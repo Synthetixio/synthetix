@@ -81,7 +81,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v6-optimism-build-{{ checksum "package-lock.json" }}
+            - v6-optimism-build-{{ checksum "hardhat/tasks/task-ops.js" }}
       - run:
           name: Build docker containers if necessary
           command: |
@@ -89,7 +89,7 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v6-optimism-build-{{ checksum "package-lock.json" }}
+          key: v6-optimism-build-{{ checksum "hardhat/tasks/task-ops.js" }}
           paths:
             - ./optimism
       - run:
