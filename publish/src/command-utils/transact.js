@@ -21,6 +21,7 @@ const performTransactionalStep = async ({
 	target,
 	read,
 	readArg, // none, 1 or an array of args, array will be spread into params
+	readTarget = target,
 	expected,
 	write,
 	writeArg, // none, 1 or an array of args, array will be spread into params
@@ -46,7 +47,7 @@ const performTransactionalStep = async ({
 
 	if (read) {
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		let response = await target[read](...argumentsForReadFunction);
+		let response = await readTarget[read](...argumentsForReadFunction);
 
 		// Ethers returns uints as BigNumber objects, while web3 stringified them.
 		// This can cause BigNumber(0) !== '0' and make runStep think there is nothing to do
