@@ -33,6 +33,11 @@ const chainIdMapping = Object.entries({
 		network: 'kovan',
 	},
 
+	420: {
+		network: 'local',
+		useOvm: true,
+	},
+
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
 		network: 'mainnet',
@@ -46,10 +51,6 @@ const chainIdMapping = Object.entries({
 	},
 	69: {
 		network: 'kovan',
-		useOvm: true,
-	},
-	420: {
-		network: 'local',
 		useOvm: true,
 	},
 	'-1': {
