@@ -83,6 +83,12 @@ module.exports = async ({
 		args: [account, account],
 	});
 
+	await deployer.deployContract({
+		name: 'SynthetixDebtShare',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
 	const proxyFeePool = await deployer.deployContract({
 		name: 'ProxyFeePool',
 		source: 'Proxy',
@@ -116,16 +122,10 @@ module.exports = async ({
 		args: [account, ZERO_ADDRESS],
 	});
 
-	const feePool = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
 		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
-	});
-
-	await deployer.deployContract({
-		name: 'FeePoolState',
-		deps: ['FeePool'],
-		args: [account, addressOf(feePool)],
 	});
 
 	await deployer.deployContract({

@@ -18,6 +18,8 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         uint periodId;
     }
 
+    bytes32 public constant CONTRACT_NAME = "SynthetixDebtShare";
+
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
     uint internal constant MAX_PERIOD_ITERATE = 10;

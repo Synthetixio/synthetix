@@ -590,8 +590,8 @@ contract('DebtCache', async accounts => {
 
 			it('When the debt snapshot is invalid, cannot issue, burn, exchange, claim, or transfer when holding debt.', async () => {
 				// Ensure the account has some synths to attempt to burn later.
-				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-				await synthetix.transfer(account2, toUnit('1000'), { from: owner });
+				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
+				await synthetix.transfer(account2, toUnit('10000'), { from: owner });
 				await synthetix.issueSynths(toUnit('10'), { from: account1 });
 
 				// Stale the debt snapshot

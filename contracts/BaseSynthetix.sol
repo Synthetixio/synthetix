@@ -140,10 +140,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
-        (uint transferable, bool anyRateIsInvalid) =
-            issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
-        require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
+        if (issuer().debtBalanceOf(account, "sUSD") > 0) {
+            (uint transferable, bool anyRateIsInvalid) =
+                issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
+            require(value <= transferable, "Cannot transfer staked or escrowed SNX");
+            require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
+        }
         
         return true;
     }

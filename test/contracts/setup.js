@@ -523,6 +523,15 @@ const setupContract = async ({
 						returns: [toWei('0.0030')],
 					}),
 				]);
+			} else if (mock === 'Issuer') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'debtBalanceOf',
+						returns: [toWei('0')],
+					}),
+				]);
 			} else if (mock === 'ExchangeState') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -671,7 +680,13 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'SynthRedeemer',
 			],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache', 'SynthetixDebtShare'],
+			deps: [
+				'AddressResolver',
+				'SystemStatus',
+				'FlexibleStorage',
+				'DebtCache',
+				'SynthetixDebtShare',
+			],
 		},
 		{
 			contract: 'Exchanger',
