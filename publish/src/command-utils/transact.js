@@ -66,7 +66,9 @@ const performTransactionalStep = async ({
 			response = response.toString();
 		}
 
-		if (expected(response)) {
+		// if an error is thrown above then response is undefined, never consider that sufficient
+		// reason to skip
+		if (response !== undefined && expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
 			return { noop: true };
 		}
