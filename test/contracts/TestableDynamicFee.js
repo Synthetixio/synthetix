@@ -48,7 +48,7 @@ contract('TestableDynamicFee', () => {
 			toUnit('49933.34034209'),
 			toUnit('49871.92313713'),
 		];
-		const dynamicFee = await testableDynamicFee.testGetDynamicFee(prices);
+		const dynamicFee = await testableDynamicFee.testGetDynamicFee(prices, '0');
 		assert.bnEqual(dynamicFee, '2064427530203592');
 	});
 });

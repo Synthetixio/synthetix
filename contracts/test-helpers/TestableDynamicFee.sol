@@ -15,7 +15,7 @@ contract TestableDynamicFee {
         return DynamicFee.getRoundDecay(round, weightDecay);
     }
 
-    function testGetDynamicFee(uint[] memory prices) public view returns (uint) {
-        return DynamicFee.getDynamicFee(prices, threshold, weightDecay);
+    function testGetDynamicFee(uint[] memory prices, uint lastExchangeDynamicFeeRate) public view returns (uint) {
+        return DynamicFee.getDynamicFee(prices, threshold, weightDecay, lastExchangeDynamicFeeRate);
     }
 }

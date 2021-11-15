@@ -440,33 +440,33 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // Using struct ExchangeEntry here to fix stack too deep error
-        // Only using exchangeFeeRate,roundIdForSrc for sourceRate, roundIdForDest for destinationRate
         IExchangeState.ExchangeEntry memory entry =
             IExchangeState.ExchangeEntry({
-                src: 0,
-                amount: 0,
-                dest: 0,
-                amountReceived: 0,
-                exchangeFeeRate: 0,
-                timestamp: 0,
-                roundIdForSrc: 0, // sourceRate
-                roundIdForDest: 0 // destinationRate
+                src: 0, // N/A
+                amount: 0, // sourceRate
+                dest: 0, // N/A
+                amountReceived: 0, // destinationRate
+                exchangeFeeRate: 0, // exchangeFeeRate
+                timestamp: 0, // exchangeDynamicFeeRate
+                roundIdForSrc: 0, // N/A
+                roundIdForDest: 0 // currentDestinationRoundId
             });
 
-        uint exchangeDynamicFeeRate;
         // Note: `fee` is denominated in the destinationCurrencyKey.
         (
             amountReceived,
             fee,
-            entry.exchangeFeeRate,
-            exchangeDynamicFeeRate,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
+            entry.exchangeFeeRate, // exchangeFeeRate
+            entry.timestamp, // exchangeDynamicFeeRate
+            entry.roundIdForDest, // currentDestinationRoundId
+            entry.amount, // sourceRate
+            entry.amountReceived // destinationRate
         ) = _getAmountsForExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
 
-        // SIP-184: Store last Exchange data in the cache to optimise the dynamic fee rate calculation
-        lastExchangeRoundId[destinationCurrencyKey] = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
-        lastExchangeDynamicFeeRate[destinationCurrencyKey] = exchangeDynamicFeeRate;
+        // SIP-184: Store last Exchange round ID and dynamic fee in the cache to optimise the dynamic fee rate calculation
+        // Put it here to cache after _getAmountsForExchangeMinusFees calculations
+        lastExchangeRoundId[destinationCurrencyKey] = entry.roundIdForDest;
+        lastExchangeDynamicFeeRate[destinationCurrencyKey] = entry.timestamp;
 
         // SIP-65: Decentralized Circuit Breaker
         if (
@@ -514,7 +514,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // in these currencies
         _updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
-            [entry.roundIdForSrc, entry.roundIdForDest]
+            [entry.amount, entry.amountReceived] // sourceRate, destinationRate
         );
 
         // Let the DApps know there was a Synth exchange
@@ -760,7 +760,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint exchangeFeeRate)
     {
-        (exchangeFeeRate, ) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        (exchangeFeeRate, , ) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
@@ -768,22 +768,27 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate
+    /// @return Current exchange round ID
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         internal
         view
-        returns (uint exchangeFeeRate, uint exchangeDynamicFeeRate)
+        returns (
+            uint exchangeFeeRate,
+            uint exchangeDynamicFeeRate,
+            uint currentDestinationRoundId
+        )
     {
         // Get the exchange fee rate as per destination currencyKey
         exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
 
         // Get the exchange dynamic fee rate as per destination currencyKey
-        exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
+        (exchangeDynamicFeeRate, currentDestinationRoundId) = _getDynamicFeeForExchange(destinationCurrencyKey);
 
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
             // Cap max exchangeFeeRate to 100%
             exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
-            return (exchangeFeeRate, exchangeDynamicFeeRate);
+            return (exchangeFeeRate, exchangeDynamicFeeRate, currentDestinationRoundId);
         }
 
         // Is this a swing trade? long to short or short to long skipping sUSD.
@@ -806,17 +811,26 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @notice Get dynamic fee for a given currency key (SIP-184)
     /// @param currencyKey The given currency key
     /// @return The dyanmic fee
-    function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {
+    /// @return The current round ID
+    function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee, uint currentRoundId) {
         // No dynamic fee for sUSD
         if (currencyKey == sUSD) {
-            return 0;
+            return (0, 0);
         }
         uint threshold = getExchangeDynamicFeeThreshold();
         uint weightDecay = getExchangeDynamicFeeWeightDecay();
         uint rounds = getExchangeDynamicFeeRounds();
         uint[] memory prices;
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds);
-        dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
+        currentRoundId = exchangeRates().getCurrentRoundId(currencyKey);
+        uint remainingRounds = currentRoundId.sub(lastExchangeRoundId[currencyKey]);
+        if (remainingRounds >= rounds) {
+            (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds);
+            dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay, 0);
+        } else {
+            // optimise calculation by using the last exchange dynamic fee rate
+            (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, remainingRounds);
+            dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay, lastExchangeDynamicFeeRate[currencyKey]);
+        }
     }
 
     function getAmountsForExchange(
@@ -832,7 +846,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForExchangeMinusFees(
+        (amountReceived, fee, exchangeFeeRate, , , , ) = _getAmountsForExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -851,23 +865,30 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint fee,
             uint exchangeFeeRate,
             uint exchangeDynamicFeeRate,
+            uint currentDestinationRoundId,
             uint sourceRate,
             uint destinationRate
         )
     {
+        (exchangeFeeRate, exchangeDynamicFeeRate, currentDestinationRoundId) = _feeRateForExchange(
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+
         uint destinationAmount;
-        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveValueAndRates(
+        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
             sourceAmount,
-            destinationCurrencyKey
+            destinationCurrencyKey,
+            0,
+            currentDestinationRoundId
         );
 
         // Return when invalid rate
         if (destinationAmount == 0 && destinationRate == 0) {
-            return (destinationAmount, 0, 0, 0, sourceRate, destinationRate);
+            return (destinationAmount, 0, 0, 0, currentDestinationRoundId, sourceRate, destinationRate);
         }
 
-        (exchangeFeeRate, exchangeDynamicFeeRate) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }

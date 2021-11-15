@@ -297,6 +297,44 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
 
+    function effectiveValueAndRatesAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        if (roundIdForSrc > 0) {
+            (sourceRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
+        } else {
+            sourceRate = _getRate(sourceCurrencyKey);
+        }
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) {
+            destinationRate = sourceRate;
+            value = sourceAmount;
+        } else {
+            if (roundIdForDest > 0) {
+                (destinationRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+            } else {
+                destinationRate = _getRate(destinationCurrencyKey);
+            }
+            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
+            if (destinationRate > 0) {
+                // Calculate the effective value by going from source -> USD -> destination
+                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            }
+        }
+    }
+
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
         return _getRateAndTimestampAtRound(currencyKey, roundId);
     }
@@ -625,6 +663,12 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
+
+        // Try to get rate from cache if possible
+        if (update.rate != 0) {
+            return (_rateOrInverted(currencyKey, update.rate, roundId), update.time);
+        }
 
         if (aggregator != AggregatorV2V3Interface(0)) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
@@ -638,9 +682,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                     abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), roundId), updatedAt);
             }
-        } else {
-            RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
-            return (_rateOrInverted(currencyKey, update.rate, roundId), update.time);
         }
     }
 

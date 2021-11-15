@@ -44,17 +44,20 @@ library DynamicFee {
     /// @param prices A list of prices from the current round to the previous rounds
     /// @param threshold A threshold to determine the price differential
     /// @param weightDecay A weight decay constant
+    /// @param lastExchangeDynamicFeeRate The last exchange dynamic fee rate
     /// @return uint dynamic fee
     function getDynamicFee(
         uint[] memory prices,
         uint threshold,
-        uint weightDecay
+        uint weightDecay,
+        uint lastExchangeDynamicFeeRate
     ) public pure returns (uint dynamicFee) {
         uint size = prices.length;
-        // 0/disable dynamic fee when price feeds less than 2 rounds
+        // disable dynamic fee when price feeds less than 2 rounds
         if (size < 2) {
             return dynamicFee;
         }
+        dynamicFee = lastExchangeDynamicFeeRate;
         for (uint i = prices.length - 1; i > 0; i--) {
             uint priceDifferential = getPriceDifferential(prices[i - 1], prices[i], threshold);
             uint roundDecay = getRoundDecay(i, weightDecay);

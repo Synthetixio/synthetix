@@ -56,6 +56,21 @@ interface IExchangeRates {
         uint roundIdForDest
     ) external view returns (uint value);
 
+    function effectiveValueAndRatesAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        );
+
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint);
 
     function getLastRoundIdBeforeElapsedSecs(
