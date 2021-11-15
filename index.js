@@ -192,7 +192,7 @@ const defaults = {
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
 	// SIP-120
-	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${5e5}`), // 500k
+	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
 	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
 };
 
