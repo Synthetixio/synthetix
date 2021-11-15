@@ -49,9 +49,9 @@
 			"name": "SystemSettings",
 			"address": "0x27346b8172e9C6559c71972a081bbC9113D86844",
 			"source": "SystemSettings",
-			"link": "https://kovan-explorer.optimism.io/address/0x27346b8172e9C6559c71972a081bbC9113D86844",
-			"timestamp": "2021-10-27T22:52:52.719Z",
-			"txn": "",
+			"link": "https://kovan-explorer.optimism.io/address/0xa412d4Bd786E6f25d2F6C711C9f4FDbf64C763AB",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_a412d4bd786e6f25d2f6c711c9f4fdbf64c763ab",
 			"network": "kovan"
 		},
 		"SystemStatus": {
@@ -149,8 +149,8 @@
 			"address": "0x38a322dB8dBa2b78B622e5224611de33b8cf6480",
 			"source": "EternalStorage",
 			"link": "https://kovan-explorer.optimism.io/address/0x38a322dB8dBa2b78B622e5224611de33b8cf6480",
-			"timestamp": "2021-01-14T17:20:48.319Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_38a322db8dba2b78b622e5224611de33b8cf6480",
 			"network": "kovan"
 		},
 		"FeePoolEternalStorage": {
@@ -166,9 +166,9 @@
 			"name": "FeePool",
 			"address": "0x2F737bf6a32bf3AcBef4d5148DA507569204Fb61",
 			"source": "FeePool",
-			"link": "https://kovan-explorer.optimism.io/address/0x2F737bf6a32bf3AcBef4d5148DA507569204Fb61",
-			"timestamp": "2021-10-27T22:52:55.212Z",
-			"txn": "",
+			"link": "https://kovan-explorer.optimism.io/address/0x95C0fe15aBd9501A1B08e0Ede9A49e724F3871c2",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_95c0fe15abd9501a1b08e0ede9a49e724f3871c2",
 			"network": "kovan"
 		},
 		"FeePoolState": {
@@ -212,8 +212,8 @@
 			"address": "0xCAA5c8e9E67BBa010D2D7F589F02d588Fb49f93D",
 			"source": "MintableSynthetix",
 			"link": "https://kovan-explorer.optimism.io/address/0xCAA5c8e9E67BBa010D2D7F589F02d588Fb49f93D",
-			"timestamp": "2021-10-11T16:31:00.378Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_caa5c8e9e67bba010d2d7f589f02d588fb49f93d",
 			"network": "kovan"
 		},
 		"ProxySynthetix": {
@@ -221,17 +221,17 @@
 			"address": "0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02",
 			"source": "Proxy",
 			"link": "https://kovan-explorer.optimism.io/address/0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02",
-			"timestamp": "2021-01-14T17:21:06.531Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_11164f6a47c3f8472d19b9add516fc780cb7ee02",
 			"network": "kovan"
 		},
 		"DebtCache": {
 			"name": "DebtCache",
 			"address": "0xFC6D35EB364951953FD86bb8A1a5b0ba8Cbb6Eb2",
 			"source": "DebtCache",
-			"link": "https://kovan-explorer.optimism.io/address/0xFC6D35EB364951953FD86bb8A1a5b0ba8Cbb6Eb2",
-			"timestamp": "2021-10-27T22:52:57.613Z",
-			"txn": "",
+			"link": "https://kovan-explorer.optimism.io/address/0xCF4a31F3C7E245F8de884907aEFF1841C042cF41",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_cf4a31f3c7e245f8de884907aeff1841c042cf41",
 			"network": "kovan"
 		},
 		"Exchanger": {
@@ -239,8 +239,8 @@
 			"address": "0x15e7Aa4Cd2C74750b5DCaC9B8B21B9189552BBaD",
 			"source": "Exchanger",
 			"link": "https://kovan-explorer.optimism.io/address/0x15e7Aa4Cd2C74750b5DCaC9B8B21B9189552BBaD",
-			"timestamp": "2021-10-11T16:31:09.221Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_15e7aa4cd2c74750b5dcac9b8b21b9189552bbad",
 			"network": "kovan"
 		},
 		"ExchangeState": {
@@ -256,9 +256,9 @@
 			"name": "Issuer",
 			"address": "0xf01276e438D8043Dbc209fA65E1D8352EfFF85ef",
 			"source": "IssuerWithoutLiquidations",
-			"link": "https://kovan-explorer.optimism.io/address/0xf01276e438D8043Dbc209fA65E1D8352EfFF85ef",
-			"timestamp": "2021-10-27T22:53:00.041Z",
-			"txn": "",
+			"link": "https://kovan-explorer.optimism.io/address/0xc0a0770299202A0eAC59628e1514c250C76F78C7",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_c0a0770299202a0eac59628e1514c250c76f78c7",
 			"network": "kovan"
 		},
 		"TradingRewards": {
@@ -284,8 +284,8 @@
 			"address": "0x77e4837cc55a3CB32A33988Fb670c5bcF13bBD3f",
 			"source": "TokenState",
 			"link": "https://kovan-explorer.optimism.io/address/0x77e4837cc55a3CB32A33988Fb670c5bcF13bBD3f",
-			"timestamp": "2021-01-14T17:21:44.788Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_77e4837cc55a3cb32a33988fb670c5bcf13bbd3f",
 			"network": "kovan"
 		},
 		"ProxysUSD": {
@@ -302,17 +302,17 @@
 			"address": "0xaA5068dC2B3AADE533d3e52C6eeaadC6a8154c57",
 			"source": "ProxyERC20",
 			"link": "https://kovan-explorer.optimism.io/address/0xaA5068dC2B3AADE533d3e52C6eeaadC6a8154c57",
-			"timestamp": "2021-01-14T17:21:48.924Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_aa5068dc2b3aade533d3e52c6eeaadc6a8154c57",
 			"network": "kovan"
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
 			"address": "0xD32c1443Dde2d248cE1bE42BacBb65Db0A4aAF10",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0xD32c1443Dde2d248cE1bE42BacBb65Db0A4aAF10",
-			"timestamp": "2021-10-27T22:53:09.351Z",
-			"txn": "",
+			"link": "https://kovan-explorer.optimism.io/address/0x2c91bBa7AeE2fBF210BDc42BA667ED0eB8Fa667C",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_2c91bba7aee2fbf210bdc42ba667ed0eb8fa667c",
 			"network": "kovan"
 		},
 		"EtherCollateral": {
@@ -518,8 +518,8 @@
 			"address": "0x057Af46c8f48D9bc574d043e46DBF33fbaE023EA",
 			"source": "SynthRedeemer",
 			"link": "https://kovan-explorer.optimism.io/address/0x057Af46c8f48D9bc574d043e46DBF33fbaE023EA",
-			"timestamp": "2021-10-11T16:31:20.659Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_057af46c8f48d9bc574d043e46dbf33fbae023ea",
 			"network": "kovan"
 		},
 		"CollateralUtil": {
@@ -527,8 +527,8 @@
 			"address": "0x5c9AD159E8fC9DC2dD081872dA56961e0B43d6AD",
 			"source": "CollateralUtil",
 			"link": "https://kovan-explorer.optimism.io/address/0x5c9AD159E8fC9DC2dD081872dA56961e0B43d6AD",
-			"timestamp": "2021-10-11T16:32:04.753Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_5c9ad159e8fc9dc2dd081872da56961e0b43d6ad",
 			"network": "kovan"
 		},
 		"CollateralManagerState": {
@@ -536,8 +536,8 @@
 			"address": "0x295d99c1464f505eEE9DBFDBb1D1f0055d39212d",
 			"source": "CollateralManagerState",
 			"link": "https://kovan-explorer.optimism.io/address/0x295d99c1464f505eEE9DBFDBb1D1f0055d39212d",
-			"timestamp": "2021-10-11T16:32:08.566Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_295d99c1464f505eee9dbfdbb1d1f0055d39212d",
 			"network": "kovan"
 		},
 		"CollateralShort": {
@@ -545,8 +545,8 @@
 			"address": "0xD170549da4115c39EC42D6101eAAE5604F26150d",
 			"source": "CollateralShort",
 			"link": "https://kovan-explorer.optimism.io/address/0xD170549da4115c39EC42D6101eAAE5604F26150d",
-			"timestamp": "2021-10-11T16:32:49.022Z",
-			"txn": "",
+			"timestamp": "2021-01-14T15:51:40.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/GENESIS_d170549da4115c39ec42d6101eaae5604f26150d",
 			"network": "kovan"
 		},
 		"WrapperFactory": {
