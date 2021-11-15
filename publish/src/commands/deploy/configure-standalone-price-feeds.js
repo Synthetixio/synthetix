@@ -6,7 +6,7 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ deployer, runStep, standaloneFeeds }) => {
+module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
 
 	// Setup remaining price feeds (that aren't synths)

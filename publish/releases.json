@@ -277,6 +277,11 @@
 			"sources": ["Exchanger"]
 		},
 		{
+			"sip": 120,
+			"layer": "base",
+			"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"]
+		},
+		{
 			"sip": 121,
 			"layer": "ovm",
 			"released": "ovm",

@@ -7,7 +7,7 @@ const { getSource, getTarget } = require('../../..');
 
 const getContract = ({
 	contract,
-	source = contract,
+	source,
 	network = 'mainnet',
 	useOvm = false,
 	deploymentPath = undefined,
@@ -18,7 +18,7 @@ const getContract = ({
 	const sourceData = getSource({
 		path,
 		fs,
-		contract: source,
+		contract: source || target.source,
 		network,
 		useOvm,
 		deploymentPath,

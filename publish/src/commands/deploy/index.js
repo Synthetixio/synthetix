@@ -364,6 +364,7 @@ const deploy = async ({
 		deployer,
 		runStep,
 		standaloneFeeds,
+		useOvm,
 	});
 
 	await configureSynths({
@@ -384,6 +385,7 @@ const deploy = async ({
 	});
 
 	await configureSystemSettings({
+		addressOf,
 		deployer,
 		useOvm,
 		generateSolidity,
