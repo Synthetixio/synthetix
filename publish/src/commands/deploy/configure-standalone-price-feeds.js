@@ -28,7 +28,9 @@ module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 				expected: input => input === feed,
 				write: 'addAggregator',
 				writeArg: [toBytes32(key), feed],
-				comment: `Ensure the ExchangeRates contract has the feed for ${key}`,
+				comment: `Ensure the ExchangeRates contract has the standalone feed for ${key}${
+					standaloneFor ? ' (see SCCP-139)' : ''
+				}`,
 			});
 		}
 	}
