@@ -162,6 +162,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
+    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal view returns (uint) {
+        return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
+    }
+
+    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal view returns (uint) {
+        return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
+    }
+
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
 
@@ -221,8 +229,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // if they have 0 SNX, but it's a necessary trade-off
         if (debtShareBalance == 0) return (0, totalSystemValue, anyRateIsInvalid);
 
-        debtBalance =
-            debtShareBalance.multiplyDecimalRound(totalSystemValue).divideDecimalRound(synthetixDebtShare().totalSupply());
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, totalSystemValue, synthetixDebtShare().totalSupply());
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
@@ -507,6 +514,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
+        require(amount > 0, "Issuer: cannot issue 0 synths");
+
         _issueSynths(from, amount, false);
     }
 
@@ -734,11 +743,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         uint totalDebtIssued
     ) internal {
-        if (totalDebtIssued == 0) {
-            synthetixDebtShare().mintShare(from, amount);
+        ISynthetixDebtShare sds = synthetixDebtShare();
+
+        // it is possible (eg in tests, system initialized with extra debt) to have issued debt without any shares issued
+        // in which case, the first account to mint gets the debt. yw.
+        if (sds.totalSupply() == 0) {
+            sds.mintShare(from, amount);
         }
         else {
-            synthetixDebtShare().mintSharePercentage(from, amount.divideDecimalRound(totalDebtIssued));
+            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
     }
 
@@ -748,12 +761,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint existingDebt,
         uint totalDebtIssued
     ) internal {
+        ISynthetixDebtShare sds = synthetixDebtShare();
 
-        if (existingDebt == debtToRemove) {
-            synthetixDebtShare().burnShare(from, synthetixDebtShare().balanceOf(from));
+        uint currentDebtShare = sds.balanceOf(from);
+
+        if (debtToRemove == existingDebt) {
+            sds.burnShare(from, currentDebtShare);
         }
         else {
-            synthetixDebtShare().burnSharePercentage(from, debtToRemove.divideDecimalRound(totalDebtIssued));
+            uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
+            sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
     }
 

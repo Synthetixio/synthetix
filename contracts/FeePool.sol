@@ -609,7 +609,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         uint rewardsFromPeriod =
             _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(ownershipPercentage);
 
-        return (feesFromPeriod.preciseDecimalToDecimal(), rewardsFromPeriod.preciseDecimalToDecimal());
+        return (feesFromPeriod, rewardsFromPeriod);
     }
 
     function effectiveDebtRatioForPeriod(address account, uint period) external view returns (uint) {

@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { toBytes32 } = require('../..');
 
-const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
+const { currentTime, fastForward, toUnit, multiplyDecimal } = require('../utils')();
 
 const { setExchangeFeeRateForSynths } = require('./helpers');
 
@@ -111,11 +111,9 @@ contract('Rewards Integration Tests', accounts => {
 	const twoFifths = amount => amount.div(web3.utils.toBN('5')).mul(web3.utils.toBN('2'));
 
 	// PERCENTAGES
-	const twentyPercent = toPreciseUnit('0.2');
-	// const twentyFivePercent = toPreciseUnit('0.25');
-	// const thirtyThreePercent = toPreciseUnit('0.333333333333333333333333333');
-	const fortyPercent = toPreciseUnit('0.4');
-	const fiftyPercent = toPreciseUnit('0.5');
+	const twentyPercent = toUnit('0.2');
+	const fortyPercent = toUnit('0.4');
+	const fiftyPercent = toUnit('0.5');
 
 	// AMOUNTS
 	const tenK = toUnit('10000');
@@ -128,6 +126,8 @@ contract('Rewards Integration Tests', accounts => {
 	const DAY = 86400;
 	const WEEK = 604800;
 	// const YEAR = 31556926;
+
+	const gweiTolerance = '1000000000';
 
 	// ACCOUNTS
 	const [deployerAccount, owner, oracle, feeAuthority, account1, account2, account3] = accounts;
@@ -245,15 +245,24 @@ contract('Rewards Integration Tests', accounts => {
 
 			// All 3 accounts have 1/3 of the rewards
 			const accOneEscrowed = await rewardEscrow.getVestingEntry(account1, 1);
-			assert.bnEqual(accOneEscrowed.escrowAmount, third(periodOneMintableSupplyMinusMinterReward));
+			assert.bnClose(
+				accOneEscrowed.escrowAmount,
+				third(periodOneMintableSupplyMinusMinterReward),
+				gweiTolerance
+			);
 
 			const accTwoEscrowed = await rewardEscrow.getVestingEntry(account2, 2);
-			assert.bnEqual(accTwoEscrowed.escrowAmount, third(periodOneMintableSupplyMinusMinterReward));
+			assert.bnClose(
+				accTwoEscrowed.escrowAmount,
+				third(periodOneMintableSupplyMinusMinterReward),
+				gweiTolerance
+			);
 
 			const accThreeEscrowed = await rewardEscrow.getVestingEntry(account3, 3);
-			assert.bnEqual(
+			assert.bnClose(
 				accThreeEscrowed.escrowAmount,
-				third(periodOneMintableSupplyMinusMinterReward)
+				third(periodOneMintableSupplyMinusMinterReward),
+				gweiTolerance
 			);
 		});
 
@@ -324,7 +333,7 @@ contract('Rewards Integration Tests', accounts => {
 
 			const rewardsLessAccountClaims = third(twoWeeksRewards);
 
-			assert.bnClose(totalRewardsAvailable, rewardsLessAccountClaims, 10);
+			assert.bnClose(totalRewardsAvailable, rewardsLessAccountClaims, '1000000000');
 		});
 
 		it('should mint SNX for the all claimable fee periods then all 3 accounts claim at the end of the claimable period', async () => {
@@ -357,13 +366,13 @@ contract('Rewards Integration Tests', accounts => {
 
 			// All 3 accounts have 1/3 of the rewards
 			const accOneEscrowed = await rewardEscrow.getVestingEntry(account1, 1);
-			assert.bnEqual(accOneEscrowed.escrowAmount, twoWeeksRewards, '1');
+			assert.bnClose(accOneEscrowed.escrowAmount, twoWeeksRewards, '1000000000');
 
 			const accTwoEscrowed = await rewardEscrow.getVestingEntry(account2, 2);
-			assert.bnEqual(accTwoEscrowed.escrowAmount, twoWeeksRewards, '1');
+			assert.bnClose(accTwoEscrowed.escrowAmount, twoWeeksRewards, '1000000000');
 
 			const accThreeEscrowed = await rewardEscrow.getVestingEntry(account3, 3);
-			assert.bnEqual(accThreeEscrowed.escrowAmount, twoWeeksRewards, '1');
+			assert.bnClose(accThreeEscrowed.escrowAmount, twoWeeksRewards, '1000000000');
 		});
 
 		it('should rollover the unclaimed SNX rewards', async () => {
@@ -457,7 +466,11 @@ contract('Rewards Integration Tests', accounts => {
 				const lastFeePeriod = await feePool.recentFeePeriods(CLAIMABLE_PERIODS);
 
 				// Assert that Account 1 has claimed a third of the rewardsToDistribute
-				assert.bnClose(lastFeePeriod.rewardsClaimed, third(lastFeePeriod.rewardsToDistribute));
+				assert.bnClose(
+					lastFeePeriod.rewardsClaimed,
+					third(lastFeePeriod.rewardsToDistribute),
+					gweiTolerance
+				);
 
 				// Assert rewards have rolled over
 				assert.bnEqual(lastFeePeriod.rewardsToDistribute, previousRewards.add(rollOverRewards));
@@ -492,8 +505,8 @@ contract('Rewards Integration Tests', accounts => {
 			// [1] -------------------------------------------------------
 
 			// Assert Account 1 has re-entered the system and has awards in period 0 & 1
-			assert.bnEqual(feesByPeriod[0][1], rewardsAmount);
-			assert.bnEqual(feesByPeriod[1][1], rewardsAmount);
+			assert.bnClose(feesByPeriod[0][1], rewardsAmount, gweiTolerance);
+			assert.bnClose(feesByPeriod[1][1], rewardsAmount, gweiTolerance);
 
 			// Only Account 1 claims rewards
 			await feePool.claimFees({ from: account1 });
@@ -506,7 +519,7 @@ contract('Rewards Integration Tests', accounts => {
 
 			// Assert Account 1 has their rewards
 			const account1EscrowEntry = await rewardEscrow.getVestingEntry(account1, 1);
-			assert.bnEqual(account1EscrowEntry.escrowAmount, rewardsAmount);
+			assert.bnClose(account1EscrowEntry.escrowAmount, rewardsAmount, gweiTolerance);
 		});
 
 		it('should allocate correct SNX rewards as others leave the system', async () => {
@@ -522,7 +535,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(
 				account1Escrowed.escrowAmount,
 				third(periodOneMintableSupplyMinusMinterReward),
-				1
+				gweiTolerance
 			);
 
 			// Account 1 leaves the system
@@ -560,12 +573,12 @@ contract('Rewards Integration Tests', accounts => {
 			// Check account2 has correct rewardsAvailable
 			const account2Rewards = await feePool.feesAvailable(account2);
 			// console.log('account2Rewards', rewardsAmount.toString(), account2Rewards[1].toString());
-			assert.bnClose(account2Rewards[1], rewardsAmount, '2');
+			assert.bnClose(account2Rewards[1], rewardsAmount, gweiTolerance);
 
 			// Check account3 has correct rewardsAvailable
 			const account3Rewards = await feePool.feesAvailable(account3);
 			// console.log('rewardsAvailable', rewardsAmount.toString(), account3Rewards[1].toString());
-			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
+			assert.bnClose(account3Rewards[1], rewardsAmount, gweiTolerance);
 
 			// Accounts 2 & 3 claim
 			await feePool.claimFees({ from: account2 });
@@ -575,10 +588,10 @@ contract('Rewards Integration Tests', accounts => {
 			// Accounts 2 & 3 now have the rewards escrowed
 			const account2Escrowed = await rewardEscrow.getVestingEntry(account2, 2);
 			// console.log('account2Escrowed[3]', account2Escrowed[1].toString());
-			assert.bnClose(account2Escrowed.escrowAmount, rewardsAmount, '1');
+			assert.bnClose(account2Escrowed.escrowAmount, rewardsAmount, gweiTolerance);
 			const account3Escrowed = await rewardEscrow.getVestingEntry(account3, 3);
 			// console.log('account3Escrowed[3]', account2Escrowed[1].toString());
-			assert.bnClose(account3Escrowed.escrowAmount, rewardsAmount, '1');
+			assert.bnClose(account3Escrowed.escrowAmount, rewardsAmount, gweiTolerance);
 		});
 	});
 
@@ -615,7 +628,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(
 				account1Escrow.escrowAmount,
 				half(periodOneMintableSupplyMinusMinterReward),
-				1
+				gweiTolerance
 			);
 
 			const account2Escrow = await rewardEscrow.getVestingEntry(account2, 2);
@@ -623,7 +636,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(
 				account2Escrow.escrowAmount,
 				half(periodOneMintableSupplyMinusMinterReward),
-				1
+				gweiTolerance
 			);
 
 			// Increase sBTC price by 100%
@@ -704,9 +717,21 @@ contract('Rewards Integration Tests', accounts => {
 			// 	oneFifth(periodTwoMintableSupply).toString()
 			// );
 
-			assert.bnClose(account1EscrowEntry2.escrowAmount, twoFifths(periodTwoMintableSupply));
-			assert.bnClose(account2EscrowEntry2.escrowAmount, twoFifths(periodTwoMintableSupply));
-			assert.bnClose(account3EscrowEntry1.escrowAmount, oneFifth(periodTwoMintableSupply), 17);
+			assert.bnClose(
+				account1EscrowEntry2.escrowAmount,
+				twoFifths(periodTwoMintableSupply),
+				gweiTolerance
+			);
+			assert.bnClose(
+				account2EscrowEntry2.escrowAmount,
+				twoFifths(periodTwoMintableSupply),
+				gweiTolerance
+			);
+			assert.bnClose(
+				account3EscrowEntry1.escrowAmount,
+				oneFifth(periodTwoMintableSupply),
+				gweiTolerance
+			);
 
 			// Commenting out this logic for now (v2.14.x) - needs to be relooked at -JJ
 
@@ -844,17 +869,17 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(
 				account1Escrow.escrowAmount,
 				half(periodOneMintableSupplyMinusMinterReward),
-				49
+				gweiTolerance
 			);
 			assert.bnClose(
 				account2Escrow.escrowAmount,
 				quarter(periodOneMintableSupplyMinusMinterReward),
-				26
+				gweiTolerance
 			);
 			assert.bnClose(
 				account3Escrow.escrowAmount,
 				quarter(periodOneMintableSupplyMinusMinterReward),
-				24
+				gweiTolerance
 			);
 
 			// Acc1 Burns all
@@ -898,9 +923,9 @@ contract('Rewards Integration Tests', accounts => {
 			// console.log('account3Escrow2[3]', account3Escrow2[3].toString());
 			// console.log('half(periodTwoMintableSupply', half(periodTwoMintableSupply).toString());
 			// console.log('quarter(periodTwoMintableSupply)', quarter(periodTwoMintableSupply).toString());
-			assert.bnClose(account1Escrow2.escrowAmount, half(periodTwoMintableSupply), 49);
-			assert.bnClose(account2Escrow2.escrowAmount, quarter(periodTwoMintableSupply), 26);
-			assert.bnClose(account3Escrow2.escrowAmount, quarter(periodTwoMintableSupply), 24);
+			assert.bnClose(account1Escrow2.escrowAmount, half(periodTwoMintableSupply), gweiTolerance);
+			assert.bnClose(account2Escrow2.escrowAmount, quarter(periodTwoMintableSupply), gweiTolerance);
+			assert.bnClose(account3Escrow2.escrowAmount, quarter(periodTwoMintableSupply), gweiTolerance);
 		});
 	});
 
@@ -920,7 +945,11 @@ contract('Rewards Integration Tests', accounts => {
 			await fastForwardAndCloseFeePeriod();
 			const rewardsAfter = await feePool.feesAvailable(account1);
 			// console.log('rewardsAfter', rewardsAfter[1].toString());
-			assert.bnEqual(rewardsAfter[1], third(periodOneMintableSupplyMinusMinterReward));
+			assert.bnClose(
+				rewardsAfter[1],
+				third(periodOneMintableSupplyMinusMinterReward),
+				gweiTolerance
+			);
 		});
 
 		it('should apply no penalty when users claim rewards above the penalty threshold ratio of 1%', async () => {
@@ -937,7 +966,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.equal(await feePool.isFeesClaimable(account1), true);
 
 			const snxRewards = await feePool.feesAvailable(account1);
-			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward));
+			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward), gweiTolerance);
 
 			// And if we claim them
 			await feePool.claimFees({ from: account1 });
@@ -947,7 +976,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(
 				vestingScheduleEntry.escrowAmount,
 				third(periodOneMintableSupplyMinusMinterReward),
-				2
+				gweiTolerance
 			);
 		});
 		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
@@ -1003,7 +1032,6 @@ contract('Rewards Integration Tests', accounts => {
 			await feePool.importFeePeriod(
 				period.index,
 				period.feePeriodId,
-				period.startingDebtIndex,
 				period.startTime,
 				period.feesToDistribute,
 				period.feesClaimed,
@@ -1020,7 +1048,7 @@ contract('Rewards Integration Tests', accounts => {
 			const transaction = await feePool.claimFees({ from: account1 });
 			assert.eventEqual(transaction, 'FeesClaimed', {
 				sUSDAmount: feesAvailableUSDAcc1[0].sub(toUnit('0.000000000000000001')),
-				snxRewards: feesAvailableUSDAcc1[1].sub(toUnit('0.000000000000000001')),
+				snxRewards: feesAvailableUSDAcc1[1],
 			});
 		});
 	});

@@ -46,7 +46,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 	let synthetix,
 		systemStatus,
 		systemSettings,
-		synthetixState,
 		delegateApprovals,
 		exchangeRates,
 		feePool,
@@ -73,7 +72,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
 		({
 			Synthetix: synthetix,
-			SynthetixState: synthetixState,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
@@ -291,13 +289,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 						await systemSettings.setMinimumStakeTime(120, { from: owner });
 
 						// issue synths first
-						await synthetix.issueSynths(web3.utils.toBN('5'), { from: account1 });
+						await synthetix.issueSynths(toUnit('0.001'), { from: account1 });
 
 						// fastForward 30 seconds
 						await fastForward(10);
 
 						await assert.revert(
-							synthetix.burnSynths(web3.utils.toBN('5'), { from: account1 }),
+							synthetix.burnSynths(toUnit('0.001'), { from: account1 }),
 							'Minimum stake time not reached'
 						);
 
@@ -305,7 +303,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						await fastForward(125);
 
 						// burn synths
-						await synthetix.burnSynths(web3.utils.toBN('5'), { from: account1 });
+						await synthetix.burnSynths(toUnit('0.001'), { from: account1 });
 					});
 				});
 			});
@@ -1576,8 +1574,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 						let debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
 
 						// debtBalanceOf has rounding error but is within tolerance
-						assert.bnClose(debtBalance1After, toUnit('150000'));
-						assert.bnClose(debtBalance2After, toUnit('50000'));
+						assert.bnClose(debtBalance1After, toUnit('150000'), '100000');
+						assert.bnClose(debtBalance2After, toUnit('50000'), '100000');
 
 						// Account 1 burns 100,000
 						await synthetix.burnSynths(toUnit('100000'), { from: account1 });
@@ -1585,8 +1583,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 						debtBalance1After = await synthetix.debtBalanceOf(account1, sUSD);
 						debtBalance2After = await synthetix.debtBalanceOf(account2, sUSD);
 
-						assert.bnClose(debtBalance1After, toUnit('50000'));
-						assert.bnClose(debtBalance2After, toUnit('50000'));
+						assert.bnClose(debtBalance1After, toUnit('50000'), '100000');
+						assert.bnClose(debtBalance2After, toUnit('50000'), '100000');
 					});
 
 					it('should revert if sender tries to issue synths with 0 amount', async () => {
@@ -1595,7 +1593,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await assert.revert(
 							synthetix.issueSynths(issuedSynths1, { from: account1 }),
-							'SafeMath: division by zero'
+							'Issuer: cannot issue 0 synths'
 						);
 					});
 				});
@@ -1857,7 +1855,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 														// because this user is holding half the debt, when we burn 250 sUSD in a reclaim,
 														// it removes it from the totalIssuedSynths and so both users have half of 250
 														// in owing synths
-														assert.bnEqual(debtBalance, divideDecimal('250', 2));
+														assert.bnClose(debtBalance, divideDecimal('250', 2), '100000');
 													});
 												});
 											});
@@ -1920,7 +1918,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						.sub(burntSynthsPt1)
 						.sub(burntSynthsPt2);
 
-					assert.bnClose(debt, expectedDebt);
+					assert.bnClose(debt, expectedDebt, '100000');
 				});
 
 				it("should allow me to burn all synths I've issued when there are other issuers", async () => {
@@ -1944,16 +1942,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// Issue and burn from account 2 all debt
 					await synthetix.issueSynths(toUnit('43'), { from: account2 });
 					let debt = await synthetix.debtBalanceOf(account2, sUSD);
-					await synthetix.burnSynths(toUnit('43'), { from: account2 });
+
+					// due to rounding it may be necessary to supply higher than originally issued synths
+					await sUSDContract.transfer(account2, toUnit('1'), {
+						from: account1,
+					});
+					await synthetix.burnSynths(toUnit('44'), { from: account2 });
 					debt = await synthetix.debtBalanceOf(account2, sUSD);
 
 					assert.bnEqual(debt, 0);
-
-					// Should set user issuanceData to 0 debtOwnership and retain debtEntryIndex of last action
-					assert.deepEqual(await synthetixState.issuanceData(account2), {
-						initialDebtOwnership: 0,
-						debtEntryIndex: 2,
-					});
 				});
 			});
 
@@ -2008,7 +2005,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// Here we make the variance a calculation of the number of times we issue/burn.
 					// This is less than ideal, but is the result of calculating the debt based on
 					// the results of the issue/burn each time.
-					const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+					const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('100000000'));
 					assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
 				}).timeout(60e3);
 
@@ -2060,7 +2057,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// Here we make the variance a calculation of the number of times we issue/burn.
 					// This is less than ideal, but is the result of calculating the debt based on
 					// the results of the issue/burn each time.
-					const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('2'));
+					const variance = web3.utils.toBN(totalTimesToIssue).mul(web3.utils.toBN('100000000')); // max 0.1 gwei of drift per op
 					assert.bnClose(debtBalance, expectedDebtForAccount2, variance);
 				}).timeout(60e3);
 

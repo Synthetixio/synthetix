@@ -33,10 +33,8 @@ contract('Liquidations', accounts => {
 		liquidations,
 		sUSDContract,
 		synthetix,
-		synthetixState,
 		systemSettings,
 		systemStatus,
-		feePoolState,
 		debtCache,
 		issuer,
 		timestamp;
@@ -50,10 +48,8 @@ contract('Liquidations', accounts => {
 			Liquidations: liquidations,
 			SynthsUSD: sUSDContract,
 			Synthetix: synthetix,
-			SynthetixState: synthetixState,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
-			FeePoolState: feePoolState,
 			DebtCache: debtCache,
 			Issuer: issuer,
 		} = await setupAllContracts({
@@ -64,14 +60,12 @@ contract('Liquidations', accounts => {
 				'ExchangeRates',
 				'Exchanger', // required for Synthetix to check if exchanger().hasWaitingPeriodOrSettlementOwing
 				'FeePool',
-				'FeePoolState', // required for checking issuance data appended
 				'DebtCache',
 				'Issuer',
 				'Liquidations',
 				'SystemStatus', // test system status controls
 				'SystemSettings',
 				'Synthetix',
-				'SynthetixState',
 				'CollateralManager',
 				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
@@ -744,7 +738,7 @@ contract('Liquidations', accounts => {
 								it('then Alice debt is reduced by 100 sUSD', async () => {
 									const aliceDebtAfter = await synthetix.debtBalanceOf(alice, sUSD);
 									const difference = aliceDebtBefore.sub(aliceDebtAfter);
-									assert.bnEqual(difference, sUSD100);
+									assert.bnClose(difference, sUSD100, '1000');
 								});
 								it('then Alice has less SNX + penalty', async () => {
 									const aliceSNXAfter = await synthetix.collateral(alice);
@@ -758,17 +752,6 @@ contract('Liquidations', accounts => {
 								it('then Alice SNX balance is 690', async () => {
 									const aliceSNXAfter = await synthetix.collateral(alice);
 									assert.bnEqual(aliceSNXAfter, toUnit('690'));
-								});
-								it('then Alice issuance ratio is updated in feePoolState', async () => {
-									const accountsDebtEntry = await feePoolState.getAccountsDebtEntry(alice, 0);
-									const issuanceState = await synthetixState.issuanceData(alice);
-
-									assert.bnEqual(
-										issuanceState.initialDebtOwnership,
-										accountsDebtEntry.debtPercentage
-									);
-
-									assert.bnEqual(issuanceState.debtEntryIndex, accountsDebtEntry.debtEntryIndex);
 								});
 								describe('given carol has obtained sUSD to liquidate alice', () => {
 									const sUSD5 = toUnit('5');
@@ -818,20 +801,6 @@ contract('Liquidations', accounts => {
 											const aliceSNXAfter = await synthetix.collateral(alice);
 											assert.bnEqual(aliceSNXAfter, toUnit('635'));
 										});
-										it('then Alice issuance ratio is updated in feePoolState', async () => {
-											const accountsDebtEntry = await feePoolState.getAccountsDebtEntry(alice, 0);
-											const issuanceState = await synthetixState.issuanceData(alice);
-
-											assert.bnEqual(
-												issuanceState.initialDebtOwnership,
-												accountsDebtEntry.debtPercentage
-											);
-
-											assert.bnEqual(
-												issuanceState.debtEntryIndex,
-												accountsDebtEntry.debtEntryIndex
-											);
-										});
 									});
 									describe('when carol liquidates Alice with 50 sUSD', () => {
 										let liquidationTransaction;
@@ -863,27 +832,17 @@ contract('Liquidations', accounts => {
 											const aliceSNXAfter = await synthetix.collateral(alice);
 											assert.bnEqual(aliceSNXAfter, toUnit('635'));
 										});
-										it('then Alice issuance ratio is updated in feePoolState', async () => {
-											const accountsDebtEntry = await feePoolState.getAccountsDebtEntry(alice, 0);
-											const issuanceState = await synthetixState.issuanceData(alice);
-
-											assert.bnEqual(
-												issuanceState.initialDebtOwnership,
-												accountsDebtEntry.debtPercentage
-											);
-
-											assert.bnEqual(
-												issuanceState.debtEntryIndex,
-												accountsDebtEntry.debtEntryIndex
-											);
-										});
 										it('then events AccountLiquidated are emitted', async () => {
-											assert.eventEqual(liquidationTransaction, 'AccountLiquidated', {
-												account: alice,
-												snxRedeemed: SNX55,
-												amountLiquidated: sUSD50,
-												liquidator: carol,
-											});
+											assert.eventEqual(
+												liquidationTransaction.logs.find(l => l.event === 'AccountLiquidated'),
+												'AccountLiquidated',
+												{
+													account: alice,
+													snxRedeemed: SNX55,
+													amountLiquidated: sUSD50,
+													liquidator: carol,
+												}
+											);
 										});
 										describe('when Bob liqudates Alice with 1000 sUSD', () => {
 											const sUSD1000 = toUnit('1000');
@@ -937,22 +896,17 @@ contract('Liquidations', accounts => {
 												assert.bnEqual(isOpenForLiquidation, false);
 											});
 											it('then events AccountLiquidated & AccountRemovedFromLiquidation are emitted', async () => {
-												assert.eventsEqual(
-													liquidationTransaction,
+												assert.eventEqual(
+													liquidationTransaction.logs.find(l => l.event === 'AccountLiquidated'),
 													'AccountLiquidated',
 													{
 														account: alice,
-													},
-													'Transfer',
-													{
-														from: alice,
-														to: bob,
 													}
-													// 'AccountRemovedFromLiquidation', // TODO this should be emitted from liquidation in this test case
-													// {
-													// 	account: alice,
-													// }
 												);
+
+												/* assert.eventEqual(liquidationTransaction.logs.find(l => l.event === 'AccountRemovedFromLiquidation'), 'AccountRemovedFromLiquidation', {
+													account: alice,
+												}); */ // TODO this should be emitted from liquidation in this test case
 											});
 											it('then Alice issuanceRatio is now at the target issuanceRatio', async () => {
 												const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
