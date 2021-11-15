@@ -365,9 +365,9 @@ module.exports = async ({
 		}
 	}
 
-	const atomicExchangeFeeRates = await getDeployParameter('ATOMIC_EXCHANGE_FEE_RATES');
-	if (SystemSettings.atomicExchangeFeeRates && atomicExchangeFeeRates) {
-		for (const [currencyKey, rate] of Object.entries(atomicExchangeFeeRates)) {
+	const atomicExchangeFeeRate = await getDeployParameter('ATOMIC_EXCHANGE_FEE_RATES');
+	if (SystemSettings.atomicExchangeFeeRate && atomicExchangeFeeRate) {
+		for (const [currencyKey, rate] of Object.entries(atomicExchangeFeeRate)) {
 			await runStep({
 				contract: 'SystemSettings',
 				target: SystemSettings,

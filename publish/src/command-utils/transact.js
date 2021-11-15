@@ -47,7 +47,21 @@ const performTransactionalStep = async ({
 
 	if (read) {
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		let response = await readTarget[read](...argumentsForReadFunction);
+		let response;
+		try {
+			response = await readTarget[read](...argumentsForReadFunction);
+		} catch (err) {
+			// allow generate solidity to quietly allow failed
+			if (generateSolidity) {
+				console.log(
+					gray(
+						`Notice: Could not read ${contract}.${read}. Silently allowing this in generateSolidity mode.`
+					)
+				);
+			} else {
+				throw err;
+			}
+		}
 
 		// Ethers returns uints as BigNumber objects, while web3 stringified them.
 		// This can cause BigNumber(0) !== '0' and make runStep think there is nothing to do
