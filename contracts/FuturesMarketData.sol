@@ -31,7 +31,7 @@ contract FuturesMarketData {
 
     struct MarketLimits {
         uint maxLeverage;
-        uint maxMarketValue;
+        uint maxMarketValueUSD;
     }
 
     struct Sides {
@@ -53,7 +53,7 @@ contract FuturesMarketData {
 
     struct FundingParameters {
         uint maxFundingRate;
-        uint minSkewScale;
+        uint skewScaleUSD;
         uint maxFundingRateDelta;
     }
 
@@ -130,9 +130,9 @@ contract FuturesMarketData {
             uint makerFee,
             uint closureFee,
             uint maxLeverage,
-            uint maxMarketValue,
+            uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScale,
+            uint skewScaleUSD,
             uint maxFundingRateDelta
         ) = _futuresMarketSettings().parameters(baseAsset);
         return
@@ -141,9 +141,9 @@ contract FuturesMarketData {
                 makerFee,
                 closureFee,
                 maxLeverage,
-                maxMarketValue,
+                maxMarketValueUSD,
                 maxFundingRate,
-                minSkewScale,
+                skewScaleUSD,
                 maxFundingRateDelta
             );
     }
@@ -192,7 +192,7 @@ contract FuturesMarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(params.maxFundingRate, params.minSkewScale, params.maxFundingRateDelta);
+        return FundingParameters(params.maxFundingRate, params.skewScaleUSD, params.maxFundingRateDelta);
     }
 
     function _marketSizes(IFuturesMarket market) internal view returns (Sides memory) {
@@ -212,7 +212,7 @@ contract FuturesMarketData {
                 address(market),
                 baseAsset,
                 FeeRates(params.takerFee, params.makerFee),
-                MarketLimits(params.maxLeverage, params.maxMarketValue),
+                MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, invalid)

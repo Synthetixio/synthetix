@@ -189,6 +189,13 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'ExchangeRatesCircuitBreaker',
+		source: 'ExchangeRatesCircuitBreaker',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
 		name: 'VirtualSynthMastercopy',
 	});
 

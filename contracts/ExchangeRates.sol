@@ -14,7 +14,7 @@ import "./SafeDecimalMath.sol";
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
-import "./interfaces/IExchanger.sol";
+import "./interfaces/IExchangeRatesCircuitBreaker.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
@@ -47,7 +47,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     mapping(bytes32 => uint) public roundFrozen;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_CICRUIT_BREAKER = "ExchangeRatesCircuitBreaker";
 
     //
     // ========== CONSTRUCTOR ==========
@@ -142,7 +142,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         // SIP-78
         uint rate = _getRate(currencyKey);
         if (rate > 0) {
-            exchanger().setLastExchangeRateForSynth(currencyKey, rate);
+            exchangeRatesCircuitBreaker().setLastExchangeRateForSynth(currencyKey, rate);
         }
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
@@ -214,7 +214,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_EXCHANGER;
+        newAddresses[0] = CONTRACT_CICRUIT_BREAKER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -446,8 +446,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
+    function exchangeRatesCircuitBreaker() internal view returns (IExchangeRatesCircuitBreaker) {
+        return IExchangeRatesCircuitBreaker(requireAndGetAddress(CONTRACT_CICRUIT_BREAKER));
     }
 
     function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {

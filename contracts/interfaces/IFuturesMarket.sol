@@ -74,9 +74,9 @@ interface IFuturesMarket {
             uint makerFee,
             uint closureFee,
             uint maxLeverage,
-            uint maxMarketValue,
+            uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint minSkewScale,
+            uint skewScaleUSD,
             uint maxFundingRateDelta
         );
 

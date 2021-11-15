@@ -711,23 +711,18 @@
 			"name": "Futures",
 			"version": {
 				"major": 2,
-				"minor": 55
+				"minor": 47
 			},
-			"sources": [
-				"Exchanger",
-				"FuturesMarketManager",
-				"Synthetix",
-				"SystemSettings"
-			],
 			"sips": [80]
 		},
 		{
 			"name": "Futures (Optimism)",
+			"ovm": true,
+			"released": false,
 			"version": {
 				"major": 2,
-				"minor": 55
+				"minor": 47
 			},
-			"ovm": true,
 			"sips": [80]
 		}
 	]
