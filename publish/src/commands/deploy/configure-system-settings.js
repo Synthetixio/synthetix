@@ -330,7 +330,10 @@ module.exports = async ({
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			read: 'atomicMaxVolumePerBlock',
-			readTarget: previousSystemSettings,
+			readTarget:
+				previousSystemSettings && previousSystemSettings.atomicMaxVolumePerBlock
+					? previousSystemSettings
+					: SystemSettings,
 			expected: input => atomicMaxVolumePerBlock === '0' || input !== '0', // only change if setting to non-zero from zero
 			write: 'setAtomicMaxVolumePerBlock',
 			writeArg: atomicMaxVolumePerBlock,
@@ -342,7 +345,10 @@ module.exports = async ({
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			read: 'atomicTwapWindow',
-			readTarget: previousSystemSettings,
+			readTarget:
+				previousSystemSettings && previousSystemSettings.atomicTwapWindow
+					? previousSystemSettings
+					: SystemSettings,
 			expected: input => input !== '0', // only change if zero
 			write: 'setAtomicTwapWindow',
 			writeArg: await getDeployParameter('ATOMIC_TWAP_WINDOW'),
@@ -357,7 +363,10 @@ module.exports = async ({
 				target: SystemSettings,
 				read: 'atomicEquivalentForDexPricing',
 				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
+				readTarget:
+					previousSystemSettings && previousSystemSettings.atomicEquivalentForDexPricing
+						? previousSystemSettings
+						: SystemSettings,
 				expected: input => input !== ZERO_ADDRESS, // only change if zero
 				write: 'setAtomicEquivalentForDexPricing',
 				writeArg: [toBytes32(currencyKey), equivalent],
@@ -365,15 +374,18 @@ module.exports = async ({
 		}
 	}
 
-	const atomicExchangeFeeRates = await getDeployParameter('ATOMIC_EXCHANGE_FEE_RATES');
-	if (SystemSettings.atomicExchangeFeeRates && atomicExchangeFeeRates) {
-		for (const [currencyKey, rate] of Object.entries(atomicExchangeFeeRates)) {
+	const atomicExchangeFeeRate = await getDeployParameter('ATOMIC_EXCHANGE_FEE_RATES');
+	if (SystemSettings.atomicExchangeFeeRate && atomicExchangeFeeRate) {
+		for (const [currencyKey, rate] of Object.entries(atomicExchangeFeeRate)) {
 			await runStep({
 				contract: 'SystemSettings',
 				target: SystemSettings,
 				read: 'atomicExchangeFeeRate',
 				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
+				readTarget:
+					previousSystemSettings && previousSystemSettings.atomicExchangeFeeRate
+						? previousSystemSettings
+						: SystemSettings,
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicExchangeFeeRate',
 				writeArg: [toBytes32(currencyKey), rate],
@@ -389,7 +401,10 @@ module.exports = async ({
 				target: SystemSettings,
 				read: 'atomicPriceBuffer',
 				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
+				readTarget:
+					previousSystemSettings && previousSystemSettings.atomicPriceBuffer
+						? previousSystemSettings
+						: SystemSettings,
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicPriceBuffer',
 				writeArg: [toBytes32(currencyKey), buffer],
@@ -407,7 +422,10 @@ module.exports = async ({
 				target: SystemSettings,
 				read: 'atomicVolatilityConsiderationWindow',
 				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
+				readTarget:
+					previousSystemSettings && previousSystemSettings.atomicVolatilityConsiderationWindow
+						? previousSystemSettings
+						: SystemSettings,
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityConsiderationWindow',
 				writeArg: [toBytes32(currencyKey), seconds],
@@ -425,7 +443,10 @@ module.exports = async ({
 				target: SystemSettings,
 				read: 'atomicVolatilityUpdateThreshold',
 				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
+				readTarget:
+					previousSystemSettings && previousSystemSettings.atomicVolatilityUpdateThreshold
+						? previousSystemSettings
+						: SystemSettings,
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityUpdateThreshold',
 				writeArg: [toBytes32(currencyKey), threshold],
