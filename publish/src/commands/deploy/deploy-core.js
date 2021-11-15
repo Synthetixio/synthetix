@@ -57,7 +57,6 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'ExchangeRates',
-		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
 		args: [account, oracleAddress, addressOf(readProxyForResolver), [], []],
 	});
 
@@ -240,5 +239,18 @@ module.exports = async ({
 		name: 'SynthetixBridgeEscrow',
 		deps: ['AddressResolver'],
 		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'SynthRedeemer',
+		deps: ['AddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'WrapperFactory',
+		source: 'WrapperFactory',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 };

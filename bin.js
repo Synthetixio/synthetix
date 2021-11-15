@@ -185,9 +185,58 @@ program
 program
 	.command('releases')
 	.description('Get the list of releases')
-	.option('--no-released', 'Only retreive the unreleased ones.')
-	.action(async ({ released }) => {
-		const result = releases.filter(release => release.released === released);
+	.option('--unreleased', 'Only retrieve the unreleased ones.')
+	.option('--with-sources', 'Only retrieve ones with files.')
+	.option('--name-only', 'Whether or not to only return the name of the next release')
+	.addOption(
+		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the release`)
+			.choices(['base', 'ovm', 'both'])
+			.default('both')
+	)
+	.action(async ({ unreleased, withSources, nameOnly, layer }) => {
+		const getSip = sipNumber => releases.sips.find(({ sip }) => sip === sipNumber);
+
+		const results = releases.releases
+			.filter(({ ovm }) =>
+				layer === 'both' ? true : (ovm && layer === 'ovm') || (!ovm && layer === 'base')
+			)
+			.filter(release => release.released === !unreleased)
+			.filter(release => {
+				if (!withSources) return true;
+				return release.sips.some(s => !!getSip(s).sources);
+			});
+
+		if (results.length > 0) {
+			if (nameOnly) {
+				console.log(results[0].name);
+			} else {
+				console.log(JSON.stringify(results, null, 2));
+			}
+		}
+	});
+
+program
+	.command('sips')
+	.description('Get the list of released or unreleased SIPs.')
+	.option('--unreleased', 'Only retrieve the SIPs that are not released on the given layer.')
+	.option('--with-sources', 'Only retrieve ones with source files.')
+	.addOption(
+		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the SIPs`)
+			.choices(['base', 'ovm', 'both'])
+			.default('both')
+	)
+	.action(async ({ unreleased, withSources, layer }) => {
+		const layers = ['both', ...(layer === 'both' ? ['base', 'ovm'] : [layer])];
+
+		const result = releases.sips
+			.filter(({ layer }) => layers.includes(layer))
+			.filter(({ released }) => layers.includes(released) === !unreleased)
+			.filter(({ sources }) => {
+				if (!withSources) return true;
+				if (!sources) return false;
+				if (Array.isArray(sources)) return sources.length > 0;
+				return layers.flatMap(layer => sources[layer]).length > 0;
+			});
 
 		if (result.length > 0) {
 			console.log(JSON.stringify(result, null, 2));

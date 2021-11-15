@@ -11,6 +11,7 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
@@ -20,10 +21,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
-
-// Note: use OZ's IERC20 here as using ours will complain about conflicting names
-// during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
@@ -562,12 +559,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
     }
 
-    // SIP-78
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
-        require(rate > 0, "Rate must be above 0");
-        lastExchangeRate[currencyKey] = rate;
-    }
-
     // SIP-139
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
@@ -660,7 +651,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             refund(from, currencyKey, refunded);
         }
 
-        if (updateCache) {
+        // by checking a reclaim or refund we also check that the currency key is still a valid synth,
+        // as the deviation check will return 0 if the synth has been removed.
+        if (updateCache && (reclaimed > 0 || refunded > 0)) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
             debtCache().updateCachedSynthDebts(key);
@@ -867,12 +860,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
-        _;
-    }
-
-    modifier onlyExchangeRates() {
-        IExchangeRates _exchangeRates = exchangeRates();
-        require(msg.sender == address(_exchangeRates), "Restricted to ExchangeRates");
         _;
     }
 

@@ -142,5 +142,20 @@
 	},
 	"SynthsLINK": {
 		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralUtil": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": false
+	},
+	"WrapperFactory": {
+		"deploy": false
 	}
 }

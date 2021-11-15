@@ -5,7 +5,10 @@ const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
-const { BigNumber } = require('ethers');
+const {
+	BigNumber,
+	utils: { parseUnits },
+} = require('ethers');
 
 const {
 	constants: {
@@ -162,10 +165,9 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl =
-		network === 'mainnet'
-			? 'https://api.etherscan.io/api'
-			: `https://api-${network}.etherscan.io/api`;
+	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+		useOvm ? '-optimistic' : ''
+	}.etherscan.io/api`;
 
 	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 
@@ -237,10 +239,7 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 	err,
 	generateSolidity,
 }) => {
-	if (
-		(generateSolidity || dryRun) &&
-		/VM Exception while processing transaction: revert Missing address/.test(err.message)
-	) {
+	if ((generateSolidity || dryRun) && /Missing address:\s[\w]+/.test(err.message)) {
 		console.log(
 			gray(
 				`WARNING: Error thrown reading state from ${yellow(
@@ -251,6 +250,25 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 	} else {
 		throw err;
 	}
+};
+
+const assignGasOptions = async ({ tx, provider, maxFeePerGas, maxPriorityFeePerGas }) => {
+	// only add EIP-1559 options if the network supports EIP-1559
+	const gasOptions = {};
+
+	let feeData = {};
+	try {
+		feeData = await provider.getFeeData();
+	} catch (_) {} // network does not support the `getFeeData` rpc call
+	if (feeData.maxFeePerGas) {
+		gasOptions.type = 2;
+		if (maxFeePerGas)
+			gasOptions.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
+		if (maxPriorityFeePerGas)
+			gasOptions.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
+	}
+
+	return Object.assign(gasOptions, tx);
 };
 
 module.exports = {
@@ -266,4 +284,5 @@ module.exports = {
 	parameterNotice,
 	reportDeployedContracts,
 	catchMissingResolverWhenGeneratingSolidity,
+	assignGasOptions,
 };

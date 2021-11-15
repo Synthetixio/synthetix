@@ -30,12 +30,16 @@ module.exports = {
 	// Assert against decoded logs
 	decodedEventEqual({ event, emittedFrom, args, log, bnCloseVariance = '10' }) {
 		assert.equal(log.name, event);
-		assert.equal(log.address, emittedFrom);
+		assert.equal(log.address, emittedFrom, 'log emission address does not match');
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
 
 			if (type === 'address') {
-				assert.equal(web3.utils.toChecksumAddress(value), web3.utils.toChecksumAddress(arg));
+				assert.equal(
+					web3.utils.toChecksumAddress(value),
+					web3.utils.toChecksumAddress(arg),
+					`arg '${arg}' does not match`
+				);
 			} else if (/^u?int/.test(type)) {
 				assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
 			} else {
@@ -266,10 +270,14 @@ module.exports = {
 		for (const [i, contract] of Object.entries(contracts).concat([
 			[contracts.length, 'AddressResolver'],
 		])) {
-			if (mocks[contract]) {
+			const contractParts = contract.split(/:/);
+			const source = contractParts[0];
+			const label = contractParts[1] || source;
+
+			if (mocks[label]) {
 				continue; // prevent dupes
 			}
-			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
+			mocks[label] = await smockit(artifacts.require(source).abi, { address: accounts[i] });
 		}
 
 		const resolver = mocks['AddressResolver'];

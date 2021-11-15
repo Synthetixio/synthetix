@@ -14,15 +14,6 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": true
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": true
-	},
-	"BinaryOptionMarketData": {
-		"deploy": true
-	},
 	"CollateralManager": {
 		"deploy": true
 	},
@@ -36,15 +27,6 @@
 		"deploy": true
 	},
 	"CollateralShort": {
-		"deploy": true
-	},
-	"CollateralStateErc20": {
-		"deploy": true
-	},
-	"CollateralStateEth": {
-		"deploy": true
-	},
-	"CollateralStateShort": {
 		"deploy": true
 	},
 	"CollateralUtil": {
@@ -269,51 +251,6 @@
 	"SynthsXTZ": {
 		"deploy": true
 	},
-	"TokenStateiBTC": {
-		"deploy": true
-	},
-	"ProxyiBTC": {
-		"deploy": true
-	},
-	"SynthiBTC": {
-		"deploy": true
-	},
-	"TokenStateiETH": {
-		"deploy": true
-	},
-	"ProxyiETH": {
-		"deploy": true
-	},
-	"SynthiETH": {
-		"deploy": true
-	},
-	"TokenStateiBNB": {
-		"deploy": true
-	},
-	"ProxyiBNB": {
-		"deploy": true
-	},
-	"SynthiBNB": {
-		"deploy": true
-	},
-	"TokenStateiTRX": {
-		"deploy": true
-	},
-	"ProxyiTRX": {
-		"deploy": true
-	},
-	"SynthiTRX": {
-		"deploy": true
-	},
-	"TokenStateiXTZ": {
-		"deploy": true
-	},
-	"ProxyiXTZ": {
-		"deploy": true
-	},
-	"SynthiXTZ": {
-		"deploy": true
-	},
 	"TokenStatesCEX": {
 		"deploy": true
 	},
@@ -321,15 +258,6 @@
 		"deploy": true
 	},
 	"SynthsCEX": {
-		"deploy": true
-	},
-	"TokenStateiCEX": {
-		"deploy": true
-	},
-	"ProxyiCEX": {
-		"deploy": true
-	},
-	"SynthiCEX": {
 		"deploy": true
 	},
 	"TokenStatesXRP": {
@@ -422,15 +350,6 @@
 	"SynthsDEFI": {
 		"deploy": true
 	},
-	"TokenStateiDEFI": {
-		"deploy": true
-	},
-	"ProxyiDEFI": {
-		"deploy": true
-	},
-	"SynthiDEFI": {
-		"deploy": true
-	},
 	"TokenStatesFTSE": {
 		"deploy": true
 	},
@@ -458,7 +377,13 @@
 	"NativeEtherWrapper": {
 		"deploy": true
 	},
+	"WrapperFactory": {
+		"deploy": true
+	},
 	"WETH": {
+		"deploy": true
+	},
+	"SynthRedeemer": {
 		"deploy": true
 	}
 }

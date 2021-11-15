@@ -48,7 +48,7 @@ contract DebtCache is BaseDebtCache {
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid, false);
+        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid);
     }
 
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
@@ -56,18 +56,39 @@ contract DebtCache is BaseDebtCache {
         synthKeyArray[0] = currencyKey;
         uint[] memory synthRateArray = new uint[](1);
         synthRateArray[0] = currencyRate;
-        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false, false);
+        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false);
     }
 
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
         onlyIssuerOrExchanger
     {
-        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false, false);
+        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false);
     }
 
     function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
         _updateDebtCacheValidity(currentlyInvalid);
+    }
+
+    function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external onlyDebtIssuer {
+        int256 newExcludedDebt = int256(_excludedIssuedDebt[currencyKey]) + delta;
+
+        require(newExcludedDebt >= 0, "Excluded debt cannot become negative");
+
+        _excludedIssuedDebt[currencyKey] = uint(newExcludedDebt);
+    }
+
+    function updateCachedsUSDDebt(int amount) external onlyIssuer {
+        uint delta = SafeDecimalMath.abs(amount);
+        if (amount > 0) {
+            _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].add(delta);
+            _cachedDebt = _cachedDebt.add(delta);
+        } else {
+            _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].sub(delta);
+            _cachedDebt = _cachedDebt.sub(delta);
+        }
+
+        emit DebtCacheUpdated(_cachedDebt);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -79,16 +100,16 @@ contract DebtCache is BaseDebtCache {
         }
     }
 
+    // Updated the global debt according to a rate/supply change in a subset of issued synths.
     function _updateCachedSynthDebtsWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
-        bool anyRateIsInvalid,
-        bool recomputeExcludedDebt
+        bool anyRateIsInvalid
     ) internal {
         uint numKeys = currencyKeys.length;
         require(numKeys == currentRates.length, "Input array lengths differ");
 
-        // Update the cached values for each synth, saving the sums as we go.
+        // Compute the cached and current debt sum for the subset of synths provided.
         uint cachedSum;
         uint currentSum;
         uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
@@ -96,36 +117,24 @@ contract DebtCache is BaseDebtCache {
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];
+
             cachedSum = cachedSum.add(_cachedSynthDebt[key]);
             currentSum = currentSum.add(currentSynthDebt);
+
             _cachedSynthDebt[key] = currentSynthDebt;
         }
 
-        // Compute the difference and apply it to the snapshot
+        // Apply the debt update.
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
-            // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
-            // debt snapshots.
-            require(cachedSum <= debt, "Cached synth sum exceeds total debt");
-            debt = debt.sub(cachedSum).add(currentSum);
-
-            // As of SIPS 136 and 150, this excluded debt section is unused.
-            // All callers of this function pass in false for `recomputeExcludedDebt`
-            // for performance reasons (_totalNonSnxBackedDebt is expensive)
-            // until we circle back when the debt calculation is refactored or discarded.
-            if (recomputeExcludedDebt) {
-                (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
-                anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
-                debt = debt.add(excludedDebt).floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
-                _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-            }
-
+            // apply the delta between the cachedSum and currentSum
+            // add currentSum before sub cachedSum to prevent overflow as cachedSum > debt for large amount of excluded debt
+            debt = debt.add(currentSum).sub(cachedSum);
             _cachedDebt = debt;
             emit DebtCacheUpdated(debt);
         }
 
-        // A partial update can invalidate the debt cache, but a full snapshot must be performed in order
-        // to re-validate it.
+        // Invalidate the cache if necessary
         if (anyRateIsInvalid) {
             _updateDebtCacheValidity(anyRateIsInvalid);
         }

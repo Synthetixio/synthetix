@@ -1,10 +1,6 @@
 const axios = require('axios');
 const { getLocalPrivateKey } = require('../../test-utils/wallets');
 
-const {
-	constants: { OVM_GAS_PRICE },
-} = require('../../..');
-
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
 	deploy: require('../../../publish/src/commands/deploy').deploy,
@@ -12,48 +8,50 @@ const commands = {
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
-async function compileInstance({ useOvm, buildPath }) {
+async function compileInstance({ useOvm, buildPath, migrations }) {
 	await commands.build({
 		useOvm,
 		cleanBuild: true,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
 		buildPath,
+		migrations,
 	});
 }
 
-async function prepareDeploy() {
-	await commands.prepareDeploy({ network: 'mainnet' });
+async function prepareDeploy(...args) {
+	await commands.prepareDeploy(...args);
 }
 
 async function deployInstance({
-	useOvm,
-	providerUrl,
-	providerPort,
-	useFork = false,
-	network = 'local',
-	freshDeploy = true,
-	ignoreCustomParameters = false,
+	addNewSynths,
 	buildPath,
+	freshDeploy = true,
+	generateSolidity = false,
+	ignoreCustomParameters = false,
+	network = 'local',
+	providerPort,
+	providerUrl,
 	skipFeedChecks = true,
+	useFork = false,
+	useOvm,
 }) {
 	const privateKey = network === 'local' ? getLocalPrivateKey({ index: 0 }) : undefined;
 
 	await commands.deploy({
-		concurrency: 1,
-		network,
-		useFork,
-		freshDeploy,
-		yes: true,
-		providerUrl: `${providerUrl}:${providerPort}`,
-		gasPrice: useOvm ? OVM_GAS_PRICE : 1,
-		useOvm,
-		privateKey,
-		methodCallGasLimit: useOvm ? undefined : 3500000,
-		contractDeploymentGasLimit: useOvm ? undefined : 9500000,
-		ignoreCustomParameters,
+		addNewSynths,
 		buildPath,
+		concurrency: 1,
+		freshDeploy,
+		generateSolidity,
+		ignoreCustomParameters,
+		network,
+		privateKey,
+		providerUrl: `${providerUrl}:${providerPort}`,
 		skipFeedChecks,
+		useFork,
+		useOvm,
+		yes: true,
 	});
 }
 
@@ -71,8 +69,6 @@ async function connectInstances({ providerUrl, providerPortL1, providerPortL2, q
 		l2Messenger,
 		l1PrivateKey: privateKey,
 		l2PrivateKey: privateKey,
-		l1GasPrice: 1,
-		l2GasPrice: OVM_GAS_PRICE,
 		gasLimit: 8000000,
 		quiet,
 	});

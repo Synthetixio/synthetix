@@ -24,7 +24,6 @@ const commands = {
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
-	importFeePeriods: require('../../publish/src/commands/import-fee-periods').importFeePeriods,
 };
 
 const snx = require('../..');
@@ -601,12 +600,10 @@ describe('publish scripts', () => {
 				});
 			});
 
-			describe('importFeePeriods script', () => {
-				let oldFeePoolAddress;
+			describe('importFeePeriods', () => {
 				let feePeriodLength;
 
 				beforeEach(async () => {
-					oldFeePoolAddress = getTarget({ contract: 'FeePool' }).address;
 					feePeriodLength = await callMethodWithRetry(FeePool.FEE_PERIOD_LENGTH());
 				});
 
@@ -631,43 +628,12 @@ describe('publish scripts', () => {
 					});
 				};
 
-				describe('when import script is called with the same source fee pool as the currently deployed one', () => {
-					it('then it fails', done => {
-						commands
-							.importFeePeriods({
-								sourceContractAddress: oldFeePoolAddress,
-								network,
-								privateKey: accounts.deployer.privateKey,
-								yes: true,
-							})
-							.then(() => done('Should not succeed.'))
-							.catch(() => done());
-					});
-				});
-				describe('when FeePool alone is redeployed', () => {
-					beforeEach(redeployFeePeriodOnly);
-
-					describe('when new fee periods are attempted to be imported', () => {
-						it('fails as there isnt more than a single period', done => {
-							commands
-								.importFeePeriods({
-									sourceContractAddress: oldFeePoolAddress,
-									network,
-									privateKey: accounts.deployer.privateKey,
-									yes: true,
-								})
-								.then(() => done('Should not succeed.'))
-								.catch(() => done());
-						});
-					});
-				});
-
 				describe('when FeePool is given three true imported periods', () => {
 					let periodsAdded;
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '0', '0', '0', '0']);
+							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
@@ -678,16 +644,22 @@ describe('publish scripts', () => {
 								i + 1,
 								0,
 								startTime,
-								0,
-								0,
-								0,
-								0,
+								3,
+								4,
+								5,
+								6,
 								overrides
 							);
 							await tx.wait();
 						}
 					});
-					describe('when the new FeePool is invalid', () => {
+
+					describe('when the system is suspended', () => {
+						beforeEach(async () => {
+							await getContract({ target: 'SystemStatus' }).suspendSystem('1', {
+								from: accounts.deployer.address,
+							});
+						});
 						describe('when FeePool alone is redeployed', () => {
 							beforeEach(redeployFeePeriodOnly);
 							describe('using the FeePoolNew', () => {
@@ -697,58 +669,6 @@ describe('publish scripts', () => {
 									FeePoolNew = getContract({ target: 'FeePool' });
 								});
 
-								describe('when the new FeePool is manually given fee periods', () => {
-									beforeEach(async () => {
-										for (let i = 0; i < feePeriodLength; i++) {
-											const tx = await FeePoolNew.importFeePeriod(
-												i,
-												i + 1,
-												0,
-												daysAgo((i + 1) * 6),
-												0,
-												0,
-												0,
-												0,
-												overrides
-											);
-											await tx.wait();
-										}
-									});
-									describe('when new fee periods are attempted to be imported', () => {
-										it('fails as the target FeePool now has imported fee periods', done => {
-											commands
-												.importFeePeriods({
-													sourceContractAddress: oldFeePoolAddress,
-													network,
-													privateKey: accounts.deployer.privateKey,
-													yes: true,
-												})
-												.then(() => done('Should not succeed.'))
-												.catch(() => done());
-										});
-									});
-								});
-							});
-						});
-					});
-					describe('when FeePool alone is redeployed', () => {
-						beforeEach(redeployFeePeriodOnly);
-						describe('using the FeePoolNew', () => {
-							let FeePoolNew;
-							beforeEach(async () => {
-								targets = getTarget();
-								FeePoolNew = getContract({ target: 'FeePool' });
-							});
-
-							describe('when import is called', () => {
-								beforeEach(async () => {
-									await commands.importFeePeriods({
-										sourceContractAddress: oldFeePoolAddress,
-										network,
-										privateKey: accounts.deployer.privateKey,
-										yes: true,
-									});
-								});
 								it('then the periods are added correctly', async () => {
 									let periods = await Promise.all(
 										[0, 1].map(i => callMethodWithRetry(FeePoolNew.recentFeePeriods(i)))
@@ -768,41 +688,6 @@ describe('publish scripts', () => {
 							});
 						});
 					});
-					describe('when FeePool is given old import periods', () => {
-						beforeEach(async () => {
-							for (let i = 0; i < feePeriodLength; i++) {
-								const tx = await FeePool.importFeePeriod(
-									i,
-									i + 1,
-									0,
-									daysAgo((i + 1) * 14),
-									0,
-									0,
-									0,
-									0,
-									overrides
-								);
-								await tx.wait();
-							}
-						});
-						describe('when FeePool alone is redeployed', () => {
-							beforeEach(redeployFeePeriodOnly);
-
-							describe('when new fee periods are attempted to be imported', () => {
-								it('fails as the most recent period is older than 1week', done => {
-									commands
-										.importFeePeriods({
-											sourceContractAddress: oldFeePoolAddress,
-											network,
-											privateKey: accounts.deployer.privateKey,
-											yes: true,
-										})
-										.then(() => done('Should not succeed.'))
-										.catch(() => done());
-								});
-							});
-						});
-					});
 				});
 			});
 
@@ -818,7 +703,7 @@ describe('publish scripts', () => {
 					// make sure exchange rates has prices for specific assets
 
 					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
-						synths.map(({ inverted, asset }) => {
+						synths.map(({ asset }) => {
 							// as the same assets are used for long and shorts, search by asset rather than
 							// name (currencyKey) here so that we don't accidentially override an inverse with
 							// another rate
@@ -835,13 +720,6 @@ describe('publish scripts', () => {
 								return {
 									asset,
 									rate: 0.000001,
-								};
-							} else if (asset === 'BNB') {
-								// ensure iBNB is not frozen
-								return {
-									asset,
-									rate: synths.find(synth => synth.inverted && synth.asset === asset).inverted
-										.entryPoint,
 								};
 							} else if (asset === 'XTZ') {
 								// ensure iXTZ is frozen at upper limit
@@ -1052,296 +930,6 @@ describe('publish scripts', () => {
 									const { suspended, reason } = await SystemStatus.synthSuspension(sETH);
 									assert.strictEqual(suspended, true);
 									assert.strictEqual(reason.toString(), '65');
-								});
-							});
-						});
-					});
-
-					describe('handle updates to inverted rates', () => {
-						describe('when a user has issued and exchanged into iCEX', () => {
-							beforeEach(async () => {
-								let tx;
-
-								Synthetix = Synthetix.connect(accounts.first);
-
-								tx = await Synthetix.issueMaxSynths(overrides);
-								await tx.wait();
-
-								tx = await Synthetix.exchange(
-									toBytes32('sUSD'),
-									ethers.utils.parseEther('100'),
-									toBytes32('iCEX'),
-									overrides
-								);
-								await tx.wait();
-							});
-							describe('when a new inverted synth iABC is added to the list', () => {
-								describe('and the inverted synth iXTZ has its parameters shifted', () => {
-									describe('and the inverted synth iCEX has its parameters shifted as well', () => {
-										beforeEach(async () => {
-											// read current config file version (if something has been removed,
-											// we don't want to include it here)
-											const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
-
-											// add new iABC synth
-											currentSynthsFile.push({
-												name: 'iABC',
-												asset: 'ABC',
-												category: 'crypto',
-												sign: '',
-												description: 'Inverted Alphabet',
-												subclass: 'PurgeableSynth',
-												inverted: {
-													entryPoint: 1,
-													upperLimit: 1.5,
-													lowerLimit: 0.5,
-												},
-											});
-
-											// mutate parameters of iXTZ
-											// Note: this is brittle and will *break* if iXTZ or iCEX are removed from the
-											// synths for deployment. This needs to be improved in the near future - JJ
-											currentSynthsFile.find(({ name }) => name === 'iXTZ').inverted = {
-												entryPoint: 100,
-												upperLimit: 150,
-												lowerLimit: 50,
-											};
-
-											// mutate parameters of iCEX
-											currentSynthsFile.find(({ name }) => name === 'iCEX').inverted = {
-												entryPoint: 1,
-												upperLimit: 1.5,
-												lowerLimit: 0.5,
-											};
-
-											fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
-										});
-
-										describe('when ExchangeRates alone is redeployed', () => {
-											let ExchangeRates;
-											let currentConfigFile;
-											beforeEach(async () => {
-												// read current config file version (if something has been removed,
-												// we don't want to include it here)
-												currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
-												const configForExrates = Object.keys(currentConfigFile).reduce(
-													(memo, cur) => {
-														memo[cur] = { deploy: cur === 'ExchangeRates' };
-														return memo;
-													},
-													{}
-												);
-
-												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
-
-												await commands.deploy({
-													concurrency,
-													addNewSynths: true,
-													network,
-													yes: true,
-													privateKey: accounts.deployer.privateKey,
-												});
-												targets = getTarget();
-												ExchangeRates = getContract({ target: 'ExchangeRates' });
-											});
-
-											// Test the properties of an inverted synth
-											const testInvertedSynth = async ({
-												currencyKey,
-												shouldBeFrozenAtUpperLimit,
-												shouldBeFrozenAtLowerLimit,
-											}) => {
-												const [
-													entryPoint,
-													upperLimit,
-													lowerLimit,
-													frozenAtUpperLimit,
-													frozenAtLowerLimit,
-												] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(toBytes32(currencyKey))
-												);
-												const expected = synths.find(({ name }) => name === currencyKey).inverted;
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													expected.entryPoint,
-													'Entry points match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(upperLimit.toString()),
-													expected.upperLimit,
-													'Upper limits match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(lowerLimit.toString()),
-													expected.lowerLimit,
-													'Lower limits match'
-												);
-												assert.strictEqual(
-													frozenAtUpperLimit,
-													!!shouldBeFrozenAtUpperLimit,
-													'Frozen upper matches expectation'
-												);
-
-												assert.strictEqual(
-													frozenAtLowerLimit,
-													!!shouldBeFrozenAtLowerLimit,
-													'Frozen lower matches expectation'
-												);
-											};
-
-											it('then the new iABC synth should be added correctly (as it has no previous rate)', async () => {
-												const iABC = toBytes32('iABC');
-												const [
-													entryPoint,
-													upperLimit,
-													lowerLimit,
-													frozenAtUpperLimit,
-													frozenAtLowerLimit,
-												] = await callMethodWithRetry(ExchangeRates.inversePricing(iABC));
-												const rate = await callMethodWithRetry(ExchangeRates.rateForCurrency(iABC));
-
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													1,
-													'Entry point match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(upperLimit.toString()),
-													1.5,
-													'Upper limit match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(lowerLimit.toString()),
-													0.5,
-													'Lower limit match'
-												);
-												assert.strictEqual(
-													frozenAtUpperLimit || frozenAtLowerLimit,
-													false,
-													'Is not frozen'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(rate.toString()),
-													0,
-													'No rate for new inverted synth'
-												);
-											});
-
-											it('and the iXTZ synth should be reconfigured correctly (as it has 0 total supply)', async () => {
-												const iXTZ = toBytes32('iXTZ');
-												const [
-													entryPoint,
-													upperLimit,
-													lowerLimit,
-													frozenAtUpperLimit,
-													frozenAtLowerLimit,
-												] = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
-
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													100,
-													'Entry point match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(upperLimit.toString()),
-													150,
-													'Upper limit match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(lowerLimit.toString()),
-													50,
-													'Lower limit match'
-												);
-												// the old rate (2 x upperLimit) is applied with the new entry point, and
-												// as it is very low, when we fetch the rate, it will return at the upper limit,
-												// but as freezeRate is a keeper it hasn't been called yet, so it won't return as frozenAtUpper
-												assert.strictEqual(
-													frozenAtUpperLimit || frozenAtLowerLimit,
-													false,
-													'Is not frozen'
-												);
-
-												// so perform  freeze
-												const tx = await ExchangeRates.freezeRate(iXTZ, overrides);
-												await tx.wait();
-
-												const [, , , newFrozenAtUpperLimit] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(iXTZ)
-												);
-
-												assert.strictEqual(
-													newFrozenAtUpperLimit,
-													true,
-													'Is now frozen at upper limit'
-												);
-											});
-
-											it('and the iCEX synth should not be inverted at all', async () => {
-												const [entryPoint] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(toBytes32('iCEX'))
-												);
-
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													0,
-													'iCEX should not be set'
-												);
-											});
-
-											it('and iDEFI should be set as frozen at the lower limit', async () => {
-												await testInvertedSynth({
-													currencyKey: 'iDEFI',
-													shouldBeFrozenAtLowerLimit: true,
-												});
-											});
-											it('and iTRX should be set as frozen at the upper limit', async () => {
-												await testInvertedSynth({
-													currencyKey: 'iTRX',
-													shouldBeFrozenAtUpperLimit: true,
-												});
-											});
-											it('and iBNB should not be frozen', async () => {
-												await testInvertedSynth({
-													currencyKey: 'iBNB',
-												});
-											});
-
-											// Note: this is destructive as it removes the sBTC contracts and thus future calls to deploy will fail
-											// Either have this at the end of the entire test script or manage configuration of deploys by passing in
-											// files to update rather than a file.
-											describe('when deployer invokes remove of iABC', () => {
-												beforeEach(async () => {
-													await commands.removeSynths({
-														network,
-														yes: true,
-														privateKey: accounts.deployer.privateKey,
-														synthsToRemove: ['iABC'],
-													});
-												});
-
-												describe('when user tries to exchange into iABC', () => {
-													it('then it fails', async () => {
-														let failed;
-														try {
-															const tx = await Synthetix.exchange(
-																toBytes32('iCEX'),
-																ethers.utils.parseEther('1000'),
-																toBytes32('iABC'),
-																overrides
-															);
-															await tx.wait();
-
-															failed = false;
-														} catch (err) {
-															failed = true;
-														}
-
-														assert.equal(failed, true);
-													});
-												});
-											});
-										});
-									});
 								});
 							});
 						});

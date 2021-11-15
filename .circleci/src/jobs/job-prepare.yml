@@ -1,18 +1,27 @@
 # Bootstraps dependencies
-{{> job-header.yml}}
+{{> job-header-node.yml}}
 # set custom delimiter to avoid checksum parsing
 {{=<% %>=}}
 steps:
   - checkout
+  - attach_workspace:
+      at: .
   - restore_cache:
       keys:
-        - v4-dependencies-{{ checksum "package-lock.json" }}
-  - run: npm install
+        - v5-dependencies-{{ checksum "package-lock.json" }}
+  - run:
+      name: Set custom npm cache directory
+      command: npm config set cache .npm-cache --global
+  - run:
+      name: Install dependencies
+      command: npm install --prefer-offline --no-audit
   - save_cache:
-      key: v4-dependencies-{{ checksum "package-lock.json" }}
+      key: v5-dependencies-{{ checksum "package-lock.json" }}
       paths:
         - node_modules
+        - .npm-cache
   - persist_to_workspace:
       root: .
       paths:
         - node_modules
+        - .npm-cache

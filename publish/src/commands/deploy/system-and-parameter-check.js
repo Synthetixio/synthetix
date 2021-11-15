@@ -24,15 +24,14 @@ module.exports = async ({
 	addNewSynths,
 	concurrency,
 	config,
-	contractDeploymentGasLimit,
 	deployer,
 	deploymentPath,
 	dryRun,
 	earliestCompiledTimestamp,
 	freshDeploy,
-	gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas,
 	getDeployParameter,
-	methodCallGasLimit,
 	network,
 	oracleExrates,
 	providerUrl,
@@ -185,9 +184,10 @@ module.exports = async ({
 				? red('⚠ No -ovm folder suffix!')
 				: green('true')
 			: 'false',
-		'Gas price to use': `${gasPrice} GWEI`,
-		'Method call gas limit': `${methodCallGasLimit} gas`,
-		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
+		'Gas Options':
+			maxFeePerGas || maxPriorityFeePerGas
+				? `provider default`
+				: `eip-1559 base fee max = ${maxFeePerGas} GWEI, miner tip = ${maxPriorityFeePerGas} GWEI`,
 		'Build Path': buildPath,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
@@ -215,20 +215,20 @@ module.exports = async ({
 			: yellow('⚠ NO'),
 	});
 
+	console.log(
+		yellow(
+			`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
+				config
+			)
+				.filter(([, { deploy }]) => deploy)
+				.map(([contract]) => contract)
+				.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
+		) + gray('-'.repeat(50))
+	);
+
 	if (!yes) {
 		try {
-			await confirmAction(
-				yellow(
-					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
-						config
-					)
-						.filter(([, { deploy }]) => deploy)
-						.map(([contract]) => contract)
-						.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
-				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
-			);
+			await confirmAction('Do you want to continue? (y/n) ');
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
 			throw Error('Halted.');
@@ -241,5 +241,6 @@ module.exports = async ({
 		currentWeekOfInflation,
 		oldExrates,
 		oracleAddress,
+		systemSuspended,
 	};
 };

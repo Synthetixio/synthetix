@@ -1,8 +1,10 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
+const { updateCache } = require('../utils/rates');
 
 function itCanExchange({ ctx }) {
 	describe('exchanging and settling', () => {
@@ -36,6 +38,8 @@ function itCanExchange({ ctx }) {
 			before('perform the exchange', async () => {
 				Synthetix = Synthetix.connect(owner);
 
+				await updateCache({ ctx });
+
 				const tx = await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'));
 				await tx.wait();
 			});
@@ -48,6 +52,16 @@ function itCanExchange({ ctx }) {
 				);
 
 				assert.bnEqual(await SynthsETH.balanceOf(owner.address), balancesETH.add(expectedAmount));
+			});
+
+			before('skip if waiting period is zero', async function() {
+				const waitingPeriodSecs = await Exchanger.waitingPeriodSecs();
+				if (waitingPeriodSecs.toString() === '0') {
+					console.log(
+						chalk.yellow('> Skipping pending settlement checks because waiting period is zero.')
+					);
+					this.skip();
+				}
 			});
 
 			it('shows that the user now has pending settlements', async () => {

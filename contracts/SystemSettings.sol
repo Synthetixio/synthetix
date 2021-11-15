@@ -41,10 +41,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
     uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
 
-    // TODO(liamz): these are simple bounds for the mint/burn fee rates (max 100%).
-    // Can we come up with better values?
-    uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
-    uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
+    int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
+    int public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -149,6 +147,40 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // The fee for burning sETH and releasing ETH from the EtherWrapper.
     function etherWrapperBurnFeeRate() external view returns (uint) {
         return getEtherWrapperBurnFeeRate();
+    }
+
+    // SIP 182: Wrapper Factory
+    // The maximum amount of token held by the Wrapper.
+    function wrapperMaxTokenAmount(address wrapper) external view returns (uint) {
+        return getWrapperMaxTokenAmount(wrapper);
+    }
+
+    // SIP 182: Wrapper Factory
+    // The fee for depositing token into the Wrapper.
+    function wrapperMintFeeRate(address wrapper) external view returns (int) {
+        return getWrapperMintFeeRate(wrapper);
+    }
+
+    // SIP 182: Wrapper Factory
+    // The fee for burning synth and releasing token from the Wrapper.
+    function wrapperBurnFeeRate(address wrapper) external view returns (int) {
+        return getWrapperBurnFeeRate(wrapper);
+    }
+
+    function minCratio(address collateral) external view returns (uint) {
+        return getMinCratio(collateral);
+    }
+
+    function collateralManager(address collateral) external view returns (address) {
+        return getNewCollateralManager(collateral);
+    }
+
+    function interactionDelay(address collateral) external view returns (uint) {
+        return getInteractionDelay(collateral);
+    }
+
+    function collapseFeeRate(address collateral) external view returns (uint) {
+        return getCollapseFeeRate(collateral);
     }
 
     // ========== RESTRICTED ==========
@@ -294,15 +326,98 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETHER_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
         emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETHER_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
         emit EtherWrapperBurnFeeRateUpdated(_rate);
+    }
+
+    function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper)),
+            _maxTokenAmount
+        );
+        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
+    }
+
+    function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
+        
+        // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperBurnFeeRate(_wrapper), "-rate > wrapperBurnFeeRate");
+        }
+
+        flexibleStorage().setIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
+            _rate
+        );
+        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
+    }
+
+    function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
+        require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
+        
+        // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperMintFeeRate(_wrapper), "-rate > wrapperMintFeeRate");
+        }
+
+        flexibleStorage().setIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),
+            _rate
+        );
+        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
+    }
+
+    function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
+        require(_minCratio >= SafeDecimalMath.unit(), "Cratio must be above 1");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, _collateral)),
+            _minCratio
+        );
+        emit MinCratioRatioUpdated(_minCratio);
+    }
+
+    function setCollateralManager(address _collateral, address _newCollateralManager) external onlyOwner {
+        flexibleStorage().setAddressValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, _collateral)),
+            _newCollateralManager
+        );
+        emit CollateralManagerUpdated(_newCollateralManager);
+    }
+
+    function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, _collateral)),
+            _interactionDelay
+        );
+        emit InteractionDelayUpdated(_interactionDelay);
+    }
+
+    function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, _collateral)),
+            _collapseFeeRate
+        );
+        emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
     // ========== EVENTS ==========
@@ -324,4 +439,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
+    event WrapperMintFeeRateUpdated(address wrapper, int rate);
+    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
+    event MinCratioRatioUpdated(uint minCratio);
+    event CollateralManagerUpdated(address newCollateralManager);
+    event InteractionDelayUpdated(uint interactionDelay);
+    event CollapseFeeRateUpdated(uint collapseFeeRate);
 }

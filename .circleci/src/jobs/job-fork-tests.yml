@@ -1,5 +1,5 @@
 # Starts a fork of mainnet, deploys the latest release, and runs L1 integration tests
-{{> job-header.yml}}
+{{> job-header-node.yml}}
 steps:
   - checkout
   - attach_workspace:
@@ -13,9 +13,9 @@ steps:
       name: Run integration tests on l1
       command: |
         # Only compile and deploy when there are new contracts
-        NEW_CONTRACTS=$(node bin.js releases --no-released)
+        NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
         if [ -z "$NEW_CONTRACTS" ]; then
           npx hardhat test:integration:l1 --use-fork
         else
-          npx hardhat test:integration:l1 --compile --deploy --use-fork
+          npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork
         fi;

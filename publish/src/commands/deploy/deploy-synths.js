@@ -16,8 +16,11 @@ module.exports = async ({
 	config,
 	deployer,
 	freshDeploy,
+	generateSolidity,
 	network,
 	synths,
+	systemSuspended,
+	useFork,
 	yes,
 }) => {
 	// ----------------
@@ -84,19 +87,28 @@ module.exports = async ({
 		}
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
-			try {
-				await confirmAction(
+		if (synthConfig.deploy && originalTotalSupply > 0) {
+			if (!systemSuspended && !generateSolidity && !useFork) {
+				console.log(
 					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
+						'⚠⚠⚠ WARNING: The system is not suspended! Adding a synth here without using a migration contract is potentially problematic.'
 					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
+						yellow(
+							`⚠⚠⚠ Please confirm - ${network}:\n` +
+								`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n` +
+								'NOTE: Deploying with this amount is dangerous when the system is not already suspended'
+						),
+					gray('-'.repeat(50)) + '\n'
 				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
+
+				if (!yes) {
+					try {
+						await confirmAction(gray('Do you want to continue? (y/n) '));
+					} catch (err) {
+						console.log(gray('Operation cancelled'));
+						process.exit();
+					}
+				}
 			}
 		}
 

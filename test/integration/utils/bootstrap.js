@@ -6,14 +6,13 @@ const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
 const { setupOptimismWatchers, approveBridge } = require('./optimism');
 const { startOpsHeartbeat } = require('./optimism-temp');
-const {
-	constants: { OVM_GAS_PRICE_GWEI },
-} = require('../../..');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
 		ctx.fork = hre.config.fork;
+
+		ctx.addedSynths = hre.config.addedSynths || [];
 
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
@@ -36,6 +35,8 @@ function bootstrapL2({ ctx }) {
 		ctx.useOvm = true;
 		ctx.l1mock = { useOvm: false };
 
+		ctx.addedSynths = hre.config.addedSynths || [];
+
 		/*
 		 * We also bootstrap an L1 provider on the assumption that the L2 integration tests
 		 * are running against an Optimism ops tool.
@@ -50,7 +51,6 @@ function bootstrapL2({ ctx }) {
 		ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		_setDefaultGasPrice({ provider: ctx.provider, gasPrice: OVM_GAS_PRICE_GWEI });
 
 		await loadUsers({ ctx: ctx.l1mock });
 		await loadUsers({ ctx });
@@ -74,7 +74,7 @@ function bootstrapL2({ ctx }) {
 }
 
 function bootstrapDual({ ctx }) {
-	before('bootstrap layer 1 and layer 2 intances', async () => {
+	before('bootstrap layer 1 and layer 2 instances', async () => {
 		ctx.l1 = { useOvm: false };
 		ctx.l2 = { useOvm: true };
 
@@ -86,7 +86,6 @@ function bootstrapDual({ ctx }) {
 		ctx.l2.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		_setDefaultGasPrice({ provider: ctx.l2.provider, gasPrice: OVM_GAS_PRICE_GWEI });
 
 		await setupOptimismWatchers({ ctx, providerUrl: hre.config.providerUrl });
 
@@ -113,12 +112,6 @@ function bootstrapDual({ ctx }) {
 			l2Wallet: ctx.l2.users.user9,
 		});
 	});
-}
-
-// Note: Currently not aware of a way to set a default gas price globally
-// on standalone ethers (used directly without hardhat).
-function _setDefaultGasPrice({ provider, gasPrice }) {
-	provider.getGasPrice = async () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
 }
 
 function _setupProvider({ url }) {

@@ -7,9 +7,10 @@ const ethers = require('ethers');
 const {
 	toBytes32,
 	getUsers,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, ZERO_ADDRESS },
 } = require('../../..');
 
+const { getContract } = require('../command-utils/contract');
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -25,13 +26,14 @@ const { performTransactionalStep } = require('../command-utils/transact');
 const DEFAULTS = {
 	network: 'kovan',
 	gasLimit: 3e5,
-	gasPrice: '1',
+	priorityGasPrice: '1',
 };
 
 const removeSynths = async ({
 	network = DEFAULTS.network,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	synthsToRemove = [],
 	yes,
@@ -80,8 +82,8 @@ const removeSynths = async ({
 		useFork,
 	});
 
-	// allow local deployments to use the private key passed as a CLI option
-	if (network !== 'local' || !privateKey) {
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey && !useFork) {
 		privateKey = envPrivateKey;
 	}
 
@@ -96,7 +98,11 @@ const removeSynths = async ({
 	}
 
 	console.log(gray(`Using account with public key ${wallet.address}`));
-	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
+	console.log(
+		gray(
+			`Using max base gas of ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI with a gas limit of ${gasLimit}`
+		)
+	);
 
 	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
 
@@ -117,17 +123,33 @@ const removeSynths = async ({
 		}
 	}
 
-	const Synthetix = new ethers.Contract(
-		deployment.targets['Synthetix'].address,
-		deployment.sources['Synthetix'].abi,
-		wallet
-	);
+	const Synthetix = getContract({
+		contract: 'Synthetix',
+		network,
+		deploymentPath,
+		wallet,
+	});
 
-	const Issuer = new ethers.Contract(
-		deployment.targets['Issuer'].address,
-		deployment.sources['Issuer'].abi,
-		wallet
-	);
+	const Issuer = getContract({
+		contract: 'Issuer',
+		network,
+		deploymentPath,
+		wallet,
+	});
+
+	const ExchangeRates = getContract({
+		contract: 'ExchangeRates',
+		network,
+		deploymentPath,
+		wallet,
+	});
+
+	const SystemStatus = getContract({
+		contract: 'SystemStatus',
+		network,
+		deploymentPath,
+		wallet,
+	});
 
 	// deep clone these configurations so we can mutate and persist them
 	const updatedConfig = JSON.parse(JSON.stringify(config));
@@ -158,15 +180,25 @@ const removeSynths = async ({
 		// now check total supply (is required in Synthetix.removeSynth)
 		const totalSupply = ethers.utils.formatEther(await Synth.totalSupply());
 		if (Number(totalSupply) > 0) {
-			console.error(
-				red(
-					`Cannot remove as Synth${currencyKey}.totalSupply is non-zero: ${yellow(
-						totalSupply
-					)}\nThe Synth must be purged of holders.`
+			const totalSupplyInUSD = ethers.utils.formatEther(
+				await ExchangeRates.effectiveValue(
+					toBytes32(currencyKey),
+					ethers.utils.parseEther(totalSupply),
+					toBytes32('sUSD')
 				)
 			);
-			process.exitCode = 1;
-			return;
+			try {
+				await confirmAction(
+					cyan(
+						`Synth${currencyKey}.totalSupply is non-zero: ${yellow(totalSupply)} which is $${yellow(
+							totalSupplyInUSD
+						)}\n${red(`THIS WILL DEPRECATE THE SYNTH BY ITS PROXY. ARE YOU SURE???.`)}`
+					) + '\nDo you want to continue? (y/n) '
+				);
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				return;
+			}
 		}
 
 		// perform transaction if owner of Synthetix or append to owner actions list
@@ -180,7 +212,8 @@ const removeSynths = async ({
 				write: 'removeSynth',
 				writeArg: toBytes32(currencyKey),
 				gasLimit,
-				gasPrice,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
 				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
@@ -200,6 +233,48 @@ const removeSynths = async ({
 			updatedSynths = updatedSynths.filter(({ name }) => name !== currencyKey);
 			fs.writeFileSync(synthsFile, stringify(updatedSynths));
 		}
+
+		// now try to remove rate
+		if (dryRun) {
+			console.log(green('Would attempt to remove the aggregator:', currencyKey));
+		} else {
+			await performTransactionalStep({
+				signer: wallet,
+				contract: 'ExchangeRates',
+				target: ExchangeRates,
+				read: 'aggregators',
+				readArg: toBytes32(currencyKey),
+				expected: input => input === ZERO_ADDRESS,
+				write: 'removeAggregator',
+				writeArg: toBytes32(currencyKey),
+				gasLimit,
+				explorerLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				encodeABI: network === 'mainnet',
+			});
+		}
+
+		// now try to unsuspend the synth
+		if (dryRun) {
+			console.log(green('Would attempt to remove the synth:', currencyKey));
+		} else {
+			await performTransactionalStep({
+				signer: wallet,
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				read: 'synthSuspension',
+				readArg: toBytes32(currencyKey),
+				expected: input => !input.suspended,
+				write: 'resumeSynth',
+				writeArg: toBytes32(currencyKey),
+				gasLimit,
+				explorerLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				encodeABI: network === 'mainnet',
+			});
+		}
 	}
 };
 
@@ -213,7 +288,12 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option('-l, --gas-limit <value>', 'Gas limit', 1e6)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-r, --dry-run', 'Dry run - no changes transacted')

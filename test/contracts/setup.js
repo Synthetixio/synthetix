@@ -204,6 +204,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
+		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
@@ -220,20 +221,6 @@ const setupContract = async ({
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
-		BinaryOptionMarketFactory: [owner, tryGetAddressOf('AddressResolver')],
-		BinaryOptionMarketManager: [
-			owner,
-			tryGetAddressOf('AddressResolver'),
-			61 * 60, // max oracle price age: 61 minutes
-			26 * 7 * 24 * 60 * 60, // expiry duration: 26 weeks (~ 6 months)
-			365 * 24 * 60 * 60, // Max time to maturity: ~ 1 year
-			toWei('2'), // Capital requirement
-			toWei('0.05'), // Skew Limit
-			toWei('0.008'), // pool fee
-			toWei('0.002'), // creator fee
-			toWei('0.02'), // refund fee
-		],
-		BinaryOptionMarketData: [],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -242,18 +229,35 @@ const setupContract = async ({
 			toUnit(50000000),
 			0,
 			0,
+			0,
 		],
 		CollateralUtil: [tryGetAddressOf('AddressResolver')],
 		Collateral: [
-			tryGetAddressOf('CollateralState'),
+			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			'sUSD',
-			1.2,
-			100,
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
 		],
-		CollateralState: [owner, tryGetAddressOf('Collateral')],
+		CollateralEth: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'),
+			toUnit(1.3),
+			toUnit(2),
+		],
+		CollateralShort: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
+		],
 		WETH: [],
+		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -512,6 +516,15 @@ const setupContract = async ({
 					fncName: 'totalIssuedSynths',
 					returns: ['0'],
 				});
+			} else if (mock === 'WrapperFactory') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'isWrapper',
+						returns: [false],
+					}),
+				]);
 			} else if (mock === 'FeePool') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -652,6 +665,16 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
 		},
 		{
+			contract: 'WrapperFactory',
+			mocks: [],
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
+		{
+			contract: 'SynthRedeemer',
+			mocks: ['Issuer'],
+			deps: ['AddressResolver'],
+		},
+		{
 			contract: 'DebtCache',
 			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
 			deps: ['ExchangeRates', 'SystemStatus'],
@@ -666,7 +689,9 @@ const setupAllContracts = async ({
 				'FeePool',
 				'DelegateApprovals',
 				'FlexibleStorage',
+				'WrapperFactory',
 				'EtherWrapper',
+				'SynthRedeemer',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
@@ -686,7 +711,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper', 'WrapperFactory'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
@@ -789,27 +814,9 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'CollateralManager',
 				'EtherWrapper',
+				'WrapperFactory',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
-		},
-		{
-			contract: 'BinaryOptionMarketFactory',
-			deps: ['AddressResolver'],
-		},
-		{
-			contract: 'BinaryOptionMarketManager',
-			deps: [
-				'SystemStatus',
-				'AddressResolver',
-				'ExchangeRates',
-				'FeePool',
-				'Synthetix',
-				'BinaryOptionMarketFactory',
-			],
-		},
-		{
-			contract: 'BinaryOptionMarketData',
-			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 		{
 			contract: 'CollateralState',
@@ -837,7 +844,15 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Collateral',
-			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
+			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralEth',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralShort',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
 	];
 

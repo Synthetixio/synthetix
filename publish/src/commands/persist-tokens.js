@@ -16,7 +16,6 @@ const pinataSDK = require('@pinata/sdk');
 const { getTokens, networkToChainId } = require('../../..');
 
 const DEFAULTS = {
-	gasPrice: '50',
 	gasLimit: 2e5, // 200,000
 	network: 'mainnet',
 };
@@ -27,14 +26,7 @@ const uploadFileToIPFS = async ({ body }) => {
 	return result.IpfsHash;
 };
 
-const persistTokens = async ({
-	network,
-	yes,
-	privateKey,
-	assetsVersion,
-	gasPrice = DEFAULTS.gasPrice,
-	gasLimit = DEFAULTS.gasLimit,
-}) => {
+const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 	ensureNetwork(network);
 
 	const { privateKey: envPrivateKey } = loadConnections({
@@ -60,7 +52,7 @@ const persistTokens = async ({
 	const output = {
 		name: 'Synthetix',
 		logoURI: `${baseURI}/snx/SNX.svg`,
-		keywords: ['synthetix', 'defi', 'derivatives', 'synths', 'isynths', 'synthetics'],
+		keywords: ['synthetix', 'defi', 'derivatives', 'synths', 'synthetics'],
 		timestamp: new Date().toISOString(),
 		tags: {
 			synth: {
@@ -68,10 +60,6 @@ const persistTokens = async ({
 				description:
 					'A synthetic asset within the Synthetix protocol which can at any time ' +
 					'be exchanged in its entirety into any other synth within Synthetix.',
-			},
-			inverse: {
-				name: 'Inverse Synth',
-				description: 'Tokens that track inverted price movement of an underlying asset.',
 			},
 			index: {
 				name: 'Index Synth',
@@ -86,17 +74,14 @@ const persistTokens = async ({
 			minor: Number(minor),
 			patch: Number(patch),
 		},
-		tokens: tokens.map(({ address, symbol, name, decimals, index, inverted }) => ({
+		tokens: tokens.map(({ address, symbol, name, decimals, index }) => ({
 			chainId,
 			address,
 			symbol,
 			name: symbol === 'SNX' ? 'Synthetix Network Token' : `Synth ${name}`,
 			decimals,
 			logoURI: baseURI + (symbol === 'SNX' ? '/snx/SNX.svg' : `/synths/${symbol}.svg`),
-			tags: []
-				.concat(index ? 'index' : [])
-				.concat(inverted ? 'inverse' : [])
-				.concat(symbol !== 'SNX' ? 'synth' : []),
+			tags: [].concat(index ? 'index' : []).concat(symbol !== 'SNX' ? 'synth' : []),
 		})),
 	};
 
@@ -149,7 +134,7 @@ const persistTokens = async ({
 	console.log(red('setContent not emitted. Not supported at the moment.'));
 	console.log(yellow(`Next step is to manually set content on ${ensName} to ${content} `));
 
-	/* Web3 fails to set the content via code ens.setContenthash(). 
+	/* Web3 fails to set the content via code ens.setContenthash().
 	setContent can be done using ethers.js CLI or we can interact with ENS contract to set the content.
 	TODO: implement ens.setContenthash() replacement using ethers and use it here
 	*/
@@ -169,7 +154,6 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option(
 				'-p, --private-key [value]',

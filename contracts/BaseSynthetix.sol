@@ -18,7 +18,6 @@ import "./interfaces/IVirtualSynth.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
-    bytes32 public constant CONTRACT_NAME = "Synthetix";
 
     // Available Synths which can be used with the system
     string public constant TOKEN_NAME = "Synthetix Network Token";
@@ -87,8 +86,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().totalIssuedSynths(currencyKey, false);
     }
 
-    // TODO: refactor the name of this function. It also incorporates the exclusion of
-    // issued sETH by the EtherWrapper.
     function totalIssuedSynthsExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint) {
         return issuer().totalIssuedSynths(currencyKey, true);
     }

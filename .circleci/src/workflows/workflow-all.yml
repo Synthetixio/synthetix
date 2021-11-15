@@ -2,7 +2,9 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Basic
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-prepare
+  - job-audit
+  - job-prepare:
+      {{> require-audit.yml}}
   - job-lint:
       {{> require-prepare.yml}}
   - job-compile:
@@ -28,6 +30,12 @@ jobs:
   # Fork tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-fork-tests:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Simulate release on fork & test
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-simulate-release:
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
