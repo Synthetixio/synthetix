@@ -668,7 +668,7 @@
 				"major": 2,
 				"minor": 53
 			},
-			"sips": []
+			"sips": [120, 182]
 		},
 		{
 			"name": "Alkaid (Optimism)",
