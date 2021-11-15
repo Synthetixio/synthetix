@@ -51,16 +51,11 @@ const performTransactionalStep = async ({
 		try {
 			response = await readTarget[read](...argumentsForReadFunction);
 		} catch (err) {
-			// allow generate solidity to quietly allow failed
-			if (generateSolidity) {
-				console.log(
-					gray(
-						`Notice: Could not read ${contract}.${read}. Silently allowing this in generateSolidity mode.`
-					)
-				);
-			} else {
-				throw err;
-			}
+			console.log(
+				gray(
+					`Warning: Could not read ${contract}.${read}(). Proceeding as though this value is not set.`
+				)
+			);
 		}
 
 		// Ethers returns uints as BigNumber objects, while web3 stringified them.
