@@ -369,12 +369,13 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
-		explorerLinkPrefix,
-		generateSolidity,
-		synths,
-		feeds,
 		deployer,
+		explorerLinkPrefix,
+		feeds,
+		generateSolidity,
+		network,
 		runStep,
+		synths,
 	});
 
 	await addSynthsToProtocol({
