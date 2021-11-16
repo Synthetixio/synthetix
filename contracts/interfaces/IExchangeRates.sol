@@ -68,7 +68,6 @@ interface IExchangeRates {
         uint roundIdForDest
     )
         external
-        view
         returns (
             uint value,
             uint sourceRate,

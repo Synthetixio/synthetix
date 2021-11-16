@@ -85,6 +85,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint timestamp;
     }
 
+    struct ExchangeEntry {
+        uint sourceRate;
+        uint destinationRate;
+        uint destinationAmount;
+        uint exchangeFeeRate;
+        uint exchangeDynamicFeeRate;
+        uint roundIdForSrc;
+        uint roundIdForDest;
+    }
+
     bytes32 public constant CONTRACT_NAME = "Exchanger";
 
     bytes32 internal constant sUSD = "sUSD";
@@ -467,34 +477,26 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        // Using struct ExchangeEntry here to fix stack too deep error
-        IExchangeState.ExchangeEntry memory entry =
-            IExchangeState.ExchangeEntry({
-                src: 0, // N/A
-                amount: 0, // sourceRate
-                dest: 0, // N/A
-                amountReceived: 0, // destinationRate
-                exchangeFeeRate: 0, // exchangeFeeRate
-                timestamp: 0, // exchangeDynamicFeeRate
-                roundIdForSrc: 0, // N/A
-                roundIdForDest: 0 // currentDestinationRoundId
-            });
+        // Using struct to resolve stack too deep error
+        ExchangeEntry memory entry;
 
-        // Note: `fee` is denominated in the destinationCurrencyKey.
-        (
-            amountReceived,
-            fee,
-            entry.exchangeFeeRate, // exchangeFeeRate
-            entry.timestamp, // exchangeDynamicFeeRate
-            entry.roundIdForDest, // currentDestinationRoundId
-            entry.amount, // sourceRate
-            entry.amountReceived // destinationRate
-        ) = _getAmountsForExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
+        (entry.exchangeFeeRate, entry.exchangeDynamicFeeRate, entry.roundIdForDest) = _feeRateForExchange(
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
 
-        // SIP-184: Store last Exchange round ID and dynamic fee in the cache to optimise the dynamic fee rate calculation
-        // Put it here to cache after _getAmountsForExchangeMinusFees calculations
+        // Puting the exchangeRate call here as it's mutative for fast cache reading
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            0,
+            entry.roundIdForDest
+        );
+
+        // SIP-184: Store last Exchange round ID and dynamic fee to optimise calculation
         lastExchangeRoundId[destinationCurrencyKey] = entry.roundIdForDest;
-        lastExchangeDynamicFeeRate[destinationCurrencyKey] = entry.timestamp;
+        lastExchangeDynamicFeeRate[destinationCurrencyKey] = entry.exchangeDynamicFeeRate;
 
         // SIP-65: Decentralized Circuit Breaker
         if (
@@ -504,9 +506,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
+        amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
+        // Note: `fee` is denominated in the destinationCurrencyKey.
+        fee = entry.destinationAmount.sub(amountReceived);
+
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
-
         vSynth = _convert(
             sourceCurrencyKey,
             from,
@@ -542,7 +547,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // in these currencies
         _updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
-            [entry.amount, entry.amountReceived] // sourceRate, destinationRate
+            [entry.sourceRate, entry.destinationRate]
         );
 
         // Let the DApps know there was a Synth exchange
@@ -811,9 +816,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey
     )
         internal
-        pure
+        view
         returns (
-            uint exchangeFeeRate,
+            uint,
             uint exchangeDynamicFeeRate,
             uint currentDestinationRoundId
         )
@@ -843,6 +848,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
         // Cap max exchangeFeeRate to 100%
         exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
+        return (exchangeFeeRate, exchangeDynamicFeeRate, currentDestinationRoundId);
     }
 
     /// @notice Get dynamic fee for a given currency key (SIP-184)
@@ -883,7 +889,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate, , , , ) = _getAmountsForExchangeMinusFees(
+        (amountReceived, fee, exchangeFeeRate) = _getAmountsForExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -900,30 +906,22 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         returns (
             uint amountReceived,
             uint fee,
-            uint exchangeFeeRate,
-            uint exchangeDynamicFeeRate,
-            uint currentDestinationRoundId,
-            uint sourceRate,
-            uint destinationRate
+            uint exchangeFeeRate
         )
     {
-        (exchangeFeeRate, exchangeDynamicFeeRate, currentDestinationRoundId) = _feeRateForExchange(
+        (exchangeFeeRate, , ) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+
+        uint destinationAmount;
+        uint destinationRate;
+        (destinationAmount, , destinationRate) = exchangeRates().effectiveValueAndRates(
             sourceCurrencyKey,
+            sourceAmount,
             destinationCurrencyKey
         );
 
-        uint destinationAmount;
-        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            0,
-            currentDestinationRoundId
-        );
-
         // Return when invalid rate
-        if (destinationAmount == 0 && destinationRate == 0) {
-            return (destinationAmount, 0, 0, 0, currentDestinationRoundId, sourceRate, destinationRate);
+        if (destinationRate == 0) {
+            return (destinationAmount, 0, 0);
         }
 
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);

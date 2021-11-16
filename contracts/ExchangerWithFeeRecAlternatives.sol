@@ -270,7 +270,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     function _feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         internal
         view
-        returns (uint)
+        returns (uint feeRate)
     {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getAtomicExchangeFeeRate(destinationCurrencyKey);
@@ -279,7 +279,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             baseRate = getExchangeFeeRate(destinationCurrencyKey);
         }
 
-        return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
+        (feeRate, , ) = _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
     }
 
     function _getAmountsForAtomicExchangeMinusFees(
