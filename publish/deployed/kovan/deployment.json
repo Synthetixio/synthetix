@@ -110,11 +110,11 @@
 		},
 		"ProxySynthetix": {
 			"name": "ProxySynthetix",
-			"address": "0x22f1ba6dB6ca0A065e1b7EAe6FC22b7E675310EF",
-			"source": "Proxy",
-			"link": "https://kovan.etherscan.io/address/0x22f1ba6dB6ca0A065e1b7EAe6FC22b7E675310EF",
-			"timestamp": "2019-05-01T12:47:41.322Z",
-			"txn": "",
+			"address": "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F",
+			"source": "ProxyERC20",
+			"link": "https://kovan.etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F",
+			"timestamp": "2019-08-09T04:25:20.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xb733df42094a616fc061a41b65e12bf7df94c69fb2de6e43be2e08306e443b8d",
 			"network": "kovan"
 		},
 		"SafeDecimalMath": {
@@ -380,11 +380,11 @@
 		},
 		"ProxysUSD": {
 			"name": "ProxysUSD",
-			"address": "0xC674ad732Dfd4E1359ec4B18fA5472c0747E480A",
+			"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xC674ad732Dfd4E1359ec4B18fA5472c0747E480A",
-			"timestamp": "2019-11-19T04:25:24.000Z",
-			"txn": "https://kovan.etherscan.io/tx/0x2fe14fc74a257b5f5690419ec5ce81495e7f1b682043593b95455ed1948d4ae2",
+			"link": "https://kovan.etherscan.io/address/0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
+			"timestamp": "2019-09-26T01:17:48.275Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"TokenStatesLINK": {
