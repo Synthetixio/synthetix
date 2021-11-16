@@ -62,6 +62,15 @@ interface IExchanger {
         bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
+    function exchangeAtomically(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
     function settle(address from, bytes32 currencyKey)
         external
         returns (
@@ -69,8 +78,6 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
-
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external;
 
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
 

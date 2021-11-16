@@ -9,6 +9,7 @@ const { currentTime, toUnit } = require('../utils')();
 const {
 	toBytes32,
 	defaults: { DYNAMIC_FEE_ROUNDS },
+	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
 } = require('../..');
 
 module.exports = {
@@ -292,6 +293,50 @@ module.exports = {
 		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
 
 		return { mocks, resolver };
+	},
+
+	prepareFlexibleStorageSmock(flexibleStorage) {
+		// Allow mocked flexible storage to be persisted through a run,
+		// to build up configuration values over multiple contexts
+		const flexibleStorageMemory = {};
+
+		const flexibleStorageTypes = [
+			['uint', 'getUIntValue', '0'],
+			['int', 'getIntValue', '0'],
+			['address', 'getAddressValue', ZERO_ADDRESS],
+			['bool', 'getBoolValue', false],
+			['bytes32', 'getBytes32Value', ZERO_BYTES32],
+		];
+		for (const [type, funcName, defaultValue] of flexibleStorageTypes) {
+			flexibleStorage.smocked[funcName].will.return.with((contract, record) => {
+				const storedValue =
+					flexibleStorageMemory[contract] &&
+					flexibleStorageMemory[contract][record] &&
+					flexibleStorageMemory[contract][record][type];
+				return storedValue || defaultValue;
+			});
+		}
+
+		const bytes32SystemSettings = toBytes32('SystemSettings');
+		return {
+			mockSystemSetting: ({ type, setting, value }) => {
+				const record = setting.startsWith('0x') ? setting : toBytes32(setting);
+
+				flexibleStorageMemory[bytes32SystemSettings] =
+					flexibleStorageMemory[bytes32SystemSettings] || {};
+				flexibleStorageMemory[bytes32SystemSettings][record] =
+					flexibleStorageMemory[bytes32SystemSettings][record] || {};
+				flexibleStorageMemory[bytes32SystemSettings][record][type] =
+					flexibleStorageMemory[bytes32SystemSettings][record][type] || {};
+
+				if (type === 'uint' || type === 'int') {
+					// Smock does not like non-native numbers like BNs, so downcast them to string
+					value = String(value);
+				}
+
+				flexibleStorageMemory[bytes32SystemSettings][record][type] = value;
+			},
+		};
 	},
 
 	getEventByName({ tx, name }) {

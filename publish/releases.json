@@ -277,6 +277,11 @@
 			"sources": ["Exchanger"]
 		},
 		{
+			"sip": 120,
+			"layer": "base",
+			"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"]
+		},
+		{
 			"sip": 121,
 			"layer": "ovm",
 			"released": "ovm",
@@ -691,6 +696,120 @@
 			"version": {
 				"major": 2,
 				"minor": 54
+			},
+			"sips": []
+		},
+		{
+			"name": "Atria",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 55
+			},
+			"sips": []
+		},
+		{
+			"name": "Atria (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 55
+			},
+			"sips": []
+		},
+		{
+			"name": "Alhena",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 56
+			},
+			"sips": []
+		},
+		{
+			"name": "Alhena (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 56
+			},
+			"sips": []
+		},
+		{
+			"name": "Peacock",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 57
+			},
+			"sips": []
+		},
+		{
+			"name": "Peacock (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 57
+			},
+			"sips": []
+		},
+		{
+			"name": "Alsephina",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 58
+			},
+			"sips": []
+		},
+		{
+			"name": "Alsephina (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 58
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirzam",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 59
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirzam (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 59
+			},
+			"sips": []
+		},
+		{
+			"name": "Alphard",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 60
+			},
+			"sips": []
+		},
+		{
+			"name": "Alphard (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 60
 			},
 			"sips": []
 		}

@@ -66,20 +66,6 @@ contract SynthUtil {
         return (currencyKeys, balances, sUSDBalances);
     }
 
-    function frozenSynths() external view returns (bytes32[] memory) {
-        ISynthetix synthetix = _synthetix();
-        IExchangeRates exchangeRates = _exchangeRates();
-        uint numSynths = synthetix.availableSynthCount();
-        bytes32[] memory frozenSynthsKeys = new bytes32[](numSynths);
-        for (uint i = 0; i < numSynths; i++) {
-            ISynth synth = synthetix.availableSynths(i);
-            if (exchangeRates.rateIsFrozen(synth.currencyKey())) {
-                frozenSynthsKeys[i] = synth.currencyKey();
-            }
-        }
-        return frozenSynthsKeys;
-    }
-
     function synthsRates() external view returns (bytes32[] memory, uint[] memory) {
         bytes32[] memory currencyKeys = _synthetix().availableCurrencyKeys();
         return (currencyKeys, _exchangeRates().ratesForCurrencies(currencyKeys));
