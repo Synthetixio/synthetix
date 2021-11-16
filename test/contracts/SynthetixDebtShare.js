@@ -233,7 +233,7 @@ contract('SynthetixDebtShare', async accounts => {
 
 			it('rolls totalSupply', async () => {
 				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('2'));
-				assert.bnEqual(await synthetixDebtShare.totalSupplyOnPeriod(0), toUnit('1'));
+				assert.bnEqual(await synthetixDebtShare.totalSupplyOnPeriod(1), toUnit('1'));
 			});
 		});
 	});
@@ -372,11 +372,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 			it('returns correct percentages for current period', async () => {
 				assert.bnEqual(
-					await synthetixDebtShare.balanceOfOnPeriod(account1, toUnit('0')),
+					await synthetixDebtShare.balanceOfOnPeriod(account1, 1),
 					toUnit('20')
 				);
 				assert.bnEqual(
-					await synthetixDebtShare.balanceOfOnPeriod(account2, toUnit('0')),
+					await synthetixDebtShare.balanceOfOnPeriod(account2, 1),
 					toUnit('80')
 				);
 			});
@@ -388,11 +388,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 				it('returns correct percentages for last period', async () => {
 					assert.bnEqual(
-						await synthetixDebtShare.balanceOfOnPeriod(account1, toUnit('0')),
+						await synthetixDebtShare.balanceOfOnPeriod(account1, 1),
 						toUnit('20')
 					);
 					assert.bnEqual(
-						await synthetixDebtShare.balanceOfOnPeriod(account2, toUnit('0')),
+						await synthetixDebtShare.balanceOfOnPeriod(account2, 1),
 						toUnit('80')
 					);
 				});
@@ -415,11 +415,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 					it('returns correct percentages for last period', async () => {
 						assert.bnEqual(
-							await synthetixDebtShare.balanceOfOnPeriod(account1, toUnit('0')),
+							await synthetixDebtShare.balanceOfOnPeriod(account1, 1),
 							toUnit('20')
 						);
 						assert.bnEqual(
-							await synthetixDebtShare.balanceOfOnPeriod(account2, toUnit('0')),
+							await synthetixDebtShare.balanceOfOnPeriod(account2, 1),
 							toUnit('80')
 						);
 					});
@@ -462,11 +462,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 			it('returns correct percentages for current period', async () => {
 				assert.bnEqual(
-					await synthetixDebtShare.sharePercentOnPeriod(account1, toUnit('0')),
+					await synthetixDebtShare.sharePercentOnPeriod(account1, 1),
 					toUnit('0.2')
 				);
 				assert.bnEqual(
-					await synthetixDebtShare.sharePercentOnPeriod(account2, toUnit('0')),
+					await synthetixDebtShare.sharePercentOnPeriod(account2, 1),
 					toUnit('0.8')
 				);
 			});
@@ -478,22 +478,22 @@ contract('SynthetixDebtShare', async accounts => {
 
 				it('returns correct percentages for last period', async () => {
 					assert.bnEqual(
-						await synthetixDebtShare.sharePercentOnPeriod(account1, toUnit('0')),
+						await synthetixDebtShare.sharePercentOnPeriod(account1, 1),
 						toUnit('0.2')
 					);
 					assert.bnEqual(
-						await synthetixDebtShare.sharePercentOnPeriod(account2, toUnit('0')),
+						await synthetixDebtShare.sharePercentOnPeriod(account2, 1),
 						toUnit('0.8')
 					);
 				});
 
 				it('returns correct percentages for current period', async () => {
 					assert.bnEqual(
-						await synthetixDebtShare.sharePercentOnPeriod(account1, toUnit('0')),
+						await synthetixDebtShare.sharePercentOnPeriod(account1, 1),
 						toUnit('0.2')
 					);
 					assert.bnEqual(
-						await synthetixDebtShare.sharePercentOnPeriod(account2, toUnit('0')),
+						await synthetixDebtShare.sharePercentOnPeriod(account2, 1),
 						toUnit('0.8')
 					);
 				});
@@ -505,11 +505,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 					it('returns correct percentages for last period', async () => {
 						assert.bnEqual(
-							await synthetixDebtShare.sharePercentOnPeriod(account1, toUnit('0')),
+							await synthetixDebtShare.sharePercentOnPeriod(account1, 1),
 							toUnit('0.2')
 						);
 						assert.bnEqual(
-							await synthetixDebtShare.sharePercentOnPeriod(account2, toUnit('0')),
+							await synthetixDebtShare.sharePercentOnPeriod(account2, 1),
 							toUnit('0.8')
 						);
 					});
