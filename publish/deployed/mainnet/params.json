@@ -49,8 +49,7 @@
 		"name": "ATOMIC_VOLATILITY_UPDATE_THRESHOLD",
 		"value": {
 			"sETH": "3",
-			"sBTC": "3",
-			"sUSD": "3"
+			"sBTC": "3"
 		}
 	}
 ]

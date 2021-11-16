@@ -36,6 +36,7 @@ const performTransactionalStep = async ({
 	encodeABI,
 	nonceManager,
 	publiclyCallable,
+	useFork,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
@@ -51,11 +52,15 @@ const performTransactionalStep = async ({
 		try {
 			response = await readTarget[read](...argumentsForReadFunction);
 		} catch (err) {
-			console.log(
-				gray(
-					`Warning: Could not read ${contract}.${read}(). Proceeding as though this value is not set.`
-				)
-			);
+			if (generateSolidity || useFork) {
+				console.log(
+					gray(
+						`Warning: Could not read ${contract}.${read}(). Proceeding as though this value is not set.`
+					)
+				);
+			} else {
+				throw err;
+			}
 		}
 
 		// Ethers returns uints as BigNumber objects, while web3 stringified them.
