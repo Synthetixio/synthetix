@@ -54,5 +54,45 @@
 	"KRW": {
 		"asset": "KRW",
 		"feed": "0x01435677FB11763550905594A16B645847C1d0F3"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"standaloneFor": "sXTZ",
+		"feed": "0x5239a625dEb44bF3EeAc2CD5366ba24b8e9DB63F"
+	},
+	"RUNE": {
+		"asset": "RUNE",
+		"standaloneFor": "sRUNE",
+		"feed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"standaloneFor": "sYFI",
+		"feed": "0xA027702dbb89fbd58938e4324ac03B58d812b0E1"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"standaloneFor": "sCRV",
+		"feed": "0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"standaloneFor": "sUNI",
+		"feed": "0x553303d460EE0afB37EdFf9bE42922D8FF63220e"
+	},
+	"XRP": {
+		"asset": "XRP",
+		"standaloneFor": "sXRP",
+		"feed": "0xCed2660c6Dd1Ffd856A5A82C67f3482d88C50b12"
+	},
+	"BNB": {
+		"asset": "BNB",
+		"standaloneFor": "sBNB",
+		"feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"standaloneFor": "sXAU",
+		"feed": "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6"
 	}
 }
