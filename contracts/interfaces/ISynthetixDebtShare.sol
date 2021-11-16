@@ -14,21 +14,19 @@ interface ISynthetixDebtShare {
 
     function sharePercentOnPeriod(address account, uint periodId) external view returns (uint);
 
-    function sharePercentToBalance(uint sharePercent) external view returns (uint);
-
     // Mutative functions
 
     function setCurrentPeriodId(uint newPeriodId) external;
 
     function mintShare(address account, uint256 amount) external;
 
-    function mintSharePercentage(address account, uint256 sharePercentage) external;
-
     function burnShare(address account, uint256 amount) external;
-
-    function burnSharePercentage(address account, uint256 sharePercentage) external;
 
     function transfer(address to, uint256 amount) external;
 
     function transferFrom(address from, address to, uint256 amount) external;
+
+    function addAuthorizedBroker(address authorizedBroker) external;
+
+    function removeAuthorizedBroker(address authorizedBroker) external;
 }
