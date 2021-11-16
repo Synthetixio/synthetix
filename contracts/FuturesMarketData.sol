@@ -14,7 +14,9 @@ contract FuturesMarketData {
 
     struct FuturesGlobals {
         uint minInitialMargin;
-        uint liquidationFee;
+        uint liquidationFeeRatio;
+        uint liquidationBufferRatio;
+        uint minLiquidationFee;
     }
 
     struct MarketSummary {
@@ -117,7 +119,13 @@ contract FuturesMarketData {
 
     function globals() external view returns (FuturesGlobals memory) {
         IFuturesMarketSettings settings = _futuresMarketSettings();
-        return FuturesGlobals(settings.minInitialMargin(), settings.liquidationFee());
+        return
+            FuturesGlobals({
+                minInitialMargin: settings.minInitialMargin(),
+                liquidationFeeRatio: settings.liquidationFeeRatio(),
+                liquidationBufferRatio: settings.liquidationBufferRatio(),
+                minLiquidationFee: settings.minLiquidationFee()
+            });
     }
 
     function parameters(bytes32 baseAsset) external view returns (IFuturesMarketSettings.Parameters memory) {

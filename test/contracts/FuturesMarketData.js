@@ -150,8 +150,18 @@ contract('FuturesMarketData', accounts => {
 
 			assert.bnEqual(await futuresMarketSettings.minInitialMargin(), globals.minInitialMargin);
 			assert.bnEqual(globals.minInitialMargin, toUnit('100'));
-			assert.bnEqual(await futuresMarketSettings.liquidationFee(), globals.liquidationFee);
-			assert.bnEqual(globals.liquidationFee, toUnit('20'));
+			assert.bnEqual(await futuresMarketSettings.minLiquidationFee(), globals.minLiquidationFee);
+			assert.bnEqual(globals.minLiquidationFee, toUnit('20'));
+			assert.bnEqual(
+				await futuresMarketSettings.liquidationFeeRatio(),
+				globals.liquidationFeeRatio
+			);
+			assert.bnEqual(globals.liquidationFeeRatio, toUnit('0.0035'));
+			assert.bnEqual(
+				await futuresMarketSettings.liquidationBufferRatio(),
+				globals.liquidationBufferRatio
+			);
+			assert.bnEqual(globals.liquidationBufferRatio, toUnit('0.0025'));
 		});
 	});
 

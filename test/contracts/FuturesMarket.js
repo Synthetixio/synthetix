@@ -64,7 +64,7 @@ contract('FuturesMarket', accounts => {
 	const skewScaleUSD = toUnit('100000');
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
-	const liquidationFee = toUnit('20');
+	const minLiquidationFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
 
 	const initialFundingIndex = toBN(4);
@@ -1368,7 +1368,9 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(toUnit('0.3')));
 			assert.bnEqual(postDetails.size, toUnit('10'));
 			assert.bnEqual(postDetails.price, toUnit('10'));
-			assert.bnEqual(postDetails.liqPrice, toUnit('2.03'));
+			// liqMargin = max(20, 10*10*0.0035) + 10*10*0.0025 = 20.25
+			// 10 + (20.25 − (100 - 0.3))÷10 = 2.055
+			assert.bnEqual(postDetails.liqPrice, toUnit('2.055'));
 			assert.bnEqual(postDetails.fee, toUnit('0.3'));
 			assert.equal(postDetails.status, Status.Ok);
 
@@ -3064,52 +3066,98 @@ contract('FuturesMarket', accounts => {
 				let liquidationPrice = await futuresMarket.liquidationPrice(trader, true);
 				let liquidationPriceNoFunding = await futuresMarket.liquidationPrice(trader, false);
 
-				assert.bnEqual(liquidationPriceNoFunding.price, toUnit('90.5'));
-				assert.bnClose(liquidationPrice.price, toUnit('90.5'), toUnit('0.001'));
+				// fee = 100 * 100 * 0.003 = 30
+				// liqMargin = max(20, 100*100*0.0035) + 100*100*0.0025 = 60
+				// liqPrice = 100 + (60 − (1000 - 30))÷100 = 90.9
+				assert.bnEqual(liquidationPriceNoFunding.price, toUnit('90.9'));
+				assert.bnClose(liquidationPrice.price, toUnit('90.9'), toUnit('0.001'));
 				assert.isFalse(liquidationPrice.invalid);
 				assert.isFalse(liquidationPriceNoFunding.invalid);
 
 				liquidationPrice = await futuresMarket.liquidationPrice(trader2, true);
 				liquidationPriceNoFunding = await futuresMarket.liquidationPrice(trader2, false);
 
+				// fee = 100 * 100 * 0.001 = 10
+				// liqMargin = max(20, 100*100*0.0035) + 100*100*0.0025 = 60
+				// liqPrice = 100 + (60 − (1000 - 10))÷(-100) = 109.3
 				assert.bnEqual(liquidationPrice.price, liquidationPriceNoFunding.price);
-				assert.bnEqual(liquidationPrice.price, toUnit('109.7'));
+				assert.bnEqual(liquidationPrice.price, toUnit('109.3'));
 				assert.isFalse(liquidationPrice.invalid);
 				assert.isFalse(liquidationPriceNoFunding.invalid);
 			});
 
-			it('Liquidation price is accurate if the liquidation fee changes', async () => {
+			it('Liquidation price is accurate if the liquidation margin changes', async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-20'), { from: trader2 });
 
+				// fee = 250 * 20 * 0.003 = 15
+				// liqMargin = max(20, 250 * 20 *0.0035) + 250 * 20*0.0025 = 20 + 12.5 = 32.5
+				// liqPrice = 250 + (32.5 − (1000 - 15))÷(20) = 202.375
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
-					toUnit(201.75),
+					toUnit(202.375),
 					toUnit('0.001')
 				);
+				// fee = 250 * 20 * 0.001 = 5
+				// liqPrice = 250 + (32.5 − (1000 - 5))÷(-20) = 298.125
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader2, true)).price,
-					toUnit(298.75),
+					toUnit(298.125),
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setMinLiquidationFee(toUnit('100'), { from: owner });
 
+				// liqMargin = max(100, 250 * 20 *0.0035) + 250 * 20*0.0025 = 100 + 12.5 = 112.5
+				// liqPrice = 250 + (112.5 − (1000 - 15))÷(20) = 206.375
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
-					toUnit(205.75),
+					toUnit(206.375),
 					toUnit('0.001')
 				);
+				// liqPrice = 250 + (112.5 − (1000 - 5))÷(-20) = 294.125
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader2, true)).price,
-					toUnit(294.75),
+					toUnit(294.125),
 					toUnit('0.001')
 				);
 
-				await futuresMarketSettings.setLiquidationFee(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit('0.03'), { from: owner });
+				// liqMargin = max(100, 250 * 20 *0.03) + 250 * 20*0.0025 = 150 + 12.5 = 162.5
+				// liqPrice = 250 + (162.5 − (1000 - 15))÷(20) = 208.875
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader, true)).price,
+					toUnit(208.875),
+					toUnit('0.001')
+				);
+				// liqPrice = 250 + (162.5 − (1000 - 5))÷(-20) = 291.625
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader2, true)).price,
+					toUnit(291.625),
+					toUnit('0.001')
+				);
+
+				await futuresMarketSettings.setLiquidationBufferRatio(toUnit('0.03'), { from: owner });
+				// liqMargin = max(100, 250 * 20 *0.03) + 250 * 20*0.0025 = 150 + 150 = 300
+				// liqPrice = 250 + (300 − (1000 - 15))÷(20) = 215.75
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader, true)).price,
+					toUnit(215.75),
+					toUnit('0.001')
+				);
+				// liqPrice = 250 + (300 − (1000 - 5))÷(-20) = 284.75
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader2, true)).price,
+					toUnit(284.75),
+					toUnit('0.001')
+				);
+
+				await futuresMarketSettings.setMinLiquidationFee(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setLiquidationBufferRatio(toUnit('0'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -3139,17 +3187,20 @@ contract('FuturesMarket', accounts => {
 				// One day of funding
 				await fastForward(24 * 60 * 60);
 
+				// liqMargin = max(20, 250 * 30 *0.0035) + 250 * 30*0.0025 = 45
 				// trader 1 pays 30 * -0.05 = -1.5 base units of funding, and a $22.5 trading fee
-				// liquidation price = (20 - (1500 - 22.5) + 30 * 250) / (30 - 1.5) = 212.018...
+				// liquidation price = pLast + (mLiq - m) / s + fPerUnit
+				// liquidation price = 250 + (45 - (1500 - 22.5)) / 30 + 0.05 * 250 = 214.75
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(212.018), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(214.75), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader, false);
 				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.001));
 
+				// liqMargin = max(20, 250 * 10 *0.0035) + 250 * 10*0.0025 = 26.25
 				// trader2 receives -10 * -0.05 = 0.5 base units of funding, and a $2.5 trading fee
-				// liquidation price = (20 - (500 - 2.5) - 10 * 250) / (-10 + 0.5) = 312.894...
+				// liquidation price = 250 + (26.25 - (500 - 2.5)) / (-10) + 0.05 * 250 = 309.625
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(313.421), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(309.625), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader2, false);
 				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.001));
 			});
@@ -3169,17 +3220,19 @@ contract('FuturesMarket', accounts => {
 
 				// Check the prices are accurate while we're here
 
+				// liqMargin = max(20, 250 * 30 *0.0035) + 250 * 30*0.0025 = 45
 				// funding rate = -10/50 * 0.1 = -0.02
 				// trader 1 pays 30 * 7 * -0.02 = -4.2 units of funding, pays $22.5 exchange fee
-				// Remaining margin = (20 - (1500 - 22.5) + 30 * 250) / (30 - 4.2) = 234.205...
+				// Remaining margin = 250 + (45 - (1500 - 22.5))/30 + ( 7 * 0.02) * 250 = 237.25
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(234.205), toUnit(0.01));
+				assert.bnClose(lPrice[0], toUnit(237.25), toUnit(0.01));
 				assert.isTrue(lPrice[1]);
 
+				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
 				// trader 2 receives -20 * 7 * -0.02 = 2.8 units of funding, pays $5 exchange fee
-				// Remaining margin = (20 - (1000 - 5) - 20 * 250) / (-20 + 2.8) = 346.802...
+				// Remaining margin = 250 + (32.5 - (1000 - 5)) / (-20) + (7 * 0.02) * 250 = 333.125
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(347.383), toUnit(0.01));
+				assert.bnClose(lPrice[0], toUnit(333.125), toUnit(0.01));
 				assert.isTrue(lPrice[1]);
 			});
 
@@ -3191,10 +3244,6 @@ contract('FuturesMarket', accounts => {
 			it('No liquidation price on an empty position', async () => {
 				assert.bnEqual((await futuresMarket.liquidationPrice(noBalance, true))[0], toUnit(0));
 			});
-
-			it.skip('Liquidation price is sensitive to liquidation fee changes', async () => {
-				assert.isTrue(false);
-			});
 		});
 
 		describe('canLiquidate', () => {
@@ -3205,9 +3254,34 @@ contract('FuturesMarket', accounts => {
 				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
 
 				price = (await futuresMarket.liquidationPrice(trader, true)).price;
-				await setPrice(baseAsset, price);
-
+				await setPrice(baseAsset, price.sub(toUnit(1)));
+				// The reason the price is imprecise is that the previously queried
+				// liquidation price was calculated using:
+				// 1. unrecorded funding assuming the previous price (depends on price)
+				// 2. liquidation margin assuming the previous price (depends on price)
+				// When price is changed artificially this results in a slightly different
+				// undercorded funding, and slightly different liquidation margin which causes the actual
+				// liquidation price to be slightly different.
+				// A precise calculation would be a) incorrect and b) cubmbersome.
+				// It would be incorrect because it would rely on other assumptions:
+				// 	1) of unrecorded funding not being recorded until liquidation due to
+				//	another tx in the market
+				// 	2) time passing until liquidation being 0 seconds.
+				// It would be cumbersome because it would need to account for the
+				// non-linear relationship of liquidation margin and
+				// price (due to using max() in it). It would also require breaking the interface of
+				// of _liquidationMargin() because now _liquidationPrice() would need to know
+				// exactly how margin is calculated in order to reverse the calculation
+				// and solve for price.
+				//
+				// This is not too bad, because this imprecision only happens when
+				// not used in transactions and when current price is far from the actual liquidation price.
+				// In actual liquidation scenario and transaction the current price is also the
+				// price which liquidationPrice() uses. So it's exactly correct.
+				// So a keeper querrying canLiquidate() or simulating the liquidation
+				// tx would have the correct liquidation price, and canLiquidate() result.
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
+				await futuresMarket.liquidatePosition(trader);
 			});
 
 			it('Empty positions cannot be liquidated', async () => {
@@ -3361,15 +3435,21 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
+				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
+				// fee 40*250*0.003 = 30
+				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
-				const price = (await futuresMarket.liquidationPrice(trader, true)).price;
-				assert.bnClose(price, toUnit('226.25'), toUnit('0.01'));
-				await setPrice(baseAsset, price);
+				const liqPrice = (await futuresMarket.liquidationPrice(trader, true)).price;
+				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
+
+				const newPrice = liqPrice.sub(toUnit(1));
+				await setPrice(baseAsset, newPrice);
 
 				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader);
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
+				const remainingMargin = (await futuresMarket.remainingMargin(trader)).marginRemaining;
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
@@ -3379,16 +3459,22 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.lastPrice, toUnit(0));
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
-				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
+				const liquidationFee = multiplyDecimalRound(
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+					toUnit(40) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
 				assert.equal(decodedLogs.length, 4);
+
 				decodedEventEqual({
 					event: 'Issued',
 					emittedFrom: sUSD.address,
 					args: [noBalance, liquidationFee],
 					log: decodedLogs[1],
+					bnCloseVariance: toUnit('0.001'),
 				});
 				decodedEventEqual({
 					event: 'PositionModified',
@@ -3408,20 +3494,65 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader, noBalance, positionSize, newPrice, liquidationFee],
 					log: decodedLogs[3],
+					bnCloseVariance: toUnit('0.001'),
+				});
+
+				assert.bnLt(remainingMargin, liquidationFee);
+			});
+
+			it('liquidations of positive margin position pays to fee pool, long case', async () => {
+				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
+				// fee 40*250*0.003 = 30
+				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
+				const liqPrice = (await futuresMarket.liquidationPrice(trader, true)).price;
+				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
+
+				const newPrice = liqPrice.sub(toUnit(0.5));
+				await setPrice(baseAsset, newPrice);
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+				const remainingMargin = (await futuresMarket.remainingMargin(trader)).marginRemaining;
+				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
+
+				const liquidationFee = multiplyDecimalRound(
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+					toUnit(40) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+
+				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
+
+				const poolFee = remainingMargin.sub(liquidationFee);
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), poolFee],
+					log: decodedLogs[4],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
-				const price = (await futuresMarket.liquidationPrice(trader3, true)).price;
-				assert.bnClose(price, toUnit('298.75'), toUnit('0.01'));
+				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
+				// fee 20*250*0.001 = 5
+				// Remaining margin = 250 + (32.5 - (1000 - 5)) / (-20)= 298.125
+				const liqPrice = (await futuresMarket.liquidationPrice(trader3, true)).price;
+				assert.bnClose(liqPrice, toUnit('298.125'), toUnit('0.01'));
 
-				await setPrice(baseAsset, price.add(toUnit('0.01')));
+				const newPrice = liqPrice.add(toUnit(1));
+
+				await setPrice(baseAsset, newPrice);
 
 				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader3);
 
+				const remainingMargin = (await futuresMarket.remainingMargin(trader3)).marginRemaining;
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
 				const position = await futuresMarket.positions(trader3, { from: noBalance });
@@ -3430,7 +3561,12 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.lastPrice, toUnit(0));
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
-				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
+				// in this case, proportional fee is smaller than minimum fee
+				const liquidationFee = multiplyDecimalRound(
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+					toUnit(20) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
@@ -3459,8 +3595,47 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader3, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader3, noBalance, positionSize, newPrice, liquidationFee],
 					log: decodedLogs[3],
+					bnCloseVariance: toUnit('0.001'),
+				});
+
+				assert.bnLt(remainingMargin, liquidationFee);
+			});
+
+			it('liquidations of positive margin position pays to fee pool, short case', async () => {
+				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
+				// fee 20*250*0.001 = 5
+				// Remaining margin = 250 + (32.5 - (1000 - 5)) / (-20)= 298.125
+				const liqPrice = (await futuresMarket.liquidationPrice(trader3, true)).price;
+				assert.bnClose(liqPrice, toUnit('298.125'), toUnit('0.01'));
+
+				const newPrice = liqPrice.add(toUnit(0.5));
+				await setPrice(baseAsset, newPrice);
+				assert.isTrue(await futuresMarket.canLiquidate(trader3));
+
+				const remainingMargin = (await futuresMarket.remainingMargin(trader3)).marginRemaining;
+				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
+
+				const liquidationFee = multiplyDecimalRound(
+					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+					toUnit(20) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+
+				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
+
+				const poolFee = remainingMargin.sub(liquidationFee);
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), poolFee],
+					log: decodedLogs[4],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});
@@ -3469,13 +3644,14 @@ contract('FuturesMarket', accounts => {
 				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader);
 				// Move the price to a non-liquidating point
 				let price = (await futuresMarket.liquidationPrice(trader, true)).price;
+				const newPrice = price.add(toUnit('1'));
 
-				await setPrice(baseAsset, price.add(toUnit('1')));
+				await setPrice(baseAsset, newPrice);
 
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 
 				// raise the liquidation fee
-				await futuresMarketSettings.setLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setMinLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				price = (await futuresMarket.liquidationPrice(trader, true)).price;
@@ -3484,7 +3660,10 @@ contract('FuturesMarket', accounts => {
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
 				// check that the liquidation price was correct.
-				assert.bnClose(price, toUnit(228.25), toUnit(0.1));
+				// liqMargin = max(100, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 125
+				// fee 40*250*0.003 = 30
+				// Remaining margin = 250 + (125 - (1000 - 30)) / (40)= 228.875
+				assert.bnClose(price, toUnit(228.875), toUnit(0.1));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 				decodedEventEqual({
@@ -3505,7 +3684,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [positionId, trader, noBalance, positionSize, price, toUnit('100')],
+					args: [positionId, trader, noBalance, positionSize, newPrice, toUnit('100')],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
@@ -3529,6 +3708,83 @@ contract('FuturesMarket', accounts => {
 
 				const { id: newPositionId } = await futuresMarket.positions(trader);
 				assert.bnGte(newPositionId, oldPositionId);
+			});
+		});
+
+		describe('liquidationFee', () => {
+			it('accurate with position size and parameters', async () => {
+				await setPrice(baseAsset, toUnit('1000'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('2'), { from: trader });
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
+				await futuresMarket.modifyPosition(toUnit('-2'), { from: trader2 });
+
+				// cannot liquidate
+				assert.bnEqual(await futuresMarket.liquidationFee(trader), toBN(0));
+				assert.bnEqual(await futuresMarket.liquidationFee(trader2), toBN(0));
+
+				// long
+				await setPrice(baseAsset, toUnit('500'));
+				// minimum liquidation fee < 20 , 0.0035 * 500 * 2 = 3.5
+				assert.bnEqual(await futuresMarket.liquidationFee(trader), minLiquidationFee);
+
+				// reduce minimum
+				await futuresMarketSettings.setMinLiquidationFee(toUnit(1), { from: owner });
+				assert.bnEqual(await futuresMarket.liquidationFee(trader), toUnit('3.5'));
+
+				// short
+				await setPrice(baseAsset, toUnit('1500'));
+				// minimum liquidation fee > 1, 0.0035 * 1500 * 2 = 10.5
+				assert.bnEqual(await futuresMarket.liquidationFee(trader2), toUnit('10.5'));
+				// increase minimum
+				await futuresMarketSettings.setMinLiquidationFee(toUnit(30), { from: owner });
+				assert.bnEqual(await futuresMarket.liquidationFee(trader2), toUnit(30));
+
+				// increase BPs
+				// minimum liquidation fee > 30, 0.02 * 1500 * 2 = 60
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
+				assert.bnEqual(await futuresMarket.liquidationFee(trader2), toUnit(60));
+			});
+		});
+
+		describe('liquidationMargin', () => {
+			it('accurate with position size, price, and parameters', async () => {
+				await setPrice(baseAsset, toUnit('1000'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('2'), { from: trader });
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
+				await futuresMarket.modifyPosition(toUnit('-2'), { from: trader2 });
+
+				// reverts for 0 position
+				await assert.revert(futuresMarket.liquidationMargin(trader3), '0 size position');
+
+				// max(20, 2 * 1000 * 0.0035) + 2 * 1000 * 0.0025 = 25
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('25'));
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('25'));
+
+				// reduce minimum
+				// max(1, 2 * 1000 * 0.0035) + 2 * 1000 * 0.0025 = 12
+				await futuresMarketSettings.setMinLiquidationFee(toUnit(1), { from: owner });
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('12'));
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('12'));
+
+				// change price
+				await setPrice(baseAsset, toUnit('1500'));
+				// max(1, 2 * 1500 * 0.0035) + 2 * 1000 * 0.0025 = 18
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('18'));
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('18'));
+
+				// change fee BPs
+				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.0025 = 67.5
+				await futuresMarketSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('67.5'));
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('67.5'));
+
+				// change buffer BPs
+				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.03 = 150
+				await futuresMarketSettings.setLiquidationBufferRatio(toUnit(0.03), { from: owner });
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader), toUnit('150'));
+				assert.bnEqual(await futuresMarket.liquidationMargin(trader2), toUnit('150'));
 			});
 		});
 	});

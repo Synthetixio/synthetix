@@ -44,11 +44,31 @@ module.exports = async ({
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
-		read: 'liquidationFee',
+		read: 'liquidationFeeRatio',
 		expected: input => input !== '0', // only change if zero
-		write: 'setLiquidationFee',
-		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
+		write: 'setLiquidationFeeRatio',
+		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE_RATIO'),
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
+	});
+
+	await runStep({
+		contract: 'FuturesMarketSettings',
+		target: futuresMarketSettings,
+		read: 'liquidationBufferRatio',
+		expected: input => input !== '0', // only change if zero
+		write: 'setLiquidationBufferRatio',
+		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_BUFFER_RATIO'),
+		comment: 'Set the reward for liquidating a futures position (SIP-80)',
+	});
+
+	await runStep({
+		contract: 'FuturesMarketSettings',
+		target: futuresMarketSettings,
+		read: 'minLiquidationFee',
+		expected: input => input !== '0', // only change if zero
+		write: 'setMinLiquidationFee',
+		writeArg: await getDeployParameter('FUTURES_MIN_LIQUIDATION_FEE'),
+		comment: 'Set the minimum reward for liquidating a futures position (SIP-80)',
 	});
 
 	const futuresAssets = futuresMarkets.map(x => x.asset);
