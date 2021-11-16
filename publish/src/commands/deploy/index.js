@@ -168,6 +168,16 @@ const deploy = async ({
 		providerUrl = envProviderUrl;
 	}
 
+	// Here we set a default private key for local-ovm deployment, as the
+	// OVM geth node has no notion of local/unlocked accounts.
+	// Deploying without a private key will give the error "OVM: Unsupported RPC method",
+	// as the OVM node does not support eth_sendTransaction, which inherently relies on
+	// the unlocked accounts on the node.
+	if (network === 'local' && useOvm && !privateKey) {
+		// Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+		privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+	}
+
 	// when not in a local network, and not forking, and the privateKey isn't supplied,
 	// use the one from the .env file
 	if (network !== 'local' && !useFork && !privateKey) {
@@ -354,6 +364,7 @@ const deploy = async ({
 		deployer,
 		runStep,
 		standaloneFeeds,
+		useOvm,
 	});
 
 	await configureSynths({
@@ -374,6 +385,7 @@ const deploy = async ({
 	});
 
 	await configureSystemSettings({
+		addressOf,
 		deployer,
 		useOvm,
 		generateSolidity,
