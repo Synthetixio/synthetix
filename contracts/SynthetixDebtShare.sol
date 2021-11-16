@@ -46,7 +46,8 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         symbol = "SDS";
         decimals = 18;
 
-        currentPeriodId = 0;
+        // NOTE: must match initial fee period ID on `FeePool` constructor if issuer wont report
+        currentPeriodId = 1;
     }
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
@@ -72,6 +73,8 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
                 return balances[account][uint(i)].amount;
             }
         }
+
+        return 0;
     }
 
     function totalSupply() public view returns (uint) {

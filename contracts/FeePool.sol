@@ -250,11 +250,12 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
         // Open up the new fee period.
         // Increment periodId from the recent closed period feePeriodId
-        _recentFeePeriodsStorage(0).feePeriodId = uint64(uint256(_recentFeePeriodsStorage(1).feePeriodId).add(1));
+        uint newFeePeriodId = uint256(_recentFeePeriodsStorage(1).feePeriodId).add(1);
+        _recentFeePeriodsStorage(0).feePeriodId = uint64(newFeePeriodId);
         _recentFeePeriodsStorage(0).startTime = uint64(now);
 
         // Inform Issuer to start recording for the new fee period
-        issuer().setCurrentPeriodId(now);
+        issuer().setCurrentPeriodId(newFeePeriodId);
 
         emitFeePeriodClosed(_recentFeePeriodsStorage(1).feePeriodId);
     }
@@ -572,12 +573,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
 
             // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
-            if (lastFeeWithdrawal < _recentFeePeriodsStorage(i).feePeriodId) {
+            uint64 periodId = _recentFeePeriodsStorage(i).feePeriodId;
+            if (lastFeeWithdrawal < periodId) {
 
-                // Gas optimisation - to reuse debtEntryIndex if found new applicable one
-                // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
-                // return if userOwnershipPercentage = 0)
-                userOwnershipPercentage = _debtShare.sharePercentOnPeriod(account, uint(_recentFeePeriodsStorage(i).startTime));
+                userOwnershipPercentage = _debtShare.sharePercentOnPeriod(account, uint(periodId));
 
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage);
 
@@ -619,7 +618,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // If the period being checked is uninitialised then return 0. This is only at the start of the system.
         if (_recentFeePeriodsStorage(period - 1).startTime == 0) return 0;
 
-        return synthetixDebtShare().sharePercentOnPeriod(account, uint(_recentFeePeriods[period].startTime));
+        return synthetixDebtShare().sharePercentOnPeriod(account, uint(_recentFeePeriods[period].feePeriodId));
     }
 
     /**
