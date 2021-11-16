@@ -342,6 +342,7 @@ module.exports = async ({
 			expected: input => atomicMaxVolumePerBlock === '0' || input !== '0', // only change if setting to non-zero from zero
 			write: 'setAtomicMaxVolumePerBlock',
 			writeArg: atomicMaxVolumePerBlock,
+			comment: 'SIP-120 Set max atomic volume per block (in USD amounts)',
 		});
 	}
 
@@ -354,6 +355,7 @@ module.exports = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setAtomicTwapWindow',
 			writeArg: await getDeployParameter('ATOMIC_TWAP_WINDOW'),
+			comment: 'SIP-120 Set the TWAP window for atomic swaps',
 		});
 	}
 
@@ -369,6 +371,8 @@ module.exports = async ({
 				expected: input => input !== ZERO_ADDRESS, // only change if zero
 				write: 'setAtomicEquivalentForDexPricing',
 				writeArg: [toBytes32(currencyKey), equivalent],
+				comment:
+					'SIP-120 Set the equivalent token - used in uniswap pools - corresponding to this synth',
 			});
 		}
 	}
@@ -385,6 +389,7 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicExchangeFeeRate',
 				writeArg: [toBytes32(currencyKey), rate],
+				comment: 'SIP-120 Set the exchange fee rate for swapping atomically into this synth',
 			});
 		}
 	}
@@ -401,6 +406,8 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicPriceBuffer',
 				writeArg: [toBytes32(currencyKey), buffer],
+				comment:
+					'SIP-120 Set the price buffer applied to the base chainlink rate when comparing atomically',
 			});
 		}
 	}
@@ -419,6 +426,7 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityConsiderationWindow',
 				writeArg: [toBytes32(currencyKey), seconds],
+				comment: 'SIP-120 Set the atomic volatility window for this synth (in seconds)',
 			});
 		}
 	}
@@ -437,6 +445,8 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityUpdateThreshold',
 				writeArg: [toBytes32(currencyKey), threshold],
+				comment:
+					'SIP-120 Set the atomic volatility count for this synth during the volatility window',
 			});
 		}
 	}
@@ -451,6 +461,7 @@ module.exports = async ({
 			expected: input => input === dexPriceAggregator,
 			write: 'setDexPriceAggregator',
 			writeArg: dexPriceAggregator,
+			comment: 'SIP-120 Set the DEX price aggregator (uniswap TWAP oracle reader)',
 		});
 	}
 
