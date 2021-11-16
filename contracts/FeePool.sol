@@ -336,7 +336,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         uint feesClaimed,
         uint rewardsToDistribute,
         uint rewardsClaimed
-    ) public optionalProxy_onlyOwner onlyDuringSetup {
+    ) external optionalProxy_onlyOwner onlyDuringSetup {
         _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
             startTime: uint64(startTime),
@@ -572,7 +572,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
 
-            // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
             uint64 periodId = _recentFeePeriodsStorage(i).feePeriodId;
             if (lastFeeWithdrawal < periodId) {
 
@@ -678,31 +677,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /* ========== Proxy Events ========== */
-
-    event IssuanceDebtRatioEntry(
-        address indexed account,
-        uint debtRatio,
-        uint debtEntryIndex,
-        uint feePeriodStartingDebtIndex
-    );
-    bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG =
-        keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
-
-    function emitIssuanceDebtRatioEntry(
-        address account,
-        uint debtRatio,
-        uint debtEntryIndex,
-        uint feePeriodStartingDebtIndex
-    ) internal {
-        proxy._emit(
-            abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex),
-            2,
-            ISSUANCEDEBTRATIOENTRY_SIG,
-            bytes32(uint256(uint160(account))),
-            0,
-            0
-        );
-    }
 
     event FeePeriodClosed(uint feePeriodId);
     bytes32 private constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");
