@@ -35,16 +35,14 @@
 		"name": "ATOMIC_PRICE_BUFFER",
 		"value": {
 			"sETH": "1500000000000000",
-			"sBTC": "1500000000000000",
-			"sUSD": "1500000000000000"
+			"sBTC": "1500000000000000"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_CONSIDERATION_WINDOW",
 		"value": {
 			"sETH": "600",
-			"sBTC": "600",
-			"sUSD": "600"
+			"sBTC": "600"
 		}
 	},
 	{
