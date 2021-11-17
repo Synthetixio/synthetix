@@ -8,12 +8,13 @@ const { toBytes32 } = require('../../../..');
 
 module.exports = async ({
 	addressOf,
-	explorerLinkPrefix,
-	generateSolidity,
-	synths,
-	feeds,
 	deployer,
+	explorerLinkPrefix,
+	feeds,
+	generateSolidity,
+	network,
 	runStep,
+	synths,
 }) => {
 	// now configure synths
 	console.log(gray(`\n------ CONFIGURE SYNTHS ------\n`));
@@ -106,6 +107,8 @@ module.exports = async ({
 					write: 'setTarget',
 					writeArg: addressOf(synth),
 					comment: 'Ensure the special ERC20 proxy for sUSD has its target set to the Synth',
+					// Skip solidity for this as on mainnet, ProxyERC20sUSD is already done via ProxysUSD above
+					skipSolidity: network === 'mainnet',
 				});
 			}
 		}

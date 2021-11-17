@@ -22,7 +22,6 @@ const {
 } = require('../../../..');
 
 const addSynthsToProtocol = require('./add-synths-to-protocol');
-const configureInverseSynths = require('./configure-inverse-synths');
 const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
@@ -55,7 +54,6 @@ const deploy = async ({
 	concurrency,
 	deploymentPath,
 	dryRun = false,
-	forceUpdateInverseSynthsOnTestnet = false,
 	freshDeploy,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
@@ -95,7 +93,7 @@ const deploy = async ({
 		freshDeploy,
 	});
 
-	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
+	const getDeployParameter = getDeployParameterFactory({ params, ignoreCustomParameters });
 
 	const addressOf = c => (c ? c.address : '');
 	const sourceOf = c => (c ? c.source : '');
@@ -170,6 +168,16 @@ const deploy = async ({
 		providerUrl = envProviderUrl;
 	}
 
+	// Here we set a default private key for local-ovm deployment, as the
+	// OVM geth node has no notion of local/unlocked accounts.
+	// Deploying without a private key will give the error "OVM: Unsupported RPC method",
+	// as the OVM node does not support eth_sendTransaction, which inherently relies on
+	// the unlocked accounts on the node.
+	if (network === 'local' && useOvm && !privateKey) {
+		// Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+		privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+	}
+
 	// when not in a local network, and not forking, and the privateKey isn't supplied,
 	// use the one from the .env file
 	if (network !== 'local' && !useFork && !privateKey) {
@@ -205,7 +213,6 @@ const deploy = async ({
 		currentSynthetixSupply,
 		currentLastMintEvent,
 		currentWeekOfInflation,
-		oldExrates,
 		oracleAddress,
 		systemSuspended,
 	} = await systemAndParameterCheck({
@@ -252,6 +259,7 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
 			ownerActionsFile,
+			useFork,
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op
@@ -357,16 +365,18 @@ const deploy = async ({
 		deployer,
 		runStep,
 		standaloneFeeds,
+		useOvm,
 	});
 
 	await configureSynths({
 		addressOf,
-		explorerLinkPrefix,
-		generateSolidity,
-		synths,
-		feeds,
 		deployer,
+		explorerLinkPrefix,
+		feeds,
+		generateSolidity,
+		network,
 		runStep,
+		synths,
 	});
 
 	await addSynthsToProtocol({
@@ -376,17 +386,8 @@ const deploy = async ({
 		synthsToAdd,
 	});
 
-	await configureInverseSynths({
-		addressOf,
-		deployer,
-		forceUpdateInverseSynthsOnTestnet,
-		network,
-		oldExrates,
-		runStep,
-		synths,
-	});
-
 	await configureSystemSettings({
+		addressOf,
 		deployer,
 		useOvm,
 		generateSolidity,
@@ -521,10 +522,6 @@ module.exports = {
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
-			)
-			.option(
-				'-u, --force-update-inverse-synths-on-testnet',
-				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
 			)
 			.option(
 				'-x, --specify-contracts <value>',

@@ -140,6 +140,7 @@ const defaults = {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
+
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
@@ -189,6 +190,10 @@ const defaults = {
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
+
+	// SIP-120
+	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
+	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
 };
 
 /**
@@ -385,9 +390,6 @@ const getSynths = ({
 			synth = Object.assign({ feed }, synth);
 		}
 
-		if (synth.inverted) {
-			synth.description = `Inverse ${synth.description}`;
-		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
@@ -589,7 +591,6 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
 					.address,
 				index: synth.index,
-				inverted: synth.inverted,
 				decimals: 18,
 				feed: synth.feed,
 			}))

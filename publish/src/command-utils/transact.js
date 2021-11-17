@@ -21,6 +21,7 @@ const performTransactionalStep = async ({
 	target,
 	read,
 	readArg, // none, 1 or an array of args, array will be spread into params
+	readTarget = target,
 	expected,
 	write,
 	writeArg, // none, 1 or an array of args, array will be spread into params
@@ -35,6 +36,7 @@ const performTransactionalStep = async ({
 	encodeABI,
 	nonceManager,
 	publiclyCallable,
+	useFork,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
@@ -46,7 +48,20 @@ const performTransactionalStep = async ({
 
 	if (read) {
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		let response = await target[read](...argumentsForReadFunction);
+		let response;
+		try {
+			response = await readTarget[read](...argumentsForReadFunction);
+		} catch (err) {
+			if (generateSolidity || useFork) {
+				console.log(
+					gray(
+						`Warning: Could not read ${contract}.${read}(). Proceeding as though this value is not set.`
+					)
+				);
+			} else {
+				throw err;
+			}
+		}
 
 		// Ethers returns uints as BigNumber objects, while web3 stringified them.
 		// This can cause BigNumber(0) !== '0' and make runStep think there is nothing to do
@@ -56,7 +71,9 @@ const performTransactionalStep = async ({
 			response = response.toString();
 		}
 
-		if (expected(response)) {
+		// if an error is thrown above then response is undefined, never consider that sufficient
+		// reason to skip
+		if (response !== undefined && expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
 			return { noop: true };
 		}
