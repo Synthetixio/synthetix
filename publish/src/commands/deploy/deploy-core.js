@@ -244,15 +244,15 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'OwnerRelayOnOptimism',
-		deps: ['AddressResolver'],
-		args: [addressOf(readProxyForResolver), account, TEMP_OWNER_DEFAULT_DURATION],
-	});
-
-	await deployer.deployContract({
 		name: 'OwnerRelayOnEthereum',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'OwnerRelayOnOptimism',
+		deps: ['AddressResolver'],
+		args: [addressOf(readProxyForResolver), account, TEMP_OWNER_DEFAULT_DURATION],
 	});
 
 	await deployer.deployContract({
