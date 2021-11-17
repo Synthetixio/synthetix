@@ -46,6 +46,9 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
 
     mapping(uint => Entry) public entries;
 
+    bool public allRoundDataShouldRevert;
+    bool public latestRoundDataShouldRevert;
+
     constructor() public {}
 
     // Mock setup function
@@ -75,6 +78,14 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
         });
     }
 
+    function setAllRoundDataShouldRevert(bool _shouldRevert) external {
+        allRoundDataShouldRevert = _shouldRevert;
+    }
+
+    function setLatestRoundDataShouldRevert(bool _shouldRevert) external {
+        latestRoundDataShouldRevert = _shouldRevert;
+    }
+
     function setDecimals(uint8 _decimals) external {
         keyDecimals = _decimals;
     }
@@ -90,6 +101,9 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
             uint80
         )
     {
+        if (latestRoundDataShouldRevert) {
+            revert("latestRoundData reverted");
+        }
         return getRoundData(uint80(latestRound()));
     }
 
@@ -122,6 +136,10 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
             uint80
         )
     {
+        if (allRoundDataShouldRevert) {
+            revert("getRoundData reverted");
+        }
+
         Entry memory entry = entries[_roundId];
         // Emulate a Chainlink aggregator
         require(entry.updatedAt > 0, "No data present");

@@ -14,7 +14,7 @@ import "./interfaces/IWrapperFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/wrapperfactory
 contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
-    bytes32 internal constant CONTRACT_NAME = "WrapperFactory";
+    bytes32 public constant CONTRACT_NAME = "WrapperFactory";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 internal constant CONTRACT_SYNTH_SUSD = "SynthsUSD";

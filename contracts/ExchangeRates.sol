@@ -2,8 +2,8 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // Libraries
@@ -20,6 +20,8 @@ import "./interfaces/IExchanger.sol";
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+
+    bytes32 public constant CONTRACT_NAME = "ExchangeRates";
 
     // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
@@ -228,6 +230,24 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
+    // SIP-120 Atomic exchanges
+    function effectiveAtomicValueAndRates(
+        bytes32,
+        uint,
+        bytes32
+    )
+        external
+        view
+        returns (
+            uint,
+            uint,
+            uint,
+            uint
+        )
+    {
+        _notImplemented();
+    }
+
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
         return _getRateAndUpdatedTime(currencyKey).rate;
     }
@@ -327,6 +347,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
 
         return false;
+    }
+
+    function synthTooVolatileForAtomicExchange(bytes32) external view returns (bool) {
+        _notImplemented();
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -536,6 +560,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return false;
         }
         return flags.getFlag(aggregator);
+    }
+
+    function _notImplemented() internal pure {
+        revert("Cannot be run on this layer");
     }
 
     /* ========== MODIFIERS ========== */
