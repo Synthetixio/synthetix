@@ -211,7 +211,7 @@ async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 
 	async function heartbeat() {
 		await dummyTx({ wallet: l1Wallet, gasPrice: 1, gasLimit: 8000000 });
-		await dummyTx({ wallet: l2Wallet, gasPrice: 0, gasLimit: 33600000000001 });
+		await dummyTx({ wallet: l2Wallet, gasPrice: 0, gasLimit: 8000000 });
 
 		await wait({ seconds: 1 });
 
