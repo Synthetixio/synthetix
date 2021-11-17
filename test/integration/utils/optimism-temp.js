@@ -45,11 +45,11 @@ function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }
 	};
 	ctx.l1.provider.on(l1Filter, log => {
 		console.log(chalk.green('L1 Messenger log emitted:', log));
-		//_printMessengerLog(log);
+		_printMessengerLog(log);
 	});
 	ctx.l2.provider.on(l2Filter, log => {
 		console.log(chalk.green('L2 Messenger log emitted:', log));
-		//_printMessengerLog(log);
+		_printMessengerLog(log);
 	});
 
 	// Block listeners
@@ -113,9 +113,11 @@ class Watcher {
 			if (
 				log.topics[0] === '0x4b388aecf9fa6cc92253704e5975a6129a4f735bdbd99567df4ed0094ee4ceb5' // TransactionEnqueued event
 			) {
-				const [,message,] = ethers.utils.defaultAbiCoder.decode(['uint', 'bytes', 'uint'], log.data);
-				msgHashes.push(
-					ethers.utils.solidityKeccak256(['bytes'], [message]));
+				const [, message] = ethers.utils.defaultAbiCoder.decode(
+					['uint', 'bytes', 'uint'],
+					log.data
+				);
+				msgHashes.push(ethers.utils.solidityKeccak256(['bytes'], [message]));
 			}
 		}
 		return msgHashes;
@@ -140,8 +142,12 @@ class Watcher {
 		const failureLogs = await layer.provider.getLogs(failureFilter);
 		const logs = successLogs.concat(failureLogs);
 		if (hre.config.debugOptimism) {
-			console.log(chalk.yellow(`Watcher.getTransactionReceipt - getLogs: ${JSON.stringify(logs.map(l => l.topics[1]))}`));
-			//logs.map(log => _printMessengerLog(log));
+			console.log(
+				chalk.yellow(
+					`Watcher.getTransactionReceipt - getLogs: ${JSON.stringify(logs.map(l => l.topics[1]))}`
+				)
+			);
+			logs.map(log => _printMessengerLog(log));
 		}
 
 		const matches = logs.filter(log => log.topics[1] === msgHash);
@@ -159,8 +165,10 @@ class Watcher {
 		return new Promise(async (resolve, reject) => {
 			const handleEvent = async log => {
 				if (hre.config.debugOptimism) {
-					console.log(chalk.yellow(`Watcher.getTransactionReceipt - handleEvent: ${JSON.stringify(log)}`));
-					//_printMessengerLog(log); // TODO decode error if this line is executed while uncommented
+					console.log(
+						chalk.yellow(`Watcher.getTransactionReceipt - handleEvent: ${JSON.stringify(log)}`)
+					);
+					_printMessengerLog(log);
 				}
 
 				if (log.topics[1] === msgHash) {
@@ -190,11 +198,15 @@ function _parseMessengerLog(log) {
 }
 
 function _printMessengerLog(log) {
-	const event = _parseMessengerLog(log);
-	const argName = event.eventFragment.inputs[0].name;
-	const argType = event.eventFragment.inputs[0].type;
-	const argValue = event.args[0];
-	console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
+	try {
+		const event = _parseMessengerLog(log);
+		const argName = event.eventFragment.inputs[0].name;
+		const argType = event.eventFragment.inputs[0].type;
+		const argValue = event.args[0];
+		console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
+	} catch (err) {
+		console.error('could not parse messenger log:', log);
+	}
 }
 
 /*
