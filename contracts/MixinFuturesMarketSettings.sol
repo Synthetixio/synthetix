@@ -25,7 +25,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
 
     // Global settings
     // minimum liquidation fee payable to liquidator
-    bytes32 internal constant SETTING_MIN_LIQUIDATION_FEE = "futuresMinLiquidationFee";
+    bytes32 internal constant SETTING_MIN_KEEPER_FEE = "futuresMinKeeperFee";
     // liquidation fee basis points payed to liquidator
     bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "futuresLiquidationFeeRatio";
     // liquidation buffer to prevent negative margin upon liquidation
@@ -113,8 +113,8 @@ contract MixinFuturesMarketSettings is MixinResolver {
         maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 
-    function _minLiquidationFee() internal view returns (uint) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE);
+    function _minKeeperFee() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE);
     }
 
     function _liquidationFeeRatio() internal view returns (uint) {

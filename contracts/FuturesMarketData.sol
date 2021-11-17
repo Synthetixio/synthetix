@@ -16,7 +16,7 @@ contract FuturesMarketData {
         uint minInitialMargin;
         uint liquidationFeeRatio;
         uint liquidationBufferRatio;
-        uint minLiquidationFee;
+        uint minKeeperFee;
     }
 
     struct MarketSummary {
@@ -124,7 +124,7 @@ contract FuturesMarketData {
                 minInitialMargin: settings.minInitialMargin(),
                 liquidationFeeRatio: settings.liquidationFeeRatio(),
                 liquidationBufferRatio: settings.liquidationBufferRatio(),
-                minLiquidationFee: settings.minLiquidationFee()
+                minKeeperFee: settings.minKeeperFee()
             });
     }
 

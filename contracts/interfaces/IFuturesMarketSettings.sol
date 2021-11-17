@@ -42,7 +42,7 @@ interface IFuturesMarketSettings {
             uint _maxFundingRateDelta
         );
 
-    function minLiquidationFee() external view returns (uint);
+    function minKeeperFee() external view returns (uint);
 
     function liquidationFeeRatio() external view returns (uint);
 

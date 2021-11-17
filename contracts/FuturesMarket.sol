@@ -628,7 +628,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /**
      * The fee charged from the margin during liquidation. Fee is proportional to position size
-     * but is at least the _minLiquidationFee() of sUSD to prevent underincentivising
+     * but is at least the _minKeeperFee() of sUSD to prevent underincentivising
      * liquidations of small positions.
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
@@ -637,7 +637,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
         // size * price * fee-ratio
         uint proportionalFee = _abs(positionSize).multiplyDecimalRound(price).multiplyDecimalRound(_liquidationFeeRatio());
-        uint minFee = _minLiquidationFee();
+        uint minFee = _minKeeperFee();
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
         return proportionalFee > minFee ? proportionalFee : minFee; // not using _max() helper because it's for signed ints
     }

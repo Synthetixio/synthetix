@@ -150,8 +150,8 @@ contract('FuturesMarketData', accounts => {
 
 			assert.bnEqual(await futuresMarketSettings.minInitialMargin(), globals.minInitialMargin);
 			assert.bnEqual(globals.minInitialMargin, toUnit('100'));
-			assert.bnEqual(await futuresMarketSettings.minLiquidationFee(), globals.minLiquidationFee);
-			assert.bnEqual(globals.minLiquidationFee, toUnit('20'));
+			assert.bnEqual(await futuresMarketSettings.minKeeperFee(), globals.minKeeperFee);
+			assert.bnEqual(globals.minKeeperFee, toUnit('20'));
 			assert.bnEqual(
 				await futuresMarketSettings.liquidationFeeRatio(),
 				globals.liquidationFeeRatio
