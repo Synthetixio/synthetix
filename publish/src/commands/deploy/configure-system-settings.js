@@ -30,12 +30,20 @@ module.exports = async ({
 
 	console.log(gray(`\n------ CONFIGURE SYSTEM SETTINGS ------\n`));
 
-	let previousSystemSettings;
+	let previousSystemSettings = deployer.getExistingContract({ contract: 'SystemSettings' });
 
-	if (SystemSettings.justDeployed) {
-		// in order to avoid situations where system settings has been changed
-		// we keep the old one around to read state from
-		previousSystemSettings = deployer.getExistingContract({ contract: 'SystemSettings' });
+	// when there is no new system settings, than just read from ourself
+	if (SystemSettings.address === previousSystemSettings.address) {
+		previousSystemSettings = undefined;
+	} else {
+		// otherwise when there's a new system setting, we want to be reading from the old
+		// this is useful when generatingSolidity so we can understand what needs to be added in solidity
+		// when upgrading SystemSettings
+		console.log(
+			gray(
+				`New SystemSettings detected. Using the existing one at ${previousSystemSettings.address} to read from`
+			)
+		);
 	}
 
 	let synthRates = [];
@@ -334,6 +342,7 @@ module.exports = async ({
 			expected: input => atomicMaxVolumePerBlock === '0' || input !== '0', // only change if setting to non-zero from zero
 			write: 'setAtomicMaxVolumePerBlock',
 			writeArg: atomicMaxVolumePerBlock,
+			comment: 'SIP-120 Set max atomic volume per block (in USD amounts)',
 		});
 	}
 
@@ -346,6 +355,7 @@ module.exports = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setAtomicTwapWindow',
 			writeArg: await getDeployParameter('ATOMIC_TWAP_WINDOW'),
+			comment: 'SIP-120 Set the TWAP window for atomic swaps',
 		});
 	}
 
@@ -361,6 +371,8 @@ module.exports = async ({
 				expected: input => input !== ZERO_ADDRESS, // only change if zero
 				write: 'setAtomicEquivalentForDexPricing',
 				writeArg: [toBytes32(currencyKey), equivalent],
+				comment:
+					'SIP-120 Set the equivalent token - used in uniswap pools - corresponding to this synth',
 			});
 		}
 	}
@@ -377,6 +389,7 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicExchangeFeeRate',
 				writeArg: [toBytes32(currencyKey), rate],
+				comment: 'SIP-120 Set the exchange fee rate for swapping atomically into this synth',
 			});
 		}
 	}
@@ -393,6 +406,8 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicPriceBuffer',
 				writeArg: [toBytes32(currencyKey), buffer],
+				comment:
+					'SIP-120 Set the price buffer applied to the base chainlink rate when comparing atomically',
 			});
 		}
 	}
@@ -411,6 +426,7 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityConsiderationWindow',
 				writeArg: [toBytes32(currencyKey), seconds],
+				comment: 'SIP-120 Set the atomic volatility window for this synth (in seconds)',
 			});
 		}
 	}
@@ -429,6 +445,8 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityUpdateThreshold',
 				writeArg: [toBytes32(currencyKey), threshold],
+				comment:
+					'SIP-120 Set the atomic volatility count for this synth during the volatility window',
 			});
 		}
 	}
@@ -443,6 +461,7 @@ module.exports = async ({
 			expected: input => input === dexPriceAggregator,
 			write: 'setDexPriceAggregator',
 			writeArg: dexPriceAggregator,
+			comment: 'SIP-120 Set the DEX price aggregator (uniswap TWAP oracle reader)',
 		});
 	}
 

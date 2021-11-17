@@ -259,6 +259,7 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
 			ownerActionsFile,
+			useFork,
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op
