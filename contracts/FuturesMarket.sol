@@ -126,7 +126,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
-     * Then marketSkew * (_assetPrice() + _marketDebt()) + _entryDebtCorrection yields the total system debt,
+     * Then marketSkew * (_assetPrice() + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
      */
     int internal _entryDebtCorrection;
@@ -260,6 +260,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _marketDebt(uint price) internal view returns (uint) {
+        // see comment explaining this calculation in _positionDebtCorrection()
         int totalDebt =
             marketSkew.multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
                 _entryDebtCorrection
@@ -1011,6 +1012,24 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The impact of a given position on the debt correction.
      */
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
+        /**
+        Debt correction calculation from the SIP https://sips.synthetix.io/sips/sip-80/
+        The overall market debt is the sum of the remaining margin in all positions. The intuition is that
+        the debt of a single positino is the value withdrawn upon closing that position.
+
+        single position remaining margin = initial-margin + profit-loss + accrued-funding =
+            = initial-margin + q * (price - last-prise) + q * funding-accrued-per-unit
+            = initial-margin + q * price - q * last-price + q * (funding - initial-funding)
+
+        Total debt = sum ( position remaining margins )
+            = sum ( initial-margin + q * price - q * last-price + q * (funding - initial-funding) )
+            = sum( q * price ) + sum( q * funding ) + sum( initial-margin + q * last-price + q * initial-funding )
+            = skew * price + skew * funding + sum( initial-margin + q * last-price + q * initial-funding )
+            = skew (price + funding) + sum( initial-margin + q * last-price + q * initial-funding )
+
+        The last term: sum( initial-margin + q * last-price + q * initial-funding ) being the position debt correction
+            that is tracked with each position change. And the first term is calculated globally in _marketDebt(),
+         */
         return
             int(position.margin).sub(
                 position.size.multiplyDecimalRound(int(position.lastPrice).add(fundingSequence[position.fundingIndex]))
