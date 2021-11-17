@@ -130,6 +130,8 @@ module.exports = async ({
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
 			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
+			// Skip solidity for this as on mainnet, as ProxySynthetix is the same and it will manage it
+			skipSolidity: network === 'mainnet',
 		});
 		await runStep({
 			contract: 'Synthetix',
@@ -150,7 +152,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
-			comment: 'Ensure the legacy SNX proxy has the correct Synthetix target set',
+			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
 		});
 	}
 

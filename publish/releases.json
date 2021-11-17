@@ -279,7 +279,8 @@
 		{
 			"sip": 120,
 			"layer": "base",
-			"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"]
+			"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"],
+			"released": "base"
 		},
 		{
 			"sip": 121,
@@ -398,7 +399,7 @@
 				"SystemSettings",
 				"WrapperFactory"
 			],
-			"released": "ovm"
+			"released": "both"
 		},
 		{
 			"sip": 187,
@@ -671,12 +672,12 @@
 		},
 		{
 			"name": "Alkaid",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 53
 			},
-			"sips": []
+			"sips": [120, 182]
 		},
 		{
 			"name": "Alkaid (Optimism)",

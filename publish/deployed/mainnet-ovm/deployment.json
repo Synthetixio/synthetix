@@ -218,10 +218,10 @@
 		},
 		"ProxySynthetix": {
 			"name": "ProxySynthetix",
-			"address": "0x218067172e9E0460A883458D44BD1f56ea609502",
-			"source": "Proxy",
-			"link": "https://explorer.optimism.io/address/0x218067172e9E0460A883458D44BD1f56ea609502",
-			"timestamp": "2021-01-15T05:41:32.973Z",
+			"address": "0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
+			"source": "ProxyERC20",
+			"link": "https://explorer.optimism.io/address/0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
+			"timestamp": "2021-01-15T05:41:26.674Z",
 			"txn": "",
 			"network": "mainnet"
 		},
@@ -290,10 +290,10 @@
 		},
 		"ProxysUSD": {
 			"name": "ProxysUSD",
-			"address": "0xbecc58c6D7Ca71b6FCC4cC8c9c5294A0eA7A0397",
-			"source": "Proxy",
-			"link": "https://explorer.optimism.io/address/0xbecc58c6D7Ca71b6FCC4cC8c9c5294A0eA7A0397",
-			"timestamp": "2021-01-15T05:42:05.158Z",
+			"address": "0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9",
+			"source": "ProxyERC20",
+			"link": "https://explorer.optimism.io/address/0x8c6f28f2F1A3C87F0f938b96d27520d9751ec8d9",
+			"timestamp": "2021-01-15T05:42:06.522Z",
 			"txn": "",
 			"network": "mainnet"
 		},
