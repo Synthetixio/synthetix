@@ -12,7 +12,7 @@ contract('TemporarilyOwned', accounts => {
 	const DAY = 60 * 60 * 24;
 	const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-	const [deployerAccount, temporaryOwner] = accounts;
+	const [deployerAccount, temporaryOwner, account1, account2, account3] = accounts;
 
 	let TestableTempOwned;
 	let expectedExpiry;
@@ -82,6 +82,129 @@ contract('TemporarilyOwned', accounts => {
 					'Ownership expired'
 				);
 			});
+		});
+	});
+
+	describe('when attempting to set a new expiry time', () => {
+		let ownershipDuration;
+
+		before('deploy', async () => {
+			ownershipDuration = DAY;
+
+			expectedExpiry = (await currentTime()) + ownershipDuration;
+
+			TestableTempOwned = await TestableTempOwnedFactory.new(temporaryOwner, ownershipDuration, {
+				from: deployerAccount,
+			});
+		});
+
+		it('should only accept duration values greater than zero', async () => {
+			ownershipDuration = 0;
+
+			await assert.revert(
+				TestableTempOwned.setNewExpiryTime(ownershipDuration, { from: temporaryOwner }),
+				'Duration cannot be 0'
+			);
+		});
+
+		it('should properly set the expiry time', async () => {
+			ownershipDuration = DAY * 2;
+
+			expectedExpiry = (await currentTime()) + ownershipDuration;
+
+			await TestableTempOwned.setNewExpiryTime(ownershipDuration, {
+				from: temporaryOwner,
+			});
+
+			assert.bnClose(
+				expectedExpiry.toString(),
+				(await TestableTempOwned.expiryTime()).toString(),
+				'10'
+			);
+		});
+
+		it('does not allow nominated owner to accept ownership after expiration', async () => {
+			ownershipDuration = DAY * 2;
+			const nominatedOwner = account1;
+
+			const txn = await TestableTempOwned.nominateNewOwner(nominatedOwner, {
+				from: temporaryOwner,
+			});
+			assert.eventEqual(txn, 'OwnerNominated', { newOwner: nominatedOwner });
+
+			const nominatedOwnerFromContract = await TestableTempOwned.nominatedOwner();
+			assert.equal(nominatedOwnerFromContract, nominatedOwner);
+
+			await fastForward(ownershipDuration);
+
+			await assert.revert(
+				TestableTempOwned.acceptOwnership({ from: account1 }),
+				'Ownership expired'
+			);
+		});
+	});
+
+	describe('when attempting to change ownership', () => {
+		let ownershipDuration;
+
+		before('deploy', async () => {
+			ownershipDuration = DAY;
+
+			expectedExpiry = (await currentTime()) + ownershipDuration;
+
+			TestableTempOwned = await TestableTempOwnedFactory.new(temporaryOwner, ownershipDuration, {
+				from: deployerAccount,
+			});
+		});
+
+		it('should not nominate new owner when not invoked by current contract owner', async () => {
+			const nominatedOwner = temporaryOwner;
+
+			await assert.revert(TestableTempOwned.nominateNewOwner(nominatedOwner, { from: account1 }));
+
+			const nominatedOwnerFromContract = await TestableTempOwned.nominatedOwner();
+			assert.equal(nominatedOwnerFromContract, ZERO_ADDRESS);
+		});
+
+		it('should nominate new owner when invoked by current contract owner', async () => {
+			const nominatedOwner = account1;
+
+			const txn = await TestableTempOwned.nominateNewOwner(nominatedOwner, {
+				from: temporaryOwner,
+			});
+			assert.eventEqual(txn, 'OwnerNominated', { newOwner: nominatedOwner });
+
+			const nominatedOwnerFromContract = await TestableTempOwned.nominatedOwner();
+			assert.equal(nominatedOwnerFromContract, nominatedOwner);
+		});
+
+		it('should not accept new owner nomination when not invoked by nominated owner', async () => {
+			const nominatedOwner = account2;
+
+			await assert.revert(TestableTempOwned.acceptOwnership({ from: account3 }));
+
+			const owner = await TestableTempOwned.temporaryOwner();
+			assert.notEqual(owner, nominatedOwner);
+		});
+
+		it('should accept new owner nomination when invoked by nominated owner', async () => {
+			const nominatedOwner = account1;
+
+			let txn = await TestableTempOwned.nominateNewOwner(nominatedOwner, { from: temporaryOwner });
+			assert.eventEqual(txn, 'OwnerNominated', { newOwner: nominatedOwner });
+
+			const nominatedOwnerFromContract = await TestableTempOwned.nominatedOwner();
+			assert.equal(nominatedOwnerFromContract, nominatedOwner);
+
+			txn = await TestableTempOwned.acceptOwnership({ from: account1 });
+
+			assert.eventEqual(txn, 'OwnerChanged', { oldOwner: temporaryOwner, newOwner: account1 });
+
+			const owner = await TestableTempOwned.temporaryOwner();
+			const nominatedOwnerFromContact = await TestableTempOwned.nominatedOwner();
+
+			assert.equal(owner, nominatedOwner);
+			assert.equal(nominatedOwnerFromContact, ZERO_ADDRESS);
 		});
 	});
 });
