@@ -271,9 +271,6 @@ module.exports = {
 			.description(
 				'Owner-relay script - accept ownership by OwnerRelayOnOptimism of nominated contracts.'
 			)
-			.description(
-				'nominate-relay script - Nominate a new owner for one or more contracts, relayed from L1 to L2 using the OwnerRelayOnEthereum contract'
-			)
 			.option(
 				'--l1-deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
