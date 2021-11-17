@@ -40,6 +40,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
+    /// @notice ID for the current round
     mapping(bytes32 => uint) public currentRoundForRate;
 
     //
@@ -503,6 +504,14 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory entry) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        uint roundId = currentRoundForRate[currencyKey];
+
+        entry = _rates[currencyKey][roundId];
+
+        // Try to get rate from cache if possible
+        if (entry.rate > 0) {
+            return entry;
+        }
 
         if (aggregator != AggregatorV2V3Interface(0)) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
@@ -514,15 +523,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             if (success) {
                 (, int256 answer, , uint256 updatedAt, ) =
                     abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
-                return
-                    RateAndUpdatedTime({
-                        rate: uint216(_formatAggregatorAnswer(currencyKey, answer)),
-                        time: uint40(updatedAt)
-                    });
+                entry.rate = uint216(_formatAggregatorAnswer(currencyKey, answer));
+                entry.time = uint40(updatedAt);
             }
-        } else {
-            uint roundId = currentRoundForRate[currencyKey];
-            entry = _rates[currencyKey][roundId];
         }
     }
 
