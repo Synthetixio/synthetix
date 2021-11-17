@@ -217,6 +217,8 @@ const owner = async ({
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 	const warnings = [];
+	// prevent dupes if some contracts are in there twice (looking at you ProxyERC20 and ProxyERC20sUSD)
+	const appendedOwnerCache = {};
 	for (const contract of Object.keys(config)) {
 		if (!deployment.targets[contract]) {
 			const msg = yellow(`WARNING: contract ${contract} not found in deployment file`);
@@ -236,7 +238,7 @@ const owner = async ({
 		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
 
 		if (currentOwner === newOwner.toLowerCase()) {
-			console.log(gray(`${newOwner} is already the owner of ${contract}`));
+			console.log(gray(`${newOwner} is already the owner of ${contract} ${address}`));
 		} else if (nominatedOwner === newOwner.toLowerCase()) {
 			const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
@@ -244,6 +246,12 @@ const owner = async ({
 				console.log(
 					gray(`Attempting to append`, yellow(`${contract}.acceptOwnership()`), `to the batch`)
 				);
+				if (address in appendedOwnerCache) {
+					console.log(gray('Skipping as this action is already in the batch'));
+					continue;
+				} else {
+					appendedOwnerCache[address] = true;
+				}
 				const { appended } = await safeBatchSubmitter.appendTransaction({
 					to: address,
 					data: encodedData,
