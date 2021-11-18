@@ -1,9 +1,9 @@
-const { ethers, contract, artifacts } = require('hardhat');
+const { ethers, contract, artifacts, web3 } = require('hardhat');
 const chalk = require('chalk');
 const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { currentTime, fastForward } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
 
 contract('OwnerRelayOnOptimism', () => {
 	const DAY = 60 * 60 * 24;
@@ -37,6 +37,13 @@ contract('OwnerRelayOnOptimism', () => {
 			ethers.provider
 		);
 		MockedMessengerSigner = MockedMessenger.wallet;
+
+		// Send some ETH to the MockedMessenger so it can perform the relay function.
+		await web3.eth.sendTransaction({
+			value: toUnit('1'),
+			from: owner.address,
+			to: MockedMessengerSigner.address,
+		});
 
 		MockedOwned1OnL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
 		MockedOwned2OnL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
@@ -103,7 +110,7 @@ contract('OwnerRelayOnOptimism', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnOptimism').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['directRelay', 'finalizeRelay', 'finalizeRelayBatch'],
+			expected: ['directRelay', 'finalizeRelay', 'finalizeRelayBatch', 'setNewExpiryTime'],
 		});
 	});
 
@@ -142,9 +149,7 @@ contract('OwnerRelayOnOptimism', () => {
 			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(MockedMessengerSigner);
 
 			try {
-				const tx = await OwnerRelayOnOptimism[relayFnc](targets, calldata, {
-					gasPrice: 0,
-				});
+				const tx = await OwnerRelayOnOptimism[relayFnc](targets, calldata);
 
 				relayReceipt = await tx.wait();
 			} catch (err) {
@@ -295,8 +300,7 @@ contract('OwnerRelayOnOptimism', () => {
 			await assert.revert(
 				OwnerRelayOnOptimism.connect(someone).directRelay(
 					mockedContractAddressOnL2,
-					mockedRelayData,
-					{ gasPrice: 0 }
+					mockedRelayData
 				),
 				'Only executable by temp owner'
 			);
@@ -306,9 +310,10 @@ contract('OwnerRelayOnOptimism', () => {
 			let relayReceipt;
 
 			it('should allow the temp owner to call direct relay', async () => {
-				const tx = await OwnerRelayOnOptimism.connect(
-					temporaryOwner
-				).directRelay(mockedContractAddressOnL2, mockedRelayData, { gasPrice: 0 });
+				const tx = await OwnerRelayOnOptimism.connect(temporaryOwner).directRelay(
+					mockedContractAddressOnL2,
+					mockedRelayData
+				);
 
 				relayReceipt = await tx.wait();
 			});
@@ -330,8 +335,7 @@ contract('OwnerRelayOnOptimism', () => {
 				await assert.revert(
 					OwnerRelayOnOptimism.connect(temporaryOwner).directRelay(
 						mockedContractAddressOnL2,
-						mockedRelayData,
-						{ gasPrice: 0 }
+						mockedRelayData
 					),
 					'Ownership expired'
 				);
