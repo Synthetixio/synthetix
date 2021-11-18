@@ -9,6 +9,7 @@ import "./interfaces/IExchanger.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 import "./DynamicFee.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -70,7 +71,7 @@ interface IExchangerInternalDebtCache {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/exchanger
-contract Exchanger is Owned, MixinSystemSettings, IExchanger {
+contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -431,7 +432,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             rates[2] = SafeDecimalMath.unit();
         }
 
-        // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
+        // Note: that exchanges can't invalidate the debt cache, since if a rate is invalid,
         // the exchange will have failed already.
         debtCache().updateCachedSynthDebtsWithRates(keys, rates);
     }
@@ -461,6 +462,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bool virtualSynth
     )
         internal
+        nonReentrant
         returns (
             uint amountReceived,
             uint fee,
@@ -854,7 +856,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint weightDecay = getExchangeDynamicFeeWeightDecay();
         uint rounds = getExchangeDynamicFeeRounds();
         uint[] memory prices;
-        // Note that we are using cache round ID here for fast read
+        // Note: We are using cache round ID here for fast read
         uint currentRoundId = exchangeRates().currentRoundForRate(currencyKey);
         uint remainingRounds = currentRoundId.sub(lastExchangeRoundId[currencyKey]);
         if (remainingRounds >= rounds) {

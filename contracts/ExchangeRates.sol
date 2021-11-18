@@ -8,6 +8,7 @@ import "./interfaces/IExchangeRates.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
@@ -17,7 +18,7 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
-contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
+contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, ReentrancyGuard {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -41,6 +42,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
     /// @notice ID for the current round
+    /// @param currencyKey is the currency key of the synth to be exchanged
+    /// @return the current exchange round ID
     mapping(bytes32 => uint) public currentRoundForRate;
 
     //
@@ -138,6 +141,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint roundIdForDest
     )
         external
+        nonReentrant
         returns (
             uint value,
             uint sourceRate,

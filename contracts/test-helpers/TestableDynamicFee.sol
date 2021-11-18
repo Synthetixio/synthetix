@@ -7,15 +7,15 @@ contract TestableDynamicFee {
     uint public threshold = 4 * 10**uint(SafeDecimalMath.decimals() - 3);
     uint public weightDecay = 9 * 10**uint(SafeDecimalMath.decimals() - 1);
 
-    function testGetPriceDifferential(uint price, uint previousPrice) public view returns (uint) {
+    function testGetPriceDifferential(uint price, uint previousPrice) external view returns (uint) {
         return DynamicFee.getPriceDifferential(price, previousPrice, threshold);
     }
 
-    function testGetPriceWeight(uint round) public view returns (uint) {
+    function testGetPriceWeight(uint round) external view returns (uint) {
         return DynamicFee.getRoundDecay(round, weightDecay);
     }
 
-    function testGetDynamicFee(uint[] memory prices, uint lastExchangeDynamicFeeRate) public view returns (uint) {
+    function testGetDynamicFee(uint[] calldata prices, uint lastExchangeDynamicFeeRate) external view returns (uint) {
         return DynamicFee.getDynamicFee(prices, threshold, weightDecay, lastExchangeDynamicFeeRate);
     }
 }

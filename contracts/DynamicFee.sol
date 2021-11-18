@@ -47,11 +47,11 @@ library DynamicFee {
     /// @param lastExchangeDynamicFeeRate The last exchange dynamic fee rate
     /// @return uint dynamic fee
     function getDynamicFee(
-        uint[] memory prices,
+        uint[] calldata prices,
         uint threshold,
         uint weightDecay,
         uint lastExchangeDynamicFeeRate
-    ) public pure returns (uint dynamicFee) {
+    ) external pure returns (uint dynamicFee) {
         uint size = prices.length;
         // disable dynamic fee when price feeds less than 2 rounds
         if (size < 2) {
