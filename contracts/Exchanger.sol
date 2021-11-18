@@ -484,6 +484,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
             entry.roundIdForDest
         );
 
+        // SIP-65: Decentralized Circuit Breaker
+        // mutative call to suspend system if the rate is invalid
+        if (
+            _suspendIfRateInvalid(sourceCurrencyKey, entry.sourceRate) ||
+            _suspendIfRateInvalid(destinationCurrencyKey, entry.destinationRate)
+        ) {
+            return (0, 0, IVirtualSynth(0));
+        }
+
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
@@ -499,17 +508,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
             destinationCurrencyKey
         );
 
-        // SIP-184: Store last Exchange round ID and dynamic fee to optimise calculation
+        // SIP-184: Store last Exchange round ID and dynamic fee after _feeRateForExchange calculations
         lastExchangeRoundId[destinationCurrencyKey] = entry.roundIdForDest;
         lastExchangeDynamicFeeRate[destinationCurrencyKey] = entry.exchangeDynamicFeeRate;
-
-        // SIP-65: Decentralized Circuit Breaker
-        if (
-            _suspendIfRateInvalid(sourceCurrencyKey, entry.sourceRate) ||
-            _suspendIfRateInvalid(destinationCurrencyKey, entry.destinationRate)
-        ) {
-            return (0, 0, IVirtualSynth(0));
-        }
 
         amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
         // Note: `fee` is denominated in the destinationCurrencyKey.
