@@ -107,15 +107,6 @@ contract('TemporarilyOwned', accounts => {
 			});
 		});
 
-		it('should only accept duration values greater than zero', async () => {
-			ownershipDuration = 0;
-
-			await assert.revert(
-				TestableTempOwned.setNewExpiryTime(ownershipDuration, { from: temporaryOwner }),
-				'Duration cannot be 0'
-			);
-		});
-
 		it('should only set a new expiry time if it is sooner than what is currently set', async () => {
 			ownershipDuration = DAY * 2;
 

@@ -14,7 +14,6 @@ contract TemporarilyOwned {
     }
 
     function setNewExpiryTime(uint _duration) external onlyTemporaryOwner {
-        require(_duration > 0, "Duration cannot be 0");
         require(block.timestamp + _duration < expiryTime, "New expiry time must be sooner than it currently is");
         expiryTime = block.timestamp + _duration;
     }
