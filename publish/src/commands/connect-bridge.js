@@ -197,7 +197,7 @@ const connectLayer = async ({
 			console.log(yellow.inverse('  * CALLING SynthetixBridge.rebuildCache()...'));
 			tx = await SynthetixBridge.rebuildCache(params);
 			receipt = await tx.wait();
-			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+			console.log(gray(`    > tx hash: ${receipt.transactionHash}`));
 		} else {
 			console.log(yellow('  * Skipping, since this is a DRY RUN'));
 		}

@@ -25,7 +25,7 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		'05ace3ae2c12c6ba5a4a0ac33254f9547cc4557c'
+		'f1631a5f7ddb6eb4a342bfbd7d46233a43412f9b'
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
