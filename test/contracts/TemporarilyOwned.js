@@ -98,6 +98,15 @@ contract('TemporarilyOwned', accounts => {
 			});
 		});
 
+		it('only allows the owner to execute', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: TestableTempOwned.setNewExpiryTime,
+				args: [42],
+				address: temporaryOwner,
+				accounts,
+			});
+		});
+
 		it('should only accept duration values greater than zero', async () => {
 			ownershipDuration = 0;
 
@@ -107,8 +116,17 @@ contract('TemporarilyOwned', accounts => {
 			);
 		});
 
-		it('should properly set the expiry time', async () => {
+		it('should only set a new expiry time if it is sooner than what is currently set', async () => {
 			ownershipDuration = DAY * 2;
+
+			await assert.revert(
+				TestableTempOwned.setNewExpiryTime(ownershipDuration, { from: temporaryOwner }),
+				'New expiry time must be sooner than it currently is'
+			);
+		});
+
+		it('should properly set the expiry time', async () => {
+			ownershipDuration = 2;
 
 			expectedExpiry = (await currentTime()) + ownershipDuration;
 
@@ -123,8 +141,7 @@ contract('TemporarilyOwned', accounts => {
 			);
 		});
 
-		it('does not allow nominated owner to accept ownership after expiration', async () => {
-			ownershipDuration = DAY * 2;
+		it('should not allow nominated owner to accept ownership after expiration', async () => {
 			const nominatedOwner = account1;
 
 			const txn = await TestableTempOwned.nominateNewOwner(nominatedOwner, {
@@ -160,7 +177,10 @@ contract('TemporarilyOwned', accounts => {
 		it('should not nominate new owner when not invoked by current contract owner', async () => {
 			const nominatedOwner = temporaryOwner;
 
-			await assert.revert(TestableTempOwned.nominateNewOwner(nominatedOwner, { from: account1 }));
+			await assert.revert(
+				TestableTempOwned.nominateNewOwner(nominatedOwner, { from: account1 }),
+				'Only executable by temp owner'
+			);
 
 			const nominatedOwnerFromContract = await TestableTempOwned.nominatedOwner();
 			assert.equal(nominatedOwnerFromContract, ZERO_ADDRESS);
@@ -181,7 +201,10 @@ contract('TemporarilyOwned', accounts => {
 		it('should not accept new owner nomination when not invoked by nominated owner', async () => {
 			const nominatedOwner = account2;
 
-			await assert.revert(TestableTempOwned.acceptOwnership({ from: account3 }));
+			await assert.revert(
+				TestableTempOwned.acceptOwnership({ from: account3 }),
+				'You must be nominated before you can accept ownership'
+			);
 
 			const owner = await TestableTempOwned.temporaryOwner();
 			assert.notEqual(owner, nominatedOwner);
