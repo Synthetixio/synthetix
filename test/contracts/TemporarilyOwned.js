@@ -67,6 +67,7 @@ contract('TemporarilyOwned', accounts => {
 					args: [42],
 					address: temporaryOwner,
 					accounts,
+					reason: 'Only executable by temp owner',
 				});
 			});
 		});
@@ -104,6 +105,7 @@ contract('TemporarilyOwned', accounts => {
 				args: [42],
 				address: temporaryOwner,
 				accounts,
+				reason: 'Only executable by temp owner',
 			});
 		});
 
@@ -150,23 +152,36 @@ contract('TemporarilyOwned', accounts => {
 				'Ownership expired'
 			);
 		});
+
+		it('should not allow the nomination of a new owner after expiration', async () => {
+			const nominatedOwner = account1;
+
+			await fastForward(ownershipDuration);
+
+			await assert.revert(
+				TestableTempOwned.nominateNewOwner(nominatedOwner, { from: temporaryOwner }),
+				'Ownership expired'
+			);
+		});
 	});
 
 	describe('when attempting to change ownership', () => {
-		let ownershipDuration;
-
-		before('deploy', async () => {
-			ownershipDuration = DAY;
-
-			expectedExpiry = (await currentTime()) + ownershipDuration;
-
-			TestableTempOwned = await TestableTempOwnedFactory.new(temporaryOwner, ownershipDuration, {
-				from: deployerAccount,
-			});
-		});
-
 		it('should not nominate new owner when not invoked by current contract owner', async () => {
 			const nominatedOwner = temporaryOwner;
+
+			await assert.revert(
+				TestableTempOwned.nominateNewOwner(nominatedOwner, { from: temporaryOwner }),
+				'Ownership expired'
+			);
+
+			await assert.revert(
+				TestableTempOwned.acceptOwnership({ from: account1 }),
+				'Ownership expired'
+			);
+
+			TestableTempOwned = await TestableTempOwnedFactory.new(temporaryOwner, DAY, {
+				from: deployerAccount,
+			});
 
 			await assert.revert(
 				TestableTempOwned.nominateNewOwner(nominatedOwner, { from: account1 }),
