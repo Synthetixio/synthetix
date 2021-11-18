@@ -8,7 +8,6 @@ const { findSolFiles, flatten, compile } = require('../solidity');
 
 const {
 	constants: { COMPILED_FOLDER, CONTRACTS_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER },
-	ovmIgnored,
 } = require('../../..');
 
 const { stringify } = require('../util');
@@ -57,22 +56,6 @@ const build = async ({
 			.concat(!migrations ? /^migrations\// : [])
 			.concat(!testHelpers ? /^test-helpers\// : []),
 	});
-
-	if (useOvm) {
-		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
-
-		const contractPaths = Object.keys(contracts);
-		contractPaths.map(contractPath => {
-			const filename = path.basename(contractPath, '.sol');
-			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
-
-			if (isIgnored) {
-				console.log(gray(`    > ${filename}`));
-
-				delete contracts[contractPath];
-			}
-		});
-	}
 
 	const allSolFiles = { ...libraries, ...contracts };
 	console.log(
@@ -157,7 +140,6 @@ const build = async ({
 				[contract]: sources[contract],
 			},
 			runs,
-			useOvm,
 		});
 
 		Object.assign(allArtifacts, artifacts);

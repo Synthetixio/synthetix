@@ -38,8 +38,8 @@ steps:
   - run:
       name: Run isolated layer 2 integration tests
       command: |
-        npx hardhat test:integration:l2 --compile --deploy || true # TEMP allow pass thru till PR #1598
+        npx hardhat test:integration:l2 --compile --deploy
   - run:
       name: Run dual layer 1 and layer 2 integration tests
       command: |
-        npx hardhat test:integration:dual --deploy || true # TEMP allow pass thru till PR #1598
+        npx hardhat test:integration:dual --deploy
