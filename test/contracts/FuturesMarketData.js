@@ -102,6 +102,8 @@ contract('FuturesMarketData', accounts => {
 				toBytes32(key),
 				toWei('0.005'), // 0.5% taker fee
 				toWei('0.001'), // 0.1% maker fee
+				toWei('0.0005'), // 0.05% taker fee next price
+				toWei('0'), // 0% maker fee next price
 				toWei('0'), // nil closure fee
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
@@ -175,6 +177,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(details.baseAsset, baseAsset);
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
+			assert.bnEqual(details.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
+			assert.bnEqual(details.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
@@ -256,6 +260,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
 			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
+			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
 		});
 
 		it('For assets', async () => {
@@ -288,6 +294,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
+			assert.equal(sBTCSummary.feeRates.takerFeeNextPrice, fmParams.takerFeeNextPrice);
+			assert.equal(sBTCSummary.feeRates.makerFeeNextPrice, fmParams.makerFeeNextPrice);
 
 			const sETHParams = await futuresMarketData.parameters(newAsset); // sETH
 
@@ -301,6 +309,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
 			assert.equal(sETHSummary.feeRates.takerFee, sETHParams.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
+			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, sETHParams.takerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, sETHParams.makerFeeNextPrice);
 
 			assert.equal(
 				sLINKSummary.market,
@@ -314,6 +324,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sLINKSummary.currentFundingRate, toUnit(0));
 			assert.equal(sLINKSummary.feeRates.takerFee, toUnit('0.005'));
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
+			assert.equal(sLINKSummary.feeRates.takerFeeNextPrice, toUnit('0.0005'));
+			assert.equal(sLINKSummary.feeRates.makerFeeNextPrice, toUnit('0'));
 		});
 	});
 });

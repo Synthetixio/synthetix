@@ -62,6 +62,8 @@ contract FuturesMarketData {
     struct FeeRates {
         uint takerFee;
         uint makerFee;
+        uint takerFeeNextPrice;
+        uint makerFeeNextPrice;
     }
 
     struct FundingDetails {
@@ -136,6 +138,8 @@ contract FuturesMarketData {
         (
             uint takerFee,
             uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
             uint closureFee,
             uint maxLeverage,
             uint maxMarketValueUSD,
@@ -147,6 +151,8 @@ contract FuturesMarketData {
             IFuturesMarketSettings.Parameters(
                 takerFee,
                 makerFee,
+                takerFeeNextPrice,
+                makerFeeNextPrice,
                 closureFee,
                 maxLeverage,
                 maxMarketValueUSD,
@@ -176,7 +182,7 @@ contract FuturesMarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(params.takerFee, params.makerFee)
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice)
             );
         }
 
@@ -219,7 +225,7 @@ contract FuturesMarketData {
             MarketData(
                 address(market),
                 baseAsset,
-                FeeRates(params.takerFee, params.makerFee),
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice),
                 MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),

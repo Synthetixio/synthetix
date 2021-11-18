@@ -81,6 +81,8 @@ contract('FuturesMarketSettings', accounts => {
 			expected: [
 				'setTakerFee',
 				'setMakerFee',
+				'setTakerFeeNextPrice',
+				'setMakerFeeNextPrice',
 				'setClosureFee',
 				'setMaxLeverage',
 				'setMaxMarketValueUSD',
@@ -128,6 +130,24 @@ contract('FuturesMarketSettings', accounts => {
 			it('should revert if taker fee is greater than 1', async () => {
 				await assert.revert(
 					futuresMarketSettings.setTakerFee(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'taker fee greater than 1'
+				);
+			});
+
+			it('should revert if maker fee next price is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setMakerFeeNextPrice(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'maker fee greater than 1'
+				);
+			});
+
+			it('should revert if taker fee next price is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setTakerFeeNextPrice(baseAsset, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'

@@ -305,6 +305,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         returns (
             uint takerFee,
             uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
             uint closureFee,
             uint maxLeverage,
             uint maxMarketValueUSD,

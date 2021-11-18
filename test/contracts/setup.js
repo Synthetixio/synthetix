@@ -1170,6 +1170,8 @@ const setupAllContracts = async ({
 						assetKey,
 						toWei('0.003'), // 0.3% taker fee
 						toWei('0.001'), // 0.1% maker fee
+						toWei('0.0005'), // 0.05% taker fee next price
+						toWei('0'), // 0% maker fee
 						toWei('0'), // nil closure fee
 						toWei('10'), // 10x max leverage
 						toWei('100000'), // 100000 max market debt

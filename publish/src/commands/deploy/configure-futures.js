@@ -101,6 +101,8 @@ module.exports = async ({
 			asset,
 			takerFee,
 			makerFee,
+			takerFeeNextPrice,
+			makerFeeNextPrice,
 			closureFee,
 			maxLeverage,
 			maxMarketValueUSD,
@@ -116,6 +118,8 @@ module.exports = async ({
 		const settings = {
 			takerFee: w3utils.toWei(takerFee),
 			makerFee: w3utils.toWei(makerFee),
+			takerFeeNextPrice: w3utils.toWei(takerFeeNextPrice),
+			makerFeeNextPrice: w3utils.toWei(makerFeeNextPrice),
 			closureFee: w3utils.toWei(closureFee),
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),

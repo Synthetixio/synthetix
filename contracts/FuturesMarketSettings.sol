@@ -51,6 +51,20 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     /*
+     * The fee charged when opening a position on the heavy side of a futures market using next price mechanism.
+     */
+    function takerFeeNextPrice(bytes32 _baseAsset) external view returns (uint) {
+        return _takerFeeNextPrice(_baseAsset);
+    }
+
+    /*
+     * The fee charged when opening a position on the light side of a futures market using next price mechanism.
+     */
+    function makerFeeNextPrice(bytes32 _baseAsset) public view returns (uint) {
+        return _makerFeeNextPrice(_baseAsset);
+    }
+
+    /*
      * The fee charged when reducing the size of a position.
      */
     function closureFee(bytes32 _baseAsset) public view returns (uint) {
@@ -98,6 +112,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         returns (
             uint _takerFee,
             uint _makerFee,
+            uint _takerFeeNextPrice,
+            uint _makerFeeNextPrice,
             uint _closureFee,
             uint _maxLeverage,
             uint _maxMarketValueUSD,
@@ -163,6 +179,16 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAKER_FEE, _makerFee);
     }
 
+    function setTakerFeeNextPrice(bytes32 _baseAsset, uint _takerFeeNextPrice) public onlyOwner {
+        require(_takerFeeNextPrice <= 1e18, "taker fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
+    }
+
+    function setMakerFeeNextPrice(bytes32 _baseAsset, uint _makerFeeNextPrice) public onlyOwner {
+        require(_makerFeeNextPrice <= 1e18, "maker fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
+    }
+
     function setClosureFee(bytes32 _baseAsset, uint _closureFee) public onlyOwner {
         require(_closureFee <= 1e18, "closure fee greater than 1");
         _setParameter(_baseAsset, PARAMETER_CLOSURE_FEE, _closureFee);
@@ -203,6 +229,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         bytes32 _baseAsset,
         uint _takerFee,
         uint _makerFee,
+        uint _takerFeeNextPrice,
+        uint _makerFeeNextPrice,
         uint _closureFee,
         uint _maxLeverage,
         uint _maxMarketValueUSD,
@@ -213,6 +241,8 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _recomputeFunding(_baseAsset);
         setTakerFee(_baseAsset, _takerFee);
         setMakerFee(_baseAsset, _makerFee);
+        setTakerFeeNextPrice(_baseAsset, _takerFeeNextPrice);
+        setMakerFeeNextPrice(_baseAsset, _makerFeeNextPrice);
         setClosureFee(_baseAsset, _closureFee);
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);

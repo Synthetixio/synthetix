@@ -58,6 +58,8 @@ contract('FuturesMarket', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
+	const takerFeeNextPrice = toUnit('0.0005');
+	const makerFeeNextPrice = toUnit('0');
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
@@ -179,6 +181,8 @@ contract('FuturesMarket', accounts => {
 			assert.equal(await futuresMarket.baseAsset(), baseAsset);
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);
+			assert.bnEqual(parameters.takerFeeNextPrice, takerFeeNextPrice);
+			assert.bnEqual(parameters.makerFeeNextPrice, makerFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
@@ -3805,7 +3809,9 @@ contract('FuturesMarket', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, { from: owner }),
+					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
+						from: owner,
+					}),
 					'Invalid price'
 				);
 			});

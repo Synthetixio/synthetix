@@ -16,6 +16,8 @@ contract MixinFuturesMarketSettings is MixinResolver {
     // Per-market settings
     bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
+    bytes32 internal constant PARAMETER_TAKER_FEE_NEXT_PRICE = "takerFeeNextPrice";
+    bytes32 internal constant PARAMETER_MAKER_FEE_NEXT_PRICE = "makerFeeNextPrice";
     bytes32 internal constant PARAMETER_CLOSURE_FEE = "closureFee";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
@@ -65,6 +67,14 @@ contract MixinFuturesMarketSettings is MixinResolver {
         return _parameter(_baseAsset, PARAMETER_MAKER_FEE);
     }
 
+    function _takerFeeNextPrice(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_TAKER_FEE_NEXT_PRICE);
+    }
+
+    function _makerFeeNextPrice(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE);
+    }
+
     function _closureFee(bytes32 _baseAsset) internal view returns (uint) {
         return _parameter(_baseAsset, PARAMETER_CLOSURE_FEE);
     }
@@ -95,6 +105,8 @@ contract MixinFuturesMarketSettings is MixinResolver {
         returns (
             uint takerFee,
             uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
             uint closureFee,
             uint maxLeverage,
             uint maxMarketValueUSD,
@@ -105,6 +117,8 @@ contract MixinFuturesMarketSettings is MixinResolver {
     {
         takerFee = _takerFee(_baseAsset);
         makerFee = _makerFee(_baseAsset);
+        takerFeeNextPrice = _takerFeeNextPrice(_baseAsset);
+        makerFeeNextPrice = _makerFeeNextPrice(_baseAsset);
         closureFee = _closureFee(_baseAsset);
         maxLeverage = _maxLeverage(_baseAsset);
         maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
