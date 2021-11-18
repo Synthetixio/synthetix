@@ -382,7 +382,7 @@
 		},
 		{
 			"sip": 182,
-			"layer": "ovm",
+			"layer": "both",
 			"sources": [
 				"DebtCache",
 				"FeePool",
@@ -670,16 +670,6 @@
 				"minor": 53
 			},
 			"sips": [120, 182]
-		},
-		{
-			"name": "Alkaid (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 53
-			},
-			"sips": []
 		},
 		{
 			"name": "Menkalinan",
