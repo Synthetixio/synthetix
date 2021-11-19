@@ -172,6 +172,9 @@ contract('FuturesMarket', accounts => {
 					'closePositionWithPriceBounds',
 					'liquidatePosition',
 					'recomputeFunding',
+					'submitNextPriceOrder',
+					'cancelNextPriceOrder',
+					'executeNextPriceOrder',
 				],
 			});
 		});

@@ -65,7 +65,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     //  2, Out of deviation dounds w.r.t. to previously stored rate or if there is no
     //  valid stored rate, w.r.t. to previous 3 oracle rates.
     function rateWithInvalid(bytes32 currencyKey) external view returns (uint, bool) {
-        (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
+        (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(currencyKey);
         return (rate, invalid || _isRateOutOfBounds(currencyKey, rate));
     }
 
@@ -81,14 +81,17 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         return _lastExchangeRate[currencyKey];
     }
 
+    function exchangeRates() public view returns (address) {
+        return requireAndGetAddress(CONTRACT_EXRATES);
+    }
+
     /* ========== Internal views ========== */
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
-    }
-
-    function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -114,7 +117,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
             // e.g. purging synths that use some exchanging functionality
         } else {
             // get new rate and check oracle "invalid" state
-            (uint rate, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
+            (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(currencyKey);
             // check and suspend
             if (invalid || _isRateOutOfBounds(currencyKey, rate)) {
                 // check synth exists, to prevent spamming settings for non existant synths
@@ -155,7 +158,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
      * emits LastRateOverriden
      */
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
-        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+        (uint[] memory rates, bool anyRateInvalid) = _exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
         require(!anyRateInvalid, "Rates for given synths not valid");
 
@@ -200,7 +203,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
         }
 
         // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
-        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
+        (uint[] memory rates, ) = _exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
 
         // start at index 1 to ignore current rate
         for (uint i = 1; i < rates.length; i++) {
@@ -216,8 +219,7 @@ contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRat
     // ========== MODIFIERS ==========
 
     modifier onlyExchangeRates() {
-        IExchangeRates _exchangeRates = exchangeRates();
-        require(msg.sender == address(_exchangeRates), "Restricted to ExchangeRates");
+        require(msg.sender == address(_exchangeRates()), "Restricted to ExchangeRates");
         _;
     }
 

@@ -14,6 +14,7 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRatesCircuitBreaker.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
@@ -125,6 +126,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     mapping(address => Position) public positions;
 
     /*
+     * TODO
+     */
+    mapping(address => NextPriceOrder) public nextPriceOrders;
+
+    /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
      * Then marketSkew * (_assetPrice() + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
@@ -143,6 +149,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+
+    // convenience struct for passing params between position modification helper functions
+    struct TradeParams {
+        int sizeDelta;
+        uint price;
+        uint fundingIndex;
+        uint takerFee;
+        uint makerFee;
+    }
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -757,19 +772,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 
-    function _orderFee(
-        int newSize,
-        int existingSize,
-        uint price
-    ) internal view returns (uint) {
-        int existingNotional = existingSize.multiplyDecimalRound(int(price));
+    function _orderFee(int existingSize, TradeParams memory params) internal view returns (uint) {
+        int newSize = existingSize.add(params.sizeDelta);
+        int existingNotional = existingSize.multiplyDecimalRound(int(params.price));
 
         // Charge the closure fee if closing a position entirely.
         if (newSize == 0) {
             return _abs(existingNotional.multiplyDecimalRound(int(_closureFee(baseAsset))));
         }
 
-        int newNotional = newSize.multiplyDecimalRound(int(price));
+        int newNotional = newSize.multiplyDecimalRound(int(params.price));
 
         int notionalDiff = newNotional;
         if (_sameSide(newNotional, existingNotional)) {
@@ -788,23 +800,22 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (_sameSide(newNotional, skew)) {
             // If the order is submitted on the same side as the skew, increasing it.
             // The taker fee is charged on the increase.
-            return _abs(notionalDiff.multiplyDecimalRound(int(_takerFee(baseAsset))));
+            return _abs(notionalDiff.multiplyDecimalRound(int(params.takerFee)));
         }
 
         // Otherwise if the order is opposite to the skew,
         // the maker fee is charged on new notional value up to the size of the existing skew,
         // and the taker fee is charged on any new skew they induce on the order's side of the market.
 
-        int makerFee = int(_makerFee(baseAsset));
-        int fee = notionalDiff.multiplyDecimalRound(makerFee);
+        int fee = notionalDiff.multiplyDecimalRound(int(params.makerFee));
 
         // The notional value of the skew after the order is filled
-        int postSkewNotional = skew.multiplyDecimalRound(int(price)).sub(existingNotional).add(newNotional);
+        int postSkewNotional = skew.multiplyDecimalRound(int(params.price)).sub(existingNotional).add(newNotional);
 
         // The order is sufficient to flip the skew, charge/rebate the difference in fees
         // between maker and taker on the new skew value.
         if (_sameSide(newNotional, postSkewNotional)) {
-            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(_takerFee(baseAsset)).sub(makerFee)));
+            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(params.takerFee).sub(int(params.makerFee))));
         }
 
         return _abs(fee);
@@ -817,43 +828,46 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
         int positionSize = positions[account].size;
-        return (_orderFee(positionSize.add(sizeDelta), positionSize, price), isInvalid);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                fundingIndex: 0, // doesn't matter for fee calculation
+                takerFee: _takerFee(baseAsset),
+                makerFee: _makerFee(baseAsset)
+            });
+        return (_orderFee(positionSize, params), isInvalid);
     }
 
-    function _postTradeDetails(
-        Position memory oldPos,
-        int sizeDelta,
-        uint price,
-        uint fundingIndex
-    )
+    function _postTradeDetails(Position memory oldPos, TradeParams memory params)
         internal
         view
         returns (
             Position memory newPosition,
-            uint _fee,
+            uint fee,
             Status tradeStatus
         )
     {
         // Reverts if the user is trying to submit a size-zero order.
-        if (sizeDelta == 0) {
+        if (params.sizeDelta == 0) {
             return (oldPos, 0, Status.NilOrder);
         }
 
         // The order is not submitted if the user's existing position needs to be liquidated.
-        if (_canLiquidate(oldPos, fundingIndex, price)) {
+        if (_canLiquidate(oldPos, params.fundingIndex, params.price)) {
             return (oldPos, 0, Status.CanLiquidate);
         }
 
-        int newSize = oldPos.size.add(sizeDelta);
+        int newSize = oldPos.size.add(params.sizeDelta);
 
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        uint fee = _orderFee(newSize, oldPos.size, price);
-        (uint newMargin, Status status) = _realisedMargin(oldPos, fundingIndex, price, -int(fee));
+        fee = _orderFee(oldPos.size, params);
+        (uint newMargin, Status status) = _realisedMargin(oldPos, params.fundingIndex, params.price, -int(fee));
         if (_isError(status)) {
             return (oldPos, 0, status);
         }
-        Position memory newPos = Position(oldPos.id, newMargin, newSize, price, fundingIndex);
+        Position memory newPos = Position(oldPos.id, newMargin, newSize, params.price, params.fundingIndex);
 
         // Check that the user has sufficient margin given their order.
         // We don't check the margin requirement if the position size is decreasing
@@ -868,16 +882,19 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Check that the maximum leverage is not exceeded (ignoring the fee).
         // We'll allow a little extra headroom for rounding errors.
-        int leverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(newMargin.add(fee)));
-        if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
-            return (oldPos, 0, Status.MaxLeverageExceeded);
+        {
+            // stack too deep
+            int leverage = newSize.multiplyDecimalRound(int(params.price)).divideDecimalRound(int(newMargin.add(fee)));
+            if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
+                return (oldPos, 0, Status.MaxLeverageExceeded);
+            }
         }
 
         // Check that the order isn't too large for the market.
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
+                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(params.price))),
                 oldPos.size,
                 newPos.size
             )
@@ -909,8 +926,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
         }
 
-        (Position memory newPosition, uint fee_, Status status_) =
-            _postTradeDetails(positions[sender], sizeDelta, price, fundingSequence.length);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                fundingIndex: fundingSequence.length,
+                takerFee: _takerFee(baseAsset),
+                makerFee: _makerFee(baseAsset)
+            });
+        (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(positions[sender], params);
 
         liqPrice = _liquidationPrice(newPosition, true, newPosition.lastPrice);
         return (newPosition.margin, newPosition.size, newPosition.lastPrice, liqPrice, fee_, status_);
@@ -1075,8 +1099,23 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
 
         Position storage position = positions[sender];
-        Position memory oldPosition = position;
+        _updatePositionMargin(position, fundingIndex, price, marginDelta);
 
+        // Emit relevant events
+        if (marginDelta != 0) {
+            emitMarginTransferred(sender, marginDelta);
+        }
+        emitPositionModified(position.id, sender, position.margin, position.size, 0, price, fundingIndex, 0);
+    }
+
+    // udpates the stored position margin in place (on the stored position)
+    function _updatePositionMargin(
+        Position storage position,
+        uint fundingIndex,
+        uint price,
+        int marginDelta
+    ) internal {
+        Position memory oldPosition = position;
         // Determine new margin, ensuring that the result is positive.
         (uint margin, Status status) = _realisedMargin(oldPosition, fundingIndex, price, marginDelta);
         _revertIfError(status);
@@ -1107,12 +1146,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
                 );
             }
         }
-
-        // Emit relevant events
-        if (marginDelta != 0) {
-            emitMarginTransferred(sender, marginDelta);
-        }
-        emitPositionModified(position.id, sender, margin, positionSize, 0, price, fundingIndex, 0);
     }
 
     /*
@@ -1139,18 +1172,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _transferMargin(marginDelta, price, fundingIndex, sender);
     }
 
-    function _modifyPosition(
-        int sizeDelta,
-        uint price,
-        uint fundingIndex,
-        address sender
-    ) internal {
+    function _modifyPosition(address sender, TradeParams memory params) internal {
         Position storage position = positions[sender];
         Position memory oldPosition = position;
 
         // Compute the new position after performing the trade
-        (Position memory newPosition, uint fee, Status status) =
-            _postTradeDetails(oldPosition, sizeDelta, price, fundingIndex);
+        (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
 
         // Update the aggregated market size and skew with the new order size
@@ -1182,11 +1209,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             }
             position.id = id;
             position.size = newPosition.size;
-            position.lastPrice = price;
-            position.fundingIndex = fundingIndex;
+            position.lastPrice = params.price;
+            position.fundingIndex = params.fundingIndex;
         }
         // emit the modification event
-        emitPositionModified(id, sender, position.margin, position.size, sizeDelta, price, fundingIndex, fee);
+        emitPositionModified(
+            id,
+            sender,
+            newPosition.margin,
+            newPosition.size,
+            params.sizeDelta,
+            params.price,
+            params.fundingIndex,
+            fee
+        );
     }
 
     /*
@@ -1196,7 +1232,223 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function modifyPosition(int sizeDelta) external optionalProxy {
         uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
-        _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                fundingIndex: fundingIndex,
+                takerFee: _takerFee(baseAsset),
+                makerFee: _makerFee(baseAsset)
+            });
+        _modifyPosition(messageSender, params);
+    }
+
+    /*
+     * TODO
+     */
+    function submitNextPriceOrder(int sizeDelta) external optionalProxy {
+        // check that a previous order doesn't exist
+        require(nextPriceOrders[messageSender].sizeDelta == 0, "previous order exists");
+
+        Position storage position = positions[messageSender];
+        uint price = _assetPriceRequireChecks();
+        uint fundingIndex = _recomputeFunding(price);
+
+        // simulate the order with current price and market and check that the order doesn't revert
+        // to prevent submitting bad orders in good faith and being charged commitDeposit for them
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                fundingIndex: fundingIndex,
+                takerFee: _takerFeeNextPrice(baseAsset),
+                makerFee: _makerFeeNextPrice(baseAsset)
+            });
+        (, , Status status) = _postTradeDetails(position, params);
+        _revertIfError(status);
+
+        // deduct fees from margin
+        uint commitDeposit = _nextPriceCommitDeposit(position.size, params);
+        uint keeperDeposit = _minKeeperFee();
+        _updatePositionMargin(position, fundingIndex, price, -int(commitDeposit + keeperDeposit));
+
+        // emit event for modidying the position (subtracting the fees from margin)
+        emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
+
+        // store order
+        uint targetRoundId = _exchangeRates().getCurrentRoundId(baseAsset) + 1; // next round
+        nextPriceOrders[messageSender] = NextPriceOrder({
+            sizeDelta: sizeDelta,
+            targetRoundId: targetRoundId,
+            commitDeposit: commitDeposit,
+            keeperDeposit: keeperDeposit
+        });
+
+        // emit event
+        emitNextPriceOrderSubmitted(messageSender, sizeDelta, targetRoundId, commitDeposit, keeperDeposit);
+    }
+
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(_exchangeRatesCircuitBreaker().exchangeRates());
+    }
+
+    /**
+     * TODO
+     */
+    function _nextPriceCommitDeposit(int existingSize, TradeParams memory params) internal view returns (uint) {
+        // modify params to spot fee
+        params.takerFee = _takerFee(baseAsset);
+        params.makerFee = _makerFee(baseAsset);
+        // commit fee is equal to the spot fee that would be paid
+        // this is to prevent free cancellation manipulations (by e.g. withdrawing the margin)
+        return _orderFee(existingSize, params);
+    }
+
+    /*
+     * TODO
+     */
+    function executeNextPriceOrder(address account) external optionalProxy {
+        // important!: order  of the account, not the sender!
+        NextPriceOrder memory order = nextPriceOrders[account];
+        // check that a previous order exists
+        require(order.sizeDelta != 0, "no order");
+
+        // check round-Id
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
+        require(order.targetRoundId <= currentRoundId, "taget roundId not reached");
+
+        // set up the trade
+        uint price = _assetPriceRequireChecks();
+        uint fundingIndex = _recomputeFunding(price);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: order.sizeDelta,
+                price: price,
+                fundingIndex: fundingIndex,
+                takerFee: _takerFeeNextPrice(baseAsset),
+                makerFee: _makerFeeNextPrice(baseAsset)
+            });
+
+        // important!: position of the account, not the sender!
+        // important!: positionRefunded must be in memory and not
+        //             storage because we're adding to its margin
+        Position memory positionRefunded = positions[account];
+        // assume commitDeposit to the margin is refunded
+        positionRefunded.margin += order.commitDeposit;
+        if (messageSender == account) {
+            // assume keeperDeposit to the margin is refunded if this is account owner
+            positionRefunded.margin += order.keeperDeposit;
+        }
+
+        // check if trade should succeed
+        (, , Status status) = _postTradeDetails(positionRefunded, params);
+        bool tradeSuccess = !_isError(status);
+
+        // handles the fees and refunds according to the mechanism rules
+        _handleNextPriceFeesAndRefunds(order, params, account, messageSender, tradeSuccess);
+
+        // execute trade if it should succeed
+        // this happens after the refunds have happened
+        if (tradeSuccess) {
+            _modifyPosition(account, params);
+        }
+
+        // remove stored order
+        delete nextPriceOrders[account];
+        // emit event
+        emitNextPriceOrderRemoved(account, order.sizeDelta, order.targetRoundId, order.commitDeposit, order.keeperDeposit);
+    }
+
+    /**
+     * TODO
+     */
+    function _handleNextPriceFeesAndRefunds(
+        NextPriceOrder memory order,
+        TradeParams memory params,
+        address account,
+        address messageSender,
+        bool tradeSuccess
+    ) internal {
+        // refund keeper fee to margin if it's the account holder
+        uint toRefund = 0;
+        uint toSender = 0;
+        uint toFeePool = 0;
+
+        // handle keeper deposit
+        if (messageSender == account) {
+            toRefund += order.keeperDeposit;
+        } else {
+            toSender += order.keeperDeposit;
+        }
+
+        if (tradeSuccess) {
+            // success
+            // refund the commitment deposit
+            toRefund += order.commitDeposit;
+        } else {
+            // failure
+            toFeePool += order.commitDeposit;
+        }
+
+        // refund to margin
+        if (toRefund > 0) {
+            Position storage position = positions[account];
+            _updatePositionMargin(position, params.fundingIndex, params.price, int(toRefund));
+
+            // emit event for modidying the position (subtracting the fees from margin)
+            emitPositionModified(
+                position.id,
+                account,
+                position.margin,
+                position.size,
+                0,
+                params.price,
+                params.fundingIndex,
+                0
+            );
+        }
+
+        // send keeper fee if needed
+        if (toSender > 0) {
+            _manager().issueSUSD(messageSender, toSender);
+        }
+
+        // send to fee pool
+        if (toFeePool > 0) {
+            _manager().payFee(toFeePool);
+        }
+    }
+
+    /*
+     * TODO
+     */
+    function cancelNextPriceOrder() external optionalProxy {
+        NextPriceOrder memory order = nextPriceOrders[messageSender];
+        // check that a previous order exists
+        require(order.sizeDelta != 0, "no order");
+
+        // refund keeper fee to margin, because this is the account owner
+        Position storage position = positions[messageSender];
+        uint price = _assetPriceRequireChecks();
+        uint fundingIndex = _recomputeFunding(price);
+        _updatePositionMargin(position, fundingIndex, price, int(order.keeperDeposit));
+
+        // emit event for modidying the position (subtracting the fees from margin)
+        emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
+
+        // pay the commitDeposit as fee to the FeePool
+        _manager().payFee(order.commitDeposit);
+
+        // remove stored order
+        delete nextPriceOrders[messageSender];
+        // emit event
+        emitNextPriceOrderRemoved(
+            messageSender,
+            order.sizeDelta,
+            order.targetRoundId,
+            order.commitDeposit,
+            order.keeperDeposit
+        );
     }
 
     function _revertIfPriceOutsideBounds(
@@ -1220,8 +1472,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     ) external optionalProxy {
         uint price = _assetPriceRequireChecks();
         _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
-        uint fundingIndex = _recomputeFunding(price);
-        _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                fundingIndex: _recomputeFunding(price),
+                takerFee: _takerFee(baseAsset),
+                makerFee: _makerFee(baseAsset)
+            });
+        _modifyPosition(messageSender, params);
     }
 
     /*
@@ -1231,7 +1490,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int size = positions[messageSender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
-        _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: -size,
+                price: price,
+                fundingIndex: _recomputeFunding(price),
+                takerFee: _takerFee(baseAsset),
+                makerFee: _makerFee(baseAsset)
+            });
+        _modifyPosition(messageSender, params);
     }
 
     /*
@@ -1242,7 +1509,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
         _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
-        _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: -size,
+                price: price,
+                fundingIndex: _recomputeFunding(price),
+                takerFee: _takerFee(baseAsset),
+                makerFee: _makerFee(baseAsset)
+            });
+        _modifyPosition(messageSender, params);
     }
 
     function _liquidatePosition(
@@ -1377,5 +1652,61 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function emitFundingRecomputed(int funding) internal {
         proxy._emit(abi.encode(funding), 1, SIG_FUNDINGRECOMPUTED, 0, 0, 0);
+    }
+
+    event NextPriceOrderSubmitted(
+        address indexed account,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit
+    );
+
+    bytes32 internal constant SIG_NEXTPRICEORDERSUBMITTED =
+        keccak256("NextPriceOrderSubmitted(address,int256,uint256,uint256,uint256)");
+
+    function emitNextPriceOrderSubmitted(
+        address account,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit
+    ) internal {
+        proxy._emit(
+            abi.encode(sizeDelta, targetRoundId, commitDeposit, keeperDeposit),
+            2,
+            SIG_NEXTPRICEORDERSUBMITTED,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
+    event NextPriceOrderRemoved(
+        address indexed account,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit
+    );
+
+    bytes32 internal constant SIG_NEXTPRICEORDERREMOVED =
+        keccak256("NextPriceOrderRemoved(address,int256,uint256,uint256,uint256)");
+
+    function emitNextPriceOrderRemoved(
+        address account,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit
+    ) internal {
+        proxy._emit(
+            abi.encode(sizeDelta, targetRoundId, commitDeposit, keeperDeposit),
+            2,
+            SIG_NEXTPRICEORDERREMOVED,
+            addressToBytes32(account),
+            0,
+            0
+        );
     }
 }

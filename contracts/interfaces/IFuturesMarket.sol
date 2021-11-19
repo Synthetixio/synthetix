@@ -26,6 +26,14 @@ interface IFuturesMarket {
         uint fundingIndex;
     }
 
+    // next-price order storage
+    struct NextPriceOrder {
+        int sizeDelta; // difference in position to pass to modifyPosition
+        uint targetRoundId; // price oracle roundId using which price this order needs to exucted
+        uint commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds
+        uint keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
+    }
+
     /* ========== FUNCTION INTERFACE ========== */
 
     /* ---------- Market Details ---------- */
@@ -135,6 +143,12 @@ interface IFuturesMarket {
     function withdrawAllMargin() external;
 
     function modifyPosition(int sizeDelta) external;
+
+    function submitNextPriceOrder(int sizeDelta) external;
+
+    function cancelNextPriceOrder() external;
+
+    function executeNextPriceOrder(address account) external;
 
     function modifyPositionWithPriceBounds(
         int sizeDelta,
