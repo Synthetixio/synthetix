@@ -475,7 +475,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
-        // Puting the exchangeRate call here as it's mutative for fast cache reading later on
+        // Puting the exchangeRate call first as it's mutative for fast cache reading later on
         (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
             sourceAmount,
@@ -483,6 +483,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
+
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         // SIP-65: Decentralized Circuit Breaker
         // mutative call to suspend system if the rate is invalid
@@ -492,8 +494,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         ) {
             return (0, 0, IVirtualSynth(0));
         }
-
-        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 

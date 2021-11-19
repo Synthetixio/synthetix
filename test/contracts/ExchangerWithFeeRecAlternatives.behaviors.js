@@ -165,6 +165,16 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedEffectiveRateAsEqualAtRound: cb => {
+			describe(`when mocked with exchange rates at round giving an effective value of 1:1`, () => {
+				beforeEach(async () => {
+					this.mocks.ExchangeRates.smocked.effectiveValueAndRatesAtRound.will.return.with(
+						(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
+					);
+				});
+				cb();
+			});
+		},
 		whenMockedLastNRates: cb => {
 			describe(`when mocked 1e18 as last n rates`, () => {
 				beforeEach(async () => {

@@ -253,7 +253,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 								behaviors.whenMockedWithUintSystemSetting(
 									{ setting: 'waitingPeriodSecs', value: '0' },
 									() => {
-										behaviors.whenMockedEffectiveRateAsEqual(() => {
+										behaviors.whenMockedEffectiveRateAsEqualAtRound(() => {
 											behaviors.whenMockedLastNRates(() => {
 												behaviors.whenMockedASingleSynthToIssueAndBurn(() => {
 													behaviors.whenMockedExchangeStatePersistance(() => {
@@ -289,7 +289,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							behaviors.whenMockedWithUintSystemSetting(
 								{ setting: 'waitingPeriodSecs', value: '0' },
 								() => {
-									behaviors.whenMockedEffectiveRateAsEqual(() => {
+									behaviors.whenMockedEffectiveRateAsEqualAtRound(() => {
 										behaviors.whenMockedLastNRates(() => {
 											behaviors.whenMockedASingleSynthToIssueAndBurn(() => {
 												behaviors.whenMockedExchangeStatePersistance(() => {
