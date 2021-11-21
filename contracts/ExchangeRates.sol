@@ -464,12 +464,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
             require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
 
-            // We should only update the rate if it's at least the same age as the last rate we've got.
-            if (timeSent < _getUpdatedTime(currencyKey)) {
-                continue;
-            }
-
-            // Ok, go ahead with the update.
             _setRate(currencyKey, 0, newRates[i], timeSent);
         }
 
@@ -509,6 +503,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory entry) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         uint roundId = currentRoundForRate[currencyKey];
+        uint currentRoundId = _getCurrentRoundId(currencyKey);
+        // Load the latest round ID
+        roundId = currentRoundId > roundId ? currentRoundId : roundId;
 
         entry = _rates[currencyKey][roundId];
 

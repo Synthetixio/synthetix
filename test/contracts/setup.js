@@ -127,7 +127,11 @@ const setupContract = async ({
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
 		artifact.link(safeDecimalMath);
-		if (/^Exchanger$|^ExchangerWithVirtualSynth$/.test(artifact._json.contractName)) {
+		if (
+			/^Exchanger$|^ExchangerWithVirtualSynth$|^ExchangerWithFeeRecAlternatives$/.test(
+				artifact._json.contractName
+			)
+		) {
 			const DynamicFee = artifacts.require('DynamicFee');
 			DynamicFee.link(safeDecimalMath);
 			artifact.link(await DynamicFee.new());

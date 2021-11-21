@@ -85,6 +85,7 @@ contract('Exchange Rates', async accounts => {
 			'removeAggregator',
 			'setOracle',
 			'updateRates',
+			'effectiveValueAndRatesAtRound',
 		];
 		const withDexPricingFunctions = baseFunctions.concat(['setDexPriceAggregator']);
 
@@ -1512,19 +1513,14 @@ contract('Exchange Rates', async accounts => {
 				});
 
 				describe('when a price already exists for sJPY', () => {
-					const oldPrice = 100;
+					const oldPrice = toUnit(100);
 					let timeOldSent;
 					beforeEach(async () => {
 						timeOldSent = await currentTime();
 
-						await instance.updateRates(
-							[sJPY],
-							[web3.utils.toWei(oldPrice.toString())],
-							timeOldSent,
-							{
-								from: oracle,
-							}
-						);
+						await instance.updateRates([sJPY], [oldPrice], timeOldSent, {
+							from: oracle,
+						});
 					});
 					describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
 						let response;
@@ -1537,7 +1533,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('and equal to the value', () => {
-							assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+							assert.bnEqual(response[0][0], oldPrice);
 						});
 					});
 					describe('when rateAndInvalid is queried with sJPY', () => {
@@ -1551,7 +1547,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('and equal to the value', () => {
-							assert.bnEqual(response[0], web3.utils.toWei(oldPrice.toString()));
+							assert.bnEqual(response[0], oldPrice);
 						});
 					});
 
@@ -1560,7 +1556,7 @@ contract('Exchange Rates', async accounts => {
 							const result = await instance.rateForCurrency(sJPY, {
 								from: accountOne,
 							});
-							assert.equal(result.toString(), toUnit(oldPrice));
+							assert.equal(result.toString(), oldPrice);
 						});
 						it('then the timestamp is returned as expected', async () => {
 							const result = await instance.lastRateUpdateTimes(sJPY, {
@@ -1577,19 +1573,19 @@ contract('Exchange Rates', async accounts => {
 							});
 						});
 						describe('when the price is fetched for sJPY', () => {
-							it('0 is returned', async () => {
+							it('old rate is returned as reading from cache', async () => {
 								const result = await instance.rateForCurrency(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toNumber(), 0);
+								assert.bnEqual(result, oldPrice);
 							});
 						});
 						describe('when the timestamp is fetched for sJPY', () => {
-							it('0 is returned', async () => {
+							it('old time is returned as reading from cache', async () => {
 								const result = await instance.lastRateUpdateTimes(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toNumber(), 0);
+								assert.equal(result.toNumber(), timeOldSent);
 							});
 						});
 						describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
@@ -1598,12 +1594,12 @@ contract('Exchange Rates', async accounts => {
 								response = await instance.ratesAndInvalidForCurrencies([sJPY]);
 							});
 
-							it('then the rates are invalid', () => {
-								assert.equal(response[1], true);
+							it('then the rates are valid as reading from cache', () => {
+								assert.equal(response[1], false);
 							});
 
-							it('with no value', () => {
-								assert.bnEqual(response[0][0], '0');
+							it('with cache value', () => {
+								assert.bnEqual(response[0][0], oldPrice);
 							});
 						});
 						describe('when the rateAndInvalid is queried with sJPY', () => {
@@ -1612,12 +1608,12 @@ contract('Exchange Rates', async accounts => {
 								response = await instance.rateAndInvalid(sJPY);
 							});
 
-							it('then the rate is invalid', () => {
-								assert.equal(response[1], true);
+							it('then the rate is valid', () => {
+								assert.equal(response[1], false);
 							});
 
-							it('with no value', () => {
-								assert.bnEqual(response[0], '0');
+							it('with cache value', () => {
+								assert.bnEqual(response[0], oldPrice);
 							});
 						});
 
@@ -1627,6 +1623,9 @@ contract('Exchange Rates', async accounts => {
 							beforeEach(async () => {
 								await fastForward(50);
 								timestamp = await currentTime();
+								// Need to set twice in order to increase the roundId in aggregator
+								// to be greater than the one in the cache
+								await aggregatorJPY.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 								await aggregatorJPY.setLatestAnswer(convertToDecimals(newRate, 8), timestamp);
 							});
 
@@ -1691,7 +1690,7 @@ contract('Exchange Rates', async accounts => {
 										const result = await instance.rateForCurrency(sJPY, {
 											from: accountOne,
 										});
-										assert.equal(result.toString(), toUnit(oldPrice));
+										assert.equal(result.toString(), oldPrice);
 									});
 									it('and the timestamp is returned as expected', async () => {
 										const result = await instance.lastRateUpdateTimes(sJPY, {
@@ -1711,7 +1710,7 @@ contract('Exchange Rates', async accounts => {
 									});
 
 									it('and equal to the old value', () => {
-										assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+										assert.bnEqual(response[0][0], oldPrice);
 									});
 								});
 
@@ -1726,7 +1725,7 @@ contract('Exchange Rates', async accounts => {
 									});
 
 									it('and equal to the old value', () => {
-										assert.bnEqual(response[0], web3.utils.toWei(oldPrice.toString()));
+										assert.bnEqual(response[0], oldPrice);
 									});
 								});
 							});
@@ -1750,7 +1749,7 @@ contract('Exchange Rates', async accounts => {
 							});
 
 							it('with sXTZ having no value', () => {
-								assert.bnEqual(response[0][0], web3.utils.toWei(oldPrice.toString()));
+								assert.bnEqual(response[0][0], oldPrice);
 								assert.bnEqual(response[0][1], '0');
 							});
 						});
@@ -1768,7 +1767,7 @@ contract('Exchange Rates', async accounts => {
 							});
 
 							it('with sXTZ having no value', () => {
-								assert.bnEqual(responseJPY[0], web3.utils.toWei(oldPrice.toString()));
+								assert.bnEqual(responseJPY[0], oldPrice);
 								assert.bnEqual(responseXTZ[0], '0');
 							});
 						});
@@ -1793,7 +1792,7 @@ contract('Exchange Rates', async accounts => {
 								});
 
 								it('and equal to the values', () => {
-									assert.bnEqual(response[0][0], toUnit(oldPrice.toString()));
+									assert.bnEqual(response[0][0], oldPrice);
 									assert.bnEqual(response[0][1], toUnit(newRate.toString()));
 								});
 							});

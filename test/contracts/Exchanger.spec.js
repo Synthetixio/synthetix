@@ -3256,8 +3256,7 @@ contract('Exchanger (spec tests)', async accounts => {
 															rebateAmount,
 															numEntries,
 														} = await exchanger.settlementOwing(account1, sETH);
-														// Reclaim dropped from 0.25 to 0.2 as fees increased by introducing dynamic fee
-														assert.bnClose(reclaimAmount, toUnit('0.2'), (1e16).toString());
+														assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
 														assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 														assert.equal(numEntries, '2');
 													});
@@ -3276,8 +3275,7 @@ contract('Exchanger (spec tests)', async accounts => {
 																	rebateAmount,
 																	numEntries,
 																} = await exchanger.settlementOwing(account1, sETH);
-																// Reclaim dropped from 0.25 to 0.2 as fees increased by introducing dynamic fee
-																assert.bnClose(reclaimAmount, toUnit('0.2'), (1e16).toString());
+																assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
 																assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 																assert.equal(numEntries, '3');
 															});
