@@ -363,7 +363,7 @@
 			"sip": 167,
 			"layer": "both",
 			"sources": {
-				"base": ["SystemSettings", "OwnerRelayOnEthereum"],
+				"base": ["SystemSettings", "OwnerRelayOnEthereum", "Issuer"],
 				"ovm": ["OwnerRelayOnOptimism"]
 			}
 		},
