@@ -318,7 +318,7 @@ const actions = {
 
 		const Issuer = getContract({
 			contract: 'Issuer',
-			source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
+			source: 'Issuer',
 			network,
 			useOvm,
 			provider,
