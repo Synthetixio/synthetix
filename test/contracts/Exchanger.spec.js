@@ -2221,6 +2221,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set a 0 rate to prevent invalid rate from causing a revert on exchange
 						for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+							// Need to run twice in order to increase the roundId
+							// to be greater than the one in the cache
+							await aggregator.setLatestAnswer('0', await currentTime());
 							await aggregator.setLatestAnswer('0', await currentTime());
 						}
 					});
@@ -2550,11 +2553,18 @@ contract('Exchanger (spec tests)', async accounts => {
 					const ethOnCL = toUnit('200'); // 1 over the ethOnDex
 
 					beforeEach(async () => {
+						// Disable exchange dynamic fee on exchange atomically
+						await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 						// CL aggregator with past price data
 						const aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set prices with no valatility
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 20 * 60);
+						// Need to start from round 11 as the first 10 rounds are used for the setup
+						await aggregator.setLatestAnswerWithRound(
+							ethOnCL,
+							(await currentTime()) - 20 * 60,
+							'11'
+						);
 						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 15 * 60);
 						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 10 * 60);
 						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 5 * 60);
