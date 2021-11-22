@@ -21,7 +21,7 @@ const SafeBatchSubmitter = require('../SafeBatchSubmitter');
 const { getContract } = require('../command-utils/contract');
 const { getBatchCallData } = require('../command-utils/bridge');
 
-const ownerRelay = async ({
+const nominateRelay = async ({
 	l1Network,
 	l2Network,
 	l1DeploymentPath,
@@ -29,6 +29,7 @@ const ownerRelay = async ({
 	l1ProviderUrl,
 	l2ProviderUrl,
 	l1PrivateKey,
+	newOwner,
 	safeOwner,
 	contracts,
 	gasPrice,
@@ -46,6 +47,30 @@ const ownerRelay = async ({
 	l2DeploymentPath = l2DeploymentPath || getDeploymentPathForNetwork({ network: l2Network });
 	ensureDeploymentPath(l1DeploymentPath);
 	ensureDeploymentPath(l2DeploymentPath);
+
+	if (!newOwner) {
+		newOwner = getUsers({ network: l2Network, user: 'owner' }).address;
+	}
+
+	if (!newOwner || !ethers.utils.isAddress(newOwner)) {
+		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
+		process.exit(1);
+	} else {
+		newOwner = newOwner.toLowerCase();
+	}
+
+	if (!isContract && !yes) {
+		try {
+			await confirmAction(
+				yellow(
+					'\nHeads up! You are about to relay nominate ownership signing with an EOA, i.e. not a multisig or a DAO. Are you sure? (y/n) '
+				)
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
+	}
 
 	const { config: l2Config, deployment: l2Deployment } = loadAndCheckRequiredSources({
 		deploymentPath: l2DeploymentPath,
@@ -92,12 +117,23 @@ const ownerRelay = async ({
 		signer: l2Provider,
 		contract: 'OwnerRelayOnOptimism',
 	});
+	if (OwnerRelayOnOptimism.address.toLowerCase() !== newOwner.toLowerCase()) {
+		try {
+			await confirmAction(
+				yellow(
+					'\nHeads up! You are about to nominate ownership to an address different than current OwnerRelayOnOptimism. Are you sure? (y/n) '
+				)
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
+	}
 
 	/// ////////////////////////////////////
 	// FILTER TARGET CONTRACTS
 	/// ////////////////////////////////////
-	const contractsToAccept = [];
-	const relayAddress = OwnerRelayOnOptimism.address.toLowerCase();
+	const contractsToNominate = [];
 	let currentBatchSize = 0;
 	for (const contract of contracts) {
 		if (currentBatchSize >= maxBatchSize) {
@@ -119,24 +155,21 @@ const ownerRelay = async ({
 			deployedContract.nominatedOwner().then(o => o.toLowerCase()),
 		]);
 
-		if (currentOwner === relayAddress) {
-			console.log(gray(`${relayAddress} is already the owner of ${contract}`));
-		} else if (nominatedOwner === relayAddress) {
-			const calldata = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
-
-			contractsToAccept.push({ contract, address: deployedContract.address, calldata });
-			currentBatchSize++;
-		} else {
-			console.log(
-				cyan(
-					`Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the OwnerRelayOnOptimism ${relayAddress}. Have you run the nominate command yet?`
-				)
-			);
+		// check if the owner is already assigned
+		if (currentOwner === newOwner || nominatedOwner === newOwner) {
+			continue;
 		}
+
+		// check for legacy function
+		const nominationFn = 'nominateOwner' in deployedContract ? 'nominateOwner' : 'nominateNewOwner';
+		const calldata = deployedContract.interface.encodeFunctionData(nominationFn, [newOwner]);
+
+		contractsToNominate.push({ contract, address: deployedContract.address, calldata });
+		currentBatchSize++;
 	}
 
-	if (!contractsToAccept.length) {
-		console.log(gray('No contracts to accept ownership.'));
+	if (!contractsToNominate.length) {
+		console.log(gray('No contracts to assign.'));
 		process.exit();
 	}
 
@@ -146,9 +179,9 @@ const ownerRelay = async ({
 				cyan(
 					`${yellow(
 						'WARNING'
-					)}: This action will confirm (accept) ${relayAddress} as the owner in ${l2Network} of the following contracts:\n- ${contractsToAccept
+					)}: This action will nominate ${newOwner} as the owner in ${l2Network} of the following contracts:\n- ${contractsToNominate
 						.map(c => c.contract)
-						.join('\n- ')}\nTotal: ${contractsToAccept.length}`
+						.join('\n- ')}\nTotal: ${contractsToNominate.length}`
 				) + '\nDo you want to continue? (y/n) '
 			);
 		} catch (err) {
@@ -160,13 +193,21 @@ const ownerRelay = async ({
 	/// ////////////////////////////////////
 	// DO THE ACTION
 	/// ////////////////////////////////////
-	const contractsToAcceptCalldata = getBatchCallData({
-		contractsCallData: contractsToAccept,
+	const contractsToNominateCalldata = getBatchCallData({
+		contractsCallData: contractsToNominate,
 		OwnerRelayOnEthereum,
 		xDomainGasLimit: ethers.BigNumber.from(xDomainGasLimit),
 	});
 
 	if (!isContract) {
+		const relayOwner = await OwnerRelayOnEthereum.owner().then(o => o.toLowerCase());
+
+		// Using a relay owned by EOA, we can execute the calls
+		if (relayOwner !== l1Wallet.address.toLowerCase()) {
+			console.log(red('The given L1 wallet is not owner of the OwnerRelayOnEthereum contract'));
+			process.exit(1);
+		}
+
 		const overrides = {
 			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		};
@@ -175,8 +216,8 @@ const ownerRelay = async ({
 		}
 
 		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
-			contractsToAcceptCalldata.targets,
-			contractsToAcceptCalldata.payloads,
+			contractsToNominateCalldata.targets,
+			contractsToNominateCalldata.payloads,
 			ethers.BigNumber.from(xDomainGasLimit),
 			overrides
 		);
@@ -242,7 +283,7 @@ const ownerRelay = async ({
 		console.log(gray('Attempting to append to the batch'));
 		const { appended } = await safeBatchSubmitter.appendTransaction({
 			to: target,
-			data: contractsToAcceptCalldata.batchData,
+			data: contractsToNominateCalldata.batchData,
 		});
 		if (!appended) {
 			console.log(gray('Skipping adding to the batch as already in pending queue'));
@@ -282,12 +323,12 @@ const ownerRelay = async ({
 };
 
 module.exports = {
-	ownerRelay,
+	nominateRelay,
 	cmd: program =>
 		program
-			.command('owner-relay')
+			.command('nominate-relay')
 			.description(
-				'Owner-relay script - accept ownership by OwnerRelayOnOptimism of nominated contracts.'
+				'nominate-relay script - Nominate a new owner for one or more contracts, relayed from L1 to L2 using the OwnerRelayOnEthereum contract'
 			)
 			.option(
 				'--l1-deployment-path <value>',
@@ -316,6 +357,10 @@ module.exports = {
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
 			.option('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
 			.option(
+				'-o, --new-owner <value>',
+				'The address of the new owner (please include the 0x prefix)'
+			)
+			.option(
 				'--safe-owner <value>',
 				'The address of the safe owner (please include the 0x prefix)'
 			)
@@ -336,5 +381,5 @@ module.exports = {
 				},
 				[]
 			)
-			.action(ownerRelay),
+			.action(nominateRelay),
 };
