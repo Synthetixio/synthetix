@@ -201,7 +201,7 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'Issuer',
-		source: useOvm ? 'Issuer',
+		source: 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
