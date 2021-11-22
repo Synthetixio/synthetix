@@ -179,7 +179,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
 					// if ovm remove the +commit... info
-					compilerversion: useOvm ? solcVersion.replace(/\+commit.+$/, '') : solcVersion,
+					compilerversion: solcVersion,
 					optimizationUsed: 1,
 					runs,
 					libraryname1: 'SafeDecimalMath',

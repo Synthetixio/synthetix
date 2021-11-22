@@ -200,7 +200,6 @@ const deploy = async ({
 		dryRun,
 		useOvm,
 		useFork,
-		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 

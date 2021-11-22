@@ -271,6 +271,7 @@ module.exports = async ({
 		writeArg: [2, await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT')],
 		comment: 'Set the gas limit for depositing rewards to L2',
 	});
+
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
@@ -281,6 +282,17 @@ module.exports = async ({
 		write: 'setCrossDomainMessageGasLimit',
 		writeArg: [3, await getDeployParameter('CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT')],
 		comment: 'Set the gas limit for withdrawing from L2',
+	});
+
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'crossDomainMessageGasLimit',
+		readArg: 4,
+		expected: input => input !== '0', // only change if zero
+		write: 'setCrossDomainMessageGasLimit',
+		writeArg: [4, await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT')],
+		comment: 'Set the gas limit for relaying owner actions to L2',
 	});
 
 	const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];

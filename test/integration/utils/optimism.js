@@ -89,14 +89,14 @@ async function finalizationOnL1({ ctx, transactionHash }) {
 async function finalizationOnL2({ ctx, transactionHash }) {
 	const messageHashes = await ctx.watcher.getMessageHashesFromL1Tx(transactionHash);
 	if (hre.config.debugOptimism) {
-		console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L2...`));
+		console.log(chalk.gray(`> Awaiting for ${messageHashes.join(', ')} to finalize on L2...`));
 	}
 
 	const promises = messageHashes.map(messageHash =>
 		ctx.watcher.getL2TransactionReceipt(messageHash)
 	);
 
-	const receipts = await Promise.all(promises).catch(console.log);
+	const receipts = await Promise.all(promises);
 	if (hre.config.debugOptimism) {
 		receipts.map(receipt =>
 			console.log(chalk.gray(`> Tx finalized on L2: ${receipt.transactionHash}`))

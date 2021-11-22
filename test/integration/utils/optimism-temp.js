@@ -44,11 +44,11 @@ function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }
 		fromBlock: 0,
 	};
 	ctx.l1.provider.on(l1Filter, log => {
-		console.log(chalk.green('L1 Messenger log emitted:'));
+		console.log(chalk.green('L1 Messenger log emitted:', log));
 		_printMessengerLog(log);
 	});
 	ctx.l2.provider.on(l2Filter, log => {
-		console.log(chalk.green('L2 Messenger log emitted:'));
+		console.log(chalk.green('L2 Messenger log emitted:', log));
 		_printMessengerLog(log);
 	});
 
@@ -111,10 +111,12 @@ class Watcher {
 		const msgHashes = [];
 		for (const log of receipt.logs) {
 			if (
-				log.address === layer.messengerAddress &&
-				log.topics[0] === ethers.utils.id('SentMessage(bytes)')
+				log.topics[0] === '0x4b388aecf9fa6cc92253704e5975a6129a4f735bdbd99567df4ed0094ee4ceb5' // TransactionEnqueued event
 			) {
-				const [message] = ethers.utils.defaultAbiCoder.decode(['bytes'], log.data);
+				const [, message] = ethers.utils.defaultAbiCoder.decode(
+					['uint', 'bytes', 'uint'],
+					log.data
+				);
 				msgHashes.push(ethers.utils.solidityKeccak256(['bytes'], [message]));
 			}
 		}
@@ -140,11 +142,15 @@ class Watcher {
 		const failureLogs = await layer.provider.getLogs(failureFilter);
 		const logs = successLogs.concat(failureLogs);
 		if (hre.config.debugOptimism) {
-			console.log(chalk.yellow('Watcher.getTransactionReceipt - getLogs:'));
+			console.log(
+				chalk.yellow(
+					`Watcher.getTransactionReceipt - getLogs: ${JSON.stringify(logs.map(l => l.topics[1]))}`
+				)
+			);
 			logs.map(log => _printMessengerLog(log));
 		}
 
-		const matches = logs.filter(log => log.data === msgHash);
+		const matches = logs.filter(log => log.topics[1] === msgHash);
 		if (matches.length > 0) {
 			if (matches.length > 1) {
 				throw Error('Found multiple transactions relaying the same message hash.');
@@ -159,11 +165,13 @@ class Watcher {
 		return new Promise(async (resolve, reject) => {
 			const handleEvent = async log => {
 				if (hre.config.debugOptimism) {
-					console.log(chalk.yellow('Watcher.getTransactionReceipt - handleEvent:'));
+					console.log(
+						chalk.yellow(`Watcher.getTransactionReceipt - handleEvent: ${JSON.stringify(log)}`)
+					);
 					_printMessengerLog(log);
 				}
 
-				if (log.data === msgHash) {
+				if (log.topics[1] === msgHash) {
 					try {
 						const txReceipt = await layer.provider.getTransactionReceipt(log.transactionHash);
 
@@ -190,11 +198,15 @@ function _parseMessengerLog(log) {
 }
 
 function _printMessengerLog(log) {
-	const event = _parseMessengerLog(log);
-	const argName = event.eventFragment.inputs[0].name;
-	const argType = event.eventFragment.inputs[0].type;
-	const argValue = event.args[0];
-	console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
+	try {
+		const event = _parseMessengerLog(log);
+		const argName = event.eventFragment.inputs[0].name;
+		const argType = event.eventFragment.inputs[0].type;
+		const argValue = event.args[0];
+		console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
+	} catch (err) {
+		console.error('could not parse messenger log:', log);
+	}
 }
 
 /*
@@ -211,7 +223,7 @@ async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 
 	async function heartbeat() {
 		await dummyTx({ wallet: l1Wallet, gasPrice: 1, gasLimit: 8000000 });
-		await dummyTx({ wallet: l2Wallet, gasPrice: 0, gasLimit: 33600000000001 });
+		await dummyTx({ wallet: l2Wallet, gasPrice: 0, gasLimit: 3360001 });
 
 		await wait({ seconds: 1 });
 
