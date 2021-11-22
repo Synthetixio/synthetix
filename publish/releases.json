@@ -364,7 +364,7 @@
 			"layer": "both",
 			"sources": {
 				"base": ["SystemSettings", "OwnerRelayOnEthereum"],
-				"ovm": ["OwnerRelayOnOptimism"]
+				"ovm": ["OwnerRelayOnOptimism", "Issuer"]
 			}
 		},
 		{
