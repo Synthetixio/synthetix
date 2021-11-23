@@ -360,6 +360,14 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 167,
+			"layer": "both",
+			"sources": {
+				"base": ["OwnerRelayOnEthereum", "SystemSettings"],
+				"ovm": ["Issuer", "OwnerRelayOnOptimism", "SystemSettings"]
+			}
+		},
+		{
 			"sip": 158,
 			"layer": "base",
 			"released": "base"
