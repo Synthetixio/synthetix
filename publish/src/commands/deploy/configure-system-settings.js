@@ -289,6 +289,7 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 4,
+		readTarget: previousSystemSettings,
 		expected: input => input !== '0', // only change if zero
 		write: 'setCrossDomainMessageGasLimit',
 		writeArg: [4, await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT')],
