@@ -111,10 +111,11 @@ const owner = async ({
 		if (isContract && useOvm) {
 			console.log(gray('New owner is a contract. Assuming it is a relayer.'));
 			// load up L1 deployment for relaying
-			const { providerUrl: l1ProviderUrl } = loadConnections({
+			const { providerUrl: l1ProviderUrl, privateKey: l1PrivateKey } = loadConnections({
 				network,
 				useOvm: false,
 			});
+			const l1Owner = getUsers({ network, user: 'owner', useOvm: false }).address;
 
 			const l1Provider = new ethers.providers.JsonRpcProvider(l1ProviderUrl);
 			relayers = {
@@ -132,6 +133,8 @@ const owner = async ({
 					useOvm: false,
 					provider: l1Provider,
 				}),
+				l1Signer: new ethers.Wallet(l1PrivateKey, l1Provider),
+				l1Owner,
 			};
 
 			console.log(
@@ -247,6 +250,7 @@ const owner = async ({
 			warnings.push(msg);
 			continue;
 		}
+		if (contract !== 'Synthetix') continue;
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
 		const deployedContract = new ethers.Contract(address, abi, provider);
@@ -356,12 +360,9 @@ const owner = async ({
 			console.log(gray('No transactions to stage'));
 		}
 	} else if (relayers) {
-		const { l1Provider, actions, OwnerRelayOnEthereum } = relayers;
+		const { l1Provider, actions, OwnerRelayOnEthereum, l1Signer, l1Owner } = relayers;
 
 		// Load the equivalent L1 safe
-		const l1Owner = getUsers({ network, user: 'owner', useOvm: false }).address;
-		const l1Signer = l1Provider.getSigner(l1Owner);
-		l1Signer.address = await l1Signer.getAddress();
 		const safeBatchSubmitter = await safeInitializer({
 			network,
 			signer: l1Signer,
@@ -383,7 +384,7 @@ const owner = async ({
 			const batchData = OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
 				batchActions.map(({ target }) => target),
 				batchActions.map(({ data }) => data),
-				'0',
+				ethers.BigNumber.from('0'),
 			]);
 			if (safeBatchSubmitter) {
 				safeBatchSubmitter.appendTransaction({
@@ -398,16 +399,17 @@ const owner = async ({
 
 					console.log(gray('Performing action directly'));
 
-					const tx = await (await OwnerRelayOnEthereum.connect(l1Signer)).initiateRelayBatch(
-						batchActions.map(({ target }) => target),
-						batchActions.map(({ data }) => data),
-						0,
-						{
-							type: 2,
-							maxFeePerGas,
-							maxPriorityFeePerGas,
-						}
-					);
+					const params = await assignGasOptions({
+						tx: {
+							to: OwnerRelayOnEthereum.address,
+							data: batchData,
+						},
+						provider: l1Provider,
+						maxFeePerGas,
+						maxPriorityFeePerGas,
+					});
+
+					const tx = await l1Signer.sendTransaction(params);
 
 					const receipt = await tx.wait();
 
