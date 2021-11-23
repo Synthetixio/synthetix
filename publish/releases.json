@@ -394,6 +394,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 184,
+			"layer": "both",
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
+		},
+		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
