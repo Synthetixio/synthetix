@@ -365,7 +365,8 @@
 			"sources": {
 				"base": ["OwnerRelayOnEthereum", "SystemSettings"],
 				"ovm": ["Issuer", "OwnerRelayOnOptimism", "SystemSettings"]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 158,
@@ -681,22 +682,22 @@
 		},
 		{
 			"name": "Menkalinan",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 54
 			},
-			"sips": []
+			"sips": [167]
 		},
 		{
 			"name": "Menkalinan (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 54
 			},
-			"sips": []
+			"sips": [167]
 		},
 		{
 			"name": "Atria",

@@ -21,7 +21,7 @@ const safeInitializer = async ({ network, signer, safeAddress }) => {
 			)
 		);
 
-		return { safeBatchSubmitter, currentNonce, pendingTxns };
+		return safeBatchSubmitter;
 	} catch (err) {
 		if (
 			!/Safe Proxy contract is not deployed in the current network/.test(err.message) &&
