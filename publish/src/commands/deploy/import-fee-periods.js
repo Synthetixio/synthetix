@@ -21,7 +21,7 @@ module.exports = async ({
 	freshDeploy,
 	generateSolidity,
 	network,
-	override,
+	override = true,
 	runStep,
 	skipTimeCheck = false,
 	systemSuspended,
