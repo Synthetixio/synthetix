@@ -149,7 +149,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         )
     {
         uint time;
-        (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
+        (sourceRate, time) = _getRateAndUpdatedTimeAtRound(sourceCurrencyKey, roundIdForSrc);
         // cache for fast read
         _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
@@ -157,7 +157,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
             destinationRate = sourceRate;
             value = sourceAmount;
         } else {
-            (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+            (destinationRate, time) = _getRateAndUpdatedTimeAtRound(destinationCurrencyKey, roundIdForDest);
             // cache for fast read
             _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
@@ -203,7 +203,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (true) {
-            (, nextTimestamp) = _getRateAndTimestampAtRound(currencyKey, roundId + 1);
+            (, nextTimestamp) = _getRateAndUpdatedTimeAtRound(currencyKey, roundId + 1);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0 || nextTimestamp > startingTimestamp + timediff) {
                 return roundId;
@@ -227,8 +227,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+        (uint srcRate, ) = _getRateAndUpdatedTimeAtRound(sourceCurrencyKey, roundIdForSrc);
+        (uint destRate, ) = _getRateAndUpdatedTimeAtRound(destinationCurrencyKey, roundIdForDest);
         if (destRate == 0) {
             // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
             // to aggregator upgrades)
@@ -239,7 +239,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
-        return _getRateAndTimestampAtRound(currencyKey, roundId);
+        return _getRateAndUpdatedTimeAtRound(currencyKey, roundId);
     }
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256) {
@@ -314,7 +314,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         for (uint i = 0; i < numRounds; i++) {
             // fetch the rate and treat is as current, so inverse limits if frozen will always be applied
             // regardless of current rate
-            (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
+            (rates[i], times[i]) = _getRateAndUpdatedTimeAtRound(currencyKey, roundId);
 
             if (roundId == 0) {
                 // if we hit the last round, then return what we have
@@ -540,7 +540,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         }
     }
 
-    function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
+    function _getRateAndUpdatedTimeAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
 

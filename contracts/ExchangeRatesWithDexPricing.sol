@@ -143,7 +143,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint considerationWindowStart = block.timestamp.sub(considerationWindow);
         uint roundId = _getCurrentRoundId(currencyKey);
         for (updateThreshold; updateThreshold > 0; updateThreshold--) {
-            (uint rate, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
+            (uint rate, uint time) = _getRateAndUpdatedTimeAtRound(currencyKey, roundId);
             if (time != 0 && time < considerationWindowStart) {
                 // Round was outside consideration window so we can stop querying further rounds
                 return false;
