@@ -42,6 +42,7 @@ const connectBridge = async ({
 		wallet: walletL1,
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
+		OwnerRelay: OwnerRelayOnEthereum,
 	} = await setupInstance({
 		network: l1Network,
 		providerUrl: l1ProviderUrl,
@@ -61,6 +62,7 @@ const connectBridge = async ({
 		wallet: walletL2,
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
+		OwnerRelay: OwnerRelayOnOptimism,
 	} = await setupInstance({
 		network: l2Network,
 		providerUrl: l2ProviderUrl,
@@ -79,10 +81,10 @@ const connectBridge = async ({
 	await connectLayer({
 		wallet: walletL1,
 		gasLimit: l1GasLimit,
-		names: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
-		addresses: [l1Messenger, SynthetixBridgeToBase.address],
+		names: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'ovm:OwnerRelayOnOptimism'],
+		addresses: [l1Messenger, SynthetixBridgeToBase.address, OwnerRelayOnOptimism.address],
 		AddressResolver: AddressResolverL1,
-		SynthetixBridge: SynthetixBridgeToOptimism,
+		cachables: [SynthetixBridgeToOptimism, OwnerRelayOnEthereum],
 		dryRun,
 	});
 
@@ -94,10 +96,10 @@ const connectBridge = async ({
 	await connectLayer({
 		wallet: walletL2,
 		gasLimit: undefined,
-		names: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
-		addresses: [l2Messenger, SynthetixBridgeToOptimism.address],
+		names: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'base:OwnerRelayOnEthereum'],
+		addresses: [l2Messenger, SynthetixBridgeToOptimism.address, OwnerRelayOnEthereum.address],
 		AddressResolver: AddressResolverL2,
-		SynthetixBridge: SynthetixBridgeToBase,
+		cachables: [SynthetixBridgeToBase, OwnerRelayOnOptimism],
 		dryRun,
 	});
 
@@ -110,7 +112,7 @@ const connectLayer = async ({
 	names,
 	addresses,
 	AddressResolver,
-	SynthetixBridge,
+	cachables,
 	dryRun,
 }) => {
 	// ---------------------------------
@@ -182,27 +184,20 @@ const connectLayer = async ({
 	// Sync cache on bridge if needed
 	// ---------------------------------
 
-	let needToSyncCacheOnBridge = needToImportAddresses;
-	if (!needToSyncCacheOnBridge) {
-		const isResolverCached = await SynthetixBridge.isResolverCached();
-		if (!isResolverCached) {
-			needToSyncCacheOnBridge = true;
-		}
-	}
+	for (const contract of cachables) {
+		const isCached = await contract.isResolverCached();
+		if (!isCached) {
+			if (!dryRun) {
+				console.log(yellow.inverse(`  * CALLING rebuildCache() on ${contract.address}...`));
 
-	if (needToSyncCacheOnBridge) {
-		console.log(yellow('  * Rebuilding caches...'));
+				tx = await contract.rebuildCache(params);
+				receipt = await tx.wait();
 
-		if (!dryRun) {
-			console.log(yellow.inverse('  * CALLING SynthetixBridge.rebuildCache()...'));
-			tx = await SynthetixBridge.rebuildCache(params);
-			receipt = await tx.wait();
-			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
-		} else {
-			console.log(yellow('  * Skipping, since this is a DRY RUN'));
+				console.log(gray(`    > tx hash: ${receipt.transactionHash}`));
+			} else {
+				console.log(yellow('Skipping rebuildCache(), since this is a DRY RUN'));
+			}
 		}
-	} else {
-		console.log(gray('  * Bridge cache is synced in this layer. Skipping...'));
 	}
 };
 
@@ -250,10 +245,21 @@ const setupInstance = async ({
 	});
 	console.log(gray(`  > ${bridgeName}:`, SynthetixBridge.address));
 
+	const relayName = useOvm ? 'OwnerRelayOnOptimism' : 'OwnerRelayOnEthereum';
+	const OwnerRelay = getContract({
+		contract: relayName,
+		getTarget,
+		getSource,
+		deploymentPath,
+		wallet,
+	});
+	console.log(gray(`  > ${relayName}:`, OwnerRelay.address));
+
 	return {
 		wallet,
 		AddressResolver,
 		SynthetixBridge,
+		OwnerRelay,
 	};
 };
 
