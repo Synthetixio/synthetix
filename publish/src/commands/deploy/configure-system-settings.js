@@ -32,8 +32,8 @@ module.exports = async ({
 
 	let previousSystemSettings = deployer.getExistingContract({ contract: 'SystemSettings' });
 
-	// when there is no new system settings, than just read from ourself
-	if (SystemSettings.address === previousSystemSettings.address) {
+	// when there is no new system settings, or when not doing generateSolidity, than just read from ourself
+	if (SystemSettings.address === previousSystemSettings.address || !generateSolidity) {
 		previousSystemSettings = undefined;
 	} else {
 		// otherwise when there's a new system setting, we want to be reading from the old
