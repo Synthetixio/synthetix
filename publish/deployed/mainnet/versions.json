@@ -3824,8 +3824,9 @@
 			},
 			"SystemSettings": {
 				"address": "0xb6B476C41Ea01930e6abE1f44b96800de0404c98",
-				"status": "current",
-				"keccak256": "0xf55f2ffecb24404a42b4476f7cfbf8d7c0043387deec84eb37eddccc01598cbf"
+				"status": "replaced",
+				"keccak256": "0xf55f2ffecb24404a42b4476f7cfbf8d7c0043387deec84eb37eddccc01598cbf",
+				"replaced_in": "v2.54.0"
 			},
 			"DebtCache": {
 				"address": "0x9D5551Cd3425Dd4585c3E7Eb7E4B98902222521E",
@@ -3851,6 +3852,26 @@
 				"address": "0x0a6956d554485a43494D69Eca78C5103511a8fEb",
 				"status": "current",
 				"keccak256": "0x0b16131f068641f79c66eb17f5504abe5e2df3a7c2acb097c8db05de3113c7af"
+			}
+		}
+	},
+	"v2.54.0": {
+		"tag": "v2.54.0",
+		"fulltag": "v2.54.0",
+		"release": "Menkalinan",
+		"network": "mainnet",
+		"date": "2021-11-23T17:28:16-06:00",
+		"commit": "dbd184ae46ed79f94fba5cc23560964b30ae00e3",
+		"contracts": {
+			"SystemSettings": {
+				"address": "0x4D3AF899DF121751422c49Ec3fDe29bE485d220c",
+				"status": "current",
+				"keccak256": "0x5174a68c4015495adf1108cd375b0fe17870dad06237fef60ccfa728e8ad79b7"
+			},
+			"OwnerRelayOnEthereum": {
+				"address": "0x0e16A6876210841577b233C4165d7B7EdF640b8a",
+				"status": "current",
+				"keccak256": "0xa1449f609b4427b695977ed157cfe46414a16d902590507338c7d5fb00c40206"
 			}
 		}
 	}

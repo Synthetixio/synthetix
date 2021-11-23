@@ -316,5 +316,8 @@
 	},
 	"WrapperFactory": {
 		"deploy": false
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": false
 	}
 }
