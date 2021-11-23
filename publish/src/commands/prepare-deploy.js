@@ -34,7 +34,6 @@ const getSipSources = ({ sip, useOvm = false }) => {
 
 	const layerSources = sip.sources[useOvm ? 'ovm' : 'base'] || [];
 
-	console.log(layerSources);
 	return layerSources;
 };
 
