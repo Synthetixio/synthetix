@@ -686,7 +686,7 @@
 				"major": 2,
 				"minor": 54
 			},
-			"sips": [167]
+			"sips": []
 		},
 		{
 			"name": "Menkalinan (Optimism)",
@@ -696,7 +696,7 @@
 				"major": 2,
 				"minor": 54
 			},
-			"sips": [167]
+			"sips": []
 		},
 		{
 			"name": "Atria",
