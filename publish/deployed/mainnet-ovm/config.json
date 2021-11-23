@@ -157,5 +157,8 @@
 	},
 	"WrapperFactory": {
 		"deploy": false
+	},
+	"OwnerRelayOnOptimism": {
+		"deploy": false
 	}
 }
