@@ -250,7 +250,6 @@ const owner = async ({
 			warnings.push(msg);
 			continue;
 		}
-		if (contract !== 'Synthetix') continue;
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
 		const deployedContract = new ethers.Contract(address, abi, provider);
