@@ -47,14 +47,9 @@ const ownerRelay = async ({
 	ensureDeploymentPath(l1DeploymentPath);
 	ensureDeploymentPath(l2DeploymentPath);
 
-	const { config: l2Config, deployment: l2Deployment } = loadAndCheckRequiredSources({
+	const { config: l2Config } = loadAndCheckRequiredSources({
 		deploymentPath: l2DeploymentPath,
 		network: l2Network,
-	});
-
-	const { deployment: l1Deployment } = loadAndCheckRequiredSources({
-		deploymentPath: l1DeploymentPath,
-		network: l1Network,
 	});
 
 	const l1Provider = new ethers.providers.JsonRpcProvider(l1ProviderUrl);
@@ -79,17 +74,23 @@ const ownerRelay = async ({
 		});
 	} else {
 		// if contracts not supplied, use all contracts except the DappMaintenance (UI control)
-		contracts = Object.keys(l2Config).filter(contract => contract !== 'DappMaintenance');
+		contracts = Object.keys(l2Config).filter(
+			contract => contract !== 'DappMaintenance' && contract !== 'ProxysUSD'
+		);
 	}
 
 	const OwnerRelayOnEthereum = getContract({
-		deployment: l1Deployment,
-		signer: l1Wallet,
+		wallet: l1Wallet,
+		network: l1Network,
+		useOvm: false,
+		deploymentPath: l1DeploymentPath,
 		contract: 'OwnerRelayOnEthereum',
 	});
 	const OwnerRelayOnOptimism = getContract({
-		deployment: l2Deployment,
-		signer: l2Provider,
+		provider: l2Provider,
+		network: l2Network,
+		useOvm: true,
+		deploymentPath: l2DeploymentPath,
 		contract: 'OwnerRelayOnOptimism',
 	});
 
@@ -104,8 +105,10 @@ const ownerRelay = async ({
 			break;
 		}
 		const deployedContract = getContract({
-			deployment: l2Deployment,
-			signer: l2Provider,
+			network: l2Network,
+			useOvm: true,
+			deploymentPath: l2DeploymentPath,
+			provider: l2Provider,
 			contract,
 		});
 
@@ -167,20 +170,14 @@ const ownerRelay = async ({
 	});
 
 	if (!isContract) {
-		const overrides = {
-			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-		};
-		if (gasLimit) {
-			overrides.gasLimit = gasLimit;
-		}
-
 		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
 			contractsToAcceptCalldata.targets,
 			contractsToAcceptCalldata.payloads,
-			ethers.BigNumber.from(xDomainGasLimit),
-			overrides
+			ethers.BigNumber.from(xDomainGasLimit)
 		);
+		console.log(`Sending initiateRelayBatch transaction...`);
 		await tx.wait();
+		console.log(`Done! Transaction hash: ${tx.hash}`);
 	} else {
 		const target = OwnerRelayOnEthereum.address();
 		// Using a relay owned by teh DAO. We need to stage the transaction in Gnosis Safe.
