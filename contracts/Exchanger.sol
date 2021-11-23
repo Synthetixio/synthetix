@@ -7,7 +7,6 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IExchanger.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
 import "./DynamicFee.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
