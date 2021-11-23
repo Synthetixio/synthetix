@@ -253,5 +253,8 @@
 	},
 	"SynthRedeemer": {
 		"deploy": false
+	},
+	"WrapperFactory": {
+		"deploy": false
 	}
 }

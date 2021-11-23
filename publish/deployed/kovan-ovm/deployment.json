@@ -218,10 +218,10 @@
 		},
 		"ProxySynthetix": {
 			"name": "ProxySynthetix",
-			"address": "0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02",
-			"source": "Proxy",
-			"link": "https://kovan-explorer.optimism.io/address/0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02",
-			"timestamp": "2021-01-14T17:21:06.531Z",
+			"address": "0x0064A673267696049938AA47595dD0B3C2e705A1",
+			"source": "ProxyERC20",
+			"link": "https://kovan-explorer.optimism.io/address/0x0064A673267696049938AA47595dD0B3C2e705A1",
+			"timestamp": "2021-01-14T17:21:00.688Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -290,10 +290,10 @@
 		},
 		"ProxysUSD": {
 			"name": "ProxysUSD",
-			"address": "0xFf6a235133dc1233B20c5AB4C86885eBe90a69ee",
+			"address": "0xaA5068dC2B3AADE533d3e52C6eeaadC6a8154c57",
 			"source": "ProxyERC20",
-			"link": "https://kovan-explorer.optimism.io/address/0xFf6a235133dc1233B20c5AB4C86885eBe90a69ee",
-			"timestamp": "2021-01-14T17:21:46.683Z",
+			"link": "https://kovan-explorer.optimism.io/address/0xaA5068dC2B3AADE533d3e52C6eeaadC6a8154c57",
+			"timestamp": "2021-01-14T17:21:48.924Z",
 			"txn": "",
 			"network": "kovan"
 		},

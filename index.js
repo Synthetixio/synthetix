@@ -14,7 +14,6 @@ const data = {
 };
 
 const assets = require('./publish/assets.json');
-const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
@@ -659,7 +658,6 @@ module.exports = {
 	toBytes32,
 	fromBytes32,
 	wrap,
-	ovmIgnored,
 	nonUpgradeable,
 	releases,
 	knownAccounts,

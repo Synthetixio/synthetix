@@ -200,7 +200,6 @@ const deploy = async ({
 		dryRun,
 		useOvm,
 		useFork,
-		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
@@ -259,6 +258,7 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
 			ownerActionsFile,
+			useFork,
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op
@@ -369,12 +369,13 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
-		explorerLinkPrefix,
-		generateSolidity,
-		synths,
-		feeds,
 		deployer,
+		explorerLinkPrefix,
+		feeds,
+		generateSolidity,
+		network,
 		runStep,
+		synths,
 	});
 
 	await addSynthsToProtocol({

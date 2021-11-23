@@ -58,7 +58,7 @@ module.exports = async ({
 							addressArgs[1].push(contract.address);
 
 							const { source, address } = contract;
-							newContractsBeingAdded[contract.address] = { name, source, address };
+							newContractsBeingAdded[contract.address] = { name, source, address, contract };
 						}
 					});
 				})
