@@ -31,10 +31,11 @@ const getSips = ({ useOvm = false }) => {
 const getSipSources = ({ sip, useOvm = false }) => {
 	if (!sip.sources) return [];
 	if (Array.isArray(sip.sources)) return sip.sources;
-	const baseSources = sip.sources.base || [];
+
 	const layerSources = sip.sources[useOvm ? 'ovm' : 'base'] || [];
-	console.log([...baseSources, ...layerSources]);
-	return [...baseSources, ...layerSources];
+
+	console.log(layerSources);
+	return layerSources;
 };
 
 const prepareDeploy = async ({
