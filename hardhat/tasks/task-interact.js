@@ -361,7 +361,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					const txPromise = contract[abiItemName](...inputs, overrides);
 					result = await _sendTx({
 						txPromise,
-						provider,
 					});
 
 					if (result.success) {
