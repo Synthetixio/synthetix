@@ -11,21 +11,23 @@ describe('deposit() integration tests (L1, L2)', () => {
 	const amountToDeposit = ethers.utils.parseEther('10');
 
 	let owner;
-	let Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow;
+	let Synthetix, SynthetixL2, SynthetixBridgeToOptimism, SynthetixBridgeEscrow;
 
-	let ownerBalance, escrowBalance;
+	let ownerBalance, ownerL2Balance, escrowBalance;
 
 	let depositReceipt;
 
 	describe('when the owner deposits SNX', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow } = ctx.l1.contracts);
+			({ Synthetix: SynthetixL2 } = ctx.l2.contracts);
 
 			owner = ctx.l1.users.owner;
 		});
 
 		before('record balances', async () => {
 			ownerBalance = await Synthetix.balanceOf(owner.address);
+			ownerL2Balance = await SynthetixL2.balanceOf(owner.address);
 			escrowBalance = await Synthetix.balanceOf(SynthetixBridgeEscrow.address);
 		});
 
@@ -59,13 +61,8 @@ describe('deposit() integration tests (L1, L2)', () => {
 
 		describe('when the deposit gets picked up in L2', () => {
 			before('target contracts and users', () => {
-				({ Synthetix } = ctx.l2.contracts);
 
 				owner = ctx.l2.users.owner;
-			});
-
-			before('record balances', async () => {
-				ownerBalance = await Synthetix.balanceOf(owner.address);
 			});
 
 			before('wait for deposit finalization', async () => {
@@ -73,7 +70,7 @@ describe('deposit() integration tests (L1, L2)', () => {
 			});
 
 			it('increases the owner balance', async () => {
-				assert.bnEqual(await Synthetix.balanceOf(owner.address), ownerBalance.add(amountToDeposit));
+				assert.bnEqual(await SynthetixL2.balanceOf(owner.address), ownerL2Balance.add(amountToDeposit));
 			});
 		});
 	});

@@ -20,6 +20,7 @@ describe('depositTo() integration tests (L1, L2)', () => {
 	describe('when the owner deposits SNX for a user', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow } = ctx.l1.contracts);
+			({ Synthetix: SynthetixL2 } = ctx.l2.contracts);
 
 			owner = ctx.l1.users.owner;
 			user = ctx.l1.users.someUser;
@@ -28,6 +29,7 @@ describe('depositTo() integration tests (L1, L2)', () => {
 		before('record balances', async () => {
 			ownerBalance = await Synthetix.balanceOf(owner.address);
 			escrowBalance = await Synthetix.balanceOf(SynthetixBridgeEscrow.address);
+			beneficiaryBalance = await SynthetixL2.balanceOf(user.address);
 		});
 
 		before('approve if needed', async () => {
@@ -65,17 +67,13 @@ describe('depositTo() integration tests (L1, L2)', () => {
 				owner = ctx.l2.users.owner;
 			});
 
-			before('record balances', async () => {
-				beneficiaryBalance = await Synthetix.balanceOf(user.address);
-			});
-
 			before('wait for deposit finalization', async () => {
 				await finalizationOnL2({ ctx, transactionHash: depositReceipt.transactionHash });
 			});
 
 			it('increases the beneficiary balance', async () => {
 				assert.bnEqual(
-					await Synthetix.balanceOf(user.address),
+					await SynthetixL2.balanceOf(user.address),
 					beneficiaryBalance.add(amountToDeposit)
 				);
 			});

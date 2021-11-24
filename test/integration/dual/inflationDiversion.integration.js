@@ -12,16 +12,21 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 
 	let ownerL1, ownerL2;
 
-	let FeePool,
+	let FeePoolL2,
 		RewardsDistributionL1,
 		RewardsDistributionL2,
-		RewardEscrowV2,
+		RewardEscrowV2L2,
 		Synthetix,
+		SynthetixL2,
 		SynthetixBridgeToOptimism,
 		SynthetixBridgeEscrow,
 		TradingRewards;
 
 	let depositReceipt;
+
+	let currentFeePeriodRewards;
+	let rewardEscrowBalanceL2, tradingRewardsBalanceL2;
+	const rewardsToDistribute = rewardsToDeposit.sub(tradingRewards);
 
 	describe('when the owner diverts part of the inflation to L2', () => {
 		before('target contracts and users', () => {
@@ -33,7 +38,7 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 				SynthetixBridgeToOptimism,
 			} = ctx.l1.contracts);
 
-			({ RewardsDistribution: RewardsDistributionL2, TradingRewards } = ctx.l2.contracts);
+			({ RewardsDistribution: RewardsDistributionL2, TradingRewards, FeePool: FeePoolL2, RewardEscrowV2: RewardEscrowV2L2, Synthetix: SynthetixL2 } = ctx.l2.contracts);
 
 			ownerL1 = ctx.l1.users.owner;
 			ownerL2 = ctx.l2.users.owner;
@@ -44,6 +49,10 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 
 			before('record values', async () => {
 				escrowBalance = await Synthetix.balanceOf(SynthetixBridgeEscrow.address);
+
+				rewardEscrowBalanceL2 = await SynthetixL2.balanceOf(RewardEscrowV2L2.address);
+				tradingRewardsBalanceL2 = await SynthetixL2.balanceOf(TradingRewards.address);
+				currentFeePeriodRewards = (await FeePoolL2.recentFeePeriods(0)).rewardsToDistribute;
 			});
 
 			before('add new distributions', async () => {
@@ -89,41 +98,27 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 				});
 
 				describe('when the rewards deposit gets picked up in L2', () => {
-					let currentFeePeriodRewards;
-					let rewardEscrowBalanceL2, tradingRewardsBalanceL2;
-					const rewardsToDistribute = rewardsToDeposit.sub(tradingRewards);
-
-					before('target contracts', () => {
-						({ FeePool, RewardEscrowV2, Synthetix } = ctx.l2.contracts);
-					});
-
-					before('record current values', async () => {
-						rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
-						tradingRewardsBalanceL2 = await Synthetix.balanceOf(TradingRewards.address);
-						currentFeePeriodRewards = (await FeePool.recentFeePeriods(0)).rewardsToDistribute;
-					});
-
 					before('wait for deposit finalization', async () => {
 						await finalizationOnL2({ ctx, transactionHash: depositReceipt.transactionHash });
 					});
 
 					it('increases the current fee periods rewards to distribute', async () => {
 						assert.bnEqual(
-							(await FeePool.recentFeePeriods(0)).rewardsToDistribute,
+							(await FeePoolL2.recentFeePeriods(0)).rewardsToDistribute,
 							currentFeePeriodRewards.add(rewardsToDistribute)
 						);
 					});
 
 					it('increases the TradingRewards balance on L2', async () => {
 						assert.bnEqual(
-							await Synthetix.balanceOf(TradingRewards.address),
+							await SynthetixL2.balanceOf(TradingRewards.address),
 							tradingRewardsBalanceL2.add(tradingRewards)
 						);
 					});
 
 					it('increases the RewardEscrowV2 balance on L2', async () => {
 						assert.bnEqual(
-							await Synthetix.balanceOf(RewardEscrowV2.address),
+							await SynthetixL2.balanceOf(RewardEscrowV2L2.address),
 							rewardEscrowBalanceL2.add(rewardsToDistribute)
 						);
 					});
