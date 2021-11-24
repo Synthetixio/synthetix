@@ -121,46 +121,24 @@ contract('SystemSettings', async accounts => {
 				'Out of range xDomain gasLimit'
 			);
 		});
-		it('the owner can invoke and replace with emitted event', async () => {
-			const newLimit = 4e6;
-			const gasLimitType = 0;
-			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
-				from: owner,
+
+		function itCanSetCrossDomainGasLimitOfType({ gasLimitType }) {
+			it(`the owner a crossDomainMessageGasLimit of type ${gasLimitType} with emitted event`, async () => {
+				const newLimit = 4e6;
+				const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+					from: owner,
+				});
+				const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
+				assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
+				assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
 			});
-			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
-			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
-			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
-		});
-		it('the owner can invoke and replace with emitted event', async () => {
-			const newLimit = 4e6;
-			const gasLimitType = 1;
-			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
-				from: owner,
-			});
-			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
-			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
-			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
-		});
-		it('the owner can invoke and replace with emitted event', async () => {
-			const newLimit = 4e6;
-			const gasLimitType = 2;
-			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
-				from: owner,
-			});
-			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
-			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
-			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
-		});
-		it('the owner can invoke and replace with emitted event', async () => {
-			const newLimit = 4e6;
-			const gasLimitType = 3;
-			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
-				from: owner,
-			});
-			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
-			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
-			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
-		});
+		}
+
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 0 });
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 1 });
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 2 });
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 3 });
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 4 });
 	});
 
 	describe('setTradingRewardsEnabled()', () => {
