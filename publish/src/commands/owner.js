@@ -162,7 +162,7 @@ const owner = async ({
 			}
 		}
 
-		console.log(gray(`Gas: base fee${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
+		console.log(gray(`Gas: base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
 	}
 
 	const confirmOrEnd = async message => {
@@ -380,7 +380,7 @@ const owner = async ({
 		const batchSize = 20;
 
 		for (let i = 0; i < actions.length; i += batchSize) {
-			const batchActions = actions.slice(i, batchSize);
+			const batchActions = actions.slice(i, i + batchSize);
 			const batchData = OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
 				batchActions.map(({ target }) => target),
 				batchActions.map(({ data }) => data),
