@@ -161,6 +161,11 @@ const connectLayer = async ({
 
 			const owner = await AddressResolver.owner();
 			if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
+				const calldata = await AddressResolver.interface.encodeFunctionData('importAddresses', [
+					names.map(toBytes32),
+					addresses,
+				]);
+				console.log('Calldata is', calldata);
 				await confirmAction(
 					yellow(
 						`    ⚠️  AddressResolver is owned by ${owner} and the current signer is $${wallet.address}. Please execute the above transaction and press "y" when done.`
