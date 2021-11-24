@@ -1,5 +1,5 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toWei } = web3.utils;
+const { toWei, toBN } = web3.utils;
 const { toBytes32 } = require('../../');
 const { currentTime, toUnit } = require('../utils')();
 const { setupContract, setupAllContracts } = require('./setup');
@@ -105,6 +105,7 @@ contract('FuturesMarketData', accounts => {
 				toWei('0.0005'), // 0.05% taker fee next price
 				toWei('0'), // 0% maker fee next price
 				toWei('0'), // nil closure fee
+				toBN('2'), // 2 rounds next price confirm window
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
 				toWei('0.2'), // 20% max funding rate

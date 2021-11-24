@@ -25,6 +25,7 @@ contract('FuturesMarketSettings', accounts => {
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const closureFee = toUnit('0');
+	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 
@@ -84,6 +85,7 @@ contract('FuturesMarketSettings', accounts => {
 				'setTakerFeeNextPrice',
 				'setMakerFeeNextPrice',
 				'setClosureFee',
+				'setNextPriceConfirmWindow',
 				'setMaxLeverage',
 				'setMaxMarketValueUSD',
 				'setMaxFundingRate',
@@ -106,6 +108,7 @@ contract('FuturesMarketSettings', accounts => {
 				takerFee,
 				makerFee,
 				closureFee,
+				nextPriceConfirmWindow,
 				maxLeverage,
 				maxMarketValueUSD,
 				maxFundingRate,

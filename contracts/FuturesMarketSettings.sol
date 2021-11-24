@@ -72,6 +72,13 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     /*
+     * The number of price update rounds during which confirming next-price is allowed
+     */
+    function nextPriceConfirmWindow(bytes32 _baseAsset) public view returns (uint) {
+        return _nextPriceConfirmWindow(_baseAsset);
+    }
+
+    /*
      * The maximum allowable leverage in a market.
      */
     function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
@@ -115,6 +122,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _takerFeeNextPrice,
             uint _makerFeeNextPrice,
             uint _closureFee,
+            uint _nextPriceConfirmWindow,
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,
@@ -194,6 +202,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_CLOSURE_FEE, _closureFee);
     }
 
+    function setNextPriceConfirmWindow(bytes32 _baseAsset, uint _nextPriceConfirmWindow) public onlyOwner {
+        _setParameter(_baseAsset, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
+    }
+
     function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
@@ -232,6 +244,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _takerFeeNextPrice,
         uint _makerFeeNextPrice,
         uint _closureFee,
+        uint _nextPriceConfirmWindow,
         uint _maxLeverage,
         uint _maxMarketValueUSD,
         uint _maxFundingRate,
@@ -244,6 +257,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setTakerFeeNextPrice(_baseAsset, _takerFeeNextPrice);
         setMakerFeeNextPrice(_baseAsset, _makerFeeNextPrice);
         setClosureFee(_baseAsset, _closureFee);
+        setNextPriceConfirmWindow(_baseAsset, _nextPriceConfirmWindow);
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
         setMaxFundingRate(_baseAsset, _maxFundingRate);

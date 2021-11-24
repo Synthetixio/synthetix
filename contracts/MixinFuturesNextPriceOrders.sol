@@ -93,7 +93,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
 
         if (account == messageSender) {
-            // is this account owner
+            // this is account owner
             // refund keeper fee to margin
             Position storage position = positions[account];
             uint price = _assetPriceRequireChecks();
@@ -106,7 +106,10 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             // this is someone else (like a keeper)
             // cancellation by third party is only possible when execution cannot be attempted any longer
             // otherwise someone might try to grief an account by cancelling for the keeper fee
-            require(currentRoundId - order.targetRoundId > _maxRoundsGap(), "cannot be cancelled by keeper yet");
+            require(
+                currentRoundId - order.targetRoundId > _nextPriceConfirmWindow(baseAsset),
+                "cannot be cancelled by keeper yet"
+            );
 
             // send keeper fee to keeper
             _manager().issueSUSD(messageSender, order.keeperDeposit);
@@ -143,14 +146,14 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
 
         // check round-Id
         uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
-        require(order.targetRoundId <= currentRoundId, "taget roundId not reached");
+        require(order.targetRoundId <= currentRoundId, "target roundId not reached");
 
         // check order is not too old to execute
         // we cannot allow executing old orders because otherwise future knowledge
         // can be used to trigger failures of orders that are more profitable
         // then the commitFee that was charged, or can be used to confirm
         // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(currentRoundId - order.targetRoundId <= _maxRoundsGap(), "order too old, use cancel");
+        require(currentRoundId - order.targetRoundId <= _nextPriceConfirmWindow(baseAsset), "order too old, use cancel");
 
         // handle the fees and refunds according to the mechanism rules
         uint toRefund = order.commitDeposit; // refund the commitment deposit
@@ -176,13 +179,10 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // set up the trade params
         TradeParams memory params =
             TradeParams({
-                sizeDelta: order.sizeDelta,
-                price: // using the pastPrice from the target roundId
-                pastPrice,
-                fundingIndex: // the funding is applied only from order confirmation time
-                fundingIndex,
-                takerFee: // using the next-price fees
-                _takerFeeNextPrice(baseAsset),
+                sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
+                price: pastPrice, // the funding is applied only from order confirmation time
+                fundingIndex: fundingIndex, // using the next-price fees
+                takerFee: _takerFeeNextPrice(baseAsset),
                 makerFee: _makerFeeNextPrice(baseAsset)
             });
         // execute or revert
@@ -210,11 +210,6 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // commit fee is equal to the spot fee that would be paid
         // this is to prevent free cancellation manipulations (by e.g. withdrawing the margin)
         return _orderFee(existingSize, params);
-    }
-
-    // TODO: add parameter
-    function _maxRoundsGap() internal view returns (uint) {
-        return 2;
     }
 
     ///// Events

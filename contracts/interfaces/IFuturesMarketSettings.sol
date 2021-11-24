@@ -7,6 +7,7 @@ interface IFuturesMarketSettings {
         uint takerFeeNextPrice;
         uint makerFeeNextPrice;
         uint closureFee;
+        uint nextPriceConfirmWindow;
         uint maxLeverage;
         uint maxMarketValueUSD;
         uint maxFundingRate;
@@ -23,6 +24,8 @@ interface IFuturesMarketSettings {
     function makerFeeNextPrice(bytes32 _baseAsset) external view returns (uint);
 
     function closureFee(bytes32 _baseAsset) external view returns (uint);
+
+    function nextPriceConfirmWindow(bytes32 _baseAsset) external view returns (uint);
 
     function maxLeverage(bytes32 _baseAsset) external view returns (uint);
 
@@ -43,6 +46,7 @@ interface IFuturesMarketSettings {
             uint _takerFeeNextPrice,
             uint _makerFeeNextPrice,
             uint _closureFee,
+            uint _nextPriceConfirmWindow,
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,

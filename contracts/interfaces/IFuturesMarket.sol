@@ -52,6 +52,7 @@ interface IFuturesMarket {
             uint takerFeeNextPrice,
             uint makerFeeNextPrice,
             uint closureFee,
+            uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
