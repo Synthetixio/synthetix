@@ -114,18 +114,25 @@ class Watcher {
 				log.address === layer.messengerAddress &&
 				log.topics[0] === '0xcb0f7ffd78f9aee47a248fae8db181db6eee833039123e026dcbff529522e52a' // SentMessage event
 			) {
-				const [sender, message, messageNonce] = ethers.utils.defaultAbiCoder.decode(['address', 'bytes', 'uint256', 'uint256'], log.data);
+				const [sender, message, messageNonce] = ethers.utils.defaultAbiCoder.decode(
+					['address', 'bytes', 'uint256', 'uint256'],
+					log.data
+				);
 
-				const msgWithoutMethod = ethers.utils.defaultAbiCoder.encode(['address', 'address', 'bytes', 'uint256'], [ethers.utils.defaultAbiCoder.decode(['address'], log.topics[1])[0], sender, message, messageNonce]);
+				const msgWithoutMethod = ethers.utils.defaultAbiCoder.encode(
+					['address', 'address', 'bytes', 'uint256'],
+					[
+						ethers.utils.defaultAbiCoder.decode(['address'], log.topics[1])[0],
+						sender,
+						message,
+						messageNonce,
+					]
+				);
 
 				const fullMsg = '0xcbd4ece9' + msgWithoutMethod.slice(2);
 
 				if (hre.config.debugOptimism) {
-					console.log(
-						chalk.yellow(
-							`encoded msg for hash: ${fullMsg}`
-						)
-					);
+					console.log(chalk.yellow(`encoded msg for hash: ${fullMsg}`));
 				}
 
 				msgHashes.push(ethers.utils.keccak256(fullMsg));
@@ -216,7 +223,7 @@ function _printMessengerLog(log) {
 		const argValue = event.args[0];
 		console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
 	} catch (err) {
-		//console.error('could not parse messenger log:', log);
+		// console.error('could not parse messenger log:', log);
 	}
 }
 

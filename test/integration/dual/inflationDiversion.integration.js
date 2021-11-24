@@ -31,14 +31,19 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 	describe('when the owner diverts part of the inflation to L2', () => {
 		before('target contracts and users', () => {
 			({
-				FeePool,
 				RewardsDistribution: RewardsDistributionL1,
 				Synthetix,
 				SynthetixBridgeEscrow,
 				SynthetixBridgeToOptimism,
 			} = ctx.l1.contracts);
 
-			({ RewardsDistribution: RewardsDistributionL2, TradingRewards, FeePool: FeePoolL2, RewardEscrowV2: RewardEscrowV2L2, Synthetix: SynthetixL2 } = ctx.l2.contracts);
+			({
+				RewardsDistribution: RewardsDistributionL2,
+				TradingRewards,
+				FeePool: FeePoolL2,
+				RewardEscrowV2: RewardEscrowV2L2,
+				Synthetix: SynthetixL2,
+			} = ctx.l2.contracts);
 
 			ownerL1 = ctx.l1.users.owner;
 			ownerL2 = ctx.l2.users.owner;

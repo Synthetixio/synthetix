@@ -61,7 +61,6 @@ describe('deposit() integration tests (L1, L2)', () => {
 
 		describe('when the deposit gets picked up in L2', () => {
 			before('target contracts and users', () => {
-
 				owner = ctx.l2.users.owner;
 			});
 
@@ -70,7 +69,10 @@ describe('deposit() integration tests (L1, L2)', () => {
 			});
 
 			it('increases the owner balance', async () => {
-				assert.bnEqual(await SynthetixL2.balanceOf(owner.address), ownerL2Balance.add(amountToDeposit));
+				assert.bnEqual(
+					await SynthetixL2.balanceOf(owner.address),
+					ownerL2Balance.add(amountToDeposit)
+				);
 			});
 		});
 	});

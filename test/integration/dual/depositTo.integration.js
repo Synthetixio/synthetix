@@ -11,7 +11,7 @@ describe('depositTo() integration tests (L1, L2)', () => {
 	const amountToDeposit = ethers.utils.parseEther('10');
 
 	let owner, user;
-	let Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow;
+	let Synthetix, SynthetixL2, SynthetixBridgeToOptimism, SynthetixBridgeEscrow;
 
 	let ownerBalance, beneficiaryBalance, escrowBalance;
 
