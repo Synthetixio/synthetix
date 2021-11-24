@@ -396,7 +396,7 @@
 		{
 			"sip": 184,
 			"layer": "both",
-			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings", "DynamicFee"]
 		},
 		{
 			"sip": 187,
