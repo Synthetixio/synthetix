@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
+import "./interfaces/IFuturesMarketBaseTypes.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
@@ -83,7 +84,7 @@ contract FuturesMarketData {
     }
 
     struct PositionData {
-        IFuturesMarket.Position position;
+        IFuturesMarketBaseTypes.Position position;
         int notionalValue;
         int profitLoss;
         int accruedFunding;
@@ -241,10 +242,21 @@ contract FuturesMarketData {
         return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)));
     }
 
-    function _position(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Position memory) {
+    function _position(IFuturesMarket market, address account)
+        internal
+        view
+        returns (IFuturesMarketBaseTypes.Position memory)
+    {
         (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
             market.positions(account);
-        return IFuturesMarket.Position(positionId, positionMargin, positionSize, positionEntryPrice, positionEntryIndex);
+        return
+            IFuturesMarketBaseTypes.Position(
+                positionId,
+                positionMargin,
+                positionSize,
+                positionEntryPrice,
+                positionEntryIndex
+            );
     }
 
     function _notionalValue(IFuturesMarket market, address account) internal view returns (int) {
