@@ -92,6 +92,8 @@ interface IFuturesMarket {
 
     function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid);
 
+    function orderFeeNextPrice(address account, int sizeDelta) external view returns (uint fee, bool invalid);
+
     function postTradeDetails(int sizeDelta, address sender)
         external
         view

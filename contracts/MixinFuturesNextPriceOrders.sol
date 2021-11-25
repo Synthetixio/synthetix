@@ -106,10 +106,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             // this is someone else (like a keeper)
             // cancellation by third party is only possible when execution cannot be attempted any longer
             // otherwise someone might try to grief an account by cancelling for the keeper fee
-            require(
-                currentRoundId - order.targetRoundId > _nextPriceConfirmWindow(baseAsset),
-                "cannot be cancelled by keeper yet"
-            );
+            require(_confirmationWindowOver(currentRoundId, order.targetRoundId), "cannot be cancelled by keeper yet");
 
             // send keeper fee to keeper
             _manager().issueSUSD(messageSender, order.keeperDeposit);
@@ -142,7 +139,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // important!: order  of the account, not the sender!
         NextPriceOrder memory order = nextPriceOrders[account];
         // check that a previous order exists
-        require(order.sizeDelta != 0, "no order");
+        require(order.sizeDelta != 0, "no previous order");
 
         // check round-Id
         uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
@@ -153,7 +150,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // can be used to trigger failures of orders that are more profitable
         // then the commitFee that was charged, or can be used to confirm
         // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(currentRoundId - order.targetRoundId <= _nextPriceConfirmWindow(baseAsset), "order too old, use cancel");
+        require(!_confirmationWindowOver(currentRoundId, order.targetRoundId), "order too old, use cancel");
 
         // handle the fees and refunds according to the mechanism rules
         uint toRefund = order.commitDeposit; // refund the commitment deposit
@@ -194,7 +191,33 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         emitNextPriceOrderRemoved(account, currentRoundId, order);
     }
 
+    ///// External views
+
+    /*
+     * Reports the fee for submitting an order of a given size.
+     * Orders that increase the skew will be more expensive than ones that decrease it;
+     */
+    function orderFeeNextPrice(address account, int sizeDelta) external view returns (uint fee, bool invalid) {
+        (uint price, bool isInvalid) = _assetPrice();
+        int positionSize = positions[account].size;
+        TradeParams memory params =
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                fundingIndex: 0, // doesn't matter for fee calculation
+                takerFee: _takerFeeNextPrice(baseAsset),
+                makerFee: _makerFeeNextPrice(baseAsset)
+            });
+        return (_orderFee(positionSize, params), isInvalid);
+    }
+
     ///// Internal views
+
+    // confirmation window is over when current roundId is more than nextPriceConfirmWindow
+    // rounds after target roundId
+    function _confirmationWindowOver(uint currentRoundId, uint targetRoundId) internal view returns (bool) {
+        return (currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(baseAsset)); // don't underflow
+    }
 
     // convenience view to access exchangeRates contract for methods that are not exposed
     // via _exchangeRatesCircuitBreaker() contract
