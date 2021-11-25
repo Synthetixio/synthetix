@@ -24,6 +24,8 @@ contract('FuturesMarketSettings', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
+	const takerFeeNextPrice = toUnit('0.0005');
+	const makerFeeNextPrice = toUnit('0.0001');
 	const closureFee = toUnit('0');
 	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
@@ -107,6 +109,8 @@ contract('FuturesMarketSettings', accounts => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
+				takerFeeNextPrice,
+				makerFeeNextPrice,
 				closureFee,
 				nextPriceConfirmWindow,
 				maxLeverage,

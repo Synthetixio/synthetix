@@ -191,26 +191,6 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         emitNextPriceOrderRemoved(account, currentRoundId, order);
     }
 
-    ///// External views
-
-    /*
-     * Reports the fee for submitting an order of a given size.
-     * Orders that increase the skew will be more expensive than ones that decrease it;
-     */
-    function orderFeeNextPrice(address account, int sizeDelta) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        int positionSize = positions[account].size;
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                fundingIndex: 0, // doesn't matter for fee calculation
-                takerFee: _takerFeeNextPrice(baseAsset),
-                makerFee: _makerFeeNextPrice(baseAsset)
-            });
-        return (_orderFee(positionSize, params), isInvalid);
-    }
-
     ///// Internal views
 
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
