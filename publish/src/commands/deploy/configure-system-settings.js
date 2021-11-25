@@ -335,6 +335,7 @@ module.exports = async ({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'getExchangeDynamicFeeThreshold',
+		readTarget: previousSystemSettings,
 		expected: input => input !== '0', // only change if zero
 		write: 'setExchangeDynamicFeeThreshold',
 		writeArg: await getDeployParameter('DYNAMIC_FEE_THRESHOLD'),
@@ -344,6 +345,7 @@ module.exports = async ({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'getExchangeDynamicFeeWeightDecay',
+		readTarget: previousSystemSettings,
 		expected: input => input !== '0', // only change if zero
 		write: 'setExchangeDynamicFeeWeightDecay',
 		writeArg: await getDeployParameter('DYNAMIC_FEE_WEIGHT_DECAY'),
@@ -353,6 +355,7 @@ module.exports = async ({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'getExchangeDynamicFeeRounds',
+		readTarget: previousSystemSettings,
 		expected: input => input !== '0', // only change if zero
 		write: 'setExchangeDynamicFeeRounds',
 		writeArg: await getDeployParameter('DYNAMIC_FEE_WEIGHT_DECAY'),

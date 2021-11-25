@@ -22,6 +22,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
     bytes32 internal constant SETTING_DYNAMIC_FEE_THRESHOLD = "dynamicFeeThreshold";
     bytes32 internal constant SETTING_DYNAMIC_FEE_WEIGHT_DECAY = "dynamicFeeWeightDecay";
+    /* ========== End Exchange Fees Related ========== */
     bytes32 internal constant SETTING_DYNAMIC_FEE_ROUNDS = "dynamicFeeRounds";
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
