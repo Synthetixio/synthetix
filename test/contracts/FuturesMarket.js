@@ -59,7 +59,7 @@ contract('FuturesMarket', accounts => {
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const takerFeeNextPrice = toUnit('0.0005');
-	const makerFeeNextPrice = toUnit('0');
+	const makerFeeNextPrice = toUnit('0.0001');
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
@@ -3812,7 +3812,7 @@ contract('FuturesMarket', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
+					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
 						from: owner,
 					}),
 					'Invalid price'
