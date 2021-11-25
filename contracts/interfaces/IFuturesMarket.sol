@@ -51,7 +51,6 @@ interface IFuturesMarket {
             uint makerFee,
             uint takerFeeNextPrice,
             uint makerFeeNextPrice,
-            uint closureFee,
             uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
@@ -90,7 +89,7 @@ interface IFuturesMarket {
 
     function currentLeverage(address account) external view returns (int leverage, bool invalid);
 
-    function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid);
+    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
 
     function postTradeDetails(int sizeDelta, address sender)
         external

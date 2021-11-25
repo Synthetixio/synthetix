@@ -65,13 +65,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     /*
-     * The fee charged when reducing the size of a position.
-     */
-    function closureFee(bytes32 _baseAsset) public view returns (uint) {
-        return _closureFee(_baseAsset);
-    }
-
-    /*
      * The number of price update rounds during which confirming next-price is allowed
      */
     function nextPriceConfirmWindow(bytes32 _baseAsset) public view returns (uint) {
@@ -121,7 +114,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _makerFee,
             uint _takerFeeNextPrice,
             uint _makerFeeNextPrice,
-            uint _closureFee,
             uint _nextPriceConfirmWindow,
             uint _maxLeverage,
             uint _maxMarketValueUSD,
@@ -197,11 +189,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
     }
 
-    function setClosureFee(bytes32 _baseAsset, uint _closureFee) public onlyOwner {
-        require(_closureFee <= 1e18, "closure fee greater than 1");
-        _setParameter(_baseAsset, PARAMETER_CLOSURE_FEE, _closureFee);
-    }
-
     function setNextPriceConfirmWindow(bytes32 _baseAsset, uint _nextPriceConfirmWindow) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
     }
@@ -243,7 +230,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _makerFee,
         uint _takerFeeNextPrice,
         uint _makerFeeNextPrice,
-        uint _closureFee,
         uint _nextPriceConfirmWindow,
         uint _maxLeverage,
         uint _maxMarketValueUSD,
@@ -256,7 +242,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMakerFee(_baseAsset, _makerFee);
         setTakerFeeNextPrice(_baseAsset, _takerFeeNextPrice);
         setMakerFeeNextPrice(_baseAsset, _makerFeeNextPrice);
-        setClosureFee(_baseAsset, _closureFee);
         setNextPriceConfirmWindow(_baseAsset, _nextPriceConfirmWindow);
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);

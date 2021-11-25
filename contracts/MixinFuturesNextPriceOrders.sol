@@ -51,7 +51,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         _revertIfError(status);
 
         // deduct fees from margin
-        uint commitDeposit = _nextPriceCommitDeposit(position.size, params);
+        uint commitDeposit = _nextPriceCommitDeposit(params);
         uint keeperDeposit = _minKeeperFee();
         _updatePositionMargin(position, fundingIndex, price, -int(commitDeposit + keeperDeposit));
         // emit event for modidying the position (subtracting the fees from margin)
@@ -206,13 +206,13 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
     }
 
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
-    function _nextPriceCommitDeposit(int existingSize, TradeParams memory params) internal view returns (uint) {
+    function _nextPriceCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
         params.takerFee = _takerFee(baseAsset);
         params.makerFee = _makerFee(baseAsset);
         // commit fee is equal to the spot fee that would be paid
         // this is to prevent free cancellation manipulations (by e.g. withdrawing the margin)
-        return _orderFee(existingSize, params);
+        return _orderFee(params);
     }
 
     ///// Events

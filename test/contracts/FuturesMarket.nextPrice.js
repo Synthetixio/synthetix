@@ -1,6 +1,6 @@
 const { contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
-const { currentTime, toUnit, multiplyDecimalRound } = require('../utils')();
+const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
 const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
@@ -98,7 +98,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const spotFee = (await futuresMarket.orderFee(trader, size))[0];
+			const spotFee = (await futuresMarket.orderFee(size))[0];
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
 			const tx = await futuresMarket.submitNextPriceOrder(size, { from: trader });
 
@@ -246,7 +246,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				spotFee = (await futuresMarket.orderFee(trader, size))[0];
+				spotFee = (await futuresMarket.orderFee(size))[0];
 				keeperFee = await futuresMarketSettings.minKeeperFee();
 				await futuresMarket.submitNextPriceOrder(size, { from: trader });
 			});
@@ -352,7 +352,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				// commitFee is the fee that would be chanrged for a spot trade when order is submitted
-				commitFee = (await futuresMarket.orderFee(trader, size))[0];
+				commitFee = (await futuresMarket.orderFee(size))[0];
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await futuresMarketSettings.minKeeperFee();
 				await futuresMarket.submitNextPriceOrder(size, { from: trader });
@@ -479,7 +479,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 				// trade was executed correctly
 				// PositionModified
-				const expectedFee = multiplyDecimalRound(size, multiplyDecimalRound(targetPrice, feeRate));
+				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
 
 				// calculate the expected margin after trade
 				expectedMargin = spotTradeDetails.margin
@@ -514,7 +514,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				let targetPrice, spotTradeDetails;
 
 				beforeEach(async () => {
-					targetPrice = multiplyDecimalRound(price, toUnit(0.9));
+					targetPrice = multiplyDecimal(price, toUnit(0.9));
 				});
 
 				describe('during target round', () => {
