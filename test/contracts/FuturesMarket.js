@@ -1607,23 +1607,26 @@ contract('FuturesMarket', accounts => {
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
 
-				// No fee => no fee minting log
-				assert.equal(decodedLogs.length, 2);
+				assert.equal(decodedLogs.length, 3);
+				const fee = multiplyDecimal(toUnit(1000), takerFee).add(
+					multiplyDecimal(toUnit(2000), makerFee)
+				);
+
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [
 						toBN('1'),
 						trader,
-						toUnit('2000'),
+						toUnit('2000').sub(fee),
 						toBN('0'),
 						toUnit('-10'),
 						(await futuresMarket.assetPrice()).price,
 						await futuresMarket.fundingSequenceLength(),
-						toBN('0'),
+						multiplyDecimal(toUnit(2000), makerFee),
 					],
-					log: decodedLogs[1],
-					bnCloseVariance: toUnit('5'),
+					log: decodedLogs[2],
+					bnCloseVariance: toUnit('0.1'),
 				});
 			});
 
@@ -1689,9 +1692,9 @@ contract('FuturesMarket', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarket],
 				});
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				// And the ids have been modified
 				positionId = (await futuresMarket.positions(trader)).id;
@@ -1721,9 +1724,9 @@ contract('FuturesMarket', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarket],
 				});
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				positionId = (await futuresMarket.positions(trader)).id;
 				assert.bnEqual(positionId, toBN('0'));
@@ -1746,9 +1749,9 @@ contract('FuturesMarket', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarket],
 				});
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('2'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
 
 				positionId = (await futuresMarket.positions(trader)).id;
 				assert.bnEqual(positionId, toBN('0'));
@@ -1775,9 +1778,9 @@ contract('FuturesMarket', accounts => {
 				});
 
 				// No fee => no fee minting log, so decodedLogs index == 1
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
 
