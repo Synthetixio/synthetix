@@ -385,5 +385,8 @@
 	},
 	"SynthRedeemer": {
 		"deploy": true
+	},
+	"DynamicFee": {
+		"deploy": true
 	}
 }
