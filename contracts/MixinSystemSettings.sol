@@ -153,6 +153,8 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_ROUNDS);
     }
 
+    /* ========== End Exchange Related Fees ========== */
+
     function getMinimumStakeTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME);
     }

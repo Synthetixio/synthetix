@@ -118,9 +118,28 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getRateStalePeriod();
     }
 
+    /* ========== Exchange Related Fees ========== */
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getExchangeFeeRate(currencyKey);
     }
+
+    // SIP-184 Dynamic Fee
+    /// @notice Get the dynamic fee threshold
+    function exchangeDynamicFeeThreshold() external view returns (uint) {
+        return getExchangeDynamicFeeThreshold();
+    }
+
+    /// @notice Get the dynamic fee weight decay per round
+    function exchangeDynamicFeeWeightDecay() external view returns (uint) {
+        return getExchangeDynamicFeeWeightDecay();
+    }
+
+    /// @notice Get the dynamic fee total rounds for calculation
+    function exchangeDynamicFeeRounds() external view returns (uint) {
+        return getExchangeDynamicFeeRounds();
+    }
+
+    /* ========== End Exchange Related Fees ========== */
 
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();

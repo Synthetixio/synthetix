@@ -14,7 +14,6 @@ module.exports = async ({
 	deployer,
 	methodCallGasLimit,
 	useOvm,
-	generateSolidity,
 	getDeployParameter,
 	network,
 	runStep,
@@ -335,7 +334,7 @@ module.exports = async ({
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
-		read: 'getExchangeDynamicFeeThreshold',
+		read: 'exchangeDynamicFeeThreshold',
 		readTarget: previousSystemSettings,
 		expected: input => input === dynamicFeeThreshold, // only change if non-default
 		write: 'setExchangeDynamicFeeThreshold',
@@ -346,7 +345,7 @@ module.exports = async ({
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
-		read: 'getExchangeDynamicFeeWeightDecay',
+		read: 'exchangeDynamicFeeWeightDecay',
 		readTarget: previousSystemSettings,
 		expected: input => input === dynamicFeeWeightDecay, // only change if non-default
 		write: 'setExchangeDynamicFeeWeightDecay',
@@ -357,7 +356,7 @@ module.exports = async ({
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
-		read: 'getExchangeDynamicFeeRounds',
+		read: 'exchangeDynamicFeeRounds',
 		readTarget: previousSystemSettings,
 		expected: input => input === dynamicFeeRounds, // only change if non-default
 		write: 'setExchangeDynamicFeeRounds',
