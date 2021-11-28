@@ -74,27 +74,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    struct ExchangeEntrySettlement {
-        bytes32 src;
-        uint amount;
-        bytes32 dest;
-        uint reclaim;
-        uint rebate;
-        uint srcRoundIdAtPeriodEnd;
-        uint destRoundIdAtPeriodEnd;
-        uint timestamp;
-    }
-
-    struct ExchangeEntry {
-        uint sourceRate;
-        uint destinationRate;
-        uint destinationAmount;
-        uint exchangeFeeRate;
-        uint exchangeDynamicFeeRate;
-        uint roundIdForSrc;
-        uint roundIdForDest;
-    }
-
     bytes32 public constant CONTRACT_NAME = "Exchanger";
 
     bytes32 internal constant sUSD = "sUSD";
@@ -220,14 +199,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
             uint reclaimAmount,
             uint rebateAmount,
             uint numEntries,
-            ExchangeEntrySettlement[] memory
+            IExchanger.ExchangeEntrySettlement[] memory
         )
     {
         // Need to sum up all reclaim and rebate amounts for the user and the currency key
         numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
 
         // For each unsettled exchange
-        ExchangeEntrySettlement[] memory settlements = new ExchangeEntrySettlement[](numEntries);
+        IExchanger.ExchangeEntrySettlement[] memory settlements = new IExchanger.ExchangeEntrySettlement[](numEntries);
         for (uint i = 0; i < numEntries; i++) {
             uint reclaim;
             uint rebate;
@@ -264,7 +243,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
                 }
             }
 
-            settlements[i] = ExchangeEntrySettlement({
+            settlements[i] = IExchanger.ExchangeEntrySettlement({
                 src: exchangeEntry.src,
                 amount: exchangeEntry.amount,
                 dest: exchangeEntry.dest,
@@ -357,7 +336,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         bool virtualSynth,
         address rewardAddress,
         bytes32 trackingCode
-    ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
+    ) external onlySynthetixorSynth nonReentrant returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
         if (from != exchangeForAddress) {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
@@ -461,7 +440,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         bool virtualSynth
     )
         internal
-        nonReentrant
         returns (
             uint amountReceived,
             uint fee,
@@ -469,12 +447,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         )
     {
         // Using struct to resolve stack too deep error
-        ExchangeEntry memory entry;
+        IExchanger.ExchangeEntry memory entry;
 
         entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
-        // Puting the exchangeRate call first as it's mutative for fast cache reading later on
+        // Puting the exchangeRate call first as it's mutative for cheap cache reading later on
         (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
             sourceAmount,
@@ -713,7 +691,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (uint reclaimAmount, uint rebateAmount, uint entries, ExchangeEntrySettlement[] memory settlements) =
+        (uint reclaimAmount, uint rebateAmount, uint entries, IExchanger.ExchangeEntrySettlement[] memory settlements) =
             _settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
@@ -846,7 +824,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
     /// @notice Get dynamic fee for a given currency key (SIP-184)
     /// @param currencyKey The given currency key
     /// @return The dyanmic fee
-    /// @return The current round ID
     function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {
         // No dynamic fee for sUSD
         if (currencyKey == sUSD) {

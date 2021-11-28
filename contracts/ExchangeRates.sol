@@ -150,7 +150,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
     {
         uint time;
         (sourceRate, time) = _getRateAndUpdatedTimeAtRound(sourceCurrencyKey, roundIdForSrc);
-        // cache for fast read
+        // cacheing to save external call
         _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
@@ -158,7 +158,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
             value = sourceAmount;
         } else {
             (destinationRate, time) = _getRateAndUpdatedTimeAtRound(destinationCurrencyKey, roundIdForDest);
-            // cache for fast read
+            // cacheing to save external call
             _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
             if (destinationRate > 0) {
@@ -463,6 +463,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
             // delete the rate and remove it from the system.
             require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
             require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
+
+            // We should only update the rate if it's at least the same age as the last rate we've got.
+            if (timeSent < _getUpdatedTime(currencyKey)) {
+                continue;
+            }
 
             _setRate(currencyKey, 0, newRates[i], timeSent);
         }
