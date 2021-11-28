@@ -108,6 +108,12 @@ interface IExchangeRates {
         view
         returns (uint[] memory rates, uint[] memory times);
 
+    function ratesAndUpdatedTimeForCurrencyLastNRoundsAtRound(
+        bytes32 currencyKey,
+        uint numRounds,
+        uint roundId
+    ) external view returns (uint[] memory rates, uint[] memory times);
+
     function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
         external
         view

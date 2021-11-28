@@ -302,6 +302,33 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         return _getRateAndUpdatedTime(currencyKey).rate;
     }
 
+    /// @notice getting N rounds of rates for a currency at a specific round
+    /// @param currencyKey the currency key
+    /// @param numRounds the number of rounds to get
+    /// @param roundId the round id
+    /// @return a list of rates and a list of times
+    function ratesAndUpdatedTimeForCurrencyLastNRoundsAtRound(
+        bytes32 currencyKey,
+        uint numRounds,
+        uint roundId
+    ) external view returns (uint[] memory rates, uint[] memory times) {
+        rates = new uint[](numRounds);
+        times = new uint[](numRounds);
+
+        for (uint i = 0; i < numRounds; i++) {
+            // fetch the rate and treat is as current, so inverse limits if frozen will always be applied
+            // regardless of current rate
+            (rates[i], times[i]) = _getRateAndUpdatedTimeAtRound(currencyKey, roundId);
+
+            if (roundId == 0) {
+                // if we hit the last round, then return what we have
+                return (rates, times);
+            } else {
+                roundId--;
+            }
+        }
+    }
+
     function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
         external
         view

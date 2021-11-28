@@ -86,16 +86,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
     /// @return the last exchange rate of the synth to sUSD
     mapping(bytes32 => uint) public lastExchangeRate;
 
-    /// @notice Return the last exchange dynamic fee rate
-    /// @param currencyKey is the currency key of the synth to be exchanged
-    /// @return the last exchange dynamic fee rate of the synth to sUSD
-    mapping(bytes32 => uint) public lastExchangeDynamicFeeRate;
-
-    /// @notice Return the last exchange round ID
-    /// @param currencyKey is the currency key of the synth to be exchanged
-    /// @return the last exchange round ID
-    mapping(bytes32 => uint) public lastExchangeRoundId;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -485,10 +475,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
             destinationCurrencyKey
         );
 
-        // SIP-184: Store last Exchange round ID and dynamic fee after _feeRateForExchange calculations
-        lastExchangeRoundId[destinationCurrencyKey] = entry.roundIdForDest;
-        lastExchangeDynamicFeeRate[destinationCurrencyKey] = entry.exchangeDynamicFeeRate;
-
         amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
         // Note: `fee` is denominated in the destinationCurrencyKey.
         fee = entry.destinationAmount.sub(amountReceived);
@@ -833,17 +819,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         uint weightDecay = getExchangeDynamicFeeWeightDecay();
         uint rounds = getExchangeDynamicFeeRounds();
         uint[] memory prices;
-        // Note: We are using cache round ID here for fast read
+        // Note: We are using cache round ID here for cheap read
         uint currentRoundId = exchangeRates().currentRoundForRate(currencyKey);
-        uint remainingRounds = currentRoundId.sub(lastExchangeRoundId[currencyKey]);
-        if (remainingRounds >= rounds) {
-            (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds);
-            dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay, 0);
-        } else {
-            // optimise calculation by using the last exchange dynamic fee rate
-            (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, remainingRounds);
-            dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay, lastExchangeDynamicFeeRate[currencyKey]);
-        }
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRoundsAtRound(currencyKey, rounds, currentRoundId);
+        dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
     }
 
     function getAmountsForExchange(
