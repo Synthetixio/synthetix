@@ -3195,6 +3195,8 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('settlement ignores deviations', () => {
 						describe('when a user exchange 100 sUSD into sETH', () => {
 							beforeEach(async () => {
+								// Disable Dynamic Fee by setting rounds to 0
+								await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 							});
 							describe('and the sETH rate moves up by a factor of 2 to 200', () => {
