@@ -38,9 +38,10 @@ contract('FeePool', async accounts => {
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
+		let timestamp;
 		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+
 			await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
 				from: oracle,
 			});

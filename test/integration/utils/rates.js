@@ -1,6 +1,9 @@
 const ethers = require('ethers');
 const { setSystemSetting } = require('./settings');
-const { toBytes32 } = require('../../..');
+const {
+	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
+} = require('../../..');
 
 async function updateExchangeRatesIfNeeded({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
@@ -94,12 +97,14 @@ async function _setNewRates({ ctx }) {
 	ExchangeRates = ExchangeRates.connect(signer);
 
 	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
-	const { timestamp } = await ctx.provider.getBlock();
-
 	const rates = await _getCurrentRates({ ctx, currencyKeys });
 
-	const tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
-	await tx.wait();
+	for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		const { timestamp } = await ctx.provider.getBlock();
+
+		const tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
+		await tx.wait();
+	}
 }
 
 async function _updateCache({ ctx }) {

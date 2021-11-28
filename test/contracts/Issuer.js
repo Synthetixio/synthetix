@@ -116,9 +116,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		timestamp = await currentTime();
-
 		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+
 			await exchangeRates.updateRates(
 				[sAUD, sEUR, SNX, sETH],
 				['0.5', '1.25', '0.1', '200'].map(toUnit),

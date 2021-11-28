@@ -284,9 +284,9 @@ contract('DebtCache', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		timestamp = await currentTime();
-
 		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+
 			await exchangeRates.updateRates(
 				[sAUD, sEUR, SNX, sETH, ETH, iETH],
 				['0.5', '1.25', '10', '200', '200', '200'].map(toUnit),

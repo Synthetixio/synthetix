@@ -65,9 +65,10 @@ contract('Rewards Integration Tests', accounts => {
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
+		let timestamp;
 		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+
 			await exchangeRates.updateRates(
 				[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
 				['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),

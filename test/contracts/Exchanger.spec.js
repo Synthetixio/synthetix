@@ -3691,8 +3691,8 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			timestamp = await currentTime();
 			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+				timestamp = await currentTime();
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
 					['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),

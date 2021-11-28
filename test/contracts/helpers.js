@@ -89,8 +89,6 @@ module.exports = {
 	},
 
 	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
-		const timestamp = await currentTime();
-
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
 			'SNX',
 			'sAUD',
@@ -101,7 +99,10 @@ module.exports = {
 			'ETH',
 		].map(toBytes32);
 
+		let timestamp;
 		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+
 			await exchangeRates.updateRates(
 				[SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH],
 				['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit),

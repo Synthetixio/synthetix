@@ -104,9 +104,10 @@ contract('TradingRewards', accounts => {
 
 		before('set exchange rates', async () => {
 			const oracle = account1;
-			const timestamp = await currentTime();
-
+			let timestamp;
 			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+				timestamp = await currentTime();
+
 				await exchangeRates.updateRates([sETH, sBTC], Object.values(rates), timestamp, {
 					from: oracle,
 				});
