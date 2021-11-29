@@ -781,6 +781,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
     ) internal view returns (uint, uint exchangeDynamicFeeRate) {
         // Get the exchange dynamic fee rate as per destination currencyKey
         exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
+        exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(_getDynamicFeeForExchange(sourceCurrencyKey));
 
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
@@ -796,9 +797,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         ) {
             // Double the exchange fee
             exchangeFeeRate = exchangeFeeRate.mul(2);
-
-            // Double the exchange dynamic fee
-            exchangeDynamicFeeRate = exchangeDynamicFeeRate.mul(2);
         }
 
         exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
