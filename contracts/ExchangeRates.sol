@@ -534,17 +534,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory entry) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-        uint roundId = currentRoundForRate[currencyKey];
-        uint currentRoundId = _getCurrentRoundId(currencyKey);
-        // Load the latest round ID
-        roundId = currentRoundId > roundId ? currentRoundId : roundId;
-
-        entry = _rates[currencyKey][roundId];
-
-        // Try to get rate from cache if possible
-        if (entry.rate > 0) {
-            return entry;
-        }
 
         if (aggregator != AggregatorV2V3Interface(0)) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
@@ -559,6 +548,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
                 entry.rate = uint216(_formatAggregatorAnswer(currencyKey, answer));
                 entry.time = uint40(updatedAt);
             }
+        } else {
+            uint roundId = currentRoundForRate[currencyKey];
+            entry = _rates[currencyKey][roundId];
         }
     }
 
