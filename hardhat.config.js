@@ -64,7 +64,7 @@ module.exports = {
 			chainId: 1,
 		},
 		'mainnet-ovm': {
-			url: process.env.PROVIDER_URL || 'https://mainnet.optimism.io/',
+			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
 			chainId: 10,
 		},
 		kovan: {
@@ -72,8 +72,8 @@ module.exports = {
 			chainId: 42,
 		},
 		'kovan-ovm': {
-			url: process.env.PROVIDER_URL || 'https://kovan.optimism.io/',
-			chainId: 420,
+			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
+			chainId: 69,
 		},
 	},
 	gasReporter: {
