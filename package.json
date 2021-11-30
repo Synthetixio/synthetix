@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.53.0",
+	"version": "2.54.0",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -77,7 +77,6 @@
 		"@eth-optimism/contracts": "0.3.4",
 		"@eth-optimism/core-utils": "~0.4.5",
 		"@eth-optimism/smock": "1.1.10",
-		"@lavamoat/allow-scripts": "1.0.6",
 		"@gnosis.pm/safe-core-sdk": "~0.3.1",
 		"@gnosis.pm/safe-service-client": "~0.1.1",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",

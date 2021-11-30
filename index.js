@@ -112,6 +112,7 @@ const knownAccounts = {
 // The solidity defaults are managed here in the same format they will be stored, hence all
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
+	TEMP_OWNER_DEFAULT_DURATION: 60 * 60 * 24 * 60, // 60 days
 	WAITING_PERIOD_SECS: (60 * 5).toString(), // 5 mins
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
 	TRADING_REWARDS_ENABLED: false,
@@ -159,6 +160,7 @@ const defaults = {
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_RELAY_GAS_LIMIT: `${8e6}`,
 
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
@@ -493,7 +495,7 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		kovan: Object.assign({}, base),
 		'kovan-ovm': Object.assign({}, base),
 		'mainnet-ovm': Object.assign({}, base, {
-			owner: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
 		}),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),

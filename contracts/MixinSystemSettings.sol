@@ -32,6 +32,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT = "crossDomainEscrowGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT = "crossDomainRewardGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT = "crossDomainWithdrawalGasLimit";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_RELAY_GAS_LIMIT = "crossDomainRelayGasLimit";
     bytes32 internal constant SETTING_ETHER_WRAPPER_MAX_ETH = "etherWrapperMaxETH";
     bytes32 internal constant SETTING_ETHER_WRAPPER_MINT_FEE_RATE = "etherWrapperMintFeeRate";
     bytes32 internal constant SETTING_ETHER_WRAPPER_BURN_FEE_RATE = "etherWrapperBurnFeeRate";
@@ -52,7 +53,7 @@ contract MixinSystemSettings is MixinResolver {
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
-    enum CrossDomainMessageGasLimits {Deposit, Escrow, Reward, Withdrawal}
+    enum CrossDomainMessageGasLimits {Deposit, Escrow, Reward, Withdrawal, Relay}
 
     constructor(address _resolver) internal MixinResolver(_resolver) {}
 
@@ -74,6 +75,8 @@ contract MixinSystemSettings is MixinResolver {
             return SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
         } else if (gasLimitType == CrossDomainMessageGasLimits.Withdrawal) {
             return SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT;
+        } else if (gasLimitType == CrossDomainMessageGasLimits.Relay) {
+            return SETTING_CROSS_DOMAIN_RELAY_GAS_LIMIT;
         } else {
             revert("Unknown gas limit type");
         }

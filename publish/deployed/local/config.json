@@ -383,6 +383,9 @@
 	"WETH": {
 		"deploy": true
 	},
+	"OwnerRelayOnEthereum": {
+		"deploy": true
+	},
 	"SynthRedeemer": {
 		"deploy": true
 	},

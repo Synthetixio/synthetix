@@ -155,6 +155,9 @@
 	"WETH": {
 		"deploy": true
 	},
+	"OwnerRelayOnOptimism": {
+		"deploy": true
+	},
 	"SynthRedeemer": {
 		"deploy": true
 	},
