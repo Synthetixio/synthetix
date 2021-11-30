@@ -629,7 +629,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe(`when ${section} is suspended`, () => {
 						beforeEach(async () => {
 							await setStatus({ owner, systemStatus, section, suspend: true, synth });
-							// Disable Dynamic Fee by setting rounds to 0
+							// Disable Dynamic Fee here as settlement is L1 and Dynamic fee is on L2
 							await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 						});
 						it('then calling settle() reverts', async () => {
@@ -3485,6 +3485,9 @@ contract('Exchanger (spec tests)', async accounts => {
 				const newCryptoBIPS = toUnit('0.04');
 
 				beforeEach(async () => {
+					// Disable Dynamic Fee here as it's testing for the base exchange fee rate
+					await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 					// Store multiple rates
 					await systemSettings.setExchangeFeeRateForSynths(
 						[sUSD, sAUD, sBTC, sETH],
