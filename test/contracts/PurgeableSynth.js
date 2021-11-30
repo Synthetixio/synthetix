@@ -11,6 +11,7 @@ const PurgeableSynth = artifacts.require('PurgeableSynth');
 const { currentTime, fastForward, toUnit } = require('../utils')();
 const {
 	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -155,14 +156,16 @@ contract('PurgeableSynth', accounts => {
 
 		describe("when there's a price for the purgeable synth", () => {
 			beforeEach(async () => {
-				await exchangeRates.updateRates(
-					[sAUD, SNX, iETH],
-					['0.5', '1', '170'].map(toUnit),
-					timestamp,
-					{
-						from: oracle,
-					}
-				);
+				for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+					await exchangeRates.updateRates(
+						[sAUD, SNX, iETH],
+						['0.5', '1', '170'].map(toUnit),
+						timestamp,
+						{
+							from: oracle,
+						}
+					);
+				}
 				await debtCache.takeDebtSnapshot();
 			});
 
@@ -322,9 +325,11 @@ contract('PurgeableSynth', accounts => {
 	describe('Replacing an existing Synth with a Purgeable one to purge and remove it', () => {
 		describe('when sAUD has a price', () => {
 			beforeEach(async () => {
-				await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+					await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+				}
 				await debtCache.takeDebtSnapshot();
 			});
 			describe('when a user holds some sAUD', () => {
