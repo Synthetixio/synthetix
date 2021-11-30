@@ -968,6 +968,9 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('exchanging between synths updates sUSD debt total due to fees', async () => {
+				// Disable Dynamic fee so that we can neglect it.
+				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 				await systemSettings.setExchangeFeeRateForSynths(
 					[sAUD, sUSD, sEUR],
 					[toUnit(0.1), toUnit(0.1), toUnit(0.1)],
