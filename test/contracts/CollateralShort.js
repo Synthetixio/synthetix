@@ -10,7 +10,10 @@ const { setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions, setExchangeFeeRateForSynths } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { DYNAMIC_FEE_ROUNDS },
+} = require('../..');
 
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
@@ -54,17 +57,22 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		let timestamp;
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+			await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		}
 
 		const sBTC = toBytes32('sBTC');
 
-		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+			await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		}
 	};
 
 	const setupShort = async () => {
