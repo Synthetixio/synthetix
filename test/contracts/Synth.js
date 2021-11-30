@@ -20,6 +20,7 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
+	defaults: { DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('Synth', async accounts => {
@@ -77,12 +78,15 @@ contract('Synth', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		const timestamp = await currentTime();
+		let timestamp;
 
 		// Send a price update to guarantee we're not stale.
-		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			timestamp = await currentTime();
+			await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+		}
 		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
@@ -733,12 +737,15 @@ contract('Synth', async accounts => {
 					contracts: [{ contract: 'Synth', properties: { currencyKey: sEUR } }],
 				}));
 
-				const timestamp = await currentTime();
+				let timestamp;
 
 				// Send a price update to guarantee we're not stale.
-				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+					timestamp = await currentTime();
+					await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
+						from: oracle,
+					});
+				}
 				await debtCache.takeDebtSnapshot();
 			});
 
