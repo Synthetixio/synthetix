@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/ISynthetixBridgeEscrow.sol";
 
-// External references.
+// Internal references.
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 
 contract SynthetixBridgeEscrow is Owned, ISynthetixBridgeEscrow {

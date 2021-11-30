@@ -34,9 +34,7 @@ async function _dualFastForward({ ctx, seconds }) {
 	const l1Ctx = ctx.l1mock || ctx;
 
 	await fastForward({ seconds: parseInt(seconds), provider: l1Ctx.provider });
-
 	await wait({ seconds: 6 });
-
 	await updateExchangeRatesIfNeeded({ ctx });
 }
 

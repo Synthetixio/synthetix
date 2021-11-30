@@ -6,7 +6,7 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ deployer, runStep, standaloneFeeds }) => {
+module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
 
 	// Setup remaining price feeds (that aren't synths)
@@ -28,7 +28,9 @@ module.exports = async ({ deployer, runStep, standaloneFeeds }) => {
 				expected: input => input === feed,
 				write: 'addAggregator',
 				writeArg: [toBytes32(key), feed],
-				comment: `Ensure the ExchangeRates contract has the feed for ${key}`,
+				comment: `Ensure the ExchangeRates contract has the standalone feed for ${key}${
+					standaloneFor ? ' (see SCCP-139)' : ''
+				}`,
 			});
 		}
 	}

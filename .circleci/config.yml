@@ -10,7 +10,7 @@ commands:
       - run:
           shell: /bin/sh
           command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 300 http://localhost:<<parameters.port>>
+            wget --retry-connrefused --waitretry=1 --read-timeout=180 --timeout=180 -t 300 http://localhost:<<parameters.port>>
             :
 jobs:
   job-audit:
@@ -42,8 +42,6 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
-      - run: rm -rf build # force a clean build
-      - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
   job-fork-tests:
     working_directory: ~/repo
     docker:
