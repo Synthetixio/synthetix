@@ -1573,19 +1573,19 @@ contract('Exchange Rates', async accounts => {
 							});
 						});
 						describe('when the price is fetched for sJPY', () => {
-							it('old rate is returned as reading from cache', async () => {
+							it('0 is returned', async () => {
 								const result = await instance.rateForCurrency(sJPY, {
 									from: accountOne,
 								});
-								assert.bnEqual(result, oldPrice);
+								assert.equal(result.toNumber(), 0);
 							});
 						});
 						describe('when the timestamp is fetched for sJPY', () => {
-							it('old time is returned as reading from cache', async () => {
+							it('0 is returned', async () => {
 								const result = await instance.lastRateUpdateTimes(sJPY, {
 									from: accountOne,
 								});
-								assert.equal(result.toNumber(), timeOldSent);
+								assert.equal(result.toNumber(), 0);
 							});
 						});
 						describe('when the ratesAndInvalidForCurrencies is queried with sJPY', () => {
@@ -1594,12 +1594,12 @@ contract('Exchange Rates', async accounts => {
 								response = await instance.ratesAndInvalidForCurrencies([sJPY]);
 							});
 
-							it('then the rates are valid as reading from cache', () => {
-								assert.equal(response[1], false);
+							it('then the rates are invalid', () => {
+								assert.equal(response[1], true);
 							});
 
-							it('with cache value', () => {
-								assert.bnEqual(response[0][0], oldPrice);
+							it('with no value', () => {
+								assert.bnEqual(response[0][0], '0');
 							});
 						});
 						describe('when the rateAndInvalid is queried with sJPY', () => {
@@ -1608,12 +1608,12 @@ contract('Exchange Rates', async accounts => {
 								response = await instance.rateAndInvalid(sJPY);
 							});
 
-							it('then the rate is valid', () => {
-								assert.equal(response[1], false);
+							it('then the rate is invalid', () => {
+								assert.equal(response[1], true);
 							});
 
-							it('with cache value', () => {
-								assert.bnEqual(response[0], oldPrice);
+							it('with no value', () => {
+								assert.bnEqual(response[0], '0');
 							});
 						});
 
