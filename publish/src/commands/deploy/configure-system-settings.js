@@ -344,38 +344,51 @@ module.exports = async ({
 	});
 
 	// SIP-184 Exchange Dynamic Fee Rate
-	const dynamicFeeThreshold = await getDeployParameter('DYNAMIC_FEE_THRESHOLD');
+	const exchangeDynamicFeeThreshold = await getDeployParameter('EXCHANGE_DYNAMIC_FEE_THRESHOLD');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'exchangeDynamicFeeThreshold',
 		readTarget: previousSystemSettings,
-		expected: input => input === dynamicFeeThreshold, // only change if non-default
+		expected: input => input === exchangeDynamicFeeThreshold, // only change if non-default
 		write: 'setExchangeDynamicFeeThreshold',
-		writeArg: dynamicFeeThreshold,
+		writeArg: exchangeDynamicFeeThreshold,
 		comment: 'Set exchange dynamic fee threshold (SIP-184)',
 	});
-	const dynamicFeeWeightDecay = await getDeployParameter('DYNAMIC_FEE_WEIGHT_DECAY');
+	const exchangeDynamicFeeWeightDecay = await getDeployParameter(
+		'EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY'
+	);
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'exchangeDynamicFeeWeightDecay',
 		readTarget: previousSystemSettings,
-		expected: input => input === dynamicFeeWeightDecay, // only change if non-default
+		expected: input => input === exchangeDynamicFeeWeightDecay, // only change if non-default
 		write: 'setExchangeDynamicFeeWeightDecay',
-		writeArg: dynamicFeeWeightDecay,
+		writeArg: exchangeDynamicFeeWeightDecay,
 		comment: 'Set exchange dynamic fee weight decay (SIP-184)',
 	});
-	const dynamicFeeRounds = await getDeployParameter('DYNAMIC_FEE_ROUNDS');
+	const exchangeDynamicFeeRounds = await getDeployParameter('EXCHANGE_DYNAMIC_FEE_ROUNDS');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'exchangeDynamicFeeRounds',
 		readTarget: previousSystemSettings,
-		expected: input => input === dynamicFeeRounds, // only change if non-default
+		expected: input => input === exchangeDynamicFeeRounds, // only change if non-default
 		write: 'setExchangeDynamicFeeRounds',
-		writeArg: dynamicFeeRounds,
+		writeArg: exchangeDynamicFeeRounds,
 		comment: 'Set exchange dynamic fee rounds (SIP-184)',
+	});
+	const exchangeMaxDynamicFee = await getDeployParameter('EXCHANGE_MAX_DYNAMIC_FEE');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'exchangeMaxDynamicFee',
+		readTarget: previousSystemSettings,
+		expected: input => input === exchangeMaxDynamicFee, // only change if non-default
+		write: 'setExchangeMaxDynamicFee',
+		writeArg: exchangeMaxDynamicFee,
+		comment: 'Set exchange max dynamic fee (SIP-184)',
 	});
 
 	// SIP-120 Atomic swap settings

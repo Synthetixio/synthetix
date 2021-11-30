@@ -1563,4 +1563,23 @@ contract('SystemSettings', async accounts => {
 			assert.eventEqual(txn, 'ExchangeDynamicFeeRoundsUpdated', [rounds]);
 		});
 	});
+
+	describe('setExchangeMaxDynamicFee()', () => {
+		const maxDynamicFee = toUnit('1');
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setExchangeMaxDynamicFee,
+				args: [maxDynamicFee],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setExchangeMaxDynamicFee(maxDynamicFee, { from: owner });
+			const actual = await systemSettings.exchangeMaxDynamicFee();
+			assert.equal(actual, maxDynamicFee, 'Configured exchange max dynamic fee is set correctly');
+			assert.eventEqual(txn, 'ExchangeMaxDynamicFeeUpdated', [maxDynamicFee]);
+		});
+	});
 });

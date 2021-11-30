@@ -8,7 +8,6 @@ import "./interfaces/IExchanger.sol";
 
 // Libraries
 import "./DynamicFee.sol";
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -70,7 +69,7 @@ interface IExchangerInternalDebtCache {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/exchanger
-contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
+contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -326,7 +325,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         bool virtualSynth,
         address rewardAddress,
         bytes32 trackingCode
-    ) external onlySynthetixorSynth nonReentrant returns (uint amountReceived, IVirtualSynth vSynth) {
+    ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
         if (from != exchangeForAddress) {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
@@ -782,26 +781,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         // Get the exchange dynamic fee rate as per destination currencyKey
         exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
         exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(_getDynamicFeeForExchange(sourceCurrencyKey));
+        uint maxDynamicFee = getExchangeMaxDynamicFee();
 
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
-            // Cap max exchangeFeeRate to 100%
-            exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
+            // Cap to max exchange dynamic fee
+            exchangeFeeRate = exchangeFeeRate > maxDynamicFee ? maxDynamicFee : exchangeFeeRate;
             return (exchangeFeeRate, exchangeDynamicFeeRate);
         }
 
-        // Is this a swing trade? long to short or short to long skipping sUSD.
-        if (
-            (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69) ||
-            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73)
-        ) {
-            // Double the exchange fee
-            exchangeFeeRate = exchangeFeeRate.mul(2);
-        }
-
         exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
-        // Cap max exchangeFeeRate to 100%
-        exchangeFeeRate = exchangeFeeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : exchangeFeeRate;
+        // Cap to max exchange dynamic fee
+        exchangeFeeRate = exchangeFeeRate > maxDynamicFee ? maxDynamicFee : exchangeFeeRate;
         return (exchangeFeeRate, exchangeDynamicFeeRate);
     }
 
@@ -813,9 +804,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger, ReentrancyGuard {
         if (currencyKey == sUSD) {
             return 0;
         }
-        uint threshold = getExchangeDynamicFeeThreshold();
-        uint weightDecay = getExchangeDynamicFeeWeightDecay();
-        uint rounds = getExchangeDynamicFeeRounds();
+        (uint threshold, uint weightDecay, uint rounds) = getExchangeDynamicFeeData();
         uint[] memory prices;
         // Note: We are using cache round ID here for cheap read
         uint currentRoundId = exchangeRates().currentRoundForRate(currencyKey);

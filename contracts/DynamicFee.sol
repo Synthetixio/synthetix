@@ -40,7 +40,7 @@ library DynamicFee {
         return weightDecay.powDecimal(round);
     }
 
-    /// @notice Calculate dynamic fee based on preceding 10 price differential
+    /// @notice Calculate dynamic fee
     /// @param prices A list of prices from the current round to the previous rounds
     /// @param threshold A threshold to determine the price differential
     /// @param weightDecay A weight decay constant

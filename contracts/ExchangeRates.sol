@@ -8,7 +8,6 @@ import "./interfaces/IExchangeRates.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
 // AggregatorInterface from Chainlink represents a decentralized pricing network for a single currency key
@@ -18,7 +17,7 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
-contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, ReentrancyGuard {
+contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -141,7 +140,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
         uint roundIdForDest
     )
         external
-        nonReentrant
         returns (
             uint value,
             uint sourceRate,
@@ -466,6 +464,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates, Reentrancy
             // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
             currentRoundForRate[currencyKey]++;
         }
+
+        // skip writing if the rate is the same
+        if (rate == _rates[currencyKey][currentRoundForRate[currencyKey]].rate) return;
 
         _rates[currencyKey][currentRoundForRate[currencyKey]] = RateAndUpdatedTime({
             rate: uint216(rate),

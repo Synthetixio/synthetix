@@ -125,18 +125,27 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-184 Dynamic Fee
     /// @notice Get the dynamic fee threshold
+    /// @return The dynamic fee threshold
     function exchangeDynamicFeeThreshold() external view returns (uint) {
         return getExchangeDynamicFeeThreshold();
     }
 
     /// @notice Get the dynamic fee weight decay per round
+    /// @return The dynamic fee weight decay per round
     function exchangeDynamicFeeWeightDecay() external view returns (uint) {
         return getExchangeDynamicFeeWeightDecay();
     }
 
     /// @notice Get the dynamic fee total rounds for calculation
+    /// @return The dynamic fee total rounds for calculation
     function exchangeDynamicFeeRounds() external view returns (uint) {
         return getExchangeDynamicFeeRounds();
+    }
+
+    /// @notice Get the max dynamic fee
+    /// @return The max dynamic fee
+    function exchangeMaxDynamicFee() external view returns (uint) {
+        return getExchangeMaxDynamicFee();
     }
 
     /* ========== End Exchange Related Fees ========== */
@@ -379,34 +388,46 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     /// @notice Set exchange dynamic fee threshold constant default 40bps
+    /// @param threshold The exchange dynamic fee threshold
     /// @return uint threshold constant
     function setExchangeDynamicFeeThreshold(uint threshold) external onlyOwner {
         require(threshold != 0, "Threshold cannot be 0");
 
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_THRESHOLD, threshold);
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD, threshold);
 
         emit ExchangeDynamicFeeThresholdUpdated(threshold);
     }
 
     /// @notice Set exchange dynamic fee weight decay constant default 0.9
+    /// @param weightDecay The exchange dynamic fee weight decay
     /// @return uint weight decay constant
     function setExchangeDynamicFeeWeightDecay(uint weightDecay) external onlyOwner {
         require(weightDecay != 0, "Weight decay cannot be 0");
 
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_WEIGHT_DECAY, weightDecay);
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, weightDecay);
 
         emit ExchangeDynamicFeeWeightDecayUpdated(weightDecay);
     }
 
     /// @notice Set exchange dynamic fee last N rounds constant default to 10
+    /// @param rounds The exchange dynamic fee last N rounds
     /// @return uint dynamic fee last N rounds
     function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
         // Allowing to be 0 as a flag to disable Dynamic Fee
         // require(rounds != 0, "rounds cannot be 0");
 
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_ROUNDS, rounds);
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS, rounds);
 
         emit ExchangeDynamicFeeRoundsUpdated(rounds);
+    }
+
+    /// @notice Set max exchange dynamic fee
+    /// @param maxFee The max exchange dynamic fee
+    /// @return uint dynamic fee last N rounds
+    function setMaxExchangeDynamicFee(uint maxFee) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_MAX_DYNAMIC_FEE, maxFee);
+
+        emit ExchangeMaxDynamicFeeUpdated(maxFee);
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
@@ -613,6 +634,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event ExchangeDynamicFeeThresholdUpdated(uint dynamicFeeThreshold);
     event ExchangeDynamicFeeWeightDecayUpdated(uint dynamicFeeWeightDecay);
     event ExchangeDynamicFeeRoundsUpdated(uint dynamicFeeRounds);
+    event ExchangeMaxDynamicFeeUpdated(uint maxDynamicFee);
+    /* ========== End Exchange Fees Related ========== */
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);

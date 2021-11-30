@@ -20,10 +20,11 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
     /* ========== Exchange Fees Related ========== */
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
-    bytes32 internal constant SETTING_DYNAMIC_FEE_THRESHOLD = "dynamicFeeThreshold";
-    bytes32 internal constant SETTING_DYNAMIC_FEE_WEIGHT_DECAY = "dynamicFeeWeightDecay";
+    bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD = "exchangeDynamicFeeThreshold";
+    bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY = "exchangeDynamicFeeWeightDecay";
+    bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS = "exchangeDynamicFeeRounds";
+    bytes32 internal constant SETTING_EXCHANGE_MAX_DYNAMIC_FEE = "exchangeMaxDynamicFee";
     /* ========== End Exchange Fees Related ========== */
-    bytes32 internal constant SETTING_DYNAMIC_FEE_ROUNDS = "dynamicFeeRounds";
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
@@ -141,19 +142,41 @@ contract MixinSystemSettings is MixinResolver {
     /// @notice Get exchange dynamic fee threshold constant default 40bps
     /// @return uint threshold constant
     function getExchangeDynamicFeeThreshold() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_THRESHOLD);
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD);
     }
 
     /// @notice Get exchange dynamic fee weight decay constant default 0.9
     /// @return uint weight decay constant
     function getExchangeDynamicFeeWeightDecay() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_WEIGHT_DECAY);
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY);
     }
 
     /// @notice Get exchange dynamic fee rounds default to 10 rounds
     /// @return uint last N round
     function getExchangeDynamicFeeRounds() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DYNAMIC_FEE_ROUNDS);
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS);
+    }
+
+    /// @notice Get exchange dynamic fee related data
+    /// @return threshold, weight decay, and rounds
+    function getExchangeDynamicFeeData()
+        internal
+        view
+        returns (
+            uint threshold,
+            uint weightDecay,
+            uint rounds
+        )
+    {
+        threshold = getExchangeDynamicFeeThreshold();
+        weightDecay = getExchangeDynamicFeeWeightDecay();
+        rounds = getExchangeDynamicFeeRounds();
+    }
+
+    /// @notice Get exchange max dynamic fee
+    /// @return max dynamic fee
+    function getExchangeMaxDynamicFee() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_MAX_DYNAMIC_FEE);
     }
 
     /* ========== End Exchange Related Fees ========== */
