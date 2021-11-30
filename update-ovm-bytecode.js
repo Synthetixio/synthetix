@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const DEPLOYMENT_FILENAME = 'deployment.json';
 
-const NETWORK = 'kovan';
+const NETWORK = 'mainnet';
 const data = {
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
@@ -22,7 +22,7 @@ const getFolderNameForNetwork = ({ network, useOvm = true }) => {
 	return useOvm ? `${network}-ovm` : network;
 };
 
-const getPathToNetwork = ({ network = 'kovan', file = '', useOvm = true, path } = {}) =>
+const getPathToNetwork = ({ network = NETWORK, file = '', useOvm = true, path } = {}) =>
 	path.join(__dirname, 'publish', 'deployed', getFolderNameForNetwork({ network, useOvm }), file);
 
 const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = true }) => {
@@ -43,7 +43,7 @@ const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = true }
  * Retrieve the list of targets for the network - returning the name, address, source file and link to etherscan
  */
 const getTarget = ({
-	network = 'kovan',
+	network = NETWORK,
 	useOvm = true,
 	contract,
 	path,
@@ -67,7 +67,7 @@ async function updateBytecode() {
 	const ovmTargets = getTarget({ NETWORK, path, fs, useOvm: true });
 
 	console.log(`Fetching ${NETWORK}-ovm sources from Etherscan...`);
-	const etherscanUrl = `https://api-${NETWORK}-optimistic.etherscan.io/api`;
+	const etherscanUrl = `https://api-optimistic.etherscan.io/api`;
 
 	const tableData = [];
 	const deployedContracts = {};
@@ -125,7 +125,11 @@ async function updateBytecode() {
 	// Replace the OVM-compiled bytecode with the post-regenesis (downloaded) bytecode.
 	for (const s of Object.keys(deploymentJSON['sources'])) {
 		if (deployedContracts[s]) {
-			deploymentJSON['sources'][s].bytecode = deployedContracts[s].deployedBytecode;
+			// Trim off the leading 0x and remove the trailing constructor args
+			let trimmedBytecode = deployedContracts[s].deployedBytecode.substring(2);
+			trimmedBytecode = trimmedBytecode.replace(deployedContracts[s].constructorArgs, '');
+
+			deploymentJSON['sources'][s].bytecode = trimmedBytecode;
 			tableData.push([s, deployedContracts[s].address, 'Updated Bytecode']);
 		}
 	}
