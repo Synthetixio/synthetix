@@ -14,6 +14,7 @@ module.exports = async ({
 	deployer,
 	methodCallGasLimit,
 	useOvm,
+	generateSolidity,
 	getDeployParameter,
 	network,
 	runStep,
