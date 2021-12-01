@@ -21,11 +21,11 @@ interface IFuturesMarket {
         external
         view
         returns (
-            uint id,
-            uint margin,
-            int size,
-            uint lastPrice,
-            uint fundingIndex
+            uint64 id,
+            uint64 fundingIndex,
+            uint128 margin,
+            uint128 lastPrice,
+            int128 size
         );
 
     function assetPrice() external view returns (uint price, bool invalid);
