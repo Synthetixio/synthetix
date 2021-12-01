@@ -103,12 +103,7 @@ interface IExchangeRates {
 
     function rateStalePeriod() external view returns (uint);
 
-    function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
-        external
-        view
-        returns (uint[] memory rates, uint[] memory times);
-
-    function ratesAndUpdatedTimeForCurrencyLastNRoundsAtRound(
+    function ratesAndUpdatedTimeForCurrencyLastNRounds(
         bytes32 currencyKey,
         uint numRounds,
         uint roundId

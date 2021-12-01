@@ -424,7 +424,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     /// @notice Set max exchange dynamic fee
     /// @param maxFee The max exchange dynamic fee
     /// @return uint dynamic fee last N rounds
-    function setMaxExchangeDynamicFee(uint maxFee) external onlyOwner {
+    function setExchangeMaxDynamicFee(uint maxFee) external onlyOwner {
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_MAX_DYNAMIC_FEE, maxFee);
 
         emit ExchangeMaxDynamicFeeUpdated(maxFee);

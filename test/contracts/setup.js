@@ -18,9 +18,10 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
-		DYNAMIC_FEE_THRESHOLD,
-		DYNAMIC_FEE_WEIGHT_DECAY,
-		DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+		EXCHANGE_DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_MAX_DYNAMIC_FEE,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
@@ -1116,13 +1117,21 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
-			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(DYNAMIC_FEE_THRESHOLD, {
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(EXCHANGE_DYNAMIC_FEE_THRESHOLD, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(DYNAMIC_FEE_WEIGHT_DECAY, {
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
+				EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(EXCHANGE_DYNAMIC_FEE_ROUNDS, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(DYNAMIC_FEE_ROUNDS, { from: owner }),
+			returnObj['SystemSettings'].setExchangeMaxDynamicFee(EXCHANGE_MAX_DYNAMIC_FEE, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,
