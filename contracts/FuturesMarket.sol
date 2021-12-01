@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./FuturesMarketBase.sol";
 import "./MixinFuturesNextPriceOrders.sol";
+import "./MixinFuturesViews.sol";
 import "./interfaces/IFuturesMarket.sol";
 
 // Internal references
@@ -65,7 +66,7 @@ import "./interfaces/IERC20.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
-contract FuturesMarket is IFuturesMarket, FuturesMarketBase, MixinFuturesNextPriceOrders {
+contract FuturesMarket is IFuturesMarket, FuturesMarketBase, MixinFuturesNextPriceOrders, MixinFuturesViews {
     constructor(
         address payable _proxy,
         address _owner,
