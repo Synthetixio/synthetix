@@ -187,6 +187,7 @@ contract('WrapperFactory', async accounts => {
 			feesEscrowed = await wrapperFactory.feesEscrowed();
 			tx = await wrapperFactory.distributeFees();
 		});
+
 		it('issues sUSD to the feepool', async () => {
 			const logs = await getDecodedLogs({
 				hash: tx.tx,
@@ -205,6 +206,16 @@ contract('WrapperFactory', async accounts => {
 					.filter(l => !!l)
 					.find(({ name }) => name === 'Transfer'),
 			});
+		});
+		
+		it('records fee paid', async () => {
+			const recentFeePeriod = await feePool.recentFeePeriods(0);
+
+			console.log(FEE_ADDRESS);
+			console.log(await sUSDSynth.balanceOf(FEE_ADDRESS));
+
+			assert.bnNotEqual(toUnit(0), feesEscrowed); // because i'm paranoid
+			assert.bnEqual(recentFeePeriod.feesToDistribute, feesEscrowed);
 		});
 
 		it('feesEscrowed = 0', async () => {
