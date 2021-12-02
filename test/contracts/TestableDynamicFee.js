@@ -17,11 +17,14 @@ contract('TestableDynamicFee', () => {
 	});
 
 	it('Can get price differential', async () => {
-		const priceDiff = await testableDynamicFee.testGetPriceDifferential(
-			toUnit('102'),
-			toUnit('101')
+		const priceDiff1 = await testableDynamicFee.testGetPriceDifferential(toUnit('8'), toUnit('10'));
+		assert.bnEqual(priceDiff1, '196000000000000000');
+		const priceDiff2 = await testableDynamicFee.testGetPriceDifferential(
+			toUnit('12'),
+			toUnit('10')
 		);
-		assert.bnEqual(priceDiff, '5900990099009900');
+		assert.bnEqual(priceDiff2, '196000000000000000');
+		assert.bnEqual(priceDiff1, priceDiff2);
 	});
 
 	it('Can get price weight', async () => {

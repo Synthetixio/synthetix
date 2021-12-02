@@ -76,38 +76,21 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 				);
 			});
 
-			describe('feeRateForAtomicExchange()', () => {
-				// Mimic settings not being configured
-				behaviors.whenMockedWithSynthUintSystemSetting(
-					{ setting: 'exchangeFeeRate', synth: sETH, value: '0' },
-					() => {
-						it('is set to 0', async () => {
-							assert.bnEqual(await this.instance.feeRateForAtomicExchange(sUSD, sETH), '0');
-						});
-					}
-				);
+			behaviors.whenMockedWithUintSystemSetting(
+				{ setting: 'exchangeMaxDynamicFee', value: toUnit('1') },
+				() => {
+					describe('feeRateForAtomicExchange()', () => {
+						// Mimic settings not being configured
+						behaviors.whenMockedWithSynthUintSystemSetting(
+							{ setting: 'exchangeFeeRate', synth: sETH, value: '0' },
+							() => {
+								it('is set to 0', async () => {
+									assert.bnEqual(await this.instance.feeRateForAtomicExchange(sUSD, sETH), '0');
+								});
+							}
+						);
 
-				// With configured override value
-				behaviors.whenMockedWithSynthUintSystemSetting(
-					{ setting: 'atomicExchangeFeeRate', synth: sETH, value: overrideFeeRate },
-					() => {
-						it('is set to the configured atomic override value', async () => {
-							assert.bnEqual(
-								await this.instance.feeRateForAtomicExchange(sUSD, sETH),
-								overrideFeeRate
-							);
-						});
-					}
-				);
-
-				// With configured base and override values
-				behaviors.whenMockedWithSynthUintSystemSetting(
-					{ setting: 'exchangeFeeRate', synth: sETH, value: baseFeeRate },
-					() => {
-						it('is set to the configured base value', async () => {
-							assert.bnEqual(await this.instance.feeRateForAtomicExchange(sUSD, sETH), baseFeeRate);
-						});
-
+						// With configured override value
 						behaviors.whenMockedWithSynthUintSystemSetting(
 							{ setting: 'atomicExchangeFeeRate', synth: sETH, value: overrideFeeRate },
 							() => {
@@ -119,9 +102,34 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 								});
 							}
 						);
-					}
-				);
-			});
+
+						// With configured base and override values
+						behaviors.whenMockedWithSynthUintSystemSetting(
+							{ setting: 'exchangeFeeRate', synth: sETH, value: baseFeeRate },
+							() => {
+								it('is set to the configured base value', async () => {
+									assert.bnEqual(
+										await this.instance.feeRateForAtomicExchange(sUSD, sETH),
+										baseFeeRate
+									);
+								});
+
+								behaviors.whenMockedWithSynthUintSystemSetting(
+									{ setting: 'atomicExchangeFeeRate', synth: sETH, value: overrideFeeRate },
+									() => {
+										it('is set to the configured atomic override value', async () => {
+											assert.bnEqual(
+												await this.instance.feeRateForAtomicExchange(sUSD, sETH),
+												overrideFeeRate
+											);
+										});
+									}
+								);
+							}
+						);
+					});
+				}
+			);
 
 			describe('getAmountsForAtomicExchange()', () => {
 				const atomicRate = toUnit('0.01');
@@ -636,224 +644,246 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											},
 											() => {
 												behaviors.whenMockedWithUintSystemSetting(
-													{ setting: 'atomicMaxVolumePerBlock', value: maxAtomicValuePerBlock },
+													{ setting: 'exchangeMaxDynamicFee', value: toUnit('1') },
 													() => {
-														const itExchangesCorrectly = ({
-															exchangeFeeRate,
-															setAsOverrideRate,
-															tradingRewardsEnabled,
-															trackingCode,
-														}) => {
-															behaviors.whenMockedWithBoolSystemSetting(
-																{
-																	setting: 'tradingRewardsEnabled',
-																	value: !!tradingRewardsEnabled,
-																},
-																() => {
-																	behaviors.whenMockedWithSynthUintSystemSetting(
+														behaviors.whenMockedWithUintSystemSetting(
+															{ setting: 'atomicMaxVolumePerBlock', value: maxAtomicValuePerBlock },
+															() => {
+																const itExchangesCorrectly = ({
+																	exchangeFeeRate,
+																	setAsOverrideRate,
+																	tradingRewardsEnabled,
+																	trackingCode,
+																}) => {
+																	behaviors.whenMockedWithBoolSystemSetting(
 																		{
-																			setting: setAsOverrideRate
-																				? 'atomicExchangeFeeRate'
-																				: 'exchangeFeeRate',
-																			synth: sETH,
-																			value: exchangeFeeRate,
+																			setting: 'tradingRewardsEnabled',
+																			value: !!tradingRewardsEnabled,
 																		},
 																		() => {
-																			let expectedAmountReceived;
-																			let expectedFee;
-																			beforeEach('attempt exchange', async () => {
-																				expectedFee = multiplyDecimal(amountIn, exchangeFeeRate);
-																				expectedAmountReceived = divideDecimal(
-																					amountIn.sub(expectedFee),
-																					lastEthRate
-																				);
+																			behaviors.whenMockedWithSynthUintSystemSetting(
+																				{
+																					setting: setAsOverrideRate
+																						? 'atomicExchangeFeeRate'
+																						: 'exchangeFeeRate',
+																					synth: sETH,
+																					value: exchangeFeeRate,
+																				},
+																				() => {
+																					let expectedAmountReceived;
+																					let expectedFee;
+																					beforeEach('attempt exchange', async () => {
+																						expectedFee = multiplyDecimal(
+																							amountIn,
+																							exchangeFeeRate
+																						);
+																						expectedAmountReceived = divideDecimal(
+																							amountIn.sub(expectedFee),
+																							lastEthRate
+																						);
 
-																				await this.instance.exchangeAtomically(
-																					...getExchangeArgs({
-																						trackingCode,
-																					})
-																				);
-																			});
-																			it('burned correct amount of sUSD', () => {
-																				assert.equal(
-																					this.mocks.sUSD.smocked.burn.calls[0][0],
-																					owner
-																				);
-																				assert.bnEqual(
-																					this.mocks.sUSD.smocked.burn.calls[0][1],
-																					amountIn
-																				);
-																			});
-																			it('issued correct amount of sETH', () => {
-																				assert.equal(
-																					this.mocks.sETH.smocked.issue.calls[0][0],
-																					owner
-																				);
-																				assert.bnEqual(
-																					this.mocks.sETH.smocked.issue.calls[0][1],
-																					expectedAmountReceived
-																				);
-																			});
-																			it('tracked atomic volume', async () => {
-																				assert.bnEqual(
-																					(await this.instance.lastAtomicVolume()).volume,
-																					amountIn
-																				);
-																			});
-																			it('updated debt cache', () => {
-																				const debtCacheUpdateCall = this.mocks.DebtCache.smocked
-																					.updateCachedSynthDebtsWithRates;
-																				assert.deepEqual(debtCacheUpdateCall.calls[0][0], [
-																					sUSD,
-																					sETH,
-																				]);
-																				assert.deepEqual(debtCacheUpdateCall.calls[0][1], [
-																					lastUsdRate,
-																					lastEthRate,
-																				]);
-																			});
-																			it('asked Synthetix to emit an exchange event', () => {
-																				const synthetixEmitExchangeCall = this.mocks.Synthetix
-																					.smocked.emitSynthExchange;
-																				assert.equal(synthetixEmitExchangeCall.calls[0][0], owner);
-																				assert.equal(synthetixEmitExchangeCall.calls[0][1], sUSD);
-																				assert.bnEqual(
-																					synthetixEmitExchangeCall.calls[0][2],
-																					amountIn
-																				);
-																				assert.equal(synthetixEmitExchangeCall.calls[0][3], sETH);
-																				assert.bnEqual(
-																					synthetixEmitExchangeCall.calls[0][4],
-																					expectedAmountReceived
-																				);
-																				assert.equal(synthetixEmitExchangeCall.calls[0][5], owner);
-																			});
-																			it('asked Synthetix to emit an atomic exchange event', () => {
-																				const synthetixEmitAtomicExchangeCall = this.mocks.Synthetix
-																					.smocked.emitAtomicSynthExchange;
-																				assert.equal(
-																					synthetixEmitAtomicExchangeCall.calls[0][0],
-																					owner
-																				);
-																				assert.equal(
-																					synthetixEmitAtomicExchangeCall.calls[0][1],
-																					sUSD
-																				);
-																				assert.bnEqual(
-																					synthetixEmitAtomicExchangeCall.calls[0][2],
-																					amountIn
-																				);
-																				assert.equal(
-																					synthetixEmitAtomicExchangeCall.calls[0][3],
-																					sETH
-																				);
-																				assert.bnEqual(
-																					synthetixEmitAtomicExchangeCall.calls[0][4],
-																					expectedAmountReceived
-																				);
-																				assert.equal(
-																					synthetixEmitAtomicExchangeCall.calls[0][5],
-																					owner
-																				);
-																			});
-																			it('did not add any fee reclamation entries to exchange state', () => {
-																				assert.equal(
-																					this.mocks.ExchangeState.smocked.appendExchangeEntry.calls
-																						.length,
-																					0
-																				);
-																			});
+																						await this.instance.exchangeAtomically(
+																							...getExchangeArgs({
+																								trackingCode,
+																							})
+																						);
+																					});
+																					it('burned correct amount of sUSD', () => {
+																						assert.equal(
+																							this.mocks.sUSD.smocked.burn.calls[0][0],
+																							owner
+																						);
+																						assert.bnEqual(
+																							this.mocks.sUSD.smocked.burn.calls[0][1],
+																							amountIn
+																						);
+																					});
+																					it('issued correct amount of sETH', () => {
+																						assert.equal(
+																							this.mocks.sETH.smocked.issue.calls[0][0],
+																							owner
+																						);
+																						assert.bnEqual(
+																							this.mocks.sETH.smocked.issue.calls[0][1],
+																							expectedAmountReceived
+																						);
+																					});
+																					it('tracked atomic volume', async () => {
+																						assert.bnEqual(
+																							(await this.instance.lastAtomicVolume()).volume,
+																							amountIn
+																						);
+																					});
+																					it('updated debt cache', () => {
+																						const debtCacheUpdateCall = this.mocks.DebtCache.smocked
+																							.updateCachedSynthDebtsWithRates;
+																						assert.deepEqual(debtCacheUpdateCall.calls[0][0], [
+																							sUSD,
+																							sETH,
+																						]);
+																						assert.deepEqual(debtCacheUpdateCall.calls[0][1], [
+																							lastUsdRate,
+																							lastEthRate,
+																						]);
+																					});
+																					it('asked Synthetix to emit an exchange event', () => {
+																						const synthetixEmitExchangeCall = this.mocks.Synthetix
+																							.smocked.emitSynthExchange;
+																						assert.equal(
+																							synthetixEmitExchangeCall.calls[0][0],
+																							owner
+																						);
+																						assert.equal(
+																							synthetixEmitExchangeCall.calls[0][1],
+																							sUSD
+																						);
+																						assert.bnEqual(
+																							synthetixEmitExchangeCall.calls[0][2],
+																							amountIn
+																						);
+																						assert.equal(
+																							synthetixEmitExchangeCall.calls[0][3],
+																							sETH
+																						);
+																						assert.bnEqual(
+																							synthetixEmitExchangeCall.calls[0][4],
+																							expectedAmountReceived
+																						);
+																						assert.equal(
+																							synthetixEmitExchangeCall.calls[0][5],
+																							owner
+																						);
+																					});
+																					it('asked Synthetix to emit an atomic exchange event', () => {
+																						const synthetixEmitAtomicExchangeCall = this.mocks
+																							.Synthetix.smocked.emitAtomicSynthExchange;
+																						assert.equal(
+																							synthetixEmitAtomicExchangeCall.calls[0][0],
+																							owner
+																						);
+																						assert.equal(
+																							synthetixEmitAtomicExchangeCall.calls[0][1],
+																							sUSD
+																						);
+																						assert.bnEqual(
+																							synthetixEmitAtomicExchangeCall.calls[0][2],
+																							amountIn
+																						);
+																						assert.equal(
+																							synthetixEmitAtomicExchangeCall.calls[0][3],
+																							sETH
+																						);
+																						assert.bnEqual(
+																							synthetixEmitAtomicExchangeCall.calls[0][4],
+																							expectedAmountReceived
+																						);
+																						assert.equal(
+																							synthetixEmitAtomicExchangeCall.calls[0][5],
+																							owner
+																						);
+																					});
+																					it('did not add any fee reclamation entries to exchange state', () => {
+																						assert.equal(
+																							this.mocks.ExchangeState.smocked.appendExchangeEntry
+																								.calls.length,
+																							0
+																						);
+																					});
 
-																			// Conditional based on test settings
-																			if (toBN(exchangeFeeRate).isZero()) {
-																				it('did not report a fee', () => {
-																					assert.equal(
-																						this.mocks.FeePool.smocked.recordFeePaid.calls.length,
-																						0
-																					);
-																				});
-																			} else {
-																				it('remitted correct fee to fee pool', () => {
-																					assert.equal(
-																						this.mocks.sUSD.smocked.issue.calls[0][0],
-																						getUsers({ network: 'mainnet', user: 'fee' }).address
-																					);
-																					assert.bnEqual(
-																						this.mocks.sUSD.smocked.issue.calls[0][1],
-																						expectedFee
-																					);
-																					assert.bnEqual(
-																						this.mocks.FeePool.smocked.recordFeePaid.calls[0],
-																						expectedFee
-																					);
-																				});
-																			}
-																			if (!tradingRewardsEnabled) {
-																				it('did not report trading rewards', () => {
-																					assert.equal(
-																						this.mocks.TradingRewards.smocked
-																							.recordExchangeFeeForAccount.calls.length,
-																						0
-																					);
-																				});
-																			} else {
-																				it('reported trading rewards', () => {
-																					const trRecordCall = this.mocks.TradingRewards.smocked
-																						.recordExchangeFeeForAccount;
-																					assert.bnEqual(trRecordCall.calls[0][0], expectedFee);
-																					assert.equal(trRecordCall.calls[0][1], owner);
-																				});
-																			}
-																			if (!trackingCode) {
-																				it('did not ask Synthetix to emit tracking event', () => {
-																					assert.equal(
-																						this.mocks.Synthetix.smocked.emitExchangeTracking.calls
-																							.length,
-																						0
-																					);
-																				});
-																			} else {
-																				it('asked Synthetix to emit tracking event', () => {
-																					const synthetixEmitTrackingCall = this.mocks.Synthetix
-																						.smocked.emitExchangeTracking;
-																					assert.equal(
-																						synthetixEmitTrackingCall.calls[0][0],
-																						trackingCode
-																					);
-																				});
-																			}
+																					// Conditional based on test settings
+																					if (toBN(exchangeFeeRate).isZero()) {
+																						it('did not report a fee', () => {
+																							assert.equal(
+																								this.mocks.FeePool.smocked.recordFeePaid.calls
+																									.length,
+																								0
+																							);
+																						});
+																					} else {
+																						it('remitted correct fee to fee pool', () => {
+																							assert.equal(
+																								this.mocks.sUSD.smocked.issue.calls[0][0],
+																								getUsers({ network: 'mainnet', user: 'fee' })
+																									.address
+																							);
+																							assert.bnEqual(
+																								this.mocks.sUSD.smocked.issue.calls[0][1],
+																								expectedFee
+																							);
+																							assert.bnEqual(
+																								this.mocks.FeePool.smocked.recordFeePaid.calls[0],
+																								expectedFee
+																							);
+																						});
+																					}
+																					if (!tradingRewardsEnabled) {
+																						it('did not report trading rewards', () => {
+																							assert.equal(
+																								this.mocks.TradingRewards.smocked
+																									.recordExchangeFeeForAccount.calls.length,
+																								0
+																							);
+																						});
+																					} else {
+																						it('reported trading rewards', () => {
+																							const trRecordCall = this.mocks.TradingRewards.smocked
+																								.recordExchangeFeeForAccount;
+																							assert.bnEqual(trRecordCall.calls[0][0], expectedFee);
+																							assert.equal(trRecordCall.calls[0][1], owner);
+																						});
+																					}
+																					if (!trackingCode) {
+																						it('did not ask Synthetix to emit tracking event', () => {
+																							assert.equal(
+																								this.mocks.Synthetix.smocked.emitExchangeTracking
+																									.calls.length,
+																								0
+																							);
+																						});
+																					} else {
+																						it('asked Synthetix to emit tracking event', () => {
+																							const synthetixEmitTrackingCall = this.mocks.Synthetix
+																								.smocked.emitExchangeTracking;
+																							assert.equal(
+																								synthetixEmitTrackingCall.calls[0][0],
+																								trackingCode
+																							);
+																						});
+																					}
+																				}
+																			);
 																		}
 																	);
-																}
-															);
-														};
+																};
 
-														describe('when no exchange fees are configured', () => {
-															itExchangesCorrectly({
-																exchangeFeeRate: '0',
-															});
-														});
+																describe('when no exchange fees are configured', () => {
+																	itExchangesCorrectly({
+																		exchangeFeeRate: '0',
+																	});
+																});
 
-														describe('with tracking code', () => {
-															itExchangesCorrectly({
-																exchangeFeeRate: '0',
-																trackingCode: toBytes32('TRACKING'),
-															});
-														});
+																describe('with tracking code', () => {
+																	itExchangesCorrectly({
+																		exchangeFeeRate: '0',
+																		trackingCode: toBytes32('TRACKING'),
+																	});
+																});
 
-														describe('when an exchange fee is configured', () => {
-															itExchangesCorrectly({
-																exchangeFeeRate: baseFeeRate,
-																tradingRewardsEnabled: true,
-															});
-														});
-														describe('when an exchange fee override for atomic exchanges is configured', () => {
-															itExchangesCorrectly({
-																exchangeFeeRate: overrideFeeRate,
-																setAsOverrideRate: true,
-																tradingRewardsEnabled: true,
-															});
-														});
+																describe('when an exchange fee is configured', () => {
+																	itExchangesCorrectly({
+																		exchangeFeeRate: baseFeeRate,
+																		tradingRewardsEnabled: true,
+																	});
+																});
+																describe('when an exchange fee override for atomic exchanges is configured', () => {
+																	itExchangesCorrectly({
+																		exchangeFeeRate: overrideFeeRate,
+																		setAsOverrideRate: true,
+																		tradingRewardsEnabled: true,
+																	});
+																});
+															}
+														);
 													}
 												);
 											}

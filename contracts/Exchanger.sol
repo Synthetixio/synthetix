@@ -778,17 +778,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
     ) internal view returns (uint, uint exchangeDynamicFeeRate) {
-        // Get the exchange dynamic fee rate as per destination currencyKey
         exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
         exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(_getDynamicFeeForExchange(sourceCurrencyKey));
         uint maxDynamicFee = getExchangeMaxDynamicFee();
-
-        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
-            exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
-            // Cap to max exchange dynamic fee
-            exchangeFeeRate = exchangeFeeRate > maxDynamicFee ? maxDynamicFee : exchangeFeeRate;
-            return (exchangeFeeRate, exchangeDynamicFeeRate);
-        }
 
         exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
         // Cap to max exchange dynamic fee
