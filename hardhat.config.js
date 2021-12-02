@@ -57,7 +57,7 @@ module.exports = {
 			url: 'http://localhost:8545',
 		},
 		mainnet: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
 			chainId: 1,
 		},
 		'mainnet-ovm': {
