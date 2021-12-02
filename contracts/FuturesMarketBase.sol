@@ -755,6 +755,16 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             );
     }
 
+    function _marketDebt(uint price) internal view returns (uint) {
+        // see comment explaining this calculation in _positionDebtCorrection()
+        int totalDebt =
+            int(marketSkew).multiplyDecimal(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
+                _entryDebtCorrection
+            );
+
+        return uint(_max(totalDebt, 0));
+    }
+
     /*
      * Alter the debt correction to account for the net result of altering a position.
      */

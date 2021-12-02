@@ -54,16 +54,6 @@ contract MixinFuturesViews is FuturesMarketBase {
         return (longSize, shortSize, isInvalid);
     }
 
-    function _marketDebt(uint price) internal view returns (uint) {
-        // see comment explaining this calculation in _positionDebtCorrection()
-        int totalDebt =
-            int(marketSkew).multiplyDecimal(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
-                _entryDebtCorrection
-            );
-
-        return uint(_max(totalDebt, 0));
-    }
-
     /*
      * The debt contributed by this market to the overall system.
      * The total market debt is equivalent to the sum of remaining margins in all open positions.
