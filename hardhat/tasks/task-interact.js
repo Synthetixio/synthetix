@@ -1,11 +1,11 @@
-const { task } = require('hardhat/config');
+const { subtask, types } = require('hardhat/config');
 const fs = require('fs');
 const path = require('path');
-const { green } = require('chalk');
 
 const synthetix = require('../..');
 
-task('interact').setAction(async (taskArguments, hre, runSuper) => {
+subtask('interact:load-contracts')
+.setAction(async ({ provider }, hre) => {
 	// build hardhat-deploy style deployments
 	if (!fs.existsSync('deployments')) {
 		fs.mkdirSync('deployments');
@@ -29,6 +29,8 @@ task('interact').setAction(async (taskArguments, hre, runSuper) => {
 	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
 	const targets = Object.keys(deploymentData.targets);
 
+	const contracts = {};
+
 	for (const target of targets) {
 		const targetData = getTarget({
 			contract: target,
@@ -44,16 +46,8 @@ task('interact').setAction(async (taskArguments, hre, runSuper) => {
 			deploymentFilePath,
 		});
 
-		fs.writeFileSync(
-			`./deployments/${hre.network.name}/${target}.json`,
-			JSON.stringify({
-				address: targetData.address,
-				abi: sourceData.abi,
-			})
-		);
+		contracts[target] = new ethers.Contract(targetData.address, sourceData.abi, provider);
 	}
 
-	console.log(green('Wrote hardhat-deploy style deployment definitions'));
-
-	await runSuper(taskArguments);
+	return contracts;
 });

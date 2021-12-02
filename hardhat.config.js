@@ -37,9 +37,6 @@ module.exports = {
 		tests: './test/contracts',
 		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
 		cache: path.join(BUILD_FOLDER, CACHE_FOLDER),
-
-		// required for interact
-		deployments: './deployments',
 	},
 	astdocs: {
 		path: path.join(BUILD_FOLDER, AST_FOLDER),

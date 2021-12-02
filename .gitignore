@@ -17,7 +17,6 @@ site/
 
 # Build artifacts
 build*/
-deployments
 
 # For eth-gas-reporter in tests
 test-gas-used.log
