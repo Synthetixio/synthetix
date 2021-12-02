@@ -8,7 +8,7 @@ const { assert } = require('./common');
 const { currentTime, toUnit } = require('../utils')();
 const {
 	toBytes32,
-	defaults: { DYNAMIC_FEE_ROUNDS },
+	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
 } = require('../..');
 
@@ -100,7 +100,7 @@ module.exports = {
 		].map(toBytes32);
 
 		let timestamp;
-		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 			timestamp = await currentTime();
 
 			await exchangeRates.updateRates(

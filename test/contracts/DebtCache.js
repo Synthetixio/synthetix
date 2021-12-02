@@ -19,7 +19,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: { DEBT_SNAPSHOT_STALE_TIME, DYNAMIC_FEE_ROUNDS },
+	defaults: { DEBT_SNAPSHOT_STALE_TIME, EXCHANGE_DYNAMIC_FEE_ROUNDS },
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -284,7 +284,7 @@ contract('DebtCache', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 			timestamp = await currentTime();
 
 			await exchangeRates.updateRates(

@@ -30,7 +30,7 @@ const { setupAllContracts } = require('./setup');
 
 const {
 	toBytes32,
-	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD, DYNAMIC_FEE_ROUNDS },
+	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD, EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('FeePool', async accounts => {
@@ -39,7 +39,7 @@ contract('FeePool', async accounts => {
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
 		let timestamp;
-		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 			timestamp = await currentTime();
 
 			await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {

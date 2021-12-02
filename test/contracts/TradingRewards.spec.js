@@ -6,7 +6,7 @@ const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
 const { setExchangeFeeRateForSynths, getDecodedLogs, decodedEventEqual } = require('./helpers');
 const {
 	toBytes32,
-	defaults: { DYNAMIC_FEE_ROUNDS },
+	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 /*
@@ -105,7 +105,7 @@ contract('TradingRewards', accounts => {
 		before('set exchange rates', async () => {
 			const oracle = account1;
 			let timestamp;
-			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 				timestamp = await currentTime();
 
 				await exchangeRates.updateRates([sETH, sBTC], Object.values(rates), timestamp, {

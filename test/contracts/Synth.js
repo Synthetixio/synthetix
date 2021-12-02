@@ -20,7 +20,7 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { DYNAMIC_FEE_ROUNDS },
+	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('Synth', async accounts => {
@@ -81,7 +81,7 @@ contract('Synth', async accounts => {
 		let timestamp;
 
 		// Send a price update to guarantee we're not stale.
-		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 			timestamp = await currentTime();
 			await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 				from: oracle,
@@ -740,7 +740,7 @@ contract('Synth', async accounts => {
 				let timestamp;
 
 				// Send a price update to guarantee we're not stale.
-				for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+				for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 					timestamp = await currentTime();
 					await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 						from: oracle,

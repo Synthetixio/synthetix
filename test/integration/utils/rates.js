@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { setSystemSetting } = require('./settings');
 const {
 	toBytes32,
-	defaults: { DYNAMIC_FEE_ROUNDS },
+	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../../..');
 
 async function updateExchangeRatesIfNeeded({ ctx }) {
@@ -99,7 +99,7 @@ async function _setNewRates({ ctx }) {
 	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
 	const rates = await _getCurrentRates({ ctx, currencyKeys });
 
-	for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+	for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 		const { timestamp } = await ctx.provider.getBlock();
 
 		const tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);

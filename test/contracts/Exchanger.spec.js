@@ -26,7 +26,7 @@ const {
 		WAITING_PERIOD_SECS,
 		PRICE_DEVIATION_THRESHOLD_FACTOR,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
-		DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_DYNAMIC_FEE_ROUNDS,
 	},
 } = require('../..');
 
@@ -2220,7 +2220,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set a 0 rate to prevent invalid rate from causing a revert on exchange
-						for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+						for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 							// Need to run twice in order to increase the roundId
 							// to be greater than the one in the cache
 							await aggregator.setLatestAnswer('0', await currentTime());
@@ -3312,7 +3312,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 								describe('and the aggregator has a rate (so the exchange succeeds)', () => {
 									beforeEach(async () => {
-										for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+										for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 											await aggregator.setLatestAnswer(
 												convertToAggregatorPrice(100),
 												await currentTime()
@@ -3590,7 +3590,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 				timestamp = await currentTime();
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
@@ -3694,7 +3694,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 				timestamp = await currentTime();
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, SNX, sETH, sBTC, iBTC],

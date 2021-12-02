@@ -12,7 +12,7 @@ const { ensureOnlyExpectedMutativeFunctions, setExchangeFeeRateForSynths } = req
 
 const {
 	toBytes32,
-	defaults: { DYNAMIC_FEE_ROUNDS },
+	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('CollateralShort', async accounts => {
@@ -58,7 +58,7 @@ contract('CollateralShort', async accounts => {
 
 	const updateRatesWithDefaults = async () => {
 		let timestamp;
-		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 			timestamp = await currentTime();
 			await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
 				from: oracle,
@@ -67,7 +67,7 @@ contract('CollateralShort', async accounts => {
 
 		const sBTC = toBytes32('sBTC');
 
-		for (let i = 0; i < DYNAMIC_FEE_ROUNDS; i++) {
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 			timestamp = await currentTime();
 			await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 				from: oracle,
