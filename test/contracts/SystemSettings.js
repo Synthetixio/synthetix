@@ -90,6 +90,7 @@ contract('SystemSettings', async accounts => {
 				'setExchangeDynamicFeeThreshold',
 				'setExchangeDynamicFeeWeightDecay',
 				'setExchangeDynamicFeeRounds',
+				'setExchangeMaxDynamicFee',
 			],
 		});
 	});
@@ -1578,7 +1579,7 @@ contract('SystemSettings', async accounts => {
 		it('the owner can invoke and replace with emitted event', async () => {
 			const txn = await systemSettings.setExchangeMaxDynamicFee(maxDynamicFee, { from: owner });
 			const actual = await systemSettings.exchangeMaxDynamicFee();
-			assert.equal(actual, maxDynamicFee, 'Configured exchange max dynamic fee is set correctly');
+			assert.bnEqual(actual, maxDynamicFee, 'Configured exchange max dynamic fee is set correctly');
 			assert.eventEqual(txn, 'ExchangeMaxDynamicFeeUpdated', [maxDynamicFee]);
 		});
 	});
