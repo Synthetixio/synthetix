@@ -211,9 +211,6 @@ contract('WrapperFactory', async accounts => {
 		it('records fee paid', async () => {
 			const recentFeePeriod = await feePool.recentFeePeriods(0);
 
-			console.log(FEE_ADDRESS);
-			console.log(await sUSDSynth.balanceOf(FEE_ADDRESS));
-
 			assert.bnNotEqual(toUnit(0), feesEscrowed); // because i'm paranoid
 			assert.bnEqual(recentFeePeriod.feesToDistribute, feesEscrowed);
 		});
