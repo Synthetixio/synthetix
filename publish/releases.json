@@ -411,8 +411,7 @@
 		{
 			"sip": 192,
 			"layer": "both",
-			"sources": ["WrapperFactory"],
-			"released": "both"
+			"sources": ["WrapperFactory"]
 		}
 	],
 	"releases": [
