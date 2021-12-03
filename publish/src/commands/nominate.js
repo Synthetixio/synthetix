@@ -72,6 +72,7 @@ const nominate = async ({
 	} = loadConnections({
 		network,
 		useFork,
+		useOvm,
 	});
 
 	if (!providerUrl) {
