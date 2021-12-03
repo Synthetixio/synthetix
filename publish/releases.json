@@ -711,7 +711,7 @@
 				"major": 2,
 				"minor": 55
 			},
-			"sips": []
+			"sips": [192]
 		},
 		{
 			"name": "Atria (Optimism)",
@@ -721,7 +721,7 @@
 				"major": 2,
 				"minor": 55
 			},
-			"sips": []
+			"sips": [192]
 		},
 		{
 			"name": "Alhena",
