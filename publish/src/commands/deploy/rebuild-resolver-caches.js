@@ -30,29 +30,45 @@ module.exports = async ({
 	// add deployed wrappers
 	const wrapperCreatedLogs = await deployer.provider.getLogs({
 		fromBlock: 0,
-		topics: [ethers.utils.id('WrapperCreated(address,bytes32,address)')]
+		topics: [ethers.utils.id('WrapperCreated(address,bytes32,address)')],
 	});
 
-	const wrappers = wrapperCreatedLogs.map((rawLog) => {
+	const wrappers = wrapperCreatedLogs.map(rawLog => {
 		const log = WrapperFactory.interface.parseLog(rawLog);
 		return [
 			`Wrapper for ${ethers.utils.parseBytes32String(log.args.currencyKey)}`,
-			new ethers.Contract(log.args.wrapperAddress, WrapperFactory.interface, deployer.provider)
+			new ethers.Contract(log.args.wrapperAddress, WrapperFactory.interface, deployer.provider),
 		]; // interface doesn't matter as long as it responds to MixinResolver
 	});
 
 	// OVM pre-regenesis
 	if (network === 'mainnet' && useOvm) {
-		wrappers.push([
-			'Wrapper for sETH',
-			new ethers.Contract('0x6202A3B0bE1D222971E93AaB084c6E584C29DB70', WrapperFactory.interface, deployer.provider)
-		], [
-			'Wrapper for sUSD',
-			new ethers.Contract('0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7', WrapperFactory.interface, deployer.provider)
-		], [
-			'Wrapper for sUSD',
-			new ethers.Contract('0x8A91e92FDd86e734781c38DB52a390e1B99fba7c', WrapperFactory.interface, deployer.provider)
-		]);
+		wrappers.push(
+			[
+				'Wrapper for sETH',
+				new ethers.Contract(
+					'0x6202A3B0bE1D222971E93AaB084c6E584C29DB70',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			],
+			[
+				'Wrapper for sUSD',
+				new ethers.Contract(
+					'0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			],
+			[
+				'Wrapper for sUSD',
+				new ethers.Contract(
+					'0x8A91e92FDd86e734781c38DB52a390e1B99fba7c',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			]
+		);
 	}
 
 	console.log(gray(`found ${wrappers.length} wrapper addresses`));
