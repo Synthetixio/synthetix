@@ -162,7 +162,7 @@ const owner = async ({
 			}
 		}
 
-		console.log(gray(`Gas: base fee${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
+		console.log(gray(`Gas: base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
 	}
 
 	const confirmOrEnd = async message => {
@@ -266,16 +266,17 @@ const owner = async ({
 		} else if (nominatedOwner === newOwner.toLowerCase()) {
 			const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
+			if (address in appendedOwnerCache) {
+				console.log(gray('Skipping as this action is already in the batch'));
+				continue;
+			} else {
+				appendedOwnerCache[address] = true;
+			}
+
 			if (safeBatchSubmitter && !useFork) {
 				console.log(
 					gray(`Attempting to append`, yellow(`${contract}.acceptOwnership()`), `to the batch`)
 				);
-				if (address in appendedOwnerCache) {
-					console.log(gray('Skipping as this action is already in the batch'));
-					continue;
-				} else {
-					appendedOwnerCache[address] = true;
-				}
 				const { appended } = await safeBatchSubmitter.appendTransaction({
 					to: address,
 					data: encodedData,
@@ -379,14 +380,14 @@ const owner = async ({
 		const batchSize = 20;
 
 		for (let i = 0; i < actions.length; i += batchSize) {
-			const batchActions = actions.slice(i, batchSize);
+			const batchActions = actions.slice(i, i + batchSize);
 			const batchData = OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
 				batchActions.map(({ target }) => target),
 				batchActions.map(({ data }) => data),
 				ethers.BigNumber.from('0'),
 			]);
 			if (safeBatchSubmitter) {
-				safeBatchSubmitter.appendTransaction({
+				await safeBatchSubmitter.appendTransaction({
 					to: OwnerRelayOnEthereum.address,
 					data: batchData,
 				});
@@ -425,7 +426,7 @@ const owner = async ({
 			console.log(
 				gray(
 					'Submitted a batch of',
-					yellow(Math.ceil(actions.length / batchSize.length)),
+					yellow(Math.ceil(actions.length / batchSize)),
 					'transactions to the safe',
 					yellow(l1Owner),
 					'at nonce position',
