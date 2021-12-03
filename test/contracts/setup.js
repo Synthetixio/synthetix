@@ -1125,11 +1125,11 @@ const setupAllContracts = async ({
 		]);
 	}
 
-	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
+	// finally if any of our contracts have setAddressResolver (from MockSynth), then invoke it
 	await Promise.all(
 		Object.values(returnObj)
-			.filter(contract => contract.setSystemStatus)
-			.map(mock => mock.setSystemStatus(returnObj['SystemStatus'].address))
+			.filter(contract => contract.setAddressResolver)
+			.map(mock => mock.setAddressResolver(returnObj['AddressResolver'].address))
 	);
 
 	return returnObj;
