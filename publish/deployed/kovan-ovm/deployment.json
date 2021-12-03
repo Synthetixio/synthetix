@@ -554,8 +554,8 @@
 			"address": "0xb7469A575b7931532F09AEe2882835A0249064a0",
 			"source": "WrapperFactory",
 			"link": "https://kovan-explorer.optimism.io/address/0xb7469A575b7931532F09AEe2882835A0249064a0",
-			"timestamp": "2021-12-03T03:18:54.235Z",
-			"txn": "",
+			"timestamp": "2021-12-03T03:13:28.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0x5cc1f0fb8e313ae49b84f1aea53351c4b9d8e3df646b8003bd217d3510a145fe",
 			"network": "kovan"
 		},
 		"OwnerRelayOnOptimism": {
