@@ -411,7 +411,8 @@
 		{
 			"sip": 192,
 			"layer": "both",
-			"sources": ["WrapperFactory"]
+			"sources": ["WrapperFactory"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -706,7 +707,7 @@
 		},
 		{
 			"name": "Atria",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 55
@@ -716,7 +717,7 @@
 		{
 			"name": "Atria (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 55
