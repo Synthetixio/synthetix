@@ -407,6 +407,11 @@
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
 			"released": "both"
+		},
+		{
+			"sip": 192,
+			"layer": "both",
+			"sources": ["WrapperFactory"]
 		}
 	],
 	"releases": [
