@@ -207,7 +207,7 @@ contract('WrapperFactory', async accounts => {
 					.find(({ name }) => name === 'Transfer'),
 			});
 		});
-		
+
 		it('records fee paid', async () => {
 			const recentFeePeriod = await feePool.recentFeePeriods(0);
 
