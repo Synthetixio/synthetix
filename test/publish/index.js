@@ -266,6 +266,9 @@ describe('publish scripts', () => {
 				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
 				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
 				SystemSettings = getContract({ target: 'SystemSettings' });
+				// Disable exchange dynamic fee so that we can neglect it
+				let tx = await SystemSettings.setExchangeDynamicFeeRounds('0', overrides);
+				await tx.wait();
 
 				Liquidations = getContract({ target: 'Liquidations' });
 
