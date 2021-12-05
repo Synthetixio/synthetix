@@ -2,12 +2,17 @@ pragma solidity ^0.5.16;
 
 import "../ExternStateToken.sol";
 import "../interfaces/ISystemStatus.sol";
+import "../interfaces/IAddressResolver.sol";
+import "../interfaces/IFeePool.sol";
 
 // Mock synth that also adheres to system status
 
 contract MockSynth is ExternStateToken {
-    ISystemStatus private systemStatus;
+    IAddressResolver private addressResolver;
     bytes32 public currencyKey;
+
+    // Where fees are pooled in sUSD
+    address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
 
     constructor(
         address payable _proxy,
@@ -21,9 +26,8 @@ contract MockSynth is ExternStateToken {
         currencyKey = _currencyKey;
     }
 
-    // Allow SystemStatus to be passed in directly
-    function setSystemStatus(ISystemStatus _status) external {
-        systemStatus = _status;
+    function setAddressResolver(IAddressResolver _resolver) external {
+        addressResolver = _resolver;
     }
 
     // Used for PurgeableSynth to test removal
@@ -31,8 +35,40 @@ contract MockSynth is ExternStateToken {
         totalSupply = _totalSupply;
     }
 
+    /**
+     * @notice _transferToFeeAddress function
+     * non-sUSD synths are exchanged into sUSD via synthInitiatedExchange
+     * notify feePool to record amount as fee paid to feePool */
+    function _transferToFeeAddress(address to, uint value) internal returns (bool) {
+        uint amountInUSD;
+
+        // sUSD can be transferred to FEE_ADDRESS directly
+        if (currencyKey == "sUSD") {
+            amountInUSD = value;
+            _transferByProxy(messageSender, to, value);
+        } else {
+            // for now, do nothing
+        }
+
+        // Notify feePool to record sUSD to distribute as fees
+        IFeePool(addressResolver.getAddress("FeePool")).recordFeePaid(amountInUSD);
+
+        return true;
+    }
+
     function transfer(address to, uint value) external optionalProxy returns (bool) {
-        systemStatus.requireSynthActive(currencyKey);
+        ISystemStatus(addressResolver.getAddress("SystemStatus")).requireSynthActive(currencyKey);
+
+        // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
+        if (to == FEE_ADDRESS) {
+            return _transferToFeeAddress(to, value);
+        }
+
+        // transfers to 0x address will be burned
+        if (to == address(0)) {
+            this.burn(messageSender, value);
+            return true;
+        }
 
         return _transferByProxy(messageSender, to, value);
     }
@@ -42,7 +78,7 @@ contract MockSynth is ExternStateToken {
         address to,
         uint value
     ) external optionalProxy returns (bool) {
-        systemStatus.requireSynthActive(currencyKey);
+        ISystemStatus(addressResolver.getAddress("SystemStatus")).requireSynthActive(currencyKey);
 
         return _transferFromByProxy(messageSender, from, to, value);
     }

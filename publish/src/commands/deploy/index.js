@@ -325,6 +325,7 @@ const deploy = async ({
 		limitPromise,
 		newContractsBeingAdded,
 		runStep,
+		network,
 		useOvm,
 	});
 
