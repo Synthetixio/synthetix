@@ -574,6 +574,47 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.bnEqual(amountReceived, effectiveValue.sub(tripleFee));
 					});
 				});
+				describe('when sBTC price rate spike', () => {
+					let sUSDsBTCFee;
+					let sBTCBalance;
+					let sBTCsUSDFee;
+					beforeEach(async () => {
+						timestamp = await currentTime();
+						await exchangeRates.updateRates([sETH, sBTC], ['110', '5100'].map(toUnit), timestamp, {
+							from: oracle,
+						});
+					});
+					describe('and swap sUSD to sBTC', () => {
+						let destinationFee;
+						beforeEach(async () => {
+							console.log('amountIssued', amountIssued.toString());
+							await synthetix.exchange(sUSD, amountIssued, sBTC, { from: account1 });
+							const { fee } = await exchanger.getAmountsForExchange(amountIssued, sUSD, sBTC);
+							destinationFee = fee;
+						});
+						it('then destination fee is greater as included dynamic fee in destination currency', async () => {
+							const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountIssued, sBTC);
+							sUSDsBTCFee = exchangeFeeIncurred(effectiveValue, bipsCrypto);
+							assert.bnGt(destinationFee, sUSDsBTCFee);
+						});
+						it('then swap sBTC to sETH and fee is more than sUSD to sBTC as dynamic fee in both direction', async () => {
+							await fastForward(await systemSettings.waitingPeriodSecs());
+							sBTCBalance = await sBTCContract.balanceOf(account1);
+							await synthetix.exchange(sBTC, sBTCBalance, sETH, { from: account1 });
+							const { fee } = await exchanger.getAmountsForExchange(sBTCBalance, sBTC, sETH);
+							assert.bnGt(fee, destinationFee);
+						});
+						it('then swap sBTC to sUSD and fee is greater as included dynamic fee in source currency', async () => {
+							await fastForward(await systemSettings.waitingPeriodSecs());
+							sBTCBalance = await sBTCContract.balanceOf(account1);
+							await synthetix.exchange(sBTC, sBTCBalance, sUSD, { from: account1 });
+							const { fee } = await exchanger.getAmountsForExchange(sBTCBalance, sBTC, sUSD);
+							const effectiveValue = await exchangeRates.effectiveValue(sBTC, sBTCBalance, sUSD);
+							sBTCsUSDFee = exchangeFeeIncurred(effectiveValue, bipsCrypto);
+							assert.bnGt(fee, sBTCsUSDFee);
+						});
+					});
+				});
 			});
 		});
 	};
@@ -2556,7 +2597,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						// CL aggregator with past price data
 						const aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
-						// set prices with no valatility
+						// set prices with no volatility
 						// Need to start from round 11 as the first 10 rounds are used for the setup
 						await aggregator.setLatestAnswerWithRound(
 							ethOnCL,
@@ -3193,7 +3234,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('settlement ignores deviations', () => {
 						describe('when a user exchange 100 sUSD into sETH', () => {
 							beforeEach(async () => {
-								// Disable Dynamic Fee by setting rounds to 0
+								// Disable Dynamic Fee in settlement by setting rounds to 0
 								await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 							});
