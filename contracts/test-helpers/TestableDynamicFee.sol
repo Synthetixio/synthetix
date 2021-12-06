@@ -4,8 +4,8 @@ pragma solidity ^0.5.16;
 import "../DynamicFee.sol";
 
 contract TestableDynamicFee {
-    uint public threshold = 4 * 10**uint(SafeDecimalMath.decimals() - 3);
-    uint public weightDecay = 9 * 10**uint(SafeDecimalMath.decimals() - 1);
+    uint public threshold = (4 * SafeDecimalMath.unit()) / 1000;
+    uint public weightDecay = (9 * SafeDecimalMath.unit()) / 10;
 
     function testGetPriceDifferential(uint price, uint previousPrice) external view returns (uint) {
         return DynamicFee.getPriceDifferential(price, previousPrice, threshold);
