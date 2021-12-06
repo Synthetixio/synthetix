@@ -8,35 +8,28 @@ library SafeDecimalMath {
     using SafeMath for uint;
 
     /* Number of decimal places in the representations. */
-    uint8 public constant DECIMALS = 18;
+    uint8 public constant decimals = 18;
     uint8 public constant highPrecisionDecimals = 27;
 
     /* The number representing 1.0. */
-    uint public constant UNIT = 10**uint(DECIMALS);
+    uint public constant UNIT = 10**uint(decimals);
 
     /* The number representing 1.0 for higher fidelity numbers. */
     uint public constant PRECISE_UNIT = 10**uint(highPrecisionDecimals);
-    uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10**uint(highPrecisionDecimals - DECIMALS);
+    uint private constant UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR = 10**uint(highPrecisionDecimals - decimals);
 
     /**
-     * @notice Provides an interface to UNIT.
+     * @return Provides an interface to UNIT.
      */
     function unit() external pure returns (uint) {
         return UNIT;
     }
 
     /**
-     * @notice Provides an interface to PRECISE_UNIT.
+     * @return Provides an interface to PRECISE_UNIT.
      */
     function preciseUnit() external pure returns (uint) {
         return PRECISE_UNIT;
-    }
-
-    /**
-     * @notice Provides an interface to decimals.
-     */
-    function decimals() external pure returns (uint8) {
-        return DECIMALS;
     }
 
     /**
