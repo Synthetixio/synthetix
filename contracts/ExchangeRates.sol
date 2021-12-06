@@ -132,7 +132,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     /// @return value of the target currency.
     /// @return rate of the source currency.
     /// @return rate of the destination currency.
-    function effectiveValueAndRatesAtRound(
+    function mutativeEffectiveValueAndRatesAtRound(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,

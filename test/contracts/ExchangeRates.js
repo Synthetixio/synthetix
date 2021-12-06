@@ -85,7 +85,7 @@ contract('Exchange Rates', async accounts => {
 			'removeAggregator',
 			'setOracle',
 			'updateRates',
-			'effectiveValueAndRatesAtRound',
+			'mutativeEffectiveValueAndRatesAtRound',
 		];
 		const withDexPricingFunctions = baseFunctions.concat(['setDexPriceAggregator']);
 

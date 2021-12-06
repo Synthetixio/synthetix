@@ -442,7 +442,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
         // Puting the exchangeRate call first as it's mutative for cheap cache reading later on
-        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates()
+            .mutativeEffectiveValueAndRatesAtRound(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,

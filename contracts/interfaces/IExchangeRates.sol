@@ -60,7 +60,7 @@ interface IExchangeRates {
         uint roundIdForDest
     ) external view returns (uint value);
 
-    function effectiveValueAndRatesAtRound(
+    function mutativeEffectiveValueAndRatesAtRound(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
