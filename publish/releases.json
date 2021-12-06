@@ -405,7 +405,13 @@
 		{
 			"sip": 184,
 			"layer": "both",
-			"sources": ["Exchanger", "ExchangeRates", "SystemSettings", "DynamicFee"]
+			"sources": [
+				"Exchanger",
+				"ExchangeRates",
+				"SystemSettings",
+				"DynamicFee",
+				"SafeDecimalMath"
+			]
 		},
 		{
 			"sip": 187,
