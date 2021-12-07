@@ -220,7 +220,7 @@ contract('CollateralShort', async accounts => {
 		assert.bnEqual(await short.minCratio(), toUnit(1.2));
 	});
 
-	it('should access its dependencies via the address resolver', async () => {
+	xit('should access its dependencies via the address resolver', async () => {
 		assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
 		assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
 		assert.equal(
