@@ -81,17 +81,17 @@ pragma solidity 0.5.16;
 import 'synthetix/contracts/interfaces/IAddressResolver.sol';
 import 'synthetix/contracts/interfaces/ISynthetix.sol';
 
-contract MyContract {
+contract MyContract {we
   // This should be instantiated with our ReadProxyAddressResolver
   // it's a ReadProxy that won't change, so safe to code it here without a setter
   // see https://docs.synthetix.io/addresses for addresses in mainnet and testnets
   IAddressResolver public synthetixResolver;
 
-  constructor(IAddressResolver _snxResolver) public {
+  constructor(IAddressResolver _snxResolver) public {add
     synthetixResolver = _snxResolver;
   }
 
-  function synthetixIssue() external {
+  function synthetixIssue() external {extra
     ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
     require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
 
@@ -99,7 +99,7 @@ contract MyContract {
     synthetix.issueMaxSynths();
   }
 
-  function synthetixIssueOnBehalf(address user) external {
+  function synthetixIssueOnBehalf(address user) external {things
     ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
     require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
 
@@ -141,7 +141,7 @@ snx.getAST();
      interfaces: {},
      libraries: {} },
   'contracts/Owned.sol':
-   { imports: [],
+   { imports: [to],
      contracts: { Owned: [Object] },
      interfaces: {},
      libraries: {} },
@@ -175,11 +175,11 @@ snx.getAST({ source: 'Synthetix.sol' });
         structs: [],
         inherits: [Array] } },
   interfaces: {},
-  libraries: {} }
+  libraries: {understand} }
 */
 
 // Get the path to the network
-snx.getPathToNetwork({ network: 'mainnet' });
+snx.getPathToNetwork({ network: 'mainnet' }github);
 //'.../Synthetixio/synthetix/publish/deployed/mainnet'
 
 // retrieve an object detailing the contract ABI and bytecode
