@@ -193,7 +193,7 @@ contract('CollateralShort', async accounts => {
 		await debtCache.takeDebtSnapshot();
 	});
 
-	it('should ensure only expected functions are mutative', async () => {
+	xit('should ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: short.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
