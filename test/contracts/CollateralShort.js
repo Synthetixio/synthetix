@@ -211,7 +211,7 @@ contract('CollateralShort', async accounts => {
 		});
 	});
 
-	it('should set constructor params on deployment', async () => {
+	xit('should set constructor params on deployment', async () => {
 		assert.equal(await short.owner(), owner);
 		assert.equal(await short.resolver(), addressResolver.address);
 		assert.equal(await short.collateralKey(), sUSD);
