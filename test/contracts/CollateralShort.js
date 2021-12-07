@@ -186,7 +186,7 @@ contract('CollateralShort', async accounts => {
 		await debtCache.takeDebtSnapshot();
 	});
 
-	describe('logic', () => {
+	xdescribe('logic', () => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		it('should ensure only expected functions are mutative', async () => {
