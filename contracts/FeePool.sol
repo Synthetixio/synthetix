@@ -44,6 +44,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     struct FeePeriod {
         uint64 feePeriodId;
         uint64 startTime;
+
+        uint allNetworksSnxBackedDebt;
+        uint allNetworksDebtSharesSupply;
+
         uint feesToDistribute;
         uint feesClaimed;
         uint rewardsToDistribute;
@@ -75,6 +79,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
+    bytes32 private constant CONTRACT_EXT_ALL_NETWORKS_SNX_BACKED_DEBT = "ext:AllNetworksSnxBackedDebt";
+    bytes32 private constant CONTRACT_EXT_ALL_NETWORKS_DEBT_SHARES_SUPPLY = "ext:AllNetworksDebtSharesSupply";
+
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
@@ -92,7 +99,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_SYNTHETIXDEBTSHARE;
@@ -105,6 +112,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[9] = CONTRACT_COLLATERALMANAGER;
         newAddresses[10] = CONTRACT_WRAPPER_FACTORY;
         newAddresses[11] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[12] = CONTRACT_EXT_ALL_NETWORKS_SNX_BACKED_DEBT;
+        newAddresses[13] = CONTRACT_EXT_ALL_NETWORKS_TOTAL_DEBT_SHARES_SUPPLY;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -168,6 +177,16 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return getTargetThreshold();
     }
 
+    function allNetworksSnxBackedDebtData() internal view returns (int256 debt, uint256 updatedAt) {
+        (, debt, , updatedAt) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_ALL_NETWORKS_SNX_BACKED_DEBT))
+            .latestRoundData();
+    }
+
+    function allNetworksDebtSharesSupplyData() internal view returns (int256 debt, uint256 updatedAt) {
+        (, debt, , updatedAt) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_ALL_NETWORKS_DEBT_SHARES_SUPPLY))
+            .latestRoundData();
+    }
+
     function recentFeePeriods(uint index)
         external
         view
@@ -217,12 +236,31 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /**
      * @notice Close the current fee period and start a new one.
      */
-    function closeCurrentFeePeriod() external issuanceActive {
+    function closeCurrentFeePeriod() external onlyMainnet issuanceActive {
+
+        // get current oracle values
+        (snxBackedAmount, snxBackedUpdateTime) = allNetworksSnxBackedDebt();
+        (debtSharesAmount, debtSharesUpdateTime) = allNetworksDebtShares();
+
+        closeSecondary(snxBackedAmount, debtSharesAmount);
+
+        // inform other chains of the chosen values
+        SystemMessenger.broadcast("FeePool", "closeSecondary()", [snxBackedDebt, debtSharesAmount]);
+    }
+
+        /**
+     * @notice Close the current fee period and start a new one.
+     */
+    function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) external onlyRelayer issuanceActive {
         require(getFeePeriodDuration() > 0, "Fee Period Duration not set");
         require(_recentFeePeriodsStorage(0).startTime <= (now - getFeePeriodDuration()), "Too early to close fee period");
 
         etherWrapper().distributeFees();
         wrapperFactory().distributeFees();
+
+        // before closing the current fee period, set the recorded snxBackedDebt and debtSharesSupply
+        _recentFeePeriodsStorage(0).allNetworksDebtSharesSupply = allNetworksDebtSharesSupply;
+        _recentFeePeriodsStorage(0).allNetworksSnxBackedDebt = allNetworksSnxBackedDebt;
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -543,15 +581,12 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      */
     function feesByPeriod(address account) public view returns (uint[2][FEE_PERIOD_LENGTH] memory results) {
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
-        uint userOwnershipPercentage;
         ISynthetixDebtShare _debtShare = synthetixDebtShare();
-
-        userOwnershipPercentage = _debtShare.sharePercent(account);
 
         // If they don't have any debt ownership and they never minted, they don't have any fees.
         // User ownership can reduce to 0 if user burns all synths,
         // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.
-        if (userOwnershipPercentage == 0) {
+        if (_debtShare.balanceOf(account) == 0) {
             uint[2][FEE_PERIOD_LENGTH] memory nullResults;
             return nullResults;
         }
@@ -575,7 +610,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             uint64 periodId = _recentFeePeriodsStorage(i).feePeriodId;
             if (lastFeeWithdrawal < periodId) {
 
-                userOwnershipPercentage = _debtShare.sharePercentOnPeriod(account, uint(periodId));
+                uint allNetworksDebtSharesSupply = _recentFeePeriodsStorage(i).allNetworksSnxBackedDebt;
+
+                uint userOwnershipPercentage = _debtShare.balanceOfOnPeriod(account, uint(periodId))
+                    .divideDecimal(allNetworksDebtSharesSupply);
 
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage);
 
