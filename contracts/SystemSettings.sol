@@ -4,6 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISystemSettings.sol";
+import "./SystemSettingsLib.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -271,35 +272,40 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         external
         onlyOwner
     {
-        require(
-            _crossDomainMessageGasLimit >= MIN_CROSS_DOMAIN_GAS_LIMIT &&
-                _crossDomainMessageGasLimit <= MAX_CROSS_DOMAIN_GAS_LIMIT,
-            "Out of range xDomain gasLimit"
-        );
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setCrossDomainMessageGasLimit(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             _getGasLimitSetting(_gasLimitType),
-            _crossDomainMessageGasLimit
-        );
+            _crossDomainMessageGasLimit,
+            MIN_CROSS_DOMAIN_GAS_LIMIT,
+            MAX_CROSS_DOMAIN_GAS_LIMIT);
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
-        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
+        SystemSettingsLib.setBoolValue(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_TRADING_REWARDS_ENABLED,
+            _tradingRewardsEnabled);
         emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
+        SystemSettingsLib.setUIntValue(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_WAITING_PERIOD_SECS,
+            _waitingPeriodSecs);
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setUIntValue(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
-            _priceDeviationThresholdFactor
-        );
+            _priceDeviationThresholdFactor);
         emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
