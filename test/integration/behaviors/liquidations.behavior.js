@@ -9,22 +9,11 @@ function itCanLiquidate({ ctx }) {
 	describe('liquidating', () => {
 		let owner;
 		let someUser;
-        let otherUser;
+		let otherUser;
 		let Synthetix, ExchangeRates, Liquidations, SystemSettings;
-		let synth;
 
 		before('target contracts and users', () => {
-			const { addedSynths } = ctx;
-			// when no added synths, then just use sDEFI for testing (useful for the simulation)
-			synth = addedSynths.length ? addedSynths[0].name : 'sDEFI';
-
-			({
-				Synthetix,
-				ExchangeRates,
-				Liquidations,
-				SynthsUSD,
-				SystemSettings
-			} = ctx.contracts);
+			({ Synthetix, ExchangeRates, Liquidations, SystemSettings } = ctx.contracts);
 
 			({ owner, someUser, otherUser } = ctx.users);
 
@@ -55,49 +44,65 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
-        before('exchange rates are correct', async () => {
-	        const { timestamp } = await ctx.provider.getBlock();
-            await ExchangeRates.updateRates(
-                [toBytes32('SNX')], 
-                [ethers.utils.parseEther('1')], 
-                timestamp
-            );
+		before('exchange rates are correct', async () => {
+			const { timestamp } = await ctx.provider.getBlock();
+			await ExchangeRates.updateRates(
+				[toBytes32('SNX')],
+				[ethers.utils.parseEther('1')],
+				timestamp
+			);
 
 			await updateExchangeRatesIfNeeded({ ctx });
-        });
+		});
 
-        before('someUser stakes their SNX', async () => {
-            await Synthetix.connect(someUser).issueSynths(ethers.utils.parseEther('10'));
-        })
+		before('someUser stakes their SNX', async () => {
+			await Synthetix.connect(someUser).issueSynths(ethers.utils.parseEther('10'));
+		});
 
-        describe('getting marked', () => {
-            before('exchange rate changes to allow liquidation', async () => {
-                const { timestamp } = await ctx.provider.getBlock();
-                await ExchangeRates.updateRates(
-                    [toBytes32('SNX')], 
-                    [ethers.utils.parseEther('0.01')], 
-                    timestamp
-                );
+		it('cannot be liquidated at this point', async () => {
+			assert.equal(await Liquidations.isOpenForLiquidation(someUser.address), false);
+		});
 
-                await updateExchangeRatesIfNeeded({ ctx });
-            });
+		describe('getting marked', () => {
+			before('exchange rate changes to allow liquidation', async () => {
+				const { timestamp } = await ctx.provider.getBlock();
+				await ExchangeRates.updateRates(
+					[toBytes32('SNX')],
+					[ethers.utils.parseEther('0.2')],
+					timestamp
+				);
 
-			before('liquidation is marked', async () => {
-                await Liquidations.connect(otherUser).flagAccountForLiquidation(someUser.address);
+				await updateExchangeRatesIfNeeded({ ctx });
 			});
 
-            describe('getting liquidated', () => {
-                before('otherUser calls liquidateDelinquentAccount', async () => {
-                    await skipLiquidationDelay({ ctx });
-                    await updateExchangeRatesIfNeeded({ ctx });
-                    await Synthetix.connect(otherUser).liquidateDelinquentAccount(someUser.address, ethers.utils.parseEther('100'));
-                });
+			before('liquidation is marked', async () => {
+				await Liquidations.connect(otherUser).flagAccountForLiquidation(someUser.address);
+			});
 
-                it('is liquidated', async () => {
-					assert.equal(await Synthetix.balanceOf(someUser.address), '0');
-                });
-            });
-        })
+			it('still not open for liquidation', async () => {
+				assert.equal(await Liquidations.isOpenForLiquidation(someUser.address), false);
+			});
+
+			it('deadline hasn not passed yet', async () => {
+				assert.equal(await Liquidations.isLiquidationDeadlinePassed(someUser.address), false);
+			});
+
+			describe('getting liquidated', () => {
+				before('otherUser calls liquidateDelinquentAccount', async () => {
+					await skipLiquidationDelay({ ctx });
+					await updateExchangeRatesIfNeeded({ ctx });
+					await Synthetix.connect(otherUser).liquidateDelinquentAccount(
+						someUser.address,
+						ethers.utils.parseEther('100')
+					);
+				});
+
+				it('is liquidated', async () => {
+					// = sUSD liquidated / SNX Price * 1.1
+					assert.equal(await Synthetix.balanceOf(someUser.address), '62068965517241379313');
+				});
+			});
+		});
 	});
 }
 
