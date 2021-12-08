@@ -8552,7 +8552,8 @@
 						}
 					],
 					"name": "AtomicSynthExchange",
-					"type": "event"
+					"type": "event",
+					"signature": "0x1a7efbf9959666326fa3a492a6acce1f400e1cdff5c26a50ff68f3123e6d7137"
 				},
 				{
 					"anonymous": false,
