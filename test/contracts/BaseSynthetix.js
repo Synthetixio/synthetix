@@ -183,14 +183,6 @@ contract('BaseSynthetix', async accounts => {
 			});
 		});
 
-		it('liquidateDelinquentAccount should revert no matter who the caller is', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: baseSynthetix.liquidateDelinquentAccount,
-				accounts,
-				args: [account1, amount],
-				reason: 'Cannot be run on this layer',
-			});
-		});
 		it('mintSecondary should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.mintSecondary,
