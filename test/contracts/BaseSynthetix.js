@@ -854,9 +854,12 @@ contract('BaseSynthetix', async accounts => {
 		});
 
 		it("should lock newly received synthetix if the user's collaterisation is too high", async () => {
+			// Disable Dynamic fee so that we can neglect it.
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			// Set sEUR for purposes of this test
 			const timestamp1 = await currentTime();
-			await exchangeRates.updateRates([sEUR], [toUnit('1')], timestamp1, { from: oracle });
+			await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
 			await debtCache.takeDebtSnapshot();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
@@ -896,12 +899,15 @@ contract('BaseSynthetix', async accounts => {
 		});
 
 		it('should unlock synthetix when collaterisation ratio changes', async () => {
+			// Disable Dynamic fee so that we can neglect it.
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			// prevent circuit breaker from firing by upping the threshold to factor 5
 			await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
 
 			// Set sAUD for purposes of this test
 			const timestamp1 = await currentTime();
-			const aud2usdrate = toUnit('1');
+			const aud2usdrate = toUnit('2');
 
 			await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
 			await debtCache.takeDebtSnapshot();
@@ -926,12 +932,12 @@ contract('BaseSynthetix', async accounts => {
 
 			// Increase the value of sAUD relative to synthetix
 			const timestamp2 = await currentTime();
-			const newAUDExchangeRate = toUnit('0.75');
+			const newAUDExchangeRate = toUnit('1');
 			await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
 			await debtCache.takeDebtSnapshot();
 
 			const transferable2 = await baseSynthetix.transferableSynthetix(account1);
-			assert.equal(transferable2.gt(toUnit('100')), true);
+			assert.equal(transferable2.gt(toUnit('1000')), true);
 		});
 
 		describe('when the user has issued some sUSD and exchanged for other synths', () => {

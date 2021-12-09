@@ -147,7 +147,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         )
     {
         uint time;
-        (sourceRate, time) = _getRateAndUpdatedTimeAtRound(sourceCurrencyKey, roundIdForSrc);
+        (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         // cacheing to save external call
         _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
@@ -155,7 +155,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             destinationRate = sourceRate;
             value = sourceAmount;
         } else {
-            (destinationRate, time) = _getRateAndUpdatedTimeAtRound(destinationCurrencyKey, roundIdForDest);
+            (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
             // cacheing to save external call
             _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
@@ -201,7 +201,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (true) {
-            (, nextTimestamp) = _getRateAndUpdatedTimeAtRound(currencyKey, roundId + 1);
+            (, nextTimestamp) = _getRateAndTimestampAtRound(currencyKey, roundId + 1);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0 || nextTimestamp > startingTimestamp + timediff) {
                 return roundId;
@@ -225,8 +225,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        (uint srcRate, ) = _getRateAndUpdatedTimeAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = _getRateAndUpdatedTimeAtRound(destinationCurrencyKey, roundIdForDest);
+        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
+        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
         if (destRate == 0) {
             // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
             // to aggregator upgrades)
@@ -237,7 +237,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
-        return _getRateAndUpdatedTimeAtRound(currencyKey, roundId);
+        return _getRateAndTimestampAtRound(currencyKey, roundId);
     }
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256) {
@@ -317,7 +317,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         for (uint i = 0; i < numRounds; i++) {
             // fetch the rate and treat is as current, so inverse limits if frozen will always be applied
             // regardless of current rate
-            (rates[i], times[i]) = _getRateAndUpdatedTimeAtRound(currencyKey, roundId);
+            (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
 
             if (roundId == 0) {
                 // if we hit the last round, then return what we have
@@ -543,7 +543,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    function _getRateAndUpdatedTimeAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
+    function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
 

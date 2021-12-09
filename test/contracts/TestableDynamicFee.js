@@ -5,7 +5,7 @@ const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const DynamicFee = artifacts.require('DynamicFee');
 const TestableDynamicFee = artifacts.require('TestableDynamicFee');
 
-contract('TestableDynamicFee', () => {
+contract('DynamicFee', () => {
 	let testableDynamicFee;
 
 	before(async () => {
@@ -38,7 +38,7 @@ contract('TestableDynamicFee', () => {
 		assert.bnEqual(priceWeight2, toUnit('0.81'));
 	});
 
-	it('Can get dynamic fee from dynamic-fee-calc.csv round 13-22, all below threshold', async () => {
+	it('Can get dynamic fee according to SIP feasibility spreadsheet round 13-22, all below threshold', async () => {
 		const prices = [
 			toUnit('49535.05178912'),
 			toUnit('49714.05205647'),
@@ -57,7 +57,7 @@ contract('TestableDynamicFee', () => {
 		assert.bnEqual(dynamicFee, '0');
 	});
 
-	it('Can get dynamic fee from dynamic-fee-calc.csv round 14-23, last one above threshold', async () => {
+	it('Can get dynamic fee according to SIP feasibility spreadsheet round 14-23, last one above threshold', async () => {
 		const prices = [
 			toUnit('49234.65005734'),
 			toUnit('49535.05178912'),
@@ -75,7 +75,7 @@ contract('TestableDynamicFee', () => {
 		assert.bnEqual(dynamicFee, '2064427530203592');
 	});
 
-	it('Can get dynamic fee from dynamic-fee-calc.csv round 23-32, first one above threshold', async () => {
+	it('Can get dynamic fee according to SIP feasibility spreadsheet round 23-32, first one above threshold', async () => {
 		const prices = [
 			toUnit('49198.77'),
 			toUnit('49143.5399999999'),
@@ -93,7 +93,7 @@ contract('TestableDynamicFee', () => {
 		assert.bnEqual(dynamicFee, '799801523256537');
 	});
 
-	it('Can get dynamic fee from dynamic-fee-calc.csv round 63-72, 70% above threshold', async () => {
+	it('Can get dynamic fee according to SIP feasibility spreadsheet round 63-72, 70% above threshold', async () => {
 		const prices = [
 			toUnit('44661.70868763'),
 			toUnit('44672.6561639399'),
@@ -112,7 +112,7 @@ contract('TestableDynamicFee', () => {
 		assert.bnEqual(dynamicFee, '18366333809739328');
 	});
 
-	it('Can get the same dynamic fee from dynamic-fee-calc.csv round 58-67, 50% above threshold', async () => {
+	it('Can get the same dynamic fee according to SIP feasibility spreadsheet round 58-67, 50% above threshold', async () => {
 		const prices = [
 			toUnit('46183.17440371'),
 			toUnit('46217.7336139799'),

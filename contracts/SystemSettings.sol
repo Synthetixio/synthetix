@@ -408,13 +408,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit ExchangeDynamicFeeWeightDecayUpdated(weightDecay);
     }
 
-    /// @notice Set exchange dynamic fee last N rounds constant default to 10
+    /// @notice Set exchange dynamic fee last N rounds
     /// @param rounds The exchange dynamic fee last N rounds
     /// @return uint dynamic fee last N rounds
     function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
-        // Allowing to be 0 as a flag to disable Dynamic Fee
-        // require(rounds != 0, "rounds cannot be 0");
-
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS, rounds);
 
         emit ExchangeDynamicFeeRoundsUpdated(rounds);

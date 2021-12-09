@@ -399,7 +399,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             rates[2] = SafeDecimalMath.unit();
         }
 
-        // Note: that exchanges can't invalidate the debt cache, since if a rate is invalid,
+        // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
         // the exchange will have failed already.
         debtCache().updateCachedSynthDebtsWithRates(keys, rates);
     }
@@ -470,10 +470,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        (entry.exchangeFeeRate, entry.exchangeDynamicFeeRate) = _feeRateForExchange(
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
+        entry.exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
         // Note: `fee` is denominated in the destinationCurrencyKey.
@@ -756,7 +753,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint exchangeFeeRate)
     {
-        (exchangeFeeRate, ) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
@@ -767,7 +764,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         internal
         view
-        returns (uint exchangeFeeRate, uint exchangeDynamicFeeRate)
+        returns (uint exchangeFeeRate)
     {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
@@ -778,15 +775,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint exchangeFeeRate,
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
-    ) internal view returns (uint, uint exchangeDynamicFeeRate) {
-        exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
+    ) internal view returns (uint) {
+        uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
         exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(_getDynamicFeeForExchange(sourceCurrencyKey));
         uint maxDynamicFee = getExchangeMaxDynamicFee();
 
         exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
         // Cap to max exchange dynamic fee
         exchangeFeeRate = exchangeFeeRate > maxDynamicFee ? maxDynamicFee : exchangeFeeRate;
-        return (exchangeFeeRate, exchangeDynamicFeeRate);
+        return exchangeFeeRate;
     }
 
     /// @notice Get dynamic fee for a given currency key (SIP-184)
@@ -838,7 +835,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (exchangeFeeRate, ) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         uint destinationAmount;
         uint destinationRate;
