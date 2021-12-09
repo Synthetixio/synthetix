@@ -64,10 +64,10 @@ module.exports = async ({
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
-		read: 'minLiquidationFee',
+		read: 'minKeeperFee',
 		expected: input => input !== '0', // only change if zero
-		write: 'setMinLiquidationFee',
-		writeArg: await getDeployParameter('FUTURES_MIN_LIQUIDATION_FEE'),
+		write: 'setMinKeeperFee',
+		writeArg: await getDeployParameter('FUTURES_MIN_KEEPER_FEE'),
 		comment: 'Set the minimum reward for liquidating a futures position (SIP-80)',
 	});
 
@@ -101,7 +101,10 @@ module.exports = async ({
 			asset,
 			takerFee,
 			makerFee,
+			takerFeeNextPrice,
+			makerFeeNextPrice,
 			closureFee,
+			nextPriceConfirmWindow,
 			maxLeverage,
 			maxMarketValueUSD,
 			maxFundingRate,
@@ -116,7 +119,10 @@ module.exports = async ({
 		const settings = {
 			takerFee: w3utils.toWei(takerFee),
 			makerFee: w3utils.toWei(makerFee),
+			takerFeeNextPrice: w3utils.toWei(takerFeeNextPrice),
+			makerFeeNextPrice: w3utils.toWei(makerFeeNextPrice),
 			closureFee: w3utils.toWei(closureFee),
+			nextPriceConfirmWindow: w3utils.toBN(nextPriceConfirmWindow),
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
 			maxFundingRate: w3utils.toWei(maxFundingRate),

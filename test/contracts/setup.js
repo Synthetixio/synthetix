@@ -2,7 +2,7 @@
 
 const { artifacts, web3, log } = require('hardhat');
 
-const { toWei } = web3.utils;
+const { toWei, toBN } = web3.utils;
 const { toUnit, currentTime } = require('../utils')();
 const {
 	toBytes32,
@@ -27,7 +27,7 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
-		FUTURES_MIN_LIQUIDATION_FEE,
+		FUTURES_MIN_KEEPER_FEE,
 		FUTURES_LIQUIDATION_FEE_RATIO,
 		FUTURES_LIQUIDATION_BUFFER_RATIO,
 		FUTURES_MIN_INITIAL_MARGIN,
@@ -1145,7 +1145,7 @@ const setupAllContracts = async ({
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setMinLiquidationFee(FUTURES_MIN_LIQUIDATION_FEE, {
+				returnObj['FuturesMarketSettings'].setMinKeeperFee(FUTURES_MIN_KEEPER_FEE, {
 					from: owner,
 				}),
 				returnObj['FuturesMarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
@@ -1170,7 +1170,10 @@ const setupAllContracts = async ({
 						assetKey,
 						toWei('0.003'), // 0.3% taker fee
 						toWei('0.001'), // 0.1% maker fee
+						toWei('0.0005'), // 0.05% taker fee next price
+						toWei('0.0001'), // 0.01% maker fee next price
 						toWei('0'), // nil closure fee
+						toBN('2'), // 2 rounds next price confirm window
 						toWei('10'), // 10x max leverage
 						toWei('100000'), // 100000 max market debt
 						toWei('0.1'), // 10% max funding rate

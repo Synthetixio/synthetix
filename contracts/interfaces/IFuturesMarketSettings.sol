@@ -4,7 +4,10 @@ interface IFuturesMarketSettings {
     struct Parameters {
         uint takerFee;
         uint makerFee;
+        uint takerFeeNextPrice;
+        uint makerFeeNextPrice;
         uint closureFee;
+        uint nextPriceConfirmWindow;
         uint maxLeverage;
         uint maxMarketValueUSD;
         uint maxFundingRate;
@@ -16,7 +19,13 @@ interface IFuturesMarketSettings {
 
     function makerFee(bytes32 _baseAsset) external view returns (uint);
 
+    function takerFeeNextPrice(bytes32 _baseAsset) external view returns (uint);
+
+    function makerFeeNextPrice(bytes32 _baseAsset) external view returns (uint);
+
     function closureFee(bytes32 _baseAsset) external view returns (uint);
+
+    function nextPriceConfirmWindow(bytes32 _baseAsset) external view returns (uint);
 
     function maxLeverage(bytes32 _baseAsset) external view returns (uint);
 
@@ -34,7 +43,10 @@ interface IFuturesMarketSettings {
         returns (
             uint _takerFee,
             uint _makerFee,
+            uint _takerFeeNextPrice,
+            uint _makerFeeNextPrice,
             uint _closureFee,
+            uint _nextPriceConfirmWindow,
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,
@@ -42,7 +54,7 @@ interface IFuturesMarketSettings {
             uint _maxFundingRateDelta
         );
 
-    function minLiquidationFee() external view returns (uint);
+    function minKeeperFee() external view returns (uint);
 
     function liquidationFeeRatio() external view returns (uint);
 

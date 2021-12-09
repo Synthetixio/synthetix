@@ -1,31 +1,8 @@
 pragma solidity ^0.5.16;
 
+import "./IFuturesMarketBaseTypes.sol";
+
 interface IFuturesMarket {
-    /* ========== TYPES ========== */
-
-    enum Status {
-        Ok,
-        InvalidPrice,
-        PriceOutOfBounds,
-        CanLiquidate,
-        CannotLiquidate,
-        MaxMarketSizeExceeded,
-        MaxLeverageExceeded,
-        InsufficientMargin,
-        NotPermitted,
-        NilOrder,
-        NoPositionOpen
-    }
-
-    // If margin/size are positive, the position is long; if negative then it is short.
-    struct Position {
-        uint id;
-        uint margin;
-        int size;
-        uint lastPrice;
-        uint fundingIndex;
-    }
-
     /* ========== FUNCTION INTERFACE ========== */
 
     /* ---------- Market Details ---------- */
@@ -72,7 +49,10 @@ interface IFuturesMarket {
         returns (
             uint takerFee,
             uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
             uint closureFee,
+            uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
@@ -121,7 +101,7 @@ interface IFuturesMarket {
             uint price,
             uint liqPrice,
             uint fee,
-            Status status
+            IFuturesMarketBaseTypes.Status status
         );
 
     /* ---------- Market Operations ---------- */
@@ -133,6 +113,12 @@ interface IFuturesMarket {
     function withdrawAllMargin() external;
 
     function modifyPosition(int sizeDelta) external;
+
+    function submitNextPriceOrder(int sizeDelta) external;
+
+    function cancelNextPriceOrder(address account) external;
+
+    function executeNextPriceOrder(address account) external;
 
     function modifyPositionWithPriceBounds(
         int sizeDelta,

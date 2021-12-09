@@ -24,7 +24,10 @@ contract('FuturesMarketSettings', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
+	const takerFeeNextPrice = toUnit('0.0005');
+	const makerFeeNextPrice = toUnit('0.0001');
 	const closureFee = toUnit('0');
+	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 
@@ -81,14 +84,17 @@ contract('FuturesMarketSettings', accounts => {
 			expected: [
 				'setTakerFee',
 				'setMakerFee',
+				'setTakerFeeNextPrice',
+				'setMakerFeeNextPrice',
 				'setClosureFee',
+				'setNextPriceConfirmWindow',
 				'setMaxLeverage',
 				'setMaxMarketValueUSD',
 				'setMaxFundingRate',
 				'setSkewScaleUSD',
 				'setMaxFundingRateDelta',
 				'setParameters',
-				'setMinLiquidationFee',
+				'setMinKeeperFee',
 				'setLiquidationFeeRatio',
 				'setLiquidationBufferRatio',
 				'setMinInitialMargin',
@@ -103,7 +109,10 @@ contract('FuturesMarketSettings', accounts => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
+				takerFeeNextPrice,
+				makerFeeNextPrice,
 				closureFee,
+				nextPriceConfirmWindow,
 				maxLeverage,
 				maxMarketValueUSD,
 				maxFundingRate,
@@ -128,6 +137,24 @@ contract('FuturesMarketSettings', accounts => {
 			it('should revert if taker fee is greater than 1', async () => {
 				await assert.revert(
 					futuresMarketSettings.setTakerFee(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'taker fee greater than 1'
+				);
+			});
+
+			it('should revert if maker fee next price is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setMakerFeeNextPrice(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'maker fee greater than 1'
+				);
+			});
+
+			it('should revert if taker fee next price is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setTakerFeeNextPrice(baseAsset, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -238,28 +265,28 @@ contract('FuturesMarketSettings', accounts => {
 		});
 	});
 
-	describe('setMinLiquidationFee()', () => {
+	describe('setMinKeeperFee()', () => {
 		let minInitialMargin;
 		beforeEach(async () => {
 			minInitialMargin = await futuresMarketSettings.minInitialMargin.call();
 		});
 		it('should be able to change the futures liquidation fee', async () => {
 			// fee <= minInitialMargin
-			const minLiquidationFee = minInitialMargin;
+			const minKeeperFee = minInitialMargin;
 
-			const originalLiquidationFee = await futuresMarketSettings.minLiquidationFee.call();
-			await futuresMarketSettings.setMinLiquidationFee(minLiquidationFee, { from: owner });
-			const newLiquidationFee = await futuresMarketSettings.minLiquidationFee.call();
-			assert.bnEqual(newLiquidationFee, minLiquidationFee);
+			const originalLiquidationFee = await futuresMarketSettings.minKeeperFee.call();
+			await futuresMarketSettings.setMinKeeperFee(minKeeperFee, { from: owner });
+			const newLiquidationFee = await futuresMarketSettings.minKeeperFee.call();
+			assert.bnEqual(newLiquidationFee, minKeeperFee);
 			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
 		});
 
 		it('only owner is permitted to change the futures liquidation fee', async () => {
-			const minLiquidationFee = toUnit('100');
+			const minKeeperFee = toUnit('100');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setMinLiquidationFee,
-				args: [minLiquidationFee.toString()],
+				fnc: futuresMarketSettings.setMinKeeperFee,
+				args: [minKeeperFee.toString()],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -268,13 +295,13 @@ contract('FuturesMarketSettings', accounts => {
 
 		it('should revert if the fee is greater than the min initial margin', async () => {
 			await assert.revert(
-				futuresMarketSettings.setMinLiquidationFee(minInitialMargin.add(new BN(1)), {
+				futuresMarketSettings.setMinKeeperFee(minInitialMargin.add(new BN(1)), {
 					from: owner,
 				}),
 				'min margin < liquidation fee'
 			);
 
-			const currentLiquidationFee = await futuresMarketSettings.minLiquidationFee.call();
+			const currentLiquidationFee = await futuresMarketSettings.minKeeperFee.call();
 			await assert.revert(
 				futuresMarketSettings.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
 					from: owner,
@@ -285,13 +312,13 @@ contract('FuturesMarketSettings', accounts => {
 
 		it('should emit event on successful liquidation fee change', async () => {
 			// fee <= minInitialMargin
-			const minLiquidationFee = minInitialMargin.sub(new BN(1));
+			const minKeeperFee = minInitialMargin.sub(new BN(1));
 
-			const txn = await futuresMarketSettings.setMinLiquidationFee(minLiquidationFee, {
+			const txn = await futuresMarketSettings.setMinKeeperFee(minKeeperFee, {
 				from: owner,
 			});
-			assert.eventEqual(txn, 'MinLiquidationFeeUpdated', {
-				sUSD: minLiquidationFee,
+			assert.eventEqual(txn, 'MinKeeperFeeUpdated', {
+				sUSD: minKeeperFee,
 			});
 		});
 	});

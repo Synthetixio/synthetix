@@ -4,6 +4,8 @@ pragma solidity ^0.5.16;
 interface IExchangeRatesCircuitBreaker {
     // Views
 
+    function exchangeRates() external view returns (address);
+
     function rateWithInvalid(bytes32 currencyKey) external view returns (uint, bool);
 
     function priceDeviationThresholdFactor() external view returns (uint);

@@ -16,7 +16,10 @@ contract MixinFuturesMarketSettings is MixinResolver {
     // Per-market settings
     bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
+    bytes32 internal constant PARAMETER_TAKER_FEE_NEXT_PRICE = "takerFeeNextPrice";
+    bytes32 internal constant PARAMETER_MAKER_FEE_NEXT_PRICE = "makerFeeNextPrice";
     bytes32 internal constant PARAMETER_CLOSURE_FEE = "closureFee";
+    bytes32 internal constant PARAMETER_NEXT_PRICE_CONFIRM_WINDOW = "nextPriceConfirmWindow";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
@@ -25,7 +28,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
 
     // Global settings
     // minimum liquidation fee payable to liquidator
-    bytes32 internal constant SETTING_MIN_LIQUIDATION_FEE = "futuresMinLiquidationFee";
+    bytes32 internal constant SETTING_MIN_KEEPER_FEE = "futuresMinKeeperFee";
     // liquidation fee basis points payed to liquidator
     bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "futuresLiquidationFeeRatio";
     // liquidation buffer to prevent negative margin upon liquidation
@@ -65,8 +68,20 @@ contract MixinFuturesMarketSettings is MixinResolver {
         return _parameter(_baseAsset, PARAMETER_MAKER_FEE);
     }
 
+    function _takerFeeNextPrice(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_TAKER_FEE_NEXT_PRICE);
+    }
+
+    function _makerFeeNextPrice(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE);
+    }
+
     function _closureFee(bytes32 _baseAsset) internal view returns (uint) {
         return _parameter(_baseAsset, PARAMETER_CLOSURE_FEE);
+    }
+
+    function _nextPriceConfirmWindow(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW);
     }
 
     function _maxLeverage(bytes32 _baseAsset) internal view returns (uint) {
@@ -95,7 +110,10 @@ contract MixinFuturesMarketSettings is MixinResolver {
         returns (
             uint takerFee,
             uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
             uint closureFee,
+            uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
@@ -105,7 +123,10 @@ contract MixinFuturesMarketSettings is MixinResolver {
     {
         takerFee = _takerFee(_baseAsset);
         makerFee = _makerFee(_baseAsset);
+        takerFeeNextPrice = _takerFeeNextPrice(_baseAsset);
+        makerFeeNextPrice = _makerFeeNextPrice(_baseAsset);
         closureFee = _closureFee(_baseAsset);
+        nextPriceConfirmWindow = _nextPriceConfirmWindow(_baseAsset);
         maxLeverage = _maxLeverage(_baseAsset);
         maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
         maxFundingRate = _maxFundingRate(_baseAsset);
@@ -113,8 +134,8 @@ contract MixinFuturesMarketSettings is MixinResolver {
         maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 
-    function _minLiquidationFee() internal view returns (uint) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE);
+    function _minKeeperFee() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE);
     }
 
     function _liquidationFeeRatio() internal view returns (uint) {

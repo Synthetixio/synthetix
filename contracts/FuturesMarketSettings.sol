@@ -51,10 +51,31 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     /*
+     * The fee charged when opening a position on the heavy side of a futures market using next price mechanism.
+     */
+    function takerFeeNextPrice(bytes32 _baseAsset) external view returns (uint) {
+        return _takerFeeNextPrice(_baseAsset);
+    }
+
+    /*
+     * The fee charged when opening a position on the light side of a futures market using next price mechanism.
+     */
+    function makerFeeNextPrice(bytes32 _baseAsset) public view returns (uint) {
+        return _makerFeeNextPrice(_baseAsset);
+    }
+
+    /*
      * The fee charged when reducing the size of a position.
      */
     function closureFee(bytes32 _baseAsset) public view returns (uint) {
         return _closureFee(_baseAsset);
+    }
+
+    /*
+     * The number of price update rounds during which confirming next-price is allowed
+     */
+    function nextPriceConfirmWindow(bytes32 _baseAsset) public view returns (uint) {
+        return _nextPriceConfirmWindow(_baseAsset);
     }
 
     /*
@@ -98,7 +119,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         returns (
             uint _takerFee,
             uint _makerFee,
+            uint _takerFeeNextPrice,
+            uint _makerFeeNextPrice,
             uint _closureFee,
+            uint _nextPriceConfirmWindow,
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,
@@ -113,13 +137,13 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
      * The minimum amount of sUSD paid to a liquidator when they successfully liquidate a position.
      * This quantity must be no greater than `minInitialMargin`.
      */
-    function minLiquidationFee() external view returns (uint) {
-        return _minLiquidationFee();
+    function minKeeperFee() external view returns (uint) {
+        return _minKeeperFee();
     }
 
     /*
      * Liquidation fee basis points paid to liquidator.
-     * Use together with minLiquidationFee() to calculate the actual fee paid.
+     * Use together with minKeeperFee() to calculate the actual fee paid.
      */
     function liquidationFeeRatio() external view returns (uint) {
         return _liquidationFeeRatio();
@@ -134,7 +158,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     /*
      * The minimum margin required to open a position.
-     * This quantity must be no less than `minLiquidationFee`.
+     * This quantity must be no less than `minKeeperFee`.
      */
     function minInitialMargin() external view returns (uint) {
         return _minInitialMargin();
@@ -163,9 +187,23 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAKER_FEE, _makerFee);
     }
 
+    function setTakerFeeNextPrice(bytes32 _baseAsset, uint _takerFeeNextPrice) public onlyOwner {
+        require(_takerFeeNextPrice <= 1e18, "taker fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
+    }
+
+    function setMakerFeeNextPrice(bytes32 _baseAsset, uint _makerFeeNextPrice) public onlyOwner {
+        require(_makerFeeNextPrice <= 1e18, "maker fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
+    }
+
     function setClosureFee(bytes32 _baseAsset, uint _closureFee) public onlyOwner {
         require(_closureFee <= 1e18, "closure fee greater than 1");
         _setParameter(_baseAsset, PARAMETER_CLOSURE_FEE, _closureFee);
+    }
+
+    function setNextPriceConfirmWindow(bytes32 _baseAsset, uint _nextPriceConfirmWindow) public onlyOwner {
+        _setParameter(_baseAsset, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
     }
 
     function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) public onlyOwner {
@@ -203,7 +241,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         bytes32 _baseAsset,
         uint _takerFee,
         uint _makerFee,
+        uint _takerFeeNextPrice,
+        uint _makerFeeNextPrice,
         uint _closureFee,
+        uint _nextPriceConfirmWindow,
         uint _maxLeverage,
         uint _maxMarketValueUSD,
         uint _maxFundingRate,
@@ -213,7 +254,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _recomputeFunding(_baseAsset);
         setTakerFee(_baseAsset, _takerFee);
         setMakerFee(_baseAsset, _makerFee);
+        setTakerFeeNextPrice(_baseAsset, _takerFeeNextPrice);
+        setMakerFeeNextPrice(_baseAsset, _makerFeeNextPrice);
         setClosureFee(_baseAsset, _closureFee);
+        setNextPriceConfirmWindow(_baseAsset, _nextPriceConfirmWindow);
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
         setMaxFundingRate(_baseAsset, _maxFundingRate);
@@ -221,10 +265,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
-    function setMinLiquidationFee(uint _sUSD) external onlyOwner {
+    function setMinKeeperFee(uint _sUSD) external onlyOwner {
         require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_LIQUIDATION_FEE, _sUSD);
-        emit MinLiquidationFeeUpdated(_sUSD);
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE, _sUSD);
+        emit MinKeeperFeeUpdated(_sUSD);
     }
 
     function setLiquidationFeeRatio(uint _ratio) external onlyOwner {
@@ -238,7 +282,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     function setMinInitialMargin(uint _minMargin) external onlyOwner {
-        require(_minLiquidationFee() <= _minMargin, "min margin < liquidation fee");
+        require(_minKeeperFee() <= _minMargin, "min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
         emit MinInitialMarginUpdated(_minMargin);
     }
@@ -246,7 +290,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
-    event MinLiquidationFeeUpdated(uint sUSD);
+    event MinKeeperFeeUpdated(uint sUSD);
     event LiquidationFeeRatioUpdated(uint bps);
     event LiquidationBufferRatioUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);

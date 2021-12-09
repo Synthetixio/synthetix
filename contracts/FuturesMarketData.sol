@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
+import "./interfaces/IFuturesMarketBaseTypes.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
@@ -16,7 +17,7 @@ contract FuturesMarketData {
         uint minInitialMargin;
         uint liquidationFeeRatio;
         uint liquidationBufferRatio;
-        uint minLiquidationFee;
+        uint minKeeperFee;
     }
 
     struct MarketSummary {
@@ -62,6 +63,8 @@ contract FuturesMarketData {
     struct FeeRates {
         uint takerFee;
         uint makerFee;
+        uint takerFeeNextPrice;
+        uint makerFeeNextPrice;
     }
 
     struct FundingDetails {
@@ -81,7 +84,7 @@ contract FuturesMarketData {
     }
 
     struct PositionData {
-        IFuturesMarket.Position position;
+        IFuturesMarketBaseTypes.Position position;
         int notionalValue;
         int profitLoss;
         int accruedFunding;
@@ -124,7 +127,7 @@ contract FuturesMarketData {
                 minInitialMargin: settings.minInitialMargin(),
                 liquidationFeeRatio: settings.liquidationFeeRatio(),
                 liquidationBufferRatio: settings.liquidationBufferRatio(),
-                minLiquidationFee: settings.minLiquidationFee()
+                minKeeperFee: settings.minKeeperFee()
             });
     }
 
@@ -136,7 +139,10 @@ contract FuturesMarketData {
         (
             uint takerFee,
             uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
             uint closureFee,
+            uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
@@ -147,7 +153,10 @@ contract FuturesMarketData {
             IFuturesMarketSettings.Parameters(
                 takerFee,
                 makerFee,
+                takerFeeNextPrice,
+                makerFeeNextPrice,
                 closureFee,
+                nextPriceConfirmWindow,
                 maxLeverage,
                 maxMarketValueUSD,
                 maxFundingRate,
@@ -176,7 +185,7 @@ contract FuturesMarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(params.takerFee, params.makerFee)
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice)
             );
         }
 
@@ -219,7 +228,7 @@ contract FuturesMarketData {
             MarketData(
                 address(market),
                 baseAsset,
-                FeeRates(params.takerFee, params.makerFee),
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice),
                 MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
@@ -235,10 +244,21 @@ contract FuturesMarketData {
         return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)));
     }
 
-    function _position(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Position memory) {
+    function _position(IFuturesMarket market, address account)
+        internal
+        view
+        returns (IFuturesMarketBaseTypes.Position memory)
+    {
         (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
             market.positions(account);
-        return IFuturesMarket.Position(positionId, positionMargin, positionSize, positionEntryPrice, positionEntryIndex);
+        return
+            IFuturesMarketBaseTypes.Position(
+                positionId,
+                positionMargin,
+                positionSize,
+                positionEntryPrice,
+                positionEntryIndex
+            );
     }
 
     function _notionalValue(IFuturesMarket market, address account) internal view returns (int) {
