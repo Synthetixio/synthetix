@@ -247,7 +247,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
      */
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
         (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimalRound(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimal(int(price));
         return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
     }
 
@@ -271,7 +271,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     function _marketDebt(uint price) internal view returns (uint) {
         // see comment explaining this calculation in _positionDebtCorrection()
         int totalDebt =
-            marketSkew.multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
+            marketSkew.multiplyDecimal(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
                 _entryDebtCorrection
             );
 
@@ -295,14 +295,14 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(baseAsset).divideDecimalRound(price);
+        uint skewScaleBaseAsset = _skewScaleUSD(baseAsset).divideDecimal(price);
 
         // parameters may not be set, don't divide by zero
         if (skewScaleBaseAsset == 0) {
             return 0;
         }
 
-        return marketSkew.divideDecimalRound(int(skewScaleBaseAsset));
+        return marketSkew.divideDecimal(int(skewScaleBaseAsset));
     }
 
     /*
@@ -316,7 +316,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             uint makerFee,
             uint takerFeeNextPrice,
             uint makerFeeNextPrice,
-            uint closureFee,
             uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
@@ -331,7 +330,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     function _currentFundingRate(uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(baseAsset));
         // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimalRound(maxFundingRate);
+        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
     }
 
     /*
@@ -352,7 +351,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
     function _unrecordedFunding(uint price) internal view returns (int funding) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
-        return _currentFundingRatePerSecond(price).multiplyDecimalRound(int(price)).mul(elapsed);
+        return _currentFundingRatePerSecond(price).multiplyDecimal(int(price)).mul(elapsed);
     }
 
     /*
@@ -454,7 +453,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     }
 
     function _notionalValue(Position memory position, uint price) internal pure returns (int value) {
-        return position.size.multiplyDecimalRound(int(price));
+        return position.size.multiplyDecimal(int(price));
     }
 
     /*
@@ -467,7 +466,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
     function _profitLoss(Position memory position, uint price) internal pure returns (int pnl) {
         int priceShift = int(price).sub(int(position.lastPrice));
-        return position.size.multiplyDecimalRound(priceShift);
+        return position.size.multiplyDecimal(priceShift);
     }
 
     /*
@@ -488,7 +487,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             return 0; // The position does not exist -- no funding.
         }
         int net = _netFundingPerUnit(lastModifiedIndex, endFundingIndex, fundingSequence.length, price);
-        return position.size.multiplyDecimalRound(net);
+        return position.size.multiplyDecimal(net);
     }
 
     /*
@@ -567,7 +566,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
         int maxLeverage = int(_maxLeverage(baseAsset).sub(milli));
-        uint inaccessible = _abs(_notionalValue(position, price).divideDecimalRound(maxLeverage));
+        uint inaccessible = _abs(_notionalValue(position, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
         if (0 < inaccessible) {
@@ -630,7 +629,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         //     profitLoss = (price - last-price) * positionSize
         //     price  = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
         int result =
-            int(position.lastPrice).add(int(liqMargin).sub(int(position.margin)).divideDecimalRound(positionSize)).sub(
+            int(position.lastPrice).add(int(liqMargin).sub(int(position.margin)).divideDecimal(positionSize)).sub(
                 fundingPerUnit
             );
 
@@ -648,7 +647,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
      */
     function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
         // size * price * fee-ratio
-        uint proportionalFee = _abs(positionSize).multiplyDecimalRound(price).multiplyDecimalRound(_liquidationFeeRatio());
+        uint proportionalFee = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationFeeRatio());
         uint minFee = _minKeeperFee();
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
         return proportionalFee > minFee ? proportionalFee : minFee; // not using _max() helper because it's for signed ints
@@ -665,7 +664,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
      */
     function _liquidationBuffer(int positionSize, uint price) internal view returns (uint lBuffer) {
         // size * price * buffer-ratio
-        return _abs(positionSize).multiplyDecimalRound(price).multiplyDecimalRound(_liquidationBufferRatio());
+        return _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
     }
 
     /**
@@ -754,7 +753,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             return 0;
         }
 
-        return _notionalValue(position, price).divideDecimalRound(int(remainingMargin_));
+        return _notionalValue(position, price).divideDecimal(int(remainingMargin_));
     }
 
     /*
@@ -767,62 +766,30 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 
-    function _orderFee(int existingSize, TradeParams memory params) internal view returns (uint) {
-        int newSize = existingSize.add(params.sizeDelta);
-        int existingNotional = existingSize.multiplyDecimalRound(int(params.price));
+    function _orderFee(TradeParams memory params) internal view returns (uint fee) {
+        int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
 
-        // Charge the closure fee if closing a position entirely.
-        if (newSize == 0) {
-            return _abs(existingNotional.multiplyDecimalRound(int(_closureFee(baseAsset))));
-        }
-
-        int newNotional = newSize.multiplyDecimalRound(int(params.price));
-
-        int notionalDiff = newNotional;
-        if (_sameSide(newNotional, existingNotional)) {
-            // If decreasing a position, charge the closure fee.
-            if (_abs(newNotional) <= _abs(existingNotional)) {
-                return _abs(existingNotional.sub(newNotional).multiplyDecimalRound(int(_closureFee(baseAsset))));
-            }
-
-            // We now know |existingNotional| < |newNotional|, provided the new order is on the same side as an existing position,
-            // The existing position's notional may be larger if it is on the other side, but we neglect this,
-            // and take the delta in the notional to be the entire new notional size, as the existing position is closing.
-            notionalDiff = notionalDiff.sub(existingNotional);
-        }
-
-        int skew = marketSkew;
-        if (_sameSide(newNotional, skew)) {
+        if (_sameSide(notionalDiff, marketSkew)) {
             // If the order is submitted on the same side as the skew, increasing it.
             // The taker fee is charged on the increase.
-            return _abs(notionalDiff.multiplyDecimalRound(int(params.takerFee)));
+            fee = _abs(notionalDiff.multiplyDecimal(int(params.takerFee)));
+        } else {
+            // Otherwise if the order is opposite to the skew,
+            // the maker fee is charged on new notional value up to the size of the existing skew,
+            // and the taker fee is charged on any new skew they induce on the order's side of the market.
+            fee = _abs(notionalDiff.multiplyDecimal(int(params.makerFee)));
         }
 
-        // Otherwise if the order is opposite to the skew,
-        // the maker fee is charged on new notional value up to the size of the existing skew,
-        // and the taker fee is charged on any new skew they induce on the order's side of the market.
-
-        int fee = notionalDiff.multiplyDecimalRound(int(params.makerFee));
-
-        // The notional value of the skew after the order is filled
-        int postSkewNotional = skew.multiplyDecimalRound(int(params.price)).sub(existingNotional).add(newNotional);
-
-        // The order is sufficient to flip the skew, charge/rebate the difference in fees
-        // between maker and taker on the new skew value.
-        if (_sameSide(newNotional, postSkewNotional)) {
-            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(params.takerFee).sub(int(params.makerFee))));
-        }
-
-        return _abs(fee);
+        // the case where the order flips the skew is ignored for simplicity due to being negligible
+        // in both size of effect and frequency of occurrence
     }
 
     /*
      * Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
      * expensive than ones that decrease it; closing positions implies a different fee rate.
      */
-    function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid) {
+    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
-        int positionSize = positions[account].size;
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
@@ -831,7 +798,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
-        return (_orderFee(positionSize, params), isInvalid);
+        return (_orderFee(params), isInvalid);
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
@@ -857,7 +824,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        fee = _orderFee(oldPos.size, params);
+        fee = _orderFee(params);
         (uint newMargin, Status status) = _realisedMargin(oldPos, params.fundingIndex, params.price, -int(fee));
         if (_isError(status)) {
             return (oldPos, 0, status);
@@ -879,7 +846,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // We'll allow a little extra headroom for rounding errors.
         {
             // stack too deep
-            int leverage = newSize.multiplyDecimalRound(int(params.price)).divideDecimalRound(int(newMargin.add(fee)));
+            int leverage = newSize.multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
             if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
@@ -889,7 +856,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(params.price))),
+                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
                 oldPos.size,
                 newPos.size
             )
@@ -1053,7 +1020,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
          */
         return
             int(position.margin).sub(
-                position.size.multiplyDecimalRound(int(position.lastPrice).add(fundingSequence[position.fundingIndex]))
+                position.size.multiplyDecimal(int(position.lastPrice).add(fundingSequence[position.fundingIndex]))
             );
     }
 

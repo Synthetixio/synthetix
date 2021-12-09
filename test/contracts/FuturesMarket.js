@@ -1,12 +1,6 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	multiplyDecimalRound,
-	divideDecimalRound,
-} = require('../utils')();
+const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
@@ -231,7 +225,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('50'));
 			assert.bnEqual(
 				await futuresMarket.proportionalSkew(),
-				divideDecimalRound(multiplyDecimalRound(marketSkew, toUnit(price)), minScale)
+				divideDecimal(multiplyDecimal(marketSkew, toUnit(price)), minScale)
 			);
 
 			await transferMarginAndModifyPosition({
@@ -250,7 +244,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('15'));
 			assert.bnClose(
 				await futuresMarket.proportionalSkew(),
-				divideDecimalRound(multiplyDecimalRound(marketSkew, toUnit(price * 1.2)), minScale)
+				divideDecimal(multiplyDecimal(marketSkew, toUnit(price * 1.2)), minScale)
 			);
 
 			await closePositionAndWithdrawMargin({
@@ -267,7 +261,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('-35'));
 			assert.bnClose(
 				await futuresMarket.proportionalSkew(),
-				divideDecimalRound(multiplyDecimalRound(marketSkew, toUnit(price * 1.1)), minScale)
+				divideDecimal(multiplyDecimal(marketSkew, toUnit(price * 1.1)), minScale)
 			);
 
 			await closePositionAndWithdrawMargin({
@@ -341,9 +335,9 @@ contract('FuturesMarket', accounts => {
 						sizeDelta: t1size,
 					});
 
-					const fee = toUnit('14');
+					const fee = toUnit('7');
 					await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader });
-					assert.bnEqual((await futuresMarket.orderFee(trader, t1size.mul(toBN(2))))[0], fee);
+					assert.bnEqual((await futuresMarket.orderFee(t1size.mul(toBN(2)))).fee, fee);
 					const tx = await futuresMarket.modifyPosition(t1size.mul(toBN(2)), { from: trader });
 
 					// Fee is properly recorded and deducted.
@@ -358,7 +352,7 @@ contract('FuturesMarket', accounts => {
 						args: [
 							toBN('1'),
 							trader,
-							margin.mul(toBN(3)).sub(toUnit('17.5')),
+							margin.mul(toBN(3)).sub(toUnit('10.5')),
 							t1size.mul(toBN(3)),
 							t1size.mul(toBN(2)),
 							toUnit('100'),
@@ -373,9 +367,9 @@ contract('FuturesMarket', accounts => {
 				it('Submit a fresh order when there is no skew', async () => {
 					await setPrice(baseAsset, toUnit('100'));
 					await futuresMarket.transferMargin(margin, { from: trader });
-					const notional = multiplyDecimalRound(margin, leverage.abs());
-					const fee = multiplyDecimalRound(notional, takerFee);
-					assert.bnEqual((await futuresMarket.orderFee(trader, notional.div(toBN(100))))[0], fee);
+					const notional = multiplyDecimal(margin, leverage.abs());
+					const fee = multiplyDecimal(notional, takerFee);
+					assert.bnEqual((await futuresMarket.orderFee(notional.div(toBN(100))))[0], fee);
 				});
 
 				it('Submit a fresh order on the same side as the skew', async () => {
@@ -384,13 +378,13 @@ contract('FuturesMarket', accounts => {
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
-						sizeDelta: multiplyDecimalRound(leverage, margin).div(toBN('100')),
+						sizeDelta: multiplyDecimal(leverage, margin).div(toBN('100')),
 					});
 
-					const notional = multiplyDecimalRound(margin, leverage);
-					const fee = multiplyDecimalRound(notional, takerFee).abs();
+					const notional = multiplyDecimal(margin, leverage);
+					const fee = multiplyDecimal(notional, takerFee).abs();
 					await futuresMarket.transferMargin(margin, { from: trader });
-					assert.bnEqual((await futuresMarket.orderFee(trader, notional.div(toBN(100))))[0], fee);
+					assert.bnEqual((await futuresMarket.orderFee(notional.div(toBN(100))))[0], fee);
 				});
 
 				it(`Submit a fresh order on the opposite side to the skew smaller than the skew`, async () => {
@@ -399,13 +393,13 @@ contract('FuturesMarket', accounts => {
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
-						sizeDelta: multiplyDecimalRound(leverage.neg(), margin).div(toBN('100')),
+						sizeDelta: multiplyDecimal(leverage.neg(), margin).div(toBN('100')),
 					});
 
-					const notional = multiplyDecimalRound(margin.div(toBN(2)), leverage);
-					const fee = multiplyDecimalRound(notional, makerFee).abs();
+					const notional = multiplyDecimal(margin.div(toBN(2)), leverage);
+					const fee = multiplyDecimal(notional, makerFee).abs();
 					await futuresMarket.transferMargin(margin.div(toBN(2)), { from: trader });
-					assert.bnEqual((await futuresMarket.orderFee(trader, notional.div(toBN(100))))[0], fee);
+					assert.bnEqual((await futuresMarket.orderFee(notional.div(toBN(100))))[0], fee);
 				});
 
 				it('Submit a fresh order on the opposite side to the skew larger than the skew', async () => {
@@ -414,15 +408,13 @@ contract('FuturesMarket', accounts => {
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.div(toBN(2)),
-						sizeDelta: multiplyDecimalRound(leverage.neg(), margin.div(toBN(2))).div(toBN('100')),
+						sizeDelta: multiplyDecimal(leverage.neg(), margin.div(toBN(2))).div(toBN('100')),
 					});
 
-					const notional = multiplyDecimalRound(margin, leverage);
-					const fee = multiplyDecimalRound(notional, takerFee.add(makerFee))
-						.div(toBN(2))
-						.abs();
+					const notional = multiplyDecimal(margin, leverage);
+					const fee = multiplyDecimal(notional, makerFee).abs();
 					await futuresMarket.transferMargin(margin, { from: trader });
-					assert.bnEqual((await futuresMarket.orderFee(trader, notional.div(toBN('100'))))[0], fee);
+					assert.bnEqual((await futuresMarket.orderFee(notional.div(toBN('100'))))[0], fee);
 				});
 
 				it('Increase an existing position on the side of the skew', async () => {
@@ -431,15 +423,14 @@ contract('FuturesMarket', accounts => {
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
-						sizeDelta: multiplyDecimalRound(leverage, margin).div(toBN('100')),
+						sizeDelta: multiplyDecimal(leverage, margin).div(toBN('100')),
 					});
 
 					const fee = toUnit('5.25');
 					assert.bnEqual(
 						(
 							await futuresMarket.orderFee(
-								trader,
-								multiplyDecimalRound(margin.div(toBN(2)), leverage).div(toBN('100'))
+								multiplyDecimal(margin.div(toBN(2)), leverage).div(toBN('100'))
 							)
 						)[0],
 						fee
@@ -452,7 +443,7 @@ contract('FuturesMarket', accounts => {
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: multiplyDecimalRound(leverage, margin.mul(toBN(2))).div(toBN(100)),
+						sizeDelta: multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100)),
 					});
 
 					await transferMarginAndModifyPosition({
@@ -460,15 +451,12 @@ contract('FuturesMarket', accounts => {
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
-						sizeDelta: multiplyDecimalRound(leverage.neg(), margin).div(toBN(100)),
+						sizeDelta: multiplyDecimal(leverage.neg(), margin).div(toBN(100)),
 					});
 
 					assert.bnEqual(
 						(
-							await futuresMarket.orderFee(
-								trader,
-								multiplyDecimalRound(leverage.neg(), margin).div(toBN(200))
-							)
+							await futuresMarket.orderFee(multiplyDecimal(leverage.neg(), margin).div(toBN(200)))
 						)[0],
 						toUnit('1.75')
 					);
@@ -480,7 +468,7 @@ contract('FuturesMarket', accounts => {
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: multiplyDecimalRound(leverage, margin.mul(toBN(2))).div(toBN(100)),
+						sizeDelta: multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100)),
 					});
 
 					await transferMarginAndModifyPosition({
@@ -488,38 +476,38 @@ contract('FuturesMarket', accounts => {
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
-						sizeDelta: multiplyDecimalRound(leverage.neg(), margin).div(toBN(100)),
+						sizeDelta: multiplyDecimal(leverage.neg(), margin).div(toBN(100)),
 					});
 
 					assert.bnEqual(
 						(
 							await futuresMarket.orderFee(
-								trader,
-								multiplyDecimalRound(leverage.neg(), margin.mul(toBN(2))).div(toBN(100))
+								multiplyDecimal(leverage.neg(), margin.mul(toBN(2))).div(toBN(100))
 							)
 						)[0],
-						toUnit('14')
+						toUnit('7')
 					);
 				});
 
 				it('reduce an existing position on the side of the skew', async () => {
-					const sizeDelta = multiplyDecimalRound(leverage, margin).div(toBN(100));
+					const price = toUnit(100);
+					const sizeDelta = multiplyDecimal(leverage, margin).div(price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
+						fillPrice: price,
 						marginDelta: margin,
 						sizeDelta,
 					});
 
-					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, sizeDelta.neg().div(toBN(2))))[0],
-						toBN(0)
-					);
+					const adjustSize = sizeDelta.div(toBN(2)).neg();
+					const expectedFee = multiplyDecimal(multiplyDecimal(adjustSize.abs(), price), makerFee);
+
+					assert.bnEqual((await futuresMarket.orderFee(adjustSize)).fee, expectedFee);
 				});
 
 				it('reduce an existing position opposite to the skew', async () => {
-					const sizeDelta1 = multiplyDecimalRound(leverage, margin.mul(toBN(2))).div(toBN(100));
+					const sizeDelta1 = multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
@@ -528,7 +516,7 @@ contract('FuturesMarket', accounts => {
 						sizeDelta: sizeDelta1,
 					});
 
-					const sizeDelta2 = multiplyDecimalRound(leverage.neg(), margin).div(toBN(100));
+					const sizeDelta2 = multiplyDecimal(leverage.neg(), margin).div(toBN(100));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
@@ -537,14 +525,13 @@ contract('FuturesMarket', accounts => {
 						sizeDelta: sizeDelta2,
 					});
 
-					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, sizeDelta2.neg().div(toBN(2))))[0],
-						toBN(0)
-					);
+					const size = sizeDelta2.neg().div(toBN(2));
+					const fee = multiplyDecimal(multiplyDecimal(size, toUnit('100')), takerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(size)).fee, fee);
 				});
 
 				it('close an existing position on the side of the skew', async () => {
-					const sizeDelta = multiplyDecimalRound(leverage, margin).div(toBN(100));
+					const sizeDelta = multiplyDecimal(leverage, margin).div(toBN(100));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
@@ -553,11 +540,13 @@ contract('FuturesMarket', accounts => {
 						sizeDelta,
 					});
 
-					assert.bnEqual((await futuresMarket.orderFee(trader, sizeDelta.neg()))[0], toBN(0));
+					const size = sizeDelta.neg();
+					const fee = multiplyDecimal(multiplyDecimal(size, toUnit('100')), makerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(sizeDelta.neg())).fee, fee);
 				});
 
 				it('close an existing position opposite to the skew', async () => {
-					const sizeDelta1 = multiplyDecimalRound(leverage, margin.mul(toBN(2))).div(toBN(100));
+					const sizeDelta1 = multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
@@ -566,7 +555,7 @@ contract('FuturesMarket', accounts => {
 						sizeDelta: sizeDelta1,
 					});
 
-					const sizeDelta2 = multiplyDecimalRound(leverage.neg(), margin).div(toBN(100));
+					const sizeDelta2 = multiplyDecimal(leverage.neg(), margin).div(toBN(100));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
@@ -575,30 +564,9 @@ contract('FuturesMarket', accounts => {
 						sizeDelta: sizeDelta2,
 					});
 
-					assert.bnEqual((await futuresMarket.orderFee(trader, sizeDelta2.neg()))[0], toBN(0));
-				});
-
-				it('Updated order, on the same side as the skew, on the opposite side of an existing position', async () => {
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: toUnit('70').mul(sideVar),
-					});
-
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
-						sizeDelta: toUnit('-35').mul(sideVar),
-					});
-
-					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, toUnit('70').mul(sideVar)))[0],
-						toUnit('10.5')
-					);
+					const size = sizeDelta2.neg();
+					const fee = multiplyDecimal(multiplyDecimal(size, toUnit('100')), takerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(size)).fee, fee);
 				});
 
 				it('Updated order, opposite and smaller than the skew, on opposite side of an existing position', async () => {
@@ -619,216 +587,9 @@ contract('FuturesMarket', accounts => {
 					});
 
 					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, toUnit('-17.5').mul(sideVar)))[0],
+						(await futuresMarket.orderFee(toUnit('-17.5').mul(sideVar)))[0],
 						toUnit('1.75')
 					);
-				});
-
-				it('Updated order, opposite and larger than the skew, on the opposite side of an existing position', async () => {
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
-						sizeDelta: toUnit('35').mul(sideVar),
-					});
-
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
-						sizeDelta: toUnit('35').mul(sideVar),
-					});
-
-					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, toUnit('-70').mul(sideVar)))[0],
-						toUnit('3.5')
-					);
-				});
-
-				it('Updated order, opposite and larger than the skew, except that an existing opposite-side order increases the skew when closed', async () => {
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
-						sizeDelta: toUnit('35').mul(sideVar),
-					});
-
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
-						sizeDelta: toUnit('-35').mul(sideVar),
-					});
-
-					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, toUnit('52.5').mul(sideVar)))[0],
-						toUnit('5.25')
-					);
-				});
-
-				it('Updated order, opposite and larger than the skew, on the opposite side of an existing position (2)', async () => {
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
-						sizeDelta: toUnit('35').mul(sideVar),
-					});
-
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader3,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.div(toBN(2)),
-						sizeDelta: toUnit('-17.5').mul(sideVar),
-					});
-
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.div(toBN(2)),
-						sizeDelta: toUnit('17.5').mul(sideVar),
-					});
-
-					assert.bnEqual(
-						(await futuresMarket.orderFee(trader, toUnit('-70').mul(sideVar)))[0],
-						toUnit('12.25')
-					);
-				});
-
-				describe('...with non-zero closure fee', () => {
-					const fee = toUnit('0.001'); // 10 bp fee
-					beforeEach(async () => {
-						await futuresMarketSettings.setClosureFee(await futuresMarket.baseAsset(), fee, {
-							from: owner,
-						});
-					});
-
-					it('reduce an existing position on the side of the skew', async () => {
-						await transferMarginAndModifyPosition({
-							market: futuresMarket,
-							account: trader,
-							fillPrice: toUnit('100'),
-							marginDelta: margin,
-							sizeDelta: multiplyDecimalRound(margin, leverage).div(toBN(100)),
-						});
-
-						const expectedFee = multiplyDecimalRound(leverage, margin)
-							.div(toBN(2))
-							.div(toBN(1000))
-							.abs();
-
-						assert.bnClose(
-							(
-								await futuresMarket.orderFee(
-									trader,
-									multiplyDecimalRound(margin, leverage)
-										.div(toBN(200))
-										.neg()
-								)
-							)[0],
-							expectedFee,
-							toUnit('0.1')
-						);
-					});
-
-					it('reduce an existing position opposite to the skew', async () => {
-						await transferMarginAndModifyPosition({
-							market: futuresMarket,
-							account: trader2,
-							fillPrice: toUnit('100'),
-							marginDelta: margin.mul(toBN(2)),
-							sizeDelta: multiplyDecimalRound(margin, leverage).div(toBN(100)),
-						});
-
-						await transferMarginAndModifyPosition({
-							market: futuresMarket,
-							account: trader,
-							fillPrice: toUnit('100'),
-							marginDelta: margin,
-							sizeDelta: multiplyDecimalRound(margin, leverage.neg()).div(toBN(100)),
-						});
-
-						const expectedFee = multiplyDecimalRound(leverage, margin)
-							.div(toBN(2))
-							.div(toBN(1000))
-							.abs();
-
-						assert.bnClose(
-							(
-								await futuresMarket.orderFee(
-									trader,
-									multiplyDecimalRound(margin, leverage).div(toBN(200))
-								)
-							)[0],
-							expectedFee,
-							toUnit('0.1')
-						);
-					});
-
-					it('close an existing position on the side of the skew', async () => {
-						await transferMarginAndModifyPosition({
-							market: futuresMarket,
-							account: trader,
-							fillPrice: toUnit('100'),
-							marginDelta: margin,
-							sizeDelta: multiplyDecimalRound(margin, leverage).div(toBN(100)),
-						});
-
-						const expectedFee = multiplyDecimalRound(leverage, margin)
-							.div(toBN(1000))
-							.abs();
-
-						assert.bnClose(
-							(
-								await futuresMarket.orderFee(
-									trader,
-									multiplyDecimalRound(margin, leverage).div(toBN(100).neg())
-								)
-							)[0],
-							expectedFee,
-							toUnit('0.1')
-						);
-					});
-
-					it('close an existing position opposite to the skew', async () => {
-						await transferMarginAndModifyPosition({
-							market: futuresMarket,
-							account: trader2,
-							fillPrice: toUnit('100'),
-							marginDelta: margin.mul(toBN(2)),
-							sizeDelta: multiplyDecimalRound(margin.mul(toBN(2)), leverage).div(toBN(100)),
-						});
-
-						await transferMarginAndModifyPosition({
-							market: futuresMarket,
-							account: trader,
-							fillPrice: toUnit('100'),
-							marginDelta: margin,
-							sizeDelta: multiplyDecimalRound(margin, leverage.neg()).div(toBN(100)),
-						});
-
-						const expectedFee = multiplyDecimalRound(leverage, margin)
-							.div(toBN(1000))
-							.abs();
-
-						assert.bnEqual(
-							(
-								await futuresMarket.orderFee(
-									trader,
-									multiplyDecimalRound(margin, leverage.neg())
-										.div(toBN(100))
-										.neg()
-								)
-							)[0],
-							expectedFee
-						);
-					});
 				});
 			});
 		}
@@ -1115,7 +876,7 @@ contract('FuturesMarket', accounts => {
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fee = (await futuresMarket.orderFee(trader, size))[0];
+			const fee = (await futuresMarket.orderFee(size))[0];
 			const tx = await futuresMarket.modifyPosition(size, { from: trader });
 
 			const position = await futuresMarket.positions(trader);
@@ -1129,7 +890,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSize(), size);
 			assert.bnEqual(
 				await futuresMarket.entryDebtCorrection(),
-				margin.sub(fee).sub(multiplyDecimalRound(size, price))
+				margin.sub(fee).sub(multiplyDecimal(size, price))
 			);
 
 			// The relevant events are properly emitted
@@ -1229,8 +990,8 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, startPrice);
 
 			const margin = toUnit('1000');
-			const minPrice = multiplyDecimalRound(startPrice, toUnit(1).sub(toUnit('0.01')));
-			const maxPrice = multiplyDecimalRound(startPrice, toUnit(1).add(toUnit('0.01')));
+			const minPrice = multiplyDecimal(startPrice, toUnit(1).sub(toUnit('0.01')));
+			const maxPrice = multiplyDecimal(startPrice, toUnit(1).add(toUnit('0.01')));
 
 			await futuresMarket.transferMargin(margin, { from: trader });
 			await futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), minPrice, maxPrice, {
@@ -1300,7 +1061,7 @@ contract('FuturesMarket', accounts => {
 			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
 			const preDistribution = (await feePool.recentFeePeriods(0))[3];
 			await setPrice(baseAsset, toUnit('200'));
-			const fee = (await futuresMarket.orderFee(trader, toUnit('50')))[0];
+			const fee = (await futuresMarket.orderFee(toUnit('50')))[0];
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
@@ -1388,16 +1149,16 @@ contract('FuturesMarket', accounts => {
 			it('properly reports the max order size on each side', async () => {
 				let maxOrderSizes = await futuresMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimalRound(maxMarketValueUSD, initialPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValueUSD, initialPrice));
+				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxMarketValueUSD, initialPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, initialPrice));
 
 				let newPrice = toUnit('193');
 				await setPrice(baseAsset, newPrice);
 
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimalRound(maxMarketValueUSD, newPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, newPrice));
 
 				// Submit order on one side, leaving part of what's left.
 
@@ -1414,9 +1175,9 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('400'))
+					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('400'))
 				);
-				assert.bnEqual(maxOrderSizes.short, divideDecimalRound(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, newPrice));
 
 				// Submit order on the other side, removing all available supply.
 				await transferMarginAndModifyPosition({
@@ -1430,7 +1191,7 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('400'))
+					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('400'))
 				); // Long side is unaffected
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
@@ -1446,7 +1207,7 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('600'))
+					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
@@ -1462,11 +1223,11 @@ contract('FuturesMarket', accounts => {
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('600'))
+					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnClose(
 					maxOrderSizes.short,
-					divideDecimalRound(maxMarketValueUSD, newPrice).sub(toUnit('666.73333')),
+					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('666.73333')),
 					toUnit('0.001')
 				);
 			});
@@ -1637,23 +1398,26 @@ contract('FuturesMarket', accounts => {
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
 
-				// No fee => no fee minting log
-				assert.equal(decodedLogs.length, 2);
+				assert.equal(decodedLogs.length, 3);
+				const fee = multiplyDecimal(toUnit(1000), takerFee).add(
+					multiplyDecimal(toUnit(2000), makerFee)
+				);
+
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [
 						toBN('1'),
 						trader,
-						toUnit('2000'),
+						toUnit('2000').sub(fee),
 						toBN('0'),
 						toUnit('-10'),
 						(await futuresMarket.assetPrice()).price,
 						await futuresMarket.fundingSequenceLength(),
-						toBN('0'),
+						multiplyDecimal(toUnit(2000), makerFee),
 					],
-					log: decodedLogs[1],
-					bnCloseVariance: toUnit('5'),
+					log: decodedLogs[2],
+					bnCloseVariance: toUnit('0.1'),
 				});
 			});
 
@@ -1719,9 +1483,9 @@ contract('FuturesMarket', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarket],
 				});
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				// And the ids have been modified
 				positionId = (await futuresMarket.positions(trader)).id;
@@ -1751,9 +1515,9 @@ contract('FuturesMarket', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarket],
 				});
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				positionId = (await futuresMarket.positions(trader)).id;
 				assert.bnEqual(positionId, toBN('0'));
@@ -1776,9 +1540,9 @@ contract('FuturesMarket', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarket],
 				});
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('2'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
 
 				positionId = (await futuresMarket.positions(trader)).id;
 				assert.bnEqual(positionId, toBN('0'));
@@ -1805,9 +1569,9 @@ contract('FuturesMarket', accounts => {
 				});
 
 				// No fee => no fee minting log, so decodedLogs index == 1
-				assert.equal(decodedLogs[1].name, 'PositionModified');
-				assert.equal(decodedLogs[1].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
 
@@ -1929,10 +1693,10 @@ contract('FuturesMarket', accounts => {
 
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				fee = (await futuresMarket.orderFee(trader, toUnit('50')))[0];
+				fee = (await futuresMarket.orderFee(toUnit('50')))[0];
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('50'), { from: trader });
-				fee2 = (await futuresMarket.orderFee(trader2, toUnit('-50')))[0];
+				fee2 = (await futuresMarket.orderFee(toUnit('-50')))[0];
 				await futuresMarket.transferMargin(toUnit('5000'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-50'), { from: trader2 });
 			});
@@ -2136,7 +1900,7 @@ contract('FuturesMarket', accounts => {
 				let price = toUnit('95');
 				await setPrice(baseAsset, price);
 				let remaining = (await futuresMarket.remainingMargin(trader3))[0];
-				const sizeFor9x = divideDecimalRound(remaining.mul(toBN('9')), price);
+				const sizeFor9x = divideDecimal(remaining.mul(toBN('9')), price);
 				await futuresMarket.modifyPosition(sizeFor9x.sub(size), { from: trader3 });
 
 				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
@@ -2144,7 +1908,7 @@ contract('FuturesMarket', accounts => {
 				price = toUnit('100');
 				await setPrice(baseAsset, price);
 				remaining = (await futuresMarket.remainingMargin(trader3))[0];
-				const sizeForNeg10x = divideDecimalRound(remaining.mul(toBN('-10')), price);
+				const sizeForNeg10x = divideDecimal(remaining.mul(toBN('-10')), price);
 
 				await transferMarginAndModifyPosition({
 					market: futuresMarket,
@@ -2158,7 +1922,7 @@ contract('FuturesMarket', accounts => {
 				price = toUnit('111');
 				await setPrice(baseAsset, price);
 				remaining = (await futuresMarket.remainingMargin(trader3))[0];
-				const sizeForNeg9x = divideDecimalRound(remaining.mul(toBN('-9')), price);
+				const sizeForNeg9x = divideDecimal(remaining.mul(toBN('-9')), price);
 				await futuresMarket.modifyPosition(sizeForNeg10x.sub(sizeForNeg9x), { from: trader3 });
 
 				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
@@ -2475,10 +2239,10 @@ contract('FuturesMarket', accounts => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 }); // -10x
 
-				const fee1 = multiplyDecimalRound(toUnit('5000'), makerFee);
-				const fee2 = multiplyDecimalRound(toUnit('5000'), takerFee.add(makerFee));
+				const fee1 = multiplyDecimal(toUnit('5000'), makerFee);
+				const fee2 = multiplyDecimal(toUnit('10000'), makerFee);
 
-				const lev = (notional, margin, fee) => divideDecimalRound(notional, margin.sub(fee));
+				const lev = (notional, margin, fee) => divideDecimal(notional, margin.sub(fee));
 
 				// With no price motion and no funding rate, leverage should be unchanged.
 				assert.bnClose(
@@ -2617,14 +2381,14 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
-			const minScale = divideDecimalRound((await futuresMarket.parameters()).skewScaleUSD, price);
+			const minScale = divideDecimal((await futuresMarket.parameters()).skewScaleUSD, price);
 			const maxFundingRate = await futuresMarket.maxFundingRate();
 			// Market is 24 units long skewed (24 / 100000)
 			await futuresMarket.modifyPosition(toUnit('24'), { from: trader });
 			let marketSkew = await futuresMarket.marketSkew();
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// 50% the other way ()
@@ -2632,7 +2396,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// Market is 100% skewed
@@ -2640,7 +2404,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// 100% the other way
@@ -2649,7 +2413,7 @@ contract('FuturesMarket', accounts => {
 			marketSkew = await futuresMarket.marketSkew();
 			assert.bnClose(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(divideDecimalRound(marketSkew, minScale), maxFundingRate.neg())
+				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 		});
 
@@ -2679,7 +2443,7 @@ contract('FuturesMarket', accounts => {
 			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(expectedFunding, toUnit(2))
+				multiplyDecimal(expectedFunding, toUnit(2))
 			);
 			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
@@ -2712,7 +2476,7 @@ contract('FuturesMarket', accounts => {
 			});
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(expectedFunding, toUnit('2'))
+				multiplyDecimal(expectedFunding, toUnit('2'))
 			);
 
 			await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit(250 * initialPrice), {
@@ -2720,7 +2484,7 @@ contract('FuturesMarket', accounts => {
 			});
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(expectedFunding, toUnit('4'))
+				multiplyDecimal(expectedFunding, toUnit('4'))
 			);
 
 			await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit(2000 * initialPrice), {
@@ -2728,7 +2492,7 @@ contract('FuturesMarket', accounts => {
 			});
 			assert.bnEqual(
 				await futuresMarket.currentFundingRate(),
-				multiplyDecimalRound(expectedFunding, toUnit('0.5'))
+				multiplyDecimal(expectedFunding, toUnit('0.5'))
 			);
 
 			// skewScaleUSD is below market size
@@ -2751,10 +2515,7 @@ contract('FuturesMarket', accounts => {
 						account: trader,
 						fillPrice: toUnit('1'),
 						marginDelta: toUnit('1000000'),
-						sizeDelta: divideDecimalRound(
-							multiplyDecimalRound(leverage, toUnit('1000000')),
-							toUnit('10')
-						),
+						sizeDelta: divideDecimal(multiplyDecimal(leverage, toUnit('1000000')), toUnit('10')),
 					});
 
 					const expected = side === 'long' ? -maxFundingRate : maxFundingRate;
@@ -2793,7 +2554,7 @@ contract('FuturesMarket', accounts => {
 								await futuresMarket.modifyPosition(size, { from: trader2 });
 							}
 
-							const skewUSD = multiplyDecimalRound(traderPos.add(size), toUnit('100'));
+							const skewUSD = multiplyDecimal(traderPos.add(size), toUnit('100'));
 							let expected = maxFR
 								.mul(skewUSD)
 								.div(skewScaleUSD)
@@ -2934,7 +2695,7 @@ contract('FuturesMarket', accounts => {
 
 			await setPrice(baseAsset, toUnit('100'));
 			await futuresMarket.transferMargin(toUnit('1000'), { from: trader }); // Debt correction: +1000
-			const fee1 = (await futuresMarket.orderFee(trader, toUnit('50')))[0];
+			const fee1 = (await futuresMarket.orderFee(toUnit('50')))[0];
 			await futuresMarket.modifyPosition(toUnit('50'), { from: trader }); // Debt correction: -5000 - fee1
 
 			assert.bnEqual(await futuresMarket.entryDebtCorrection(), toUnit('-4000').sub(fee1));
@@ -2942,7 +2703,7 @@ contract('FuturesMarket', accounts => {
 
 			await setPrice(baseAsset, toUnit('120'));
 			await futuresMarket.transferMargin(toUnit('600'), { from: trader2 }); // Debt correction: +600
-			const fee2 = (await futuresMarket.orderFee(trader2, toUnit('-35')))[0];
+			const fee2 = (await futuresMarket.orderFee(toUnit('-35')))[0];
 			await futuresMarket.modifyPosition(toUnit('-35'), { from: trader2 }); // Debt correction: +4200 - fee2
 
 			assert.bnClose(
@@ -3466,8 +3227,8 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.lastPrice, toUnit(0));
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
-				const liquidationFee = multiplyDecimalRound(
-					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(40) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3523,8 +3284,8 @@ contract('FuturesMarket', accounts => {
 				const remainingMargin = (await futuresMarket.remainingMargin(trader)).marginRemaining;
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
-				const liquidationFee = multiplyDecimalRound(
-					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(40) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3569,8 +3330,8 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.fundingIndex, toBN(0));
 
 				// in this case, proportional fee is smaller than minimum fee
-				const liquidationFee = multiplyDecimalRound(
-					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(20) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3624,8 +3385,8 @@ contract('FuturesMarket', accounts => {
 				const remainingMargin = (await futuresMarket.remainingMargin(trader3)).marginRemaining;
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
-				const liquidationFee = multiplyDecimalRound(
-					multiplyDecimalRound(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
 					toUnit(20) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
@@ -3812,7 +3573,7 @@ contract('FuturesMarket', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
+					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
 						from: owner,
 					}),
 					'Invalid price'

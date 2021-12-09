@@ -104,7 +104,6 @@ contract('FuturesMarketData', accounts => {
 				toWei('0.001'), // 0.1% maker fee
 				toWei('0.0005'), // 0.05% taker fee next price
 				toWei('0'), // 0% maker fee next price
-				toWei('0'), // nil closure fee
 				toBN('2'), // 2 rounds next price confirm window
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
