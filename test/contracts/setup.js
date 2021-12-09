@@ -166,7 +166,7 @@ const setupContract = async ({
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
-		ExchangeRatesCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		BaseSynthetix: [
@@ -503,7 +503,7 @@ const setupContract = async ({
 				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
 			]);
 		},
-		async ExchangeRatesCircuitBreaker() {
+		async ExchangeCircuitBreaker() {
 			await Promise.all([
 				cache['SystemStatus'].updateAccessControl(
 					toBytes32('Synth'),
@@ -667,7 +667,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['ExchangeRatesCircuitBreaker'],
+			mocks: ['ExchangeCircuitBreaker'],
 		},
 		{ contract: 'SynthetixState' },
 		{ contract: 'SupplySchedule' },
@@ -750,7 +750,7 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
 		{
-			contract: 'ExchangeRatesCircuitBreaker',
+			contract: 'ExchangeCircuitBreaker',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
 		},
@@ -766,7 +766,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeRatesCircuitBreaker',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{
@@ -928,7 +928,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FlexibleStorage',
-				'ExchangeRatesCircuitBreaker',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
@@ -940,7 +940,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FlexibleStorage',
-				'ExchangeRatesCircuitBreaker',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{

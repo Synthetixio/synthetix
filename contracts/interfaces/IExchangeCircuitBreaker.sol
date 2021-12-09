@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
-// https://docs.synthetix.io/contracts/source/interfaces/IExchangeRatesCircuitBreaker
-interface IExchangeRatesCircuitBreaker {
+// https://docs.synthetix.io/contracts/source/interfaces/IExchangeCircuitBreaker
+interface IExchangeCircuitBreaker {
     // Views
 
     function exchangeRates() external view returns (address);

@@ -33,7 +33,7 @@ contract('FuturesMarket', accounts => {
 		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
-		exchangeRatesCircuitBreaker,
+		exchangeCircuitBreaker,
 		addressResolver,
 		oracle,
 		sUSD,
@@ -73,7 +73,7 @@ contract('FuturesMarket', accounts => {
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {
 			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeRatesCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
+			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
 		}
 	}
 
@@ -104,7 +104,7 @@ contract('FuturesMarket', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
-			ExchangeRatesCircuitBreaker: exchangeRatesCircuitBreaker,
+			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
 			Synthetix: synthetix,
@@ -123,7 +123,7 @@ contract('FuturesMarket', accounts => {
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
-				'ExchangeRatesCircuitBreaker',
+				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'Synthetix',
 				'CollateralManager',
@@ -3650,7 +3650,7 @@ contract('FuturesMarket', accounts => {
 			everythingReverts();
 		});
 
-		describe('exchangeRatesCircuitBreaker.lastExchangeRate is updated after transactions', () => {
+		describe('exchangeCircuitBreaker.lastExchangeRate is updated after transactions', () => {
 			const newPrice = toUnit('110');
 
 			beforeEach(async () => {
@@ -3662,17 +3662,17 @@ contract('FuturesMarket', accounts => {
 
 			it('after transferMargin', async () => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after withdrawAllMargin', async () => {
 				await futuresMarket.withdrawAllMargin({ from: trader });
-				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after modifyPosition', async () => {
 				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
-				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after modifyPositionWithPriceBounds', async () => {
@@ -3682,19 +3682,19 @@ contract('FuturesMarket', accounts => {
 					toUnit('200'),
 					{ from: trader }
 				);
-				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after closePosition', async () => {
 				await futuresMarket.closePosition({ from: trader });
-				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after closePositionWithPriceBounds reverts', async () => {
 				await futuresMarket.closePositionWithPriceBounds(toUnit('50'), toUnit('200'), {
 					from: trader,
 				});
-				assert.bnEqual(await exchangeRatesCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 		});
 	});

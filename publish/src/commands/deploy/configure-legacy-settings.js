@@ -21,7 +21,7 @@ module.exports = async ({
 		EternalStorageLiquidations,
 		Exchanger,
 		ExchangeState,
-		ExchangeRatesCircuitBreaker,
+		ExchangeCircuitBreaker,
 		FeePool,
 		FeePoolEternalStorage,
 		FeePoolState,
@@ -168,17 +168,17 @@ module.exports = async ({
 		});
 	}
 
-	if (ExchangeRatesCircuitBreaker && SystemStatus) {
+	if (ExchangeCircuitBreaker && SystemStatus) {
 		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			read: 'accessControl',
-			readArg: [toBytes32('Synth'), addressOf(ExchangeRatesCircuitBreaker)],
+			readArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker)],
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
-			writeArg: [toBytes32('Synth'), addressOf(ExchangeRatesCircuitBreaker), true, false],
-			comment: 'Ensure the ExchangeRatesCircuitBreaker contract can suspend synths - see SIP-65',
+			writeArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker), true, false],
+			comment: 'Ensure the ExchangeCircuitBreaker contract can suspend synths - see SIP-65',
 		});
 	}
 

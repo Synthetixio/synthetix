@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/IExchangeRatesCircuitBreaker.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -24,13 +24,13 @@ import "./Proxyable.sol";
  * methods.
  * Suspend functionality is public, resume functionality is controlled by owner.
  *
- * https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesCircuitBreaker
+ * https://docs.synthetix.io/contracts/source/contracts/ExchangeCircuitBreaker
  */
-contract ExchangeRatesCircuitBreaker is Owned, MixinSystemSettings, IExchangeRatesCircuitBreaker {
+contract ExchangeCircuitBreaker is Owned, MixinSystemSettings, IExchangeCircuitBreaker {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 public constant CONTRACT_NAME = "ExchangeRatesCircuitBreaker";
+    bytes32 public constant CONTRACT_NAME = "ExchangeCircuitBreaker";
 
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
