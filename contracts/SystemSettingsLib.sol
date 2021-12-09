@@ -4,6 +4,26 @@ pragma solidity ^0.5.16;
 import "./interfaces/IFlexibleStorage.sol";
 
 library SystemSettingsLib {
+    event IssuanceRatioUpdated(uint newRatio);
+
+    function setUIntValue(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint value
+    ) internal {
+        IFlexibleStorage(flexibleStorage).setUIntValue(settingContractName, settingName, value);
+    }
+
+    // function setBoolValue(
+    //     address flexibleStorage,
+    //     bytes32 settingContractName,
+    //     bytes32 settingName,
+    //     bool value
+    // ) internal {
+    //     IFlexibleStorage(flexibleStorage).setBoolValue(settingContractName, settingName, value);
+    // }
+
     function setCrossDomainMessageGasLimit(
         address flexibleStorage,
         bytes32 settingContractName,
@@ -19,21 +39,15 @@ library SystemSettingsLib {
         setUIntValue(flexibleStorage, settingContractName, gasLimitSettings, crossDomainMessageGasLimit);
     }
 
-    function setUIntValue(
+    function setIssuanceRatio(
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint value
+        uint issuanceRatio,
+        uint maxInssuranceRatio
     ) public {
-        IFlexibleStorage(flexibleStorage).setUIntValue(settingContractName, settingName, value);
-    }
-
-    function setBoolValue(
-        address flexibleStorage,
-        bytes32 settingContractName,
-        bytes32 settingName,
-        bool value
-    ) public {
-        IFlexibleStorage(flexibleStorage).setBoolValue(settingContractName, settingName, value);
+        require(issuanceRatio <= maxInssuranceRatio, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
+        setUIntValue(flexibleStorage, settingContractName, settingName, issuanceRatio);
+        emit IssuanceRatioUpdated(issuanceRatio);
     }
 }

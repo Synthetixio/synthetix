@@ -257,28 +257,17 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
-        SystemSettingsLib.setBoolValue(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_TRADING_REWARDS_ENABLED,
-            _tradingRewardsEnabled
-        );
+        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
         emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        SystemSettingsLib.setUIntValue(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_WAITING_PERIOD_SECS,
-            _waitingPeriodSecs
-        );
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        SystemSettingsLib.setUIntValue(
-            address(flexibleStorage()),
+        flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
             _priceDeviationThresholdFactor
@@ -287,9 +276,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO, _issuanceRatio);
-        emit IssuanceRatioUpdated(_issuanceRatio);
+        SystemSettingsLib.setIssuanceRatio(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            _issuanceRatio,
+            MAX_CROSS_DOMAIN_GAS_LIMIT
+        );
     }
 
     function setFeePeriodDuration(uint _feePeriodDuration) external onlyOwner {
@@ -560,7 +553,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
-    event IssuanceRatioUpdated(uint newRatio);
     event FeePeriodDurationUpdated(uint newFeePeriodDuration);
     event TargetThresholdUpdated(uint newTargetThreshold);
     event LiquidationDelayUpdated(uint newDelay);
