@@ -883,7 +883,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(position.margin, margin.sub(fee));
 			assert.bnEqual(position.size, size);
 			assert.bnEqual(position.lastPrice, price);
-			assert.bnEqual(position.fundingIndex, initialFundingIndex.add(toBN(2))); // margin transfer and position modification
+			assert.bnEqual(position.lastFundingIndex, initialFundingIndex.add(toBN(2))); // margin transfer and position modification
 
 			// Skew, size, entry notional sum, pending order value are updated.
 			assert.bnEqual(await futuresMarket.marketSkew(), size);
@@ -1339,7 +1339,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.margin, remaining);
 				assert.bnEqual(position.size, toUnit(0));
 				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.fundingIndex, toBN(0));
+				assert.bnEqual(position.lastFundingIndex, toBN(0));
 
 				// Skew, size, entry notional sum, debt are updated.
 				assert.bnEqual(await futuresMarket.marketSkew(), toUnit(0));
@@ -3225,7 +3225,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.margin, toUnit(0));
 				assert.bnEqual(position.size, toUnit(0));
 				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.fundingIndex, toBN(0));
+				assert.bnEqual(position.lastFundingIndex, toBN(0));
 
 				const liquidationFee = multiplyDecimal(
 					multiplyDecimal(await futuresMarketSettings.liquidationFeeRatio(), newPrice),
@@ -3327,7 +3327,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.margin, toUnit(0));
 				assert.bnEqual(position.size, toUnit(0));
 				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.fundingIndex, toBN(0));
+				assert.bnEqual(position.lastFundingIndex, toBN(0));
 
 				// in this case, proportional fee is smaller than minimum fee
 				const liquidationFee = multiplyDecimal(

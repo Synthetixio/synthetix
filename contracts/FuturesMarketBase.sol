@@ -125,7 +125,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     mapping(address => Position) public positions;
 
     /*
-     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
      * Then marketSkew * (_assetPrice() + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
      */
@@ -223,71 +223,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     }
 
     /*
-     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
-     */
-    function assetPrice() external view returns (uint price, bool invalid) {
-        return _assetPrice();
-    }
-
-    function _marketSizes() internal view returns (uint long, uint short) {
-        int size = int(marketSize);
-        int skew = marketSkew;
-        return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
-    }
-
-    /*
-     * The total number of base units on each side of the market.
-     */
-    function marketSizes() external view returns (uint long, uint short) {
-        return _marketSizes();
-    }
-
-    /*
-     * The remaining units on each side of the market left to be filled before hitting the cap.
-     */
-    function _maxOrderSizes(uint price) internal view returns (uint, uint) {
-        (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimal(int(price));
-        return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
-    }
-
-    /*
-     * The maximum size in base units of an order on each side of the market that will not exceed the max market value.
-     */
-    function maxOrderSizes()
-        external
-        view
-        returns (
-            uint long,
-            uint short,
-            bool invalid
-        )
-    {
-        (uint price, bool isInvalid) = _assetPrice();
-        (uint longSize, uint shortSize) = _maxOrderSizes(price);
-        return (longSize, shortSize, isInvalid);
-    }
-
-    function _marketDebt(uint price) internal view returns (uint) {
-        // see comment explaining this calculation in _positionDebtCorrection()
-        int totalDebt =
-            int(marketSkew).multiplyDecimal(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
-                _entryDebtCorrection
-            );
-
-        return uint(_max(totalDebt, 0));
-    }
-
-    /*
-     * The debt contributed by this market to the overall system.
-     * The total market debt is equivalent to the sum of remaining margins in all open positions.
-     */
-    function marketDebt() external view returns (uint debt, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_marketDebt(price), isInvalid);
-    }
-
-    /*
      * The size of the skew relative to the size of the market skew scaler.
      * This value can be outside of [-1, 1] values.
      * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
@@ -305,41 +240,10 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return int(marketSkew).divideDecimal(int(skewScaleBaseAsset));
     }
 
-    /*
-     * The basic settings of this market, which determine trading fees and funding rate behaviour.
-     */
-    function parameters()
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD,
-            uint maxFundingRateDelta
-        )
-    {
-        return _parameters(baseAsset);
-    }
-
     function _currentFundingRate(uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(baseAsset));
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
-    }
-
-    /*
-     * The current funding rate as determined by the market skew; this is returned as a percentage per day.
-     * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
-     */
-    function currentFundingRate() external view returns (int) {
-        (uint price, ) = _assetPrice();
-        return _currentFundingRate(price);
     }
 
     /*
@@ -352,15 +256,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     function _unrecordedFunding(uint price) internal view returns (int funding) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
         return _currentFundingRatePerSecond(price).multiplyDecimal(int(price)).mul(elapsed);
-    }
-
-    /*
-     * The funding per base unit accrued since the funding rate was last recomputed, which has not yet
-     * been persisted in the funding sequence.
-     */
-    function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_unrecordedFunding(price), isInvalid);
     }
 
     /*
@@ -393,22 +288,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         // Compute the net difference between start and end indices.
         return result.sub(fundingSequence[startIndex]);
-    }
-
-    /*
-     * Computes the net funding that was accrued between any two funding sequence indices.
-     * If endIndex is equal to the funding sequence length, then unrecorded funding will be included.
-     */
-    function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_netFundingPerUnit(startIndex, endIndex, fundingSequence.length, price), isInvalid);
-    }
-
-    /*
-     * The number of entries in the funding sequence.
-     */
-    function fundingSequenceLength() external view returns (uint) {
-        return fundingSequence.length;
     }
 
     /* ---------- Position Details ---------- */
@@ -452,16 +331,8 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return false;
     }
 
-    function _notionalValue(Position memory position, uint price) internal pure returns (int value) {
-        return int(position.size).multiplyDecimal(int(price));
-    }
-
-    /*
-     * The notional value of a position is its size multiplied by the current price. Margin and leverage are ignored.
-     */
-    function notionalValue(address account) external view returns (int value, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_notionalValue(positions[account], price), isInvalid);
+    function _notionalValue(int positionSize, uint price) internal pure returns (int value) {
+        return positionSize.multiplyDecimal(int(price));
     }
 
     function _profitLoss(Position memory position, uint price) internal pure returns (int pnl) {
@@ -469,33 +340,17 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return int(position.size).multiplyDecimal(priceShift);
     }
 
-    /*
-     * The PnL of a position is the change in its notional value. Funding is not taken into account.
-     */
-    function profitLoss(address account) external view returns (int pnl, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_profitLoss(positions[account], price), isInvalid);
-    }
-
     function _accruedFunding(
         Position memory position,
         uint endFundingIndex,
         uint price
     ) internal view returns (int funding) {
-        uint lastModifiedIndex = position.fundingIndex;
+        uint lastModifiedIndex = position.lastFundingIndex;
         if (lastModifiedIndex == 0) {
             return 0; // The position does not exist -- no funding.
         }
         int net = _netFundingPerUnit(lastModifiedIndex, endFundingIndex, fundingSequence.length, price);
         return int(position.size).multiplyDecimal(net);
-    }
-
-    /*
-     * The funding accrued in a position since it was opened; this does not include PnL.
-     */
-    function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_accruedFunding(positions[account], fundingSequence.length, price), isInvalid);
     }
 
     /*
@@ -549,16 +404,8 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return uint(_max(0, remaining));
     }
 
-    /*
-     * The initial margin plus profit and funding; returns zero balance if losses exceed the initial margin.
-     */
-    function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
-    }
-
     function _accessibleMargin(
-        Position storage position,
+        Position memory position,
         uint fundingIndex,
         uint price
     ) internal view returns (uint) {
@@ -567,7 +414,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
         int maxLeverage = int(_maxLeverage(baseAsset).sub(milli));
-        uint inaccessible = _abs(_notionalValue(position, price).divideDecimal(maxLeverage));
+        uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
         if (0 < inaccessible) {
@@ -584,15 +431,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         }
 
         return remaining.sub(inaccessible);
-    }
-
-    /*
-     * The approximate amount of margin the user may withdraw given their current position; this underestimates the
-     * true value slightly.
-     */
-    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
     function _liquidationPrice(
@@ -612,7 +450,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         if (includeFunding) {
             // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
             fundingPerUnit = _netFundingPerUnit(
-                position.fundingIndex,
+                position.lastFundingIndex,
                 fundingSequence.length,
                 fundingSequence.length,
                 currentPrice
@@ -678,51 +516,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return _liquidationBuffer(positionSize, price).add(_liquidationFee(positionSize, price));
     }
 
-    /**
-     * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee.
-     * Reverts if position size is 0.
-     * @param account address of the position account
-     * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
-     */
-    function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(positions[account].size != 0, "0 size position");
-        (uint price, ) = _assetPrice();
-        return _liquidationMargin(int(positions[account].size), price);
-    }
-
-    /*
-     * The price at which a position is subject to liquidation; otherwise the price at which the user's remaining
-     * margin has run out. When they have just enough margin left to pay a liquidator, then they are liquidated.
-     * If a position is long, then it is safe as long as the current price is above the liquidation price; if it is
-     * short, then it is safe whenever the current price is below the liquidation price.
-     * A position's accurate liquidation price can move around slightly due to accrued funding - this contribution
-     * can be omitted by passing false to includeFunding.
-     */
-    function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
-        (uint aPrice, bool isInvalid) = _assetPrice();
-        uint liqPrice = _liquidationPrice(positions[account], includeFunding, aPrice);
-        return (liqPrice, isInvalid);
-    }
-
-    /**
-     * The fee paid to liquidator in the event of successful liquidation of an account at current price.
-     * Returns 0 if account cannot be liquidated right now.
-     * @param account address of the trader's account
-     * @return fee that will be paid for liquidating the account if it can be liquidated
-     *  in sUSD fixed point decimal units or 0 if account is not liquidatable.
-     */
-    function liquidationFee(address account) external view returns (uint) {
-        (uint price, bool invalid) = _assetPrice();
-        if (!invalid && _canLiquidate(positions[account], fundingSequence.length, price)) {
-            return _liquidationFee(int(positions[account].size), price);
-        } else {
-            // theoretically we can calculate a value, but this value is always incorrect because
-            // it's for a price at which liquidation cannot happen - so is misleading, because
-            // it won't be paid, and what will be paid is a different fee (for a different price)
-            return 0;
-        }
-    }
-
     function _canLiquidate(
         Position memory position,
         uint fundingIndex,
@@ -736,14 +529,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return _remainingMargin(position, fundingIndex, price) <= _liquidationMargin(int(position.size), price);
     }
 
-    /*
-     * True if and only if a position is ready to be liquidated.
-     */
-    function canLiquidate(address account) external view returns (bool) {
-        (uint price, bool invalid) = _assetPrice();
-        return !invalid && _canLiquidate(positions[account], fundingSequence.length, price);
-    }
-
     function _currentLeverage(
         Position memory position,
         uint price,
@@ -754,17 +539,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             return 0;
         }
 
-        return _notionalValue(position, price).divideDecimal(int(remainingMargin_));
-    }
-
-    /*
-     * Equivalent to the position's notional value divided by its remaining margin.
-     */
-    function currentLeverage(address account) external view returns (int leverage, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        Position storage position = positions[account];
-        uint remainingMargin_ = _remainingMargin(position, fundingSequence.length, price);
-        return (_currentLeverage(position, price, remainingMargin_), isInvalid);
+        return _notionalValue(position.size, price).divideDecimal(int(remainingMargin_));
     }
 
     function _orderFee(TradeParams memory params) internal view returns (uint fee) {
@@ -783,23 +558,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         // the case where the order flips the skew is ignored for simplicity due to being negligible
         // in both size of effect and frequency of occurrence
-    }
-
-    /*
-     * Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
-     * expensive than ones that decrease it; closing positions implies a different fee rate.
-     */
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                fundingIndex: 0, // doesn't matter for fee calculation
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
-            });
-        return (_orderFee(params), isInvalid);
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
@@ -833,7 +591,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         Position memory newPos =
             Position({
                 id: oldPos.id,
-                fundingIndex: uint64(params.fundingIndex),
+                lastFundingIndex: uint64(params.fundingIndex),
                 margin: uint128(newMargin),
                 lastPrice: uint128(params.price),
                 size: int128(newSize)
@@ -873,41 +631,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         }
 
         return (newPos, fee, Status.Ok);
-    }
-
-    /*
-     * Returns all new position details if a given order from `sender` was confirmed at the current price.
-     */
-    function postTradeDetails(int sizeDelta, address sender)
-        external
-        view
-        returns (
-            uint margin,
-            int size,
-            uint price,
-            uint liqPrice,
-            uint fee,
-            Status status
-        )
-    {
-        bool invalid;
-        (price, invalid) = _assetPrice();
-        if (invalid) {
-            return (0, 0, 0, 0, 0, Status.InvalidPrice);
-        }
-
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                fundingIndex: fundingSequence.length,
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
-            });
-        (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(positions[sender], params);
-
-        liqPrice = _liquidationPrice(newPosition, true, newPosition.lastPrice);
-        return (newPosition.margin, newPosition.size, newPosition.lastPrice, liqPrice, fee_, status_);
     }
 
     /* ---------- Utilities ---------- */
@@ -1028,8 +751,18 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
          */
         return
             int(position.margin).sub(
-                int(position.size).multiplyDecimal(int(position.lastPrice).add(fundingSequence[position.fundingIndex]))
+                int(position.size).multiplyDecimal(int(position.lastPrice).add(fundingSequence[position.lastFundingIndex]))
             );
+    }
+
+    function _marketDebt(uint price) internal view returns (uint) {
+        // see comment explaining this calculation in _positionDebtCorrection()
+        int totalDebt =
+            int(marketSkew).multiplyDecimal(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
+                _entryDebtCorrection
+            );
+
+        return uint(_max(totalDebt, 0));
     }
 
     /*
@@ -1094,7 +827,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         int positionSize = position.size;
         _applyDebtCorrection(
             Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
-            Position(0, position.fundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
         );
 
         // Update the account's position with the realised margin.
@@ -1102,7 +835,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // We only need to update their funding/PnL details if they actually have a position open
         if (positionSize != 0) {
             position.lastPrice = uint128(price);
-            position.fundingIndex = uint64(fundingIndex);
+            position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
             //     * they have sufficient margin to do so
@@ -1170,7 +903,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             delete position.id;
             delete position.size;
             delete position.lastPrice;
-            delete position.fundingIndex;
+            delete position.lastFundingIndex;
         } else {
             if (oldPosition.size == 0) {
                 // New positions get new ids.
@@ -1180,7 +913,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             position.id = id;
             position.size = newPosition.size;
             position.lastPrice = uint128(params.price);
-            position.fundingIndex = uint64(params.fundingIndex);
+            position.lastFundingIndex = uint64(params.fundingIndex);
         }
         // emit the modification event
         emitPositionModified(
@@ -1301,7 +1034,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         _applyDebtCorrection(
             Position(0, uint64(fundingIndex), 0, uint128(price), 0),
-            Position(0, position.fundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
         );
 
         // Close the position itself.

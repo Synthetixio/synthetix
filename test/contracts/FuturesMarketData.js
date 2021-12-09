@@ -214,7 +214,7 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details2.position.margin, position.margin);
 			assert.bnEqual(details2.position.size, position.size);
 			assert.bnEqual(details2.position.lastPrice, position.lastPrice);
-			assert.bnEqual(details2.position.fundingIndex, position.fundingIndex);
+			assert.bnEqual(details2.position.lastFundingIndex, position.lastFundingIndex);
 
 			const notional = await futuresMarket.notionalValue(trader1);
 			assert.bnEqual(details2.notionalValue, notional.value);
