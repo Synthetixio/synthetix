@@ -247,15 +247,20 @@ contract FuturesMarketData {
         view
         returns (IFuturesMarketBaseTypes.Position memory)
     {
-        (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
-            market.positions(account);
+        (
+            uint64 positionId,
+            uint64 positionEntryIndex,
+            uint128 positionMargin,
+            uint128 positionEntryPrice,
+            int128 positionSize
+        ) = market.positions(account);
         return
             IFuturesMarketBaseTypes.Position(
                 positionId,
+                positionEntryIndex,
                 positionMargin,
-                positionSize,
                 positionEntryPrice,
-                positionEntryIndex
+                positionSize
             );
     }
 

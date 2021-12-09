@@ -61,10 +61,10 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         uint targetRoundId = _exchangeRates().getCurrentRoundId(baseAsset) + 1; // next round
         NextPriceOrder memory order =
             NextPriceOrder({
-                sizeDelta: sizeDelta,
-                targetRoundId: targetRoundId,
-                commitDeposit: commitDeposit,
-                keeperDeposit: keeperDeposit
+                sizeDelta: int128(sizeDelta),
+                targetRoundId: uint128(targetRoundId),
+                commitDeposit: uint128(commitDeposit),
+                keeperDeposit: uint128(keeperDeposit)
             });
         // emit event
         emitNextPriceOrderSubmitted(messageSender, order);
