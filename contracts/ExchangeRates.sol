@@ -14,7 +14,7 @@ import "./SafeDecimalMath.sol";
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
-import "./interfaces/IExchangeRatesCircuitBreaker.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
@@ -47,7 +47,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     mapping(bytes32 => uint) public roundFrozen;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_CICRUIT_BREAKER = "ExchangeRatesCircuitBreaker";
+    bytes32 private constant CONTRACT_CICRUIT_BREAKER = "ExchangeCircuitBreaker";
 
     //
     // ========== CONSTRUCTOR ==========
@@ -142,7 +142,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         // SIP-78
         uint rate = _getRate(currencyKey);
         if (rate > 0) {
-            exchangeRatesCircuitBreaker().setLastExchangeRateForSynth(currencyKey, rate);
+            exchangeCircuitBreaker().setLastExchangeRateForSynth(currencyKey, rate);
         }
 
         emit InversePriceConfigured(currencyKey, entryPoint, upperLimit, lowerLimit);
@@ -446,8 +446,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function exchangeRatesCircuitBreaker() internal view returns (IExchangeRatesCircuitBreaker) {
-        return IExchangeRatesCircuitBreaker(requireAndGetAddress(CONTRACT_CICRUIT_BREAKER));
+    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CICRUIT_BREAKER));
     }
 
     function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {

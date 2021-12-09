@@ -189,8 +189,8 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'ExchangeRatesCircuitBreaker',
-		source: 'ExchangeRatesCircuitBreaker',
+		name: 'ExchangeCircuitBreaker',
+		source: 'ExchangeCircuitBreaker',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});

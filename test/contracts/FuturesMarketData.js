@@ -15,7 +15,7 @@ contract('FuturesMarketData', accounts => {
 		futuresMarketSettings,
 		futuresMarketData,
 		exchangeRates,
-		exchangeRatesCircuitBreaker,
+		exchangeCircuitBreaker,
 		oracle,
 		sUSD,
 		baseAsset;
@@ -35,7 +35,7 @@ contract('FuturesMarketData', accounts => {
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {
 			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeRatesCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
+			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
 		}
 	}
 
@@ -47,7 +47,7 @@ contract('FuturesMarketData', accounts => {
 			FuturesMarketSettings: futuresMarketSettings,
 			FuturesMarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
-			ExchangeRatesCircuitBreaker: exchangeRatesCircuitBreaker,
+			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
 		} = await setupAllContracts({
 			accounts,
@@ -60,7 +60,7 @@ contract('FuturesMarketData', accounts => {
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
-				'ExchangeRatesCircuitBreaker',
+				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'Synthetix',
 				'CollateralManager',

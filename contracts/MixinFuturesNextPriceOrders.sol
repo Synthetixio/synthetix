@@ -200,9 +200,9 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
     }
 
     // convenience view to access exchangeRates contract for methods that are not exposed
-    // via _exchangeRatesCircuitBreaker() contract
+    // via _exchangeCircuitBreaker() contract
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(_exchangeRatesCircuitBreaker().exchangeRates());
+        return IExchangeRates(_exchangeCircuitBreaker().exchangeRates());
     }
 
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot

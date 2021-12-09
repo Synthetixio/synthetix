@@ -21,7 +21,7 @@ const {
 	defaults: { PRICE_DEVIATION_THRESHOLD_FACTOR },
 } = require('../..');
 
-contract('ExchangeRatesCircuitBreaker tests', async accounts => {
+contract('ExchangeCircuitBreaker tests', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
 		'sUSD',
 		'sAUD',
@@ -552,7 +552,7 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 
 			({
 				Exchanger: exchanger,
-				ExchangeRatesCircuitBreaker: cicruitBreaker,
+				ExchangeCircuitBreaker: cicruitBreaker,
 				Synthetix: synthetix,
 				ExchangeRates: exchangeRates,
 				SystemStatus: systemStatus,
@@ -565,7 +565,7 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 				contracts: [
 					'Exchanger',
-					'ExchangeRatesCircuitBreaker',
+					'ExchangeCircuitBreaker',
 					'ExchangeState',
 					'ExchangeRates',
 					'DebtCache',
@@ -629,7 +629,7 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 		before(async () => {
 			({
 				Exchanger: exchanger,
-				ExchangeRatesCircuitBreaker: cicruitBreaker,
+				ExchangeCircuitBreaker: cicruitBreaker,
 				Synthetix: synthetix,
 				ExchangeRates: exchangeRates,
 				SystemStatus: systemStatus,
@@ -642,7 +642,7 @@ contract('ExchangeRatesCircuitBreaker tests', async accounts => {
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 				contracts: [
 					'Exchanger',
-					'ExchangeRatesCircuitBreaker',
+					'ExchangeCircuitBreaker',
 					'ExchangeState',
 					'ExchangeRates',
 					'DebtCache',

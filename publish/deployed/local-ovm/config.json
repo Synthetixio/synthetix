@@ -23,7 +23,7 @@
 	"ExchangeRates": {
 		"deploy": true
 	},
-	"ExchangeRatesCircuitBreaker": {
+	"ExchangeCircuitBreaker": {
 		"deploy": true
 	},
 	"Exchanger": {

@@ -13,7 +13,7 @@ import "./SignedSafeDecimalMath.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeRatesCircuitBreaker.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
@@ -139,7 +139,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeRatesCircuitBreaker";
+    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -193,8 +193,8 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _exchangeRatesCircuitBreaker() internal view returns (IExchangeRatesCircuitBreaker) {
-        return IExchangeRatesCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function _systemStatus() internal view returns (ISystemStatus) {
@@ -216,7 +216,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     /* ---------- Market Details ---------- */
 
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeRatesCircuitBreaker().rateWithInvalid(baseAsset);
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
         // Ensure we catch uninitialised rates or suspended state / synth
         invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
         return (price, invalid);
@@ -702,7 +702,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
-        (uint price, bool circuitBroken) = _exchangeRatesCircuitBreaker().rateWithBreakCircuit(baseAsset);
+        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset);
         // revert if price is invalid or circuit was broken
         _revertIfError(circuitBroken, Status.InvalidPrice);
         return price;

@@ -7,7 +7,7 @@ import "./MixinFuturesViews.sol";
 import "./interfaces/IFuturesMarket.sol";
 
 // Internal references
-import "./interfaces/IExchangeRatesCircuitBreaker.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
