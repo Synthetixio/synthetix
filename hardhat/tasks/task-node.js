@@ -19,6 +19,7 @@ task('node', 'Run a node')
 		const network = taskArguments.targetNetwork;
 		if (network !== 'local') {
 			if (network === 'mainnet') {
+				hre.config.networks.hardhat.allowUnlimitedContractSize = false;
 				taskArguments.fork = process.env.PROVIDER_URL_MAINNET;
 			}
 			taskArguments.fork =
