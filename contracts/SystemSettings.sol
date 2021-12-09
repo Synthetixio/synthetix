@@ -386,7 +386,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         }
     }
 
-    /// @notice Set exchange dynamic fee threshold constant default 40bps
+    /// @notice Set exchange dynamic fee threshold constant in decimal ratio
     /// @param threshold The exchange dynamic fee threshold
     /// @return uint threshold constant
     function setExchangeDynamicFeeThreshold(uint threshold) external onlyOwner {
@@ -397,7 +397,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit ExchangeDynamicFeeThresholdUpdated(threshold);
     }
 
-    /// @notice Set exchange dynamic fee weight decay constant default 0.9
+    /// @notice Set exchange dynamic fee weight decay constant
     /// @param weightDecay The exchange dynamic fee weight decay
     /// @return uint weight decay constant
     function setExchangeDynamicFeeWeightDecay(uint weightDecay) external onlyOwner {
@@ -421,6 +421,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     /// @param maxFee The max exchange dynamic fee
     /// @return uint dynamic fee last N rounds
     function setExchangeMaxDynamicFee(uint maxFee) external onlyOwner {
+        require(maxFee != 0, "Max dynamic fee cannot be 0");
+
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_MAX_DYNAMIC_FEE, maxFee);
 
         emit ExchangeMaxDynamicFeeUpdated(maxFee);

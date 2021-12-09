@@ -168,9 +168,15 @@ contract MixinSystemSettings is MixinResolver {
             uint rounds
         )
     {
-        threshold = getExchangeDynamicFeeThreshold();
-        weightDecay = getExchangeDynamicFeeWeightDecay();
-        rounds = getExchangeDynamicFeeRounds();
+        bytes32[] memory data = new bytes32[](3);
+        uint[] memory result = new uint[](3);
+        data[0] = SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD;
+        data[1] = SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY;
+        data[2] = SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS;
+        result = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, data);
+        threshold = result[0];
+        weightDecay = result[1];
+        rounds = result[2];
     }
 
     /// @notice Get exchange max dynamic fee
