@@ -125,7 +125,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     mapping(address => Position) public positions;
 
     /*
-     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
      * Then marketSkew * (_assetPrice() + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
      */
@@ -331,8 +331,8 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return false;
     }
 
-    function _notionalValue(Position memory position, uint price) internal pure returns (int value) {
-        return int(position.size).multiplyDecimal(int(price));
+    function _notionalValue(int positionSize, uint price) internal pure returns (int value) {
+        return positionSize.multiplyDecimal(int(price));
     }
 
     function _profitLoss(Position memory position, uint price) internal pure returns (int pnl) {
@@ -345,7 +345,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         uint endFundingIndex,
         uint price
     ) internal view returns (int funding) {
-        uint lastModifiedIndex = position.fundingIndex;
+        uint lastModifiedIndex = position.lastFundingIndex;
         if (lastModifiedIndex == 0) {
             return 0; // The position does not exist -- no funding.
         }
@@ -405,7 +405,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     }
 
     function _accessibleMargin(
-        Position storage position,
+        Position memory position,
         uint fundingIndex,
         uint price
     ) internal view returns (uint) {
@@ -414,7 +414,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
         int maxLeverage = int(_maxLeverage(baseAsset).sub(milli));
-        uint inaccessible = _abs(_notionalValue(position, price).divideDecimal(maxLeverage));
+        uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
         if (0 < inaccessible) {
@@ -450,7 +450,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         if (includeFunding) {
             // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
             fundingPerUnit = _netFundingPerUnit(
-                position.fundingIndex,
+                position.lastFundingIndex,
                 fundingSequence.length,
                 fundingSequence.length,
                 currentPrice
@@ -539,7 +539,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             return 0;
         }
 
-        return _notionalValue(position, price).divideDecimal(int(remainingMargin_));
+        return _notionalValue(position.size, price).divideDecimal(int(remainingMargin_));
     }
 
     function _orderFee(TradeParams memory params) internal view returns (uint fee) {
@@ -591,7 +591,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         Position memory newPos =
             Position({
                 id: oldPos.id,
-                fundingIndex: uint64(params.fundingIndex),
+                lastFundingIndex: uint64(params.fundingIndex),
                 margin: uint128(newMargin),
                 lastPrice: uint128(params.price),
                 size: int128(newSize)
@@ -751,7 +751,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
          */
         return
             int(position.margin).sub(
-                int(position.size).multiplyDecimal(int(position.lastPrice).add(fundingSequence[position.fundingIndex]))
+                int(position.size).multiplyDecimal(int(position.lastPrice).add(fundingSequence[position.lastFundingIndex]))
             );
     }
 
@@ -827,7 +827,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         int positionSize = position.size;
         _applyDebtCorrection(
             Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
-            Position(0, position.fundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
         );
 
         // Update the account's position with the realised margin.
@@ -835,7 +835,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // We only need to update their funding/PnL details if they actually have a position open
         if (positionSize != 0) {
             position.lastPrice = uint128(price);
-            position.fundingIndex = uint64(fundingIndex);
+            position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
             //     * they have sufficient margin to do so
@@ -903,7 +903,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             delete position.id;
             delete position.size;
             delete position.lastPrice;
-            delete position.fundingIndex;
+            delete position.lastFundingIndex;
         } else {
             if (oldPosition.size == 0) {
                 // New positions get new ids.
@@ -913,7 +913,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             position.id = id;
             position.size = newPosition.size;
             position.lastPrice = uint128(params.price);
-            position.fundingIndex = uint64(params.fundingIndex);
+            position.lastFundingIndex = uint64(params.fundingIndex);
         }
         // emit the modification event
         emitPositionModified(
@@ -1034,7 +1034,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         _applyDebtCorrection(
             Position(0, uint64(fundingIndex), 0, uint128(price), 0),
-            Position(0, position.fundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
         );
 
         // Close the position itself.

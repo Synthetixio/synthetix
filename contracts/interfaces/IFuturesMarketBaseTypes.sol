@@ -20,7 +20,7 @@ interface IFuturesMarketBaseTypes {
     // If margin/size are positive, the position is long; if negative then it is short.
     struct Position {
         uint64 id;
-        uint64 fundingIndex;
+        uint64 lastFundingIndex;
         uint128 margin;
         uint128 lastPrice;
         int128 size;

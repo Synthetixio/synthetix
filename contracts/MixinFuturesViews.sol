@@ -124,7 +124,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function notionalValue(address account) external view returns (int value, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
-        return (_notionalValue(positions[account], price), isInvalid);
+        return (_notionalValue(positions[account].size, price), isInvalid);
     }
 
     /*
