@@ -1,5 +1,8 @@
 pragma solidity ^0.5.16;
 
+// Internal references
+import "./interfaces/IFlexibleStorage.sol";
+
 library SystemSettingsLib {
     function setCrossDomainMessageGasLimit(
         address flexibleStorage,
@@ -8,12 +11,12 @@ library SystemSettingsLib {
         uint crossDomainMessageGasLimit,
         uint minCrossDomainGasLimit,
         uint maxCrossDomainGasLimit
-    ) public returns (bool success, bytes memory result) {
+    ) public {
         require(
             crossDomainMessageGasLimit >= minCrossDomainGasLimit && crossDomainMessageGasLimit <= maxCrossDomainGasLimit,
             "Out of range xDomain gasLimit"
         );
-        (success, result) = setUIntValue(flexibleStorage, settingContractName, gasLimitSettings, crossDomainMessageGasLimit);
+        setUIntValue(flexibleStorage, settingContractName, gasLimitSettings, crossDomainMessageGasLimit);
     }
 
     function setUIntValue(
@@ -21,11 +24,8 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         uint value
-    ) public returns (bool success, bytes memory result) {
-        // solhint-disable-next-line
-        (success, result) = flexibleStorage.delegatecall(
-            abi.encodeWithSignature("setUIntValue(bytes32,bytes32,uint)", settingContractName, settingName, value)
-        );
+    ) public {
+        IFlexibleStorage(flexibleStorage).setUIntValue(settingContractName, settingName, value);
     }
 
     function setBoolValue(
@@ -33,10 +33,7 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         bool value
-    ) public returns (bool success, bytes memory result) {
-        // solhint-disable-next-line
-        (success, result) = flexibleStorage.delegatecall(
-            abi.encodeWithSignature("setBoolValue(bytes32,bytes32,uint)", settingContractName, settingName, value)
-        );
+    ) public {
+        IFlexibleStorage(flexibleStorage).setBoolValue(settingContractName, settingName, value);
     }
 }
