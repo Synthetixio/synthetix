@@ -138,6 +138,14 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedWithUintsSystemSetting: ({ setting, value }, cb) => {
+			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
+				beforeEach(async () => {
+					this.flexibleStorageMock.mockSystemSetting({ setting, value, type: 'uints' });
+				});
+				cb();
+			});
+		},
 		whenMockedWithSynthUintSystemSetting: ({ setting, synth, value }, cb) => {
 			const settingForSynth = web3.utils.soliditySha3(
 				{ type: 'bytes32', value: toBytes32(setting) },
