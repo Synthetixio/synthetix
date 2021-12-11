@@ -51,3 +51,37 @@ subtask('interact:load-contracts')
 
 	return contracts;
 });
+
+subtask('interact:stage-txn')
+.setAction(async ({ txn, contract, functionSignature, args }, hre) => {
+	const { getPathToNetwork } = synthetix.wrap({
+		network: hre.network.name,
+		useOvm: false,
+		fs,
+		path,
+	});
+
+	// always appending to mainnet owner actions now
+	const { ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
+		deploymentPath: getPathToNetwork({ network: hre.network.name, useOvm: false }),
+		network: hre.network.name,
+	});
+
+	// append to owner actions if supplied
+	const appendOwnerAction = appendOwnerActionGenerator({
+		ownerActions,
+		ownerActionsFile,
+		//'https://',
+	});
+
+	const actionName = `${contract.address}.${functionSignature}:${args.join(',')}`;
+
+	const ownerAction = {
+		key: actionName,
+		target: txn.to,
+		action: actionName,
+		data: txn.data,
+	};
+
+	appendOwnerAction(ownerAction);
+});
