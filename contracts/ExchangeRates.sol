@@ -153,7 +153,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint time;
         (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         // cacheing to save external call
-        _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
+        if (sourceCurrencyKey != "sUSD") _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
             destinationRate = sourceRate;
@@ -161,7 +161,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         } else {
             (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
             // cacheing to save external call
-            _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
+            if (destinationCurrencyKey != "sUSD") _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
             if (destinationRate > 0) {
                 // Calculate the effective value by going from source -> USD -> destination
