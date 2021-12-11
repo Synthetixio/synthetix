@@ -59,8 +59,12 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
         oracle = _oracle;
 
-        // The sUSD rate is always 1 and is never stale.
-        _setRate("sUSD", 0, SafeDecimalMath.unit(), now);
+        // The sUSD rate is always 1 on round 1 and is never stale.
+        currentRoundForRate["sUSD"]++;
+        _rates["sUSD"][currentRoundForRate["sUSD"]] = RateAndUpdatedTime({
+            rate: uint216(SafeDecimalMath.unit()),
+            time: uint40(now)
+        });
 
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
@@ -436,12 +440,14 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint256 rate,
         uint256 time
     ) internal {
-        if (roundId > 0) {
-            currentRoundForRate[currencyKey] = roundId;
-        } else {
-            // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
-            currentRoundForRate[currencyKey]++;
-        }
+        require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
+        require(roundId > 0, "Round id must be greater than 0.");
+        // Should not set any rate to zero ever, as no asset will ever be
+        // truely worthless and still valid. In this scenario, we should
+        // delete the rate and remove it from the system.
+        require(rate != 0, "Zero is not a valid rate, please call deleteRate instead.");
+
+        currentRoundForRate[currencyKey] = roundId;
 
         // skip writing if the rate is the same
         if (rate == _rates[currencyKey][currentRoundForRate[currencyKey]].rate) return;
@@ -464,18 +470,13 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
 
-            // Should not set any rate to zero ever, as no asset will ever be
-            // truely worthless and still valid. In this scenario, we should
-            // delete the rate and remove it from the system.
-            require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
-            require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
-
             // We should only update the rate if it's at least the same age as the last rate we've got.
             if (timeSent < _getUpdatedTime(currencyKey)) {
                 continue;
             }
 
-            _setRate(currencyKey, 0, newRates[i], timeSent);
+            currentRoundForRate[currencyKey]++;
+            _setRate(currencyKey, currentRoundForRate[currencyKey], newRates[i], timeSent);
         }
 
         emit RatesUpdated(currencyKeys, newRates);
