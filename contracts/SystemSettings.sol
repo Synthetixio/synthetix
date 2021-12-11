@@ -408,7 +408,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit ExchangeDynamicFeeWeightDecayUpdated(weightDecay);
     }
 
-    /// @notice Set exchange dynamic fee last N rounds
+    /// @notice Set exchange dynamic fee last N rounds with minimum 2 rounds
     /// @param rounds The exchange dynamic fee last N rounds
     /// @return uint dynamic fee last N rounds
     function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
