@@ -442,10 +442,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     ) internal {
         require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
         require(roundId > 0, "Round id must be greater than 0.");
-        // Should not set any rate to zero ever, as no asset will ever be
-        // truely worthless and still valid. In this scenario, we should
-        // delete the rate and remove it from the system.
-        require(rate != 0, "Zero is not a valid rate, please call deleteRate instead.");
 
         currentRoundForRate[currencyKey] = roundId;
 
@@ -469,6 +465,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
+
+            // Should not set any rate to zero ever, as no asset will ever be
+            // truely worthless and still valid. In this scenario, we should
+            // delete the rate and remove it from the system.
+            require(newRates[i] != 0, "Zero is not a valid rate, please call deleteRate instead.");
 
             // We should only update the rate if it's at least the same age as the last rate we've got.
             if (timeSent < _getUpdatedTime(currencyKey)) {
