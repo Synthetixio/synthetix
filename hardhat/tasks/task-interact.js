@@ -4,6 +4,11 @@ const path = require('path');
 
 const synthetix = require('../..');
 
+const {
+	loadAndCheckRequiredSources,
+	appendOwnerActionGenerator
+} = require('../../publish/src/util');
+
 subtask('interact:load-contracts')
 .setAction(async ({ provider }, hre) => {
 	// build hardhat-deploy style deployments
