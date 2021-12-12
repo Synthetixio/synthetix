@@ -1,16 +1,17 @@
-const { subtask, types } = require('hardhat/config');
+const { subtask } = require('hardhat/config');
 const fs = require('fs');
 const path = require('path');
+
+const ethers = require('ethers');
 
 const synthetix = require('../..');
 
 const {
 	loadAndCheckRequiredSources,
-	appendOwnerActionGenerator
+	appendOwnerActionGenerator,
 } = require('../../publish/src/util');
 
-subtask('interact:load-contracts')
-.setAction(async ({ provider }, hre) => {
+subtask('interact:load-contracts').setAction(async ({ provider }, hre) => {
 	// build hardhat-deploy style deployments
 	if (!fs.existsSync('deployments')) {
 		fs.mkdirSync('deployments');
@@ -57,8 +58,7 @@ subtask('interact:load-contracts')
 	return contracts;
 });
 
-subtask('interact:stage-txn')
-.setAction(async ({ txn, contract, functionSignature, args }, hre) => {
+subtask('interact:stage-txn').setAction(async ({ txn, contract, functionSignature, args }, hre) => {
 	const { getPathToNetwork } = synthetix.wrap({
 		network: hre.network.name,
 		useOvm: false,
@@ -76,7 +76,7 @@ subtask('interact:stage-txn')
 	const appendOwnerAction = appendOwnerActionGenerator({
 		ownerActions,
 		ownerActionsFile,
-		//'https://',
+		// 'https://',
 	});
 
 	const actionName = `${contract.address}.${functionSignature}:${args.join(',')}`;
