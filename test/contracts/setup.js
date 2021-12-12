@@ -614,14 +614,6 @@ const setupAllContracts = async ({
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
 		},
-<<<<<<< HEAD
-		{
-			contract: 'ExchangeRatesWithDexPricing',
-			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
-		},
-=======
->>>>>>> 3b53405847a0e1743fc372a4400dc7890660f93e
 		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
