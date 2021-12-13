@@ -22,6 +22,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeDecimalMath for uint;
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
+    bytes32 public constant SUSD = "sUSD";
 
     // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
     mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
@@ -60,8 +61,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         oracle = _oracle;
 
         // The sUSD rate is always 1 on round 1 and is never stale.
-        currentRoundForRate["sUSD"] = 1;
-        _rates["sUSD"][currentRoundForRate["sUSD"]] = RateAndUpdatedTime({
+        currentRoundForRate[SUSD] = 1;
+        _rates[SUSD][currentRoundForRate[SUSD]] = RateAndUpdatedTime({
             rate: uint216(SafeDecimalMath.unit()),
             time: uint40(now)
         });
@@ -152,16 +153,16 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     {
         uint time;
         (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        // cacheing to save external call and skip for sUSD
-        if (sourceCurrencyKey != "sUSD") _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
+        // cacheing to save external call
+        _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
             destinationRate = sourceRate;
             value = sourceAmount;
         } else {
             (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-            // cacheing to save external call and skip for sUSD
-            if (destinationCurrencyKey != "sUSD") _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
+            // cacheing to save external call
+            _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
             if (destinationRate > 0) {
                 // Calculate the effective value by going from source -> USD -> destination
@@ -345,7 +346,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
-        if (currencyKey == "sUSD") {
+        if (currencyKey == SUSD) {
             return (rateAndTime.rate, false);
         }
         return (
@@ -371,7 +372,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // do one lookup of the rate & time to minimize gas
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
-            if (!anyRateInvalid && currencyKeys[i] != "sUSD") {
+            if (!anyRateInvalid && currencyKeys[i] != SUSD) {
                 anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time);
             }
         }
@@ -440,8 +441,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint256 rate,
         uint256 time
     ) internal {
-        require(currencyKey != "sUSD", "Rate of sUSD cannot be updated, it's always UNIT.");
         require(roundId > 0, "Round id must be greater than 0.");
+
+        // No caching for sUSD
+        if (currencyKey == SUSD) return;
 
         currentRoundForRate[currencyKey] = roundId;
 
@@ -607,7 +610,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsStale(bytes32 currencyKey, uint _rateStalePeriod) internal view returns (bool) {
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == "sUSD") return false;
+        if (currencyKey == SUSD) return false;
 
         return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
     }
@@ -618,7 +621,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
         // sUSD is a special case and is never invalid
-        if (currencyKey == "sUSD") return false;
+        if (currencyKey == SUSD) return false;
         address aggregator = address(aggregators[currencyKey]);
         // when no aggregator or when the flags haven't been setup
         if (aggregator == address(0) || flags == FlagsInterface(0)) {
