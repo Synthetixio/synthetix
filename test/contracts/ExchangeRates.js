@@ -312,15 +312,14 @@ contract('Exchange Rates', async accounts => {
 				assert.equal(lastUpdatedTimeLGHI.toNumber(), updatedTime);
 			});
 
-			it('should revert when trying to set sUSD price', async () => {
+			it('should skip when trying to set sUSD price', async () => {
 				await fastForward(1);
 
-				await assert.revert(
-					instance.updateRates([sUSD], [web3.utils.toWei('1.0', 'ether')], timeSent, {
-						from: oracle,
-					}),
-					"Rate of sUSD cannot be updated, it's always UNIT"
-				);
+				instance.updateRates([sUSD], [toUnit('2')], timeSent, {
+					from: oracle,
+				});
+
+				assert.bnEqual(await instance.rateForCurrency(toBytes32('sUSD')), toUnit('1'));
 			});
 
 			it('should emit RatesUpdated event when rate updated', async () => {
