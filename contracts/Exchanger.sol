@@ -206,8 +206,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
 
             // given these round ids, determine what effective value they should have received
-            uint destinationAmount =
-                exchangeRates().effectiveValueAtRound(
+            (uint destinationAmount, , ) =
+                exchangeRates().effectiveValueAndRatesAtRound(
                     exchangeEntry.src,
                     exchangeEntry.amount,
                     exchangeEntry.dest,
@@ -442,8 +442,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
         // Puting the exchangeRate call first as it's mutative for cheap cache reading later on
-        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates()
-            .mutativeEffectiveValueAndRatesAtRound(
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
@@ -535,7 +534,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
                 sourceAmountAfterSettlement,
                 destinationCurrencyKey,
                 amountReceived,
-                entry.exchangeFeeRate
+                entry.exchangeFeeRate,
+                entry.roundIdForSrc,
+                entry.roundIdForDest
             );
         }
     }
@@ -632,7 +633,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
-        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4, 0);
+        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
 
         // start at index 1 to ignore current rate
         for (uint i = 1; i < rates.length; i++) {
@@ -797,8 +798,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (uint threshold, uint weightDecay, uint rounds) = getExchangeDynamicFeeData();
         uint[] memory prices;
         // Note: We are using cache round ID here for cheap read
-        uint currentRoundId = exchangeRates().currentRoundForRate(currencyKey);
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds, currentRoundId);
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds);
         dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
     }
 
@@ -868,11 +868,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint amount,
         bytes32 dest,
         uint amountReceived,
-        uint exchangeFeeRate
+        uint exchangeFeeRate,
+        uint roundIdForSrc,
+        uint roundIdForDest
     ) internal {
         IExchangeRates exRates = exchangeRates();
-        uint roundIdForSrc = exRates.getCurrentRoundId(src);
-        uint roundIdForDest = exRates.getCurrentRoundId(dest);
         exchangeState().appendExchangeEntry(
             account,
             src,

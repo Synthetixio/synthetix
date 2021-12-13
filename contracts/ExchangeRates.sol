@@ -23,7 +23,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
 
-    // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
+    // Exchange rates and update times from the centralized oracle. Only used for sUSD.
     mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
 
     // The address of the oracle which pushes rate updates to this contract
@@ -40,9 +40,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     // Do not allow the oracle to submit times any further forward into the future than this constant.
     uint private constant ORACLE_FUTURE_LIMIT = 10 minutes;
 
-    /// @notice ID for the current round
-    /// @param currencyKey is the currency key of the synth to be exchanged
-    /// @return the current exchange round ID
     mapping(bytes32 => uint) public currentRoundForRate;
 
     //
@@ -60,7 +57,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         oracle = _oracle;
 
         // The sUSD rate is always 1 and is never stale.
-        _setRate("sUSD", 0, SafeDecimalMath.unit(), now);
+        _setRate("sUSD", SafeDecimalMath.unit(), now);
 
         internalUpdateRates(_currencyKeys, _newRates, now);
     }
@@ -121,51 +118,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    /// @notice Same as effectiveValueAndRates but at historical rates.
-    /// @dev Needs to be mutative as it's calling setRate to cache the rate.
-    /// It can be call by anyone as rate is always returned by the oracle.
-    /// @param sourceCurrencyKey The currency key of the source currency.
-    /// @param sourceAmount The amount of the source currency.
-    /// @param destinationCurrencyKey The currency key of the destination currency.
-    /// @param roundIdForSrc The round id of the source currency.
-    /// @param roundIdForDest The round id of the target currency.
-    /// @return value of the target currency.
-    /// @return rate of the source currency.
-    /// @return rate of the destination currency.
-    function mutativeEffectiveValueAndRatesAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    )
-        external
-        returns (
-            uint value,
-            uint sourceRate,
-            uint destinationRate
-        )
-    {
-        uint time;
-        (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        // cacheing to save external call
-        _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) {
-            destinationRate = sourceRate;
-            value = sourceAmount;
-        } else {
-            (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-            // cacheing to save external call
-            _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
-            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
-            if (destinationRate > 0) {
-                // Calculate the effective value by going from source -> USD -> destination
-                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
-            }
-        }
-    }
-
     /* ========== VIEWS ========== */
 
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory currencies) {
@@ -215,25 +167,33 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _getCurrentRoundId(currencyKey);
     }
 
-    function effectiveValueAtRound(
+    function effectiveValueAndRatesAtRound(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) external view returns (uint value) {
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        (sourceRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
+        (destinationRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
 
-        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-        if (destRate == 0) {
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) return (sourceAmount, sourceRate, destinationRate);
+        if (destinationRate == 0) {
             // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
             // to aggregator upgrades)
-            return 0;
+            return (0, sourceRate, destinationRate);
         }
         // Calculate the effective value by going from source -> USD -> destination
-        value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
+        value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
@@ -300,20 +260,15 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _getRateAndUpdatedTime(currencyKey).rate;
     }
 
-    /// @notice getting N rounds of rates for a currency at a specific round
-    /// @param currencyKey the currency key
-    /// @param numRounds the number of rounds to get
-    /// @param roundId the round id
-    /// @return a list of rates and a list of times
-    function ratesAndUpdatedTimeForCurrencyLastNRounds(
-        bytes32 currencyKey,
-        uint numRounds,
-        uint roundId
-    ) external view returns (uint[] memory rates, uint[] memory times) {
+    function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
+        external
+        view
+        returns (uint[] memory rates, uint[] memory times)
+    {
         rates = new uint[](numRounds);
         times = new uint[](numRounds);
 
-        roundId = roundId > 0 ? roundId : _getCurrentRoundId(currencyKey);
+        uint roundId = _getCurrentRoundId(currencyKey);
         for (uint i = 0; i < numRounds; i++) {
             // fetch the rate and treat is as current, so inverse limits if frozen will always be applied
             // regardless of current rate
@@ -425,23 +380,13 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    /// @notice setting the rate for a currency
-    /// @param currencyKey the currency key
-    /// @param roundId the round id
-    /// @param rate the rate to set
-    /// @param time the time of the rate
     function _setRate(
         bytes32 currencyKey,
-        uint256 roundId,
         uint256 rate,
         uint256 time
     ) internal {
-        if (roundId > 0) {
-            currentRoundForRate[currencyKey] = roundId;
-        } else {
-            // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
-            currentRoundForRate[currencyKey]++;
-        }
+        // Note: this will effectively start the rounds at 1, which matches Chainlink's Agggregators
+        currentRoundForRate[currencyKey]++;
 
         // skip writing if the rate is the same
         if (rate == _rates[currencyKey][currentRoundForRate[currencyKey]].rate) return;
@@ -475,7 +420,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 continue;
             }
 
-            _setRate(currencyKey, 0, newRates[i], timeSent);
+            _setRate(currencyKey, newRates[i], timeSent);
         }
 
         emit RatesUpdated(currencyKeys, newRates);
@@ -545,12 +490,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-        RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
-
-        // Try to get rate from cache if possible
-        if (update.rate > 0) {
-            return (update.rate, update.time);
-        }
 
         if (aggregator != AggregatorV2V3Interface(0)) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
@@ -564,6 +503,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                     abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return (_formatAggregatorAnswer(currencyKey, answer), updatedAt);
             }
+        } else {
+            RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
+            return (update.rate, update.time);
         }
     }
 
