@@ -60,7 +60,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         oracle = _oracle;
 
         // The sUSD rate is always 1 on round 1 and is never stale.
-        currentRoundForRate["sUSD"]++;
+        currentRoundForRate["sUSD"] = 1;
         _rates["sUSD"][currentRoundForRate["sUSD"]] = RateAndUpdatedTime({
             rate: uint216(SafeDecimalMath.unit()),
             time: uint40(now)
@@ -152,7 +152,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     {
         uint time;
         (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        // cacheing to save external call
+        // cacheing to save external call and skip for sUSD
         if (sourceCurrencyKey != "sUSD") _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
@@ -160,7 +160,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             value = sourceAmount;
         } else {
             (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-            // cacheing to save external call
+            // cacheing to save external call and skip for sUSD
             if (destinationCurrencyKey != "sUSD") _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
             if (destinationRate > 0) {
