@@ -409,15 +409,20 @@
 			"released": "both"
 		},
 		{
+			"sip": 188,
+			"layer": "base",
+			"sources": []
+		},
+		{
 			"sip": 192,
 			"layer": "both",
 			"sources": ["WrapperFactory"],
 			"released": "both"
 		},
 		{
-			"sip": 188,
-			"layer": "base",
-			"sources": []
+			"sip": 194,
+			"layer": "ovm",
+			"sources": ["Synthetix"]
 		}
 	],
 	"releases": [
