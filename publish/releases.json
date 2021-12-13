@@ -416,7 +416,7 @@
 		},
 		{
 			"sip": 188,
-			"layer": "both",
+			"layer": "base",
 			"sources": []
 		}
 	],
