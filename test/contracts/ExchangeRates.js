@@ -1859,19 +1859,18 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('roundIds for historical rates', () => {
-			it('getCurrentRoundId() by default is 0 for all synths except sUSD which is 1', async () => {
+			it('getCurrentRoundId() by default is 0 for all synths including sUSD', async () => {
 				// Note: rates that were set in the truffle migration will be at 1, so we need to check
 				// other synths
 				assert.equal(await instance.getCurrentRoundId(sJPY), '0');
 				assert.equal(await instance.getCurrentRoundId(sBNB), '0');
-				assert.equal(await instance.getCurrentRoundId(sUSD), '1');
+				assert.equal(await instance.getCurrentRoundId(sUSD), '0');
 			});
 
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() shows first entry for sUSD', async () => {
-				const timeOfsUSDRateSetOnInit = await instance.lastRateUpdateTimes(sUSD);
 				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3', '0'), [
 					[toUnit('1'), '0', '0'],
-					[timeOfsUSDRateSetOnInit, '0', '0'],
+					['0', '0', '0'],
 				]);
 			});
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() returns 0s for other currency keys', async () => {

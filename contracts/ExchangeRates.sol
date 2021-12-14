@@ -24,8 +24,13 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
     bytes32 public constant SUSD = "sUSD";
 
-    // Exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
-    mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) private _rates;
+    // internal oracle rates and udpate times stored by currency code, e.g. 'SNX', or 'sUSD'
+    // TODO: implement sip-81 to remove internal oracles. the difficulty is that almost all tests
+    //  use internal oracles to set prices, so almost all tests will need to use mocked aggregators instead
+    mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) public deprecatedOracleRates;
+
+    // cached exchange rates and update times stored by currency code, e.g. 'SNX', or 'sUSD'
+    mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) public cachedRates;
 
     // The address of the oracle which pushes rate updates to this contract
     address public oracle;
@@ -44,7 +49,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     /// @notice ID for the current round
     /// @param currencyKey is the currency key of the synth to be exchanged
     /// @return the current exchange round ID
-    mapping(bytes32 => uint) public currentRoundForRate;
+    mapping(bytes32 => uint) public deprecatedOracleRound;
 
     //
     // ========== CONSTRUCTOR ==========
@@ -61,10 +66,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         oracle = _oracle;
 
         // The sUSD rate is always 1 on round 1 and is never stale.
-        currentRoundForRate[SUSD] = 1;
-        _rates[SUSD][currentRoundForRate[SUSD]] = RateAndUpdatedTime({
+        deprecatedOracleRound[SUSD] = 1;
+        deprecatedOracleRates[SUSD][1] = RateAndUpdatedTime({
             rate: uint216(SafeDecimalMath.unit()),
-            time: uint40(now)
+            time: uint40(block.timestamp)
         });
 
         internalUpdateRates(_currencyKeys, _newRates, now);
@@ -90,9 +95,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function deleteRate(bytes32 currencyKey) external onlyOracle {
         require(_getRate(currencyKey) > 0, "Rate is zero");
 
-        delete _rates[currencyKey][currentRoundForRate[currencyKey]];
+        delete deprecatedOracleRates[currencyKey][deprecatedOracleRound[currencyKey]];
 
-        currentRoundForRate[currencyKey]--;
+        deprecatedOracleRound[currencyKey]--;
 
         emit RateDeleted(currencyKey);
     }
@@ -154,7 +159,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint time;
         (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         // cacheing to save external call
-        _setRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
+        _cacheRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
             destinationRate = sourceRate;
@@ -162,7 +167,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         } else {
             (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
             // cacheing to save external call
-            _setRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
+            _cacheRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
             // prevent divide-by 0 error (this happens if the dest is not a valid rate)
             if (destinationRate > 0) {
                 // Calculate the effective value by going from source -> USD -> destination
@@ -203,6 +208,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint startingTimestamp,
         uint timediff
     ) external view returns (uint) {
+        if (currencyKey == SUSD) {
+            // no rounds or update timestamps for sUSD
+            return 0;
+        }
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (true) {
@@ -430,31 +439,47 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    /// @notice setting the rate for a currency
+    /// @notice setting the cached rate for a currency
     /// @param currencyKey the currency key
     /// @param roundId the round id
     /// @param rate the rate to set
     /// @param time the time of the rate
-    function _setRate(
+    function _cacheRate(
+        bytes32 currencyKey,
+        uint256 roundId,
+        uint256 rate,
+        uint256 time
+    ) internal {
+        // No caching for sUSD
+        if (currencyKey == SUSD) {
+            return;
+        }
+
+        require(roundId > 0, "Round id must be greater than 0.");
+
+        // skip writing if the rate is the same
+        if (rate == cachedRates[currencyKey][roundId].rate) {
+            return;
+        }
+
+        // write to cache
+        cachedRates[currencyKey][roundId] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
+    }
+
+    /// @notice setting the deprecated internal oracle rate for a currency
+    /// @param currencyKey the currency key
+    /// @param roundId the round id
+    /// @param rate the rate to set
+    /// @param time the time of the rate
+    function _setDeprecatedOracleRate(
         bytes32 currencyKey,
         uint256 roundId,
         uint256 rate,
         uint256 time
     ) internal {
         require(roundId > 0, "Round id must be greater than 0.");
-
-        // No caching for sUSD
-        if (currencyKey == SUSD) return;
-
-        currentRoundForRate[currencyKey] = roundId;
-
-        // skip writing if the rate is the same
-        if (rate == _rates[currencyKey][currentRoundForRate[currencyKey]].rate) return;
-
-        _rates[currencyKey][currentRoundForRate[currencyKey]] = RateAndUpdatedTime({
-            rate: uint216(rate),
-            time: uint40(time)
-        });
+        deprecatedOracleRound[currencyKey] = roundId;
+        deprecatedOracleRates[currencyKey][roundId] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
     }
 
     function internalUpdateRates(
@@ -479,8 +504,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 continue;
             }
 
-            currentRoundForRate[currencyKey]++;
-            _setRate(currencyKey, currentRoundForRate[currencyKey], newRates[i], timeSent);
+            deprecatedOracleRound[currencyKey]++;
+            _setDeprecatedOracleRate(currencyKey, deprecatedOracleRound[currencyKey], newRates[i], timeSent);
         }
 
         emit RatesUpdated(currencyKeys, newRates);
@@ -517,8 +542,16 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory entry) {
-        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        // short circuit sUSD
+        if (currencyKey == SUSD) {
+            return
+                RateAndUpdatedTime({
+                    rate: uint216(SafeDecimalMath.unit()),
+                    time: uint40(block.timestamp) // never stale
+                });
+        }
 
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         if (aggregator != AggregatorV2V3Interface(0)) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
             // so let's call it low-level to suppress any reverts
@@ -533,30 +566,39 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 entry.time = uint40(updatedAt);
             }
         } else {
-            uint roundId = currentRoundForRate[currencyKey];
-            entry = _rates[currencyKey][roundId];
+            uint roundId = deprecatedOracleRound[currencyKey];
+            entry = deprecatedOracleRates[currencyKey][roundId];
         }
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
+        if (currencyKey == SUSD) {
+            // sUSD has no rounds
+            return 0;
+        }
 
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         if (aggregator != AggregatorV2V3Interface(0)) {
             return aggregator.latestRound();
         } else {
-            return currentRoundForRate[currencyKey];
+            return deprecatedOracleRound[currencyKey];
         }
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-        RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
-
-        // Try to get rate from cache if possible
-        if (update.rate > 0) {
-            return (update.rate, update.time);
+        // short circuit sUSD
+        if (currencyKey == SUSD) {
+            // time is 0 because there are no update times for sUSD
+            return (SafeDecimalMath.unit(), 0);
         }
 
+        // Try to get rate from cache if possible
+        RateAndUpdatedTime memory cachedRate = cachedRates[currencyKey][roundId];
+        if (cachedRate.rate > 0) {
+            return (cachedRate.rate, cachedRate.time);
+        }
+
+        AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         if (aggregator != AggregatorV2V3Interface(0)) {
             // this view from the aggregator is the most gas efficient but it can throw when there's no data,
             // so let's call it low-level to suppress any reverts
@@ -569,6 +611,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                     abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return (_formatAggregatorAnswer(currencyKey, answer), updatedAt);
             }
+        } else {
+            // use the deprecated oracle path
+            RateAndUpdatedTime memory internalOracleRate = deprecatedOracleRates[currencyKey][roundId];
+            return (internalOracleRate.rate, internalOracleRate.time);
         }
     }
 

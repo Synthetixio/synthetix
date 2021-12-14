@@ -2594,6 +2594,9 @@ contract('Exchanger (spec tests)', async accounts => {
 					const ethOnCL = toUnit('200'); // 1 over the ethOnDex
 
 					beforeEach(async () => {
+						// set dynamic fee to a low value because it won't accept 0 prices rounds
+						await systemSettings.setExchangeDynamicFeeRounds('3', { from: owner });
+
 						// CL aggregator with past price data
 						const aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });

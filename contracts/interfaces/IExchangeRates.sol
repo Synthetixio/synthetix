@@ -15,8 +15,6 @@ interface IExchangeRates {
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
-    function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
-
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory);
 
     function effectiveValue(
