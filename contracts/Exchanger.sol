@@ -470,7 +470,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        entry.exchangeFeeRate = _feeRateForExchange(
+        entry.exchangeFeeRate = _feeRateForExchangeAtRound(
             sourceCurrencyKey,
             destinationCurrencyKey,
             entry.roundIdForSrc,
@@ -758,7 +758,22 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint exchangeFeeRate)
     {
-        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey, 0, 0);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+    }
+
+    /// @notice Calculate the exchange fee for a given source and destination currency key
+    /// @param sourceCurrencyKey The source currency key
+    /// @param destinationCurrencyKey The destination currency key
+    /// @return The exchange fee rate
+    /// @return The exchange dynamic fee rate
+    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        view
+        returns (uint exchangeFeeRate)
+    {
+        // Get the exchange fee rate as per destination currencyKey
+        uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
+        return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
@@ -768,7 +783,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param roundIdForDest The round id of the target currency.
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate
-    function _feeRateForExchange(
+    function _feeRateForExchangeAtRound(
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
@@ -777,7 +792,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
         return
-            _calculateFeeRateFromExchangeSynths(
+            _calculateFeeRateFromExchangeSynthsAtRound(
                 baseRate,
                 sourceCurrencyKey,
                 destinationCurrencyKey,
@@ -789,12 +804,29 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _calculateFeeRateFromExchangeSynths(
         uint exchangeFeeRate,
         bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    ) internal view returns (uint) {
+        uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey);
+        exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(_getDynamicFeeForExchange(sourceCurrencyKey));
+        uint maxDynamicFee = getExchangeMaxDynamicFee();
+
+        exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
+        // Cap to max exchange dynamic fee
+        exchangeFeeRate = exchangeFeeRate > maxDynamicFee ? maxDynamicFee : exchangeFeeRate;
+        return exchangeFeeRate;
+    }
+
+    function _calculateFeeRateFromExchangeSynthsAtRound(
+        uint exchangeFeeRate,
+        bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint) {
-        uint exchangeDynamicFeeRate = _getDynamicFeeForExchange(destinationCurrencyKey, roundIdForDest);
-        exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(_getDynamicFeeForExchange(sourceCurrencyKey, roundIdForSrc));
+        uint exchangeDynamicFeeRate = _getDynamicFeeForExchangeAtRound(destinationCurrencyKey, roundIdForDest);
+        exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(
+            _getDynamicFeeForExchangeAtRound(sourceCurrencyKey, roundIdForSrc)
+        );
         uint maxDynamicFee = getExchangeMaxDynamicFee();
 
         exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
@@ -805,14 +837,26 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     /// @notice Get dynamic fee for a given currency key (SIP-184)
     /// @param currencyKey The given currency key
-    /// @param roundId The round id
     /// @return The dyanmic fee
-    function _getDynamicFeeForExchange(bytes32 currencyKey, uint roundId) internal view returns (uint dynamicFee) {
+    function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {
         // No dynamic fee for sUSD
         if (currencyKey == sUSD) return 0;
         (uint threshold, uint weightDecay, uint rounds) = getExchangeDynamicFeeData();
         uint[] memory prices;
-        if (roundId == 0) roundId = exchangeRates().getCurrentRoundId(currencyKey);
+        uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds, roundId);
+        dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
+    }
+
+    /// @notice Get dynamic fee for a given currency key (SIP-184)
+    /// @param currencyKey The given currency key
+    /// @param roundId The round id
+    /// @return The dyanmic fee
+    function _getDynamicFeeForExchangeAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint dynamicFee) {
+        // No dynamic fee for sUSD
+        if (currencyKey == sUSD) return 0;
+        (uint threshold, uint weightDecay, uint rounds) = getExchangeDynamicFeeData();
+        uint[] memory prices;
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds, roundId);
         dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
     }
@@ -850,7 +894,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey, 0, 0);
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         uint destinationAmount;
         uint destinationRate;

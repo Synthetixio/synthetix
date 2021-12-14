@@ -724,7 +724,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							from: oracle,
 						}
 					);
-					// Disable Dynamic Fee by setting rounds to 0
+					// Disable Dynamic Fee to neglect it
 					await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 				});
 				describe('and the exchange fee rate is 1% for easier human consumption', () => {
@@ -2749,6 +2749,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						let exchangeFeeRate;
 
 						beforeEach(async () => {
+							// Disable Dynamic Fee to neglect it
+							await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 							await systemSettings.setAtomicExchangeFeeRate(sETH, feeRateOverride, {
 								from: owner,
 							});
