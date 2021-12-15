@@ -746,7 +746,7 @@
 				"major": 2,
 				"minor": 56
 			},
-			"sips": []
+			"sips": [188]
 		},
 		{
 			"name": "Alhena (Optimism)",
@@ -756,7 +756,7 @@
 				"major": 2,
 				"minor": 56
 			},
-			"sips": []
+			"sips": [194, 195]
 		},
 		{
 			"name": "Peacock",
