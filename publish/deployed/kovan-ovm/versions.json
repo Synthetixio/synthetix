@@ -979,8 +979,29 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x752b2e77769a8832E657CB9f7318543e03c13627",
+				"status": "replaced",
+				"keccak256": "0x87c92d55af4f4b01932ec25770439770836ed60b9652a3f4ab1ec6e0d82d302a",
+				"replaced_in": "v2.56.1-alpha"
+			}
+		}
+	},
+	"v2.56.1-alpha": {
+		"tag": "v2.56.1-alpha",
+		"fulltag": "v2.56.1-alpha",
+		"release": "Alhena",
+		"network": "kovan",
+		"date": "2021-12-15T05:19:57-05:00",
+		"commit": "64f28868700af3cbc1fae6522d7fd29d059d7577",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x099B3881d63d3Eef0ec32783Aa64B726672213E2",
 				"status": "current",
 				"keccak256": "0x87c92d55af4f4b01932ec25770439770836ed60b9652a3f4ab1ec6e0d82d302a"
+			},
+			"CollateralEth": {
+				"address": "0xc7960401a5Ca5A201d41Cf6532C7d2803f8D5Ce4",
+				"status": "current",
+				"keccak256": "0xd83c3667bcacd4d33cf0fc649cee03d85e7d3914abb7ce6c9898e6ee1d66da81"
 			}
 		}
 	}
