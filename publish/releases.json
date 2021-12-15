@@ -407,6 +407,27 @@
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
 			"released": "both"
+		},
+		{
+			"sip": 188,
+			"layer": "base",
+			"sources": []
+		},
+		{
+			"sip": 192,
+			"layer": "both",
+			"sources": ["WrapperFactory"],
+			"released": "both"
+		},
+		{
+			"sip": 194,
+			"layer": "ovm",
+			"sources": ["Synthetix"]
+		},
+		{
+			"sip": 195,
+			"layer": "ovm",
+			"sources": ["CollateralEth"]
 		}
 	],
 	"releases": [
@@ -701,22 +722,22 @@
 		},
 		{
 			"name": "Atria",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 55
 			},
-			"sips": []
+			"sips": [192]
 		},
 		{
 			"name": "Atria (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 55
 			},
-			"sips": []
+			"sips": [192]
 		},
 		{
 			"name": "Alhena",
