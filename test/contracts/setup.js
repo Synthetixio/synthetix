@@ -108,7 +108,7 @@ const setupContract = async ({
 	skipPostDeploy = false,
 	properties = {},
 }) => {
-	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
+	const [deployerAccount, owner, , fundsWallet] = accounts;
 
 	const artifact = artifacts.require(contract);
 
@@ -146,20 +146,8 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
-		ExchangeRates: [
-			owner,
-			oracle,
-			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')],
-			[toWei('0.2', 'ether')],
-		],
-		ExchangeRatesWithDexPricing: [
-			owner,
-			oracle,
-			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')],
-			[toWei('0.2', 'ether')],
-		],
+		ExchangeRates: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeRatesWithDexPricing: [owner, tryGetAddressOf('AddressResolver')],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
