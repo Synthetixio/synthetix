@@ -27,13 +27,23 @@ async function setupPriceAggregators(exchangeRates, owner, keys, decimalsArray =
 	}
 }
 
+/// same as setupPriceAggregators, but checks if an aggregator the that currency is already setup up
+async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
+	const missingKeys = [];
+	for (let i = 0; i < keys.length; i++) {
+		if ((await exchangeRates.aggregators(keys[i])) === ZERO_ADDRESS) {
+			missingKeys.push(keys[i]);
+		}
+	}
+	await setupPriceAggregators(exchangeRates, owner, missingKeys);
+}
 // utility function update rates for aggregators that are already set up
 /// @param exchangeRates instance of ExchangeRates contract
 /// @param owner owner account of exchangeRates contract for adding an aggregator
 /// @param keys array of bytes32 currency keys
 /// @param rates array of BN rates
 /// @param timestamp optional timestamp for the update, currentTime() is used by default
-async function updateAggregatorRates(exchangeRates, owner, keys, rates, timestamp = undefined) {
+async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = undefined) {
 	timestamp = timestamp || (await currentTime());
 	for (let i = 0; i < keys.length; i++) {
 		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
@@ -124,23 +134,11 @@ module.exports = {
 	updateAggregatorRates,
 
 	async updateRatesWithDefaults({ exchangeRates, owner, debtCache }) {
-		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
-			'SNX',
-			'sAUD',
-			'sEUR',
-			'sBTC',
-			'iBTC',
-			'sETH',
-			'ETH',
-		].map(toBytes32);
-
-		await updateAggregatorRates(
-			exchangeRates,
-			owner,
-			[SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH],
-			['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit)
-		);
-
+		const keys = ['SNX', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
+		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
+		// set up any missing aggregators
+		await setupMissingPriceAggregators(exchangeRates, owner, keys);
+		await updateAggregatorRates(exchangeRates, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 

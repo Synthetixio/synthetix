@@ -2778,7 +2778,6 @@ contract('Exchanger (spec tests)', async accounts => {
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
-										owner,
 										[sETH, sEUR],
 										[toUnit(baseRate * 3).toString(), toUnit('1.9')]
 									);
@@ -2805,7 +2804,6 @@ contract('Exchanger (spec tests)', async accounts => {
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
-										owner,
 										[sETH, sEUR],
 										[toUnit(baseRate * 1.1).toString(), toUnit('10')]
 									);
@@ -3418,7 +3416,7 @@ contract('Exchanger (spec tests)', async accounts => {
 	};
 
 	async function updateRates(keys, rates) {
-		await updateAggregatorRates(exchangeRates, owner, keys, rates);
+		await updateAggregatorRates(exchangeRates, keys, rates);
 	}
 
 	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {

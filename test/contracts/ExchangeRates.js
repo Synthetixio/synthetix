@@ -2025,7 +2025,7 @@ contract('Exchange Rates', async accounts => {
 
 	// utility function update rates for aggregators that are already set up
 	async function updateRates(keys, rates, timestamp = undefined) {
-		await updateAggregatorRates(instance, owner, keys, rates, timestamp);
+		await updateAggregatorRates(instance, keys, rates, timestamp);
 	}
 
 	describe('Using ExchangeRates', () => {
