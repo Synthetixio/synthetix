@@ -423,6 +423,11 @@
 			"sip": 194,
 			"layer": "ovm",
 			"sources": ["Synthetix"]
+		},
+		{
+			"sip": 195,
+			"layer": "ovm",
+			"sources": ["CollateralEth"]
 		}
 	],
 	"releases": [
