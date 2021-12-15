@@ -17,6 +17,8 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	convertToDecimals,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
@@ -1987,22 +1989,12 @@ contract('Exchange Rates', async accounts => {
 
 	// utility function to setup price aggregators
 	async function setupAggregators(keys, decimalsArray = []) {
-		let aggregator;
-		for (let i = 0; i < keys.length; i++) {
-			aggregator = await MockAggregator.new({ from: owner });
-			await aggregator.setDecimals(decimalsArray.length > 0 ? decimalsArray[i] : 18);
-			await instance.addAggregator(keys[i], aggregator.address, { from: owner });
-		}
+		await setupPriceAggregators(instance, owner, keys, decimalsArray);
 	}
 
 	// utility function update rates for aggregators that are already set up
 	async function updateRates(keys, rates, timestamp = undefined) {
-		let aggregator;
-		timestamp = timestamp || (await currentTime());
-		for (let i = 0; i < keys.length; i++) {
-			aggregator = await MockAggregator.at(await instance.aggregators(keys[i]));
-			await aggregator.setLatestAnswer(rates[i], timestamp);
-		}
+		await updateAggregatorRates(instance, keys, rates, timestamp);
 	}
 
 	describe('Using ExchangeRates', () => {
