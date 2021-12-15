@@ -219,7 +219,7 @@ module.exports = async ({
 		}
 	}
 
-	const addressesChunkSize = useOvm ? 5 : 20;
+	const addressesChunkSize = 20;
 	let batchCounter = 1;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
