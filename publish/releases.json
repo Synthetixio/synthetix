@@ -411,7 +411,8 @@
 		{
 			"sip": 188,
 			"layer": "base",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 192,
@@ -422,12 +423,14 @@
 		{
 			"sip": 194,
 			"layer": "ovm",
-			"sources": ["Synthetix"]
+			"sources": ["Synthetix"],
+			"released": "both"
 		},
 		{
 			"sip": 195,
 			"layer": "ovm",
-			"sources": ["CollateralEth"]
+			"sources": ["CollateralEth"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -741,7 +744,7 @@
 		},
 		{
 			"name": "Alhena",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 56
@@ -751,7 +754,7 @@
 		{
 			"name": "Alhena (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 56
