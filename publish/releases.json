@@ -409,10 +409,25 @@
 			"released": "both"
 		},
 		{
+			"sip": 188,
+			"layer": "base",
+			"sources": []
+		},
+		{
 			"sip": 192,
 			"layer": "both",
 			"sources": ["WrapperFactory"],
 			"released": "both"
+		},
+		{
+			"sip": 194,
+			"layer": "ovm",
+			"sources": ["Synthetix"]
+		},
+		{
+			"sip": 195,
+			"layer": "ovm",
+			"sources": ["CollateralEth"]
 		}
 	],
 	"releases": [
@@ -731,7 +746,7 @@
 				"major": 2,
 				"minor": 56
 			},
-			"sips": []
+			"sips": [188]
 		},
 		{
 			"name": "Alhena (Optimism)",
@@ -741,7 +756,7 @@
 				"major": 2,
 				"minor": 56
 			},
-			"sips": []
+			"sips": [194, 195]
 		},
 		{
 			"name": "Peacock",
