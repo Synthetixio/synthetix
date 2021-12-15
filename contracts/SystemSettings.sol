@@ -7,14 +7,8 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/ISystemSettings.sol";
 import "./SystemSettingsLib.sol";
 
-// Libraries
-import "./SafeDecimalMath.sol";
-
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
-
     bytes32 public constant CONTRACT_NAME = "SystemSettings";
 
     // No more synths may be issued than the value of SNX backing them.
@@ -257,22 +251,30 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
-        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
-        emit TradingRewardsEnabled(_tradingRewardsEnabled);
+        SystemSettingsLib.setTradingRewardsEnabled(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_TRADING_REWARDS_ENABLED,
+            _tradingRewardsEnabled
+        );
     }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
-        emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
+        SystemSettingsLib.setWaitingPeriodSecs(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_TRADING_REWARDS_ENABLED,
+            _waitingPeriodSecs
+        );
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setWaitingPeriodSecs(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
+            SETTING_TRADING_REWARDS_ENABLED,
             _priceDeviationThresholdFactor
         );
-        emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
     function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
@@ -286,49 +288,50 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setFeePeriodDuration(uint _feePeriodDuration) external onlyOwner {
-        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
-        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
-
-        emit FeePeriodDurationUpdated(_feePeriodDuration);
+        SystemSettingsLib.setFeePeriodDuration(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            _feePeriodDuration,
+            MIN_FEE_PERIOD_DURATION,
+            MAX_FEE_PERIOD_DURATION
+        );
     }
 
     function setTargetThreshold(uint _percent) external onlyOwner {
-        require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
-
-        uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_TARGET_THRESHOLD, _targetThreshold);
-
-        emit TargetThresholdUpdated(_targetThreshold);
+        SystemSettingsLib.setTargetThreshold(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            _percent,
+            MAX_TARGET_THRESHOLD
+        );
     }
 
     function setLiquidationDelay(uint time) external onlyOwner {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY, time);
-
-        emit LiquidationDelayUpdated(time);
+        SystemSettingsLib.setLiquidationDelay(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            time,
+            MAX_LIQUIDATION_DELAY,
+            MIN_LIQUIDATION_DELAY
+        );
     }
 
     // The collateral / issuance ratio ( debt / collateral ) is higher when there is less collateral backing their debt
     // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral value to cover debt and liquidation penalty
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(
-            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty())),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
+        SystemSettingsLib.setLiquidationRatio(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            _liquidationRatio,
+            MAX_LIQUIDATION_RATIO,
+            getLiquidationPenalty(),
+            getIssuanceRatio(),
+            RATIO_FROM_TARGET_BUFFER
         );
-
-        // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
-        // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
-        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO, _liquidationRatio);
-
-        emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
@@ -550,13 +553,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
-    event TradingRewardsEnabled(bool enabled);
-    event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
-    event PriceDeviationThresholdUpdated(uint threshold);
-    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
     event TargetThresholdUpdated(uint newTargetThreshold);
-    event LiquidationDelayUpdated(uint newDelay);
-    event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
