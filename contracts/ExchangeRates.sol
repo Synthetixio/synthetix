@@ -359,23 +359,23 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 });
         } else {
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-            require(aggregator != AggregatorV2V3Interface(0), "invalid aggregator");
+            if (aggregator != AggregatorV2V3Interface(0)) {
+                // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+                // so let's call it low-level to suppress any reverts
+                bytes memory payload = abi.encodeWithSignature("latestRoundData()");
+                // solhint-disable avoid-low-level-calls
+                (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
-            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
-            // so let's call it low-level to suppress any reverts
-            bytes memory payload = abi.encodeWithSignature("latestRoundData()");
-            // solhint-disable avoid-low-level-calls
-            (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
-
-            if (success) {
-                (, int256 answer, , uint256 updatedAt, ) =
-                    abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
-                return
-                    RateAndUpdatedTime({
-                        rate: uint216(_formatAggregatorAnswer(currencyKey, answer)),
-                        time: uint40(updatedAt)
-                    });
-            }
+                if (success) {
+                    (, int256 answer, , uint256 updatedAt, ) =
+                        abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
+                    return
+                        RateAndUpdatedTime({
+                            rate: uint216(_formatAggregatorAnswer(currencyKey, answer)),
+                            time: uint40(updatedAt)
+                        });
+                } // else return defaults, to avoid reverting in views
+            } // else return defaults, to avoid reverting in views
         }
     }
 
@@ -384,8 +384,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return 0; // no roundIds for sUSD
         }
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-        require(aggregator != AggregatorV2V3Interface(0), "invalid aggregator");
-        return aggregator.latestRound();
+        if (aggregator != AggregatorV2V3Interface(0)) {
+            return aggregator.latestRound();
+        } // else return defaults, to avoid reverting in views
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
@@ -396,21 +397,20 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return (SafeDecimalMath.unit(), 0);
         } else {
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-            require(aggregator != AggregatorV2V3Interface(0), "invalid aggregator");
 
-            // this view from the aggregator is the most gas efficient but it can throw when there's no data,
-            // so let's call it low-level to suppress any reverts
-            bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)", roundId);
-            // solhint-disable avoid-low-level-calls
-            (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
+            if (aggregator != AggregatorV2V3Interface(0)) {
+                // this view from the aggregator is the most gas efficient but it can throw when there's no data,
+                // so let's call it low-level to suppress any reverts
+                bytes memory payload = abi.encodeWithSignature("getRoundData(uint80)", roundId);
+                // solhint-disable avoid-low-level-calls
+                (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
-            if (success) {
-                (, int256 answer, , uint256 updatedAt, ) =
-                    abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
-                return (_formatAggregatorAnswer(currencyKey, answer), updatedAt);
-            }
-
-            // if failed return defaults (0, 0)
+                if (success) {
+                    (, int256 answer, , uint256 updatedAt, ) =
+                        abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
+                    return (_formatAggregatorAnswer(currencyKey, answer), updatedAt);
+                } // else return defaults, to avoid reverting in views
+            } // else return defaults, to avoid reverting in views
         }
     }
 

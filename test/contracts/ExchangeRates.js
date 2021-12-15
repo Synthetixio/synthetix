@@ -106,10 +106,16 @@ contract('Exchange Rates', async accounts => {
 				assert.equal(rateIsStale, false);
 			});
 
-			it('ensure reverts stale if not set', async () => {
+			// it('ensure reverts stale if not set', async () => {
+			// 	// Set up rates for test
+			// 	await systemSettings.setRateStalePeriod(30, { from: owner });
+			// 	await assert.revert(instance.rateIsStale(toBytes32('GOLD')), 'invalid aggregator');
+			// });
+
+			it('ensure stale if not set', async () => {
 				// Set up rates for test
 				await systemSettings.setRateStalePeriod(30, { from: owner });
-				await assert.revert(instance.rateIsStale(toBytes32('GOLD')), 'invalid aggregator');
+				assert.equal(await instance.rateIsStale(toBytes32('GOLD')), true);
 			});
 
 			it('make sure anyone can check if rate is stale', async () => {
@@ -416,18 +422,26 @@ contract('Exchange Rates', async accounts => {
 					assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
 				});
 
-				it('should revert when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
-					await assert.revert(
-						instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')),
-						'invalid aggregator'
-					);
+				// it('should revert when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
+				// 	await assert.revert(
+				// 		instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')),
+				// 		'invalid aggregator'
+				// 	);
+				// });
+
+				it('should return 0 when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
+					assert.equal(await instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')), 0);
 				});
 
+				// it('should revert when relying on a non-existing src rate in effectiveValue', async () => {
+				// 	await assert.revert(
+				// 		instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), SNX),
+				// 		'invalid aggregator'
+				// 	);
+				// });
+
 				it('should revert when relying on a non-existing src rate in effectiveValue', async () => {
-					await assert.revert(
-						instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), SNX),
-						'invalid aggregator'
-					);
+					assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), SNX), 0);
 				});
 
 				it('effectiveValueAndRates() should return rates as well with sUSD on one side', async () => {
@@ -797,15 +811,21 @@ contract('Exchange Rates', async accounts => {
 											await assert.invalidOpcode(instance.aggregatorKeys(1));
 										});
 									});
-									it('when the ratesAndInvalidForCurrencies is queried it reverts', async () => {
-										await assert.revert(
-											instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]),
-											'invalid aggregator'
+									// it('when the ratesAndInvalidForCurrencies is queried it reverts', async () => {
+									// 	await assert.revert(
+									// 		instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]),
+									// 		'invalid aggregator'
+									// 	);
+									// });
+									it('when the ratesAndInvalidForCurrencies is queried it returns 0', async () => {
+										assert.deepEqual(
+											await instance.ratesAndInvalidForCurrencies([sJPY, sXTZ, sUSD]),
+											[[0, toUnit(newRateXTZ), toUnit(1)], true]
 										);
 									});
 									describe('when rateAndInvalid is queried', () => {
-										it('then JPY reverts', async () => {
-											await assert.revert(instance.rateAndInvalid(sJPY), 'invalid aggregator');
+										it('then JPY returns true', async () => {
+											assert.deepEqual(await instance.rateAndInvalid(sJPY), [0, true]);
 										});
 
 										it('other rates are fine', async () => {
@@ -941,9 +961,13 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('roundIds for historical rates', () => {
-			it('getCurrentRoundId() reverts for unknown currencies', async () => {
-				await assert.revert(instance.getCurrentRoundId(sJPY), 'invalid aggregator');
-				await assert.revert(instance.getCurrentRoundId(sBNB), 'invalid aggregator');
+			// it('getCurrentRoundId() reverts for unknown currencies', async () => {
+			// 	await assert.revert(instance.getCurrentRoundId(sJPY), 'invalid aggregator');
+			// 	await assert.revert(instance.getCurrentRoundId(sBNB), 'invalid aggregator');
+			// });
+			it('getCurrentRoundId() returns 0 for unknown currencies', async () => {
+				assert.equal(await instance.getCurrentRoundId(sJPY), 0);
+				assert.equal(await instance.getCurrentRoundId(sBNB), 0);
 			});
 
 			it('getCurrentRoundId() is 0 for currencies with no updates', async () => {
@@ -994,11 +1018,11 @@ contract('Exchange Rates', async accounts => {
 						});
 					});
 					describe('rateAndTimestampAtRound()', () => {
-						it('when invoked for no price, reverts', async () => {
-							await assert.revert(
-								instance.rateAndTimestampAtRound(toBytes32('TEST'), '0'),
-								'invalid aggregator'
-							);
+						it('when invoked for no price returns 0', async () => {
+							assert.deepEqual(await instance.rateAndTimestampAtRound(toBytes32('TEST'), '0'), [
+								0,
+								0,
+							]);
 						});
 						it('when invoked for an aggregator', async () => {
 							const assertRound = async ({ roundId }) => {
@@ -1017,10 +1041,17 @@ contract('Exchange Rates', async accounts => {
 
 					describe('ratesAndUpdatedTimeForCurrencyLastNRounds()', () => {
 						describe('when invoked for a non-existant currency', () => {
-							it('then it reverts', async () => {
-								await assert.revert(
-									instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'),
-									'invalid aggregator'
+							// it('then it reverts', async () => {
+							// 	await assert.revert(
+							// 		instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'),
+							// 		'invalid aggregator'
+							// 	);
+							// });
+							it('then it returns zeros', async () => {
+								const fiveZeros = new Array(5).fill('0');
+								assert.deepEqual(
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'),
+									[fiveZeros, fiveZeros]
 								);
 							});
 						});
@@ -1994,7 +2025,7 @@ contract('Exchange Rates', async accounts => {
 
 	// utility function update rates for aggregators that are already set up
 	async function updateRates(keys, rates, timestamp = undefined) {
-		await updateAggregatorRates(instance, keys, rates, timestamp);
+		await updateAggregatorRates(instance, owner, keys, rates, timestamp);
 	}
 
 	describe('Using ExchangeRates', () => {

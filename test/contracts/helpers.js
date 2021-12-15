@@ -34,16 +34,10 @@ async function setupPriceAggregators(exchangeRates, owner, keys, decimalsArray =
 /// @param rates array of BN rates
 /// @param timestamp optional timestamp for the update, currentTime() is used by default
 async function updateAggregatorRates(exchangeRates, owner, keys, rates, timestamp = undefined) {
-	let aggregator;
 	timestamp = timestamp || (await currentTime());
 	for (let i = 0; i < keys.length; i++) {
 		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
-		if (aggregatorAddress === ZERO_ADDRESS) {
-			await setupPriceAggregators(exchangeRates, owner, [keys[i]]);
-		} else {
-			// use the existing one if possible
-			aggregator = await MockAggregator.at(aggregatorAddress);
-		}
+		const aggregator = await MockAggregator.at(aggregatorAddress);
 		// set the rate
 		await aggregator.setLatestAnswer(rates[i], timestamp);
 	}
