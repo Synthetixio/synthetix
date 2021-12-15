@@ -412,7 +412,7 @@
 			"sip": 188,
 			"layer": "base",
 			"sources": [],
-			"released": "both"
+			"released": "base"
 		},
 		{
 			"sip": 192,
@@ -424,13 +424,13 @@
 			"sip": 194,
 			"layer": "ovm",
 			"sources": ["Synthetix"],
-			"released": "both"
+			"released": "ovm"
 		},
 		{
 			"sip": 195,
 			"layer": "ovm",
 			"sources": ["CollateralEth"],
-			"released": "both"
+			"released": "ovm"
 		}
 	],
 	"releases": [
