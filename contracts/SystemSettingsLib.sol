@@ -35,7 +35,7 @@ library SystemSettingsLib {
         uint crossDomainMessageGasLimit,
         uint minCrossDomainGasLimit,
         uint maxCrossDomainGasLimit
-    ) public {
+    ) external {
         require(
             crossDomainMessageGasLimit >= minCrossDomainGasLimit && crossDomainMessageGasLimit <= maxCrossDomainGasLimit,
             "Out of range xDomain gasLimit"
@@ -43,13 +43,14 @@ library SystemSettingsLib {
         setUIntValue(flexibleStorage, settingContractName, gasLimitSettings, crossDomainMessageGasLimit);
     }
 
+    // slither-disable-next-line reentrancy-benign
     function setIssuanceRatio(
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
         uint _issuanceRatio,
         uint maxInssuranceRatio
-    ) public {
+    ) external {
         require(_issuanceRatio <= maxInssuranceRatio, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
         setUIntValue(flexibleStorage, settingContractName, settingName, _issuanceRatio);
         emit IssuanceRatioUpdated(_issuanceRatio);
@@ -60,7 +61,7 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         bool _tradingRewardsEnabled
-    ) public {
+    ) external {
         setBoolValue(flexibleStorage, settingContractName, settingName, _tradingRewardsEnabled);
         emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
@@ -70,7 +71,7 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         uint _waitingPeriodSecs
-    ) public {
+    ) external {
         setUIntValue(flexibleStorage, settingContractName, settingName, _waitingPeriodSecs);
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
@@ -80,7 +81,7 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         uint _priceDeviationThresholdFactor
-    ) public {
+    ) external {
         setUIntValue(flexibleStorage, settingContractName, settingName, _priceDeviationThresholdFactor);
         emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
@@ -92,7 +93,7 @@ library SystemSettingsLib {
         uint _feePeriodDuration,
         uint minFeePeriodDuration,
         uint maxFeePeriodDuration
-    ) public {
+    ) external {
         require(_feePeriodDuration >= minFeePeriodDuration, "value < MIN_FEE_PERIOD_DURATION");
         require(_feePeriodDuration <= maxFeePeriodDuration, "value > MAX_FEE_PERIOD_DURATION");
 
@@ -106,7 +107,7 @@ library SystemSettingsLib {
         bytes32 settingName,
         uint _percent,
         uint maxTargetThreshold
-    ) public {
+    ) external {
         require(_percent <= maxTargetThreshold, "Threshold too high");
         uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
 
@@ -121,7 +122,7 @@ library SystemSettingsLib {
         uint time,
         uint maxLiquidationDelay,
         uint minLiquidationDelay
-    ) public {
+    ) external {
         require(time <= maxLiquidationDelay, "Must be less than 30 days");
         require(time >= minLiquidationDelay, "Must be greater than 1 day");
 
@@ -138,7 +139,7 @@ library SystemSettingsLib {
         uint getLiquidationPenalty,
         uint getIssuanceRatio,
         uint ratioFromTargetBuffer
-    ) public {
+    ) external {
         require(
             _liquidationRatio <= maxLiquidationRatio.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty)),
             "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
