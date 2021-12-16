@@ -2037,6 +2037,9 @@ contract('Exchange Rates', async accounts => {
 				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
 			}));
 
+			// remove the pre-configured aggregator
+			await instance.removeAggregator(toBytes32('SNX'), { from: owner });
+
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });
 			aggregatorFastGasPrice = await MockAggregator.new({ from: owner });
@@ -2078,6 +2081,9 @@ contract('Exchange Rates', async accounts => {
 				accounts,
 				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
 			}));
+
+			// remove the pre-configured aggregator
+			await instance.removeAggregator(toBytes32('SNX'), { from: owner });
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });
