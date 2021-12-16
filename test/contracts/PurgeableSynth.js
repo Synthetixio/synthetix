@@ -72,7 +72,7 @@ contract('PurgeableSynth', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [SNX, sAUD, iETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, iETH]);
 	});
 
 	beforeEach(async () => {

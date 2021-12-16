@@ -138,6 +138,7 @@ module.exports = {
 		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
 		// set up any missing aggregators
 		await setupMissingPriceAggregators(exchangeRates, owner, keys);
+
 		await updateAggregatorRates(exchangeRates, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},

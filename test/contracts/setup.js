@@ -4,6 +4,8 @@ const { artifacts, web3, log } = require('hardhat');
 
 const { toWei } = web3.utils;
 const { toUnit } = require('../utils')();
+const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
+
 const {
 	toBytes32,
 	getUsers,
@@ -1119,6 +1121,11 @@ const setupAllContracts = async ({
 			.filter(contract => contract.setAddressResolver)
 			.map(mock => mock.setAddressResolver(returnObj['AddressResolver'].address))
 	);
+
+	// setup SNX price feed
+	const SNX = toBytes32('SNX');
+	await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
+	await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
 
 	return returnObj;
 };

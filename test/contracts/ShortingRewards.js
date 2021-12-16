@@ -35,7 +35,6 @@ contract('ShortingRewards', accounts => {
 	const iETH = toBytes32('iETH');
 	const sBTC = toBytes32('sBTC');
 	const iBTC = toBytes32('iBTC');
-	const SNX = toBytes32('SNX');
 
 	// Synthetix is the rewardsToken
 	let rewardsToken,
@@ -136,7 +135,7 @@ contract('ShortingRewards', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, iBTC, sETH, iETH, SNX]);
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, iBTC, sETH, iETH]);
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 

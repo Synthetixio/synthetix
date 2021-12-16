@@ -73,7 +73,7 @@ contract('Depot', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [SNX, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [ETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

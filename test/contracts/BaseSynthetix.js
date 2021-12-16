@@ -68,7 +68,7 @@ contract('BaseSynthetix', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, SNX, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

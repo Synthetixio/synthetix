@@ -12,7 +12,6 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
-	setupPriceAggregators,
 	updateAggregatorRates,
 } = require('./helpers');
 
@@ -77,8 +76,6 @@ contract('Liquidations', accounts => {
 				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
 		}));
-
-		await setupPriceAggregators(exchangeRates, owner, [SNX]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

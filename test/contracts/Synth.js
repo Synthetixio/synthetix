@@ -73,7 +73,7 @@ contract('Synth', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [SNX, sEUR]);
+		await setupPriceAggregators(exchangeRates, owner, [sEUR]);
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});

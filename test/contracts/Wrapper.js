@@ -21,7 +21,7 @@ const { toBN } = require('web3-utils');
 
 contract('Wrapper', async accounts => {
 	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
-	const [sETH, sUSD, ETH, SNX] = ['sETH', 'sUSD', 'ETH', 'SNX'].map(toBytes32);
+	const [sETH, sUSD, ETH] = ['sETH', 'sUSD', 'ETH'].map(toBytes32);
 
 	const ONE = toBN('1');
 
@@ -113,12 +113,8 @@ contract('Wrapper', async accounts => {
 			from: owner,
 		});
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH, SNX]);
-		await updateAggregatorRates(
-			exchangeRates,
-			[sETH, ETH, SNX],
-			['1500', '1500', '0.2'].map(toUnit)
-		);
+		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
+		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

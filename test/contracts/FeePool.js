@@ -109,7 +109,7 @@ contract('FeePool', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, SNX]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD]);
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});

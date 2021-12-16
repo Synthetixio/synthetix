@@ -170,7 +170,7 @@ contract('Rewards Integration Tests', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sBTC, iBTC, sETH, ETH]);
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
 

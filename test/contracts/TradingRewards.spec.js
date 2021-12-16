@@ -99,7 +99,7 @@ contract('TradingRewards', accounts => {
 				],
 			}));
 
-			await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC, SNX]);
+			await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
 		});
 
 		before('BRRRRRR', async () => {

@@ -113,7 +113,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, SNX, sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

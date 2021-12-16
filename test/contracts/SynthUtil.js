@@ -47,7 +47,7 @@ contract('SynthUtil', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, ownerAccount, [sBTC, iBTC, SNX]);
+		await setupPriceAggregators(exchangeRates, ownerAccount, [sBTC, iBTC]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

@@ -281,7 +281,7 @@ contract('DebtCache', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, SNX, sETH, ETH, iETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH, iETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
