@@ -80,13 +80,14 @@ module.exports = async ({
 			comment: 'Ensure the CollateralEth contract has all associated synths added',
 		});
 
+		const issueFeeRate = (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'];
 		await runStep({
 			contract: 'CollateralEth',
 			target: CollateralEth,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero,
+			expected: input => issueFeeRate === '0' || input !== '0',
 			write: 'setIssueFeeRate',
-			writeArg: [(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE']],
+			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralEth contract has its issue fee rate set',
 		});
 	}
@@ -121,13 +122,14 @@ module.exports = async ({
 			comment: 'Ensure the CollateralErc20 contract has all associated synths added',
 		});
 
+		const issueFeeRate = (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'];
 		await runStep({
 			contract: 'CollateralErc20',
 			target: CollateralErc20,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
+			expected: input => issueFeeRate === '0' || input !== '0',
 			write: 'setIssueFeeRate',
-			writeArg: [(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE']],
+			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralErc20 contract has its issue fee rate set',
 		});
 	}
@@ -167,7 +169,7 @@ module.exports = async ({
 			contract: 'CollateralShort',
 			target: CollateralShort,
 			read: 'issueFeeRate',
-			expected: input => (issueFeeRate === '0' ? true : input !== '0'),
+			expected: input => issueFeeRate === '0' || input !== '0',
 			write: 'setIssueFeeRate',
 			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
@@ -175,59 +177,62 @@ module.exports = async ({
 
 		if (CollateralShort.interactionDelay) {
 			const interactionDelay = (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'];
-
 			await runStep({
 				contract: 'CollateralShort',
 				target: CollateralShort,
 				read: 'interactionDelay',
-				expected: input => input !== '0', // only change if zero
+				expected: input => interactionDelay === '0' || input !== '0',
 				write: 'setInteractionDelay',
-				writeArg: interactionDelay,
+				writeArg: [interactionDelay],
 				comment:
 					'Ensure the CollateralShort contract has an interaction delay to prevent frontrunning',
 			});
 		}
 	}
 
+	const maxDebt = collateralManagerDefaults['MAX_DEBT'];
 	await runStep({
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'maxDebt',
-		expected: input => input !== '0', // only change if zero
+		expected: input => maxDebt === '0' || input !== '0',
 		write: 'setMaxDebt',
-		writeArg: [collateralManagerDefaults['MAX_DEBT']],
+		writeArg: [maxDebt],
 		comment: 'Set the max amount of debt in the CollateralManager',
 	});
 
 	if (CollateralManager.maxSkewRate) {
+		const maxSkewRate = collateralManagerDefaults['MAX_SKEW_RATE'];
 		await runStep({
 			contract: 'CollateralManager',
 			target: CollateralManager,
 			read: 'maxSkewRate',
-			expected: input => input !== '0', // only change if zero
+			expected: input => maxSkewRate === '0' || input !== '0',
 			write: 'setMaxSkewRate',
-			writeArg: [collateralManagerDefaults['MAX_SKEW_RATE']],
+			writeArg: [maxSkewRate],
 			comment: 'Set the max skew rate in the CollateralManager',
 		});
 	}
 
+	const baseBorrowRate = collateralManagerDefaults['BASE_BORROW_RATE'];
 	await runStep({
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'baseBorrowRate',
-		expected: input => input !== '0', // only change if zero
+		expected: input => baseBorrowRate === '0' || input !== '0',
 		write: 'setBaseBorrowRate',
-		writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
+		writeArg: [baseBorrowRate],
 		comment: 'Set the base borrow rate in the CollateralManager',
 	});
 
+	const baseShortRate = collateralManagerDefaults['BASE_SHORT_RATE'];
 	await runStep({
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'baseShortRate',
-		expected: input => input !== '0', // only change if zero
+		expected: input => baseShortRate === '0' || input !== '0',
 		write: 'setBaseShortRate',
-		writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
+		writeArg: [baseShortRate],
 		comment: 'Set the base short rate in the CollateralManager',
 	});
 
