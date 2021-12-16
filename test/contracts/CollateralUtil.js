@@ -67,10 +67,6 @@ contract('CollateralUtil', async accounts => {
 		await renBTC.transfer(receiver, issueAmount, { from: owner });
 	};
 
-	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
-	};
-
 	const deployCollateral = async ({
 		owner,
 		manager,
@@ -182,7 +178,7 @@ contract('CollateralUtil', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		await updateRatesWithDefaults();
+		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 
 		await issuesUSDToAccount(toUnit(1000), owner);
 		await issuesBTCtoAccount(toUnit(10), owner);
