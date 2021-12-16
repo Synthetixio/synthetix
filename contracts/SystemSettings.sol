@@ -335,17 +335,22 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY, penalty);
-
-        emit LiquidationPenaltyUpdated(penalty);
+        SystemSettingsLib.setLiquidationPenalty(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            penalty,
+            MAX_LIQUIDATION_PENALTY
+        );
     }
 
     function setRateStalePeriod(uint period) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD, period);
-
-        emit RateStalePeriodUpdated(period);
+        SystemSettingsLib.setRateStalePeriod(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ISSUANCE_RATIO,
+            period
+        );
     }
 
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
@@ -554,8 +559,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TargetThresholdUpdated(uint newTargetThreshold);
-    event LiquidationPenaltyUpdated(uint newPenalty);
-    event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);

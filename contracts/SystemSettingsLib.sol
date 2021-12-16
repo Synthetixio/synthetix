@@ -6,7 +6,6 @@ import "./interfaces/IFlexibleStorage.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-// slither-disable-next-line reentrancy-benign
 library SystemSettingsLib {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -53,6 +52,7 @@ library SystemSettingsLib {
     ) external {
         require(_issuanceRatio <= maxInssuranceRatio, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
         setUIntValue(flexibleStorage, settingContractName, settingName, _issuanceRatio);
+        // slither-disable-next-line reentrancy-events
         emit IssuanceRatioUpdated(_issuanceRatio);
     }
 
@@ -63,6 +63,7 @@ library SystemSettingsLib {
         bool _tradingRewardsEnabled
     ) external {
         setBoolValue(flexibleStorage, settingContractName, settingName, _tradingRewardsEnabled);
+        // slither-disable-next-line reentrancy-events
         emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
@@ -73,6 +74,7 @@ library SystemSettingsLib {
         uint _waitingPeriodSecs
     ) external {
         setUIntValue(flexibleStorage, settingContractName, settingName, _waitingPeriodSecs);
+        // slither-disable-next-line reentrancy-events
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
@@ -83,6 +85,7 @@ library SystemSettingsLib {
         uint _priceDeviationThresholdFactor
     ) external {
         setUIntValue(flexibleStorage, settingContractName, settingName, _priceDeviationThresholdFactor);
+        // slither-disable-next-line reentrancy-events
         emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
@@ -98,6 +101,7 @@ library SystemSettingsLib {
         require(_feePeriodDuration <= maxFeePeriodDuration, "value > MAX_FEE_PERIOD_DURATION");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, _feePeriodDuration);
+        // slither-disable-next-line reentrancy-events
         emit FeePeriodDurationUpdated(_feePeriodDuration);
     }
 
@@ -112,6 +116,7 @@ library SystemSettingsLib {
         uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
 
         setUIntValue(flexibleStorage, settingContractName, settingName, _targetThreshold);
+        // slither-disable-next-line reentrancy-events
         emit TargetThresholdUpdated(_targetThreshold);
     }
 
@@ -127,6 +132,7 @@ library SystemSettingsLib {
         require(time >= minLiquidationDelay, "Must be greater than 1 day");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, time);
+        // slither-disable-next-line reentrancy-events
         emit LiquidationDelayUpdated(time);
     }
 
@@ -151,7 +157,31 @@ library SystemSettingsLib {
         require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, _liquidationRatio);
+        // slither-disable-next-line reentrancy-events
         emit LiquidationRatioUpdated(_liquidationRatio);
+    }
+
+    function setLiquidationPenalty(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint penalty,
+        uint maxLiquidationPenalty
+    ) external {
+        require(penalty <= maxLiquidationPenalty, "penalty > MAX_LIQUIDATION_PENALTY");
+
+        setUIntValue(flexibleStorage, settingContractName, settingName, penalty);
+        emit LiquidationPenaltyUpdated(penalty);
+    }
+
+    function setRateStalePeriod(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint period
+    ) external {
+        setUIntValue(flexibleStorage, settingContractName, settingName, period);
+        emit RateStalePeriodUpdated(period);
     }
 
     // ========== EVENTS ==========
@@ -163,4 +193,6 @@ library SystemSettingsLib {
     event TargetThresholdUpdated(uint newTargetThreshold);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationPenaltyUpdated(uint newPenalty);
+    event RateStalePeriodUpdated(uint rateStalePeriod);
 }
