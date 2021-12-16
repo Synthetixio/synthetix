@@ -6,6 +6,7 @@ import "./interfaces/IFlexibleStorage.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
+// slither-disable-next-line reentrancy-benign
 library SystemSettingsLib {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -43,7 +44,6 @@ library SystemSettingsLib {
         setUIntValue(flexibleStorage, settingContractName, gasLimitSettings, crossDomainMessageGasLimit);
     }
 
-    // slither-disable-next-line reentrancy-benign
     function setIssuanceRatio(
         address flexibleStorage,
         bytes32 settingContractName,
