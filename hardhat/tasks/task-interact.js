@@ -11,15 +11,7 @@ const {
 	appendOwnerActionGenerator,
 } = require('../../publish/src/util');
 
-subtask('interact:load-contracts').setAction(async ({ provider }, hre) => {
-	// build hardhat-deploy style deployments
-	if (!fs.existsSync('deployments')) {
-		fs.mkdirSync('deployments');
-	}
-	if (!fs.existsSync(`deployments/${hre.network.name}`)) {
-		fs.mkdirSync(`deployments/${hre.network.name}`);
-	}
-
+subtask('interact:load-contracts').setAction(async (args, hre, runSuper) => {
 	// Wrap Synthetix utils for current network
 	const { getPathToNetwork, getTarget, getSource } = synthetix.wrap({
 		network: hre.network.name,
@@ -52,10 +44,10 @@ subtask('interact:load-contracts').setAction(async ({ provider }, hre) => {
 			deploymentFilePath,
 		});
 
-		contracts[target] = new ethers.Contract(targetData.address, sourceData.abi, provider);
+		contracts[target] = new ethers.Contract(targetData.address, sourceData.abi, args.provider);
 	}
 
-	return contracts;
+	return { ...contracts, ...(await runSuper(args)) };
 });
 
 subtask('interact:stage-txn').setAction(async ({ txn, contract, functionSignature, args }, hre) => {
