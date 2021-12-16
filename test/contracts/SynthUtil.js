@@ -3,16 +3,20 @@
 const { contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toBytes32 } = require('../..');
-const { toUnit, currentTime } = require('../utils')();
-const { setExchangeFeeRateForSynths } = require('./helpers');
+const { toUnit } = require('../utils')();
+const {
+	setExchangeFeeRateForSynths,
+	setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
 
 contract('SynthUtil', accounts => {
-	const [, ownerAccount, oracle, account2] = accounts;
-	let synthUtil, sUSDContract, synthetix, exchangeRates, timestamp, systemSettings, debtCache;
+	const [, ownerAccount, , account2] = accounts;
+	let synthUtil, sUSDContract, synthetix, exchangeRates, systemSettings, debtCache;
 
-	const [sUSD, sBTC, iBTC] = ['sUSD', 'sBTC', 'iBTC'].map(toBytes32);
+	const [sUSD, sBTC, iBTC, SNX] = ['sUSD', 'sBTC', 'iBTC', 'SNX'].map(toBytes32);
 	const synthKeys = [sUSD, sBTC, iBTC];
 	const synthPrices = [toUnit('1'), toUnit('5000'), toUnit('5000')];
 
@@ -42,15 +46,18 @@ contract('SynthUtil', accounts => {
 				'RewardEscrowV2', // required for issuer._collateral to read collateral
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, ownerAccount, [sBTC, iBTC, SNX]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		timestamp = await currentTime();
-		await exchangeRates.updateRates([sBTC, iBTC], ['5000', '5000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		await updateAggregatorRates(
+			exchangeRates,
+			[sBTC, iBTC, SNX],
+			['5000', '5000', '0.2'].map(toUnit)
+		);
 		await debtCache.takeDebtSnapshot();
 
 		// set a 0% default exchange fee rate for test purpose
