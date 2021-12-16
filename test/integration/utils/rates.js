@@ -1,13 +1,24 @@
 const ethers = require('ethers');
+const { artifacts } = require('hardhat');
 const { setSystemSetting } = require('./settings');
 const { toBytes32 } = require('../../..');
+
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
 	if (await _areRatesInvalid({ ctx })) {
-		await _printRatesInfo({ ctx });
-		throw new Error('Rates are invalid.');
+		if (ctx.fork) {
+			await _printRatesInfo({ ctx });
+			throw new Error('Rates are invalid (fork mode).');
+		} else {
+			await _setMissingRates({ ctx });
+			if (await _areRatesInvalid({ ctx })) {
+				await _printRatesInfo({ ctx });
+				throw new Error('Rates are still invalid after updating.');
+			}
+		}
 	}
 
 	if (await _isCacheInvalid({ ctx })) {
@@ -66,6 +77,30 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 	return availableCurrencyKeys
 		.filter(key => key !== toBytes32('sUSD'))
 		.concat(['SNX', 'ETH'].map(toBytes32));
+}
+
+async function _setMissingRates({ ctx }) {
+	let { ExchangeRates } = ctx.contracts;
+	const owner = ctx.users.owner;
+	ExchangeRates = ExchangeRates.connect(owner);
+
+	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
+	const { timestamp } = await ctx.provider.getBlock();
+
+	for (const currencyKey of currencyKeys) {
+		const rate = await ExchangeRates.rateForCurrency(currencyKey);
+		if (rate.toString() === '0') {
+			// deploy an aggregator
+			let aggregator = await MockAggregator.new({ from: owner });
+			aggregator = aggregator.connect(owner);
+			// set decimals
+			await (await aggregator.setDecimals(18)).wait();
+			// push the new price
+			await (await aggregator.setLatestAnswer(ethers.utils.parseEther('1'), timestamp)).wait();
+			// set the aggregator in ExchangeRates
+			await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
+		}
+	}
 }
 
 async function _updateCache({ ctx }) {
