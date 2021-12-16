@@ -263,7 +263,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setWaitingPeriodSecs(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_TRADING_REWARDS_ENABLED,
+            SETTING_WAITING_PERIOD_SECS,
             _waitingPeriodSecs
         );
     }
@@ -272,7 +272,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setWaitingPeriodSecs(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_TRADING_REWARDS_ENABLED,
+            SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
             _priceDeviationThresholdFactor
         );
     }
@@ -291,7 +291,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setFeePeriodDuration(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
+            SETTING_FEE_PERIOD_DURATION,
             _feePeriodDuration,
             MIN_FEE_PERIOD_DURATION,
             MAX_FEE_PERIOD_DURATION
@@ -302,7 +302,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setTargetThreshold(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
+            SETTING_TARGET_THRESHOLD,
             _percent,
             MAX_TARGET_THRESHOLD
         );
@@ -312,7 +312,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setLiquidationDelay(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
+            SETTING_LIQUIDATION_DELAY,
             time,
             MAX_LIQUIDATION_DELAY,
             MIN_LIQUIDATION_DELAY
@@ -325,7 +325,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setLiquidationRatio(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
+            SETTING_LIQUIDATION_RATIO,
             _liquidationRatio,
             MAX_LIQUIDATION_RATIO,
             getLiquidationPenalty(),
@@ -338,7 +338,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setLiquidationPenalty(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
+            SETTING_LIQUIDATION_PENALTY,
             penalty,
             MAX_LIQUIDATION_PENALTY
         );
@@ -348,7 +348,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         SystemSettingsLib.setRateStalePeriod(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
+            SETTING_RATE_STALE_PERIOD,
             period
         );
     }
@@ -357,22 +357,24 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         external
         onlyOwner
     {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
-        for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
-            flexibleStorage().setUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, synthKeys[i])),
-                exchangeFeeRates[i]
-            );
-            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
-        }
+        SystemSettingsLib.setExchangeFeeRateForSynths(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_EXCHANGE_FEE_RATE,
+            synthKeys,
+            exchangeFeeRates,
+            MAX_EXCHANGE_FEE_RATE
+        );
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
-        require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME, _seconds);
-        emit MinimumStakeTimeUpdated(_seconds);
+        SystemSettingsLib.setMinimumStakeTime(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_MINIMUM_STAKE_TIME,
+            _seconds,
+            MAX_MINIMUM_STAKE_TIME
+        );
     }
 
     function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
@@ -558,9 +560,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
-    event TargetThresholdUpdated(uint newTargetThreshold);
-    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
     event EtherWrapperMaxETHUpdated(uint maxETH);

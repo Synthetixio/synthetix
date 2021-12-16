@@ -184,6 +184,39 @@ library SystemSettingsLib {
         emit RateStalePeriodUpdated(period);
     }
 
+    function setExchangeFeeRateForSynths(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingExchangeFeeRate,
+        bytes32[] calldata synthKeys,
+        uint256[] calldata exchangeFeeRates,
+        uint maxExchangeFeeRate
+    ) external {
+        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
+        for (uint i = 0; i < synthKeys.length; i++) {
+            require(exchangeFeeRates[i] <= maxExchangeFeeRate, "MAX_EXCHANGE_FEE_RATE exceeded");
+            setUIntValue(
+                flexibleStorage,
+                settingContractName,
+                keccak256(abi.encodePacked(settingExchangeFeeRate, synthKeys[i])),
+                exchangeFeeRates[i]
+            );
+            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
+        }
+    }
+
+    function setMinimumStakeTime(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _seconds,
+        uint maxMinimumStakeTime
+    ) external {
+        require(_seconds <= maxMinimumStakeTime, "stake time exceed maximum 1 week");
+        setUIntValue(flexibleStorage, settingContractName, settingName, _seconds);
+        emit MinimumStakeTimeUpdated(_seconds);
+    }
+
     // ========== EVENTS ==========
     event IssuanceRatioUpdated(uint newRatio);
     event TradingRewardsEnabled(bool enabled);
@@ -195,4 +228,6 @@ library SystemSettingsLib {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
+    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event MinimumStakeTimeUpdated(uint minimumStakeTime);
 }
