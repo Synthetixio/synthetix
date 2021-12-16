@@ -1122,10 +1122,12 @@ const setupAllContracts = async ({
 			.map(mock => mock.setAddressResolver(returnObj['AddressResolver'].address))
 	);
 
-	// setup SNX price feed
-	const SNX = toBytes32('SNX');
-	await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
-	await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+	if (returnObj['ExchangeRates']) {
+		// setup SNX price feed
+		const SNX = toBytes32('SNX');
+		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
+		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+	}
 
 	return returnObj;
 };
