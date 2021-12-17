@@ -126,6 +126,12 @@ const defaults = {
 	LIQUIDATION_DELAY: (3600 * 24 * 3).toString(), // 3 days
 	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
 	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
+	INSTANT_LIQUIDATION_DELAY: '0', // 0 days
+	INSTANT_LIQUIDATION_RATIO: w3utils.toWei('0.667'), // 150% cratio
+	INSTANT_LIQUIDATION_PENALTY: w3utils.toWei('0.2'), // 20% penalty
+	SELF_LIQUIDATION_PENALTY: w3utils.toWei('0.03'), // 3% penalty
+	FLAG_REWARD: w3utils.toWei('1'), // 1 SNX
+	LIQUIDATE_REWARD: w3utils.toWei('2'), // 2 SNX
 	RATE_STALE_PERIOD: (3600 * 25).toString(), // 25 hours
 	EXCHANGE_FEE_RATES: {
 		forex: w3utils.toWei('0.003'),
