@@ -17,6 +17,13 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
+    bytes32 internal constant SETTING_INSTANT_LIQUIDATION_DELAY = "instantLiquidationDelay";
+    bytes32 internal constant SETTING_INSTANT_LIQUIDATION_RATIO = "instantLiquidationRatio";
+    bytes32 internal constant SETTING_INSTANT_LIQUIDATION_PENALTY = "instantLiquidationPenalty";
+    bytes32 internal constant SETTING_SELF_LIQUIDATION_RATIO = "selfLiquidationRatio";
+    bytes32 internal constant SETTING_SELF_LIQUIDATION_PENALTY = "selfLiquidationPenalty";
+    bytes32 internal constant SETTING_FLAG_REWARD = "flagReward";
+    bytes32 internal constant SETTING_LIQUIDATE_REWARD = "liquidateReward";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
@@ -118,6 +125,34 @@ contract MixinSystemSettings is MixinResolver {
 
     function getLiquidationPenalty() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY);
+    }
+
+    function getInstantLiquidationDelay() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_DELAY);
+    }
+
+    function getInstantLiquidationRatio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_RATIO);
+    }
+
+    function getInstantLiquidationPenalty() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_PENALTY);
+    }
+
+    function getSelfLiquidationRatio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_RATIO);
+    }
+
+    function getSelfLiquidationPenalty() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_PENALTY);
+    }  
+
+    function getFlagReward() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD);
+    }
+
+    function getLiquidateReward() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD);
     }
 
     function getRateStalePeriod() internal view returns (uint) {

@@ -113,6 +113,36 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationPenalty();
     }
 
+    /* SIP-302: Upgrade Liquidation Mechanism */
+    function instantLiquidationDelay() external view returns (uint) {
+        return getInstantLiquidationDelay();
+    }
+
+    function instantLiquidationRatio() external view returns (uint) {
+        return getInstantLiquidationRatio();
+    }
+
+    function instantLiquidationPenalty() external view returns (uint) {
+        return getInstantLiquidationPenalty();
+    }
+
+    function selfLiquidationRatio() external view returns (uint) {
+        return getSelfLiquidationRatio();
+    }
+
+    function selfLiquidationPenalty() external view returns (uint) {
+        return getSelfLiquidationPenalty();
+    }
+
+    function flagReward() external view returns (uint) {
+        return getFlagReward();
+    }
+
+    function liquidateReward() external view returns (uint) {
+        return getLiquidateReward();
+    }
+    /* End SIP-302 */
+
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
         return getRateStalePeriod();
@@ -336,6 +366,71 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit LiquidationPenaltyUpdated(penalty);
     }
 
+    function setInstantLiquidationDelay(uint _time) external onlyOwner {
+        require(_time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
+        require(_time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_DELAY, _time);
+
+        emit InstantLiquidationDelayUpdated(_time);
+    }
+
+    function setInstantLiquidationRatio(uint _ratio) external onlyOwner {
+        require(
+            _ratio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getInstantLiquidationPenalty())),
+            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
+        );
+
+        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
+        require(_ratio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_RATIO, _ratio);
+
+        emit InstantLiquidationRatioUpdated(_ratio);
+    }
+
+    function setInstantLiquidationPenalty(uint _penalty) external onlyOwner {
+        require(_penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_PENALTY, _penalty);
+
+        emit InstantLiquidationPenaltyUpdated(_penalty);
+    }
+
+    function setSelfLiquidationRatio(uint _ratio) external onlyOwner {
+        require(
+            _ratio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getSelfLiquidationPenalty())),
+            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
+        );
+
+        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
+        require(_ratio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_RATIO, _ratio);
+
+        emit SelfLiquidationRatioUpdated(_ratio);
+    }
+
+    function setSelfLiquidationPenalty(uint _penalty) external onlyOwner {
+        require(_penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_PENALTY, _penalty);
+
+        emit SelfLiquidationPenaltyUpdated(_penalty);
+    }
+
+    function setFlagReward(uint _reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD, _reward);
+
+        emit FlagRewardUpdated(_reward);
+    }
+
+    function setLiquidateReward(uint _reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD, _reward);
+
+        emit LiquidateRewardUpdated(_reward);
+    }
+
     function setRateStalePeriod(uint period) external onlyOwner {
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD, period);
 
@@ -556,6 +651,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
+    event InstantLiquidationDelayUpdated(uint newDelay);
+    event InstantLiquidationRatioUpdated(uint newRatio);
+    event InstantLiquidationPenaltyUpdated(uint newPenalty);
+    event SelfLiquidationRatioUpdated(uint newRatio);
+    event SelfLiquidationPenaltyUpdated(uint newPenalty);
+    event FlagRewardUpdated(uint newReward);
+    event LiquidateRewardUpdated(uint newReward);
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
