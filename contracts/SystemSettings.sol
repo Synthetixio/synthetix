@@ -126,10 +126,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getInstantLiquidationPenalty();
     }
 
-    function selfLiquidationRatio() external view returns (uint) {
-        return getSelfLiquidationRatio();
-    }
-
     function selfLiquidationPenalty() external view returns (uint) {
         return getSelfLiquidationPenalty();
     }
@@ -397,20 +393,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit InstantLiquidationPenaltyUpdated(_penalty);
     }
 
-    function setSelfLiquidationRatio(uint _ratio) external onlyOwner {
-        require(
-            _ratio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getSelfLiquidationPenalty())),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
-        );
-
-        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_ratio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_RATIO, _ratio);
-
-        emit SelfLiquidationRatioUpdated(_ratio);
-    }
-
     function setSelfLiquidationPenalty(uint _penalty) external onlyOwner {
         require(_penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
 
@@ -654,7 +636,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event InstantLiquidationDelayUpdated(uint newDelay);
     event InstantLiquidationRatioUpdated(uint newRatio);
     event InstantLiquidationPenaltyUpdated(uint newPenalty);
-    event SelfLiquidationRatioUpdated(uint newRatio);
     event SelfLiquidationPenaltyUpdated(uint newPenalty);
     event FlagRewardUpdated(uint newReward);
     event LiquidateRewardUpdated(uint newReward);
