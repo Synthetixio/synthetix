@@ -364,7 +364,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     function setInstantLiquidationDelay(uint _time) external onlyOwner {
         require(_time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(_time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_DELAY, _time);
 
