@@ -28,6 +28,15 @@ library SystemSettingsLib {
         IFlexibleStorage(flexibleStorage).setBoolValue(settingContractName, settingName, value);
     }
 
+    function setAddressValue(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address value
+    ) internal {
+        IFlexibleStorage(flexibleStorage).setAddressValue(settingContractName, settingName, value);
+    }
+
     function setCrossDomainMessageGasLimit(
         address flexibleStorage,
         bytes32 settingContractName,
@@ -217,6 +226,61 @@ library SystemSettingsLib {
         emit MinimumStakeTimeUpdated(_seconds);
     }
 
+    function setDebtSnapshotStaleTime(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _seconds
+    ) external {
+        setUIntValue(flexibleStorage, settingContractName, settingName, _seconds);
+        emit DebtSnapshotStaleTimeUpdated(_seconds);
+    }
+
+    function setAggregatorWarningFlags(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address _flags
+    ) external {
+        require(_flags != address(0), "Valid address must be given");
+        setAddressValue(flexibleStorage, settingContractName, settingName, _flags);
+        emit AggregatorWarningFlagsUpdated(_flags);
+    }
+
+    function setEtherWrapperMaxETH(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _maxETH
+    ) external {
+        setUIntValue(flexibleStorage, settingContractName, settingName, _maxETH);
+        emit EtherWrapperMaxETHUpdated(_maxETH);
+    }
+
+    function setEtherWrapperMintFeeRate(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _rate,
+        int maxWrapperMintFeeRate
+    ) external {
+        require(_rate <= uint(maxWrapperMintFeeRate), "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        setUIntValue(flexibleStorage, settingContractName, settingName, _rate);
+        emit EtherWrapperMintFeeRateUpdated(_rate);
+    }
+
+    function setEtherWrapperBurnFeeRate(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _rate,
+        int maxWrapperBurnFeeRate
+    ) external {
+        require(_rate <= uint(maxWrapperBurnFeeRate), "rate > MAX_WRAPPER_BURN_FEE_RATE");
+        setUIntValue(flexibleStorage, settingContractName, settingName, _rate);
+        emit EtherWrapperBurnFeeRateUpdated(_rate);
+    }
+
     // ========== EVENTS ==========
     event IssuanceRatioUpdated(uint newRatio);
     event TradingRewardsEnabled(bool enabled);
@@ -230,4 +294,9 @@ library SystemSettingsLib {
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
+    event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
+    event AggregatorWarningFlagsUpdated(address flags);
+    event EtherWrapperMaxETHUpdated(uint maxETH);
+    event EtherWrapperMintFeeRateUpdated(uint rate);
+    event EtherWrapperBurnFeeRateUpdated(uint rate);
 }

@@ -175,14 +175,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getWrapperBurnFeeRate(wrapper);
     }
 
-    function minCratio(address collateral) external view returns (uint) {
-        return getMinCratio(collateral);
-    }
-
-    function collateralManager(address collateral) external view returns (address) {
-        return getNewCollateralManager(collateral);
-    }
-
     function interactionDelay(address collateral) external view returns (uint) {
         return getInteractionDelay(collateral);
     }
@@ -378,31 +370,50 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
-        emit DebtSnapshotStaleTimeUpdated(_seconds);
+        SystemSettingsLib.setDebtSnapshotStaleTime(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_DEBT_SNAPSHOT_STALE_TIME,
+            _seconds
+        );
     }
 
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
-        require(_flags != address(0), "Valid address must be given");
-        flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
-        emit AggregatorWarningFlagsUpdated(_flags);
+        SystemSettingsLib.setAggregatorWarningFlags(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_AGGREGATOR_WARNING_FLAGS,
+            _flags
+        );
     }
 
     function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
-        emit EtherWrapperMaxETHUpdated(_maxETH);
+        SystemSettingsLib.setEtherWrapperMaxETH(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ETHER_WRAPPER_MAX_ETH,
+            _maxETH
+        );
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
-        emit EtherWrapperMintFeeRateUpdated(_rate);
+        SystemSettingsLib.setEtherWrapperMintFeeRate(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ETHER_WRAPPER_MINT_FEE_RATE,
+            _rate,
+            MAX_WRAPPER_MINT_FEE_RATE
+        );
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
-        emit EtherWrapperBurnFeeRateUpdated(_rate);
+        SystemSettingsLib.setEtherWrapperBurnFeeRate(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ETHER_WRAPPER_BURN_FEE_RATE,
+            _rate,
+            MAX_WRAPPER_BURN_FEE_RATE
+        );
     }
 
     function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
@@ -448,25 +459,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _rate
         );
         emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
-    }
-
-    function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
-        require(_minCratio >= SafeDecimalMath.unit(), "Cratio must be above 1");
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, _collateral)),
-            _minCratio
-        );
-        emit MinCratioRatioUpdated(_minCratio);
-    }
-
-    function setCollateralManager(address _collateral, address _newCollateralManager) external onlyOwner {
-        flexibleStorage().setAddressValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, _collateral)),
-            _newCollateralManager
-        );
-        emit CollateralManagerUpdated(_newCollateralManager);
     }
 
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
@@ -560,11 +552,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
-    event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
-    event AggregatorWarningFlagsUpdated(address flags);
-    event EtherWrapperMaxETHUpdated(uint maxETH);
-    event EtherWrapperMintFeeRateUpdated(uint rate);
-    event EtherWrapperBurnFeeRateUpdated(uint rate);
     event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
     event WrapperMintFeeRateUpdated(address wrapper, int rate);
     event WrapperBurnFeeRateUpdated(address wrapper, int rate);
