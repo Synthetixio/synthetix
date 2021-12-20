@@ -352,11 +352,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
         // sUSD rate is 1.0
         if (currencyKey == sUSD) {
-            return
-                RateAndUpdatedTime({
-                    rate: uint216(SafeDecimalMath.unit()),
-                    time: uint40(block.timestamp) // never "stale"
-                });
+            return RateAndUpdatedTime({rate: uint216(SafeDecimalMath.unit()), time: 0});
         } else {
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
             if (aggregator != AggregatorV2V3Interface(0)) {

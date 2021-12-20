@@ -72,13 +72,11 @@ contract('Exchange Rates', async accounts => {
 		describe('constructor', () => {
 			it('should set constructor params on deployment', async () => {
 				assert.equal(await instance.owner(), owner);
+			});
 
-				const sUSDRate = await instance.rateForCurrency(sUSD);
-				assert.bnEqual(sUSDRate, toUnit('1'));
-
-				const lastUpdatedTimeSUSD = await instance.lastRateUpdateTimes(sUSD);
-				// update time is "now"
-				assert.equal(lastUpdatedTimeSUSD.toNumber(), await currentTime());
+			it('returns correct values for sUSD after deployment ', async () => {
+				assert.bnEqual(await instance.rateForCurrency(sUSD), toUnit('1'));
+				assert.equal(await instance.lastRateUpdateTimes(sUSD), 0);
 			});
 		});
 	};
