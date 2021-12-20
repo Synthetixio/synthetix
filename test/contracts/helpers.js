@@ -27,7 +27,7 @@ async function setupPriceAggregators(exchangeRates, owner, keys, decimalsArray =
 	}
 }
 
-/// same as setupPriceAggregators, but checks if an aggregator the that currency is already setup up
+/// same as setupPriceAggregators, but checks if an aggregator for that currency is already setup up
 async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
 	const missingKeys = [];
 	for (let i = 0; i < keys.length; i++) {

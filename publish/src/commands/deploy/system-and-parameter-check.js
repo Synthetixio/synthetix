@@ -121,12 +121,10 @@ module.exports = async ({
 		}
 	}
 
-	for (const address of [account]) {
-		if (!isAddress(address)) {
-			console.error(red('Invalid address detected (please check your inputs):', address));
-			process.exitCode = 1;
-			process.exit();
-		}
+	if (!isAddress(account)) {
+		console.error(red('Invalid address detected (please check your inputs):', account));
+		process.exitCode = 1;
+		process.exit();
 	}
 
 	const newSynthsToAdd = synths
