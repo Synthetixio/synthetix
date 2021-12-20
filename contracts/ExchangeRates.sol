@@ -22,6 +22,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeDecimalMath for uint;
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
+    //slither-disable-next-line naming-convention
     bytes32 internal constant sUSD = "sUSD";
 
     // Decentralized oracle networks that feed into pricing aggregators
@@ -360,6 +361,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 // so let's call it low-level to suppress any reverts
                 bytes memory payload = abi.encodeWithSignature("latestRoundData()");
                 // solhint-disable avoid-low-level-calls
+                // slither-disable-next-line low-level-calls
                 (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
                 if (success) {
@@ -469,6 +471,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _notImplemented() internal pure {
+        // slither-disable-next-line dead-code
         revert("Cannot be run on this layer");
     }
 
