@@ -92,4 +92,17 @@ interface IIssuer {
         uint susdAmount,
         address liquidator
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
+
+    function instantLiquidation(
+        address account, 
+        uint susdAmount, 
+        address liquidator
+    ) external returns (uint totalRedeemed, uint amountToLiquidate);
+
+    // Used to self-liquidate an account back to the target c-ratio (issuanceRatio).
+    function selfLiquidation(
+        address account,
+        uint susdAmount,
+        address liquidator
+    ) external returns (uint totalRedeemed, uint amountToLiquidate);
 }

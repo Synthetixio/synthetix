@@ -200,7 +200,7 @@ describe('deployments', () => {
 								'FeePoolState',
 								'FlexibleStorage',
 								'Issuer',
-								'Liquidations',
+								'Liquidator',
 								'RewardEscrow',
 								'RewardsDistribution',
 								'SupplySchedule',

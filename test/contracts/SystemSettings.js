@@ -77,6 +77,12 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationDelay',
 				'setLiquidationPenalty',
 				'setLiquidationRatio',
+				'setInstantLiquidationDelay',
+				'setInstantLiquidationRatio',
+				'setInstantLiquidationPenalty',
+				'setSelfLiquidationPenalty',
+				'setLiquidateReward',
+				'setFlagReward',
 				'setMinCratio',
 				'setMinimumStakeTime',
 				'setPriceDeviationThresholdFactor',
@@ -637,6 +643,18 @@ contract('SystemSettings', async accounts => {
 			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('0'));
 		});
 	});
+
+	describe('setInstantLiquidationDelay()', () => {});
+
+	describe('setInstantLiquidationRatio()', () => {});
+
+	describe('setInstantLiquidationPenalty()', () => {});
+
+	describe('setSelfLiquidationPenalty()', () => {});
+
+	describe('setFlagReward()', () => {});
+
+	describe('setLiquidateReward()', () => {});
 
 	describe('liquidations constants', () => {
 		it('MAX_LIQUIDATION_RATIO is 100%', async () => {

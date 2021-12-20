@@ -20,7 +20,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/ILiquidations.sol";
+import "./interfaces/ILiquidator.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
@@ -85,7 +85,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
-    bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
+    bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
@@ -103,7 +103,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[6] = CONTRACT_REWARDESCROW_V2;
         newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
-        newAddresses[8] = CONTRACT_LIQUIDATIONS;
+        newAddresses[8] = CONTRACT_LIQUIDATOR;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_COLLATERALMANAGER;
         newAddresses[11] = CONTRACT_SYNTHREDEEMER;
@@ -130,8 +130,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
-    function liquidations() internal view returns (ILiquidations) {
-        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS));
+    function liquidator() internal view returns (ILiquidator) {
+        return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -579,56 +579,78 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint susdAmount,
         address liquidator
     ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+        // // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        // require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
 
-        // Check account is liquidation open
-        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
+        // // Check account is liquidation open
+        // require(liquidator().isOpenForLiquidation(account), "Account not open for liquidation");
 
-        // require liquidator has enough sUSD
-        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+        // // require liquidator has enough sUSD
+        // require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
 
-        uint liquidationPenalty = liquidations().liquidationPenalty();
+        // uint liquidationPenalty = liquidator().liquidationPenalty();
 
-        // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
-        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
-        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
+        // // What is their debt in sUSD?
+        // (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
+        // (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
+        // _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
-        uint collateralForAccount = _collateral(account);
-        uint amountToFixRatio =
-            liquidations().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
+        // uint collateralForAccount = _collateral(account);
+        // uint amountToFixRatio =
+        //     liquidator().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
 
-        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
-        amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+        // // Cap amount to liquidate to repair collateral ratio based on issuance ratio
+        // amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
 
-        // what's the equivalent amount of snx for the amountToLiquidate?
-        uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
+        // // what's the equivalent amount of snx for the amountToLiquidate?
+        // uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
 
-        // Add penalty
-        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+        // // Add penalty
+        // totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
-        // if total SNX to redeem is greater than account's collateral
-        // account is under collateralised, liquidate all collateral and reduce sUSD to burn
-        if (totalRedeemed > collateralForAccount) {
-            // set totalRedeemed to all transferable collateral
-            totalRedeemed = collateralForAccount;
+        // // if total SNX to redeem is greater than account's collateral
+        // // account is under collateralised, liquidate all collateral and reduce sUSD to burn
+        // if (totalRedeemed > collateralForAccount) {
+        //     // set totalRedeemed to all transferable collateral
+        //     totalRedeemed = collateralForAccount;
 
-            // whats the equivalent sUSD to burn for all collateral less penalty
-            amountToLiquidate = _snxToUSD(
-                collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
-                snxRate
-            );
-        }
+        //     // whats the equivalent sUSD to burn for all collateral less penalty
+        //     amountToLiquidate = _snxToUSD(
+        //         collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
+        //         snxRate
+        //     );
+        // }
 
-        // burn sUSD from messageSender (liquidator) and reduce account's debt
-        _burnSynths(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
+        // // burn sUSD from messageSender (liquidator) and reduce account's debt
+        // _burnSynths(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
 
-        // Remove liquidation flag if amount liquidated fixes ratio
-        if (amountToLiquidate == amountToFixRatio) {
-            // Remove liquidation
-            liquidations().removeAccountInLiquidation(account);
-        }
+        // // Remove liquidation flag if amount liquidated fixes ratio
+        // if (amountToLiquidate == amountToFixRatio) {
+        //     // Remove liquidation
+        //     liquidator().removeAccountInLiquidation(account);
+        // }
+        totalRedeemed = 0;
+        amountToLiquidate = 0;
+    }
+
+    function instantLiquidation(
+        address account,
+        uint susdAmount,
+        address liquidator
+    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+        // TODO: instant liquidation
+        totalRedeemed = 0;
+        amountToLiquidate = 0;
+    }
+
+    function selfLiquidation(
+        address account,
+        uint susdAmount,
+        address liquidator
+    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+        // TODO: Self liquidation
+        totalRedeemed = 0;
+        amountToLiquidate = 0;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -733,7 +755,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
         // Issuance ratio is fixed so should remove any liquidations
         if (existingDebt.sub(amountBurnt) <= maxIssuableSynthsForAccount) {
-            liquidations().removeAccountInLiquidation(from);
+            liquidator().removeAccountInLiquidation(from);
         }
     }
 
