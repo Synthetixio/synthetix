@@ -417,12 +417,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setWrapperMaxTokenAmount(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper)),
+            SETTING_WRAPPER_MAX_TOKEN_AMOUNT,
+            _wrapper,
             _maxTokenAmount
         );
-        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
@@ -552,11 +553,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
-    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
     event WrapperMintFeeRateUpdated(address wrapper, int rate);
     event WrapperBurnFeeRateUpdated(address wrapper, int rate);
-    event MinCratioRatioUpdated(uint minCratio);
-    event CollateralManagerUpdated(address newCollateralManager);
     event InteractionDelayUpdated(uint interactionDelay);
     event CollapseFeeRateUpdated(uint collapseFeeRate);
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);

@@ -281,6 +281,22 @@ library SystemSettingsLib {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
+    function setWrapperMaxTokenAmount(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address _wrapper,
+        uint _maxTokenAmount
+    ) external {
+        setUIntValue(
+            flexibleStorage,
+            settingContractName,
+            keccak256(abi.encodePacked(settingName, _wrapper)),
+            _maxTokenAmount
+        );
+        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
+    }
+
     // ========== EVENTS ==========
     event IssuanceRatioUpdated(uint newRatio);
     event TradingRewardsEnabled(bool enabled);
@@ -299,4 +315,5 @@ library SystemSettingsLib {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
 }
