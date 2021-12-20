@@ -33,7 +33,6 @@ module.exports = async ({
 	maxPriorityFeePerGas,
 	getDeployParameter,
 	network,
-	oracleExrates,
 	providerUrl,
 	skipFeedChecks,
 	standaloneFeeds,
@@ -43,7 +42,6 @@ module.exports = async ({
 	yes,
 	buildPath,
 }) => {
-	let oracleAddress;
 	let currentSynthetixSupply;
 	let oldExrates;
 	let currentLastMintEvent;
@@ -92,12 +90,8 @@ module.exports = async ({
 
 	try {
 		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
-		if (!oracleExrates) {
-			oracleAddress = await oldExrates.oracle();
-		}
 	} catch (err) {
 		if (freshDeploy) {
-			oracleAddress = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
 			console.error(
@@ -127,7 +121,7 @@ module.exports = async ({
 		}
 	}
 
-	for (const address of [account, oracleAddress]) {
+	for (const address of [account]) {
 		if (!isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
@@ -206,7 +200,6 @@ module.exports = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(formatUnits(currentSynthetixSupply) / 1e6)}m`,
-		'ExchangeRates Oracle': oracleAddress,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
@@ -240,7 +233,6 @@ module.exports = async ({
 		currentLastMintEvent,
 		currentWeekOfInflation,
 		oldExrates,
-		oracleAddress,
 		systemSuspended,
 	};
 };

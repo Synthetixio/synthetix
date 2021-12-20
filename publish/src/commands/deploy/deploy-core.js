@@ -14,7 +14,6 @@ module.exports = async ({
 	currentSynthetixSupply,
 	currentWeekOfInflation,
 	deployer,
-	oracleAddress,
 	useOvm,
 }) => {
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
