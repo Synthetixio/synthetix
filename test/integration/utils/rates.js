@@ -1,9 +1,7 @@
 const ethers = require('ethers');
-const { artifacts } = require('hardhat');
 const { setSystemSetting } = require('./settings');
 const { toBytes32 } = require('../../..');
-
-const MockAggregator = artifacts.require('MockAggregatorV2V3');
+const { createMockAggregatorFactory } = require('../../utils')();
 
 async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
@@ -84,14 +82,17 @@ async function _setMissingRates({ ctx }) {
 	const owner = ctx.users.owner;
 	ExchangeRates = ExchangeRates.connect(owner);
 
+	// factory for price aggregators contracts
+	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
+
+	// got over all rates and agg aggregators
 	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
 	const { timestamp } = await ctx.provider.getBlock();
-
 	for (const currencyKey of currencyKeys) {
 		const rate = await ExchangeRates.rateForCurrency(currencyKey);
 		if (rate.toString() === '0') {
 			// deploy an aggregator
-			let aggregator = await MockAggregator.new({ from: owner });
+			let aggregator = await MockAggregatorFactory.deploy();
 			aggregator = aggregator.connect(owner);
 			// set decimals
 			await (await aggregator.setDecimals(18)).wait();
