@@ -297,6 +297,57 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    function liquidateDelinquentAccount(address account, uint susdAmount)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        (uint totalRedeemed, uint amountLiquidated) =
+            issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // TODO: Transfer SNX redeemed to the LiquidatorRewards
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
+    function instantLiquidation(address account, uint susdAmount)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        (uint totalRedeemed, uint amountLiquidated) =
+            issuer().instantLiquidation(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // TODO: Transfer SNX redeemed to the LiquidatorRewards
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
+    function selfLiquidation(address account, uint susdAmount)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        (uint totalRedeemed, uint amountLiquidated) =
+            issuer().selfLiquidation(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // TODO: Transfer SNX redeemed to the LiquidatorRewards
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
     function exchangeWithTrackingForInitiator(
         bytes32,
         uint,

@@ -17,6 +17,12 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
+		INSTANT_LIQUIDATION_DELAY,
+		INSTANT_LIQUIDATION_RATIO,
+		INSTANT_LIQUIDATION_PENALTY,
+		SELF_LIQUIDATION_PENALTY,
+		FLAG_REWARD,
+		LIQUIDATE_REWARD,
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
@@ -221,7 +227,7 @@ const setupContract = async ({
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
-		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
+		Liquidator: [owner, tryGetAddressOf('AddressResolver')],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -452,8 +458,8 @@ const setupContract = async ({
 				from: owner,
 			});
 		},
-		async Liquidations() {
-			await cache['EternalStorageLiquidations'].setAssociatedContract(instance.address, {
+		async Liquidator() {
+			await cache['EternalStorageLiquidator'].setAssociatedContract(instance.address, {
 				from: owner,
 			});
 		},
@@ -648,8 +654,8 @@ const setupAllContracts = async ({
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
-		{ contract: 'EternalStorage', forContract: 'Liquidations' },
-		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
+		{ contract: 'EternalStorage', forContract: 'Liquidator' },
+		{ contract: 'Liquidator', deps: ['EternalStorage', 'FlexibleStorage'] },
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
@@ -745,7 +751,7 @@ const setupAllContracts = async ({
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
-				'Liquidations',
+				'Liquidator',
 			],
 			deps: [
 				'Issuer',
@@ -765,7 +771,7 @@ const setupAllContracts = async ({
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
-				'Liquidations',
+				'Liquidator',
 			],
 			deps: [
 				'Issuer',
@@ -782,7 +788,7 @@ const setupAllContracts = async ({
 			mocks: [
 				'Exchanger',
 				'SynthetixEscrow',
-				'Liquidations',
+				'Liquidator',
 				'Issuer',
 				'SystemStatus',
 				'SynthetixBridgeToBase',
@@ -1079,6 +1085,20 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setInstantLiquidationDelay(INSTANT_LIQUIDATION_DELAY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setInstantLiquidationRatio(INSTANT_LIQUIDATION_RATIO, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setInstantLiquidationPenalty(INSTANT_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setFlagReward(FLAG_REWARD, { from: owner }),
+			returnObj['SystemSettings'].setLiquidateReward(LIQUIDATE_REWARD, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
