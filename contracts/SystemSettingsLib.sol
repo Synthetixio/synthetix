@@ -383,6 +383,117 @@ library SystemSettingsLib {
         emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
+    function setAtomicMaxVolumePerBlock(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _maxVolume,
+        uint maxAtomicVolumePerBlock
+    ) external {
+        require(_maxVolume <= maxAtomicVolumePerBlock, "Atomic max volume exceed maximum uint192");
+        setUIntValue(flexibleStorage, settingContractName, settingName, _maxVolume);
+        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
+    }
+
+    function setAtomicTwapWindow(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        uint _window,
+        uint minAtomicTwapWindow,
+        uint maxAtomicTwapWindow
+    ) external {
+        require(_window >= minAtomicTwapWindow, "Atomic twap window under minimum 1 min");
+        require(_window <= maxAtomicTwapWindow, "Atomic twap window exceed maximum 1 day");
+        setUIntValue(flexibleStorage, settingContractName, settingName, _window);
+        emit AtomicTwapWindowUpdated(_window);
+    }
+
+    function setAtomicEquivalentForDexPricing(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        address _equivalent
+    ) external {
+        require(_equivalent != address(0), "Atomic equivalent is 0 address");
+        setAddressValue(
+            flexibleStorage,
+            settingContractName,
+            keccak256(abi.encodePacked(settingName, _currencyKey)),
+            _equivalent
+        );
+        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
+    }
+
+    function setAtomicExchangeFeeRate(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        uint _exchangeFeeRate,
+        uint maxExchangeFeeRate
+    ) external {
+        require(_exchangeFeeRate <= maxExchangeFeeRate, "MAX_EXCHANGE_FEE_RATE exceeded");
+        setUIntValue(
+            flexibleStorage,
+            settingContractName,
+            keccak256(abi.encodePacked(settingName, _currencyKey)),
+            _exchangeFeeRate
+        );
+        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
+    }
+
+    function setAtomicPriceBuffer(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        uint _buffer
+    ) external {
+        setUIntValue(flexibleStorage, settingContractName, keccak256(abi.encodePacked(settingName, _currencyKey)), _buffer);
+        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
+    }
+
+    function setAtomicVolatilityConsiderationWindow(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        uint _window,
+        uint minAtomicVolatilityConsiderationWindow,
+        uint maxAtomicVolatilityConsiderationWindow
+    ) external {
+        if (_window != 0) {
+            require(
+                _window >= minAtomicVolatilityConsiderationWindow,
+                "Atomic volatility consideration window under minimum 1 min"
+            );
+            require(
+                _window <= maxAtomicVolatilityConsiderationWindow,
+                "Atomic volatility consideration window exceed maximum 1 day"
+            );
+        }
+        setUIntValue(flexibleStorage, settingContractName, keccak256(abi.encodePacked(settingName, _currencyKey)), _window);
+        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
+    }
+
+    function setAtomicVolatilityUpdateThreshold(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        uint _threshold
+    ) external {
+        setUIntValue(
+            flexibleStorage,
+            settingContractName,
+            keccak256(abi.encodePacked(settingName, _currencyKey)),
+            _threshold
+        );
+        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
+    }
+
     // ========== EVENTS ==========
     event IssuanceRatioUpdated(uint newRatio);
     event TradingRewardsEnabled(bool enabled);
@@ -406,4 +517,11 @@ library SystemSettingsLib {
     event WrapperBurnFeeRateUpdated(address wrapper, int rate);
     event InteractionDelayUpdated(uint interactionDelay);
     event CollapseFeeRateUpdated(uint collapseFeeRate);
+    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
+    event AtomicTwapWindowUpdated(uint newWindow);
+    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
+    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
+    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
+    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
 }

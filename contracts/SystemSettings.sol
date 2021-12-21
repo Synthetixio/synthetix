@@ -471,82 +471,79 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
-        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
-        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
+        SystemSettingsLib.setAtomicMaxVolumePerBlock(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK,
+            _maxVolume,
+            MAX_ATOMIC_VOLUME_PER_BLOCK
+        );
     }
 
     function setAtomicTwapWindow(uint _window) external onlyOwner {
-        require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
-        require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_WINDOW, _window);
-        emit AtomicTwapWindowUpdated(_window);
+        SystemSettingsLib.setAtomicTwapWindow(
+            address(flexibleStorage()),
+            SETTING_CONTRACT_NAME,
+            SETTING_ATOMIC_TWAP_WINDOW,
+            _window,
+            MIN_ATOMIC_TWAP_WINDOW,
+            MAX_ATOMIC_TWAP_WINDOW
+        );
     }
 
     function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
-        require(_equivalent != address(0), "Atomic equivalent is 0 address");
-        flexibleStorage().setAddressValue(
+        SystemSettingsLib.setAtomicEquivalentForDexPricing(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, _currencyKey)),
+            SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING,
+            _currencyKey,
             _equivalent
         );
-        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
     function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate) external onlyOwner {
-        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setAtomicExchangeFeeRate(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, _currencyKey)),
-            _exchangeFeeRate
+            SETTING_ATOMIC_EXCHANGE_FEE_RATE,
+            _currencyKey,
+            _exchangeFeeRate,
+            MAX_EXCHANGE_FEE_RATE
         );
-        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
     function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setAtomicPriceBuffer(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey)),
+            SETTING_ATOMIC_PRICE_BUFFER,
+            _currencyKey,
             _buffer
         );
-        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
     }
 
     function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
-        if (_window != 0) {
-            require(
-                _window >= MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
-                "Atomic volatility consideration window under minimum 1 min"
-            );
-            require(
-                _window <= MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
-                "Atomic volatility consideration window exceed maximum 1 day"
-            );
-        }
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setAtomicVolatilityConsiderationWindow(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, _currencyKey)),
-            _window
+            SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+            _currencyKey,
+            _window,
+            MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+            MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW
         );
-        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
     }
 
     function setAtomicVolatilityUpdateThreshold(bytes32 _currencyKey, uint _threshold) external onlyOwner {
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setAtomicVolatilityUpdateThreshold(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, _currencyKey)),
+            SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD,
+            _currencyKey,
             _threshold
         );
-        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
-    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
-    event AtomicTwapWindowUpdated(uint newWindow);
-    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
-    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
-    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
-    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
 }
