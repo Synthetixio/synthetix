@@ -427,58 +427,47 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
-        require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
-
-        // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
-        // otherwise risk of flash loan attack
-        if (_rate < 0) {
-            require(-_rate <= getWrapperBurnFeeRate(_wrapper), "-rate > wrapperBurnFeeRate");
-        }
-
-        flexibleStorage().setIntValue(
+        SystemSettingsLib.setWrapperMintFeeRate(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
-            _rate
+            SETTING_WRAPPER_MINT_FEE_RATE,
+            _wrapper,
+            _rate,
+            MAX_WRAPPER_MINT_FEE_RATE,
+            getWrapperBurnFeeRate(_wrapper)
         );
-        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
     function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
-        require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
-
-        // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
-        // otherwise risk of flash loan attack
-        if (_rate < 0) {
-            require(-_rate <= getWrapperMintFeeRate(_wrapper), "-rate > wrapperMintFeeRate");
-        }
-
-        flexibleStorage().setIntValue(
+        SystemSettingsLib.setWrapperBurnFeeRate(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),
-            _rate
+            SETTING_WRAPPER_BURN_FEE_RATE,
+            _wrapper,
+            _rate,
+            MAX_WRAPPER_BURN_FEE_RATE,
+            getWrapperMintFeeRate(_wrapper)
         );
-        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setInteractionDelay(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, _collateral)),
+            SETTING_INTERACTION_DELAY,
+            _collateral,
             _interactionDelay
         );
-        emit InteractionDelayUpdated(_interactionDelay);
     }
 
     function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
-        flexibleStorage().setUIntValue(
+        SystemSettingsLib.setCollapseFeeRate(
+            address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, _collateral)),
+            SETTING_COLLAPSE_FEE_RATE,
+            _collateral,
             _collapseFeeRate
         );
-        emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
     function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
@@ -553,10 +542,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
-    event WrapperMintFeeRateUpdated(address wrapper, int rate);
-    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
-    event InteractionDelayUpdated(uint interactionDelay);
-    event CollapseFeeRateUpdated(uint collapseFeeRate);
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
     event AtomicTwapWindowUpdated(uint newWindow);
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);

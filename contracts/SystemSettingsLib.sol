@@ -19,6 +19,15 @@ library SystemSettingsLib {
         IFlexibleStorage(flexibleStorage).setUIntValue(settingContractName, settingName, value);
     }
 
+    function setIntValue(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        int value
+    ) internal {
+        IFlexibleStorage(flexibleStorage).setIntValue(settingContractName, settingName, value);
+    }
+
     function setBoolValue(
         address flexibleStorage,
         bytes32 settingContractName,
@@ -297,6 +306,83 @@ library SystemSettingsLib {
         emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
+    function setWrapperMintFeeRate(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address _wrapper,
+        int _rate,
+        int maxWrapperMintFeeRate,
+        int getWrapperBurnFeeRate
+    ) external {
+        require(_rate <= maxWrapperMintFeeRate, "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        require(_rate >= -maxWrapperMintFeeRate, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
+
+        // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperBurnFeeRate, "-rate > wrapperBurnFeeRate");
+        }
+
+        setIntValue(flexibleStorage, settingContractName, keccak256(abi.encodePacked(settingName, _wrapper)), _rate);
+        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
+    }
+
+    function setWrapperBurnFeeRate(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address _wrapper,
+        int _rate,
+        int maxWrapperBurnFeeRate,
+        int getWrapperMintFeeRate
+    ) external {
+        require(_rate <= maxWrapperBurnFeeRate, "rate > MAX_WRAPPER_BURN_FEE_RATE");
+        require(_rate >= -maxWrapperBurnFeeRate, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
+
+        // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperMintFeeRate, "-rate > wrapperMintFeeRate");
+        }
+
+        setIntValue(flexibleStorage, settingContractName, keccak256(abi.encodePacked(settingName, _wrapper)), _rate);
+        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
+    }
+
+    function setInteractionDelay(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address _collateral,
+        uint _interactionDelay
+    ) external {
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
+        setUIntValue(
+            flexibleStorage,
+            settingContractName,
+            keccak256(abi.encodePacked(settingName, _collateral)),
+            _interactionDelay
+        );
+        emit InteractionDelayUpdated(_interactionDelay);
+    }
+
+    function setCollapseFeeRate(
+        address flexibleStorage,
+        bytes32 settingContractName,
+        bytes32 settingName,
+        address _collateral,
+        uint _collapseFeeRate
+    ) external {
+        setUIntValue(
+            flexibleStorage,
+            settingContractName,
+            keccak256(abi.encodePacked(settingName, _collateral)),
+            _collapseFeeRate
+        );
+        emit CollapseFeeRateUpdated(_collapseFeeRate);
+    }
+
     // ========== EVENTS ==========
     event IssuanceRatioUpdated(uint newRatio);
     event TradingRewardsEnabled(bool enabled);
@@ -316,4 +402,8 @@ library SystemSettingsLib {
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
     event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
+    event WrapperMintFeeRateUpdated(address wrapper, int rate);
+    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
+    event InteractionDelayUpdated(uint interactionDelay);
+    event CollapseFeeRateUpdated(uint collapseFeeRate);
 }
