@@ -7,15 +7,12 @@ async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
 	if (await _areRatesInvalid({ ctx })) {
-		if (ctx.fork) {
+		// try to add the missing rates
+		await _setMissingRates({ ctx });
+		// check again
+		if (await _areRatesInvalid({ ctx })) {
 			await _printRatesInfo({ ctx });
-			throw new Error('Rates are invalid (fork mode).');
-		} else {
-			await _setMissingRates({ ctx });
-			if (await _areRatesInvalid({ ctx })) {
-				await _printRatesInfo({ ctx });
-				throw new Error('Rates are still invalid after updating.');
-			}
+			throw new Error('Rates are still invalid after updating.');
 		}
 	}
 
@@ -78,15 +75,24 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 }
 
 async function _setMissingRates({ ctx }) {
-	let { ExchangeRates } = ctx.contracts;
+	let currencyKeys;
+	if (ctx.fork) {
+		// this adds a rate for only e.g. sREDEEMER in fork mode (which is not an existing synth
+		// but is added to test the redeeming functionality)
+		// All other synths should have feeds in fork mode
+		currencyKeys = (ctx.addedSynths || []).map(o => toBytes32(o.name));
+	} else {
+		// set missing rates for all synths, since not in fork mode we don't have existing feeds
+		currencyKeys = await _getAvailableCurrencyKeys({ ctx });
+	}
+
 	const owner = ctx.users.owner;
-	ExchangeRates = ExchangeRates.connect(owner);
+	const ExchangeRates = ctx.contracts.ExchangeRates.connect(owner);
 
 	// factory for price aggregators contracts
 	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
 
-	// got over all rates and agg aggregators
-	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
+	// got over all rates and add aggregators
 	const { timestamp } = await ctx.provider.getBlock();
 	for (const currencyKey of currencyKeys) {
 		const rate = await ExchangeRates.rateForCurrency(currencyKey);
