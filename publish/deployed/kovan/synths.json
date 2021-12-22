@@ -6,27 +6,33 @@
 	},
 	{
 		"name": "sEUR",
-		"asset": "EUR"
+		"asset": "EUR",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sJPY",
-		"asset": "JPY"
+		"asset": "JPY",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sAUD",
-		"asset": "AUD"
+		"asset": "AUD",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sGBP",
-		"asset": "GBP"
+		"asset": "GBP",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sKRW",
-		"asset": "KRW"
+		"asset": "KRW",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sCHF",
-		"asset": "CHF"
+		"asset": "CHF",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sBTC",
@@ -40,7 +46,8 @@
 	},
 	{
 		"name": "sLINK",
-		"asset": "LINK"
+		"asset": "LINK",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sDEFI",
@@ -117,6 +124,6 @@
 				"weight": 2.5
 			}
 		],
-		"subclass": "PurgeableSynth"
+		"subclass": "MultiCollateralSynth"
 	}
 ]

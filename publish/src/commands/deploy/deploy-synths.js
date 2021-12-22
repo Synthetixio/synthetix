@@ -16,7 +16,6 @@ module.exports = async ({
 	config,
 	deployer,
 	freshDeploy,
-	deploymentPath,
 	generateSolidity,
 	network,
 	synths,
@@ -113,20 +112,7 @@ module.exports = async ({
 			}
 		}
 
-		let sourceContract = subclass || 'Synth';
-
-		// The Futures testnet only supports whitelisted transfers for synths, in order
-		// to correctly measure profits in the trading competition.
-		if (deploymentPath.includes('kovan-ovm-futures')) {
-			if (subclass) {
-				throw new Error(
-					'Whitelisted transfers is unimplemented for MultiCollateralSynths, please implement it.'
-				);
-			}
-
-			sourceContract = 'LimitedTransferSynth';
-		}
-
+		const sourceContract = subclass || 'Synth';
 		const synth = await deployer.deployContract({
 			name: `Synth${currencyKey}`,
 			source: sourceContract,

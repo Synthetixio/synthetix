@@ -17,12 +17,14 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
+	assignGasOptions,
 } = require('../util');
 
-const SafeBatchSubmitter = require('../SafeBatchSubmitter');
+const { getContract } = require('../command-utils/contract');
+const { safeInitializer } = require('../command-utils/safe-initializer');
 
 const DEFAULTS = {
-	gasPrice: '15',
+	priorityGasPrice: '1',
 	gasLimit: 2e5, // 200,000
 };
 
@@ -30,7 +32,8 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
 	yes,
@@ -65,6 +68,7 @@ const owner = async ({
 	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 		useFork,
+		useOvm,
 	});
 
 	if (!providerUrl) {
@@ -84,7 +88,7 @@ const owner = async ({
 
 	let signer;
 	if (!privateKey) {
-		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		const account = getUsers({ network, user: 'owner', useOvm }).address;
 		signer = provider.getSigner(account);
 		signer.address = await signer.getAddress();
 	} else {
@@ -93,38 +97,59 @@ const owner = async ({
 
 	console.log(gray(`Using account with public key ${signer.address}`));
 
-	const safeBatchSubmitter = new SafeBatchSubmitter({ network, signer, safeAddress: newOwner });
-	let isOwnerASafe = false;
+	let relayers;
 
-	try {
-		// attempt to initialize a gnosis safe from the new owner
-		const { currentNonce, pendingTxns } = await safeBatchSubmitter.init();
-		isOwnerASafe = true;
-		console.log(
-			gray(
-				'Loaded safe at address',
-				yellow(newOwner),
-				'nonce',
-				yellow(currentNonce),
-				'with',
-				yellow(pendingTxns.count),
-				'transactions pending signing'
-			)
-		);
-	} catch (err) {
-		if (!/Safe Proxy contract is not deployed in the current network/.test(err.message)) {
-			throw err;
-		}
+	const safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: newOwner });
 
+	if (!safeBatchSubmitter) {
 		console.log(gray('New owner is not a Gnosis safe.'));
+		console.log(gray('New owner set to'), yellow(newOwner));
 
-		if (signer.address.toLowerCase() !== newOwner.toLowerCase()) {
+		const deployedCode = await provider.getCode(newOwner);
+		const isContract = deployedCode !== '0x';
+
+		if (isContract && useOvm) {
+			console.log(gray('New owner is a contract. Assuming it is a relayer.'));
+			// load up L1 deployment for relaying
+			const { providerUrl: l1ProviderUrl, privateKey: l1PrivateKey } = loadConnections({
+				network,
+				useOvm: false,
+			});
+			const l1Owner = getUsers({ network, user: 'owner', useOvm: false }).address;
+
+			const l1Provider = new ethers.providers.JsonRpcProvider(l1ProviderUrl);
+			relayers = {
+				actions: [],
+				l1Provider,
+				OwnerRelayOnOptimism: getContract({
+					contract: 'OwnerRelayOnOptimism',
+					network,
+					useOvm,
+					provider,
+				}),
+				OwnerRelayOnEthereum: getContract({
+					contract: 'OwnerRelayOnEthereum',
+					network,
+					useOvm: false,
+					provider: l1Provider,
+				}),
+				l1Signer: new ethers.Wallet(l1PrivateKey, l1Provider),
+				l1Owner,
+			};
+
+			console.log(
+				gray('L2 relayer'),
+				yellow(relayers.OwnerRelayOnOptimism.address),
+				gray('L1 base relayer'),
+				yellow(relayers.OwnerRelayOnEthereum.address)
+			);
+		} else if (signer.address.toLowerCase() !== newOwner.toLowerCase()) {
 			throw new Error(
 				`New owner is ${newOwner} and signer is ${signer.address}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
 			);
 		}
 
-		if (!yes) {
+		if (!yes && !isContract) {
 			try {
 				await confirmAction(
 					yellow(
@@ -137,7 +162,7 @@ const owner = async ({
 			}
 		}
 
-		console.log(gray(`Gas Price: ${gasPrice} gwei`));
+		console.log(gray(`Gas: base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
 	}
 
 	const confirmOrEnd = async message => {
@@ -149,7 +174,7 @@ const owner = async ({
 					message +
 						cyan(
 							`\nPlease type "y" to ${
-								isOwnerASafe ? 'stage' : 'submit'
+								safeBatchSubmitter ? 'stage' : 'submit'
 							} transaction, or enter "n" to cancel and resume this later? (y/n) `
 						)
 				);
@@ -170,7 +195,7 @@ const owner = async ({
 		if (complete) continue;
 
 		entry.complete = true;
-		if (isOwnerASafe && !useFork) {
+		if (safeBatchSubmitter && !useFork) {
 			console.log(gray(`Attempting to append`, yellow(key), `to the batch`));
 			const { appended } = await safeBatchSubmitter.appendTransaction({
 				to: target,
@@ -181,14 +206,23 @@ const owner = async ({
 			} else {
 				console.log(gray('Transaction successfully added to the batch.'));
 			}
+		} else if (relayers) {
+			// Relayer
+			console.log(gray('Adding'), yellow(key), gray('to the relayer actions'));
+			relayers.actions.push({ target, data });
 		} else {
 			try {
 				await confirmOrEnd(yellow('Confirm: ') + `Submit ${bgYellow(black(key))} to (${target})`);
-				const params = {
-					to: target,
-					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-					data,
-				};
+				const params = await assignGasOptions({
+					tx: {
+						to: target,
+						data,
+					},
+					provider,
+					maxFeePerGas,
+					maxPriorityFeePerGas,
+				});
+
 				if (gasLimit) {
 					params.gasLimit = ethers.BigNumber.from(gasLimit);
 				}
@@ -207,6 +241,8 @@ const owner = async ({
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 	const warnings = [];
+	// prevent dupes if some contracts are in there twice (looking at you ProxyERC20 and ProxyERC20sUSD)
+	const appendedOwnerCache = {};
 	for (const contract of Object.keys(config)) {
 		if (!deployment.targets[contract]) {
 			const msg = yellow(`WARNING: contract ${contract} not found in deployment file`);
@@ -226,11 +262,18 @@ const owner = async ({
 		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
 
 		if (currentOwner === newOwner.toLowerCase()) {
-			console.log(gray(`${newOwner} is already the owner of ${contract}`));
+			console.log(gray(`${newOwner} is already the owner of ${contract} ${address}`));
 		} else if (nominatedOwner === newOwner.toLowerCase()) {
 			const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
-			if (isOwnerASafe && !useFork) {
+			if (address in appendedOwnerCache) {
+				console.log(gray('Skipping as this action is already in the batch'));
+				continue;
+			} else {
+				appendedOwnerCache[address] = true;
+			}
+
+			if (safeBatchSubmitter && !useFork) {
 				console.log(
 					gray(`Attempting to append`, yellow(`${contract}.acceptOwnership()`), `to the batch`)
 				);
@@ -241,15 +284,27 @@ const owner = async ({
 				if (!appended) {
 					console.log(gray('Skipping adding to the batch as already in pending queue'));
 				}
+			} else if (relayers) {
+				// Relayer
+				console.log(
+					gray('Adding'),
+					yellow(`${contract}.acceptOwnership()`),
+					gray('to the relayer actions')
+				);
+				relayers.actions.push({ target: address, data: encodedData });
 			} else {
 				try {
 					await confirmOrEnd(gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`));
 
-					const params = {
-						to: address,
-						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-						data: encodedData,
-					};
+					const params = await assignGasOptions({
+						tx: {
+							to: address,
+							data: encodedData,
+						},
+						provider,
+						maxFeePerGas,
+						maxPriorityFeePerGas,
+					});
 
 					if (gasLimit) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);
@@ -273,7 +328,7 @@ const owner = async ({
 		}
 	}
 
-	if (isOwnerASafe) {
+	if (safeBatchSubmitter) {
 		const { transactions } = safeBatchSubmitter;
 
 		if (transactions.length) {
@@ -295,6 +350,85 @@ const owner = async ({
 					yellow(transactions.length),
 					'transactions to the safe',
 					yellow(newOwner),
+					'at nonce position',
+					yellow(nonce)
+				)
+			);
+
+			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+		} else {
+			console.log(gray('No transactions to stage'));
+		}
+	} else if (relayers) {
+		const { l1Provider, actions, OwnerRelayOnEthereum, l1Signer, l1Owner } = relayers;
+
+		// Load the equivalent L1 safe
+		const safeBatchSubmitter = await safeInitializer({
+			network,
+			signer: l1Signer,
+			safeAddress: l1Owner,
+		});
+
+		if (!safeBatchSubmitter) {
+			console.log('The L1 owner for this relayer is NOT a safe, proceeding directly');
+			// await OwnerRelayOnEthereum.connect(l1Signer);
+		}
+
+		// This is the batch of transactions to relay at a time to L2, it's based on the
+		// number of transactions that can be done on a single L2 transaction and fit within the
+		// crossDomainMessageGasLimit for type "Relay" (4)
+		const batchSize = 20;
+
+		for (let i = 0; i < actions.length; i += batchSize) {
+			const batchActions = actions.slice(i, i + batchSize);
+			const batchData = OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
+				batchActions.map(({ target }) => target),
+				batchActions.map(({ data }) => data),
+				ethers.BigNumber.from('0'),
+			]);
+			if (safeBatchSubmitter) {
+				await safeBatchSubmitter.appendTransaction({
+					to: OwnerRelayOnEthereum.address,
+					data: batchData,
+				});
+			} else {
+				try {
+					await confirmOrEnd(
+						gray(`Confirm: Submit relay batch of`, yellow(batchActions.length), `transactions?`)
+					);
+
+					console.log(gray('Performing action directly'));
+
+					const params = await assignGasOptions({
+						tx: {
+							to: OwnerRelayOnEthereum.address,
+							data: batchData,
+						},
+						provider: l1Provider,
+						maxFeePerGas,
+						maxPriorityFeePerGas,
+					});
+
+					const tx = await l1Signer.sendTransaction(params);
+
+					const receipt = await tx.wait();
+
+					logTx(receipt);
+				} catch (err) {
+					throw Error(`Transaction failed to submit.\n${err}`);
+				}
+			}
+		}
+
+		if (safeBatchSubmitter) {
+			const { nonce } = await safeBatchSubmitter.submit();
+
+			console.log(
+				gray(
+					'Submitted a batch of',
+					yellow(Math.ceil(actions.length / batchSize)),
+					'transactions to the safe',
+					yellow(l1Owner),
 					'at nonce position',
 					yellow(nonce)
 				)
@@ -334,7 +468,8 @@ module.exports = {
 				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')

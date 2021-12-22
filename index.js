@@ -16,11 +16,10 @@ const data = {
 };
 
 const assets = require('./publish/assets.json');
-const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'local-ovm', 'kovan', 'mainnet', 'goerli', 'kovan-ovm-futures'];
+const networks = ['local', 'kovan', 'mainnet', 'goerli'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -32,12 +31,6 @@ const chainIdMapping = Object.entries({
 	42: {
 		network: 'kovan',
 	},
-
-	420: {
-		network: 'local',
-		useOvm: true,
-	},
-
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
 		network: 'mainnet',
@@ -99,8 +92,6 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	OVM_GAS_PRICE_GWEI: '0.00001',
-
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
@@ -124,6 +115,7 @@ const knownAccounts = {
 // The solidity defaults are managed here in the same format they will be stored, hence all
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
+	TEMP_OWNER_DEFAULT_DURATION: 60 * 60 * 24 * 60, // 60 days
 	WAITING_PERIOD_SECS: (60 * 5).toString(), // 5 mins
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
 	TRADING_REWARDS_ENABLED: false,
@@ -151,10 +143,10 @@ const defaults = {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
+
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
-		'kovan-ovm-futures': constants.ZERO_ADDRESS,
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -169,6 +161,7 @@ const defaults = {
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_RELAY_GAS_LIMIT: `${8e6}`,
 
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
@@ -207,6 +200,9 @@ const defaults = {
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
 	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
+	// SIP-120
+	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
+	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
 };
 
 /**
@@ -403,9 +399,6 @@ const getSynths = ({
 			synth = Object.assign({ feed }, synth);
 		}
 
-		if (synth.inverted) {
-			synth.description = `Inverse ${synth.description}`;
-		}
 		// replace an index placeholder with the index details
 		if (typeof synth.index === 'string') {
 			const { index } = synths.find(({ name }) => name === synth.index) || {};
@@ -532,7 +525,7 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		kovan: Object.assign({}, base),
 		'kovan-ovm': Object.assign({}, base),
 		'mainnet-ovm': Object.assign({}, base, {
-			owner: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
 		}),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
@@ -638,7 +631,6 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
 					.address,
 				index: synth.index,
-				inverted: synth.inverted,
 				decimals: 18,
 				feed: synth.feed,
 			}))
@@ -706,7 +698,6 @@ module.exports = {
 	toBytes32,
 	fromBytes32,
 	wrap,
-	ovmIgnored,
 	nonUpgradeable,
 	releases,
 	knownAccounts,

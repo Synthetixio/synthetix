@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
-import "../interfaces/IWETH.sol";
 
 // IWETH
 contract MockWETH is ERC20, ERC20Detailed {

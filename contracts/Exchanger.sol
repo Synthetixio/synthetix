@@ -41,6 +41,15 @@ interface ISynthetixInternal {
         address toAddress
     ) external;
 
+    function emitAtomicSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint fromAmount,
+        bytes32 toCurrencyKey,
+        uint toAmount,
+        address toAddress
+    ) external;
+
     function emitExchangeReclaim(
         address account,
         bytes32 currencyKey,
@@ -78,7 +87,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     bytes32 public constant CONTRACT_NAME = "Exchanger";
 
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 internal constant sUSD = "sUSD";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -185,7 +194,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
     }
 
-    // Internal function to emit events for each individual rebate and reclaim entry
+    // Internal function to aggregate each individual rebate and reclaim entry for a synth
     function _settlementOwing(address account, bytes32 currencyKey)
         internal
         view
@@ -221,7 +230,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
                 );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
-            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeEntry.exchangeFeeRate);
+            uint amountShouldHaveReceived = _deductFeesFromAmount(destinationAmount, exchangeEntry.exchangeFeeRate);
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
@@ -348,17 +357,36 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             virtualSynth
         );
 
-        if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
-            tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
-        }
+        _processTradingRewards(fee, rewardAddress);
 
         if (trackingCode != bytes32(0)) {
-            ISynthetixInternal(address(synthetix())).emitExchangeTracking(
-                trackingCode,
-                destinationCurrencyKey,
-                amountReceived,
-                fee
-            );
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
+        }
+    }
+
+    function exchangeAtomically(
+        address,
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint) {
+        _notImplemented();
+    }
+
+    function _emitTrackingEvent(
+        bytes32 trackingCode,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        uint256 fee
+    ) internal {
+        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount, fee);
+    }
+
+    function _processTradingRewards(uint fee, address rewardAddress) internal {
+        if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
+            tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
         }
     }
 
@@ -553,7 +581,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint,
         bytes32
     ) internal returns (IVirtualSynth) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
@@ -574,6 +602,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // SIP-65: Decentralized Circuit Breaker
         (, bool circuitBroken) = exchangeCircuitBreaker().rateWithBreakCircuit(currencyKey);
         require(circuitBroken, "Synth price is valid");
+    }
+
+    // SIP-139
+    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
+        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+
+        require(!anyRateInvalid, "Rates for given synths not valid");
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            lastExchangeRate[currencyKeys[i]] = rates[i];
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -683,14 +722,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint exchangeFeeRate)
-    {
+    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
-        exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
+        uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
+        return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
+    }
 
+    function _calculateFeeRateFromExchangeSynths(
+        uint exchangeFeeRate,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    ) internal pure returns (uint) {
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             return exchangeFeeRate;
         }
@@ -701,7 +743,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73)
         ) {
             // Double the exchange fee
-            exchangeFeeRate = exchangeFeeRate.mul(2);
+            return exchangeFeeRate.mul(2);
         }
 
         return exchangeFeeRate;
@@ -749,11 +791,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationCurrencyKey
         );
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-        amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
+        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 
-    function _getAmountReceivedForExchange(uint destinationAmount, uint exchangeFeeRate)
+    function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
         internal
         pure
         returns (uint amountReceived)
@@ -816,6 +858,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             exchangeEntry.timestamp,
             _waitingPeriodSecs
         );
+    }
+
+    function _notImplemented() internal pure {
+        revert("Cannot be run on this layer");
     }
 
     // ========== MODIFIERS ==========

@@ -63,7 +63,7 @@ module.exports = {
 		return flattenedContracts;
 	},
 
-	compile({ sources, runs, useOvm }) {
+	compile({ sources, runs }) {
 		// Note: require this here as silent error is detected on require that impacts pretty-error
 		const solc = require('solc');
 

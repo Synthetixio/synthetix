@@ -298,7 +298,6 @@ contract('PurgeableSynth', accounts => {
 				});
 
 				describe('when the user holds 5000 USD worth of the purgeable synth iETH', () => {
-					let balanceBeforePurgeUser2;
 					beforeEach(async () => {
 						// Note: 5000 is chosen to be large enough to accommodate exchange fees which
 						// ultimately limit the total supply of that synth
@@ -312,7 +311,6 @@ contract('PurgeableSynth', accounts => {
 							user: account2,
 							amount: iETHAmount,
 						});
-						balanceBeforePurgeUser2 = await iETHContract.balanceOf(account2);
 					});
 					describe('when purge is invoked with both accounts', () => {
 						it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
@@ -322,84 +320,6 @@ contract('PurgeableSynth', accounts => {
 					describe('when purge is invoked with just one account', () => {
 						it('then it reverts as the totalSupply exceeds the 100,000USD max', async () => {
 							await assert.revert(iETHContract.purge([account2], { from: owner }));
-						});
-					});
-					describe('when the exchange rates has the synth as frozen', () => {
-						beforeEach(async () => {
-							// prevent circuit breaker from firing by upping the threshold to a factor 4
-							// because the price moved from 170 (before inverse pricing) to 50 (frozen at lower limit)
-							await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
-
-							await exchangeRates.setInversePricing(
-								iETH,
-								toUnit(100),
-								toUnit(150),
-								toUnit(50),
-								false,
-								false,
-								{ from: owner }
-							);
-							await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
-								from: oracle,
-							});
-							await debtCache.takeDebtSnapshot();
-						});
-						describe('when purge is invoked with just one account', () => {
-							let txn;
-
-							beforeEach(async () => {
-								txn = await iETHContract.purge([account2], { from: owner });
-							});
-
-							it('then it must issue the Purged event', () => {
-								const purgedEvent = txn.logs.find(log => log.event === 'Purged');
-
-								assert.eventEqual(purgedEvent, 'Purged', {
-									account: account2,
-									value: balanceBeforePurgeUser2,
-								});
-							});
-
-							it('and the second user is at 0 balance', async () => {
-								const userBalance = await iETHContract.balanceOf(account2);
-								assert.bnEqual(
-									userBalance,
-									toUnit(0),
-									'The second user must no longer have a balance after the purge'
-								);
-							});
-
-							it('and no change occurs for the other user', async () => {
-								const userBalance = await iETHContract.balanceOf(account1);
-								assert.bnEqual(
-									userBalance,
-									balanceBeforePurge,
-									'The first user must not be impacted by a purge for another user'
-								);
-							});
-						});
-
-						describe('when purge is invoked with both accounts', () => {
-							let txn;
-							beforeEach(async () => {
-								txn = await iETHContract.purge([account2, account1], { from: owner });
-							});
-							it('then it must issue two purged events', () => {
-								const events = txn.logs.filter(log => log.event === 'Purged');
-
-								assert.eventEqual(events[0], 'Purged', {
-									account: account2,
-									value: balanceBeforePurgeUser2,
-								});
-								assert.eventEqual(events[1], 'Purged', {
-									account: account1,
-									value: balanceBeforePurge,
-								});
-							});
-							it('and the total supply of the synth must be 0', async () => {
-								const totalSupply = await iETHContract.totalSupply();
-								assert.bnEqual(totalSupply, toUnit('0'), 'Total supply must be 0 after full purge');
-							});
 						});
 					});
 				});

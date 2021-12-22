@@ -189,4 +189,19 @@ library SafeDecimalMath {
     function floorsub(uint a, uint b) internal pure returns (uint) {
         return b >= a ? 0 : a - b;
     }
+
+    /* ---------- Utilities ---------- */
+    /*
+     * Absolute value of the input, returned as a signed number.
+     */
+    function signedAbs(int x) internal pure returns (int) {
+        return x < 0 ? -x : x;
+    }
+
+    /*
+     * Absolute value of the input, returned as an unsigned number.
+     */
+    function abs(int x) internal pure returns (uint) {
+        return uint(signedAbs(x));
+    }
 }

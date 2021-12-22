@@ -182,7 +182,13 @@
 	"FuturesMarketData": {
 		"deploy": true
 	},
+	"WrapperFactory": {
+		"deploy": true
+	},
 	"WETH": {
+		"deploy": true
+	},
+	"OwnerRelayOnOptimism": {
 		"deploy": true
 	},
 	"SynthRedeemer": {

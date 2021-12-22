@@ -14,7 +14,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 	.addFlag('useFork', 'Use a local fork')
 	.addFlag('useOvm', 'Use an Optimism chain')
 	.addOptionalParam('targetNetwork', 'Target the instance deployed in this network', 'mainnet')
-	.addOptionalParam('gasPrice', 'Gas price to set when performing transfers', 0, types.int)
 	.addOptionalParam('gasLimit', 'Max gas to use when signing transactions', 8000000, types.int)
 	.addOptionalParam('privateKey', 'Private key to use to sign txs')
 	.addOptionalParam('providerUrl', 'The http provider to use for communicating with the blockchain')
@@ -22,7 +21,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 	.addOptionalParam('blockTag', 'Specify the block tag to interact at, per ethers.js specification')
 	.setAction(async (taskArguments, hre) => {
 		const { useOvm, useFork, deploymentPath, targetNetwork } = taskArguments;
-		let { providerUrl, gasLimit, gasPrice, privateKey, blockTag } = taskArguments;
+		let { providerUrl, gasLimit, privateKey, blockTag } = taskArguments;
 		// ------------------
 		// Default values per network
 		// ------------------
@@ -30,9 +29,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 		const key = `${targetNetwork}${useOvm ? '-ovm' : ''}`;
 		const defaults = DEFAULTS[key];
 		providerUrl = providerUrl || defaults.providerUrl;
-		gasPrice = gasPrice || defaults.gasPrice;
 		if (useOvm) {
-			gasPrice = synthetix.constants.OVM_GAS_PRICE_GWEI;
 			gasLimit = undefined;
 		}
 		blockTag = blockTag || 'latest';
@@ -115,7 +112,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 			useOvm,
 			providerUrl,
 			network: targetNetwork,
-			gasPrice,
 			deploymentFilePath,
 			wallet,
 			blockTag,
@@ -335,7 +331,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					// SEND TX
 				} else {
 					const overrides = {
-						gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
 						gasLimit,
 					};
 
@@ -366,7 +361,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					const txPromise = contract[abiItemName](...inputs, overrides);
 					result = await _sendTx({
 						txPromise,
-						provider,
 					});
 
 					if (result.success) {
@@ -440,45 +434,32 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 	});
 
 const DEFAULTS = {
-	mainnet: {
-		gasPrice: 200,
-	},
+	mainnet: {},
 	'mainnet-ovm': {
 		providerUrl: 'https://mainnet.optimism.io',
-		gasPrice: 0,
 	},
-	kovan: {
-		gasPrice: 1,
-	},
+	kovan: {},
 	'kovan-ovm': {
 		providerUrl: 'https://kovan.optimism.io',
-		gasPrice: 0,
 	},
 	'kovan-ovm-futures': {
 		providerUrl: 'https://kovan.optimism.io',
 		gasPrice: undefined,
 	},
 	local: {
-		gasPrice: 1,
 		providerUrl: 'http://localhost:9545',
 	},
 	'local-ovm': {
 		providerUrl: 'http://localhost:8545',
-		gasPrice: 0,
 	},
-	rinkeby: {
-		gasPrice: 1,
-	},
-	ropsten: {
-		gasPrice: 1,
-	},
+	rinkeby: {},
+	ropsten: {},
 };
 
 async function _printHeader({
 	useOvm,
 	providerUrl,
 	network,
-	gasPrice,
 	deploymentFilePath,
 	wallet,
 	blockTag,
@@ -495,7 +476,7 @@ async function _printHeader({
 		)
 	);
 	console.log(gray(`> Network: ${network}`));
-	console.log(gray(`> Gas price: ${gasPrice}`));
+	console.log(gray(`> Gas price: provider default`));
 	console.log(gray(`> OVM: ${useOvm}`));
 	console.log(gray(`> Block tag: ${blockTag}`));
 	console.log(yellow(`> Target deployment: ${path.dirname(deploymentFilePath)}`));

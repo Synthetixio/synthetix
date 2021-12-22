@@ -163,5 +163,23 @@
 	},
 	"EtherWrapper": {
 		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralUtil": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"WrapperFactory": {
+		"deploy": false
+	},
+	"OwnerRelayOnOptimism": {
+		"deploy": false
 	}
 }

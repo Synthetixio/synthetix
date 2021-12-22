@@ -14,6 +14,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "SystemSettings";
+
     // No more synths may be issued than the value of SNX backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
@@ -41,10 +43,19 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
     uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
 
-    // TODO(liamz): these are simple bounds for the mint/burn fee rates (max 100%).
-    // Can we come up with better values?
-    uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
-    uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
+    int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
+    int public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
+
+    // Atomic block volume limit is encoded as uint192.
+    uint public constant MAX_ATOMIC_VOLUME_PER_BLOCK = uint192(-1);
+
+    // TWAP window must be between 1 min and 1 day.
+    uint public constant MIN_ATOMIC_TWAP_WINDOW = 60;
+    uint public constant MAX_ATOMIC_TWAP_WINDOW = 86400;
+
+    // Volatility consideration window must be between 1 min and 1 day.
+    uint public constant MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 60;
+    uint public constant MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 86400;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -151,6 +162,24 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getEtherWrapperBurnFeeRate();
     }
 
+    // SIP 182: Wrapper Factory
+    // The maximum amount of token held by the Wrapper.
+    function wrapperMaxTokenAmount(address wrapper) external view returns (uint) {
+        return getWrapperMaxTokenAmount(wrapper);
+    }
+
+    // SIP 182: Wrapper Factory
+    // The fee for depositing token into the Wrapper.
+    function wrapperMintFeeRate(address wrapper) external view returns (int) {
+        return getWrapperMintFeeRate(wrapper);
+    }
+
+    // SIP 182: Wrapper Factory
+    // The fee for burning synth and releasing token from the Wrapper.
+    function wrapperBurnFeeRate(address wrapper) external view returns (int) {
+        return getWrapperBurnFeeRate(wrapper);
+    }
+
     function minCratio(address collateral) external view returns (uint) {
         return getMinCratio(collateral);
     }
@@ -165,6 +194,48 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     function collapseFeeRate(address collateral) external view returns (uint) {
         return getCollapseFeeRate(collateral);
+    }
+
+    // SIP-120 Atomic exchanges
+    // max allowed volume per block for atomic exchanges
+    function atomicMaxVolumePerBlock() external view returns (uint) {
+        return getAtomicMaxVolumePerBlock();
+    }
+
+    // SIP-120 Atomic exchanges
+    // time window (in seconds) for TWAP prices when considered for atomic exchanges
+    function atomicTwapWindow() external view returns (uint) {
+        return getAtomicTwapWindow();
+    }
+
+    // SIP-120 Atomic exchanges
+    // equivalent asset to use for a synth when considering external prices for atomic exchanges
+    function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
+        return getAtomicEquivalentForDexPricing(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // fee rate override for atomic exchanges into a synth
+    function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicExchangeFeeRate(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // price dampener for chainlink prices when considered for atomic exchanges
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicPriceBuffer(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // consideration window for determining synth volatility
+    function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityConsiderationWindow(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // update threshold for determining synth volatility
+    function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityUpdateThreshold(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -310,15 +381,60 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETHER_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
         emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETHER_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
         emit EtherWrapperBurnFeeRateUpdated(_rate);
+    }
+
+    function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper)),
+            _maxTokenAmount
+        );
+        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
+    }
+
+    function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
+
+        // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperBurnFeeRate(_wrapper), "-rate > wrapperBurnFeeRate");
+        }
+
+        flexibleStorage().setIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
+            _rate
+        );
+        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
+    }
+
+    function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
+        require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
+
+        // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
+        // otherwise risk of flash loan attack
+        if (_rate < 0) {
+            require(-_rate <= getWrapperMintFeeRate(_wrapper), "-rate > wrapperMintFeeRate");
+        }
+
+        flexibleStorage().setIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),
+            _rate
+        );
+        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
     function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
@@ -359,6 +475,76 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
+    function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
+        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
+        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
+    }
+
+    function setAtomicTwapWindow(uint _window) external onlyOwner {
+        require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
+        require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_WINDOW, _window);
+        emit AtomicTwapWindowUpdated(_window);
+    }
+
+    function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
+        require(_equivalent != address(0), "Atomic equivalent is 0 address");
+        flexibleStorage().setAddressValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, _currencyKey)),
+            _equivalent
+        );
+        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
+    }
+
+    function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate) external onlyOwner {
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, _currencyKey)),
+            _exchangeFeeRate
+        );
+        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
+    }
+
+    function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey)),
+            _buffer
+        );
+        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
+    }
+
+    function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
+        if (_window != 0) {
+            require(
+                _window >= MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+                "Atomic volatility consideration window under minimum 1 min"
+            );
+            require(
+                _window <= MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+                "Atomic volatility consideration window exceed maximum 1 day"
+            );
+        }
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, _currencyKey)),
+            _window
+        );
+        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
+    }
+
+    function setAtomicVolatilityUpdateThreshold(bytes32 _currencyKey, uint _threshold) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, _currencyKey)),
+            _threshold
+        );
+        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -378,8 +564,18 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
+    event WrapperMintFeeRateUpdated(address wrapper, int rate);
+    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
     event MinCratioRatioUpdated(uint minCratio);
     event CollateralManagerUpdated(address newCollateralManager);
     event InteractionDelayUpdated(uint interactionDelay);
     event CollapseFeeRateUpdated(uint collapseFeeRate);
+    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
+    event AtomicTwapWindowUpdated(uint newWindow);
+    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
+    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
+    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
+    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
 }

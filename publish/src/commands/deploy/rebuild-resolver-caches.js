@@ -8,58 +8,17 @@ const {
 } = require('../../../..');
 
 module.exports = async ({
-	addressOf,
-	compiled,
 	deployer,
 	generateSolidity,
 	limitPromise,
-	network,
 	newContractsBeingAdded,
 	runStep,
+	network,
 	useOvm,
 }) => {
-	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
+	console.log(gray(`\n------ REBUILD RESOLVER CACHES ------\n`));
 
-	// Legacy contracts.
-	if (network === 'mainnet' && !useOvm) {
-		// v2.35.2 contracts.
-		// TODO  -fetch these from getVersions()
-		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
-		const CollateralErc20 = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46'; // REN
-		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
-
-		const legacyContracts = Object.entries({
-			CollateralEth,
-			CollateralErc20,
-			CollateralShort,
-		}).map(([name, address]) => {
-			// Conbine MixinResolver + Owned abis
-			const abi1 = compiled['MixinResolver'].abi;
-			const abi2 = compiled['Owned'].abi.filter(e => e.type !== 'constructor'); // Avoid duplicate constructor entries
-			const abi = [...abi1, ...abi2];
-
-			const target = new ethers.Contract(address, abi, deployer.provider);
-			target.source = name;
-			return [`legacy_${name}`, target];
-		});
-
-		for (const [name, target] of legacyContracts) {
-			await runStep({
-				gasLimit: 7e6,
-				contract: name,
-				target,
-				read: 'isResolverCached',
-				expected: input => input,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildCache',
-				// these updates are tricky to Soliditize, and aren't
-				// owner required and aren't critical to the core, so
-				// let's skip them in the migration script
-				// and a re-run of the deploy script will catch them
-				skipSolidity: true,
-			});
-		}
-	}
+	const { AddressResolver, WrapperFactory } = deployer.deployedContracts;
 
 	const filterTargetsWith = ({ prop }) =>
 		Object.entries(deployer.deployedContracts).filter(([, target]) => {
@@ -67,6 +26,93 @@ module.exports = async ({
 		});
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
+
+	const wrappers = [];
+
+	// add deployed wrappers
+	try {
+		const wrapperCreatedLogs = await deployer.provider.getLogs({
+			fromBlock: 0,
+			topics: [ethers.utils.id('WrapperCreated(address,bytes32,address)')],
+		});
+
+		for (const rawLog of wrapperCreatedLogs) {
+			const log = WrapperFactory.interface.parseLog(rawLog);
+			wrappers.push([
+				`Wrapper for ${yellow(
+					ethers.utils.parseBytes32String(log.args.currencyKey)
+				)} via token ${yellow(
+					await new ethers.Contract(
+						log.args.token,
+						[
+							{
+								constant: true,
+								inputs: [],
+								name: 'name',
+								outputs: [
+									{
+										type: 'string',
+									},
+								],
+								payable: false,
+								stateMutability: 'view',
+								type: 'function',
+							},
+						],
+						deployer.provider
+					).name()
+				)}`,
+				new ethers.Contract(log.args.wrapperAddress, WrapperFactory.interface, deployer.provider),
+			]); // interface doesn't matter as long as it responds to MixinResolver
+		}
+	} catch (err) {
+		if (/eth_getLogs are limited to a 10,000 blocks range/.test(err.message)) {
+			console.log(
+				yellow.bold(
+					'Warning: Cannot fetch logs on this network. Known limitation on OVM mainnet - cannot search back greater than 10k blocks'
+				)
+			);
+		} else {
+			throw err;
+		}
+	}
+
+	// OVM pre-regenesis
+	if (network === 'mainnet' && useOvm) {
+		console.log(gray('Adding 3 known OVM wrapper pre-regenesis'));
+		wrappers.push(
+			[
+				'WETHWrapper',
+				new ethers.Contract(
+					'0x6202A3B0bE1D222971E93AaB084c6E584C29DB70',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			],
+			[
+				'DAIWrapper',
+				new ethers.Contract(
+					'0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			],
+			[
+				'LUSDWrapper',
+				new ethers.Contract(
+					'0x8A91e92FDd86e734781c38DB52a390e1B99fba7c',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			]
+		);
+	}
+
+	console.log(gray(`found ${yellow(wrappers.length)} wrapper addresses`));
+
+	wrappers.forEach(([label, target]) => console.log(gray(label, 'at', yellow(target.address))));
+
+	contractsWithRebuildableCache.push(...wrappers);
 
 	// collect all resolver addresses required
 	const contractToDepMap = {};
@@ -129,10 +175,14 @@ module.exports = async ({
 		// when running in solidity generation mode, we cannot expect
 		// the address resolver to have been updated. Thus we have to compile a list
 		// of all possible contracts to update rather than relying on "isResolverCached"
-		for (const { name: newContract } of Object.values(newContractsBeingAdded)) {
+		for (const { name: newContract, address, contract } of Object.values(newContractsBeingAdded)) {
 			if (Array.isArray(contractToDepMap[newContract])) {
 				// when the new contract is required by others, add them
 				contractToDepMap[newContract].forEach(entry => contractsToRebuildCacheSet.add(entry));
+			}
+			// and regardless add each new contract being added if it uses the MixinResolver
+			if (contract.resolverAddressesRequired) {
+				contractsToRebuildCacheSet.add(address);
 			}
 		}
 		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
@@ -169,7 +219,7 @@ module.exports = async ({
 		}
 	}
 
-	const addressesChunkSize = useOvm ? 7 : 20;
+	const addressesChunkSize = useOvm ? 5 : 20;
 	let batchCounter = 1;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
@@ -198,45 +248,6 @@ module.exports = async ({
 				skipSolidity: true, // this is a double check - we don't want solidity output for this
 			});
 		}
-	}
-
-	// Now perform a sync of legacy contracts that have not been replaced in Shaula (v2.35.x)
-	// EtherCollateral, EtherCollateralsUSD
-	console.log(gray('Checking all legacy contracts with setResolverAndSyncCache() are rebuilt...'));
-	const contractsWithLegacyResolverCaching = filterTargetsWith({
-		prop: 'setResolverAndSyncCache',
-	});
-	for (const [contract, target] of contractsWithLegacyResolverCaching) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract,
-			target,
-			read: 'isResolverCached',
-			readArg: addressOf(ReadProxyAddressResolver),
-			expected: input => input,
-			write: 'setResolverAndSyncCache',
-			writeArg: addressOf(ReadProxyAddressResolver),
-			comment:
-				'Rebuild the resolver cache of contracts that use the legacy "setResolverAndSyncCache" function',
-		});
-	}
-
-	// Finally set resolver on contracts even older than legacy (Depot)
-	console.log(gray('Checking all legacy contracts with setResolver() are rebuilt...'));
-	const contractsWithLegacyResolverNoCache = filterTargetsWith({
-		prop: 'setResolver',
-	});
-	for (const [contract, target] of contractsWithLegacyResolverNoCache) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract,
-			target,
-			read: 'resolver',
-			expected: input => addressOf(ReadProxyAddressResolver),
-			write: 'setResolver',
-			writeArg: addressOf(ReadProxyAddressResolver),
-			comment: 'Rebuild the resolver cache of contracts that use the legacy "setResolver" function',
-		});
 	}
 
 	console.log(gray('All caches are rebuilt. '));

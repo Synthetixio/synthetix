@@ -10,13 +10,13 @@ commands:
       - run:
           shell: /bin/sh
           command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 300 http://localhost:<<parameters.port>>
+            wget --retry-connrefused --waitretry=1 --read-timeout=180 --timeout=180 -t 300 http://localhost:<<parameters.port>>
             :
 jobs:
   job-audit:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:14.17-ubuntu
+      - image: synthetixio/docker-sec-tools:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -33,7 +33,7 @@ jobs:
   job-compile:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -42,12 +42,10 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
-      - run: rm -rf build # force a clean build
-      - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
   job-fork-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -81,7 +79,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v6-optimism-build-{{ checksum "hardhat/tasks/task-ops.js" }}
+            - v6-optimism-build-{{ checksum "package-lock.json" }}
       - run:
           name: Build docker containers if necessary
           command: |
@@ -89,7 +87,7 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v6-optimism-build-{{ checksum "hardhat/tasks/task-ops.js" }}
+          key: v6-optimism-build-{{ checksum "package-lock.json" }}
           paths:
             - ./optimism
       - run:
@@ -117,7 +115,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -129,7 +127,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -143,7 +141,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -153,7 +151,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v4-dependencies-{{ checksum "package-lock.json" }}
+            - v5-dependencies-{{ checksum "package-lock.json" }}
       - run:
           name: Set custom npm cache directory
           command: npm config set cache .npm-cache --global
@@ -161,7 +159,7 @@ jobs:
           name: Install dependencies
           command: npm install --prefer-offline --no-audit
       - save_cache:
-          key: v4-dependencies-{{ checksum "package-lock.json" }}
+          key: v5-dependencies-{{ checksum "package-lock.json" }}
           paths:
             - node_modules
             - .npm-cache
@@ -173,7 +171,7 @@ jobs:
   job-simulate-release:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -196,7 +194,7 @@ jobs:
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -216,7 +214,7 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -242,7 +240,7 @@ jobs:
   job-unit-tests-coverage-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:14.17-ubuntu
+      - image: synthetixio/docker-sec-tools:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -258,7 +256,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -288,7 +286,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -309,7 +307,7 @@ jobs:
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -341,7 +339,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -360,7 +358,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:14.17-ubuntu
+      - image: synthetixio/docker-node:16.13-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN

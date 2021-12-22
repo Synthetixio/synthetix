@@ -305,13 +305,29 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    function liquidateDelinquentAccount(address account, uint susdAmount)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        (uint totalRedeemed, uint amountLiquidated) =
+            issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
     function exchangeWithTrackingForInitiator(
         bytes32,
         uint,
         bytes32,
         address,
         bytes32
-    ) external returns (uint amountReceived) {
+    ) external returns (uint) {
         _notImplemented();
     }
 
@@ -324,11 +340,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _notImplemented();
     }
 
-    function mint() external returns (bool) {
+    function exchangeAtomically(
+        bytes32,
+        uint,
+        bytes32,
+        bytes32
+    ) external returns (uint) {
         _notImplemented();
     }
 
-    function liquidateDelinquentAccount(address, uint) external returns (bool) {
+    function mint() external returns (bool) {
         _notImplemented();
     }
 
@@ -387,6 +408,25 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 snxRedeemed,
+        uint256 amountLiquidated,
+        address liquidator
+    ) internal {
+        proxy._emit(
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
@@ -395,7 +435,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 internal constant SYNTHEXCHANGE_SIG =
+    bytes32 internal constant SYNTH_EXCHANGE_SIG =
         keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
 
     function emitSynthExchange(
@@ -409,7 +449,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         proxy._emit(
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
-            SYNTHEXCHANGE_SIG,
+            SYNTH_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0

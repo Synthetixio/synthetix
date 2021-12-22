@@ -50,6 +50,8 @@ const {
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
 		DEBT_SNAPSHOT_STALE_TIME,
+		ATOMIC_MAX_VOLUME_PER_BLOCK,
+		ATOMIC_TWAP_WINDOW,
 	},
 	wrap,
 } = snx;
@@ -278,6 +280,10 @@ describe('publish scripts', () => {
 						PRICE_DEVIATION_THRESHOLD_FACTOR
 					);
 					assert.strictEqual(await Exchanger.tradingRewardsEnabled(), TRADING_REWARDS_ENABLED);
+					assert.strictEqual(
+						(await Exchanger.atomicMaxVolumePerBlock()).toString(),
+						ATOMIC_MAX_VOLUME_PER_BLOCK
+					);
 					assert.strictEqual((await Issuer.issuanceRatio()).toString(), ISSUANCE_RATIO);
 					assert.strictEqual((await FeePool.feePeriodDuration()).toString(), FEE_PERIOD_DURATION);
 					assert.strictEqual(
@@ -292,6 +298,10 @@ describe('publish scripts', () => {
 						LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
+					assert.strictEqual(
+						(await ExchangeRates.atomicTwapWindow()).toString(),
+						ATOMIC_TWAP_WINDOW
+					);
 					assert.strictEqual(
 						(await DebtCache.debtSnapshotStaleTime()).toString(),
 						DEBT_SNAPSHOT_STALE_TIME
@@ -316,6 +326,7 @@ describe('publish scripts', () => {
 				describe('when defaults are changed', () => {
 					let newWaitingPeriod;
 					let newPriceDeviation;
+					let newAtomicMaxVolumePerBlock;
 					let newIssuanceRatio;
 					let newFeePeriodDuration;
 					let newTargetThreshold;
@@ -323,6 +334,7 @@ describe('publish scripts', () => {
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
 					let newRateStalePeriod;
+					let newAtomicTwapWindow;
 					let newRateForsUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
@@ -330,6 +342,7 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
 						newPriceDeviation = ethers.utils.parseEther('0.45').toString();
+						newAtomicMaxVolumePerBlock = ethers.utils.parseEther('1000').toString();
 						newIssuanceRatio = ethers.utils.parseEther('0.25').toString();
 						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
 						newTargetThreshold = '6';
@@ -337,6 +350,7 @@ describe('publish scripts', () => {
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
+						newAtomicTwapWindow = '1800';
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
@@ -348,6 +362,12 @@ describe('publish scripts', () => {
 
 						tx = await SystemSettings.setPriceDeviationThresholdFactor(
 							newPriceDeviation,
+							overrides
+						);
+						await tx.wait();
+
+						tx = await SystemSettings.setAtomicMaxVolumePerBlock(
+							newAtomicMaxVolumePerBlock,
 							overrides
 						);
 						await tx.wait();
@@ -368,6 +388,9 @@ describe('publish scripts', () => {
 						await tx.wait();
 
 						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
+						await tx.wait();
+
+						tx = await SystemSettings.setAtomicTwapWindow(newAtomicTwapWindow, overrides);
 						await tx.wait();
 
 						tx = await SystemSettings.setRateStalePeriod(newRateStalePeriod, overrides);
@@ -414,6 +437,10 @@ describe('publish scripts', () => {
 								(await Exchanger.priceDeviationThresholdFactor()).toString(),
 								newPriceDeviation
 							);
+							assert.strictEqual(
+								(await Exchanger.atomicMaxVolumePerBlock()).toString(),
+								newAtomicMaxVolumePerBlock
+							);
 							assert.strictEqual((await Issuer.issuanceRatio()).toString(), newIssuanceRatio);
 							assert.strictEqual(
 								(await FeePool.feePeriodDuration()).toString(),
@@ -438,6 +465,10 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
 								newRateStalePeriod
+							);
+							assert.strictEqual(
+								(await ExchangeRates.atomicTwapWindow()).toString(),
+								newAtomicTwapWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
 							assert.strictEqual(
@@ -703,7 +734,7 @@ describe('publish scripts', () => {
 					// make sure exchange rates has prices for specific assets
 
 					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
-						synths.map(({ inverted, asset }) => {
+						synths.map(({ asset }) => {
 							// as the same assets are used for long and shorts, search by asset rather than
 							// name (currencyKey) here so that we don't accidentially override an inverse with
 							// another rate
@@ -720,13 +751,6 @@ describe('publish scripts', () => {
 								return {
 									asset,
 									rate: 0.000001,
-								};
-							} else if (asset === 'BNB') {
-								// ensure iBNB is not frozen
-								return {
-									asset,
-									rate: synths.find(synth => synth.inverted && synth.asset === asset).inverted
-										.entryPoint,
 								};
 							} else if (asset === 'XTZ') {
 								// ensure iXTZ is frozen at upper limit
@@ -937,296 +961,6 @@ describe('publish scripts', () => {
 									const { suspended, reason } = await SystemStatus.synthSuspension(sETH);
 									assert.strictEqual(suspended, true);
 									assert.strictEqual(reason.toString(), '65');
-								});
-							});
-						});
-					});
-
-					describe('handle updates to inverted rates', () => {
-						describe('when a user has issued and exchanged into iCEX', () => {
-							beforeEach(async () => {
-								let tx;
-
-								Synthetix = Synthetix.connect(accounts.first);
-
-								tx = await Synthetix.issueMaxSynths(overrides);
-								await tx.wait();
-
-								tx = await Synthetix.exchange(
-									toBytes32('sUSD'),
-									ethers.utils.parseEther('100'),
-									toBytes32('iCEX'),
-									overrides
-								);
-								await tx.wait();
-							});
-							describe('when a new inverted synth iABC is added to the list', () => {
-								describe('and the inverted synth iXTZ has its parameters shifted', () => {
-									describe('and the inverted synth iCEX has its parameters shifted as well', () => {
-										beforeEach(async () => {
-											// read current config file version (if something has been removed,
-											// we don't want to include it here)
-											const currentSynthsFile = JSON.parse(fs.readFileSync(synthsJSONPath));
-
-											// add new iABC synth
-											currentSynthsFile.push({
-												name: 'iABC',
-												asset: 'ABC',
-												category: 'crypto',
-												sign: '',
-												description: 'Inverted Alphabet',
-												subclass: 'PurgeableSynth',
-												inverted: {
-													entryPoint: 1,
-													upperLimit: 1.5,
-													lowerLimit: 0.5,
-												},
-											});
-
-											// mutate parameters of iXTZ
-											// Note: this is brittle and will *break* if iXTZ or iCEX are removed from the
-											// synths for deployment. This needs to be improved in the near future - JJ
-											currentSynthsFile.find(({ name }) => name === 'iXTZ').inverted = {
-												entryPoint: 100,
-												upperLimit: 150,
-												lowerLimit: 50,
-											};
-
-											// mutate parameters of iCEX
-											currentSynthsFile.find(({ name }) => name === 'iCEX').inverted = {
-												entryPoint: 1,
-												upperLimit: 1.5,
-												lowerLimit: 0.5,
-											};
-
-											fs.writeFileSync(synthsJSONPath, JSON.stringify(currentSynthsFile));
-										});
-
-										describe('when ExchangeRates alone is redeployed', () => {
-											let ExchangeRates;
-											let currentConfigFile;
-											beforeEach(async () => {
-												// read current config file version (if something has been removed,
-												// we don't want to include it here)
-												currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
-												const configForExrates = Object.keys(currentConfigFile).reduce(
-													(memo, cur) => {
-														memo[cur] = { deploy: cur === 'ExchangeRates' };
-														return memo;
-													},
-													{}
-												);
-
-												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
-
-												await commands.deploy({
-													concurrency,
-													addNewSynths: true,
-													network,
-													yes: true,
-													privateKey: accounts.deployer.privateKey,
-												});
-												targets = getTarget();
-												ExchangeRates = getContract({ target: 'ExchangeRates' });
-											});
-
-											// Test the properties of an inverted synth
-											const testInvertedSynth = async ({
-												currencyKey,
-												shouldBeFrozenAtUpperLimit,
-												shouldBeFrozenAtLowerLimit,
-											}) => {
-												const [
-													entryPoint,
-													upperLimit,
-													lowerLimit,
-													frozenAtUpperLimit,
-													frozenAtLowerLimit,
-												] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(toBytes32(currencyKey))
-												);
-												const expected = synths.find(({ name }) => name === currencyKey).inverted;
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													expected.entryPoint,
-													'Entry points match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(upperLimit.toString()),
-													expected.upperLimit,
-													'Upper limits match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(lowerLimit.toString()),
-													expected.lowerLimit,
-													'Lower limits match'
-												);
-												assert.strictEqual(
-													frozenAtUpperLimit,
-													!!shouldBeFrozenAtUpperLimit,
-													'Frozen upper matches expectation'
-												);
-
-												assert.strictEqual(
-													frozenAtLowerLimit,
-													!!shouldBeFrozenAtLowerLimit,
-													'Frozen lower matches expectation'
-												);
-											};
-
-											it('then the new iABC synth should be added correctly (as it has no previous rate)', async () => {
-												const iABC = toBytes32('iABC');
-												const [
-													entryPoint,
-													upperLimit,
-													lowerLimit,
-													frozenAtUpperLimit,
-													frozenAtLowerLimit,
-												] = await callMethodWithRetry(ExchangeRates.inversePricing(iABC));
-												const rate = await callMethodWithRetry(ExchangeRates.rateForCurrency(iABC));
-
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													1,
-													'Entry point match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(upperLimit.toString()),
-													1.5,
-													'Upper limit match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(lowerLimit.toString()),
-													0.5,
-													'Lower limit match'
-												);
-												assert.strictEqual(
-													frozenAtUpperLimit || frozenAtLowerLimit,
-													false,
-													'Is not frozen'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(rate.toString()),
-													0,
-													'No rate for new inverted synth'
-												);
-											});
-
-											it('and the iXTZ synth should be reconfigured correctly (as it has 0 total supply)', async () => {
-												const iXTZ = toBytes32('iXTZ');
-												const [
-													entryPoint,
-													upperLimit,
-													lowerLimit,
-													frozenAtUpperLimit,
-													frozenAtLowerLimit,
-												] = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
-
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													100,
-													'Entry point match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(upperLimit.toString()),
-													150,
-													'Upper limit match'
-												);
-												assert.strictEqual(
-													+ethers.utils.formatEther(lowerLimit.toString()),
-													50,
-													'Lower limit match'
-												);
-												// the old rate (2 x upperLimit) is applied with the new entry point, and
-												// as it is very low, when we fetch the rate, it will return at the upper limit,
-												// but as freezeRate is a keeper it hasn't been called yet, so it won't return as frozenAtUpper
-												assert.strictEqual(
-													frozenAtUpperLimit || frozenAtLowerLimit,
-													false,
-													'Is not frozen'
-												);
-
-												// so perform  freeze
-												const tx = await ExchangeRates.freezeRate(iXTZ, overrides);
-												await tx.wait();
-
-												const [, , , newFrozenAtUpperLimit] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(iXTZ)
-												);
-
-												assert.strictEqual(
-													newFrozenAtUpperLimit,
-													true,
-													'Is now frozen at upper limit'
-												);
-											});
-
-											it('and the iCEX synth should not be inverted at all', async () => {
-												const [entryPoint] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(toBytes32('iCEX'))
-												);
-
-												assert.strictEqual(
-													+ethers.utils.formatEther(entryPoint.toString()),
-													0,
-													'iCEX should not be set'
-												);
-											});
-
-											it('and iDEFI should be set as frozen at the lower limit', async () => {
-												await testInvertedSynth({
-													currencyKey: 'iDEFI',
-													shouldBeFrozenAtLowerLimit: true,
-												});
-											});
-											it('and iTRX should be set as frozen at the upper limit', async () => {
-												await testInvertedSynth({
-													currencyKey: 'iTRX',
-													shouldBeFrozenAtUpperLimit: true,
-												});
-											});
-											it('and iBNB should not be frozen', async () => {
-												await testInvertedSynth({
-													currencyKey: 'iBNB',
-												});
-											});
-
-											// Note: this is destructive as it removes the sBTC contracts and thus future calls to deploy will fail
-											// Either have this at the end of the entire test script or manage configuration of deploys by passing in
-											// files to update rather than a file.
-											describe('when deployer invokes remove of iABC', () => {
-												beforeEach(async () => {
-													await commands.removeSynths({
-														network,
-														yes: true,
-														privateKey: accounts.deployer.privateKey,
-														synthsToRemove: ['iABC'],
-													});
-												});
-
-												describe('when user tries to exchange into iABC', () => {
-													it('then it fails', async () => {
-														let failed;
-														try {
-															const tx = await Synthetix.exchange(
-																toBytes32('iCEX'),
-																ethers.utils.parseEther('1000'),
-																toBytes32('iABC'),
-																overrides
-															);
-															await tx.wait();
-
-															failed = false;
-														} catch (err) {
-															failed = true;
-														}
-
-														assert.equal(failed, true);
-													});
-												});
-											});
-										});
-									});
 								});
 							});
 						});
@@ -1448,6 +1182,8 @@ describe('publish scripts', () => {
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
+									// Same applies to the owner relays
+									.filter(([contract]) => !/^OwnerRelay/.test(contract))
 									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([, { source }]) =>

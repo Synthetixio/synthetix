@@ -131,6 +131,8 @@ module.exports = async ({
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
 			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
+			// Skip solidity for this as on mainnet, as ProxySynthetix is the same and it will manage it
+			skipSolidity: network === 'mainnet',
 		});
 		await runStep({
 			contract: 'Synthetix',
@@ -151,7 +153,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
-			comment: 'Ensure the legacy SNX proxy has the correct Synthetix target set',
+			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
 		});
 	}
 
@@ -221,19 +223,6 @@ module.exports = async ({
 			write: 'setAssociatedContract',
 			writeArg: IssuerAddress,
 			comment: 'Ensure that Synthetix can write to its State contract',
-		});
-	}
-
-	if (useOvm && SynthetixState && FeePool) {
-		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
-		await runStep({
-			contract: 'SynthetixState',
-			target: SynthetixState,
-			read: 'feePool',
-			expected: input => input === addressOf(FeePool),
-			write: 'setFeePool',
-			writeArg: addressOf(FeePool),
-			comment: 'Ensure the FeePool contract can write to the SynthetixState contract',
 		});
 	}
 

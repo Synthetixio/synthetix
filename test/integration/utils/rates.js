@@ -2,17 +2,10 @@ const ethers = require('ethers');
 const { setSystemSetting } = require('./settings');
 const { toBytes32 } = require('../../..');
 
-async function updateExchangeRatesIfNeeded({ ctx, forceUpdate = false }) {
+async function updateExchangeRatesIfNeeded({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
-	// Temporary fix: futures assets need their rates updated,
-	// however they are not added to the issuer, and thus won't be
-	// included in the output of anySynthOrSNXRateIsInvalid.
-	//
-	// Previously I'd removed this if block, but the L1 integration test
-	// fails with "Only the oracle can perform this action". It's easier to
-	// just force it for now, as this is temporary until we get CL feeds on L2.
-	if ((await _areRatesInvalid({ ctx })) || forceUpdate) {
+	if (await _areRatesInvalid({ ctx })) {
 		await _setNewRates({ ctx });
 		if (await _areRatesInvalid({ ctx })) {
 			await _printRatesInfo({ ctx });
@@ -73,14 +66,9 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 
 	const availableCurrencyKeys = await Issuer.availableCurrencyKeys();
 
-	return (
-		availableCurrencyKeys
-			.filter(key => key !== toBytes32('sUSD'))
-			// Manually add the futures assets: ETH, BTC and LINK.
-			// These are not added to the issuer yet, but their prices
-			// are needed in the futures markets.
-			.concat(['SNX', 'ETH', 'sETH', 'sBTC', 'sLINK'].map(toBytes32))
-	);
+	return availableCurrencyKeys
+		.filter(key => key !== toBytes32('sUSD'))
+		.concat(['SNX', 'ETH'].map(toBytes32));
 }
 
 async function _getCurrentRates({ ctx, currencyKeys }) {
@@ -123,6 +111,10 @@ async function _updateCache({ ctx }) {
 	await tx.wait();
 }
 
+async function updateCache({ ctx }) {
+	await _updateCache({ ctx });
+}
+
 async function getRate({ ctx, symbol }) {
 	const { ExchangeRates } = ctx.contracts;
 
@@ -132,4 +124,5 @@ async function getRate({ ctx, symbol }) {
 module.exports = {
 	updateExchangeRatesIfNeeded,
 	getRate,
+	updateCache,
 };

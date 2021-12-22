@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const Web3 = require('web3');
-const { toWei, isAddress } = require('web3-utils');
+const { isAddress } = require('web3-utils');
 const assert = require('assert');
 
 require('dotenv').config();
@@ -140,32 +140,12 @@ describe('deployments', () => {
 							.call();
 						assert.strictEqual(availableSynths.length, synths.length);
 					});
-					synths.forEach(({ name, inverted, feed, index }) => {
+					synths.forEach(({ name, feed, index }) => {
 						describe(name, () => {
 							it('Synthetix has the synth added', async () => {
 								const foundSynth = await contracts.Synthetix.methods.synths(toBytes32(name)).call();
 								assert.strictEqual(foundSynth, targets[`Synth${name}`].address);
 							});
-							if (inverted) {
-								it('ensure only inverted synths have i prefix', () => {
-									assert.strictEqual(name[0], 'i');
-								});
-								it(`checking inverted params of ${name}`, async () => {
-									// check inverted status
-									const {
-										entryPoint,
-										upperLimit,
-										lowerLimit,
-									} = await contracts.ExchangeRates.methods.inversePricing(toBytes32(name)).call();
-									assert.strictEqual(entryPoint, toWei(inverted.entryPoint.toString()));
-									assert.strictEqual(upperLimit, toWei(inverted.upperLimit.toString()));
-									assert.strictEqual(lowerLimit, toWei(inverted.lowerLimit.toString()));
-								});
-							} else {
-								it('ensure non inverted synths have s prefix', () => {
-									assert.strictEqual(name[0], 's');
-								});
-							}
 							if (feed) {
 								it(`checking aggregator of ${name}`, async () => {
 									const aggregatorActual = await contracts.ExchangeRates.methods

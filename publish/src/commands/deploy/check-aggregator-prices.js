@@ -17,7 +17,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 
 	let abi;
 
-	for (const { name, asset, feed, inverted } of feeds) {
+	for (const { name, asset, feed } of feeds) {
 		const currencyKey = name || asset; // either name of synth or asset for standalone
 		if (feed) {
 			if (!ethers.utils.isAddress(feed)) {
@@ -49,24 +49,12 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 
 			const liveAggregator = new ethers.Contract(feed, abi, provider);
 
-			const [
-				aggAnswerRaw,
-				exRatesAnswerRaw,
-				{ frozenAtUpperLimit, frozenAtLowerLimit },
-			] = await Promise.all([
+			const [aggAnswerRaw, exRatesAnswerRaw] = await Promise.all([
 				liveAggregator.latestAnswer(),
 				oldExrates.rateForCurrency(toBytes32(currencyKey)),
-				oldExrates.inversePricing(toBytes32(currencyKey)),
 			]);
 
-			let answer = (aggAnswerRaw / 1e8).toString();
-
-			// do a quick calculation of he inverted number
-			if (inverted) {
-				answer = 2 * inverted.entryPoint - answer;
-				answer = frozenAtLowerLimit ? inverted.lowerLimit : Math.max(answer, inverted.lowerLimit);
-				answer = frozenAtUpperLimit ? inverted.upperLimit : Math.min(answer, inverted.upperLimit);
-			}
+			const answer = (aggAnswerRaw / 1e8).toString();
 
 			const existing = ethers.utils.formatUnits(exRatesAnswerRaw);
 
