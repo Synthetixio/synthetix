@@ -17,6 +17,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/IWrapperFactory.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
@@ -255,7 +256,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         total = total.add(futuresDebt);
 
         // Ensure that if the excluded non-SNX debt exceeds SNX-backed debt, no overflow occurs
-        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
         return (total, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
