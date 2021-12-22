@@ -275,7 +275,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_CONTRACT_NAME,
             SETTING_ISSUANCE_RATIO,
             _issuanceRatio,
-            MAX_CROSS_DOMAIN_GAS_LIMIT
+            MAX_ISSUANCE_RATIO
         );
     }
 
