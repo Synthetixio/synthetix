@@ -431,6 +431,11 @@
 			"layer": "ovm",
 			"sources": ["CollateralEth"],
 			"released": "ovm"
+		},
+		{
+			"sip": 196,
+			"layer": "both",
+			"sources": ["ExchangeRates"]
 		}
 	],
 	"releases": [
