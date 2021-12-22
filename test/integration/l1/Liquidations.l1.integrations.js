@@ -7,7 +7,7 @@ const path = require('path');
 const {
 	constants: { BUILD_FOLDER },
 } = require('../../..');
-const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}-ovm`);
+const buildPath = path.join(__dirname, '..', '..', '..', `${BUILD_FOLDER}`);
 const { loadCompiledFiles } = require('../../../publish/src/solidity');
 const { compiled } = loadCompiledFiles({ buildPath });
 
@@ -21,7 +21,7 @@ describe('Liquidations (L1)', () => {
 			evm: {
 				bytecode: { object: bytecode },
 			},
-		} = compiled['MockAggregatorV2V3'];
+		} = compiled.MockAggregatorV2V3;
 		const MockAggregatorFactory = new ethers.ContractFactory(abi, bytecode, ctx.users.owner);
 		const MockAggregator = await MockAggregatorFactory.deploy();
 		ctx.contracts.MockAggregator = MockAggregator;
