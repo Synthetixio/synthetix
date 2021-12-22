@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
-const { updateExchangeRatesIfNeeded } = require('../utils/rates');
+const { getRate, setRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 const { skipLiquidationDelay } = require('../utils/skip');
 
@@ -10,14 +10,14 @@ function itCanLiquidate({ ctx }) {
 		let owner;
 		let someUser;
 		let otherUser;
-		let Synthetix, ExchangeRates, Liquidations, SystemSettings;
+		let exchangeRate;
+		let Synthetix, Liquidations, SystemSettings;
 
 		before('target contracts and users', () => {
-			({ Synthetix, ExchangeRates, Liquidations, SystemSettings } = ctx.contracts);
+			({ Synthetix, Liquidations, SystemSettings } = ctx.contracts);
 
 			({ owner, someUser, otherUser } = ctx.users);
 
-			ExchangeRates = ExchangeRates.connect(owner);
 			SystemSettings = SystemSettings.connect(owner);
 		});
 
@@ -44,19 +44,13 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
-		before('exchange rates are correct', async () => {
-			const { timestamp } = await ctx.provider.getBlock();
-			await ExchangeRates.updateRates(
-				[toBytes32('SNX')],
-				[ethers.utils.parseEther('1')],
-				timestamp
-			);
-
-			await updateExchangeRatesIfNeeded({ ctx });
+		before('exchange rate is set', async () => {
+			exchangeRate = await getRate({ ctx, symbol: 'SNX' });
+			await setRate({ ctx, symbol: 'SNX', rate: '1000000000000000000' });
 		});
 
 		before('someUser stakes their SNX', async () => {
-			await Synthetix.connect(someUser).issueSynths(ethers.utils.parseEther('10'));
+			await Synthetix.connect(someUser).issueMaxSynths();
 		});
 
 		it('cannot be liquidated at this point', async () => {
@@ -65,25 +59,22 @@ function itCanLiquidate({ ctx }) {
 
 		describe('getting marked', () => {
 			before('exchange rate changes to allow liquidation', async () => {
-				const { timestamp } = await ctx.provider.getBlock();
-				await ExchangeRates.updateRates(
-					[toBytes32('SNX')],
-					[ethers.utils.parseEther('0.2')],
-					timestamp
-				);
-
-				await updateExchangeRatesIfNeeded({ ctx });
+				await setRate({ ctx, symbol: 'SNX', rate: '100000000000000000' });
 			});
 
 			before('liquidation is marked', async () => {
 				await Liquidations.connect(otherUser).flagAccountForLiquidation(someUser.address);
 			});
 
+			after('restore exchange rate', async () => {
+				await setRate({ ctx, symbol: 'SNX', rate: exchangeRate.toString() });
+			});
+
 			it('still not open for liquidation', async () => {
 				assert.equal(await Liquidations.isOpenForLiquidation(someUser.address), false);
 			});
 
-			it('deadline hasn not passed yet', async () => {
+			it('deadline has not passed yet', async () => {
 				assert.equal(await Liquidations.isLiquidationDeadlinePassed(someUser.address), false);
 			});
 
@@ -96,7 +87,6 @@ function itCanLiquidate({ ctx }) {
 					let beforeDebt;
 
 					before('otherUser calls liquidateDelinquentAccount', async () => {
-						await updateExchangeRatesIfNeeded({ ctx });
 						await Synthetix.connect(otherUser).liquidateDelinquentAccount(
 							someUser.address,
 							ethers.utils.parseEther('100')
