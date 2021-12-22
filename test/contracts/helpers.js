@@ -11,6 +11,48 @@ const {
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
 } = require('../..');
 
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
+
+/// utility function to setup price aggregators
+/// @param exchangeRates instance of ExchangeRates contract
+/// @param owner owner account of exchangeRates contract for adding an aggregator
+/// @param keys array of bytes32 currency keys
+/// @param decimalsArray optional array of ints for each key, defaults to 18 decimals
+async function setupPriceAggregators(exchangeRates, owner, keys, decimalsArray = []) {
+	let aggregator;
+	for (let i = 0; i < keys.length; i++) {
+		aggregator = await MockAggregator.new({ from: owner });
+		await aggregator.setDecimals(decimalsArray.length > 0 ? decimalsArray[i] : 18);
+		await exchangeRates.addAggregator(keys[i], aggregator.address, { from: owner });
+	}
+}
+
+/// same as setupPriceAggregators, but checks if an aggregator for that currency is already setup up
+async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
+	const missingKeys = [];
+	for (let i = 0; i < keys.length; i++) {
+		if ((await exchangeRates.aggregators(keys[i])) === ZERO_ADDRESS) {
+			missingKeys.push(keys[i]);
+		}
+	}
+	await setupPriceAggregators(exchangeRates, owner, missingKeys);
+}
+// utility function update rates for aggregators that are already set up
+/// @param exchangeRates instance of ExchangeRates contract
+/// @param owner owner account of exchangeRates contract for adding an aggregator
+/// @param keys array of bytes32 currency keys
+/// @param rates array of BN rates
+/// @param timestamp optional timestamp for the update, currentTime() is used by default
+async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = undefined) {
+	timestamp = timestamp || (await currentTime());
+	for (let i = 0; i < keys.length; i++) {
+		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
+		const aggregator = await MockAggregator.at(aggregatorAddress);
+		// set the rate
+		await aggregator.setLatestAnswer(rates[i], timestamp);
+	}
+}
+
 module.exports = {
 	/**
 	 * the truffle transaction does not return all events logged, only those from the invoked
@@ -87,28 +129,17 @@ module.exports = {
 		return web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 	},
 
-	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
-		const timestamp = await currentTime();
+	setupPriceAggregators,
 
-		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
-			'SNX',
-			'sAUD',
-			'sEUR',
-			'sBTC',
-			'iBTC',
-			'sETH',
-			'ETH',
-		].map(toBytes32);
+	updateAggregatorRates,
 
-		await exchangeRates.updateRates(
-			[SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH],
-			['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+	async updateRatesWithDefaults({ exchangeRates, owner, debtCache }) {
+		const keys = ['SNX', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
+		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
+		// set up any missing aggregators
+		await setupMissingPriceAggregators(exchangeRates, owner, keys);
 
+		await updateAggregatorRates(exchangeRates, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 
