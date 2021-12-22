@@ -15,6 +15,8 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const {
@@ -35,7 +37,7 @@ contract('DebtCache', async accounts => {
 	].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [deployerAccount, owner, oracle, account1, account2] = accounts;
+	const [deployerAccount, owner, , account1, account2] = accounts;
 
 	const oneETH = toUnit('1.0');
 	const twoETH = toUnit('2.0');
@@ -49,7 +51,6 @@ contract('DebtCache', async accounts => {
 		sETHContract,
 		sEURContract,
 		sAUDContract,
-		timestamp,
 		debtCache,
 		issuer,
 		synths,
@@ -283,18 +284,17 @@ contract('DebtCache', async accounts => {
 				'WETH',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH, iETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		timestamp = await currentTime();
-
-		await exchangeRates.updateRates(
+		await updateAggregatorRates(
+			exchangeRates,
 			[sAUD, sEUR, SNX, sETH, ETH, iETH],
-			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit),
-			timestamp,
-			{ from: oracle }
+			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
 		);
 
 		// set a 0.3% default exchange fee rate
@@ -399,11 +399,10 @@ contract('DebtCache', async accounts => {
 			// set default issuance ratio of 0.2
 			await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
 			// set up initial prices
-			await exchangeRates.updateRates(
+			await updateAggregatorRates(
+				exchangeRates,
 				[sAUD, sEUR, sETH],
-				['0.5', '2', '100'].map(toUnit),
-				await currentTime(),
-				{ from: oracle }
+				['0.5', '2', '100'].map(toUnit)
 			);
 			await debtCache.takeDebtSnapshot();
 
@@ -455,9 +454,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(result[0], toUnit(550));
 				assert.isFalse(result[1]);
 
-				await exchangeRates.updateRates([sAUD, sEUR], ['1', '3'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['1', '3'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 				assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(700));
 				result = await debtCache.currentDebt();
@@ -479,13 +476,10 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('updates the cached values for all individual synths', async () => {
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH],
-					['1', '3', '200'].map(toUnit),
-					await currentTime(),
-					{
-						from: oracle,
-					}
+					['1', '3', '200'].map(toUnit)
 				);
 				await debtCache.takeDebtSnapshot();
 				let debts = await debtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
@@ -513,11 +507,10 @@ contract('DebtCache', async accounts => {
 				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 
 				// Revalidate the cache once rates are no longer stale
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, SNX, sETH, ETH, iETH],
-					['0.5', '2', '100', '200', '200', '200'].map(toUnit),
-					await currentTime(),
-					{ from: oracle }
+					['0.5', '2', '100', '200', '200', '200'].map(toUnit)
 				);
 				const tx2 = await debtCache.takeDebtSnapshot();
 				assert.isFalse((await debtCache.cacheInfo()).isInvalid);
@@ -534,11 +527,10 @@ contract('DebtCache', async accounts => {
 				await fastForward(snapshotStaleTime + 10);
 
 				// ensure no actual rates are stale.
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH, SNX],
-					['0.5', '2', '100', '1'].map(toUnit),
-					await currentTime(),
-					{ from: oracle }
+					['0.5', '2', '100', '1'].map(toUnit)
 				);
 
 				const info = await debtCache.cacheInfo();
@@ -602,13 +594,11 @@ contract('DebtCache', async accounts => {
 				const snapshotStaleTime = await systemSettings.debtSnapshotStaleTime();
 				await fastForward(snapshotStaleTime + 10);
 				// ensure no actual rates are stale.
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH, SNX],
-					['0.5', '2', '100', '1'].map(toUnit),
-					await currentTime(),
-					{ from: oracle }
+					['0.5', '2', '100', '1'].map(toUnit)
 				);
-
 				await assert.revert(
 					synthetix.issueSynths(toUnit('10'), { from: account1 }),
 					'A synth or SNX rate is invalid'
@@ -712,13 +702,10 @@ contract('DebtCache', async accounts => {
 			it('allows resynchronisation of subsets of synths', async () => {
 				await debtCache.takeDebtSnapshot();
 
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH],
-					['1', '3', '200'].map(toUnit),
-					await currentTime(),
-					{
-						from: oracle,
-					}
+					['1', '3', '200'].map(toUnit)
 				);
 
 				// First try a single currency, ensuring that the others have not been altered.
@@ -752,11 +739,10 @@ contract('DebtCache', async accounts => {
 				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 
 				// But even if we update all rates, we can't revalidate the cache using the partial update function
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH],
-					['0.5', '2', '100'].map(toUnit),
-					await currentTime(),
-					{ from: oracle }
+					['0.5', '2', '100'].map(toUnit)
 				);
 				const tx2 = await debtCache.updateCachedSynthDebts([sAUD, sEUR, sETH]);
 				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
@@ -767,13 +753,10 @@ contract('DebtCache', async accounts => {
 			it('properly emits events', async () => {
 				await debtCache.takeDebtSnapshot();
 
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH],
-					['1', '3', '200'].map(toUnit),
-					await currentTime(),
-					{
-						from: oracle,
-					}
+					['1', '3', '200'].map(toUnit)
 				);
 
 				const tx = await debtCache.updateCachedSynthDebts([sAUD]);
@@ -1038,9 +1021,7 @@ contract('DebtCache', async accounts => {
 
 				const debts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
 
-				await exchangeRates.updateRates([sAUD, sEUR], ['1', '1'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['1', '1'].map(toUnit));
 
 				await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
 				const postDebts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
@@ -1071,9 +1052,7 @@ contract('DebtCache', async accounts => {
 				// set a high price deviation threshold factor to be sure it doesn't trigger here
 				await systemSettings.setPriceDeviationThresholdFactor(toUnit('99'), { from: owner });
 
-				await exchangeRates.updateRates([sAUD, sEUR], ['2', '1'].map(toUnit), await currentTime(), {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['2', '1'].map(toUnit));
 
 				await fastForward(100);
 

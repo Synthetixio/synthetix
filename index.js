@@ -193,8 +193,8 @@ const defaults = {
 	},
 
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
-	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
-	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
+	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 5 bps
+	ETHER_WRAPPER_BURN_FEE_RATE: '0',
 
 	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
