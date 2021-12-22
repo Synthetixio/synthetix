@@ -640,22 +640,40 @@ contract('DebtCache', async accounts => {
 				await debtCache.takeDebtSnapshot({ from: owner });
 			});
 
-			it('properly incorporates futures market debt', async () => {
-				const market = await setupContract({
-					accounts,
-					contract: 'MockFuturesMarket',
-					args: [futuresMarketManager.address, toBytes32('sLINK'), toUnit('1000'), false],
-					skipPostDeploy: true,
+			describe('properly incorporates futures market debt', () => {
+				it('when no market exist', async () => {
+					await debtCache.takeDebtSnapshot();
+					const initialDebt = (await debtCache.cacheInfo()).debt;
+
+					// issue some debt to sanity check it's being updated
+					sUSDContract.issue(account1, toUnit(100), { from: owner });
+					await debtCache.takeDebtSnapshot();
+
+					// debt calc works
+					assert.bnEqual((await debtCache.currentDebt())[0], initialDebt.add(toUnit(100)));
+					assert.bnEqual((await debtCache.cacheInfo()).debt, initialDebt.add(toUnit(100)));
+
+					// no debt from futures
+					assert.bnEqual((await debtCache.currentSynthDebts([])).futuresDebt, toUnit(0));
 				});
-				await futuresMarketManager.addMarkets([market.address], { from: owner });
 
-				await debtCache.takeDebtSnapshot();
-				const initialDebt = (await debtCache.cacheInfo()).debt;
-				await market.setMarketDebt(toUnit('2000'));
-				await debtCache.takeDebtSnapshot();
+				it('when a market exists', async () => {
+					const market = await setupContract({
+						accounts,
+						contract: 'MockFuturesMarket',
+						args: [futuresMarketManager.address, toBytes32('sLINK'), toUnit('1000'), false],
+						skipPostDeploy: true,
+					});
+					await futuresMarketManager.addMarkets([market.address], { from: owner });
 
-				assert.bnEqual((await debtCache.cacheInfo()).debt, initialDebt.add(toUnit('1000')));
-				assert.bnEqual((await debtCache.currentSynthDebts([])).futuresDebt, toUnit('2000'));
+					await debtCache.takeDebtSnapshot();
+					const initialDebt = (await debtCache.cacheInfo()).debt;
+					await market.setMarketDebt(toUnit('2000'));
+					await debtCache.takeDebtSnapshot();
+
+					assert.bnEqual((await debtCache.cacheInfo()).debt, initialDebt.add(toUnit('1000')));
+					assert.bnEqual((await debtCache.currentSynthDebts([])).futuresDebt, toUnit('2000'));
+				});
 			});
 
 			describe('when debts are excluded', async () => {

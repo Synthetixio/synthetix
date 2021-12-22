@@ -338,67 +338,79 @@ contract('FuturesMarketManager', accounts => {
 	});
 
 	describe('Aggregated Debt', () => {
-		const individualDebt = toUnit('1000');
-		const currencyKeys = ['sBTC', 'sETH', 'sLINK'].map(toBytes32);
-		let markets;
-		beforeEach(async () => {
-			markets = await Promise.all(
-				currencyKeys.map(k =>
-					setupContract({
-						accounts,
-						contract: 'MockFuturesMarket',
-						args: [futuresMarketManager.address, k, individualDebt, false],
-						skipPostDeploy: true,
-					})
-				)
-			);
-			await futuresMarketManager.addMarkets(
-				markets.map(m => m.address),
-				{ from: owner }
-			);
-		});
-
-		it('Aggregated debt updates properly as the debt values change', async () => {
+		it('futures debt is zero when no markets are deployed', async () => {
+			// check initial debt
 			const initialSystemDebt = (await debtCache.currentDebt())[0];
-
-			assert.bnEqual((await futuresMarketManager.totalDebt())[0], individualDebt.mul(toBN(3)));
-			assert.bnEqual(initialSystemDebt, individualDebt.mul(toBN(3)).add(initialMint));
-			await markets[0].setMarketDebt(toUnit('2500'));
-			await markets[1].setMarketDebt(toUnit('200'));
-			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('3700'));
-			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('700')));
-
-			await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
-			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('2700'));
-			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.sub(toUnit('300')));
-			const market = await setupContract({
-				accounts,
-				contract: 'MockFuturesMarket',
-				args: [futuresMarketManager.address, toBytes32('sLINK'), toUnit('4000'), false],
-				skipPostDeploy: true,
-			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
-
-			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
-			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('3700')));
+			// issue some sUSD
+			sUSD.issue(trader, toUnit(100), { from: owner });
+			await debtCache.takeDebtSnapshot();
+			// check debt currentDebt() works as expected
+			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit(100)));
 		});
 
-		it('Aggregated debt validity updates properly with the individual markets', async () => {
-			assert.isFalse((await futuresMarketManager.totalDebt())[1]);
-			assert.isFalse((await debtCache.currentDebt())[1]);
+		describe('when there are multiple markets', () => {
+			const individualDebt = toUnit('1000');
+			const currencyKeys = ['sBTC', 'sETH', 'sLINK'].map(toBytes32);
+			let markets;
+			beforeEach(async () => {
+				markets = await Promise.all(
+					currencyKeys.map(k =>
+						setupContract({
+							accounts,
+							contract: 'MockFuturesMarket',
+							args: [futuresMarketManager.address, k, individualDebt, false],
+							skipPostDeploy: true,
+						})
+					)
+				);
+				await futuresMarketManager.addMarkets(
+					markets.map(m => m.address),
+					{ from: owner }
+				);
+			});
 
-			await markets[0].setInvalid(true);
-			assert.isTrue((await futuresMarketManager.totalDebt())[1]);
-			assert.isTrue((await debtCache.currentDebt())[1]);
+			it('Aggregated debt updates properly as the debt values change', async () => {
+				const initialSystemDebt = (await debtCache.currentDebt())[0];
 
-			await markets[0].setInvalid(false);
-			await markets[2].setInvalid(true);
-			assert.isTrue((await futuresMarketManager.totalDebt())[1]);
-			assert.isTrue((await debtCache.currentDebt())[1]);
+				assert.bnEqual((await futuresMarketManager.totalDebt())[0], individualDebt.mul(toBN(3)));
+				assert.bnEqual(initialSystemDebt, individualDebt.mul(toBN(3)).add(initialMint));
+				await markets[0].setMarketDebt(toUnit('2500'));
+				await markets[1].setMarketDebt(toUnit('200'));
+				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('3700'));
+				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('700')));
 
-			await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
-			assert.isFalse((await futuresMarketManager.totalDebt())[1]);
-			assert.isFalse((await debtCache.currentDebt())[1]);
+				await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
+				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('2700'));
+				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.sub(toUnit('300')));
+				const market = await setupContract({
+					accounts,
+					contract: 'MockFuturesMarket',
+					args: [futuresMarketManager.address, toBytes32('sLINK'), toUnit('4000'), false],
+					skipPostDeploy: true,
+				});
+				await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
+				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('3700')));
+			});
+
+			it('Aggregated debt validity updates properly with the individual markets', async () => {
+				assert.isFalse((await futuresMarketManager.totalDebt())[1]);
+				assert.isFalse((await debtCache.currentDebt())[1]);
+
+				await markets[0].setInvalid(true);
+				assert.isTrue((await futuresMarketManager.totalDebt())[1]);
+				assert.isTrue((await debtCache.currentDebt())[1]);
+
+				await markets[0].setInvalid(false);
+				await markets[2].setInvalid(true);
+				assert.isTrue((await futuresMarketManager.totalDebt())[1]);
+				assert.isTrue((await debtCache.currentDebt())[1]);
+
+				await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
+				assert.isFalse((await futuresMarketManager.totalDebt())[1]);
+				assert.isFalse((await debtCache.currentDebt())[1]);
+			});
 		});
 	});
 });
