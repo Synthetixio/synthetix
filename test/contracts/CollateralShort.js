@@ -4,11 +4,16 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { fastForward, toUnit, fromUnit, currentTime } = require('../utils')();
+const { fastForward, toUnit, fromUnit } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
-const { ensureOnlyExpectedMutativeFunctions, setExchangeFeeRateForSynths } = require('./helpers');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	setExchangeFeeRateForSynths,
+	setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
@@ -19,7 +24,7 @@ contract('CollateralShort', async accounts => {
 	const sETH = toBytes32('sETH');
 	const sBTC = toBytes32('sBTC');
 
-	const [, owner, oracle, , account1, account2] = accounts;
+	const [, owner, , , account1, account2] = accounts;
 
 	let short,
 		managerState,
@@ -54,17 +59,7 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		const sBTC = toBytes32('sBTC');
-
-		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const setupShort = async () => {
@@ -102,6 +97,8 @@ contract('CollateralShort', async accounts => {
 				'CollateralManagerState',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -506,10 +503,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([sETH], ['50'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
 
 				// simulate buying sETH for 50 susd.
 				await sUSDSynth.transfer(owner, toUnit(50), { from: account1 });
@@ -531,10 +525,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([sETH], ['150'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
 
 				// simulate buying sETH for 150 susd.
 				await sUSDSynth.transfer(owner, toUnit(150), { from: account1 });
@@ -566,10 +557,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			it('liquidation should be capped to only fix the c ratio', async () => {
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([sETH], ['110'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(110)]);
 
 				// When the ETH price increases 10% to $110, the short
 				// which started at 130% should allow 0.18 ETH
@@ -620,11 +608,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([sETH], ['150'].map(toUnit), timestamp, {
-					from: oracle,
-				});
-
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
@@ -665,10 +649,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([sETH], ['150'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
 
 				// 111100 + 50 - (2 * 50) = 111,050
 
@@ -712,10 +693,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([sETH], ['50'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
 
 				// 111100 - 50 + (2 * 50) = 111,150
 
