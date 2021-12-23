@@ -27,6 +27,10 @@ module.exports = async ({
 		name: 'Math',
 	});
 
+	await deployer.deployContract({
+		name: 'SystemSettingsLib',
+	});
+
 	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	await deployer.deployContract({
