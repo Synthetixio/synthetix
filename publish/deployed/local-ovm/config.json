@@ -160,5 +160,8 @@
 	},
 	"SynthRedeemer": {
 		"deploy": true
+	},
+	"SystemSettingsLib": {
+		"deploy": true
 	}
 }
