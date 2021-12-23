@@ -261,7 +261,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        SystemSettingsLib.setWaitingPeriodSecs(
+        SystemSettingsLib.setPriceDeviationThresholdFactor(
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,

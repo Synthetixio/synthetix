@@ -14,7 +14,8 @@ const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../');
-const { toBN } = require('web3-utils');
+const { toBN, sha3, hexToNumberString } = require('web3-utils');
+const AbiCoder = require('web3-eth-abi');
 
 contract('SystemSettings', async accounts => {
 	const [, owner, account1] = accounts;
@@ -64,7 +65,6 @@ contract('SystemSettings', async accounts => {
 				'setAtomicVolatilityConsiderationWindow',
 				'setAtomicVolatilityUpdateThreshold',
 				'setCollapseFeeRate',
-				'setCollateralManager',
 				'setCrossDomainMessageGasLimit',
 				'setDebtSnapshotStaleTime',
 				'setEtherWrapperBurnFeeRate',
@@ -77,7 +77,6 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationDelay',
 				'setLiquidationPenalty',
 				'setLiquidationRatio',
-				'setMinCratio',
 				'setMinimumStakeTime',
 				'setPriceDeviationThresholdFactor',
 				'setRateStalePeriod',
@@ -156,7 +155,10 @@ contract('SystemSettings', async accounts => {
 			const txn = await systemSettings.setTradingRewardsEnabled(enabled, { from: owner });
 			const actual = await systemSettings.tradingRewardsEnabled();
 			assert.equal(actual, enabled, 'Configured trading rewards enabled is set correctly');
-			assert.eventEqual(txn, 'TradingRewardsEnabled', [enabled]);
+			const logs = txn.receipt.rawLogs.filter(
+				log => log.topics[0] === sha3('TradingRewardsEnabled(bool)')
+			);
+			assert.equal(hexToNumberString(logs[0].data), enabled ? '1' : '0');
 		});
 	});
 
@@ -175,7 +177,17 @@ contract('SystemSettings', async accounts => {
 			const txn = await systemSettings.setWaitingPeriodSecs(newPeriod, { from: owner });
 			const actual = await systemSettings.waitingPeriodSecs();
 			assert.equal(actual, newPeriod, 'Configured waiting period is set correctly');
-			assert.eventEqual(txn, 'WaitingPeriodSecsUpdated', [newPeriod]);
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'WaitingPeriodSecsUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
+			});
+			const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+			assert.equal(hexToNumberString(logs[0].data), newPeriod);
 		});
 	});
 
@@ -195,7 +207,17 @@ contract('SystemSettings', async accounts => {
 				from: owner,
 			});
 			assert.bnEqual(await systemSettings.priceDeviationThresholdFactor(), newThreshold);
-			assert.eventEqual(txn, 'PriceDeviationThresholdUpdated', [newThreshold]);
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'PriceDeviationThresholdUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
+			});
+			const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+			assert.equal(hexToNumberString(logs[0].data), newThreshold);
 		});
 	});
 
@@ -207,7 +229,19 @@ contract('SystemSettings', async accounts => {
 				from: owner,
 			});
 
-			assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'IssuanceRatioUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
+			});
+			const logs = transaction.receipt.rawLogs.filter(
+				log => log.topics[0] === encodeEventSignature
+			);
+			assert.equal(hexToNumberString(logs[0].data), ratio);
 		});
 
 		it('should allow the owner to set the issuance ratio to zero', async () => {
@@ -217,7 +251,19 @@ contract('SystemSettings', async accounts => {
 				from: owner,
 			});
 
-			assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: ratio });
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'IssuanceRatioUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
+			});
+			const logs = transaction.receipt.rawLogs.filter(
+				log => log.topics[0] === encodeEventSignature
+			);
+			assert.equal(hexToNumberString(logs[0].data), ratio);
 		});
 
 		it('should disallow a non-owner from setting the issuance ratio', async () => {
@@ -237,7 +283,19 @@ contract('SystemSettings', async accounts => {
 			const transaction = await systemSettings.setIssuanceRatio(max, {
 				from: owner,
 			});
-			assert.eventEqual(transaction, 'IssuanceRatioUpdated', { newRatio: max });
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'IssuanceRatioUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
+			});
+			const logs = transaction.receipt.rawLogs.filter(
+				log => log.topics[0] === encodeEventSignature
+			);
+			assert.equal(hexToNumberString(logs[0].data), max);
 
 			// But max + 1 should fail
 			await assert.revert(
@@ -274,7 +332,17 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and an event is emitted for that change', async () => {
-				assert.eventEqual(txn, 'FeePeriodDurationUpdated', [twoWeeks]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'FeePeriodDurationUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(hexToNumberString(logs[0].data), twoWeeks);
 			});
 		});
 
@@ -286,9 +354,19 @@ contract('SystemSettings', async accounts => {
 				from: owner,
 			});
 
-			assert.eventEqual(transaction, 'FeePeriodDurationUpdated', {
-				newFeePeriodDuration: minimum,
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'FeePeriodDurationUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
 			});
+			const logs = transaction.receipt.rawLogs.filter(
+				log => log.topics[0] === encodeEventSignature
+			);
+			assert.equal(hexToNumberString(logs[0].data), minimum);
 			assert.bnEqual(await systemSettings.feePeriodDuration(), minimum);
 
 			// But no smaller
@@ -308,9 +386,19 @@ contract('SystemSettings', async accounts => {
 				from: owner,
 			});
 
-			assert.eventEqual(transaction, 'FeePeriodDurationUpdated', {
-				newFeePeriodDuration: maximum,
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'FeePeriodDurationUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
 			});
+			const logs = transaction.receipt.rawLogs.filter(
+				log => log.topics[0] === encodeEventSignature
+			);
+			assert.equal(hexToNumberString(logs[0].data), maximum);
 			assert.bnEqual(await systemSettings.feePeriodDuration(), maximum);
 
 			// But no larger
@@ -347,7 +435,17 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and an event is emitted for that change', async () => {
-				assert.eventEqual(txn, 'TargetThresholdUpdated', [toUnit('0.05')]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'TargetThresholdUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(hexToNumberString(logs[0].data), toUnit('0.05'));
 			});
 		});
 
@@ -357,31 +455,6 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
 				'Threshold too high'
 			);
-		});
-	});
-
-	describe('setMinCratio', async () => {
-		describe('revert condtions', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					systemSettings.setMinCratio(short.address, toUnit(1), { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-			});
-			it('should fail if the minimum is less than 1', async () => {
-				await assert.revert(
-					systemSettings.setMinCratio(short.address, toUnit(0.99), { from: owner }),
-					'Cratio must be above 1'
-				);
-			});
-		});
-		describe('when it succeeds', async () => {
-			beforeEach(async () => {
-				await systemSettings.setMinCratio(short.address, toUnit(2), { from: owner });
-			});
-			it('should update the minCratio', async () => {
-				assert.bnEqual(await systemSettings.minCratio(short.address), toUnit(2));
-			});
 		});
 	});
 
@@ -429,25 +502,6 @@ contract('SystemSettings', async accounts => {
 			});
 			it('should update the interaction delay', async () => {
 				assert.bnEqual(await systemSettings.interactionDelay(short.address), toUnit(50));
-			});
-		});
-	});
-
-	describe('setCollateralManager', async () => {
-		describe('revert condtions', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					systemSettings.setCollateralManager(short.address, ZERO_ADDRESS, { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-			});
-		});
-		describe('when it succeeds', async () => {
-			beforeEach(async () => {
-				await systemSettings.setCollateralManager(short.address, ZERO_ADDRESS, { from: owner });
-			});
-			it('should update the manager', async () => {
-				assert.bnEqual(await systemSettings.collateralManager(short.address), ZERO_ADDRESS);
 			});
 		});
 	});
@@ -677,9 +731,17 @@ contract('SystemSettings', async accounts => {
 
 			// Ensure oracle is set to oracle address originally
 			const txn = await systemSettings.setRateStalePeriod(rateStalePeriod, { from: owner });
-			assert.eventEqual(txn, 'RateStalePeriodUpdated', {
-				rateStalePeriod,
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'RateStalePeriodUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
 			});
+			const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+			assert.equal(hexToNumberString(logs[0].data), rateStalePeriod);
 		});
 	});
 
@@ -711,9 +773,17 @@ contract('SystemSettings', async accounts => {
 
 			// Ensure oracle is set to oracle address originally
 			const txn = await systemSettings.setDebtSnapshotStaleTime(staleTime, { from: owner });
-			assert.eventEqual(txn, 'DebtSnapshotStaleTimeUpdated', {
-				debtSnapshotStaleTime: staleTime,
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'DebtSnapshotStaleTimeUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+					},
+				],
 			});
+			const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+			assert.equal(hexToNumberString(logs[0].data), staleTime);
 		});
 	});
 
@@ -764,10 +834,28 @@ contract('SystemSettings', async accounts => {
 					const transaction = await systemSettings.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
 						from: owner,
 					});
-					assert.eventEqual(transaction, 'ExchangeFeeUpdated', {
-						synthKey: sUSD,
-						newExchangeFeeRate: fxBIPS,
+					const encodeEventSignature = AbiCoder.encodeEventSignature({
+						name: 'ExchangeFeeUpdated',
+						type: 'event',
+						inputs: [
+							{
+								type: 'bytes32',
+								name: 'synthKey',
+							},
+							{
+								type: 'uint256',
+								name: 'newExchangeFeeRate',
+							},
+						],
 					});
+					const logs = transaction.receipt.rawLogs.filter(
+						log => log.topics[0] === encodeEventSignature
+					);
+					assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[0], sUSD);
+					assert.equal(
+						AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[1],
+						fxBIPS.toString()
+					);
 				});
 				it('when multiple exchange rates then store them to be readable', async () => {
 					// Store multiple rates
@@ -798,33 +886,48 @@ contract('SystemSettings', async accounts => {
 						}
 					);
 					// Emit multiple update events
-					assert.eventsEqual(
-						transaction,
-						'ExchangeFeeUpdated',
-						{
-							synthKey: sUSD,
-							newExchangeFeeRate: fxBIPS,
-						},
-						'ExchangeFeeUpdated',
-						{
-							synthKey: sAUD,
-							newExchangeFeeRate: fxBIPS,
-						},
-						'ExchangeFeeUpdated',
-						{
-							synthKey: sBTC,
-							newExchangeFeeRate: cryptoBIPS,
-						},
-						'ExchangeFeeUpdated',
-						{
-							synthKey: sETH,
-							newExchangeFeeRate: cryptoBIPS,
-						}
+					const encodeEventSignature = AbiCoder.encodeEventSignature({
+						name: 'ExchangeFeeUpdated',
+						type: 'event',
+						inputs: [
+							{
+								type: 'bytes32',
+								name: 'synthKey',
+							},
+							{
+								type: 'uint256',
+								name: 'newExchangeFeeRate',
+							},
+						],
+					});
+					const logs = transaction.receipt.rawLogs.filter(
+						log => log.topics[0] === encodeEventSignature
+					);
+					assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[0], sUSD);
+					assert.equal(
+						AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[1],
+						fxBIPS.toString()
+					);
+					assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[1].data)[0], sAUD);
+					assert.equal(
+						AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[1].data)[1],
+						fxBIPS.toString()
+					);
+					assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[2].data)[0], sBTC);
+					assert.equal(
+						AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[2].data)[1],
+						cryptoBIPS.toString()
+					);
+					assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[3].data)[0], sETH);
+					assert.equal(
+						AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[3].data)[1],
+						cryptoBIPS.toString()
 					);
 				});
 			});
 		});
 	});
+
 	describe('setMinimumStakeTime()', () => {
 		const week = 604800;
 		it('can only be invoked by owner', async () => {
@@ -853,7 +956,18 @@ contract('SystemSettings', async accounts => {
 
 		it('setting minimum stake time emits the correct event', async () => {
 			const txn = await systemSettings.setMinimumStakeTime('1000', { from: owner });
-			assert.eventEqual(txn, 'MinimumStakeTimeUpdated', ['1000']);
+			const encodeEventSignature = AbiCoder.encodeEventSignature({
+				name: 'MinimumStakeTimeUpdated',
+				type: 'event',
+				inputs: [
+					{
+						type: 'uint256',
+						name: 'minimumStakeTime',
+					},
+				],
+			});
+			const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+			assert.equal(hexToNumberString(logs[0].data), '1000');
 		});
 	});
 
@@ -885,7 +999,18 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AggregatorWarningFlagsUpdated event', async () => {
-				assert.eventEqual(txn, 'AggregatorWarningFlagsUpdated', [owner]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AggregatorWarningFlagsUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'address',
+							name: 'flags',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['address'], logs[0].data)[0], owner);
 			});
 		});
 	});
@@ -912,7 +1037,18 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an EtherWrapperMaxETHUpdated event', async () => {
-				assert.eventEqual(txn, 'EtherWrapperMaxETHUpdated', [newValue]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'EtherWrapperMaxETHUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+							name: 'maxETH',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['uint256'], logs[0].data)[0], newValue);
 			});
 		});
 	});
@@ -947,7 +1083,17 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an EtherWrapperMintFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'EtherWrapperMintFeeRateUpdated', [newValue]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'EtherWrapperMintFeeRateUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['uint256'], logs[0].data)[0], newValue);
 			});
 		});
 	});
@@ -982,7 +1128,17 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'EtherWrapperBurnFeeRateUpdated', [newValue]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'EtherWrapperBurnFeeRateUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['uint256'], logs[0].data)[0], newValue);
 			});
 		});
 	});
@@ -1018,7 +1174,17 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AtomicMaxVolumePerBlockUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicMaxVolumePerBlockUpdated', [limit]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicMaxVolumePerBlockUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['uint256'], logs[0].data)[0], limit);
 			});
 
 			it('allows to be changed', async () => {
@@ -1073,7 +1239,17 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AtomicTwapWindowUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicTwapWindowUpdated', [twapWindow]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicTwapWindowUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'uint256',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['uint256'], logs[0].data)[0], twapWindow);
 			});
 
 			it('allows to be changed', async () => {
@@ -1110,7 +1286,26 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AtomicEquivalentForDexPricingUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicEquivalentForDexPricingUpdated', [sETH, equivalentAsset]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicEquivalentForDexPricingUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'bytes32',
+							name: 'synthKey',
+						},
+						{
+							type: 'address',
+							name: 'equivalent',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['bytes32', 'address'], logs[0].data)[0], sETH);
+				assert.equal(
+					AbiCoder.decodeParameters(['bytes32', 'address'], logs[0].data)[1],
+					equivalentAsset
+				);
 			});
 
 			it('allows equivalent to be changed', async () => {
@@ -1173,7 +1368,26 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AtomicExchangeFeeUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicExchangeFeeUpdated', [sETH, feeBips]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicExchangeFeeUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'bytes32',
+							name: 'synthKey',
+						},
+						{
+							type: 'uint256',
+							name: 'newExchangeFeeRate',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[0], sETH);
+				assert.equal(
+					AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[1],
+					feeBips.toString()
+				);
 			});
 
 			it('allows fee to be changed', async () => {
@@ -1214,7 +1428,26 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AtomicPriceBufferUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [sETH, buffer]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicPriceBufferUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'bytes32',
+							name: 'synthKey',
+						},
+						{
+							type: 'uint256',
+							name: 'newExchangeFeeRate',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[0], sETH);
+				assert.equal(
+					AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[1],
+					buffer.toString()
+				);
 			});
 
 			it('allows to be changed', async () => {
@@ -1283,10 +1516,26 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits a AtomicVolatilityConsiderationWindowUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicVolatilityConsiderationWindowUpdated', [
-					sETH,
-					considerationWindow,
-				]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicVolatilityConsiderationWindowUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'bytes32',
+							name: 'synthKey',
+						},
+						{
+							type: 'uint256',
+							name: 'newVolatilityConsiderationWindow',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[0], sETH);
+				assert.equal(
+					AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[1],
+					considerationWindow.toString()
+				);
 			});
 
 			it('allows to be changed', async () => {
@@ -1333,7 +1582,26 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('and emits an AtomicVolatilityUpdateThresholdUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicVolatilityUpdateThresholdUpdated', [sETH, threshold]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'AtomicVolatilityUpdateThresholdUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'bytes32',
+							name: 'synthKey',
+						},
+						{
+							type: 'uint256',
+							name: 'newVolatilityUpdateThreshold',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[0], sETH);
+				assert.equal(
+					AbiCoder.decodeParameters(['bytes32', 'uint256'], logs[0].data)[1],
+					threshold.toString()
+				);
 			});
 
 			it('allows to be changed', async () => {
@@ -1379,7 +1647,29 @@ contract('SystemSettings', async accounts => {
 				assert.bnEqual(await systemSettings.wrapperMaxTokenAmount(systemSettings.address), 0);
 			});
 			it('and emits a WrapperMaxTokenAmountUpdated event', async () => {
-				assert.eventEqual(txn, 'WrapperMaxTokenAmountUpdated', [testWrapperAddress, newValue]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'WrapperMaxTokenAmountUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'address',
+							name: 'wrapper',
+						},
+						{
+							type: 'uint256',
+							name: 'maxTokenAmount',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(
+					AbiCoder.decodeParameters(['address', 'uint256'], logs[0].data)[0],
+					testWrapperAddress
+				);
+				assert.equal(
+					AbiCoder.decodeParameters(['address', 'uint256'], logs[0].data)[1],
+					newValue.toString()
+				);
 			});
 		});
 	});
@@ -1434,7 +1724,29 @@ contract('SystemSettings', async accounts => {
 				assert.bnEqual(await systemSettings.wrapperMintFeeRate(systemSettings.address), 0);
 			});
 			it('and emits an WrapperMintFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'WrapperMintFeeRateUpdated', [testWrapperAddress, newValue]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'WrapperMintFeeRateUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'address',
+							name: 'wrapper',
+						},
+						{
+							type: 'int256',
+							name: 'rate',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(
+					AbiCoder.decodeParameters(['address', 'int256'], logs[0].data)[0],
+					testWrapperAddress
+				);
+				assert.equal(
+					AbiCoder.decodeParameters(['address', 'int256'], logs[0].data)[1],
+					newValue.toString()
+				);
 			});
 		});
 	});
@@ -1489,7 +1801,29 @@ contract('SystemSettings', async accounts => {
 				assert.bnEqual(await systemSettings.wrapperBurnFeeRate(systemSettings.address), 0);
 			});
 			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'WrapperBurnFeeRateUpdated', [testWrapperAddress, newValue]);
+				const encodeEventSignature = AbiCoder.encodeEventSignature({
+					name: 'WrapperBurnFeeRateUpdated',
+					type: 'event',
+					inputs: [
+						{
+							type: 'address',
+							name: 'wrapper',
+						},
+						{
+							type: 'int256',
+							name: 'rate',
+						},
+					],
+				});
+				const logs = txn.receipt.rawLogs.filter(log => log.topics[0] === encodeEventSignature);
+				assert.equal(
+					AbiCoder.decodeParameters(['address', 'int256'], logs[0].data)[0],
+					testWrapperAddress
+				);
+				assert.equal(
+					AbiCoder.decodeParameters(['address', 'int256'], logs[0].data)[1],
+					newValue.toString()
+				);
 			});
 		});
 	});
