@@ -55,7 +55,11 @@ contract('Exchange Rates', async accounts => {
 	let mockFlagsInterface;
 
 	const itIncludesCorrectMutativeFunctions = contract => {
-		const baseFunctions = ['addAggregator', 'removeAggregator'];
+		const baseFunctions = [
+			'addAggregator',
+			'removeAggregator',
+			'mutativeEffectiveValueAndRatesAtRound',
+		];
 		const withDexPricingFunctions = baseFunctions.concat(['setDexPriceAggregator']);
 
 		it('only expected functions should be mutative', () => {
@@ -949,7 +953,7 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() shows first entry for sUSD', async () => {
-				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3'), [
+				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3', '0'), [
 					[toUnit('1'), '0', '0'],
 					[0, 0, 0],
 				]);
@@ -957,7 +961,7 @@ contract('Exchange Rates', async accounts => {
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() returns 0s for other currencies without updates', async () => {
 				const fiveZeros = new Array(5).fill('0');
 				await setupAggregators([sJPY]);
-				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5'), [
+				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5', '0'), [
 					fiveZeros,
 					fiveZeros,
 				]);
@@ -1012,7 +1016,7 @@ contract('Exchange Rates', async accounts => {
 							it('then it returns zeros', async () => {
 								const fiveZeros = new Array(5).fill('0');
 								assert.deepEqual(
-									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'),
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5', '0'),
 									[fiveZeros, fiveZeros]
 								);
 							});
@@ -1020,7 +1024,7 @@ contract('Exchange Rates', async accounts => {
 						describe('when invoked for an aggregated price', () => {
 							it('then it returns the rates as expected', async () => {
 								assert.deepEqual(
-									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '3'),
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '3', '0'),
 									[
 										[toUnit('102'), toUnit('101'), toUnit('100')],
 										['1002', '1001', '1000'],
@@ -1030,7 +1034,7 @@ contract('Exchange Rates', async accounts => {
 
 							it('then it returns the rates as expected, even over the edge', async () => {
 								assert.deepEqual(
-									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5'),
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5', '0'),
 									[
 										[toUnit('102'), toUnit('101'), toUnit('100'), '0', '0'],
 										['1002', '1001', '1000', '0', '0'],
