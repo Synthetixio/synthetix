@@ -319,5 +319,14 @@
 	},
 	"OwnerRelayOnEthereum": {
 		"deploy": false
+	},
+	"TokenStatesETHBTC": {
+		"deploy": false
+	},
+	"ProxysETHBTC": {
+		"deploy": false
+	},
+	"SynthsETHBTC": {
+		"deploy": false
 	}
 }

@@ -33,7 +33,8 @@ function itCanStake({ ctx }) {
 				Synthetix = Synthetix.connect(user);
 
 				const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
-				await tx.wait();
+				const { gasUsed } = await tx.wait();
+				console.log(`issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 			});
 
 			it('issues the expected amount of sUSD', async () => {
@@ -69,7 +70,8 @@ function itCanStake({ ctx }) {
 							FeePool = FeePool.connect(user);
 
 							const tx = await FeePool.claimFees();
-							await tx.wait();
+							const { gasUsed } = await tx.wait();
+							console.log(`claimFees() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 						});
 
 						it('shows a slight increase in the users sUSD balance', async () => {
@@ -93,7 +95,8 @@ function itCanStake({ ctx }) {
 				Synthetix = Synthetix.connect(user);
 
 				const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
-				await tx.wait();
+				const { gasUsed } = await tx.wait();
+				console.log(`burnSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 			});
 
 			it('reduced the expected amount of debt', async () => {

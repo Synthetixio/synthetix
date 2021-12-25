@@ -7,14 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const FeePool = artifacts.require('FeePool');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	toPreciseUnit,
-	fromUnit,
-	multiplyDecimal,
-} = require('../utils')();
+const { fastForward, toUnit, toPreciseUnit, fromUnit, multiplyDecimal } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -24,6 +17,8 @@ const {
 	decodedEventEqual,
 	proxyThruTo,
 	setExchangeFeeRateForSynths,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
@@ -34,17 +29,12 @@ const {
 } = require('../..');
 
 contract('FeePool', async accounts => {
-	const [deployerAccount, owner, oracle, account1, account2] = accounts;
+	const [deployerAccount, owner, , account1, account2] = accounts;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
-		let timestamp;
 		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			timestamp = await currentTime();
-
-			await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
-				from: oracle,
-			});
+			await updateAggregatorRates(exchangeRates, [sAUD, SNX], ['0.5', '0.1'].map(toUnit));
 		}
 		await debtCache.takeDebtSnapshot();
 	};
@@ -120,6 +110,8 @@ contract('FeePool', async accounts => {
 				'WrapperFactory',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sAUD]);
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});
@@ -828,15 +820,10 @@ contract('FeePool', async accounts => {
 								.concat(synths)
 								.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
 
-							const timestamp = await currentTime();
-
-							await exchangeRates.updateRates(
+							await updateAggregatorRates(
+								exchangeRates,
 								ratesToUpdate.map(toBytes32),
-								ratesToUpdate.map(() => toUnit('1')),
-								timestamp,
-								{
-									from: oracle,
-								}
+								ratesToUpdate.map(() => toUnit('1'))
 							);
 							await debtCache.takeDebtSnapshot();
 						});
@@ -1103,10 +1090,7 @@ contract('FeePool', async accounts => {
 
 				// Increase the price so we start well and truly within our 20% ratio.
 				const newRate = (await exchangeRates.rateForCurrency(SNX)).add(web3.utils.toBN('1'));
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				assert.equal(await feePool.isFeesClaimable(owner), true);
@@ -1120,10 +1104,7 @@ contract('FeePool', async accounts => {
 				const newRate = (await exchangeRates.rateForCurrency(SNX)).add(
 					step.mul(web3.utils.toBN('1'))
 				);
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				const issuanceRatio = fromUnit(await feePool.issuanceRatio());
@@ -1145,10 +1126,7 @@ contract('FeePool', async accounts => {
 
 					// Bump the rate down.
 					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(step);
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-						from: oracle,
-					});
+					await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 					await debtCache.takeDebtSnapshot();
 				}
 			});
@@ -1180,10 +1158,7 @@ contract('FeePool', async accounts => {
 				const currentRate = await exchangeRates.rateForCurrency(SNX);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
@@ -1223,10 +1198,7 @@ contract('FeePool', async accounts => {
 				const currentRate = await exchangeRates.rateForCurrency(SNX);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
-				const timestamp = await currentTime();
-				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
@@ -1327,15 +1299,10 @@ contract('FeePool', async accounts => {
 								.concat(synths)
 								.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
 
-							const timestamp = await currentTime();
-
-							await exchangeRates.updateRates(
+							await updateAggregatorRates(
+								exchangeRates,
 								ratesToUpdate.map(toBytes32),
-								ratesToUpdate.map(() => toUnit('1')),
-								timestamp,
-								{
-									from: oracle,
-								}
+								ratesToUpdate.map(() => toUnit('1'))
 							);
 							await debtCache.takeDebtSnapshot();
 						});
