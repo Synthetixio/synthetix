@@ -347,7 +347,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('reverts when setting the fee period duration below minimum', async () => {
-			const minimum = await systemSettings.MIN_FEE_PERIOD_DURATION();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const minimum = toBN('86400'); // 1 day
 
 			// Owner should be able to set minimum
 			const transaction = await systemSettings.setFeePeriodDuration(minimum, {
@@ -379,7 +381,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should disallow the owner from setting the fee period duration above maximum', async () => {
-			const maximum = await systemSettings.MAX_FEE_PERIOD_DURATION();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const maximum = toBN('5184000'); // 60 days
 
 			// Owner should be able to set maximum
 			const transaction = await systemSettings.setFeePeriodDuration(maximum, {
@@ -450,7 +454,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('reverts when owner sets the Target threshold above the max allowed value', async () => {
-			const thresholdPercent = (await systemSettings.MAX_TARGET_THRESHOLD()).add(toBN('1'));
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const thresholdPercent = toBN('50').add(toBN('1'));
 			await assert.revert(
 				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
 				'Threshold too high'
@@ -605,7 +611,9 @@ contract('SystemSettings', async accounts => {
 
 					issuanceRatio = await systemSettings.issuanceRatio();
 
-					RATIO_FROM_TARGET_BUFFER = await systemSettings.RATIO_FROM_TARGET_BUFFER();
+					// Have to hardcode here due to public const not available in Solidity V5
+					// https://ethereum.stackexchange.com/a/102633/33908
+					RATIO_FROM_TARGET_BUFFER = toUnit('2');
 
 					// min liquidation ratio is how much the collateral ratio can drop from the issuance ratio before liquidation's can be started.
 					MIN_LIQUIDATION_RATIO = multiplyDecimal(RATIO_FROM_TARGET_BUFFER, issuanceRatio);
@@ -618,7 +626,9 @@ contract('SystemSettings', async accounts => {
 				});
 
 				it('when setLiquidationRatio is set above MAX_LIQUIDATION_RATIO then revert', async () => {
-					const MAX_LIQUIDATION_RATIO = await systemSettings.MAX_LIQUIDATION_RATIO();
+					// Have to hardcode here due to public const not available in Solidity V5
+					// https://ethereum.stackexchange.com/a/102633/33908
+					const MAX_LIQUIDATION_RATIO = toUnit('1');
 					const newLiquidationRatio = MAX_LIQUIDATION_RATIO.add(toUnit('1'));
 
 					await assert.revert(
@@ -668,7 +678,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('when setLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
-			const MAX_LIQUIDATION_PENALTY = await systemSettings.MAX_LIQUIDATION_PENALTY();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
 			const newLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
 			await assert.revert(
 				systemSettings.setLiquidationPenalty(newLiquidationPenalty, {
@@ -694,11 +706,15 @@ contract('SystemSettings', async accounts => {
 
 	describe('liquidations constants', () => {
 		it('MAX_LIQUIDATION_RATIO is 100%', async () => {
-			const MAX_LIQUIDATION_RATIO = await systemSettings.MAX_LIQUIDATION_RATIO();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_RATIO = toUnit('1');
 			assert.bnEqual(MAX_LIQUIDATION_RATIO, toUnit('1'));
 		});
 		it('MAX_LIQUIDATION_PENALTY is 25%', async () => {
-			const MAX_LIQUIDATION_PENALTY = await systemSettings.MAX_LIQUIDATION_PENALTY();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
 			assert.bnEqual(MAX_LIQUIDATION_PENALTY, toUnit('.25'));
 		});
 	});
@@ -1065,7 +1081,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if the rate exceeds MAX_WRAPPER_MINT_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_WRAPPER_MINT_FEE_RATE()).add(ONE);
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const newValue = toUnit('1').add(ONE);
 			await assert.revert(
 				systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner }),
 				'rate > MAX_WRAPPER_MINT_FEE_RATE'
@@ -1110,7 +1128,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if the rate exceeds MAX_WRAPPER_BURN_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_WRAPPER_BURN_FEE_RATE()).add(ONE);
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const newValue = toUnit('1').add(ONE);
 			await assert.revert(
 				systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner }),
 				'rate > MAX_WRAPPER_BURN_FEE_RATE'
@@ -1213,7 +1233,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if window is below minimum', async () => {
-			const minimum = await systemSettings.MIN_ATOMIC_TWAP_WINDOW();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const minimum = toBN('60');
 			await assert.revert(
 				systemSettings.setAtomicTwapWindow(minimum.sub(toBN('1')), { from: owner }),
 				'Atomic twap window under minimum 1 min'
@@ -1221,7 +1243,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if window is above maximum', async () => {
-			const maximum = await systemSettings.MAX_ATOMIC_TWAP_WINDOW();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const maximum = toBN('86400');
 			await assert.revert(
 				systemSettings.setAtomicTwapWindow(maximum.add(toBN('1')), { from: owner }),
 				'Atomic twap window exceed maximum 1 day'
@@ -1348,7 +1372,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if fee is above maximum', async () => {
-			const maximum = await systemSettings.MAX_EXCHANGE_FEE_RATE();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const maximum = toUnit('0.1');
 			await assert.revert(
 				systemSettings.setAtomicExchangeFeeRate(sETH, maximum.add(toBN('1')), { from: owner }),
 				'MAX_EXCHANGE_FEE_RATE exceeded'
@@ -1477,7 +1503,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if window is below minimum', async () => {
-			const minimum = await systemSettings.MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const minimum = toBN('60');
 			await assert.revert(
 				systemSettings.setAtomicVolatilityConsiderationWindow(sETH, minimum.sub(toBN('1')), {
 					from: owner,
@@ -1487,7 +1515,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if window is above maximum', async () => {
-			const maximum = await systemSettings.MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW();
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const maximum = toBN('86400');
 			await assert.revert(
 				systemSettings.setAtomicVolatilityConsiderationWindow(sETH, maximum.add(toBN('1')), {
 					from: owner,
@@ -1686,7 +1716,9 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if the rate exceeds MAX_WRAPPER_MINT_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_WRAPPER_MINT_FEE_RATE()).add(ONE);
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const newValue = toUnit('1').add(ONE);
 			await assert.revert(
 				systemSettings.setWrapperMintFeeRate(testWrapperAddress, newValue, { from: owner }),
 				'rate > MAX_WRAPPER_MINT_FEE_RATE'
@@ -1761,9 +1793,10 @@ contract('SystemSettings', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-
 		it('should revert if the rate exceeds MAX_WRAPPER_BURN_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_WRAPPER_BURN_FEE_RATE()).add(ONE);
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const newValue = toUnit('1').add(ONE);
 			await assert.revert(
 				systemSettings.setWrapperBurnFeeRate(testWrapperAddress, newValue, { from: owner }),
 				'rate > MAX_WRAPPER_BURN_FEE_RATE'
