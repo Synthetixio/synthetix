@@ -11,47 +11,6 @@ import "./SystemSettingsLib.sol";
 contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     bytes32 public constant CONTRACT_NAME = "SystemSettings";
 
-    // No more synths may be issued than the value of SNX backing them.
-    uint public constant MAX_ISSUANCE_RATIO = 1e18;
-
-    // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
-
-    uint public constant MAX_TARGET_THRESHOLD = 50;
-
-    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
-
-    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
-
-    uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
-
-    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 1 days;
-
-    // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
-
-    // Minimum Stake time may not exceed 1 weeks.
-    uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
-
-    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
-    uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
-
-    int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
-    int public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
-
-    // Atomic block volume limit is encoded as uint192.
-    uint public constant MAX_ATOMIC_VOLUME_PER_BLOCK = uint192(-1);
-
-    // TWAP window must be between 1 min and 1 day.
-    uint public constant MIN_ATOMIC_TWAP_WINDOW = 60;
-    uint public constant MAX_ATOMIC_TWAP_WINDOW = 86400;
-
-    // Volatility consideration window must be between 1 min and 1 day.
-    uint public constant MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 60;
-    uint public constant MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 86400;
-
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
@@ -235,9 +194,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             _getGasLimitSetting(_gasLimitType),
-            _crossDomainMessageGasLimit,
-            MIN_CROSS_DOMAIN_GAS_LIMIT,
-            MAX_CROSS_DOMAIN_GAS_LIMIT
+            _crossDomainMessageGasLimit
         );
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
@@ -274,8 +231,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_ISSUANCE_RATIO,
-            _issuanceRatio,
-            MAX_ISSUANCE_RATIO
+            _issuanceRatio
         );
     }
 
@@ -284,9 +240,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_FEE_PERIOD_DURATION,
-            _feePeriodDuration,
-            MIN_FEE_PERIOD_DURATION,
-            MAX_FEE_PERIOD_DURATION
+            _feePeriodDuration
         );
     }
 
@@ -295,8 +249,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_TARGET_THRESHOLD,
-            _percent,
-            MAX_TARGET_THRESHOLD
+            _percent
         );
     }
 
@@ -305,9 +258,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_LIQUIDATION_DELAY,
-            time,
-            MAX_LIQUIDATION_DELAY,
-            MIN_LIQUIDATION_DELAY
+            time
         );
     }
 
@@ -319,10 +270,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_CONTRACT_NAME,
             SETTING_LIQUIDATION_RATIO,
             _liquidationRatio,
-            MAX_LIQUIDATION_RATIO,
             getLiquidationPenalty(),
-            getIssuanceRatio(),
-            RATIO_FROM_TARGET_BUFFER
+            getIssuanceRatio()
         );
     }
 
@@ -331,8 +280,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_LIQUIDATION_PENALTY,
-            penalty,
-            MAX_LIQUIDATION_PENALTY
+            penalty
         );
     }
 
@@ -354,8 +302,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_CONTRACT_NAME,
             SETTING_EXCHANGE_FEE_RATE,
             synthKeys,
-            exchangeFeeRates,
-            MAX_EXCHANGE_FEE_RATE
+            exchangeFeeRates
         );
     }
 
@@ -364,8 +311,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_MINIMUM_STAKE_TIME,
-            _seconds,
-            MAX_MINIMUM_STAKE_TIME
+            _seconds
         );
     }
 
@@ -401,8 +347,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_ETHER_WRAPPER_MINT_FEE_RATE,
-            _rate,
-            MAX_WRAPPER_MINT_FEE_RATE
+            _rate
         );
     }
 
@@ -411,8 +356,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_ETHER_WRAPPER_BURN_FEE_RATE,
-            _rate,
-            MAX_WRAPPER_BURN_FEE_RATE
+            _rate
         );
     }
 
@@ -433,7 +377,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_WRAPPER_MINT_FEE_RATE,
             _wrapper,
             _rate,
-            MAX_WRAPPER_MINT_FEE_RATE,
             getWrapperBurnFeeRate(_wrapper)
         );
     }
@@ -445,7 +388,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_WRAPPER_BURN_FEE_RATE,
             _wrapper,
             _rate,
-            MAX_WRAPPER_BURN_FEE_RATE,
             getWrapperMintFeeRate(_wrapper)
         );
     }
@@ -475,8 +417,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK,
-            _maxVolume,
-            MAX_ATOMIC_VOLUME_PER_BLOCK
+            _maxVolume
         );
     }
 
@@ -485,9 +426,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             address(flexibleStorage()),
             SETTING_CONTRACT_NAME,
             SETTING_ATOMIC_TWAP_WINDOW,
-            _window,
-            MIN_ATOMIC_TWAP_WINDOW,
-            MAX_ATOMIC_TWAP_WINDOW
+            _window
         );
     }
 
@@ -507,8 +446,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_CONTRACT_NAME,
             SETTING_ATOMIC_EXCHANGE_FEE_RATE,
             _currencyKey,
-            _exchangeFeeRate,
-            MAX_EXCHANGE_FEE_RATE
+            _exchangeFeeRate
         );
     }
 
@@ -528,9 +466,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_CONTRACT_NAME,
             SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
             _currencyKey,
-            _window,
-            MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
-            MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW
+            _window
         );
     }
 

@@ -10,6 +10,47 @@ library SystemSettingsLib {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    // No more synths may be issued than the value of SNX backing them.
+    uint public constant MAX_ISSUANCE_RATIO = 1e18;
+
+    // The fee period must be between 1 day and 60 days.
+    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
+    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
+
+    uint public constant MAX_TARGET_THRESHOLD = 50;
+
+    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
+    uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
+
+    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
+
+    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
+    uint public constant MIN_LIQUIDATION_DELAY = 1 days;
+
+    // Exchange fee may not exceed 10%.
+    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
+
+    // Minimum Stake time may not exceed 1 weeks.
+    uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
+
+    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
+    uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
+
+    int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
+
+    int public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
+
+    // Atomic block volume limit is encoded as uint192.
+    uint public constant MAX_ATOMIC_VOLUME_PER_BLOCK = uint192(-1);
+
+    // TWAP window must be between 1 min and 1 day.
+    uint public constant MIN_ATOMIC_TWAP_WINDOW = 60;
+    uint public constant MAX_ATOMIC_TWAP_WINDOW = 86400;
+
+    // Volatility consideration window must be between 1 min and 1 day.
+    uint public constant MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 60;
+    uint public constant MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 86400;
+
     function setUIntValue(
         address flexibleStorage,
         bytes32 settingContractName,
@@ -50,12 +91,11 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 gasLimitSettings,
-        uint crossDomainMessageGasLimit,
-        uint minCrossDomainGasLimit,
-        uint maxCrossDomainGasLimit
+        uint crossDomainMessageGasLimit
     ) external {
         require(
-            crossDomainMessageGasLimit >= minCrossDomainGasLimit && crossDomainMessageGasLimit <= maxCrossDomainGasLimit,
+            crossDomainMessageGasLimit >= MIN_CROSS_DOMAIN_GAS_LIMIT &&
+                crossDomainMessageGasLimit <= MAX_CROSS_DOMAIN_GAS_LIMIT,
             "Out of range xDomain gasLimit"
         );
         setUIntValue(flexibleStorage, settingContractName, gasLimitSettings, crossDomainMessageGasLimit);
@@ -65,10 +105,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _issuanceRatio,
-        uint maxIssuanceRatio
+        uint _issuanceRatio
     ) external {
-        require(_issuanceRatio <= maxIssuanceRatio, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
+        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
         setUIntValue(flexibleStorage, settingContractName, settingName, _issuanceRatio);
         // slither-disable-next-line reentrancy-events
         emit IssuanceRatioUpdated(_issuanceRatio);
@@ -111,12 +150,10 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _feePeriodDuration,
-        uint minFeePeriodDuration,
-        uint maxFeePeriodDuration
+        uint _feePeriodDuration
     ) external {
-        require(_feePeriodDuration >= minFeePeriodDuration, "value < MIN_FEE_PERIOD_DURATION");
-        require(_feePeriodDuration <= maxFeePeriodDuration, "value > MAX_FEE_PERIOD_DURATION");
+        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
+        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, _feePeriodDuration);
         // slither-disable-next-line reentrancy-events
@@ -127,10 +164,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _percent,
-        uint maxTargetThreshold
+        uint _percent
     ) external {
-        require(_percent <= maxTargetThreshold, "Threshold too high");
+        require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
         uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
 
         setUIntValue(flexibleStorage, settingContractName, settingName, _targetThreshold);
@@ -142,12 +178,10 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint time,
-        uint maxLiquidationDelay,
-        uint minLiquidationDelay
+        uint time
     ) external {
-        require(time <= maxLiquidationDelay, "Must be less than 30 days");
-        require(time >= minLiquidationDelay, "Must be greater than 1 day");
+        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
+        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, time);
         // slither-disable-next-line reentrancy-events
@@ -159,19 +193,17 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         uint _liquidationRatio,
-        uint maxLiquidationRatio,
         uint getLiquidationPenalty,
-        uint getIssuanceRatio,
-        uint ratioFromTargetBuffer
+        uint getIssuanceRatio
     ) external {
         require(
-            _liquidationRatio <= maxLiquidationRatio.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty)),
+            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty)),
             "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
         );
 
         // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
         // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
-        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio.multiplyDecimal(ratioFromTargetBuffer);
+        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio.multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
         require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, _liquidationRatio);
@@ -183,10 +215,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint penalty,
-        uint maxLiquidationPenalty
+        uint penalty
     ) external {
-        require(penalty <= maxLiquidationPenalty, "penalty > MAX_LIQUIDATION_PENALTY");
+        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
 
         setUIntValue(flexibleStorage, settingContractName, settingName, penalty);
         // slither-disable-next-line reentrancy-events
@@ -209,12 +240,11 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingExchangeFeeRate,
         bytes32[] calldata synthKeys,
-        uint256[] calldata exchangeFeeRates,
-        uint maxExchangeFeeRate
+        uint256[] calldata exchangeFeeRates
     ) external {
         require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
         for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= maxExchangeFeeRate, "MAX_EXCHANGE_FEE_RATE exceeded");
+            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
             setUIntValue(
                 flexibleStorage,
                 settingContractName,
@@ -230,10 +260,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _seconds,
-        uint maxMinimumStakeTime
+        uint _seconds
     ) external {
-        require(_seconds <= maxMinimumStakeTime, "stake time exceed maximum 1 week");
+        require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
         setUIntValue(flexibleStorage, settingContractName, settingName, _seconds);
         // slither-disable-next-line reentrancy-events
         emit MinimumStakeTimeUpdated(_seconds);
@@ -277,10 +306,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _rate,
-        int maxWrapperMintFeeRate
+        uint _rate
     ) external {
-        require(_rate <= uint(maxWrapperMintFeeRate), "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
         setUIntValue(flexibleStorage, settingContractName, settingName, _rate);
         // slither-disable-next-line reentrancy-events
         emit EtherWrapperMintFeeRateUpdated(_rate);
@@ -290,10 +318,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _rate,
-        int maxWrapperBurnFeeRate
+        uint _rate
     ) external {
-        require(_rate <= uint(maxWrapperBurnFeeRate), "rate > MAX_WRAPPER_BURN_FEE_RATE");
+        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
         setUIntValue(flexibleStorage, settingContractName, settingName, _rate);
         // slither-disable-next-line reentrancy-events
         emit EtherWrapperBurnFeeRateUpdated(_rate);
@@ -322,11 +349,10 @@ library SystemSettingsLib {
         bytes32 settingName,
         address _wrapper,
         int _rate,
-        int maxWrapperMintFeeRate,
         int getWrapperBurnFeeRate
     ) external {
-        require(_rate <= maxWrapperMintFeeRate, "rate > MAX_WRAPPER_MINT_FEE_RATE");
-        require(_rate >= -maxWrapperMintFeeRate, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
+        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
 
         // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
         // otherwise risk of flash loan attack
@@ -345,11 +371,10 @@ library SystemSettingsLib {
         bytes32 settingName,
         address _wrapper,
         int _rate,
-        int maxWrapperBurnFeeRate,
         int getWrapperMintFeeRate
     ) external {
-        require(_rate <= maxWrapperBurnFeeRate, "rate > MAX_WRAPPER_BURN_FEE_RATE");
-        require(_rate >= -maxWrapperBurnFeeRate, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
+        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
+        require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
 
         // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
         // otherwise risk of flash loan attack
@@ -401,10 +426,9 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _maxVolume,
-        uint maxAtomicVolumePerBlock
+        uint _maxVolume
     ) external {
-        require(_maxVolume <= maxAtomicVolumePerBlock, "Atomic max volume exceed maximum uint192");
+        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
         setUIntValue(flexibleStorage, settingContractName, settingName, _maxVolume);
         // slither-disable-next-line reentrancy-events
         emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
@@ -414,12 +438,10 @@ library SystemSettingsLib {
         address flexibleStorage,
         bytes32 settingContractName,
         bytes32 settingName,
-        uint _window,
-        uint minAtomicTwapWindow,
-        uint maxAtomicTwapWindow
+        uint _window
     ) external {
-        require(_window >= minAtomicTwapWindow, "Atomic twap window under minimum 1 min");
-        require(_window <= maxAtomicTwapWindow, "Atomic twap window exceed maximum 1 day");
+        require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
+        require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
         setUIntValue(flexibleStorage, settingContractName, settingName, _window);
         // slither-disable-next-line reentrancy-events
         emit AtomicTwapWindowUpdated(_window);
@@ -448,10 +470,9 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         bytes32 _currencyKey,
-        uint _exchangeFeeRate,
-        uint maxExchangeFeeRate
+        uint _exchangeFeeRate
     ) external {
-        require(_exchangeFeeRate <= maxExchangeFeeRate, "MAX_EXCHANGE_FEE_RATE exceeded");
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
         setUIntValue(
             flexibleStorage,
             settingContractName,
@@ -479,17 +500,15 @@ library SystemSettingsLib {
         bytes32 settingContractName,
         bytes32 settingName,
         bytes32 _currencyKey,
-        uint _window,
-        uint minAtomicVolatilityConsiderationWindow,
-        uint maxAtomicVolatilityConsiderationWindow
+        uint _window
     ) external {
         if (_window != 0) {
             require(
-                _window >= minAtomicVolatilityConsiderationWindow,
+                _window >= MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
                 "Atomic volatility consideration window under minimum 1 min"
             );
             require(
-                _window <= maxAtomicVolatilityConsiderationWindow,
+                _window <= MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
                 "Atomic volatility consideration window exceed maximum 1 day"
             );
         }
