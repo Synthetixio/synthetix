@@ -247,7 +247,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 					};
 
 					describe('failure modes', () => {
-						behaviors.whenMockedWithExchangeRatesValidity({ valid: false }, () => {
+						behaviors.whenMockedWithExchangeRatesValidityAtRound({ valid: false }, () => {
 							it('reverts when either rate is invalid', async () => {
 								await assert.revert(
 									this.instance.exchange(...getExchangeArgs()),

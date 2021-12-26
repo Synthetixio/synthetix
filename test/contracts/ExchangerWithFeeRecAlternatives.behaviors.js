@@ -113,6 +113,14 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedWithExchangeRatesValidityAtRound: ({ valid = true }, cb) => {
+			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
+				beforeEach(async () => {
+					this.mocks.ExchangeRates.smocked.anyRateIsInvalidAtRound.will.return.with(!valid);
+				});
+				cb();
+			});
+		},
 		whenMockedWithNoPriorExchangesToSettle: cb => {
 			describe(`when mocked with no prior exchanges to settle`, () => {
 				beforeEach(async () => {
