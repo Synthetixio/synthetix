@@ -50,7 +50,7 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		before('someUser stakes their SNX', async () => {
-			await Synthetix.connect(someUser).issueSynths(ethers.utils.parseEther('10'));
+			await Synthetix.connect(someUser).issueMaxSynths();
 		});
 
 		it('cannot be liquidated at this point', async () => {
