@@ -1,7 +1,7 @@
 'use strict';
 
 const { gray } = require('chalk');
-const { toBytes32 } = require('../../../..');
+const { toBytes32, allowZeroOrUpdateIfNonZero } = require('../../../..');
 
 module.exports = async ({
 	addressOf,
@@ -85,7 +85,7 @@ module.exports = async ({
 			contract: 'CollateralEth',
 			target: CollateralEth,
 			read: 'issueFeeRate',
-			expected: input => issueFeeRate === '0' || input !== '0',
+			expected: allowZeroOrUpdateIfNonZero(issueFeeRate),
 			write: 'setIssueFeeRate',
 			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralEth contract has its issue fee rate set',
@@ -127,7 +127,7 @@ module.exports = async ({
 			contract: 'CollateralErc20',
 			target: CollateralErc20,
 			read: 'issueFeeRate',
-			expected: input => issueFeeRate === '0' || input !== '0',
+			expected: allowZeroOrUpdateIfNonZero(issueFeeRate),
 			write: 'setIssueFeeRate',
 			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralErc20 contract has its issue fee rate set',
@@ -169,7 +169,7 @@ module.exports = async ({
 			contract: 'CollateralShort',
 			target: CollateralShort,
 			read: 'issueFeeRate',
-			expected: input => issueFeeRate === '0' || input !== '0',
+			expected: allowZeroOrUpdateIfNonZero(issueFeeRate),
 			write: 'setIssueFeeRate',
 			writeArg: [issueFeeRate],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
@@ -181,7 +181,7 @@ module.exports = async ({
 				contract: 'CollateralShort',
 				target: CollateralShort,
 				read: 'interactionDelay',
-				expected: input => interactionDelay === '0' || input !== '0',
+				expected: allowZeroOrUpdateIfNonZero(interactionDelay),
 				write: 'setInteractionDelay',
 				writeArg: [interactionDelay],
 				comment:
@@ -195,7 +195,7 @@ module.exports = async ({
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'maxDebt',
-		expected: input => maxDebt === '0' || input !== '0',
+		expected: allowZeroOrUpdateIfNonZero(maxDebt),
 		write: 'setMaxDebt',
 		writeArg: [maxDebt],
 		comment: 'Set the max amount of debt in the CollateralManager',
@@ -207,7 +207,7 @@ module.exports = async ({
 			contract: 'CollateralManager',
 			target: CollateralManager,
 			read: 'maxSkewRate',
-			expected: input => maxSkewRate === '0' || input !== '0',
+			expected: allowZeroOrUpdateIfNonZero(maxSkewRate),
 			write: 'setMaxSkewRate',
 			writeArg: [maxSkewRate],
 			comment: 'Set the max skew rate in the CollateralManager',
@@ -219,7 +219,7 @@ module.exports = async ({
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'baseBorrowRate',
-		expected: input => baseBorrowRate === '0' || input !== '0',
+		expected: allowZeroOrUpdateIfNonZero(baseBorrowRate),
 		write: 'setBaseBorrowRate',
 		writeArg: [baseBorrowRate],
 		comment: 'Set the base borrow rate in the CollateralManager',
@@ -230,7 +230,7 @@ module.exports = async ({
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'baseShortRate',
-		expected: input => baseShortRate === '0' || input !== '0',
+		expected: allowZeroOrUpdateIfNonZero(baseShortRate),
 		write: 'setBaseShortRate',
 		writeArg: [baseShortRate],
 		comment: 'Set the base short rate in the CollateralManager',
