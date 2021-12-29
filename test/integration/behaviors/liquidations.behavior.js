@@ -101,7 +101,7 @@ function itCanLiquidate({ ctx }) {
 
 					it('is liquidated', async () => {
 						// = sUSD liquidated / SNX Price * 1.1
-						assert.notEqual(await Synthetix.balanceOf(someUser.address), '100000000000000000000');
+						assert.bnLt(await Synthetix.balanceOf(someUser.address), '100000000000000000000');
 					});
 
 					it('deducts sUSD debt from the liquidated', async () => {
