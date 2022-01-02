@@ -559,8 +559,8 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
 
 			// Accounts 2 & 3 claim
+			await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 			await feePool.claimFees({ from: account2 });
-			// updateRatesWithDefaults();
 			await feePool.claimFees({ from: account3 });
 
 			// Accounts 2 & 3 now have the rewards escrowed
