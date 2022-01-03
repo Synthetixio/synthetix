@@ -91,15 +91,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
-    bytes32 private constant CONTRACT_EXT_ALL_NETWORKS_SNX_BACKED_DEBT = "ext:AllNetworksSnxBackedDebt";
-    bytes32 private constant CONTRACT_EXT_ALL_NETWORKS_DEBT_SHARES_SUPPLY = "ext:AllNetworksDebtSharesSupply";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_INFO = "ext:AggregatorDebtInfo";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -112,8 +111,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_COLLATERALMANAGER;
         newAddresses[11] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[12] = CONTRACT_EXT_ALL_NETWORKS_SNX_BACKED_DEBT;
-        newAddresses[13] = CONTRACT_EXT_ALL_NETWORKS_TOTAL_DEBT_SHARES_SUPPLY;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_INFO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -165,14 +163,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
     }
 
-    function allNetworksSnxBackedDebtData() internal view returns (int256 debt, uint256 updatedAt) {
-        (, debt, , updatedAt) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_ALL_NETWORKS_SNX_BACKED_DEBT))
+    function allNetworksSnxBackedDebt() internal view returns (uint256 debt, uint256 updatedAt) {
+        (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_INFO))
             .latestRoundData();
+        
+        debt = uint(rawData >> 128) & 0xffffffffffffffffffffffffffffffff;
+        updatedAt = timestamp;
     }
 
-    function allNetworksDebtSharesSupplyData() internal view returns (int256 debt, uint256 updatedAt) {
-        (, debt, , updatedAt) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_ALL_NETWORKS_DEBT_SHARES_SUPPLY))
+    function allNetworksDebtSharesSupply() internal view returns (uint256 sharesSupply, uint256 updatedAt) {
+        (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_INFO))
             .latestRoundData();
+
+        sharesSupply = uint(rawData) & 0xffffffffffffffffffffffffffffffff;
+        updatedAt = timestamp;
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -239,8 +243,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     {
 
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (snxBackedAmount, snxBackedUpdateTime) = allNetworksSnxBackedDebt();
-        (debtSharesAmount, debtSharesUpdateTime) = allNetworksDebtShares();
+        (uint snxBackedAmount, ) = allNetworksSnxBackedDebt();
+        (uint debtSharesAmount, ) = allNetworksDebtSharesSupply();
 
         // If it's zero, they haven't issued, and they have no debt.
         // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths

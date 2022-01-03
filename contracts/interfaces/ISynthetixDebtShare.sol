@@ -10,6 +10,8 @@ interface ISynthetixDebtShare {
 
     function totalSupply() external view returns (uint);
 
+    function totalSupplyOnPeriod(uint periodId) external view returns (uint);
+
     function sharePercent(address account) external view returns (uint);
 
     function sharePercentOnPeriod(address account, uint periodId) external view returns (uint);

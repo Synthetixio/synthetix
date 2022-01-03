@@ -102,6 +102,22 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========= RESTRICTED FUNCTIONS ==============
 
+    function closeFeePeriod(uint snxBackedAmount, uint totalDebtShares) external {
+        require(msg.sender == address(feePool()), "Only the fee pool can call this");
+        
+        ISynthetixBridgeToBase bridgeToBase;
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeFeePeriodClose.selector, snxBackedAmount, totalDebtShares);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(
+            synthetixBridgeToBase(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.CloseFeePeriod))
+        );
+
+        emit FeePeriodClosed(snxBackedAmount, totalDebtShares);
+    }
+
     // invoked by Messenger on L1 after L2 waiting period elapses
     function finalizeWithdrawal(address to, uint256 amount) external {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
@@ -220,4 +236,6 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     );
 
     event RewardDepositInitiated(address indexed account, uint256 amount);
+
+    event FeePeriodClosed(uint snxBackedDebt, uint totalDebtShares);
 }
