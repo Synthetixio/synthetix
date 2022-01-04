@@ -3507,10 +3507,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
+			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
+			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
+			await setupPriceAggregators(exchangeRates, owner, keys);
 			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
-				const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
-				await setupPriceAggregators(exchangeRates, owner, keys);
 				await updateRates(keys, rates);
 			}
 
@@ -3605,10 +3605,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
+			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
+			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
+			await setupPriceAggregators(exchangeRates, owner, keys);
 			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
-				const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
-				await setupPriceAggregators(exchangeRates, owner, keys);
 				await updateRates(keys, rates);
 			}
 
