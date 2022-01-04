@@ -2494,15 +2494,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						const aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set prices with no volatility
-						// Need to start from round 11 as the first 10 rounds are used for the setup
-						await aggregator.setLatestAnswerWithRound(
-							ethOnCL,
-							(await currentTime()) - 20 * 60,
-							'11'
-						);
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 15 * 60);
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 10 * 60);
-						await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - 5 * 60);
+						for (let i = EXCHANGE_DYNAMIC_FEE_ROUNDS; i > 0; i--) {
+							await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - i * 5 * 60);
+						}
 
 						// DexPriceAggregator
 						const dexPriceAggregator = await MockDexPriceAggregator.new();
