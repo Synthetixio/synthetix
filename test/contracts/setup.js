@@ -144,6 +144,7 @@ const setupContract = async ({
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
+		SingleNetworkAggregatorDebtInfo: [tryGetAddressOf('AddressResolver')],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [
@@ -603,6 +604,10 @@ const setupAllContracts = async ({
 	// for the same dependency (e.g. in l1/l2 configurations)
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
+		{
+			contract: 'SingleNetworkAggregatorDebtInfo',
+			resolverAlias: 'ext:AggregatorDebtInfo',
+		},
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
@@ -697,6 +702,7 @@ const setupAllContracts = async ({
 				'SynthRedeemer',
 			],
 			deps: [
+				'SingleNetworkAggregatorDebtInfo',
 				'AddressResolver',
 				'SystemStatus',
 				'FlexibleStorage',
@@ -747,14 +753,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'BaseSynthetix',
@@ -767,14 +766,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'MintableSynthetix',
@@ -801,6 +793,7 @@ const setupAllContracts = async ({
 			mocks: [
 				'ext:Messenger',
 				'ovm:SynthetixBridgeToBase',
+				'FeePool',
 				'SynthetixBridgeEscrow',
 				'RewardsDistribution',
 			],
@@ -808,7 +801,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
-			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'],
+			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'FeePool', 'RewardEscrowV2'],
 			deps: ['AddressResolver', 'Synthetix'],
 		},
 		{
@@ -833,7 +826,12 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'WrapperFactory',
 			],
-			deps: ['SystemStatus', 'SynthetixDebtShare', 'AddressResolver'],
+			deps: [
+				'SingleNetworkAggregatorDebtInfo',
+				'SystemStatus',
+				'SynthetixDebtShare',
+				'AddressResolver',
+			],
 		},
 		{
 			contract: 'CollateralState',

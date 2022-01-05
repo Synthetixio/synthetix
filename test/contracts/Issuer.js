@@ -63,9 +63,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synthRedeemer,
 		exchanger;
 
-	const getRemainingIssuableSynths = async account =>
-		(await synthetix.remainingIssuableSynths(account))[0];
-
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
 	before(async () => {
@@ -308,6 +305,97 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
+			describe('allNetworksSnxBackedDebt', () => {
+				describe('when exchange rates set', () => {
+					beforeEach(async () => {
+						await fastForward(10);
+						// Send a price update to give the synth rates
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH, ETH, SNX],
+							['0.5', '1.25', '100', '100', '2'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
+						);
+						await debtCache.takeDebtSnapshot();
+					});
+
+					describe('when numerous issues in many currencies', () => {
+						beforeEach(async () => {
+							// as our synths are mocks, let's issue some amount to users
+							await sUSDContract.issue(account1, toUnit('1000'));
+
+							await sAUDContract.issue(account1, toUnit('1000')); // 500 sUSD worth
+							await sAUDContract.issue(account2, toUnit('1000')); // 500 sUSD worth
+
+							await sEURContract.issue(account3, toUnit('80')); // 100 sUSD worth
+
+							await sETHContract.issue(account1, toUnit('1')); // 100 sUSD worth
+
+							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
+							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
+							await debtCache.takeDebtSnapshot();
+						});
+						it('then allNetworksSnxBackedDebt in should correctly resolve the total issued synths in sUSD', async () => {
+							assert.bnEqual((await issuer.allNetworksSnxBackedDebt()).debt, toUnit('2200'));
+						});
+					});
+
+					describe('when issued through SNX staking', () => {
+						beforeEach(async () => {
+							// as our synths are mocks, let's issue some amount to users
+							const issuedSynthetixs = web3.utils.toBN('200012');
+							await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
+								from: owner,
+							});
+
+							// Issue
+							const amountIssued = toUnit('2011');
+							await synthetix.issueSynths(amountIssued, { from: account1 });
+							await debtCache.takeDebtSnapshot();
+						});
+						it('then allNetworksSnxBackedDebt in should correctly resolve the total issued synths in sUSD', async () => {
+							assert.bnEqual((await issuer.allNetworksSnxBackedDebt()).debt, toUnit('2011'));
+						});
+					});
+				});
+			});
+
+			describe('allNetworksDebtSharesSupply()', () => {
+				describe('when exchange rates set', () => {
+					beforeEach(async () => {
+						await fastForward(10);
+						// Send a price update to give the synth rates
+						await exchangeRates.updateRates(
+							[sAUD, sEUR, sETH, ETH, SNX],
+							['0.5', '1.25', '100', '100', '2'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
+						);
+						await debtCache.takeDebtSnapshot();
+					});
+
+					describe('when issued with snx debt', () => {
+						beforeEach(async () => {
+							// as our synths are mocks, let's issue some amount to users
+							const issuedSynthetixs = web3.utils.toBN('200012');
+							await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
+								from: owner,
+							});
+
+							// Issue
+							const amountIssued = toUnit('2011');
+							await synthetix.issueSynths(amountIssued, { from: account1 });
+						});
+						it('then allNetworksDebtSharesSupply in should correctly resolve the total issued synths in sUSD', async () => {
+							assert.bnEqual(
+								(await issuer.allNetworksDebtSharesSupply()).sharesSupply,
+								toUnit('2011')
+							);
+						});
+					});
+				});
+			});
+
 			describe('totalIssuedSynths()', () => {
 				describe('when exchange rates set', () => {
 					beforeEach(async () => {
@@ -496,8 +584,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 						multiplyDecimal(snx2usdRate, issuanceRatio)
 					).sub(amountIssued);
 
-					const remainingIssuable = await getRemainingIssuableSynths(account1);
-					assert.bnEqual(remainingIssuable, expectedIssuableSynths);
+					const issuableSynths = await issuer.remainingIssuableSynths(account1);
+					assert.bnEqual(issuableSynths.maxIssuable, expectedIssuableSynths);
+
+					// other args should also be correct
+					assert.bnEqual(issuableSynths.totalSystemDebt, amountIssued);
+					assert.bnEqual(issuableSynths.alreadyIssued, amountIssued);
 				});
 
 				it("should correctly calculate a user's remaining issuable synths without prior issuance", async () => {
@@ -514,8 +606,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 						multiplyDecimal(snx2usdRate, issuanceRatio)
 					);
 
-					const remainingIssuable = await getRemainingIssuableSynths(account1);
-					assert.bnEqual(remainingIssuable, expectedIssuableSynths);
+					const remainingIssuable = await issuer.remainingIssuableSynths(account1);
+					assert.bnEqual(remainingIssuable.maxIssuable, expectedIssuableSynths);
 				});
 			});
 
@@ -1207,14 +1299,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					// They should now be able to issue sUSD
-					const issuableSynths = await getRemainingIssuableSynths(account1);
-					assert.bnEqual(issuableSynths, toUnit('200'));
+					let issuableSynths = await issuer.remainingIssuableSynths(account1);
+					assert.bnEqual(issuableSynths.maxIssuable, toUnit('200'));
 
 					// Issue that amount.
-					await synthetix.issueSynths(issuableSynths, { from: account1 });
+					await synthetix.issueSynths(issuableSynths.maxIssuable, { from: account1 });
 
 					// They should now have 0 issuable synths.
-					assert.bnEqual(await getRemainingIssuableSynths(account1), '0');
+					issuableSynths = await issuer.remainingIssuableSynths(account1);
+					assert.bnEqual(issuableSynths.maxIssuable, '0');
 
 					// And trying to issue the smallest possible unit of one should fail.
 					await assert.revert(synthetix.issueSynths('1', { from: account1 }), 'Amount too large');
@@ -2180,6 +2273,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 						from: owner,
 					});
 
+					console.log(
+						'rate for currency',
+						(await exchangeRates.rateForCurrency(toBytes32('SNX'))).toString()
+					);
+
 					// Issue
 					const issuedSynths = toUnit(web3.utils.toBN('6400'));
 					await synthetix.issueSynths(issuedSynths, { from: account1 });
@@ -2375,8 +2473,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 					const issued = maxIssuable.div(web3.utils.toBN(3));
 					await synthetix.issueSynths(issued, { from: account1 });
 					const expectedRemaining = maxIssuable.sub(issued);
-					const remaining = await getRemainingIssuableSynths(account1);
-					assert.bnEqual(expectedRemaining, remaining);
+					const issuableSynths = await issuer.remainingIssuableSynths(account1);
+					assert.bnEqual(expectedRemaining, issuableSynths.maxIssuable);
 				});
 
 				it("should correctly calculate a user's max issuable synths with escrowed synthetix", async () => {
