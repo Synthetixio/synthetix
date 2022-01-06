@@ -278,7 +278,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // regardless of current rate
             (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
 
-            if (roundId == 0) {
+            if (roundId == 1) {
                 // if we hit the last round, then return what we have
                 return (rates, times);
             } else {
@@ -462,7 +462,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
         if (currencyKey == SUSD) {
-            return 0; // no roundIds for sUSD
+            return 1; // consistent with ChainLink Oracle that start at round 1
         }
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         if (aggregator != AggregatorV2V3Interface(0)) {
