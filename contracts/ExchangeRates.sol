@@ -478,10 +478,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return (SafeDecimalMath.unit(), 0);
         } else {
             if (cacheRates[currencyKey][roundId].rate != 0) {
-                return (
-                    _formatAggregatorAnswer(currencyKey, cacheRates[currencyKey][roundId].rate),
-                    cacheRates[currencyKey][roundId].time
-                );
+                return (cacheRates[currencyKey][roundId].rate, cacheRates[currencyKey][roundId].time);
             }
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
