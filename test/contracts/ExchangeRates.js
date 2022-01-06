@@ -948,8 +948,8 @@ contract('Exchange Rates', async accounts => {
 				assert.equal(await instance.getCurrentRoundId(sBNB), 0);
 			});
 
-			it('getCurrentRoundId() is 0 for sUSD', async () => {
-				assert.equal(await instance.getCurrentRoundId(sUSD), 0);
+			it('getCurrentRoundId() is 1 for sUSD', async () => {
+				assert.equal(await instance.getCurrentRoundId(sUSD), 1);
 			});
 
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() shows first entry for sUSD', async () => {
