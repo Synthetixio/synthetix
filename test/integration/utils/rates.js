@@ -96,21 +96,21 @@ async function _setMissingRates({ ctx }) {
 	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
 
 	// got over all rates and add aggregators
-	const { timestamp } = await ctx.provider.getBlock();
-	for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-		for (const currencyKey of currencyKeys) {
-			const rate = await ExchangeRates.rateForCurrency(currencyKey);
-			if (rate.toString() === '0') {
-				// deploy an aggregator
-				let aggregator = await MockAggregatorFactory.deploy();
-				aggregator = aggregator.connect(owner);
-				// set decimals
-				await (await aggregator.setDecimals(18)).wait();
+	for (const currencyKey of currencyKeys) {
+		const rate = await ExchangeRates.rateForCurrency(currencyKey);
+		if (rate.toString() === '0') {
+			// deploy an aggregator
+			let aggregator = await MockAggregatorFactory.deploy();
+			aggregator = aggregator.connect(owner);
+			// set decimals
+			await (await aggregator.setDecimals(18)).wait();
+			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
+				const { timestamp } = await ctx.provider.getBlock();
 				// push the new price
 				await (await aggregator.setLatestAnswer(ethers.utils.parseEther('1'), timestamp)).wait();
-				// set the aggregator in ExchangeRates
-				await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 			}
+			// set the aggregator in ExchangeRates
+			await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 		}
 	}
 }
