@@ -170,7 +170,6 @@ contract('Rewards Integration Tests', accounts => {
 				'ExchangeRates',
 				'FeePool',
 				'FeePoolEternalStorage', // necessary to claimFees()
-				'FeePoolState', // necessary to claimFees()
 				'DebtCache',
 				'RewardEscrowV2',
 				'RewardsDistribution', // required for Synthetix.mint()

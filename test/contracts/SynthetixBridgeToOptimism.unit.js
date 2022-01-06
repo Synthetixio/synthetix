@@ -23,6 +23,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			abi: SynthetixBridgeToOptimism.abi,
 			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
+				'closeFeePeriod',
 				'depositAndMigrateEscrow',
 				'deposit',
 				'depositTo',

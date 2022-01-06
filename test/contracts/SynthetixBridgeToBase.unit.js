@@ -16,6 +16,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
 				'finalizeDeposit',
+				'finalizeFeePeriodClose',
 				'finalizeEscrowMigration',
 				'finalizeRewardDeposit',
 				'withdraw',

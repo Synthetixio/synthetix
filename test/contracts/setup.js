@@ -825,6 +825,7 @@ const setupAllContracts = async ({
 				'CollateralManager',
 				'EtherWrapper',
 				'WrapperFactory',
+				'SynthetixBridgeToOptimism',
 			],
 			deps: [
 				'SingleNetworkAggregatorDebtInfo',

@@ -255,16 +255,20 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         (uint debtSharesSupply, ) = allNetworksDebtSharesSupply();
 
         // close on this chain
-        closeSecondary(snxBackedDebt, debtSharesSupply);
+        _closeSecondary(snxBackedDebt, debtSharesSupply);
 
         // inform other chain of the chosen values
-        ISynthetixBridgeToOptimism(requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM)).closeFeePeriod(snxBackedDebt, debtSharesSupply);
+        ISynthetixBridgeToOptimism(resolver.requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM, "Missing contract: SynthetixBridgeToOptimism")).closeFeePeriod(snxBackedDebt, debtSharesSupply);
     }
 
-        /**
+    function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) external onlyRelayer issuanceActive {
+        _closeSecondary(allNetworksSnxBackedDebt, allNetworksDebtSharesSupply);
+    }
+
+    /**
      * @notice Close the current fee period and start a new one.
      */
-    function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) public onlyRelayer issuanceActive {
+    function _closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) internal {
         etherWrapper().distributeFees();
         wrapperFactory().distributeFees();
 

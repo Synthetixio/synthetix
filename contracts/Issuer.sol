@@ -165,21 +165,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
     }
 
-    function allNetworksSnxBackedDebt() public view returns (uint256 debt, uint256 updatedAt) {
-        (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_INFO))
+    function allNetworksDebtInfo() public view returns (uint256 debt, uint256 sharesSupply, bool isStale) {
+        (, int256 rawData, , uint updatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_INFO))
             .latestRoundData();
         
-        //debt = uint(rawData);
         debt = uint(rawData >> 128);
-        updatedAt = timestamp;
-    }
-
-    function allNetworksDebtSharesSupply() public view returns (uint256 sharesSupply, uint256 updatedAt) {
-        (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_INFO))
-            .latestRoundData();
-
         sharesSupply = uint(rawData) & 0xffffffffffffffffffffffffffffffff;
-        updatedAt = timestamp;
+        isStale = now - getRateStalePeriod() > updatedAt;
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -246,16 +238,22 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     {
 
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (uint snxBackedAmount, ) = allNetworksSnxBackedDebt();
-        (uint debtSharesAmount, ) = allNetworksDebtSharesSupply();
+        (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
 
         // If it's zero, they haven't issued, and they have no debt.
         // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
         // if they have 0 SNX, but it's a necessary trade-off
-        if (debtShareBalance == 0) return (0, snxBackedAmount, anyRateIsInvalid);
+        if (debtShareBalance == 0) {
+            return (0, snxBackedAmount, debtInfoStale);
+        }
+        
+        // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
+        (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount);
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(currencyRate);
         totalSystemValue = snxBackedAmount;
+        
+        anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
@@ -278,7 +276,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), sUSD);
-        (uint fun,) = allNetworksSnxBackedDebt();
         (uint issuable, bool isInvalid) = _maxIssuableSynths(_issuer);
         maxIssuable = issuable;
         anyRateIsInvalid = anyRateIsInvalid || isInvalid;
@@ -311,7 +308,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint totalOwnedSynthetix = _collateral(_issuer);
 
         (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), SNX);
-        console.log("TOS", debtBalance);
 
         // it's more gas intensive to put this check here if they have 0 SNX, but it complies with the interface
         if (totalOwnedSynthetix == 0) return (0, anyRateIsInvalid);

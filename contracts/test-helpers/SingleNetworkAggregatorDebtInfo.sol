@@ -40,8 +40,10 @@ interface AggregatorV2V3Interface {
 
 // aggregator which reports the data from `Issuer` for `totalIssuedSynths` and `totalDebtShares`
 // useful for testing
-contract SingleNetworkAggregatorDebtInfo is AggregatorV2V3Interface {
+contract SingleNetworkAggregatorDebtInfo is Owned, AggregatorV2V3Interface {
     AddressResolver public resolver;
+
+    uint public overrideTimestamp;
 
     struct Entry {
         uint80 roundId;
@@ -53,8 +55,12 @@ contract SingleNetworkAggregatorDebtInfo is AggregatorV2V3Interface {
 
     mapping(uint => Entry) public entries;
 
-    constructor(AddressResolver _resolver) public {
+    constructor(AddressResolver _resolver) public Owned(msg.sender) {
         resolver = _resolver;
+    }
+
+    function setOverrideTimestamp(uint timestamp) public onlyOwner {
+        overrideTimestamp = timestamp;
     }
 
     function latestRoundData()
@@ -106,6 +112,12 @@ contract SingleNetworkAggregatorDebtInfo is AggregatorV2V3Interface {
 
         uint result = (totalIssuedSynths << 128) | totalDebtShares;
 
-        return (1, int256(result), now, now, 1);
+        uint dataTimestamp = now;
+
+        if (overrideTimestamp != 0) {
+            dataTimestamp = overrideTimestamp;
+        }
+
+        return (1, int256(result), dataTimestamp, dataTimestamp, 1);
     }
 }

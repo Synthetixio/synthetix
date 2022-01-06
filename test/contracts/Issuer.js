@@ -61,7 +61,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synths,
 		addressResolver,
 		synthRedeemer,
-		exchanger;
+		exchanger,
+		aggregatorDebtInfo;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -85,6 +86,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 			SynthRedeemer: synthRedeemer,
+			'ext:AggregatorDebtInfo': aggregatorDebtInfo,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -98,6 +100,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthetixEscrow',
 				'SystemSettings',
 				'Issuer',
+				'SingleNetworkAggregatorDebtInfo',
 				'DebtCache',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
@@ -305,7 +308,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe('allNetworksSnxBackedDebt', () => {
+			describe('allNetworksDebtInfo()', () => {
 				describe('when exchange rates set', () => {
 					beforeEach(async () => {
 						await fastForward(10);
@@ -335,8 +338,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
 							await debtCache.takeDebtSnapshot();
 						});
-						it('then allNetworksSnxBackedDebt in should correctly resolve the total issued synths in sUSD', async () => {
-							assert.bnEqual((await issuer.allNetworksSnxBackedDebt()).debt, toUnit('2200'));
+						it('then should have recorded debt and not debt shares', async () => {
+							const debtInfo = await issuer.allNetworksDebtInfo();
+
+							assert.bnEqual(debtInfo.debt, toUnit('2200'));
+							assert.bnEqual(debtInfo.sharesSupply, toUnit('0')); // stays 0 if no debt shares are minted
+							assert.isFalse(debtInfo.isStale);
 						});
 					});
 
@@ -353,28 +360,16 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await synthetix.issueSynths(amountIssued, { from: account1 });
 							await debtCache.takeDebtSnapshot();
 						});
-						it('then allNetworksSnxBackedDebt in should correctly resolve the total issued synths in sUSD', async () => {
-							assert.bnEqual((await issuer.allNetworksSnxBackedDebt()).debt, toUnit('2011'));
+						it('then should have recorded debt and debt shares', async () => {
+							const debtInfo = await issuer.allNetworksDebtInfo();
+
+							assert.bnEqual(debtInfo.debt, toUnit('2011'));
+							assert.bnEqual(debtInfo.sharesSupply, toUnit('2011'));
+							assert.isFalse(debtInfo.isStale);
 						});
 					});
-				});
-			});
 
-			describe('allNetworksDebtSharesSupply()', () => {
-				describe('when exchange rates set', () => {
-					beforeEach(async () => {
-						await fastForward(10);
-						// Send a price update to give the synth rates
-						await exchangeRates.updateRates(
-							[sAUD, sEUR, sETH, ETH, SNX],
-							['0.5', '1.25', '100', '100', '2'].map(toUnit),
-							await currentTime(),
-							{ from: oracle }
-						);
-						await debtCache.takeDebtSnapshot();
-					});
-
-					describe('when issued with snx debt', () => {
+					describe('when oracle updatedAt is old', () => {
 						beforeEach(async () => {
 							// as our synths are mocks, let's issue some amount to users
 							const issuedSynthetixs = web3.utils.toBN('200012');
@@ -385,12 +380,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 							// Issue
 							const amountIssued = toUnit('2011');
 							await synthetix.issueSynths(amountIssued, { from: account1 });
+							await debtCache.takeDebtSnapshot();
+
+							await aggregatorDebtInfo.setOverrideTimestamp(500); // really old timestamp
 						});
-						it('then allNetworksDebtSharesSupply in should correctly resolve the total issued synths in sUSD', async () => {
-							assert.bnEqual(
-								(await issuer.allNetworksDebtSharesSupply()).sharesSupply,
-								toUnit('2011')
-							);
+						it('then isStale = true', async () => {
+							assert.isTrue((await issuer.allNetworksDebtInfo()).isStale);
 						});
 					});
 				});
@@ -1119,52 +1114,45 @@ contract('Issuer (via Synthetix)', async accounts => {
 							});
 						});
 					});
-					['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
-						describe(`when ${type} is stale`, () => {
-							beforeEach(async () => {
-								await fastForward(
-									(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
-								);
+					describe(`when SNX is stale`, () => {
+						beforeEach(async () => {
+							await fastForward(
+								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+							);
 
-								// set all rates minus those to ignore
-								const ratesToUpdate = ['SNX']
-									.concat(synths)
-									.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+							await debtCache.takeDebtSnapshot();
+						});
 
-								const timestamp = await currentTime();
+						it('reverts on issueSynths()', async () => {
+							await assert.revert(
+								synthetix.issueSynths(toUnit('1'), { from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+						it('reverts on issueMaxSynths()', async () => {
+							await assert.revert(
+								synthetix.issueMaxSynths({ from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+					});
 
-								await exchangeRates.updateRates(
-									ratesToUpdate.map(toBytes32),
-									ratesToUpdate.map(() => toUnit('1')),
-									timestamp,
-									{
-										from: oracle,
-									}
-								);
-								await debtCache.takeDebtSnapshot();
-							});
+					describe(`when debt aggregator is stale`, () => {
+						beforeEach(async () => {
+							await aggregatorDebtInfo.setOverrideTimestamp(500); // really old timestamp
+						});
 
-							if (type === 'none') {
-								it('then calling issueSynths succeeds', async () => {
-									await synthetix.issueSynths(toUnit('1'), { from: account1 });
-								});
-								it('and calling issueMaxSynths() succeeds', async () => {
-									await synthetix.issueMaxSynths({ from: account1 });
-								});
-							} else {
-								it('reverts on issueSynths()', async () => {
-									await assert.revert(
-										synthetix.issueSynths(toUnit('1'), { from: account1 }),
-										'A synth or SNX rate is invalid'
-									);
-								});
-								it('reverts on issueMaxSynths()', async () => {
-									await assert.revert(
-										synthetix.issueMaxSynths({ from: account1 }),
-										'A synth or SNX rate is invalid'
-									);
-								});
-							}
+						it('reverts on issueSynths()', async () => {
+							await assert.revert(
+								synthetix.issueSynths(toUnit('1'), { from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+						it('reverts on issueMaxSynths()', async () => {
+							await assert.revert(
+								synthetix.issueMaxSynths({ from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
 						});
 					});
 				});
@@ -1352,52 +1340,44 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 					});
 
-					['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
-						describe(`when ${type} is stale`, () => {
-							beforeEach(async () => {
-								await fastForward(
-									(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
-								);
+					describe(`when SNX is stale`, () => {
+						beforeEach(async () => {
+							await fastForward(
+								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+							);
+							await debtCache.takeDebtSnapshot();
+						});
 
-								// set all rates minus those to ignore
-								const ratesToUpdate = ['SNX']
-									.concat(synths)
-									.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+						it('then calling burn() reverts', async () => {
+							await assert.revert(
+								synthetix.burnSynths(toUnit('1'), { from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+						it('and calling burnSynthsToTarget() reverts', async () => {
+							await assert.revert(
+								synthetix.burnSynthsToTarget({ from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+					});
 
-								const timestamp = await currentTime();
+					describe(`when debt aggregator is stale`, () => {
+						beforeEach(async () => {
+							await aggregatorDebtInfo.setOverrideTimestamp(500);
+						});
 
-								await exchangeRates.updateRates(
-									ratesToUpdate.map(toBytes32),
-									ratesToUpdate.map(rate => toUnit(rate === 'SNX' ? '0.1' : '1')),
-									timestamp,
-									{
-										from: oracle,
-									}
-								);
-								await debtCache.takeDebtSnapshot();
-							});
-
-							if (type === 'none') {
-								it('then calling burnSynths() succeeds', async () => {
-									await synthetix.burnSynths(toUnit('1'), { from: account1 });
-								});
-								it('and calling burnSynthsToTarget() succeeds', async () => {
-									await synthetix.burnSynthsToTarget({ from: account1 });
-								});
-							} else {
-								it('then calling burn() reverts', async () => {
-									await assert.revert(
-										synthetix.burnSynths(toUnit('1'), { from: account1 }),
-										'A synth or SNX rate is invalid'
-									);
-								});
-								it('and calling burnSynthsToTarget() reverts', async () => {
-									await assert.revert(
-										synthetix.burnSynthsToTarget({ from: account1 }),
-										'A synth or SNX rate is invalid'
-									);
-								});
-							}
+						it('then calling burn() reverts', async () => {
+							await assert.revert(
+								synthetix.burnSynths(toUnit('1'), { from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+						it('and calling burnSynthsToTarget() reverts', async () => {
+							await assert.revert(
+								synthetix.burnSynthsToTarget({ from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
 						});
 					});
 				});
@@ -2272,11 +2252,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 					await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
 						from: owner,
 					});
-
-					console.log(
-						'rate for currency',
-						(await exchangeRates.rateForCurrency(toBytes32('SNX'))).toString()
-					);
 
 					// Issue
 					const issuedSynths = toUnit(web3.utils.toBN('6400'));

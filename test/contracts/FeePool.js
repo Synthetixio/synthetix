@@ -72,6 +72,7 @@ contract('FeePool', async accounts => {
 		sUSDContract,
 		addressResolver,
 		wrapperFactory,
+		aggregatorDebtInfo,
 		synths;
 
 	before(async () => {
@@ -88,6 +89,7 @@ contract('FeePool', async accounts => {
 			SynthsUSD: sUSDContract,
 			SystemStatus: systemStatus,
 			WrapperFactory: wrapperFactory,
+			'ext:AggregatorDebtInfo': aggregatorDebtInfo,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -99,12 +101,12 @@ contract('FeePool', async accounts => {
 				'DebtCache',
 				'Proxy',
 				'Synthetix',
-				'SynthetixState',
 				'SystemSettings',
 				'SystemStatus',
 				'RewardEscrowV2',
 				'DelegateApprovals',
 				'CollateralManager',
+				'SingleNetworkAggregatorDebtInfo',
 				'WrapperFactory',
 			],
 		}));
@@ -137,6 +139,7 @@ contract('FeePool', async accounts => {
 				'recordFeePaid',
 				'setRewardsToDistribute',
 				'closeCurrentFeePeriod',
+				'closeSecondary',
 				'claimFees',
 				'claimOnBehalf',
 				'importFeePeriod',
@@ -778,43 +781,30 @@ contract('FeePool', async accounts => {
 						});
 					});
 				});
-				['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
-					describe(`when ${type} is stale`, () => {
-						beforeEach(async () => {
-							await fastForward(
-								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
-							);
+				describe(`when SNX is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+						await debtCache.takeDebtSnapshot();
+					});
 
-							// set all rates minus those to ignore
-							const ratesToUpdate = ['SNX']
-								.concat(synths)
-								.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+					it('reverts on claimFees', async () => {
+						await assert.revert(
+							feePool.claimFees({ from: owner }),
+							'A synth or SNX rate is invalid'
+						);
+					});
+				});
 
-							const timestamp = await currentTime();
+				describe(`when debt aggregator is stale`, () => {
+					beforeEach(async () => {
+						await aggregatorDebtInfo.setOverrideTimestamp(500);
+					});
 
-							await exchangeRates.updateRates(
-								ratesToUpdate.map(toBytes32),
-								ratesToUpdate.map(() => toUnit('1')),
-								timestamp,
-								{
-									from: oracle,
-								}
-							);
-							await debtCache.takeDebtSnapshot();
-						});
-
-						if (type === 'none') {
-							it('allows claimFees', async () => {
-								await feePool.claimFees({ from: owner });
-							});
-						} else {
-							it('reverts on claimFees', async () => {
-								await assert.revert(
-									feePool.claimFees({ from: owner }),
-									'A synth or SNX rate is invalid'
-								);
-							});
-						}
+					it('reverts on claimFees', async () => {
+						await assert.revert(
+							feePool.claimFees({ from: owner }),
+							'A synth or SNX rate is invalid'
+						);
 					});
 				});
 			});
@@ -1263,43 +1253,30 @@ contract('FeePool', async accounts => {
 						});
 					});
 				});
-				['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
-					describe(`when ${type} is stale`, () => {
-						beforeEach(async () => {
-							await fastForward(
-								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
-							);
+				describe(`when SNX is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+						await debtCache.takeDebtSnapshot();
+					});
 
-							// set all rates minus those to ignore
-							const ratesToUpdate = ['SNX']
-								.concat(synths)
-								.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+					it('reverts on claimOnBehalf', async () => {
+						await assert.revert(
+							feePool.claimOnBehalf(authoriser, { from: delegate }),
+							'A synth or SNX rate is invalid'
+						);
+					});
+				});
 
-							const timestamp = await currentTime();
+				describe(`when debt aggregator is stale`, () => {
+					beforeEach(async () => {
+						await aggregatorDebtInfo.setOverrideTimestamp(500);
+					});
 
-							await exchangeRates.updateRates(
-								ratesToUpdate.map(toBytes32),
-								ratesToUpdate.map(() => toUnit('1')),
-								timestamp,
-								{
-									from: oracle,
-								}
-							);
-							await debtCache.takeDebtSnapshot();
-						});
-
-						if (type === 'none') {
-							it('allows claimFees', async () => {
-								await feePool.claimOnBehalf(authoriser, { from: delegate });
-							});
-						} else {
-							it('reverts on claimFees', async () => {
-								await assert.revert(
-									feePool.claimOnBehalf(authoriser, { from: delegate }),
-									'A synth or SNX rate is invalid'
-								);
-							});
-						}
+					it('reverts on claimOnBehalf', async () => {
+						await assert.revert(
+							feePool.claimOnBehalf(authoriser, { from: delegate }),
+							'A synth or SNX rate is invalid'
+						);
 					});
 				});
 			});

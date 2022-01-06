@@ -37,7 +37,8 @@ contract('BaseSynthetix', async accounts => {
 		timestamp,
 		addressResolver,
 		systemSettings,
-		systemStatus;
+		systemStatus,
+		aggregatorDebtInfo;
 
 	before(async () => {
 		({
@@ -48,12 +49,12 @@ contract('BaseSynthetix', async accounts => {
 			DebtCache: debtCache,
 			SystemStatus: systemStatus,
 			SynthetixEscrow: escrow,
+			'ext:AggregatorDebtInfo': aggregatorDebtInfo,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
 			contracts: [
 				'BaseSynthetix',
-				'SynthetixState',
 				'SupplySchedule',
 				'AddressResolver',
 				'ExchangeRates',
@@ -61,6 +62,7 @@ contract('BaseSynthetix', async accounts => {
 				'SystemStatus',
 				'DebtCache',
 				'Issuer',
+				'SingleNetworkAggregatorDebtInfo',
 				'Exchanger',
 				'RewardsDistribution',
 				'CollateralManager',
@@ -709,6 +711,9 @@ contract('BaseSynthetix', async accounts => {
 						baseSynthetix.issueSynths(toUnit('1'), { from: account2 }),
 					]);
 
+					// make aggregator debt info rate stale
+					await aggregatorDebtInfo.setOverrideTimestamp(await currentTime());
+
 					// Now jump forward in time so the rates are stale
 					await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 				});
@@ -718,17 +723,8 @@ contract('BaseSynthetix', async accounts => {
 					const timestamp = await currentTime();
 
 					// now give some synth rates
-					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-						from: oracle,
-					});
-					await debtCache.takeDebtSnapshot();
+					await aggregatorDebtInfo.setOverrideTimestamp(0);
 
-					await ensureTransferReverts();
-
-					// the remainder of the synths have prices
-					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-						from: oracle,
-					});
 					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
@@ -745,7 +741,7 @@ contract('BaseSynthetix', async accounts => {
 					});
 				});
 
-				it('should not allow transfer if the exchange rate for any synth is stale', async () => {
+				it('should not allow transfer if debt aggregator is stale', async () => {
 					await ensureTransferReverts();
 
 					const timestamp = await currentTime();
@@ -758,19 +754,8 @@ contract('BaseSynthetix', async accounts => {
 
 					await ensureTransferReverts();
 
-					// now give some synth rates
-					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
-						from: oracle,
-					});
-					await debtCache.takeDebtSnapshot();
-
-					await ensureTransferReverts();
-
-					// now give the remainder of synths rates
-					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-						from: oracle,
-					});
-					await debtCache.takeDebtSnapshot();
+					// now give the aggregator debt info rate
+					await aggregatorDebtInfo.setOverrideTimestamp(0);
 
 					// now SNX transfer should work
 					await baseSynthetix.transfer(account2, value, { from: account1 });

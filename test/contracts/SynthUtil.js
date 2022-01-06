@@ -33,7 +33,6 @@ contract('SynthUtil', accounts => {
 				'Exchanger',
 				'ExchangeRates',
 				'ExchangeState',
-				'FeePoolState',
 				'FeePoolEternalStorage',
 				'SystemSettings',
 				'DebtCache',

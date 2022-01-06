@@ -326,11 +326,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 	describe('allowance()', () => {
 		it('returns 0 for non-brokers', async () => {
-			assert.bnEqual(await synthetixDebtShare.allowance(account1), toUnit('0'));
+			assert.bnEqual(await synthetixDebtShare.allowance(account1, ZERO_ADDRESS), toUnit('0'));
 		});
 
 		it('returns MAX_UINT for brokers', async () => {
-			assert.bnNotEqual(await synthetixDebtShare.allowance(owner), toUnit('0'));
+			assert.bnNotEqual(await synthetixDebtShare.allowance(account1, owner), toUnit('0'));
 		});
 	});
 
