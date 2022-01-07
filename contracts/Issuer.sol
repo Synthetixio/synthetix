@@ -28,8 +28,6 @@ import "./Proxyable.sol";
 
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 interface IProxy {
     function target() external view returns (address);
 }

@@ -47,7 +47,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				].map(toBytes32),
 				[
 					synthetixBridgeToBase,
-					tokenState.address,
 					systemStatus.address,
 					mockAddress,
 					mockAddress,

@@ -27,7 +27,7 @@ module.exports = async ({
 		name: 'Math',
 	});
 
-	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
+	console.log(gray(`\n------ DEPLOY ADDRESS RESOLVER ------\n`));
 
 	await deployer.deployContract({
 		name: 'AddressResolver',
@@ -39,6 +39,16 @@ module.exports = async ({
 		source: 'ReadProxy',
 		args: [account],
 	});
+
+	console.log(gray(`\n------ DEPLOY SELF ORACLE ------\n`));
+
+	await deployer.deployContract({
+		name: 'ext:AggregatorDebtInfo',
+		source: 'SingleNetworkAggregatorDebtInfo',
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	await deployer.deployContract({
 		name: 'FlexibleStorage',

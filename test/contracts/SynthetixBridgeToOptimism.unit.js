@@ -48,6 +48,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let issuer;
 		let resolver;
 		let rewardEscrow;
+		let feePool;
 		const escrowAmount = 100;
 		const emptyArray = [];
 
@@ -65,6 +66,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
+			feePool = await smockit(artifacts.require('FeePool').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
@@ -73,6 +75,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'ext:Messenger',
 					'Synthetix',
 					'Issuer',
+					'FeePool',
 					'RewardsDistribution',
 					'ovm:SynthetixBridgeToBase',
 					'RewardEscrowV2',
@@ -83,6 +86,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					messenger.address,
 					synthetix.address,
 					issuer.address,
+					feePool.address,
 					rewardsDistribution,
 					snxBridgeToBase,
 					rewardEscrow.address,

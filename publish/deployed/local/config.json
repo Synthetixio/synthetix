@@ -385,5 +385,8 @@
 	},
 	"SynthRedeemer": {
 		"deploy": true
+	},
+	"ext:AggregatorDebtInfo": {
+		"deploy": true
 	}
 }

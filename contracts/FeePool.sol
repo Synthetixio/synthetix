@@ -599,8 +599,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         ISynthetixDebtShare _debtShare = synthetixDebtShare();
 
-        uint userOwnershipPercentage = _debtShare.balanceOf(account)
-            .divideDecimal(_debtShare.totalSupply());
+        uint debtSharesSupply = _debtShare.totalSupply();
+        uint userOwnershipPercentage = debtSharesSupply == 0 ? 0 : _debtShare.balanceOf(account).divideDecimal(debtSharesSupply);
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
@@ -623,8 +623,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
                 uint debtSharesSupply = _debtShare.totalSupplyOnPeriod(uint(periodId));
 
-                uint userOwnershipPercentage = _debtShare.balanceOfOnPeriod(account, uint(periodId))
-                    .divideDecimal(debtSharesSupply);
+                uint userOwnershipPercentage = debtSharesSupply == 0 ? 0 : _debtShare.balanceOfOnPeriod(account, uint(periodId)).divideDecimal(debtSharesSupply);
 
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage);
 

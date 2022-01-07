@@ -154,6 +154,13 @@ const setupContract = async ({
 			[toBytes32('SNX')],
 			[toWei('0.2', 'ether')],
 		],
+		ExchangeRatesWithDexPricing: [
+			owner,
+			oracle,
+			tryGetAddressOf('AddressResolver'),
+			[toBytes32('SNX')],
+			[toWei('0.2', 'ether')],
+		],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
@@ -617,6 +624,11 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
+		{
+			contract: 'ExchangeRatesWithDexPricing',
+			resolverAlias: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{ contract: 'SynthetixDebtShare' },
