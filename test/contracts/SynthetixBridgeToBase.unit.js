@@ -357,6 +357,50 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 				});
 			});
+
+			describe('finalizeFeePeriodClose', async () => {
+				describe('failure modes', () => {
+					it('should only allow the relayer (aka messenger) to call finalizeFeePeriodClose()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.finalizeFeePeriodClose,
+							args: [user1, 100],
+							accounts,
+							address: smockedMessenger,
+							reason: 'Only the relayer can call this',
+						});
+					});
+
+					it('should only allow the L1 bridge to invoke finalizeFeePeriodClose() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.finalizeFeePeriodClose(1, 1, {
+								from: smockedMessenger,
+							}),
+							'Only the L1 bridge can invoke'
+						);
+					});
+				});
+
+				describe('when invoked by the messenger (aka relayer)', async () => {
+					let finalizeTx;
+					beforeEach('finalizeFeePeriodClose is called', async () => {
+						finalizeTx = await instance.finalizeFeePeriodClose('1', '2', {
+							from: smockedMessenger,
+						});
+					});
+
+					it('should emit a FeePeriodCloseFinalized event', async () => {
+						assert.eventEqual(finalizeTx, 'FeePeriodCloseFinalized', ['1', '2']);
+					});
+
+					it('then SNX is minted via MintableSynthetix.mintSecondary', async () => {
+						assert.equal(feePool.smocked.closeSecondary.calls.length, 1);
+						assert.equal(feePool.smocked.closeSecondary.calls[0][0].toString(), '1');
+						assert.equal(feePool.smocked.closeSecondary.calls[0][1].toString(), '2');
+					});
+				});
+			});
 		});
 	});
 });

@@ -102,7 +102,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    function closeFeePeriod(uint snxBackedAmount, uint totalDebtShares) external {
+    function closeFeePeriod(uint snxBackedAmount, uint totalDebtShares) external requireInitiationActive {
         require(msg.sender == address(feePool()), "Only the fee pool can call this");
         
         ISynthetixBridgeToBase bridgeToBase;
