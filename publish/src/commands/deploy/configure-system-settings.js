@@ -332,16 +332,14 @@ module.exports = async ({
 		comment: 'Set the fee rate for minting sETH from ETH in the EtherWrapper (SIP-112)',
 	});
 
-	// Disable checking this as now the current value is set to 0
-	const etherWrapperBurnFeeRate = await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'etherWrapperBurnFeeRate',
 		readTarget: previousSystemSettings,
-		expected: input => etherWrapperBurnFeeRate === '0' || input !== '0', // only change if the value to set is above zero and the value onchain is 0
+		expected: input => input !== '0', // only change if zero
 		write: 'setEtherWrapperBurnFeeRate',
-		writeArg: etherWrapperBurnFeeRate,
+		writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
 		comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
 	});
 

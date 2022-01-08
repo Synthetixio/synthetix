@@ -239,12 +239,6 @@
 		"sign": "",
 		"description": "DeFi Index"
 	},
-	"ETHBTC": {
-		"asset": "ETHBTC",
-		"category": "crypto",
-		"sign": "",
-		"description": "ETH / BTC"
-	},
 	"EUR": {
 		"asset": "EUR",
 		"category": "forex",

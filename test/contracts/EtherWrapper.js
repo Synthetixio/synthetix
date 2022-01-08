@@ -4,14 +4,12 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { toUnit, multiplyDecimal } = require('../utils')();
+const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	getDecodedLogs,
 	decodedEventEqual,
-	setupPriceAggregators,
-	updateAggregatorRates,
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
@@ -25,7 +23,7 @@ contract('EtherWrapper', async accounts => {
 
 	const ONE = toBN('1');
 
-	const [, owner, , , account1] = accounts;
+	const [, owner, oracle, , account1] = accounts;
 
 	let systemSettings,
 		feePool,
@@ -37,7 +35,8 @@ contract('EtherWrapper', async accounts => {
 		sUSDSynth,
 		sETHSynth,
 		etherWrapper,
-		weth;
+		weth,
+		timestamp;
 
 	const calculateETHToUSD = async feesInETH => {
 		// Ask the Depot how many sUSD I will get for this ETH
@@ -94,10 +93,12 @@ contract('EtherWrapper', async accounts => {
 		await systemSettings.setEtherWrapperBurnFeeRate(toUnit('0.005'), { from: owner });
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
+		timestamp = await currentTime();
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
 		// Depot requires ETH rates
-		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await exchangeRates.updateRates([sETH, ETH], ['1500', '1500'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

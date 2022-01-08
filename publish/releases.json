@@ -414,12 +414,6 @@
 			"released": "both"
 		},
 		{
-			"sip": 188,
-			"layer": "base",
-			"sources": [],
-			"released": "base"
-		},
-		{
 			"sip": 192,
 			"layer": "both",
 			"sources": ["WrapperFactory"],
@@ -428,19 +422,7 @@
 		{
 			"sip": 194,
 			"layer": "ovm",
-			"sources": ["Synthetix"],
-			"released": "ovm"
-		},
-		{
-			"sip": 195,
-			"layer": "ovm",
-			"sources": ["CollateralEth"],
-			"released": "ovm"
-		},
-		{
-			"sip": 196,
-			"layer": "both",
-			"sources": ["ExchangeRates"]
+			"sources": ["Synthetix"]
 		}
 	],
 	"releases": [
@@ -754,22 +736,22 @@
 		},
 		{
 			"name": "Alhena",
-			"released": true,
+			"released": false,
 			"version": {
 				"major": 2,
 				"minor": 56
 			},
-			"sips": [188]
+			"sips": []
 		},
 		{
 			"name": "Alhena (Optimism)",
 			"ovm": true,
-			"released": true,
+			"released": false,
 			"version": {
 				"major": 2,
 				"minor": 56
 			},
-			"sips": [194, 195]
+			"sips": []
 		},
 		{
 			"name": "Peacock",

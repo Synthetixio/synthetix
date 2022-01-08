@@ -40,7 +40,6 @@ const owner = async ({
 	useOvm,
 	useFork,
 	providerUrl,
-	skipOwnership = false,
 	throwOnNotNominatedOwner = false,
 }) => {
 	ensureNetwork(network);
@@ -240,95 +239,91 @@ const owner = async ({
 		}
 	}
 
+	console.log(gray('Looking for contracts whose ownership we should accept'));
 	const warnings = [];
-	if (!skipOwnership) {
-		console.log(gray('Looking for contracts whose ownership we should accept'));
-		// prevent dupes if some contracts are in there twice (looking at you ProxyERC20 and ProxyERC20sUSD)
-		const appendedOwnerCache = {};
-		for (const contract of Object.keys(config)) {
-			if (!deployment.targets[contract]) {
-				const msg = yellow(`WARNING: contract ${contract} not found in deployment file`);
-				console.log(msg);
-				warnings.push(msg);
+	// prevent dupes if some contracts are in there twice (looking at you ProxyERC20 and ProxyERC20sUSD)
+	const appendedOwnerCache = {};
+	for (const contract of Object.keys(config)) {
+		if (!deployment.targets[contract]) {
+			const msg = yellow(`WARNING: contract ${contract} not found in deployment file`);
+			console.log(msg);
+			warnings.push(msg);
+			continue;
+		}
+		const { address, source } = deployment.targets[contract];
+		const { abi } = deployment.sources[source];
+		const deployedContract = new ethers.Contract(address, abi, provider);
+
+		// ignore contracts that don't support Owned
+		if (!deployedContract.functions.owner) {
+			continue;
+		}
+		const currentOwner = (await deployedContract.owner()).toLowerCase();
+		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
+
+		if (currentOwner === newOwner.toLowerCase()) {
+			console.log(gray(`${newOwner} is already the owner of ${contract} ${address}`));
+		} else if (nominatedOwner === newOwner.toLowerCase()) {
+			const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
+
+			if (address in appendedOwnerCache) {
+				console.log(gray('Skipping as this action is already in the batch'));
 				continue;
-			}
-			const { address, source } = deployment.targets[contract];
-			const { abi } = deployment.sources[source];
-			const deployedContract = new ethers.Contract(address, abi, provider);
-
-			// ignore contracts that don't support Owned
-			if (!deployedContract.functions.owner) {
-				continue;
-			}
-			const currentOwner = (await deployedContract.owner()).toLowerCase();
-			const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
-
-			if (currentOwner === newOwner.toLowerCase()) {
-				console.log(gray(`${newOwner} is already the owner of ${contract} ${address}`));
-			} else if (nominatedOwner === newOwner.toLowerCase()) {
-				const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
-
-				if (address in appendedOwnerCache) {
-					console.log(gray('Skipping as this action is already in the batch'));
-					continue;
-				} else {
-					appendedOwnerCache[address] = true;
-				}
-
-				if (safeBatchSubmitter && !useFork) {
-					console.log(
-						gray(`Attempting to append`, yellow(`${contract}.acceptOwnership()`), `to the batch`)
-					);
-					const { appended } = await safeBatchSubmitter.appendTransaction({
-						to: address,
-						data: encodedData,
-					});
-					if (!appended) {
-						console.log(gray('Skipping adding to the batch as already in pending queue'));
-					}
-				} else if (relayers) {
-					// Relayer
-					console.log(
-						gray('Adding'),
-						yellow(`${contract}.acceptOwnership()`),
-						gray('to the relayer actions')
-					);
-					relayers.actions.push({ target: address, data: encodedData });
-				} else {
-					try {
-						await confirmOrEnd(
-							gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`)
-						);
-
-						const params = await assignGasOptions({
-							tx: {
-								to: address,
-								data: encodedData,
-							},
-							provider,
-							maxFeePerGas,
-							maxPriorityFeePerGas,
-						});
-
-						if (gasLimit) {
-							params.gasLimit = ethers.BigNumber.from(gasLimit);
-						}
-
-						const tx = await signer.sendTransaction(params);
-						const receipt = await tx.wait();
-
-						logTx(receipt);
-					} catch (err) {
-						throw Error(`Transaction failed to submit.\n${err}`);
-					}
-				}
 			} else {
-				const msg = `Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`;
-				if (throwOnNotNominatedOwner && contract !== 'DappMaintenance') {
-					throw Error(msg);
-				} else {
-					console.log(cyan(msg));
+				appendedOwnerCache[address] = true;
+			}
+
+			if (safeBatchSubmitter && !useFork) {
+				console.log(
+					gray(`Attempting to append`, yellow(`${contract}.acceptOwnership()`), `to the batch`)
+				);
+				const { appended } = await safeBatchSubmitter.appendTransaction({
+					to: address,
+					data: encodedData,
+				});
+				if (!appended) {
+					console.log(gray('Skipping adding to the batch as already in pending queue'));
 				}
+			} else if (relayers) {
+				// Relayer
+				console.log(
+					gray('Adding'),
+					yellow(`${contract}.acceptOwnership()`),
+					gray('to the relayer actions')
+				);
+				relayers.actions.push({ target: address, data: encodedData });
+			} else {
+				try {
+					await confirmOrEnd(gray(`Confirm: Submit`, yellow(`${contract}.acceptOwnership()`), `?`));
+
+					const params = await assignGasOptions({
+						tx: {
+							to: address,
+							data: encodedData,
+						},
+						provider,
+						maxFeePerGas,
+						maxPriorityFeePerGas,
+					});
+
+					if (gasLimit) {
+						params.gasLimit = ethers.BigNumber.from(gasLimit);
+					}
+
+					const tx = await signer.sendTransaction(params);
+					const receipt = await tx.wait();
+
+					logTx(receipt);
+				} catch (err) {
+					throw Error(`Transaction failed to submit.\n${err}`);
+				}
+			}
+		} else {
+			const msg = `Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`;
+			if (throwOnNotNominatedOwner && contract !== 'DappMaintenance') {
+				throw Error(msg);
+			} else {
+				console.log(cyan(msg));
 			}
 		}
 	}
@@ -473,7 +468,6 @@ module.exports = {
 			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-			.option('-s, --skip-ownership', 'Skip ownership checks.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(

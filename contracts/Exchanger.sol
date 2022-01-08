@@ -451,13 +451,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             entry.roundIdForDest
         );
 
-        _ensureCanExchangeAtRound(
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
-        );
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         // SIP-65: Decentralized Circuit Breaker
         // mutative call to suspend system if the rate is invalid
@@ -476,12 +470,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        entry.exchangeFeeRate = _feeRateForExchangeAtRound(
-            sourceCurrencyKey,
-            destinationCurrencyKey,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
-        );
+        entry.exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
         // Note: `fee` is denominated in the destinationCurrencyKey.
@@ -629,26 +618,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         synthKeys[0] = sourceCurrencyKey;
         synthKeys[1] = destinationCurrencyKey;
         require(!exchangeRates().anyRateIsInvalid(synthKeys), "Src/dest rate invalid or not found");
-    }
-
-    function _ensureCanExchangeAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) internal view {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
-
-        bytes32[] memory synthKeys = new bytes32[](2);
-        synthKeys[0] = sourceCurrencyKey;
-        synthKeys[1] = destinationCurrencyKey;
-
-        uint[] memory roundIds = new uint[](2);
-        roundIds[0] = roundIdForSrc;
-        roundIds[1] = roundIdForDest;
-        require(!exchangeRates().anyRateIsInvalidAtRound(synthKeys, roundIds), "Src/dest rate invalid or not found");
     }
 
     function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
@@ -802,31 +771,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    /// @notice Calculate the exchange fee for a given source and destination currency key
-    /// @param sourceCurrencyKey The source currency key
-    /// @param destinationCurrencyKey The destination currency key
-    /// @param roundIdForSrc The round id of the source currency.
-    /// @param roundIdForDest The round id of the target currency.
-    /// @return The exchange fee rate
-    /// @return The exchange dynamic fee rate
-    function _feeRateForExchangeAtRound(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) internal view returns (uint exchangeFeeRate) {
-        // Get the exchange fee rate as per destination currencyKey
-        uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
-        return
-            _calculateFeeRateFromExchangeSynthsAtRound(
-                baseRate,
-                sourceCurrencyKey,
-                destinationCurrencyKey,
-                roundIdForSrc,
-                roundIdForDest
-            );
-    }
-
     function _calculateFeeRateFromExchangeSynths(
         uint exchangeFeeRate,
         bytes32 sourceCurrencyKey,
@@ -842,48 +786,19 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return exchangeFeeRate;
     }
 
-    function _calculateFeeRateFromExchangeSynthsAtRound(
-        uint exchangeFeeRate,
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) internal view returns (uint) {
-        uint exchangeDynamicFeeRate = _getDynamicFeeForExchangeAtRound(destinationCurrencyKey, roundIdForDest);
-        exchangeDynamicFeeRate = exchangeDynamicFeeRate.add(
-            _getDynamicFeeForExchangeAtRound(sourceCurrencyKey, roundIdForSrc)
-        );
-        uint maxDynamicFee = getExchangeMaxDynamicFee();
-
-        exchangeFeeRate = exchangeFeeRate.add(exchangeDynamicFeeRate);
-        // Cap to max exchange dynamic fee
-        exchangeFeeRate = exchangeFeeRate > maxDynamicFee ? maxDynamicFee : exchangeFeeRate;
-        return exchangeFeeRate;
-    }
-
     /// @notice Get dynamic fee for a given currency key (SIP-184)
     /// @param currencyKey The given currency key
     /// @return The dyanmic fee
     function _getDynamicFeeForExchange(bytes32 currencyKey) internal view returns (uint dynamicFee) {
         // No dynamic fee for sUSD
-        if (currencyKey == sUSD) return 0;
+        if (currencyKey == sUSD) {
+            return 0;
+        }
         (uint threshold, uint weightDecay, uint rounds) = getExchangeDynamicFeeData();
         uint[] memory prices;
-        uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds, roundId);
-        dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
-    }
-
-    /// @notice Get dynamic fee for a given currency key (SIP-184)
-    /// @param currencyKey The given currency key
-    /// @param roundId The round id
-    /// @return The dyanmic fee
-    function _getDynamicFeeForExchangeAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint dynamicFee) {
-        // No dynamic fee for sUSD
-        if (currencyKey == sUSD) return 0;
-        (uint threshold, uint weightDecay, uint rounds) = getExchangeDynamicFeeData();
-        uint[] memory prices;
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds, roundId);
+        // Note: We are using cache round ID here for cheap read
+        uint currentRoundId = exchangeRates().currentRoundForRate(currencyKey);
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, rounds, currentRoundId);
         dynamicFee = DynamicFee.getDynamicFee(prices, threshold, weightDecay);
     }
 

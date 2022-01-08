@@ -41,8 +41,7 @@ function itCanExchange({ ctx }) {
 				await updateCache({ ctx });
 
 				const tx = await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'));
-				const { gasUsed } = await tx.wait();
-				console.log(`exchange() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+				await tx.wait();
 			});
 
 			it('receives the expected amount of sETH', async () => {
@@ -78,8 +77,7 @@ function itCanExchange({ ctx }) {
 
 				before('settle', async () => {
 					const tx = await Synthetix.settle(toBytes32('sETH'));
-					const { gasUsed } = await tx.wait();
-					console.log(`settle() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+					await tx.wait();
 				});
 
 				it('shows that the user no longer has pending settlements', async () => {

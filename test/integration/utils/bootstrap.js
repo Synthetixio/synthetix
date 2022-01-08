@@ -2,7 +2,7 @@ const hre = require('hardhat');
 const ethers = require('ethers');
 const { loadUsers } = require('./users');
 const { connectContracts } = require('./contracts');
-const { increaseStalePeriodAndCheckRatesAndCache } = require('./rates');
+const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
 const { setupOptimismWatchers, approveBridge } = require('./optimism');
 const { startOpsHeartbeat } = require('./optimism-temp');
@@ -26,7 +26,7 @@ function bootstrapL1({ ctx }) {
 
 		connectContracts({ ctx });
 
-		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx });
 	});
 }
 
@@ -57,7 +57,7 @@ function bootstrapL2({ ctx }) {
 
 		connectContracts({ ctx });
 
-		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx });
 
 		await ensureBalance({
 			ctx,
@@ -95,8 +95,8 @@ function bootstrapDual({ ctx }) {
 		connectContracts({ ctx: ctx.l1 });
 		connectContracts({ ctx: ctx.l2 });
 
-		await increaseStalePeriodAndCheckRatesAndCache({ ctx: ctx.l1 });
-		await increaseStalePeriodAndCheckRatesAndCache({ ctx: ctx.l2 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l2 });
 
 		await approveBridge({ ctx: ctx.l1, amount: ethers.utils.parseEther('100000000') });
 

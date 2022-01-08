@@ -193,8 +193,8 @@ const defaults = {
 	},
 
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
-	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 5 bps
-	ETHER_WRAPPER_BURN_FEE_RATE: '0',
+	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
+	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
 	// SIP-120
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k

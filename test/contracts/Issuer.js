@@ -25,8 +25,6 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
-	setupPriceAggregators,
-	updateAggregatorRates,
 } = require('./helpers');
 
 const {
@@ -43,7 +41,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [, owner, , account1, account2, account3, account6] = accounts;
+	const [, owner, oracle, account1, account2, account3, account6] = accounts;
 
 	let synthetix,
 		systemStatus,
@@ -58,6 +56,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		sAUDContract,
 		escrow,
 		rewardEscrowV2,
+		timestamp,
 		debtCache,
 		issuer,
 		synths,
@@ -112,18 +111,19 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthRedeemer',
 			],
 		}));
-
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			await updateAggregatorRates(
-				exchangeRates,
+			timestamp = await currentTime();
+
+			await exchangeRates.updateRates(
 				[sAUD, sEUR, SNX, sETH],
-				['0.5', '1.25', '0.1', '200'].map(toUnit)
+				['0.5', '1.25', '0.1', '200'].map(toUnit),
+				timestamp,
+				{ from: oracle }
 			);
 		}
 
@@ -316,10 +316,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 					beforeEach(async () => {
 						await fastForward(10);
 						// Send a price update to give the synth rates
-						await updateAggregatorRates(
-							exchangeRates,
+						await exchangeRates.updateRates(
 							[sAUD, sEUR, sETH, ETH, SNX],
-							['0.5', '1.25', '100', '100', '2'].map(toUnit)
+							['0.5', '1.25', '100', '100', '2'].map(toUnit),
+							await currentTime(),
+							{ from: oracle }
 						);
 						await debtCache.takeDebtSnapshot();
 					});
@@ -397,7 +398,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 			describe('debtBalance()', () => {
 				it('should not change debt balance % if exchange rates change', async () => {
 					let newAUDRate = toUnit('0.5');
-					await updateAggregatorRates(exchangeRates, [sAUD], [newAUDRate]);
+					let timestamp = await currentTime();
+					await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
 					await debtCache.takeDebtSnapshot();
 
 					await synthetix.transfer(account1, toUnit('20000'), {
@@ -427,8 +429,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 						PRECISE_UNIT
 					);
 
+					timestamp = await currentTime();
 					newAUDRate = toUnit('1.85');
-					await updateAggregatorRates(exchangeRates, [sAUD], [newAUDRate]);
+					await exchangeRates.updateRates([sAUD], [newAUDRate], timestamp, { from: oracle });
 					await debtCache.takeDebtSnapshot();
 
 					totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
@@ -668,7 +671,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 						}));
 
 						await issuer.addSynth(synth.address, { from: owner });
-						await setupPriceAggregators(exchangeRates, owner, [currencyKey]);
 					});
 
 					it('should be able to query multiple synth addresses', async () => {
@@ -720,7 +722,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 						describe('when the synth has a rate', () => {
 							beforeEach(async () => {
 								for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-									await updateAggregatorRates(exchangeRates, [currencyKey], [toUnit('2')]);
+									await exchangeRates.updateRates([currencyKey], [toUnit('2')], timestamp, {
+										from: oracle,
+									});
 								}
 							});
 
@@ -738,6 +742,17 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 										const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
 										assert.equal(numEntries, '0');
+									});
+									describe('when the rate is also removed', () => {
+										beforeEach(async () => {
+											await exchangeRates.deleteRate(currencyKey, { from: oracle });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(currencyKey);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
 									});
 								});
 								describe('when the same user exchanges out of the synth', () => {
@@ -761,6 +776,22 @@ contract('Issuer (via Synthetix)', async accounts => {
 											await synthetix.settle(currencyKey);
 											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
 											assert.equal(numEntries, '0');
+										});
+										describe('when the rate is also removed', () => {
+											beforeEach(async () => {
+												await exchangeRates.deleteRate(currencyKey, { from: oracle });
+											});
+											it('then settling works as expected', async () => {
+												await synthetix.settle(currencyKey);
+
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
+											it('then settling from the original currency works too', async () => {
+												await synthetix.settle(currencyKey);
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
 										});
 									});
 								});
@@ -1013,10 +1044,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 									.concat(synths)
 									.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
 
-								await updateAggregatorRates(
-									exchangeRates,
+								const timestamp = await currentTime();
+
+								await exchangeRates.updateRates(
 									ratesToUpdate.map(toBytes32),
-									ratesToUpdate.map(() => toUnit('1'))
+									ratesToUpdate.map(() => toUnit('1')),
+									timestamp,
+									{
+										from: oracle,
+									}
 								);
 								await debtCache.takeDebtSnapshot();
 							});
@@ -1240,10 +1276,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 									.concat(synths)
 									.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
 
-								await updateAggregatorRates(
-									exchangeRates,
+								const timestamp = await currentTime();
+
+								await exchangeRates.updateRates(
 									ratesToUpdate.map(toBytes32),
-									ratesToUpdate.map(rate => toUnit(rate === 'SNX' ? '0.1' : '1'))
+									ratesToUpdate.map(rate => toUnit(rate === 'SNX' ? '0.1' : '1')),
+									timestamp,
+									{
+										from: oracle,
+									}
 								);
 								await debtCache.takeDebtSnapshot();
 							});
@@ -1569,7 +1610,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							from: owner,
 						});
 						// Set SNX price to 1
-						await updateAggregatorRates(exchangeRates, [SNX], ['1'].map(toUnit));
+						await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
+							from: oracle,
+						});
 						await debtCache.takeDebtSnapshot();
 						// Issue
 						await synthetix.issueMaxSynths({ from: account1 });
@@ -1582,7 +1625,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price drops 50%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['.5'].map(toUnit));
+							await exchangeRates.updateRates([SNX], ['.5'].map(toUnit), timestamp, {
+								from: oracle,
+							});
 							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 							assert.equal(await feePool.isFeesClaimable(account1), false);
@@ -1604,7 +1649,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price drops 10%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['.9'].map(toUnit));
+							await exchangeRates.updateRates([SNX], ['.9'].map(toUnit), timestamp, {
+								from: oracle,
+							});
 							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
@@ -1625,7 +1672,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price drops 90%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['.1'].map(toUnit));
+							await exchangeRates.updateRates([SNX], ['.1'].map(toUnit), timestamp, {
+								from: oracle,
+							});
 							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
@@ -1646,7 +1695,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price increases 100%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['2'].map(toUnit));
+							await exchangeRates.updateRates([SNX], ['2'].map(toUnit), timestamp, {
+								from: oracle,
+							});
 							await debtCache.takeDebtSnapshot();
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
@@ -1733,7 +1784,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 									});
 									describe('and the sEUR price decreases by 20% to 1', () => {
 										beforeEach(async () => {
-											await updateAggregatorRates(exchangeRates, [sEUR], ['1'].map(toUnit));
+											await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
+												from: oracle,
+											});
 											await debtCache.takeDebtSnapshot();
 										});
 										describe('and 60s elapses', () => {
@@ -2056,7 +2109,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			it("should prevent more issuance if the user's collaterisation changes to be insufficient", async () => {
 				// Set sEUR for purposes of this test
-				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('0.75')]);
+				const timestamp1 = await currentTime();
+				await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
 				await debtCache.takeDebtSnapshot();
 
 				const issuedSynthetixs = web3.utils.toBN('200000');
@@ -2075,7 +2129,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await synthetix.exchange(sUSD, issuedSynths, sEUR, { from: account1 });
 
 				// Increase the value of sEUR relative to synthetix
-				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('1.1')]);
+				const timestamp2 = await currentTime();
+				await exchangeRates.updateRates([sEUR], [toUnit('1.10')], timestamp2, { from: oracle });
 				await debtCache.takeDebtSnapshot();
 
 				await assert.revert(
@@ -2376,7 +2431,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					await synthetix.transfer(authoriser, toUnit('20000'), {
 						from: owner,
 					});
-					await updateAggregatorRates(exchangeRates, [SNX], [toUnit('1')]);
+					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, { from: oracle });
 					await debtCache.takeDebtSnapshot();
 				});
 				describe('when not approved it should revert on', async () => {
@@ -2463,7 +2518,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							});
 							it('and calling burnSynthsToTargetOnBehalf() succeeds', async () => {
 								// need the user to be undercollaterized for this to succeed
-								await updateAggregatorRates(exchangeRates, [SNX], [toUnit('0.001')]);
+								await exchangeRates.updateRates([SNX], ['0.001'].map(toUnit), timestamp, {
+									from: oracle,
+								});
 								await debtCache.takeDebtSnapshot();
 								await synthetix.burnSynthsToTargetOnBehalf(authoriser, { from: delegate });
 							});
@@ -2513,7 +2570,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 				it('should approveBurnOnBehalf and burnSynthsToTarget', async () => {
 					await synthetix.issueMaxSynths({ from: authoriser });
-					await updateAggregatorRates(exchangeRates, [SNX], [toUnit('0.01')]);
+					await exchangeRates.updateRates([SNX], ['0.01'].map(toUnit), timestamp, { from: oracle });
 					await debtCache.takeDebtSnapshot();
 
 					await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });

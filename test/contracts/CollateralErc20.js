@@ -8,16 +8,11 @@ const BN = require('bn.js');
 
 const PublicEST8Decimals = artifacts.require('PublicEST8Decimals');
 
-const { fastForward, toUnit } = require('../utils')();
+const { fastForward, toUnit, currentTime } = require('../utils')();
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-const {
-	ensureOnlyExpectedMutativeFunctions,
-	setStatus,
-	setupPriceAggregators,
-	updateAggregatorRates,
-} = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, setStatus } = require('./helpers');
 
 const {
 	toBytes32,
@@ -52,7 +47,7 @@ contract('CollateralErc20', async accounts => {
 	let id;
 	let proxy, tokenState;
 
-	const [deployerAccount, owner, , , account1, account2] = accounts;
+	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
 	let cerc20,
 		managerState,
@@ -90,7 +85,17 @@ contract('CollateralErc20', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+			from: oracle,
+		});
+
+		const sBTC = toBytes32('sBTC');
+
+		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -141,8 +146,6 @@ contract('CollateralErc20', async accounts => {
 				'CollateralUtil',
 			],
 		}));
-
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -301,20 +304,28 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('when the price falls by 25% our c ratio is 150%', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [7500].map(toUnit));
+				await exchangeRates.updateRates([sBTC], ['7500'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
 
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
 			it('when the price increases by 100% our c ratio is 400%', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [20000].map(toUnit));
+				await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(4));
 			});
 
 			it('when the price fallsby 50% our cratio is 100%', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [5000].map(toUnit));
+				await exchangeRates.updateRates([sBTC], ['5000'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1));
 			});
@@ -335,7 +346,10 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('price changes should not change the cratio', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [75].map(toUnit));
+				await exchangeRates.updateRates([sBTC], ['75'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
@@ -895,7 +909,10 @@ contract('CollateralErc20', async accounts => {
 			let liquidationAmount;
 
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [7000].map(toUnit));
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([sBTC], ['7000'].map(toUnit), timestamp, {
+					from: oracle,
+				});
 
 				await issuesUSDToAccount(toUnit(5000), account2);
 
@@ -945,7 +962,10 @@ contract('CollateralErc20', async accounts => {
 
 		describe('when a loan needs to be completely liquidated', async () => {
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [5000].map(toUnit));
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([sBTC], ['5000'].map(toUnit), timestamp, {
+					from: oracle,
+				});
 
 				loan = await cerc20.loans(id);
 

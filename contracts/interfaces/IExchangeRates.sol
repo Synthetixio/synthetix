@@ -15,7 +15,7 @@ interface IExchangeRates {
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
-    function anyRateIsInvalidAtRound(bytes32[] calldata currencyKeys, uint[] calldata roundIds) external view returns (bool);
+    function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
 
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory);
 
@@ -84,6 +84,8 @@ interface IExchangeRates {
     ) external view returns (uint);
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256);
+
+    function oracle() external view returns (address);
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time);
 

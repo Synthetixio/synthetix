@@ -3890,30 +3890,5 @@
 				"keccak256": "0x582cac91f50cfefc154d67097081d0dd0d4877333df51c3cfe19485f80ef7e74"
 			}
 		}
-	},
-	"v2.56.1": {
-		"tag": "v2.56.1",
-		"fulltag": "v2.56.1",
-		"release": "Alhena",
-		"network": "mainnet",
-		"date": "2021-12-15T18:16:59-05:00",
-		"commit": "324105690195d2c0925ffbfffe5d0bba8e98fad7",
-		"contracts": {
-			"TokenStatesETHBTC": {
-				"address": "0x042A7A0022A7695454ac5Be77a4860e50c9683fC",
-				"status": "current",
-				"keccak256": "0x10a63d041fa9899b429b12dddcf047b55c23fe62019c08abbba9fa1f603738d3"
-			},
-			"ProxysETHBTC": {
-				"address": "0x104eDF1da359506548BFc7c25bA1E28C16a70235",
-				"status": "current",
-				"keccak256": "0xa4731706c3292ed368ded616be2fcf28877d8a853cbce27be7d78e6a57636e9f"
-			},
-			"SynthsETHBTC": {
-				"address": "0xcc3aab773e2171b2E257Ee17001400eE378aa52B",
-				"status": "current",
-				"keccak256": "0x77d6d75f0faee02ff7a6bae37e0aa47e6afb849484a1f4ea6794131ffc5c77b8"
-			}
-		}
 	}
 }

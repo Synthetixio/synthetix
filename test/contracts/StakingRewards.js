@@ -2,12 +2,7 @@ const { contract } = require('hardhat');
 const { toBN } = require('web3-utils');
 
 const { toBytes32 } = require('../..');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-	setupPriceAggregators,
-	updateAggregatorRates,
-} = require('./helpers');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { mockToken, setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
@@ -16,7 +11,7 @@ contract('StakingRewards', accounts => {
 	const [
 		,
 		owner,
-		,
+		oracle,
 		authority,
 		rewardEscrowAddress,
 		stakingAccount1,
@@ -38,12 +33,18 @@ contract('StakingRewards', accounts => {
 
 	const setRewardsTokenExchangeRate = async ({ rateStaleDays } = { rateStaleDays: 7 }) => {
 		const rewardsTokenIdentifier = await rewardsToken.symbol();
-		const tokenKey = toBytes32(rewardsTokenIdentifier);
 
 		await systemSettings.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
-		await setupPriceAggregators(exchangeRates, owner, [tokenKey]);
-		await updateAggregatorRates(exchangeRates, [tokenKey], [toUnit('2')]);
-		assert.equal(await exchangeRates.rateIsStale(tokenKey), false);
+		const updatedTime = await currentTime();
+		await exchangeRates.updateRates(
+			[toBytes32(rewardsTokenIdentifier)],
+			[toUnit('2')],
+			updatedTime,
+			{
+				from: oracle,
+			}
+		);
+		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
 	};
 
 	addSnapshotBeforeRestoreAfterEach();

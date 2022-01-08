@@ -360,11 +360,14 @@ contract('FeePoolState', async accounts => {
 	// TODO checks SynthetixState debt entry is same as stored FeePoolState Entry
 	// it.only('should allow an issuer to issue max synths and track debt issuance in feePool', async function() {
 	// 	// Send a price update to guarantee we're not depending on values from outside this test.
+	// 	const oracle = await exchangeRates.oracle();
+	// 	const timestamp = await currentTime();
 
-	// 	await updateAggregatorRates(
-	//  	exchangeRates,
+	// 	await exchangeRates.updateRates(
 	// 		[sAUD, sEUR, SNX],
-	// 		['0.5', '1.25', '0.1'].map(toUnit)
+	// 		['0.5', '1.25', '0.1'].map(toUnit),
+	// 		timestamp,
+	// 		{ from: oracle }
 	// 	);
 
 	// 	// Give some SNX to account1
@@ -394,11 +397,14 @@ contract('FeePoolState', async accounts => {
 
 	// it('should allow an issuer to issue synths many times and track debt issuance in feePool', async function() {
 	// 	// Send a price update to guarantee we're not depending on values from outside this test.
+	// 	const oracle = await exchangeRates.oracle();
+	// 	const timestamp = await currentTime();
 
-	// 	await updateAggregatorRates(
-	//  	exchangeRates,
+	// 	await exchangeRates.updateRates(
 	// 		[sAUD, sEUR, SNX],
 	// 		['0.5', '1.25', '0.1'].map(toUnit),
+	// 		timestamp,
+	// 		{ from: oracle }
 	// 	);
 
 	// 	// Give some SNX to account1

@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.56.1",
+	"version": "2.55.0",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -18,7 +18,7 @@
 		"prepublishOnly": "npm run describe && npm run pack",
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node",
 		"fork:mainnet": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
-		"test": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat test",
+		"test": "hardhat test",
 		"describe": "hardhat describe",
 		"test:deployments": "mocha test/deployments -- --timeout 60000",
 		"test:etherscan": "node test/etherscan",

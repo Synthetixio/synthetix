@@ -31,10 +31,6 @@
 		"asset": "DEFI",
 		"feed": "0xa8E875F94138B0C5b51d1e1d5dE35bbDdd28EA87"
 	},
-	"ETHBTC": {
-		"asset": "ETHBTC",
-		"feed": "0xAc559F25B1619171CbC396a50854A3240b6A4e99"
-	},
 	"EUR": {
 		"asset": "EUR",
 		"feed": "0xb49f677943BC038e9857d61E7d053CaA2C1734C1"

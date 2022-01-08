@@ -5,6 +5,7 @@ const { contract, web3 } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const {
+	currentTime,
 	fastForward,
 	getEthBalance,
 	toUnit,
@@ -16,8 +17,6 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
-	setupPriceAggregators,
-	updateAggregatorRates,
 } = require('./helpers');
 
 const { mockToken, setupAllContracts } = require('./setup');
@@ -27,7 +26,7 @@ const { toBytes32 } = require('../..');
 contract('Depot', async accounts => {
 	let synthetix, synth, depot, addressResolver, systemStatus, exchangeRates, ethRate, snxRate;
 
-	const [, owner, , fundsWallet, address1, address2, address3] = accounts;
+	const [, owner, oracle, fundsWallet, address1, address2, address3] = accounts;
 
 	const [SNX, ETH] = ['SNX', 'ETH'].map(toBytes32);
 
@@ -72,16 +71,19 @@ contract('Depot', async accounts => {
 				'Issuer',
 			],
 		}));
-
-		await setupPriceAggregators(exchangeRates, owner, [ETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
+		const timestamp = await currentTime();
+
 		snxRate = toUnit('0.1');
 		ethRate = toUnit('172');
-		await updateAggregatorRates(exchangeRates, [SNX, ETH], [snxRate, ethRate]);
+
+		await exchangeRates.updateRates([SNX, ETH], [snxRate, ethRate], timestamp, {
+			from: oracle,
+		});
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -776,7 +778,10 @@ contract('Depot', async accounts => {
 					);
 				});
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
-					await updateAggregatorRates(exchangeRates, [SNX, ETH], ['0.1', '134'].map(toUnit));
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX, ETH], ['0.1', '134'].map(toUnit), timestamp, {
+						from: oracle,
+					});
 					await assert.revert(
 						depot.exchangeEtherForSynthsAtRate(ethRate, payload),
 						'Guaranteed rate would not be received'
@@ -825,7 +830,10 @@ contract('Depot', async accounts => {
 					);
 				});
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
-					await updateAggregatorRates(exchangeRates, [SNX, ETH], ['0.1', '134'].map(toUnit));
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX, ETH], ['0.1', '134'].map(toUnit), timestamp, {
+						from: oracle,
+					});
 					await assert.revert(
 						depot.exchangeEtherForSNXAtRate(ethRate, snxRate, ethToSendFromPurchaser),
 						'Guaranteed ether rate would not be received'
@@ -886,7 +894,10 @@ contract('Depot', async accounts => {
 					);
 				});
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
-					await updateAggregatorRates(exchangeRates, [SNX], ['0.05'].map(toUnit));
+					const timestamp = await currentTime();
+					await exchangeRates.updateRates([SNX], ['0.05'].map(toUnit), timestamp, {
+						from: oracle,
+					});
 					await assert.revert(
 						depot.exchangeSynthsForSNXAtRate(synthsToSend, snxRate, fromPurchaser),
 						'Guaranteed rate would not be received'
