@@ -134,8 +134,21 @@ async function getRate({ ctx, symbol }) {
 	return ExchangeRates.rateForCurrency(toBytes32(symbol));
 }
 
+async function setRate({ ctx, symbol, rate }) {
+	const ExchangeRates = ctx.contracts.ExchangeRates.connect(ctx.users.owner);
+	const MockAggregator = ctx.contracts.MockAggregator.connect(ctx.users.owner);
+
+	const { timestamp } = await ctx.provider.getBlock();
+
+	await (await MockAggregator.setDecimals(18)).wait();
+	await (await MockAggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
+	await (await ExchangeRates.addAggregator(toBytes32(symbol), MockAggregator.address)).wait();
+	await MockAggregator.setLatestAnswer(rate, timestamp);
+}
+
 module.exports = {
 	increaseStalePeriodAndCheckRatesAndCache,
 	getRate,
+	setRate,
 	updateCache,
 };
