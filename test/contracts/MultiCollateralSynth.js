@@ -6,8 +6,13 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 let MultiCollateralSynth;
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
+const { toUnit, fastForward } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -16,9 +21,10 @@ const {
 const { setupAllContracts } = require('./setup');
 
 contract('MultiCollateralSynth', accounts => {
-	const [deployerAccount, owner, oracle, , account1] = accounts;
+	const [deployerAccount, owner, , , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
+	const sBTC = toBytes32('sBTC');
 
 	let issuer,
 		resolver,
@@ -40,20 +46,6 @@ contract('MultiCollateralSynth', accounts => {
 		// Set up the depositor with an amount of synths to deposit.
 		await sUSDSynth.issue(receiver, issueAmount, {
 			from: owner,
-		});
-	};
-
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		const sBTC = toBytes32('sBTC');
-
-		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-			from: oracle,
 		});
 	};
 
@@ -91,6 +83,9 @@ contract('MultiCollateralSynth', accounts => {
 			],
 		}));
 
+		await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
+		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
 		await manager.rebuildCache();
@@ -98,8 +93,6 @@ contract('MultiCollateralSynth', accounts => {
 		await debtCache.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
-
-		await updateRatesWithDefaults();
 
 		await issuesUSDToAccount(toUnit(1000), owner);
 		await debtCache.takeDebtSnapshot();
@@ -199,11 +192,9 @@ contract('MultiCollateralSynth', accounts => {
 
 		describe('when multiCollateral is set to the owner', () => {
 			beforeEach(async () => {
-				const timestamp = await currentTime();
-
-				await exchangeRates.updateRates([toBytes32('sXYZ')], [toUnit(5)], timestamp, {
-					from: oracle,
-				});
+				const sXYZ = toBytes32('sXYZ');
+				await setupPriceAggregators(exchangeRates, owner, [sXYZ]);
+				await updateAggregatorRates(exchangeRates, [sXYZ], [toUnit(5)]);
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {

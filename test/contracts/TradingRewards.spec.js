@@ -2,8 +2,14 @@ const { contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { setupAllContracts } = require('./setup');
-const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
-const { setExchangeFeeRateForSynths, getDecodedLogs, decodedEventEqual } = require('./helpers');
+const { toUnit, multiplyDecimal } = require('../utils')();
+const {
+	setExchangeFeeRateForSynths,
+	getDecodedLogs,
+	decodedEventEqual,
+	setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
 const {
 	toBytes32,
 	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
@@ -18,9 +24,9 @@ const {
 contract('TradingRewards', accounts => {
 	const [, owner, account1] = accounts;
 
-	const synths = ['sUSD', 'sETH', 'sBTC'];
+	const synths = ['sUSD', 'sETH', 'sBTC', 'SNX'];
 	const synthKeys = synths.map(toBytes32);
-	const [sUSD, sETH, sBTC] = synthKeys;
+	const [sUSD, sETH, sBTC, SNX] = synthKeys;
 
 	let synthetix, exchanger, exchangeRates, rewards, resolver, systemSettings;
 	let sUSDContract, sETHContract, sBTCContract;
@@ -34,6 +40,7 @@ contract('TradingRewards', accounts => {
 	const rates = {
 		[sETH]: toUnit('100'),
 		[sBTC]: toUnit('12000'),
+		[SNX]: toUnit('0.2'),
 	};
 
 	let feesPaidUSD;
@@ -94,6 +101,8 @@ contract('TradingRewards', accounts => {
 					'CollateralManager',
 				],
 			}));
+
+			await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
 		});
 
 		before('BRRRRRR', async () => {
@@ -103,14 +112,8 @@ contract('TradingRewards', accounts => {
 		});
 
 		before('set exchange rates', async () => {
-			const oracle = account1;
-			let timestamp;
 			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				timestamp = await currentTime();
-
-				await exchangeRates.updateRates([sETH, sBTC], Object.values(rates), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH, sBTC, SNX], Object.values(rates));
 			}
 
 			await setExchangeFeeRateForSynths({

@@ -4,14 +4,16 @@ const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const { toBytes32 } = require('../..');
+
+const { fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
+
 const {
-	toBytes32,
-	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
-} = require('../..');
-
-const { currentTime, fastForward, toUnit, toPreciseUnit, multiplyDecimal } = require('../utils')();
-
-const { setExchangeFeeRateForSynths } = require('./helpers');
+	setExchangeFeeRateForSynths,
+	setupPriceAggregators,
+	updateRatesWithDefaults,
+	updateAggregatorRates,
+} = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
 
@@ -63,25 +65,6 @@ contract('Rewards Integration Tests', accounts => {
 
 	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
 
-	// Updates rates with defaults so they're not stale.
-	const updateRatesWithDefaults = async () => {
-		let timestamp;
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			timestamp = await currentTime();
-
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX, sBTC, iBTC, sETH, ETH],
-				['0.5', '1.25', '0.1', '5000', '4000', '172', '172'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
-		}
-
-		await debtCache.takeDebtSnapshot();
-	};
-
 	const fastForwardAndCloseFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		// Note: add on a small addition of 10 seconds - this seems to have
@@ -93,12 +76,12 @@ contract('Rewards Integration Tests', accounts => {
 		// Fast forward another day after feePeriod closed before minting
 		await fastForward(DAY + 10);
 
-		await updateRatesWithDefaults();
+		await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
 		await fastForward(seconds);
-		await updateRatesWithDefaults();
+		await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 	};
 
 	const exchangeFeeRate = toUnit('0.003'); // 30 bips
@@ -136,7 +119,7 @@ contract('Rewards Integration Tests', accounts => {
 	// const YEAR = 31556926;
 
 	// ACCOUNTS
-	const [deployerAccount, owner, oracle, feeAuthority, account1, account2, account3] = accounts;
+	const [deployerAccount, owner, , feeAuthority, account1, account2, account3] = accounts;
 
 	// VARIABLES
 	let feePool,
@@ -186,6 +169,8 @@ contract('Rewards Integration Tests', accounts => {
 				'CollateralManager',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sBTC, iBTC, sETH, ETH]);
 
 		MINTER_SNX_REWARD = await supplySchedule.minterReward();
 
@@ -574,8 +559,8 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
 
 			// Accounts 2 & 3 claim
+			await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 			await feePool.claimFees({ from: account2 });
-			// updateRatesWithDefaults();
 			await feePool.claimFees({ from: account3 });
 
 			// Accounts 2 & 3 now have the rewards escrowed
@@ -633,10 +618,7 @@ contract('Rewards Integration Tests', accounts => {
 			);
 
 			// Increase sBTC price by 100%
-			const timestamp = await currentTime();
-			await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-				from: oracle,
-			});
+			await updateAggregatorRates(exchangeRates, [sBTC], ['10000'].map(toUnit));
 			await debtCache.takeDebtSnapshot();
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
@@ -934,10 +916,7 @@ contract('Rewards Integration Tests', accounts => {
 			const currentRate = await exchangeRates.rateForCurrency(SNX);
 			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.009')));
 
-			const timestamp = await currentTime();
-			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-				from: oracle,
-			});
+			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 
 			// we will be able to claim fees
 			assert.equal(await feePool.isFeesClaimable(account1), true);
@@ -959,11 +938,7 @@ contract('Rewards Integration Tests', accounts => {
 		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
 			// But if the price of SNX decreases a lot...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
-			const timestamp = await currentTime();
-			await exchangeRates.updateRates([SNX], [newRate], timestamp, {
-				from: oracle,
-			});
-
+			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 			// we will fall into the >100% bracket
 			assert.equal(await feePool.isFeesClaimable(account1), false);
 

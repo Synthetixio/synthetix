@@ -4,15 +4,18 @@ const {
 	toBytes32,
 	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../../..');
+const { createMockAggregatorFactory } = require('../../utils')();
 
-async function updateExchangeRatesIfNeeded({ ctx }) {
+async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
 	if (await _areRatesInvalid({ ctx })) {
-		await _setNewRates({ ctx });
+		// try to add the missing rates
+		await _setMissingRates({ ctx });
+		// check again
 		if (await _areRatesInvalid({ ctx })) {
 			await _printRatesInfo({ ctx });
-			throw new Error('Rates are still invalid after updating them.');
+			throw new Error('Rates are still invalid after updating.');
 		}
 	}
 
@@ -74,36 +77,41 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 		.concat(['SNX', 'ETH'].map(toBytes32));
 }
 
-async function _getCurrentRates({ ctx, currencyKeys }) {
-	const { ExchangeRates } = ctx.contracts;
-
-	const rates = [];
-	for (const currencyKey of currencyKeys) {
-		const rate = await ExchangeRates.rateForCurrency(currencyKey);
-
-		// Simualte any exchange rates that are 0.
-		const newRate = rate.toString() === '0' ? ethers.utils.parseEther('1') : rate;
-
-		rates.push(newRate);
+async function _setMissingRates({ ctx }) {
+	let currencyKeys;
+	if (ctx.fork) {
+		// this adds a rate for only e.g. sREDEEMER in fork mode (which is not an existing synth
+		// but is added to test the redeeming functionality)
+		// All other synths should have feeds in fork mode
+		currencyKeys = (ctx.addedSynths || []).map(o => toBytes32(o.name));
+	} else {
+		// set missing rates for all synths, since not in fork mode we don't have existing feeds
+		currencyKeys = await _getAvailableCurrencyKeys({ ctx });
 	}
 
-	return rates;
-}
+	const owner = ctx.users.owner;
+	const ExchangeRates = ctx.contracts.ExchangeRates.connect(owner);
 
-async function _setNewRates({ ctx }) {
-	let { ExchangeRates } = ctx.contracts;
-	const oracle = await ExchangeRates.oracle();
-	const signer = ctx.fork ? ctx.provider.getSigner(oracle) : ctx.users.owner;
-	ExchangeRates = ExchangeRates.connect(signer);
+	// factory for price aggregators contracts
+	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
 
-	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
-	const rates = await _getCurrentRates({ ctx, currencyKeys });
-
-	for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-		const { timestamp } = await ctx.provider.getBlock();
-
-		const tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
-		await tx.wait();
+	// got over all rates and add aggregators
+	for (const currencyKey of currencyKeys) {
+		const rate = await ExchangeRates.rateForCurrency(currencyKey);
+		if (rate.toString() === '0') {
+			// deploy an aggregator
+			let aggregator = await MockAggregatorFactory.deploy();
+			aggregator = aggregator.connect(owner);
+			// set decimals
+			await (await aggregator.setDecimals(18)).wait();
+			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
+				const { timestamp } = await ctx.provider.getBlock();
+				// push the new price
+				await (await aggregator.setLatestAnswer(ethers.utils.parseEther('1'), timestamp)).wait();
+			}
+			// set the aggregator in ExchangeRates
+			await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
+		}
 	}
 }
 
@@ -127,7 +135,7 @@ async function getRate({ ctx, symbol }) {
 }
 
 module.exports = {
-	updateExchangeRatesIfNeeded,
+	increaseStalePeriodAndCheckRatesAndCache,
 	getRate,
 	updateCache,
 };
