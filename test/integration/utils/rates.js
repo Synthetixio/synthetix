@@ -136,14 +136,21 @@ async function getRate({ ctx, symbol }) {
 
 async function setRate({ ctx, symbol, rate }) {
 	const ExchangeRates = ctx.contracts.ExchangeRates.connect(ctx.users.owner);
-	const MockAggregator = ctx.contracts.MockAggregator.connect(ctx.users.owner);
+
+	// factory for price aggregators contracts
+	const MockAggregatorFactory = await createMockAggregatorFactory(ctx.users.owner);
+
+	// deploy an aggregator
+	let aggregator = await MockAggregatorFactory.deploy();
+	aggregator = aggregator.connect(ctx.users.owner);
 
 	const { timestamp } = await ctx.provider.getBlock();
-
-	await (await MockAggregator.setDecimals(18)).wait();
-	await (await MockAggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
-	await (await ExchangeRates.addAggregator(toBytes32(symbol), MockAggregator.address)).wait();
-	await MockAggregator.setLatestAnswer(rate, timestamp);
+	// set decimals
+	await (await aggregator.setDecimals(18)).wait();
+	// push the new price
+	await (await aggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
+	// set the aggregator in ExchangeRates
+	await (await ExchangeRates.addAggregator(toBytes32(symbol), aggregator.address)).wait();
 }
 
 module.exports = {
