@@ -9,14 +9,12 @@ const { createMockAggregatorFactory } = require('../../utils')();
 async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
+	// try to add the missing rates
+	await _setMissingRates({ ctx });
+	// check again
 	if (await _areRatesInvalid({ ctx })) {
-		// try to add the missing rates
-		await _setMissingRates({ ctx });
-		// check again
-		if (await _areRatesInvalid({ ctx })) {
-			await _printRatesInfo({ ctx });
-			throw new Error('Rates are still invalid after updating.');
-		}
+		await _printRatesInfo({ ctx });
+		throw new Error('Rates are still invalid after updating.');
 	}
 
 	if (await _isCacheInvalid({ ctx })) {
@@ -97,21 +95,18 @@ async function _setMissingRates({ ctx }) {
 
 	// got over all rates and add aggregators
 	for (const currencyKey of currencyKeys) {
-		const rate = await ExchangeRates.rateForCurrency(currencyKey);
-		if (rate.toString() === '0') {
-			// deploy an aggregator
-			let aggregator = await MockAggregatorFactory.deploy();
-			aggregator = aggregator.connect(owner);
-			// set decimals
-			await (await aggregator.setDecimals(18)).wait();
-			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				const { timestamp } = await ctx.provider.getBlock();
-				// push the new price
-				await (await aggregator.setLatestAnswer(ethers.utils.parseEther('1'), timestamp)).wait();
-			}
-			// set the aggregator in ExchangeRates
-			await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
+		// deploy an aggregator
+		let aggregator = await MockAggregatorFactory.deploy();
+		aggregator = aggregator.connect(owner);
+		// set decimals
+		await (await aggregator.setDecimals(18)).wait();
+		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
+			const { timestamp } = await ctx.provider.getBlock();
+			// push the new price
+			await (await aggregator.setLatestAnswer(ethers.utils.parseEther('1'), timestamp)).wait();
 		}
+		// set the aggregator in ExchangeRates
+		await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 	}
 }
 
