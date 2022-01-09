@@ -261,7 +261,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         ISynthetixBridgeToOptimism(resolver.requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM, "Missing contract: SynthetixBridgeToOptimism")).closeFeePeriod(snxBackedDebt, debtSharesSupply);
     }
 
-    function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) external onlyRelayer issuanceActive {
+    function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) external onlyRelayer {
         _closeSecondary(allNetworksSnxBackedDebt, allNetworksDebtSharesSupply);
     }
 
