@@ -7,7 +7,7 @@ const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
 
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
-		const SNXAmount = ethers.utils.parseEther('1000');
+		const SNXAmount = ethers.utils.parseEther('100');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
 		let user;
