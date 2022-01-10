@@ -112,9 +112,9 @@ function itCanLiquidate({ ctx }) {
 						assert.bnLt(await SynthsUSD.balanceOf(otherUser.address), beforeBalance);
 					});
 
-					it('takes SNX from otherUser', async () => {
+					it('transfers SNX from otherUser', async () => {
 						const amountSent = beforeDebttedSnx.sub(await Synthetix.balanceOf(someUser.address));
-						
+
 						assert.bnNotEqual(amountSent, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(otherUser.address),
