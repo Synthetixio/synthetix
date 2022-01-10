@@ -120,7 +120,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint rate,
         uint time
     ) internal {
-        if (rate > 0) {
+        if (rate > 0 && rate != cacheRates[currencyKey][roundId].rate) {
             cacheRates[currencyKey][roundId] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
         }
     }

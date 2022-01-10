@@ -2158,9 +2158,6 @@ contract('Exchanger (spec tests)', async accounts => {
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set a 0 rate to prevent invalid rate from causing a revert on exchange
 						for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-							// Need to run twice in order to increase the roundId
-							// to be greater than the one in the cache
-							await aggregator.setLatestAnswer('0', await currentTime());
 							await aggregator.setLatestAnswer('0', await currentTime());
 						}
 					});
