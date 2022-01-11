@@ -6,14 +6,12 @@ const { createMockAggregatorFactory } = require('../../utils')();
 async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
-	// print the rates for visibility
-	await _printRatesInfo({ ctx });
-
 	if (await _areRatesInvalid({ ctx })) {
 		// try to add the missing rates
 		await _setMissingRates({ ctx });
 		// check again
 		if (await _areRatesInvalid({ ctx })) {
+			await _printRatesInfo({ ctx });
 			throw new Error('Rates are still invalid after updating.');
 		}
 	}
@@ -132,17 +130,15 @@ async function getRate({ ctx, symbol }) {
 }
 
 async function setRate({ ctx, symbol, rate }) {
-	// find existing aggregator
-	const aggregatorAddress = await ctx.contracts.ExchangeRates.aggregators(toBytes32(symbol));
-	let aggregator = new ethers.Contract(
-		aggregatorAddress,
-		ctx.contracts.MockAggregator.interface,
-		ctx.provider
-	);
-	aggregator = aggregator.connect(ctx.users.owner);
+	const ExchangeRates = ctx.contracts.ExchangeRates.connect(ctx.users.owner);
+	const MockAggregator = ctx.contracts.MockAggregator.connect(ctx.users.owner);
 
 	const { timestamp } = await ctx.provider.getBlock();
-	await (await aggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
+
+	await (await MockAggregator.setDecimals(18)).wait();
+	await (await MockAggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
+	await (await ExchangeRates.addAggregator(toBytes32(symbol), MockAggregator.address)).wait();
+	await MockAggregator.setLatestAnswer(rate, timestamp);
 }
 
 module.exports = {
