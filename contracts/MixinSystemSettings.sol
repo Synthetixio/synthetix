@@ -7,6 +7,7 @@ import "./interfaces/IFlexibleStorage.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinsystemsettings
 contract MixinSystemSettings is MixinResolver {
+    // must match the one defined SystemSettingsLib, defined in both places due to sol v0.5 limitations
     bytes32 internal constant SETTING_CONTRACT_NAME = "SystemSettings";
 
     bytes32 internal constant SETTING_WAITING_PERIOD_SECS = "waitingPeriodSecs";

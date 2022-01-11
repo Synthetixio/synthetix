@@ -104,6 +104,10 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	it('ensure contract name method using the library return correct value', async () => {
+		assert.equal(await systemSettings.CONTRACT_NAME(), toBytes32('SystemSettings'));
+	});
+
 	describe('setCrossDomainMessageGasLimit()', () => {
 		it('only owner can invoke', async () => {
 			await onlyGivenAddressCanInvoke({
