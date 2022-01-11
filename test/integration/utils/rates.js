@@ -6,12 +6,14 @@ const { createMockAggregatorFactory } = require('../../utils')();
 async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
+	// print the rates for visibility
+	await _printRatesInfo({ ctx });
+
 	if (await _areRatesInvalid({ ctx })) {
 		// try to add the missing rates
 		await _setMissingRates({ ctx });
 		// check again
 		if (await _areRatesInvalid({ ctx })) {
-			await _printRatesInfo({ ctx });
 			throw new Error('Rates are still invalid after updating.');
 		}
 	}
