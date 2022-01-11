@@ -84,24 +84,21 @@ function itCanLiquidate({ ctx }) {
 				});
 
 				describe('getting liquidated', () => {
-					let beforeDebt;
-					let beforeBalance;
+					let beforeDebt, beforeDebttedSnx;
+					let beforeBalance, beforeCredittedSnx;
 
 					before('otherUser calls liquidateDelinquentAccount', async () => {
 						beforeDebt = (
 							await Synthetix.debtBalanceOf(someUser.address, toBytes32('sUSD'))
 						).toString();
+						beforeDebttedSnx = await Synthetix.balanceOf(someUser.address);
+						beforeCredittedSnx = await Synthetix.balanceOf(otherUser.address);
 						beforeBalance = await SynthsUSD.balanceOf(otherUser.address);
 
 						await Synthetix.connect(otherUser).liquidateDelinquentAccount(
 							someUser.address,
 							ethers.utils.parseEther('100')
 						);
-					});
-
-					it('is liquidated', async () => {
-						// = sUSD liquidated / SNX Price * 1.1
-						assert.bnLt(await Synthetix.balanceOf(someUser.address), '100000000000000000000');
 					});
 
 					it('deducts sUSD debt from the liquidated', async () => {
@@ -113,6 +110,16 @@ function itCanLiquidate({ ctx }) {
 
 					it('burns sUSD from otherUser', async () => {
 						assert.bnLt(await SynthsUSD.balanceOf(otherUser.address), beforeBalance);
+					});
+
+					it('transfers SNX from otherUser', async () => {
+						const amountSent = beforeDebttedSnx.sub(await Synthetix.balanceOf(someUser.address));
+
+						assert.bnNotEqual(amountSent, '0');
+						assert.bnEqual(
+							await Synthetix.balanceOf(otherUser.address),
+							beforeCredittedSnx.add(amountSent)
+						);
 					});
 				});
 			});
