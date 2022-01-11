@@ -635,7 +635,6 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 	}, {});
 
 module.exports = {
-	allowZeroOrUpdateIfNonZero,
 	chainIdMapping,
 	constants,
 	decode,
