@@ -9,11 +9,18 @@ import "./SystemSettingsLib.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
-    bytes32 public constant CONTRACT_NAME = "SystemSettings";
+    // SystemSettingsLib is a way to split out the setters to reduce contract size
+    using SystemSettingsLib for IFlexibleStorage;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
+
+    // backwards compatibility to having CONTRACT_NAME public constant
+    // solhint-disable-next-line func-name-mixedcase
+    function CONTRACT_NAME() external view returns (bytes32) {
+        return SystemSettingsLib.contractName();
+    }
 
     // SIP-37 Fee Reclamation
     // The number of seconds after an exchange is executed that must be waited
@@ -190,84 +197,45 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         external
         onlyOwner
     {
-        SystemSettingsLib.setCrossDomainMessageGasLimit(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            _getGasLimitSetting(_gasLimitType),
-            _crossDomainMessageGasLimit
-        );
+        flexibleStorage().setCrossDomainMessageGasLimit(_getGasLimitSetting(_gasLimitType), _crossDomainMessageGasLimit);
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
-        SystemSettingsLib.setTradingRewardsEnabled(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_TRADING_REWARDS_ENABLED,
-            _tradingRewardsEnabled
-        );
+        flexibleStorage().setTradingRewardsEnabled(SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
     }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        SystemSettingsLib.setWaitingPeriodSecs(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_WAITING_PERIOD_SECS,
-            _waitingPeriodSecs
-        );
+        flexibleStorage().setWaitingPeriodSecs(SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        SystemSettingsLib.setPriceDeviationThresholdFactor(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setPriceDeviationThresholdFactor(
             SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
             _priceDeviationThresholdFactor
         );
     }
 
     function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
-        SystemSettingsLib.setIssuanceRatio(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ISSUANCE_RATIO,
-            _issuanceRatio
-        );
+        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, _issuanceRatio);
     }
 
     function setFeePeriodDuration(uint _feePeriodDuration) external onlyOwner {
-        SystemSettingsLib.setFeePeriodDuration(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_FEE_PERIOD_DURATION,
-            _feePeriodDuration
-        );
+        flexibleStorage().setFeePeriodDuration(SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
     }
 
     function setTargetThreshold(uint _percent) external onlyOwner {
-        SystemSettingsLib.setTargetThreshold(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_TARGET_THRESHOLD,
-            _percent
-        );
+        flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, _percent);
     }
 
     function setLiquidationDelay(uint time) external onlyOwner {
-        SystemSettingsLib.setLiquidationDelay(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_LIQUIDATION_DELAY,
-            time
-        );
+        flexibleStorage().setLiquidationDelay(SETTING_LIQUIDATION_DELAY, time);
     }
 
     // The collateral / issuance ratio ( debt / collateral ) is higher when there is less collateral backing their debt
     // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral value to cover debt and liquidation penalty
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        SystemSettingsLib.setLiquidationRatio(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setLiquidationRatio(
             SETTING_LIQUIDATION_RATIO,
             _liquidationRatio,
             getLiquidationPenalty(),
@@ -276,104 +244,50 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
-        SystemSettingsLib.setLiquidationPenalty(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_LIQUIDATION_PENALTY,
-            penalty
-        );
+        flexibleStorage().setLiquidationPenalty(SETTING_LIQUIDATION_PENALTY, penalty);
     }
 
     function setRateStalePeriod(uint period) external onlyOwner {
-        SystemSettingsLib.setRateStalePeriod(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_RATE_STALE_PERIOD,
-            period
-        );
+        flexibleStorage().setRateStalePeriod(SETTING_RATE_STALE_PERIOD, period);
     }
 
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
         external
         onlyOwner
     {
-        SystemSettingsLib.setExchangeFeeRateForSynths(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_EXCHANGE_FEE_RATE,
-            synthKeys,
-            exchangeFeeRates
-        );
+        flexibleStorage().setExchangeFeeRateForSynths(SETTING_EXCHANGE_FEE_RATE, synthKeys, exchangeFeeRates);
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
-        SystemSettingsLib.setMinimumStakeTime(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_MINIMUM_STAKE_TIME,
-            _seconds
-        );
+        flexibleStorage().setMinimumStakeTime(SETTING_MINIMUM_STAKE_TIME, _seconds);
     }
 
     function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
-        SystemSettingsLib.setDebtSnapshotStaleTime(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_DEBT_SNAPSHOT_STALE_TIME,
-            _seconds
-        );
+        flexibleStorage().setDebtSnapshotStaleTime(SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
     }
 
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
-        SystemSettingsLib.setAggregatorWarningFlags(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_AGGREGATOR_WARNING_FLAGS,
-            _flags
-        );
+        flexibleStorage().setAggregatorWarningFlags(SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
     }
 
     function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
-        SystemSettingsLib.setEtherWrapperMaxETH(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ETHER_WRAPPER_MAX_ETH,
-            _maxETH
-        );
+        flexibleStorage().setEtherWrapperMaxETH(SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        SystemSettingsLib.setEtherWrapperMintFeeRate(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ETHER_WRAPPER_MINT_FEE_RATE,
-            _rate
-        );
+        flexibleStorage().setEtherWrapperMintFeeRate(SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        SystemSettingsLib.setEtherWrapperBurnFeeRate(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ETHER_WRAPPER_BURN_FEE_RATE,
-            _rate
-        );
+        flexibleStorage().setEtherWrapperBurnFeeRate(SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
     }
 
     function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
-        SystemSettingsLib.setWrapperMaxTokenAmount(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_WRAPPER_MAX_TOKEN_AMOUNT,
-            _wrapper,
-            _maxTokenAmount
-        );
+        flexibleStorage().setWrapperMaxTokenAmount(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper, _maxTokenAmount);
     }
 
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
-        SystemSettingsLib.setWrapperMintFeeRate(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setWrapperMintFeeRate(
             SETTING_WRAPPER_MINT_FEE_RATE,
             _wrapper,
             _rate,
@@ -382,9 +296,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
-        SystemSettingsLib.setWrapperBurnFeeRate(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setWrapperBurnFeeRate(
             SETTING_WRAPPER_BURN_FEE_RATE,
             _wrapper,
             _rate,
@@ -393,47 +305,23 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
-        SystemSettingsLib.setInteractionDelay(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_INTERACTION_DELAY,
-            _collateral,
-            _interactionDelay
-        );
+        flexibleStorage().setInteractionDelay(SETTING_INTERACTION_DELAY, _collateral, _interactionDelay);
     }
 
     function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
-        SystemSettingsLib.setCollapseFeeRate(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_COLLAPSE_FEE_RATE,
-            _collateral,
-            _collapseFeeRate
-        );
+        flexibleStorage().setCollapseFeeRate(SETTING_COLLAPSE_FEE_RATE, _collateral, _collapseFeeRate);
     }
 
     function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
-        SystemSettingsLib.setAtomicMaxVolumePerBlock(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK,
-            _maxVolume
-        );
+        flexibleStorage().setAtomicMaxVolumePerBlock(SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
     }
 
     function setAtomicTwapWindow(uint _window) external onlyOwner {
-        SystemSettingsLib.setAtomicTwapWindow(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ATOMIC_TWAP_WINDOW,
-            _window
-        );
+        flexibleStorage().setAtomicTwapWindow(SETTING_ATOMIC_TWAP_WINDOW, _window);
     }
 
     function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
-        SystemSettingsLib.setAtomicEquivalentForDexPricing(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setAtomicEquivalentForDexPricing(
             SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING,
             _currencyKey,
             _equivalent
@@ -441,29 +329,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate) external onlyOwner {
-        SystemSettingsLib.setAtomicExchangeFeeRate(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ATOMIC_EXCHANGE_FEE_RATE,
-            _currencyKey,
-            _exchangeFeeRate
-        );
+        flexibleStorage().setAtomicExchangeFeeRate(SETTING_ATOMIC_EXCHANGE_FEE_RATE, _currencyKey, _exchangeFeeRate);
     }
 
     function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
-        SystemSettingsLib.setAtomicPriceBuffer(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
-            SETTING_ATOMIC_PRICE_BUFFER,
-            _currencyKey,
-            _buffer
-        );
+        flexibleStorage().setAtomicPriceBuffer(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey, _buffer);
     }
 
     function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
-        SystemSettingsLib.setAtomicVolatilityConsiderationWindow(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setAtomicVolatilityConsiderationWindow(
             SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
             _currencyKey,
             _window
@@ -471,9 +345,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicVolatilityUpdateThreshold(bytes32 _currencyKey, uint _threshold) external onlyOwner {
-        SystemSettingsLib.setAtomicVolatilityUpdateThreshold(
-            address(flexibleStorage()),
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setAtomicVolatilityUpdateThreshold(
             SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD,
             _currencyKey,
             _threshold
