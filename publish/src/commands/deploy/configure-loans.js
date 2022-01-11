@@ -1,7 +1,8 @@
 'use strict';
 
 const { gray } = require('chalk');
-const { toBytes32, allowZeroOrUpdateIfNonZero } = require('../../../..');
+const { toBytes32 } = require('../../../..');
+const { allowZeroOrUpdateIfNonZero } = require('../../util.js');
 
 module.exports = async ({
 	addressOf,

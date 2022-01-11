@@ -6,9 +6,9 @@ const {
 } = require('ethers');
 const {
 	toBytes32,
-	allowZeroOrUpdateIfNonZero,
 	constants: { ZERO_ADDRESS },
 } = require('../../../..');
+const { allowZeroOrUpdateIfNonZero } = require('../../util.js');
 
 module.exports = async ({
 	addressOf,

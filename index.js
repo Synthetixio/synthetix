@@ -203,8 +203,6 @@ const defaults = {
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
 const fromBytes32 = key => w3utils.hexToAscii(key);
 
-const allowZeroOrUpdateIfNonZero = param => input => param === '0' || input !== '0';
-
 const getFolderNameForNetwork = ({ network, useOvm = false }) => {
 	if (network.includes('ovm')) {
 		return network;
