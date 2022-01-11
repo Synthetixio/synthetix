@@ -106,6 +106,7 @@
 		"fs-extra": "9.0.1",
 		"hardhat": "2.6.4",
 		"hardhat-gas-reporter": "~1.0.4",
+		"hardhat-interact": "^0.2.0",
 		"husky": "^4.3.0",
 		"is-ci": "^2.0.0",
 		"lodash.clonedeep": "^4.5.0",
