@@ -34,6 +34,8 @@ task('node', 'Run a node')
 				yellow(`Targeting Synthetix in ${network}${taskArguments.fork ? ' (forked)' : ''}`)
 			);
 
+			const fundedSigner = (await hre.ethers.getSigners())[0];
+
 			// Unlock any specified accounts, plus those
 			// known as protocol users of the target network.
 			const { getUsers } = wrap({ network, fs, path });
@@ -42,8 +44,15 @@ task('node', 'Run a node')
 				.filter(account => account.name !== 'zero')
 				.concat(knownAccounts[network] || []);
 			await Promise.all(
-				accounts.map(account => {
-					console.log(gray(`  > Unlocking ${account.name}: ${account.address}`));
+				accounts.map(async account => {
+					console.log(gray(`  > Unlocking & Funding ${account.name}: ${account.address}`));
+
+					// owner might not have eth when we impersonate them
+
+					await fundedSigner.sendTransaction({
+						to: account.address,
+						value: '10000000000000000000',
+					});
 
 					return provider.request({
 						method: 'hardhat_impersonateAccount',

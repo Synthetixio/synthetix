@@ -81,6 +81,12 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 	.addFlag('debugOptimism', 'Debug Optimism activity')
 	.addFlag('compile', 'Compile an l2 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l2 instance before running the tests')
+	.addFlag('useFork', 'Run the tests against a fork of mainnet')
+	.addOptionalParam(
+		'providerPort',
+		'The target port for the running local chain to test on',
+		'8545'
+	)
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l2/';
 		hre.config.debugOptimism = taskArguments.debugOptimism;
@@ -89,25 +95,48 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 
 		const providerUrl = (hre.config.providerUrl = 'http://localhost');
 		hre.config.providerPortL1 = '9545';
-		const providerPortL2 = (hre.config.providerPortL2 = '8545');
+		const providerPortL2 = (hre.config.providerPortL2 = taskArguments.providerPort);
 		const useOvm = true;
 		const buildPath = path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
 
 		if (taskArguments.compile) {
 			await compileInstance({ useOvm, buildPath });
 		}
+		if (taskArguments.useFork) {
+			hre.config.fork = true;
+			console.log(hre.config);
+		}
 
 		if (taskArguments.deploy) {
-			const network = 'local';
-			await prepareDeploy({ network, synthsToAdd, useOvm });
-			await deployInstance({
-				addNewSynths: true,
-				buildPath,
-				network,
-				providerPort: providerPortL2,
-				providerUrl,
-				useOvm,
-			});
+			if (taskArguments.useFork) {
+				await prepareDeploy({
+					network: 'mainnet',
+					synthsToAdd,
+					useOvm,
+					useSips: taskArguments.useSips,
+				});
+				await deployInstance({
+					addNewSynths: true,
+					buildPath,
+					freshDeploy: false,
+					network: 'mainnet',
+					providerPort: providerPortL2,
+					providerUrl,
+					useFork: true,
+					useOvm,
+				});
+			} else {
+				const network = 'local';
+				await prepareDeploy({ network, synthsToAdd, useOvm });
+				await deployInstance({
+					addNewSynths: true,
+					buildPath,
+					network,
+					providerPort: providerPortL2,
+					providerUrl,
+					useOvm,
+				});
+			}
 			hre.config.addedSynths = synthsToAdd;
 		}
 

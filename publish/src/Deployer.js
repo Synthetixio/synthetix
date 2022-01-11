@@ -48,7 +48,7 @@ class Deployer {
 
 		// use the default owner when in a fork or in local mode and no private key supplied
 		if ((useFork || network === 'local') && !privateKey) {
-			const ownerAddress = getUsers({ network, user: 'owner' }).address; // protocolDAO
+			const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
 			this.signer = this.provider.getSigner(ownerAddress);
 			this.signer.address = ownerAddress;
 		} else {
