@@ -3,11 +3,13 @@ require('dotenv').config();
 
 const path = require('path');
 
-require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
+require('hardhat-interact');
+
+require('./hardhat');
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
@@ -54,6 +56,22 @@ module.exports = {
 			gas: 12e6,
 			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
+		},
+		mainnet: {
+			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
+			chainId: 1,
+		},
+		'mainnet-ovm': {
+			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
+			chainId: 10,
+		},
+		kovan: {
+			url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			chainId: 42,
+		},
+		'kovan-ovm': {
+			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
+			chainId: 69,
 		},
 	},
 	gasReporter: {
