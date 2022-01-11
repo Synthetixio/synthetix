@@ -12,7 +12,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // SystemSettingsLib is a way to split out the setters to reduce contract size
     using SystemSettingsLib for IFlexibleStorage;
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
+        // SETTING_CONTRACT_NAME is defined for the getters in MixinSystemSettings and
+        // SystemSettingsLib.contractName() is a view into SystemSettingsLib of the contract name
+        // that's used by the setters. They have to be equal.
+        require(SETTING_CONTRACT_NAME == SystemSettingsLib.contractName(), "read and write keys not equal");
+    }
 
     // ========== VIEWS ==========
 
