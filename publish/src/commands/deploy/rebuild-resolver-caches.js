@@ -13,11 +13,12 @@ module.exports = async ({
 	limitPromise,
 	newContractsBeingAdded,
 	runStep,
+	network,
 	useOvm,
 }) => {
 	console.log(gray(`\n------ REBUILD RESOLVER CACHES ------\n`));
 
-	const { AddressResolver } = deployer.deployedContracts;
+	const { AddressResolver, WrapperFactory } = deployer.deployedContracts;
 
 	const filterTargetsWith = ({ prop }) =>
 		Object.entries(deployer.deployedContracts).filter(([, target]) => {
@@ -25,6 +26,93 @@ module.exports = async ({
 		});
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
+
+	const wrappers = [];
+
+	// add deployed wrappers
+	try {
+		const wrapperCreatedLogs = await deployer.provider.getLogs({
+			fromBlock: 0,
+			topics: [ethers.utils.id('WrapperCreated(address,bytes32,address)')],
+		});
+
+		for (const rawLog of wrapperCreatedLogs) {
+			const log = WrapperFactory.interface.parseLog(rawLog);
+			wrappers.push([
+				`Wrapper for ${yellow(
+					ethers.utils.parseBytes32String(log.args.currencyKey)
+				)} via token ${yellow(
+					await new ethers.Contract(
+						log.args.token,
+						[
+							{
+								constant: true,
+								inputs: [],
+								name: 'name',
+								outputs: [
+									{
+										type: 'string',
+									},
+								],
+								payable: false,
+								stateMutability: 'view',
+								type: 'function',
+							},
+						],
+						deployer.provider
+					).name()
+				)}`,
+				new ethers.Contract(log.args.wrapperAddress, WrapperFactory.interface, deployer.provider),
+			]); // interface doesn't matter as long as it responds to MixinResolver
+		}
+	} catch (err) {
+		if (/limited to a 10,000 blocks range/.test(err.message)) {
+			console.log(
+				yellow.bold(
+					'Warning: Cannot fetch logs on this network. Known limitation on OVM mainnet - cannot search back greater than 10k blocks'
+				)
+			);
+		} else {
+			throw err;
+		}
+	}
+
+	// OVM pre-regenesis
+	if (network === 'mainnet' && useOvm) {
+		console.log(gray('Adding 3 known OVM wrapper pre-regenesis'));
+		wrappers.push(
+			[
+				'WETHWrapper',
+				new ethers.Contract(
+					'0x6202A3B0bE1D222971E93AaB084c6E584C29DB70',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			],
+			[
+				'DAIWrapper',
+				new ethers.Contract(
+					'0xad32aA4Bff8b61B4aE07E3BA437CF81100AF0cD7',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			],
+			[
+				'LUSDWrapper',
+				new ethers.Contract(
+					'0x8A91e92FDd86e734781c38DB52a390e1B99fba7c',
+					WrapperFactory.interface,
+					deployer.provider
+				),
+			]
+		);
+	}
+
+	console.log(gray(`found ${yellow(wrappers.length)} wrapper addresses`));
+
+	wrappers.forEach(([label, target]) => console.log(gray(label, 'at', yellow(target.address))));
+
+	contractsWithRebuildableCache.push(...wrappers);
 
 	// collect all resolver addresses required
 	const contractToDepMap = {};
@@ -131,7 +219,7 @@ module.exports = async ({
 		}
 	}
 
-	const addressesChunkSize = useOvm ? 5 : 20;
+	const addressesChunkSize = 20;
 	let batchCounter = 1;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);

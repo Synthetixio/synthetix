@@ -297,6 +297,22 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    function liquidateDelinquentAccount(address account, uint susdAmount)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        (uint totalRedeemed, uint amountLiquidated) =
+            issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        // Transfer SNX redeemed to messageSender
+        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
+        return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
     function exchangeWithTrackingForInitiator(
         bytes32,
         uint,
@@ -326,10 +342,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function mint() external returns (bool) {
-        _notImplemented();
-    }
-
-    function liquidateDelinquentAccount(address, uint) external returns (bool) {
         _notImplemented();
     }
 
@@ -388,6 +400,25 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 snxRedeemed,
+        uint256 amountLiquidated,
+        address liquidator
+    ) internal {
+        proxy._emit(
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,

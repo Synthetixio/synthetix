@@ -4,6 +4,8 @@ const { artifacts, web3, log } = require('hardhat');
 
 const { toWei } = web3.utils;
 const { toUnit } = require('../utils')();
+const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
+
 const {
 	toBytes32,
 	getUsers,
@@ -108,7 +110,7 @@ const setupContract = async ({
 	skipPostDeploy = false,
 	properties = {},
 }) => {
-	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
+	const [deployerAccount, owner, , fundsWallet] = accounts;
 
 	const artifact = artifacts.require(contract);
 
@@ -146,13 +148,9 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
-		ExchangeRates: [
-			owner,
-			oracle,
-			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')],
-			[toWei('0.2', 'ether')],
-		],
+		ExchangeRates: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeRatesWithDexPricing: [owner, tryGetAddressOf('AddressResolver')],
+		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
@@ -747,14 +745,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'BaseSynthetix',
@@ -767,14 +758,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'MintableSynthetix',
@@ -1102,12 +1086,19 @@ const setupAllContracts = async ({
 		]);
 	}
 
-	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
+	// finally if any of our contracts have setAddressResolver (from MockSynth), then invoke it
 	await Promise.all(
 		Object.values(returnObj)
-			.filter(contract => contract.setSystemStatus)
-			.map(mock => mock.setSystemStatus(returnObj['SystemStatus'].address))
+			.filter(contract => contract.setAddressResolver)
+			.map(mock => mock.setAddressResolver(returnObj['AddressResolver'].address))
 	);
+
+	if (returnObj['ExchangeRates']) {
+		// setup SNX price feed
+		const SNX = toBytes32('SNX');
+		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
+		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+	}
 
 	return returnObj;
 };

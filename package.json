@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.54.0",
+	"version": "2.56.1",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -106,7 +106,7 @@
 		"fs-extra": "9.0.1",
 		"hardhat": "2.6.4",
 		"hardhat-gas-reporter": "~1.0.4",
-		"hardhat-interact": "^0.1.2",
+		"hardhat-interact": "^0.2.0",
 		"husky": "^4.3.0",
 		"is-ci": "^2.0.0",
 		"lodash.clonedeep": "^4.5.0",

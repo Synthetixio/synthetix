@@ -12,6 +12,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const {
@@ -24,7 +25,7 @@ const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
-	const [deployerAccount, owner, oracle, account1, alice, bob, carol, david] = accounts;
+	const [deployerAccount, owner, , account1, alice, bob, carol, david] = accounts;
 	const week = 3600 * 24 * 7;
 	const sUSD100 = toUnit('100');
 
@@ -36,8 +37,7 @@ contract('Liquidations', accounts => {
 		systemSettings,
 		systemStatus,
 		debtCache,
-		issuer,
-		timestamp;
+		issuer;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -80,16 +80,11 @@ contract('Liquidations', accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		timestamp = await currentTime();
-		// SNX is 6 dolla
 		await updateSNXPrice('6');
 	};
 
 	const updateSNXPrice = async rate => {
-		timestamp = await currentTime();
-		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [SNX], [rate].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 	};
 
