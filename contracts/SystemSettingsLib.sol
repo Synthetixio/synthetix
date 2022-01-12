@@ -76,12 +76,11 @@ library SystemSettingsLib {
     function setIssuanceRatio(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
-        uint _issuanceRatio
+        uint issuanceRatio
     ) external {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _issuanceRatio);
-        // slither-disable-next-line reentrancy-events
-        emit IssuanceRatioUpdated(_issuanceRatio);
+        require(issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, issuanceRatio);
+        emit IssuanceRatioUpdated(issuanceRatio);
     }
 
     function setTradingRewardsEnabled(
@@ -90,7 +89,6 @@ library SystemSettingsLib {
         bool _tradingRewardsEnabled
     ) external {
         flexibleStorage.setBoolValue(SETTINGS_CONTRACT_NAME, settingName, _tradingRewardsEnabled);
-        // slither-disable-next-line reentrancy-events
         emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
@@ -100,7 +98,6 @@ library SystemSettingsLib {
         uint _waitingPeriodSecs
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _waitingPeriodSecs);
-        // slither-disable-next-line reentrancy-events
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
@@ -110,7 +107,6 @@ library SystemSettingsLib {
         uint _priceDeviationThresholdFactor
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _priceDeviationThresholdFactor);
-        // slither-disable-next-line reentrancy-events
         emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
@@ -123,7 +119,6 @@ library SystemSettingsLib {
         require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _feePeriodDuration);
-        // slither-disable-next-line reentrancy-events
         emit FeePeriodDurationUpdated(_feePeriodDuration);
     }
 
@@ -136,7 +131,6 @@ library SystemSettingsLib {
         uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _targetThreshold);
-        // slither-disable-next-line reentrancy-events
         emit TargetThresholdUpdated(_targetThreshold);
     }
 
@@ -149,7 +143,6 @@ library SystemSettingsLib {
         require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, time);
-        // slither-disable-next-line reentrancy-events
         emit LiquidationDelayUpdated(time);
     }
 
@@ -171,7 +164,6 @@ library SystemSettingsLib {
         require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _liquidationRatio);
-        // slither-disable-next-line reentrancy-events
         emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
@@ -183,7 +175,6 @@ library SystemSettingsLib {
         require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);
-        // slither-disable-next-line reentrancy-events
         emit LiquidationPenaltyUpdated(penalty);
     }
 
@@ -193,7 +184,6 @@ library SystemSettingsLib {
         uint period
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, period);
-        // slither-disable-next-line reentrancy-events
         emit RateStalePeriodUpdated(period);
     }
 
@@ -211,7 +201,6 @@ library SystemSettingsLib {
                 keccak256(abi.encodePacked(settingExchangeFeeRate, synthKeys[i])),
                 exchangeFeeRates[i]
             );
-            // slither-disable-next-line reentrancy-events
             emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
     }
@@ -223,7 +212,6 @@ library SystemSettingsLib {
     ) external {
         require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _seconds);
-        // slither-disable-next-line reentrancy-events
         emit MinimumStakeTimeUpdated(_seconds);
     }
 
@@ -233,7 +221,6 @@ library SystemSettingsLib {
         uint _seconds
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _seconds);
-        // slither-disable-next-line reentrancy-events
         emit DebtSnapshotStaleTimeUpdated(_seconds);
     }
 
@@ -244,7 +231,6 @@ library SystemSettingsLib {
     ) external {
         require(_flags != address(0), "Valid address must be given");
         flexibleStorage.setAddressValue(SETTINGS_CONTRACT_NAME, settingName, _flags);
-        // slither-disable-next-line reentrancy-events
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
@@ -254,7 +240,6 @@ library SystemSettingsLib {
         uint _maxETH
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _maxETH);
-        // slither-disable-next-line reentrancy-events
         emit EtherWrapperMaxETHUpdated(_maxETH);
     }
 
@@ -265,7 +250,6 @@ library SystemSettingsLib {
     ) external {
         require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _rate);
-        // slither-disable-next-line reentrancy-events
         emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
@@ -276,7 +260,6 @@ library SystemSettingsLib {
     ) external {
         require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _rate);
-        // slither-disable-next-line reentrancy-events
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
@@ -291,7 +274,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _wrapper)),
             _maxTokenAmount
         );
-        // slither-disable-next-line reentrancy-events
         emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
@@ -312,7 +294,6 @@ library SystemSettingsLib {
         }
 
         flexibleStorage.setIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _wrapper)), _rate);
-        // slither-disable-next-line reentrancy-events
         emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
@@ -333,7 +314,6 @@ library SystemSettingsLib {
         }
 
         flexibleStorage.setIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _wrapper)), _rate);
-        // slither-disable-next-line reentrancy-events
         emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
@@ -349,7 +329,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _collateral)),
             _interactionDelay
         );
-        // slither-disable-next-line reentrancy-events
         emit InteractionDelayUpdated(_interactionDelay);
     }
 
@@ -364,7 +343,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _collateral)),
             _collapseFeeRate
         );
-        // slither-disable-next-line reentrancy-events
         emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
@@ -375,7 +353,6 @@ library SystemSettingsLib {
     ) external {
         require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _maxVolume);
-        // slither-disable-next-line reentrancy-events
         emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
     }
 
@@ -387,7 +364,6 @@ library SystemSettingsLib {
         require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
         require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _window);
-        // slither-disable-next-line reentrancy-events
         emit AtomicTwapWindowUpdated(_window);
     }
 
@@ -403,7 +379,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _equivalent
         );
-        // slither-disable-next-line reentrancy-events
         emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
@@ -419,7 +394,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _exchangeFeeRate
         );
-        // slither-disable-next-line reentrancy-events
         emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
@@ -434,7 +408,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _buffer
         );
-        // slither-disable-next-line reentrancy-events
         emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
     }
 
@@ -459,7 +432,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _window
         );
-        // slither-disable-next-line reentrancy-events
         emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
     }
 
@@ -474,7 +446,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _threshold
         );
-        // slither-disable-next-line reentrancy-events
         emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
 
