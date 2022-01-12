@@ -80,7 +80,6 @@ library SystemSettingsLib {
     ) external {
         require(issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, issuanceRatio);
-        emit IssuanceRatioUpdated(issuanceRatio);
     }
 
     function setTradingRewardsEnabled(
@@ -89,7 +88,6 @@ library SystemSettingsLib {
         bool _tradingRewardsEnabled
     ) external {
         flexibleStorage.setBoolValue(SETTINGS_CONTRACT_NAME, settingName, _tradingRewardsEnabled);
-        emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
     function setWaitingPeriodSecs(
@@ -98,7 +96,6 @@ library SystemSettingsLib {
         uint _waitingPeriodSecs
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _waitingPeriodSecs);
-        emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(
@@ -107,7 +104,6 @@ library SystemSettingsLib {
         uint _priceDeviationThresholdFactor
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _priceDeviationThresholdFactor);
-        emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
     function setFeePeriodDuration(
@@ -119,19 +115,17 @@ library SystemSettingsLib {
         require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _feePeriodDuration);
-        emit FeePeriodDurationUpdated(_feePeriodDuration);
     }
 
     function setTargetThreshold(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         uint _percent
-    ) external {
+    ) external returns (uint targetThreshold) {
         require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
-        uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
+        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
 
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _targetThreshold);
-        emit TargetThresholdUpdated(_targetThreshold);
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, targetThreshold);
     }
 
     function setLiquidationDelay(
@@ -143,7 +137,6 @@ library SystemSettingsLib {
         require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, time);
-        emit LiquidationDelayUpdated(time);
     }
 
     function setLiquidationRatio(
@@ -164,7 +157,6 @@ library SystemSettingsLib {
         require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _liquidationRatio);
-        emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
     function setLiquidationPenalty(
@@ -175,7 +167,6 @@ library SystemSettingsLib {
         require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);
-        emit LiquidationPenaltyUpdated(penalty);
     }
 
     function setRateStalePeriod(
@@ -184,7 +175,6 @@ library SystemSettingsLib {
         uint period
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, period);
-        emit RateStalePeriodUpdated(period);
     }
 
     function setExchangeFeeRateForSynths(
@@ -201,7 +191,6 @@ library SystemSettingsLib {
                 keccak256(abi.encodePacked(settingExchangeFeeRate, synthKeys[i])),
                 exchangeFeeRates[i]
             );
-            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
     }
 
@@ -212,7 +201,6 @@ library SystemSettingsLib {
     ) external {
         require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _seconds);
-        emit MinimumStakeTimeUpdated(_seconds);
     }
 
     function setDebtSnapshotStaleTime(
@@ -221,7 +209,6 @@ library SystemSettingsLib {
         uint _seconds
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _seconds);
-        emit DebtSnapshotStaleTimeUpdated(_seconds);
     }
 
     function setAggregatorWarningFlags(
@@ -231,7 +218,6 @@ library SystemSettingsLib {
     ) external {
         require(_flags != address(0), "Valid address must be given");
         flexibleStorage.setAddressValue(SETTINGS_CONTRACT_NAME, settingName, _flags);
-        emit AggregatorWarningFlagsUpdated(_flags);
     }
 
     function setEtherWrapperMaxETH(
@@ -240,7 +226,6 @@ library SystemSettingsLib {
         uint _maxETH
     ) external {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _maxETH);
-        emit EtherWrapperMaxETHUpdated(_maxETH);
     }
 
     function setEtherWrapperMintFeeRate(
@@ -250,7 +235,6 @@ library SystemSettingsLib {
     ) external {
         require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _rate);
-        emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(
@@ -260,7 +244,6 @@ library SystemSettingsLib {
     ) external {
         require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _rate);
-        emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
     function setWrapperMaxTokenAmount(
@@ -274,7 +257,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _wrapper)),
             _maxTokenAmount
         );
-        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
     function setWrapperMintFeeRate(
@@ -294,7 +276,6 @@ library SystemSettingsLib {
         }
 
         flexibleStorage.setIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _wrapper)), _rate);
-        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
     function setWrapperBurnFeeRate(
@@ -314,7 +295,6 @@ library SystemSettingsLib {
         }
 
         flexibleStorage.setIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _wrapper)), _rate);
-        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
     function setInteractionDelay(
@@ -329,7 +309,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _collateral)),
             _interactionDelay
         );
-        emit InteractionDelayUpdated(_interactionDelay);
     }
 
     function setCollapseFeeRate(
@@ -343,7 +322,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _collateral)),
             _collapseFeeRate
         );
-        emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
     function setAtomicMaxVolumePerBlock(
@@ -353,7 +331,6 @@ library SystemSettingsLib {
     ) external {
         require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _maxVolume);
-        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
     }
 
     function setAtomicTwapWindow(
@@ -364,7 +341,6 @@ library SystemSettingsLib {
         require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
         require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _window);
-        emit AtomicTwapWindowUpdated(_window);
     }
 
     function setAtomicEquivalentForDexPricing(
@@ -379,7 +355,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _equivalent
         );
-        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
     function setAtomicExchangeFeeRate(
@@ -394,7 +369,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _exchangeFeeRate
         );
-        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
     function setAtomicPriceBuffer(
@@ -408,7 +382,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _buffer
         );
-        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
     }
 
     function setAtomicVolatilityConsiderationWindow(
@@ -432,7 +405,6 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _window
         );
-        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
     }
 
     function setAtomicVolatilityUpdateThreshold(
@@ -446,37 +418,5 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _threshold
         );
-        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
-
-    // ========== EVENTS ==========
-    event IssuanceRatioUpdated(uint newRatio);
-    event TradingRewardsEnabled(bool enabled);
-    event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
-    event PriceDeviationThresholdUpdated(uint threshold);
-    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
-    event TargetThresholdUpdated(uint newTargetThreshold);
-    event LiquidationDelayUpdated(uint newDelay);
-    event LiquidationRatioUpdated(uint newRatio);
-    event LiquidationPenaltyUpdated(uint newPenalty);
-    event RateStalePeriodUpdated(uint rateStalePeriod);
-    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event MinimumStakeTimeUpdated(uint minimumStakeTime);
-    event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
-    event AggregatorWarningFlagsUpdated(address flags);
-    event EtherWrapperMaxETHUpdated(uint maxETH);
-    event EtherWrapperMintFeeRateUpdated(uint rate);
-    event EtherWrapperBurnFeeRateUpdated(uint rate);
-    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
-    event WrapperMintFeeRateUpdated(address wrapper, int rate);
-    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
-    event InteractionDelayUpdated(uint interactionDelay);
-    event CollapseFeeRateUpdated(uint collapseFeeRate);
-    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
-    event AtomicTwapWindowUpdated(uint newWindow);
-    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
-    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
-    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
-    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
 }

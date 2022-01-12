@@ -124,13 +124,12 @@ const setupContract = async ({
 
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
-		if (/^SystemSettings$/.test(artifact._json.contractName)) {
-			const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		if (artifact._json.contractName === 'SystemSettings') {
 			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
 			SystemSettingsLib.link(safeDecimalMath);
 			artifact.link(await SystemSettingsLib.new());
 		} else {
-			const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
 			artifact.link(safeDecimalMath);
 		}
 	}

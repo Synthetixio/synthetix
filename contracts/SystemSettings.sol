@@ -206,12 +206,19 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
+    function setIssuanceRatio(uint issuanceRatio) external onlyOwner {
+        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, issuanceRatio);
+        emit IssuanceRatioUpdated(issuanceRatio);
+    }
+
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
         flexibleStorage().setTradingRewardsEnabled(SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
+        emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
         flexibleStorage().setWaitingPeriodSecs(SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
+        emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
@@ -219,22 +226,22 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
             _priceDeviationThresholdFactor
         );
-    }
-
-    function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
-        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, _issuanceRatio);
+        emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
     function setFeePeriodDuration(uint _feePeriodDuration) external onlyOwner {
         flexibleStorage().setFeePeriodDuration(SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
+        emit FeePeriodDurationUpdated(_feePeriodDuration);
     }
 
-    function setTargetThreshold(uint _percent) external onlyOwner {
-        flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, _percent);
+    function setTargetThreshold(uint percent) external onlyOwner {
+        uint targetThreshold = flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, percent);
+        emit TargetThresholdUpdated(targetThreshold);
     }
 
     function setLiquidationDelay(uint time) external onlyOwner {
         flexibleStorage().setLiquidationDelay(SETTING_LIQUIDATION_DELAY, time);
+        emit LiquidationDelayUpdated(time);
     }
 
     // The collateral / issuance ratio ( debt / collateral ) is higher when there is less collateral backing their debt
@@ -246,14 +253,17 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             getLiquidationPenalty(),
             getIssuanceRatio()
         );
+        emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
         flexibleStorage().setLiquidationPenalty(SETTING_LIQUIDATION_PENALTY, penalty);
+        emit LiquidationPenaltyUpdated(penalty);
     }
 
     function setRateStalePeriod(uint period) external onlyOwner {
         flexibleStorage().setRateStalePeriod(SETTING_RATE_STALE_PERIOD, period);
+        emit RateStalePeriodUpdated(period);
     }
 
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
@@ -261,34 +271,44 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         onlyOwner
     {
         flexibleStorage().setExchangeFeeRateForSynths(SETTING_EXCHANGE_FEE_RATE, synthKeys, exchangeFeeRates);
+        for (uint i = 0; i < synthKeys.length; i++) {
+            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
+        }
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
         flexibleStorage().setMinimumStakeTime(SETTING_MINIMUM_STAKE_TIME, _seconds);
+        emit MinimumStakeTimeUpdated(_seconds);
     }
 
     function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
         flexibleStorage().setDebtSnapshotStaleTime(SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
+        emit DebtSnapshotStaleTimeUpdated(_seconds);
     }
 
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
         flexibleStorage().setAggregatorWarningFlags(SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
+        emit AggregatorWarningFlagsUpdated(_flags);
     }
 
     function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
         flexibleStorage().setEtherWrapperMaxETH(SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
+        emit EtherWrapperMaxETHUpdated(_maxETH);
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
         flexibleStorage().setEtherWrapperMintFeeRate(SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
+        emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
         flexibleStorage().setEtherWrapperBurnFeeRate(SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
+        emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
     function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
         flexibleStorage().setWrapperMaxTokenAmount(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper, _maxTokenAmount);
+        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
@@ -298,6 +318,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _rate,
             getWrapperBurnFeeRate(_wrapper)
         );
+        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
     function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
@@ -307,22 +328,27 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _rate,
             getWrapperMintFeeRate(_wrapper)
         );
+        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
         flexibleStorage().setInteractionDelay(SETTING_INTERACTION_DELAY, _collateral, _interactionDelay);
+        emit InteractionDelayUpdated(_interactionDelay);
     }
 
     function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
         flexibleStorage().setCollapseFeeRate(SETTING_COLLAPSE_FEE_RATE, _collateral, _collapseFeeRate);
+        emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
     function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
         flexibleStorage().setAtomicMaxVolumePerBlock(SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
+        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
     }
 
     function setAtomicTwapWindow(uint _window) external onlyOwner {
         flexibleStorage().setAtomicTwapWindow(SETTING_ATOMIC_TWAP_WINDOW, _window);
+        emit AtomicTwapWindowUpdated(_window);
     }
 
     function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
@@ -331,14 +357,17 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _currencyKey,
             _equivalent
         );
+        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
     function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate) external onlyOwner {
         flexibleStorage().setAtomicExchangeFeeRate(SETTING_ATOMIC_EXCHANGE_FEE_RATE, _currencyKey, _exchangeFeeRate);
+        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
     function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
         flexibleStorage().setAtomicPriceBuffer(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey, _buffer);
+        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
     }
 
     function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
@@ -347,6 +376,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _currencyKey,
             _window
         );
+        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
     }
 
     function setAtomicVolatilityUpdateThreshold(bytes32 _currencyKey, uint _threshold) external onlyOwner {
@@ -355,8 +385,38 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _currencyKey,
             _threshold
         );
+        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
+    event IssuanceRatioUpdated(uint newRatio);
+    event TradingRewardsEnabled(bool enabled);
+    event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
+    event PriceDeviationThresholdUpdated(uint threshold);
+    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
+    event TargetThresholdUpdated(uint newTargetThreshold);
+    event LiquidationDelayUpdated(uint newDelay);
+    event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationPenaltyUpdated(uint newPenalty);
+    event RateStalePeriodUpdated(uint rateStalePeriod);
+    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event MinimumStakeTimeUpdated(uint minimumStakeTime);
+    event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
+    event AggregatorWarningFlagsUpdated(address flags);
+    event EtherWrapperMaxETHUpdated(uint maxETH);
+    event EtherWrapperMintFeeRateUpdated(uint rate);
+    event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
+    event WrapperMintFeeRateUpdated(address wrapper, int rate);
+    event WrapperBurnFeeRateUpdated(address wrapper, int rate);
+    event InteractionDelayUpdated(uint interactionDelay);
+    event CollapseFeeRateUpdated(uint collapseFeeRate);
+    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
+    event AtomicTwapWindowUpdated(uint newWindow);
+    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
+    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
+    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
+    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
 }
