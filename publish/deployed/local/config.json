@@ -389,7 +389,10 @@
 	"SynthRedeemer": {
 		"deploy": true
 	},
-	"DynamicFee": {
+	"SystemSettingsLib": {
+		"deploy": true
+	},
+  "DynamicFee": {
 		"deploy": true
 	}
 }
