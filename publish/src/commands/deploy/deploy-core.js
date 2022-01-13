@@ -135,9 +135,10 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'RewardsDistribution',
-		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
+		deps: ['AddressResolver'],
 		args: [
 			account, // owner
+			addressOf(readProxyForResolver), // address resolver
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
 			addressOf(rewardEscrowV2),
