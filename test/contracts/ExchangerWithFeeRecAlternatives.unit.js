@@ -251,7 +251,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							it('reverts when either rate is invalid', async () => {
 								await assert.revert(
 									this.instance.exchange(...getExchangeArgs()),
-									'Src/dest rate invalid or not found'
+									'src/dest rate stale or flagged'
 								);
 							});
 						});
@@ -423,7 +423,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							it('reverts when either rate is invalid', async () => {
 								await assert.revert(
 									this.instance.exchangeAtomically(...getExchangeArgs()),
-									'Src/dest rate invalid or not found'
+									'src/dest rate stale or flagged'
 								);
 							});
 						});

@@ -92,25 +92,25 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     /// @notice Get the dynamic fee threshold
     /// @return The dynamic fee threshold
     function exchangeDynamicFeeThreshold() external view returns (uint) {
-        return getExchangeDynamicFeeThreshold();
+        return getExchangeDynamicFeeConfig().threshold;
     }
 
     /// @notice Get the dynamic fee weight decay per round
     /// @return The dynamic fee weight decay per round
     function exchangeDynamicFeeWeightDecay() external view returns (uint) {
-        return getExchangeDynamicFeeWeightDecay();
+        return getExchangeDynamicFeeConfig().weightDecay;
     }
 
     /// @notice Get the dynamic fee total rounds for calculation
     /// @return The dynamic fee total rounds for calculation
     function exchangeDynamicFeeRounds() external view returns (uint) {
-        return getExchangeDynamicFeeRounds();
+        return getExchangeDynamicFeeConfig().rounds;
     }
 
     /// @notice Get the max dynamic fee
     /// @return The max dynamic fee
     function exchangeMaxDynamicFee() external view returns (uint) {
-        return getExchangeMaxDynamicFee();
+        return getExchangeDynamicFeeConfig().maxFee;
     }
 
     /* ========== End Exchange Related Fees ========== */
