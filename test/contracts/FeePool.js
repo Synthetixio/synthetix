@@ -97,7 +97,6 @@ contract('FeePool', async accounts => {
 				'DebtCache',
 				'Proxy',
 				'Synthetix',
-				'SynthetixState',
 				'SystemSettings',
 				'SystemStatus',
 				'RewardEscrowV2',

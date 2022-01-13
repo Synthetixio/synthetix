@@ -53,7 +53,6 @@ contract('BaseSynthetix', async accounts => {
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
 			contracts: [
 				'BaseSynthetix',
-				'SynthetixState',
 				'SupplySchedule',
 				'AddressResolver',
 				'ExchangeRates',

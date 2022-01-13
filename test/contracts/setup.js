@@ -716,6 +716,11 @@ const setupAllContracts = async ({
 			],
 		},
 		{
+			contract: 'ExchangeRatesWithDexPricing',
+			resolverAlias: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
+		{
 			contract: 'ExchangerWithFeeRecAlternatives',
 			resolverAlias: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
