@@ -120,8 +120,14 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint rate,
         uint time
     ) internal {
-        if (rate > 0 && rate != cacheRates[currencyKey][roundId].rate) {
-            cacheRates[currencyKey][roundId] = RateAndUpdatedTime({rate: uint216(rate), time: uint40(time)});
+        if (rate > 0) {
+            // valid rate
+            RateAndUpdatedTime storage cacheEntry = cacheRates[currencyKey][roundId];
+            if (cacheEntry.rate != rate) {
+                // check if cached this round already to avoid SSTORE for same round
+                cacheEntry.rate = uint216(rate);
+                cacheEntry.time = uint40(time);
+            }
         }
     }
 
@@ -477,11 +483,14 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // which are used in atomic swaps and fee reclamation
             return (SafeDecimalMath.unit(), 0);
         } else {
-            if (cacheRates[currencyKey][roundId].rate != 0) {
-                return (cacheRates[currencyKey][roundId].rate, cacheRates[currencyKey][roundId].time);
+            // read cache
+            RateAndUpdatedTime memory cachedEntry = cacheRates[currencyKey][roundId];
+            if (cachedEntry.rate != 0) {
+                return (cachedEntry.rate, cachedEntry.time);
             }
-            AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
+            // if no valid cache entry - read from aggregator
+            AggregatorV2V3Interface aggregator = aggregators[currencyKey];
             if (aggregator != AggregatorV2V3Interface(0)) {
                 // this view from the aggregator is the most gas efficient but it can throw when there's no data,
                 // so let's call it low-level to suppress any reverts

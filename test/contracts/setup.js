@@ -126,25 +126,23 @@ const setupContract = async ({
 		);
 	};
 
-	// Linking library if needed
+	// Linking libraries if needed
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
-		artifact.link(safeDecimalMath);
-    // link DynamicFee lib into Exchanger
-		if (
-			/^Exchanger$|^ExchangerWithVirtualSynth$|^ExchangerWithFeeRecAlternatives$/.test(
-				artifact._json.contractName
-			)
-		) {
+		if (artifact._json.contractName.startsWith('Exchanger')) {
+			// SafeDecimalMath -> DynamicFee -> Exchanger*
+			artifact.link(safeDecimalMath);
 			const DynamicFee = artifacts.require('DynamicFee');
 			DynamicFee.link(safeDecimalMath);
 			artifact.link(await DynamicFee.new());
-    }
-    // link SystemSettingsLib into SystemSettings
-		if (artifact._json.contractName === 'SystemSettings') {
+		} else if (artifact._json.contractName === 'SystemSettings') {
+			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
 			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
 			SystemSettingsLib.link(safeDecimalMath);
 			artifact.link(await SystemSettingsLib.new());
+		} else {
+			// SafeDecimalMath -> anything else that expects linking
+			artifact.link(safeDecimalMath);
 		}
 	}
 
