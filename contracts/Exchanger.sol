@@ -206,8 +206,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
 
             // given these round ids, determine what effective value they should have received
-            uint destinationAmount =
-                exchangeRates().effectiveValueAtRound(
+            (uint destinationAmount, , ) =
+                exchangeRates().effectiveValueAndRatesAtRound(
                     exchangeEntry.src,
                     exchangeEntry.amount,
                     exchangeEntry.dest,
@@ -441,9 +441,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
-        // Puting the exchangeRate call first as it's mutative for cheap cache reading later on
-        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates()
-            .mutativeEffectiveValueAndRatesAtRound(
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,

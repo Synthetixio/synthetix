@@ -69,68 +69,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    /// @notice Same as effectiveValueAndRates but at historical rates.
-    /// @dev Needs to be mutative as it's calling setRate to cache the rate.
-    /// It can be call by anyone as rate is always returned by the oracle.
-    /// @param sourceCurrencyKey The currency key of the source currency.
-    /// @param sourceAmount The amount of the source currency.
-    /// @param destinationCurrencyKey The currency key of the destination currency.
-    /// @param roundIdForSrc The round id of the source currency.
-    /// @param roundIdForDest The round id of the target currency.
-    /// @return value of the target currency.
-    /// @return rate of the source currency.
-    /// @return rate of the destination currency.
-    function mutativeEffectiveValueAndRatesAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    )
-        external
-        returns (
-            uint value,
-            uint sourceRate,
-            uint destinationRate
-        )
-    {
-        uint time;
-        (sourceRate, time) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        // cacheing to save external call
-        _setCacheRate(sourceCurrencyKey, roundIdForSrc, sourceRate, time);
-        // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) {
-            destinationRate = sourceRate;
-            value = sourceAmount;
-        } else {
-            (destinationRate, time) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-            // cacheing to save external call
-            _setCacheRate(destinationCurrencyKey, roundIdForDest, destinationRate, time);
-            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
-            if (destinationRate > 0) {
-                // Calculate the effective value by going from source -> USD -> destination
-                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
-            }
-        }
-    }
-
-    function _setCacheRate(
-        bytes32 currencyKey,
-        uint roundId,
-        uint rate,
-        uint time
-    ) internal {
-        if (rate > 0) {
-            // valid rate
-            RateAndUpdatedTime storage cacheEntry = cacheRates[currencyKey][roundId];
-            if (cacheEntry.rate != rate) {
-                // check if cached this round already to avoid SSTORE for same round
-                cacheEntry.rate = uint216(rate);
-                cacheEntry.time = uint40(time);
-            }
-        }
-    }
-
     /* ========== VIEWS ========== */
 
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory currencies) {
@@ -199,6 +137,35 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
         // Calculate the effective value by going from source -> USD -> destination
         value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
+    }
+
+    function effectiveValueAndRatesAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        (sourceRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
+        // If there's no change in the currency, then just return the amount they gave us
+        if (sourceCurrencyKey == destinationCurrencyKey) {
+            value = sourceAmount;
+        } else {
+            (destinationRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
+            if (destinationRate > 0) {
+                // Calculate the effective value by going from source -> USD -> destination
+                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            }
+        }
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {

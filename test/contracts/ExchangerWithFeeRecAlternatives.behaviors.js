@@ -179,9 +179,9 @@ module.exports = function({ accounts }) {
 			});
 		},
 		whenMockedEffectiveRateAsEqualAtRound: cb => {
-			describe(`when mocked with exchange rates at round giving an effective value of 1:1`, () => {
+			describe(`when mocked with exchange rates giving an effective value of 1:1`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.mutativeEffectiveValueAndRatesAtRound.will.return.with(
+					this.mocks.ExchangeRates.smocked.effectiveValueAndRatesAtRound.will.return.with(
 						(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
 					);
 				});

@@ -25,10 +25,33 @@ interface IExchangeRates {
         bytes32 destinationCurrencyKey
     ) external view returns (uint value);
 
+    function effectiveValueAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
+    ) external view returns (uint value);
+
     function effectiveValueAndRates(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        );
+
+    function effectiveValueAndRatesAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
     )
         external
         view
@@ -50,28 +73,6 @@ interface IExchangeRates {
             uint systemValue,
             uint systemSourceRate,
             uint systemDestinationRate
-        );
-
-    function effectiveValueAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) external view returns (uint value);
-
-    function mutativeEffectiveValueAndRatesAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    )
-        external
-        returns (
-            uint value,
-            uint sourceRate,
-            uint destinationRate
         );
 
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint);
