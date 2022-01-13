@@ -173,6 +173,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         view
         returns (
             uint64 feePeriodId,
+            uint64 unused, // required post 185 for api compatibility
             uint64 startTime,
             uint feesToDistribute,
             uint feesClaimed,
@@ -183,6 +184,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         FeePeriod memory feePeriod = _recentFeePeriodsStorage(index);
         return (
             feePeriod.feePeriodId,
+            0,
             feePeriod.startTime,
             feePeriod.feesToDistribute,
             feePeriod.feesClaimed,

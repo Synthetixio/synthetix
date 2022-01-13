@@ -413,16 +413,6 @@
 			]
 		},
 		{
-			"sip": 185,
-			"layer": "both",
-			"sources": [
-				"Synthetix",
-				"FeePool",
-				"Issuer",
-				"SynthetixDebtShare"
-			]
-		},
-		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
