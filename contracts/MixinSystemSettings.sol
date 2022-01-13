@@ -7,6 +7,7 @@ import "./interfaces/IFlexibleStorage.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinsystemsettings
 contract MixinSystemSettings is MixinResolver {
+    // must match the one defined SystemSettingsLib, defined in both places due to sol v0.5 limitations
     bytes32 internal constant SETTING_CONTRACT_NAME = "SystemSettings";
 
     bytes32 internal constant SETTING_WAITING_PERIOD_SECS = "waitingPeriodSecs";
@@ -34,8 +35,6 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_WRAPPER_MAX_TOKEN_AMOUNT = "wrapperMaxTokens";
     bytes32 internal constant SETTING_WRAPPER_MINT_FEE_RATE = "wrapperMintFeeRate";
     bytes32 internal constant SETTING_WRAPPER_BURN_FEE_RATE = "wrapperBurnFeeRate";
-    bytes32 internal constant SETTING_MIN_CRATIO = "minCratio";
-    bytes32 internal constant SETTING_NEW_COLLATERAL_MANAGER = "newCollateralManager";
     bytes32 internal constant SETTING_INTERACTION_DELAY = "interactionDelay";
     bytes32 internal constant SETTING_COLLAPSE_FEE_RATE = "collapseFeeRate";
     bytes32 internal constant SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK = "atomicMaxVolumePerBlock";
@@ -177,22 +176,6 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, wrapper))
-            );
-    }
-
-    function getMinCratio(address collateral) internal view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral))
-            );
-    }
-
-    function getNewCollateralManager(address collateral) internal view returns (address) {
-        return
-            flexibleStorage().getAddressValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral))
             );
     }
 
