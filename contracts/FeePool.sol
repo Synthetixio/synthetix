@@ -242,9 +242,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /**
      * @notice The RewardsDistribution contract informs us how many SNX rewards are sent to RewardEscrow to be claimed.
      */
-    function setRewardsToDistribute(uint amount) external {
-        address rewardsAuthority = address(rewardsDistribution());
-        require(messageSender == rewardsAuthority || msg.sender == rewardsAuthority, "Caller is not rewardsAuthority");
+    function setRewardsToDistribute(uint amount) external onlyRewardsDistribution {
         // Add the amount of SNX rewards to distribute on top of any rolling unclaimed amount
         _recentFeePeriodsStorage(0).rewardsToDistribute = _recentFeePeriodsStorage(0).rewardsToDistribute.add(amount);
     }
@@ -743,6 +741,12 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         bool isIssuer = msg.sender == address(issuer());
         bool isSynthetixState = msg.sender == address(synthetixState());
         require(isIssuer || isSynthetixState, "Issuer and SynthetixState only");
+        _;
+    }
+
+    modifier onlyRewardsDistribution {
+        bool isRewardsDistribution = msg.sender == address(rewardsDistribution());
+        require(isRewardsDistribution, "RewardsDistribution only");
         _;
     }
 
