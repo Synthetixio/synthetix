@@ -160,11 +160,8 @@
 	},
 	"SynthRedeemer": {
 		"deploy": true
-	},	
+	},
 	"SystemSettingsLib": {
 		"deploy": true
-	},
-  "DynamicFee": {
-    "deploy": true
 	}
 }

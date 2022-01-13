@@ -2,37 +2,37 @@ const { contract, artifacts } = require('hardhat');
 const { assert } = require('./common');
 const { toUnit, toBN } = require('../utils')();
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const DynamicFee = artifacts.require('DynamicFee');
 const TestableDynamicFee = artifacts.require('TestableDynamicFee');
 
-contract('DynamicFee', () => {
+contract('DynamicFee', accounts => {
+	const [, owner, account1] = accounts;
+
 	let testableDynamicFee;
+
+	const threshold = toUnit('0.004');
+	const weightDecay = toUnit('0.9');
 
 	before(async () => {
 		const safeDecimalMath = await SafeDecimalMath.new();
-		DynamicFee.link(safeDecimalMath);
 		TestableDynamicFee.link(safeDecimalMath);
-		TestableDynamicFee.link(await DynamicFee.new());
-		testableDynamicFee = await TestableDynamicFee.new();
+		const addressResolver = account1; // is not important for these tests
+		testableDynamicFee = await TestableDynamicFee.new(owner, addressResolver);
 	});
 
 	it('Can get price differential', async () => {
-		const priceDiff1 = await testableDynamicFee.getPriceDifferential(toUnit('8'), toUnit('10'));
+		const priceDiff1 = await testableDynamicFee.thresholdedAbsDeviationRatio(
+			toUnit('8'),
+			toUnit('10'),
+			threshold
+		);
 		assert.bnEqual(priceDiff1, '196000000000000000');
-		const priceDiff2 = await testableDynamicFee.getPriceDifferential(toUnit('12'), toUnit('10'));
+		const priceDiff2 = await testableDynamicFee.thresholdedAbsDeviationRatio(
+			toUnit('12'),
+			toUnit('10'),
+			threshold
+		);
 		assert.bnEqual(priceDiff2, '196000000000000000');
 		assert.bnEqual(priceDiff1, priceDiff2);
-	});
-
-	it('Can get price weight', async () => {
-		const priceWeight0 = await testableDynamicFee.getPriceWeight('0');
-		assert.bnEqual(priceWeight0, toUnit('1'));
-
-		const priceWeight1 = await testableDynamicFee.getPriceWeight('1');
-		assert.bnEqual(priceWeight1, toUnit('0.9'));
-
-		const priceWeight2 = await testableDynamicFee.getPriceWeight('2');
-		assert.bnEqual(priceWeight2, toUnit('0.81'));
 	});
 
 	it('Can get dynamic fee according to SIP feasibility spreadsheet round 13-22, all below threshold', async () => {
@@ -50,7 +50,11 @@ contract('DynamicFee', () => {
 			toUnit('49960.65493467'),
 			toUnit('49994'),
 		];
-		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
+		const dynamicFee = await testableDynamicFee.dynamicFeeCalculation(
+			prices,
+			threshold,
+			weightDecay
+		);
 		assert.bnEqual(dynamicFee, '0');
 	});
 
@@ -68,7 +72,11 @@ contract('DynamicFee', () => {
 			toUnit('49871.92313713'),
 			toUnit('49981'),
 		];
-		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
+		const dynamicFee = await testableDynamicFee.dynamicFeeCalculation(
+			prices,
+			threshold,
+			weightDecay
+		);
 		assert.bnClose(dynamicFee, toUnit(20.6442753020364).div(toBN(10000)), 1e9);
 	});
 
@@ -86,7 +94,11 @@ contract('DynamicFee', () => {
 			toUnit('49234.65005734'),
 			toUnit('49535.05178912'),
 		];
-		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
+		const dynamicFee = await testableDynamicFee.dynamicFeeCalculation(
+			prices,
+			threshold,
+			weightDecay
+		);
 		assert.bnClose(dynamicFee, toUnit(7.99801523256557).div(toBN(10000)), 1e9);
 	});
 
@@ -105,7 +117,11 @@ contract('DynamicFee', () => {
 			toUnit('47222.35138239'),
 			toUnit('47382.88726893'),
 		];
-		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
+		const dynamicFee = await testableDynamicFee.dynamicFeeCalculation(
+			prices,
+			threshold,
+			weightDecay
+		);
 		assert.bnClose(dynamicFee, toUnit(183.663338097394).div(toBN(10000)), 1e9);
 	});
 
@@ -123,7 +139,11 @@ contract('DynamicFee', () => {
 			toUnit('47670.81054939'),
 			toUnit('47911.8471578599'),
 		];
-		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
+		const dynamicFee = await testableDynamicFee.dynamicFeeCalculation(
+			prices,
+			threshold,
+			weightDecay
+		);
 		assert.bnClose(dynamicFee, toUnit(45.0272321178039).div(toBN(10000)), 1e9);
 	});
 });

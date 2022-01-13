@@ -391,8 +391,5 @@
 	},
 	"SystemSettingsLib": {
 		"deploy": true
-	},
-  "DynamicFee": {
-		"deploy": true
 	}
 }

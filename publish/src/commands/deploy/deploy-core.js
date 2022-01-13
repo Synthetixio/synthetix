@@ -23,10 +23,6 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'DynamicFee',
-	});
-
-	await deployer.deployContract({
 		name: 'Math',
 	});
 

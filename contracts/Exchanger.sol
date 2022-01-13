@@ -7,7 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IExchanger.sol";
 
 // Libraries
-import "./DynamicFee.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -865,7 +865,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint[] memory prices;
         uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        dynamicFee = DynamicFee.getDynamicFee(prices, config.threshold, config.weightDecay);
+        dynamicFee = _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
     }
 
     /// @notice Get dynamicFee for a given currency key (SIP-184)
@@ -882,7 +882,52 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         if (currencyKey == sUSD) return 0;
         uint[] memory prices;
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        dynamicFee = DynamicFee.getDynamicFee(prices, config.threshold, config.weightDecay);
+        dynamicFee = _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
+    }
+
+    /// @notice Calculate dynamic fee according to SIP-184
+    /// @param prices A list of prices from the current round to the previous rounds
+    /// @param threshold A threshold to clip the price deviation ratop
+    /// @param weightDecay A weight decay constant
+    /// @return uint dynamic fee rate as decimal
+    function _dynamicFeeCalculation(
+        uint[] memory prices,
+        uint threshold,
+        uint weightDecay
+    ) internal pure returns (uint dynamicFee) {
+        uint size = prices.length;
+        // short circuit if there is a single price
+        if (size <= 1) {
+            return dynamicFee;
+        }
+        // go backwards in price array
+        for (uint i = size - 1; i > 0; i--) {
+            // apply decay from previous round (will be 0 for first round)
+            dynamicFee = dynamicFee.multiplyDecimal(weightDecay);
+            // calculate price deviation
+            uint deviation = _thresholdedAbsDeviationRatio(prices[i - 1], prices[i], threshold);
+            // add to total fee
+            dynamicFee = dynamicFee.add(deviation);
+        }
+    }
+
+    /// absolute price deviation ratio used by dynamic fee calculation
+    /// deviationRatio = (abs(current - previous) / previous) - threshold
+    /// if negative, zero is returned
+    function _thresholdedAbsDeviationRatio(
+        uint price,
+        uint previousPrice,
+        uint threshold
+    ) public pure returns (uint deviationRatio) {
+        if (previousPrice == 0) {
+            return 0; // don't divide by zero
+        }
+        // abs difference between prices
+        uint absDelta = price > previousPrice ? price - previousPrice : previousPrice - price;
+        // relative to previous price
+        deviationRatio = absDelta.divideDecimal(previousPrice);
+        // only the positive difference from threshold
+        deviationRatio = deviationRatio > threshold ? deviationRatio - threshold : 0;
     }
 
     function getAmountsForExchange(

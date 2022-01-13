@@ -129,13 +129,7 @@ const setupContract = async ({
 	// Linking libraries if needed
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
-		if (artifact._json.contractName.startsWith('Exchanger')) {
-			// SafeDecimalMath -> DynamicFee -> Exchanger*
-			artifact.link(safeDecimalMath);
-			const DynamicFee = artifacts.require('DynamicFee');
-			DynamicFee.link(safeDecimalMath);
-			artifact.link(await DynamicFee.new());
-		} else if (artifact._json.contractName === 'SystemSettings') {
+		if (artifact._json.contractName === 'SystemSettings') {
 			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
 			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
 			SystemSettingsLib.link(safeDecimalMath);

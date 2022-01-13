@@ -1,21 +1,24 @@
 pragma solidity ^0.5.16;
 
 // Libraries
-import "../DynamicFee.sol";
+import "../Exchanger.sol";
 
-contract TestableDynamicFee {
-    uint public threshold = (4 * SafeDecimalMath.unit()) / 1000;
-    uint public weightDecay = (9 * SafeDecimalMath.unit()) / 10;
+contract TestableDynamicFee is Exchanger {
+    constructor(address _owner, address _resolver) public Exchanger(_owner, _resolver) {}
 
-    function getPriceDifferential(uint price, uint previousPrice) external view returns (uint) {
-        return DynamicFee.priceDeviation(price, previousPrice, threshold);
+    function thresholdedAbsDeviationRatio(
+        uint price,
+        uint previousPrice,
+        uint threshold
+    ) external view returns (uint) {
+        return _thresholdedAbsDeviationRatio(price, previousPrice, threshold);
     }
 
-    function getPriceWeight(uint round) external view returns (uint) {
-        return DynamicFee.getRoundDecay(round, weightDecay);
-    }
-
-    function getDynamicFee(uint[] calldata prices) external view returns (uint) {
-        return DynamicFee.getDynamicFee(prices, threshold, weightDecay);
+    function dynamicFeeCalculation(
+        uint[] calldata prices,
+        uint threshold,
+        uint weightDecay
+    ) external view returns (uint) {
+        return _dynamicFeeCalculation(prices, threshold, weightDecay);
     }
 }

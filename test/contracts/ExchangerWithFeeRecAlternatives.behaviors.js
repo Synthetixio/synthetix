@@ -23,9 +23,6 @@ module.exports = function({ accounts }) {
 	before(async () => {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
 		ExchangerWithFeeRecAlternatives.link(safeDecimalMath);
-		const DynamicFee = artifacts.require('DynamicFee');
-		DynamicFee.link(safeDecimalMath);
-		ExchangerWithFeeRecAlternatives.link(await DynamicFee.new());
 	});
 
 	beforeEach(async () => {
