@@ -201,6 +201,15 @@ contract('FeePool', async accounts => {
 				reason: 'Issuer and SynthetixState only',
 			});
 		});
+
+		it('setRewardsToDistribute() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.setRewardsToDistribute,
+				accounts,
+				args: ['0'],
+				reason: 'RewardsDistribution only',
+			});
+		});
 	});
 
 	describe('when the issuanceRatio is 0.2', () => {
