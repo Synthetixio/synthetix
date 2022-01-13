@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 // Libraires
@@ -13,7 +14,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/rewardsdistribution
-contract RewardsDistribution is Owned, IRewardsDistribution {
+contract RewardsDistribution is Owned, IRewardsDistribution, MixinSystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -42,21 +43,36 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
      */
     DistributionData[] public distributions;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+
     /**
      * @dev _authority maybe the underlying synthetix contract.
      * Remember to set the authority on a synthetix upgrade
      */
     constructor(
         address _owner,
+        address _resolver,
         address _authority,
         address _synthetixProxy,
         address _rewardEscrow,
         address _feePoolProxy
-    ) public Owned(_owner) {
+    ) public Owned(_owner) MixinSystemSettings(_resolver) {
         authority = _authority;
         synthetixProxy = _synthetixProxy;
         rewardEscrow = _rewardEscrow;
         feePoolProxy = _feePoolProxy;
+    }
+
+    /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_FEEPOOL;
+        bytes32[] memory combined = combineArrays(existingAddresses, newAddresses);
+        addresses = combined;
     }
 
     // ========== EXTERNAL SETTERS ==========
@@ -71,6 +87,10 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
 
     function setFeePoolProxy(address _feePoolProxy) external onlyOwner {
         feePoolProxy = _feePoolProxy;
+    }
+
+    function _feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     /**
@@ -178,7 +198,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
         IERC20(synthetixProxy).transfer(rewardEscrow, remainder);
 
         // Tell the FeePool how much it has to distribute to the stakers
-        IFeePool(feePoolProxy).setRewardsToDistribute(remainder);
+        _feePool().setRewardsToDistribute(remainder);
 
         emit RewardsDistributed(amount);
         return true;
