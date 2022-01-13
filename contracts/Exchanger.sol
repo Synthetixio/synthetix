@@ -809,7 +809,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param roundIdForDest The round id of the target currency.
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate
-    function _feeRateForExchangeAtRound(
+    function _feeRateForExchangeAtRounds(
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
