@@ -196,7 +196,6 @@ const setupContract = async ({
 		SynthetixBridgeEscrow: [owner],
 		RewardsDistribution: [
 			owner,
-			tryGetAddressOf('AddressResolver'),
 			tryGetAddressOf('Synthetix'),
 			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('RewardEscrowV2'),
@@ -674,14 +673,7 @@ const setupAllContracts = async ({
 		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
 		{
 			contract: 'RewardsDistribution',
-			mocks: [
-				'AddressResolver',
-				'Synthetix',
-				'FeePool',
-				'RewardEscrow',
-				'RewardEscrowV2',
-				'ProxyFeePool',
-			],
+			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{ contract: 'SynthUtil', deps: ['AddressResolver'] },

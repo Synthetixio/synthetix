@@ -66,6 +66,7 @@ contract('FeePool', async accounts => {
 		systemSettings,
 		exchangeRates,
 		feePoolState,
+		rewardsDistribution,
 		delegateApprovals,
 		sUSDContract,
 		addressResolver,
@@ -82,6 +83,7 @@ contract('FeePool', async accounts => {
 			FeePoolState: feePoolState,
 			DebtCache: debtCache,
 			ProxyFeePool: feePoolProxy,
+			RewardsDistribution: rewardsDistribution,
 			Synthetix: synthetix,
 			SystemSettings: systemSettings,
 			SynthsUSD: sUSDContract,
@@ -103,6 +105,7 @@ contract('FeePool', async accounts => {
 				'SystemSettings',
 				'SystemStatus',
 				'RewardEscrowV2',
+				'RewardsDistribution',
 				'DelegateApprovals',
 				'CollateralManager',
 				'WrapperFactory',
@@ -201,14 +204,23 @@ contract('FeePool', async accounts => {
 				reason: 'Issuer and SynthetixState only',
 			});
 		});
+	});
 
-		it('setRewardsToDistribute() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: feePool.setRewardsToDistribute,
-				accounts,
-				args: ['0'],
-				reason: 'RewardsDistribution only',
+	describe.only('setRewardsToDistribute', () => {
+		before(async () => {
+			await proxyThruTo({
+				proxy: feePoolProxy,
+				target: feePool,
+				fncName: 'setMessageSender',
+				from: account1,
+				args: [rewardsDistribution.address],
 			});
+		});
+		it('should revert when called by an unauthorized account', async () => {
+			await assert.revert(
+				feePool.setRewardsToDistribute('0', { from: account1 }),
+				'RewardsDistribution only'
+			);
 		});
 	});
 
