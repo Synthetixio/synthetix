@@ -8,7 +8,7 @@ contract TestableDynamicFee {
     uint public weightDecay = (9 * SafeDecimalMath.unit()) / 10;
 
     function getPriceDifferential(uint price, uint previousPrice) external view returns (uint) {
-        return DynamicFee.getPriceDifferential(price, previousPrice, threshold);
+        return DynamicFee.priceDeviation(price, previousPrice, threshold);
     }
 
     function getPriceWeight(uint round) external view returns (uint) {

@@ -592,6 +592,7 @@ module.exports = ({ web3 } = {}) => {
 		divideDecimalRound,
 		powerToDecimal,
 
+		toBN,
 		toUnit,
 		fromUnit,
 

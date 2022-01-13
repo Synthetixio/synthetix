@@ -1,6 +1,6 @@
 const { contract, artifacts } = require('hardhat');
 const { assert } = require('./common');
-const { toUnit } = require('../utils')();
+const { toUnit, toBN } = require('../utils')();
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const DynamicFee = artifacts.require('DynamicFee');
 const TestableDynamicFee = artifacts.require('TestableDynamicFee');
@@ -69,7 +69,7 @@ contract('DynamicFee', () => {
 			toUnit('49981'),
 		];
 		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
-		assert.bnEqual(dynamicFee, '2064427530203592');
+		assert.bnClose(dynamicFee, toUnit(20.6442753020364).div(toBN(10000)), 1e9);
 	});
 
 	it('Can get dynamic fee according to SIP feasibility spreadsheet round 23-32, first one above threshold', async () => {
@@ -87,7 +87,7 @@ contract('DynamicFee', () => {
 			toUnit('49535.05178912'),
 		];
 		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
-		assert.bnEqual(dynamicFee, '799801523256537');
+		assert.bnClose(dynamicFee, toUnit(7.99801523256557).div(toBN(10000)), 1e9);
 	});
 
 	it('Can get dynamic fee according to SIP feasibility spreadsheet round 63-72, 70% above threshold', async () => {
@@ -106,7 +106,7 @@ contract('DynamicFee', () => {
 			toUnit('47382.88726893'),
 		];
 		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
-		assert.bnEqual(dynamicFee, '18366333809739328');
+		assert.bnClose(dynamicFee, toUnit(183.663338097394).div(toBN(10000)), 1e9);
 	});
 
 	it('Can get the same dynamic fee according to SIP feasibility spreadsheet round 58-67, 50% above threshold', async () => {
@@ -124,6 +124,6 @@ contract('DynamicFee', () => {
 			toUnit('47911.8471578599'),
 		];
 		const dynamicFee = await testableDynamicFee.getDynamicFee(prices);
-		assert.bnEqual(dynamicFee, '4502723211780442');
+		assert.bnClose(dynamicFee, toUnit(45.0272321178039).div(toBN(10000)), 1e9);
 	});
 });

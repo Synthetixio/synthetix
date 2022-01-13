@@ -1870,7 +1870,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								it(`attempting to ${type} from sUSD into sAUD reverts with dest stale`, async () => {
 									await assert.revert(
 										exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
-										'src/dest rate stale or flagged'
+										'Src/dest rate invalid or not found'
 									);
 								});
 								it('settling still works ', async () => {
@@ -1893,7 +1893,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											it(`${type} back to sUSD fails as the source has no rate`, async () => {
 												await assert.revert(
 													exchange({ from: sAUD, amount: amountIssued, to: sUSD }),
-													'src/dest rate stale or flagged'
+													'Src/dest rate invalid or not found'
 												);
 											});
 										});
