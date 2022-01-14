@@ -206,7 +206,7 @@ contract('FeePool', async accounts => {
 		});
 	});
 
-	describe.only('setRewardsToDistribute', () => {
+	describe('setRewardsToDistribute', () => {
 		before(async () => {
 			await proxyThruTo({
 				proxy: feePoolProxy,
