@@ -138,7 +138,6 @@ module.exports = async ({
 		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
 		args: [
 			account, // owner
-			addressOf(readProxyForResolver), // address resolver
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
 			addressOf(rewardEscrowV2),
