@@ -8,6 +8,7 @@ const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../../..');
+const { allowZeroOrUpdateIfNonZero } = require('../../util.js');
 
 module.exports = async ({
 	addressOf,
@@ -107,20 +108,23 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'waitingPeriodSecs',
 		readTarget: previousSystemSettings,
-		expected: input => waitingPeriodSecs === '0' || input !== '0', // only change if setting to non-zero from zero
+		expected: allowZeroOrUpdateIfNonZero(waitingPeriodSecs),
 		write: 'setWaitingPeriodSecs',
 		writeArg: waitingPeriodSecs,
 		comment: 'Set the fee reclamation (SIP-37) waiting period',
 	});
 
+	const priceDeviationThresholdFactor = await getDeployParameter(
+		'PRICE_DEVIATION_THRESHOLD_FACTOR'
+	);
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'priceDeviationThresholdFactor',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(priceDeviationThresholdFactor),
 		write: 'setPriceDeviationThresholdFactor',
-		writeArg: await getDeployParameter('PRICE_DEVIATION_THRESHOLD_FACTOR'),
+		writeArg: priceDeviationThresholdFactor,
 		comment: 'Set the threshold for the circuit breaker (SIP-65)',
 	});
 
@@ -136,163 +140,179 @@ module.exports = async ({
 		comment: 'Set the flag for trading rewards (SIP-63)',
 	});
 
+	const issuanceRatio = await getDeployParameter('ISSUANCE_RATIO');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'issuanceRatio',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(issuanceRatio),
 		write: 'setIssuanceRatio',
-		writeArg: await getDeployParameter('ISSUANCE_RATIO'),
+		writeArg: issuanceRatio,
 		comment: 'Set the issuance ratio - the c-ratio stored as an inverted decimal',
 	});
 
+	const feePeriodDuration = await getDeployParameter('FEE_PERIOD_DURATION');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'feePeriodDuration',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(feePeriodDuration),
 		write: 'setFeePeriodDuration',
-		writeArg: await getDeployParameter('FEE_PERIOD_DURATION'),
+		writeArg: feePeriodDuration,
 		comment: 'Set the fee period duration',
 	});
 
+	const targetThreshold = await getDeployParameter('TARGET_THRESHOLD');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'targetThreshold',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(targetThreshold),
 		write: 'setTargetThreshold',
-		writeArg: await getDeployParameter('TARGET_THRESHOLD'),
+		writeArg: targetThreshold,
 		comment:
 			'Set the target threshold - the threshold beyond the c-ratio that allows fees to be claimed',
 	});
 
+	const liquidationDelay = await getDeployParameter('LIQUIDATION_DELAY');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'liquidationDelay',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(liquidationDelay),
 		write: 'setLiquidationDelay',
-		writeArg: await getDeployParameter('LIQUIDATION_DELAY'),
+		writeArg: liquidationDelay,
 		comment: 'Set the delay from when an account is flagged till when it can be liquidated',
 	});
 
+	const liquidationRatio = await getDeployParameter('LIQUIDATION_RATIO');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'liquidationRatio',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(liquidationRatio),
 		write: 'setLiquidationRatio',
-		writeArg: await getDeployParameter('LIQUIDATION_RATIO'),
+		writeArg: liquidationRatio,
 		comment: 'Set the ratio below which an account can be flagged for liquidation',
 	});
 
+	const liquidationPenalty = await getDeployParameter('LIQUIDATION_PENALTY');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'liquidationPenalty',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(liquidationPenalty),
 		write: 'setLiquidationPenalty',
-		writeArg: await getDeployParameter('LIQUIDATION_PENALTY'),
+		writeArg: liquidationPenalty,
 		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
 	});
 
+	const rateStalePeriod = await getDeployParameter('RATE_STALE_PERIOD');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'rateStalePeriod',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(rateStalePeriod),
 		write: 'setRateStalePeriod',
-		writeArg: await getDeployParameter('RATE_STALE_PERIOD'),
+		writeArg: rateStalePeriod,
 		comment: 'Set the maximum amount of time (in secs) that a rate can be used for',
 	});
 
+	const minimumStakeTime = await getDeployParameter('MINIMUM_STAKE_TIME');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'minimumStakeTime',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(minimumStakeTime),
 		write: 'setMinimumStakeTime',
-		writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
+		writeArg: minimumStakeTime,
 		comment: 'Set the minimum amount of time SNX can be issued before any is burned (SIP-40)',
 	});
 
+	const debtSnapshotStaleTime = await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'debtSnapshotStaleTime',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(debtSnapshotStaleTime),
 		write: 'setDebtSnapshotStaleTime',
-		writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
+		writeArg: debtSnapshotStaleTime,
 		comment: 'Set the length of time after which the DebtCache snapshot becomes stale (SIP-91)',
 	});
 
+	const crossDomainDepositGasLimit = await getDeployParameter('CROSS_DOMAIN_DEPOSIT_GAS_LIMIT');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 0,
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(crossDomainDepositGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [0, await getDeployParameter('CROSS_DOMAIN_DEPOSIT_GAS_LIMIT')],
+		writeArg: [0, crossDomainDepositGasLimit],
 		comment: 'Set the gas limit for depositing onto L2',
 	});
 
+	const crossDomainEscrowGasLimit = await getDeployParameter('CROSS_DOMAIN_ESCROW_GAS_LIMIT');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 1,
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(crossDomainEscrowGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [1, await getDeployParameter('CROSS_DOMAIN_ESCROW_GAS_LIMIT')],
+		writeArg: [1, crossDomainEscrowGasLimit],
 		comment: 'Set the gas limit for migrating escrowed SNX to L2',
 	});
 
+	const crossDomainRewardGasLimit = await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 2,
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(crossDomainRewardGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [2, await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT')],
+		writeArg: [2, crossDomainRewardGasLimit],
 		comment: 'Set the gas limit for depositing rewards to L2',
 	});
 
+	const crossDomainWithdrawalGasLimit = await getDeployParameter(
+		'CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT'
+	);
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 3,
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(crossDomainWithdrawalGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [3, await getDeployParameter('CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT')],
+		writeArg: [3, crossDomainWithdrawalGasLimit],
 		comment: 'Set the gas limit for withdrawing from L2',
 	});
 
+	const crossDomainRelayGasLimit = await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 4,
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(crossDomainRelayGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [4, await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT')],
+		writeArg: [4, crossDomainRelayGasLimit],
 		comment: 'Set the gas limit for relaying owner actions to L2',
 	});
 
@@ -311,24 +331,27 @@ module.exports = async ({
 		});
 	}
 
+	const etherWrapperMaxETH = await getDeployParameter('ETHER_WRAPPER_MAX_ETH');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'etherWrapperMaxETH',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(etherWrapperMaxETH),
 		write: 'setEtherWrapperMaxETH',
-		writeArg: await getDeployParameter('ETHER_WRAPPER_MAX_ETH'),
+		writeArg: etherWrapperMaxETH,
 		comment: 'Set the max amount of Ether allowed in the EtherWrapper (SIP-112)',
 	});
+
+	const etherWrapperMintFeeRate = await getDeployParameter('ETHER_WRAPPER_MINT_FEE_RATE');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'etherWrapperMintFeeRate',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(etherWrapperMintFeeRate),
 		write: 'setEtherWrapperMintFeeRate',
-		writeArg: await getDeployParameter('ETHER_WRAPPER_MINT_FEE_RATE'),
+		writeArg: etherWrapperMintFeeRate,
 		comment: 'Set the fee rate for minting sETH from ETH in the EtherWrapper (SIP-112)',
 	});
 
@@ -339,7 +362,7 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'etherWrapperBurnFeeRate',
 		readTarget: previousSystemSettings,
-		expected: input => etherWrapperBurnFeeRate === '0' || input !== '0', // only change if the value to set is above zero and the value onchain is 0
+		expected: allowZeroOrUpdateIfNonZero(etherWrapperBurnFeeRate),
 		write: 'setEtherWrapperBurnFeeRate',
 		writeArg: etherWrapperBurnFeeRate,
 		comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
@@ -402,7 +425,7 @@ module.exports = async ({
 			target: SystemSettings,
 			read: 'atomicMaxVolumePerBlock',
 			readTarget: previousSystemSettings,
-			expected: input => atomicMaxVolumePerBlock === '0' || input !== '0', // only change if setting to non-zero from zero
+			expected: allowZeroOrUpdateIfNonZero(atomicMaxVolumePerBlock),
 			write: 'setAtomicMaxVolumePerBlock',
 			writeArg: atomicMaxVolumePerBlock,
 			comment: 'SIP-120 Set max atomic volume per block (in USD amounts)',
@@ -410,14 +433,15 @@ module.exports = async ({
 	}
 
 	if (SystemSettings.atomicTwapWindow) {
+		const atomicTwapWindow = await getDeployParameter('ATOMIC_TWAP_WINDOW');
 		await runStep({
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			read: 'atomicTwapWindow',
 			readTarget: previousSystemSettings,
-			expected: input => input !== '0', // only change if zero
+			expected: allowZeroOrUpdateIfNonZero(atomicTwapWindow),
 			write: 'setAtomicTwapWindow',
-			writeArg: await getDeployParameter('ATOMIC_TWAP_WINDOW'),
+			writeArg: atomicTwapWindow,
 			comment: 'SIP-120 Set the TWAP window for atomic swaps',
 		});
 	}
@@ -538,7 +562,7 @@ module.exports = async ({
 			read: 'interactionDelay',
 			readArg: addressOf(CollateralShort),
 			readTarget: previousSystemSettings,
-			expected: input => (interactionDelay === '0' ? true : input !== '0'),
+			expected: allowZeroOrUpdateIfNonZero(interactionDelay),
 			write: 'setInteractionDelay',
 			writeArg: [CollateralShort.address, interactionDelay],
 			comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
@@ -553,7 +577,7 @@ module.exports = async ({
 			read: 'collapseFeeRate',
 			readArg: addressOf(CollateralShort),
 			readTarget: previousSystemSettings,
-			expected: input => (collapseFeeRate === '0' ? true : input !== '0'),
+			expected: allowZeroOrUpdateIfNonZero(collapseFeeRate),
 			write: 'setCollapseFeeRate',
 			writeArg: [CollateralShort.address, collapseFeeRate],
 			comment:
