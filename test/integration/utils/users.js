@@ -6,7 +6,7 @@ async function loadUsers({ ctx, network }) {
 
 	// Retrieve and create wallets
 	if (ctx.fork) {
-		wallets = wallets.concat(_getWallets({ provider: ctx.provider }));
+		wallets = wallets.concat(_getWallets({ ctx, provider: ctx.provider }));
 	}
 	wallets = wallets.concat(loadLocalWallets({ provider: ctx.provider }));
 
@@ -20,8 +20,8 @@ async function loadUsers({ ctx, network }) {
 	}
 }
 
-function _getWallets({ provider }) {
-	const users = getUsers({ network: 'mainnet' });
+function _getWallets({ ctx, provider }) {
+	const users = getUsers(ctx);
 
 	const signers = users
 		.filter(user => user.name !== 'fee')

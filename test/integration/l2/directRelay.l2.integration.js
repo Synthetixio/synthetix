@@ -5,7 +5,8 @@ const {
 	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../..');
 
-describe('tempOwner directRelay integration tests (L2)', () => {
+// skipped because tempOwner no longer will work for fork tests
+describe.skip('tempOwner directRelay integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
