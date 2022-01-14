@@ -66,6 +66,7 @@ contract('FeePool', async accounts => {
 		systemSettings,
 		exchangeRates,
 		feePoolState,
+		rewardsDistribution,
 		delegateApprovals,
 		sUSDContract,
 		addressResolver,
@@ -82,6 +83,7 @@ contract('FeePool', async accounts => {
 			FeePoolState: feePoolState,
 			DebtCache: debtCache,
 			ProxyFeePool: feePoolProxy,
+			RewardsDistribution: rewardsDistribution,
 			Synthetix: synthetix,
 			SystemSettings: systemSettings,
 			SynthsUSD: sUSDContract,
@@ -103,6 +105,7 @@ contract('FeePool', async accounts => {
 				'SystemSettings',
 				'SystemStatus',
 				'RewardEscrowV2',
+				'RewardsDistribution',
 				'DelegateApprovals',
 				'CollateralManager',
 				'WrapperFactory',
@@ -193,6 +196,23 @@ contract('FeePool', async accounts => {
 	});
 
 	describe('restricted methods', () => {
+		before(async () => {
+			await proxyThruTo({
+				proxy: feePoolProxy,
+				target: feePool,
+				fncName: 'setMessageSender',
+				from: account1,
+				args: [rewardsDistribution.address],
+			});
+		});
+		it('setRewardsToDistribute() cannot be called by an unauthorized account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.setRewardsToDistribute,
+				accounts,
+				args: ['0'],
+				reason: 'RewardsDistribution only',
+			});
+		});
 		it('appendAccountIssuanceRecord() cannot be invoked directly by any account', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: feePool.appendAccountIssuanceRecord,
