@@ -196,17 +196,6 @@ contract('FeePool', async accounts => {
 	});
 
 	describe('restricted methods', () => {
-		it('appendAccountIssuanceRecord() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: feePool.appendAccountIssuanceRecord,
-				accounts,
-				args: [account1, toUnit('0.001'), '0'],
-				reason: 'Issuer and SynthetixState only',
-			});
-		});
-	});
-
-	describe('setRewardsToDistribute', () => {
 		before(async () => {
 			await proxyThruTo({
 				proxy: feePoolProxy,
@@ -216,11 +205,21 @@ contract('FeePool', async accounts => {
 				args: [rewardsDistribution.address],
 			});
 		});
-		it('should revert when called by an unauthorized account', async () => {
-			await assert.revert(
-				feePool.setRewardsToDistribute('0', { from: account1 }),
-				'RewardsDistribution only'
-			);
+		it('setRewardsToDistribute() cannot be called by an unauthorized account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.setRewardsToDistribute,
+				accounts,
+				args: ['0'],
+				reason: 'RewardsDistribution only',
+			});
+		});
+		it('appendAccountIssuanceRecord() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: feePool.appendAccountIssuanceRecord,
+				accounts,
+				args: [account1, toUnit('0.001'), '0'],
+				reason: 'Issuer and SynthetixState only',
+			});
 		});
 	});
 
