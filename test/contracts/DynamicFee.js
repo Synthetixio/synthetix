@@ -35,7 +35,7 @@ contract('DynamicFee', accounts => {
 		assert.bnEqual(priceDiff1, priceDiff2);
 	});
 
-	it('Can get dynamic fee according to SIP feasibility spreadsheet round 13-22, all below threshold', async () => {
+	it('Fee is similar to dynamic-fee-calc.csv rounds 22-11, all below threshold', async () => {
 		const prices = [
 			toUnit('49535.05178912'),
 			toUnit('49714.05205647'),
@@ -58,7 +58,7 @@ contract('DynamicFee', accounts => {
 		assert.bnEqual(dynamicFee, '0');
 	});
 
-	it('Can get dynamic fee according to SIP feasibility spreadsheet round 14-23, last one above threshold', async () => {
+	it('Fee is similar to dynamic-fee-calc.csv rounds 23-14, last one above threshold', async () => {
 		const prices = [
 			toUnit('49234.65005734'),
 			toUnit('49535.05178912'),
@@ -80,7 +80,7 @@ contract('DynamicFee', accounts => {
 		assert.bnClose(dynamicFee, toUnit(20.6442753020364).div(toBN(10000)), 1e9);
 	});
 
-	it('Can get dynamic fee according to SIP feasibility spreadsheet round 23-32, first one above threshold', async () => {
+	it('Fee is similar to dynamic-fee-calc.csv rounds 32-22, first one above threshold', async () => {
 		const prices = [
 			toUnit('49198.77'),
 			toUnit('49143.5399999999'),
@@ -102,7 +102,7 @@ contract('DynamicFee', accounts => {
 		assert.bnClose(dynamicFee, toUnit(7.99801523256557).div(toBN(10000)), 1e9);
 	});
 
-	it('Can get dynamic fee according to SIP feasibility spreadsheet round 63-72, 70% above threshold', async () => {
+	it('Fee is similar to dynamic-fee-calc.csv rounds 72-63, 70% above threshold', async () => {
 		const prices = [
 			toUnit('44661.70868763'),
 			toUnit('44672.6561639399'),
@@ -125,7 +125,7 @@ contract('DynamicFee', accounts => {
 		assert.bnClose(dynamicFee, toUnit(183.663338097394).div(toBN(10000)), 1e9);
 	});
 
-	it('Can get the same dynamic fee according to SIP feasibility spreadsheet round 58-67, 50% above threshold', async () => {
+	it('Fee is similar to dynamic-fee-calc.csv rounds 67-58, 50% above threshold', async () => {
 		const prices = [
 			toUnit('46183.17440371'),
 			toUnit('46217.7336139799'),
