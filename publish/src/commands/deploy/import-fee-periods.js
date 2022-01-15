@@ -178,6 +178,7 @@ module.exports = async ({
 					`FeePool newFeePool = FeePool(${FeePool.address})`,
 					`(
 						uint64 feePeriodId_${index},
+						uint64 unused_${index},
 						uint64 startTime_${index},
 						uint feesToDistribute_${index},
 						uint feesClaimed_${index},

@@ -125,7 +125,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         currentPeriodId = newPeriodId;
     }
         
-    function mintShare(address account, uint256 amount) public onlyIssuer {
+    function mintShare(address account, uint256 amount) external onlyIssuer {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _supplyBalance(account, amount);
@@ -136,7 +136,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         emit Mint(account, amount);
     }
 
-    function burnShare(address account, uint256 amount) public onlyIssuer {
+    function burnShare(address account, uint256 amount) external onlyIssuer {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _deductBalance(account, amount);
@@ -162,9 +162,18 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     }
 
     function importAddresses(address[] calldata accounts, uint256[] calldata amounts) external onlyOwner onlySetup {
+        uint supply = totalSupplyOnPeriod[currentPeriodId];
+
         for (uint i = 0; i < accounts.length; i++) {
-            mintShare(accounts[i], amounts[i]);
+            _supplyBalance(accounts[i], amounts[i]);
+
+            supply = supply.add(amounts[i]);
+
+            emit Transfer(address(0), accounts[i], amounts[i]);
+            emit Mint(accounts[i], amounts[i]);
         }
+
+        totalSupplyOnPeriod[currentPeriodId] = supply;
     }
 
     function finishSetup() external onlyOwner {

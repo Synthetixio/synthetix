@@ -502,4 +502,61 @@ contract('SynthetixDebtShare', async accounts => {
 			});
 		});
 	});
+
+	describe('importAddresses()', () => {
+		it('should disallow import outside of owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetixDebtShare.importAddresses,
+				args: [[account2], [toUnit('0.1')]],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+
+		describe('when invoked by owner', () => {
+			beforeEach(async () => {
+				await synthetixDebtShare.importAddresses([account1], [toUnit('20')], { from: owner });
+				await synthetixDebtShare.importAddresses([account2, issuer], [toUnit('10'), toUnit('10')], {
+					from: owner,
+				});
+				await synthetixDebtShare.importAddresses([account2], [toUnit('50')], { from: owner });
+			});
+
+			it('sets total supply', async () => {
+				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('90'));
+			});
+
+			it('accumulates balances', async () => {
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('20'));
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account2), toUnit('60'));
+				assert.bnEqual(await synthetixDebtShare.balanceOf(issuer), toUnit('10'));
+			});
+		});
+	});
+
+	describe('finishSetup()', () => {
+		it('should disallow another from minting', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetixDebtShare.finishSetup,
+				args: [],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when invoked by owner', () => {
+			beforeEach(async () => {
+				await synthetixDebtShare.finishSetup({ from: owner });
+			});
+
+			it('becomes initialized', async () => {
+				assert.isTrue(await synthetixDebtShare.isInitialized());
+			});
+		});
+	});
 });
