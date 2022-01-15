@@ -783,7 +783,7 @@
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Peacock (Optimism)",
@@ -793,7 +793,7 @@
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Alsephina",
