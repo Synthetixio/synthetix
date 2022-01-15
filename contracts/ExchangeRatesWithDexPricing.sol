@@ -10,13 +10,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
     bytes32 internal constant SETTING_DEX_PRICE_AGGREGATOR = "dexPriceAggregator";
 
-    constructor(
-        address _owner,
-        address _oracle,
-        address _resolver,
-        bytes32[] memory _currencyKeys,
-        uint[] memory _newRates
-    ) public ExchangeRates(_owner, _oracle, _resolver, _currencyKeys, _newRates) {}
+    constructor(address _owner, address _resolver) public ExchangeRates(_owner, _resolver) {}
 
     /* ========== SETTERS ========== */
 

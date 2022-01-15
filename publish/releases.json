@@ -421,6 +421,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 193,
+			"layer": "both",
+			"sources": ["SystemSettings", "SystemSettingsLib"]
+		},
+		{
 			"sip": 194,
 			"layer": "ovm",
 			"sources": ["Synthetix"],
@@ -431,6 +436,16 @@
 			"layer": "ovm",
 			"sources": ["CollateralEth"],
 			"released": "ovm"
+		},
+		{
+			"sip": 196,
+			"layer": "both",
+			"sources": ["ExchangeRates"]
+		},
+		{
+			"sip": 200,
+			"layer": "both",
+			"sources": ["FeePool"]
 		}
 	],
 	"releases": [
@@ -768,7 +783,7 @@
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Peacock (Optimism)",
@@ -778,7 +793,7 @@
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Alsephina",

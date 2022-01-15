@@ -18,6 +18,8 @@ const {
 	setStatus,
 	convertToAggregatorPrice,
 	updateRatesWithDefaults,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const {
@@ -58,8 +60,6 @@ contract('Exchanger (spec tests)', async accounts => {
 		sEURContract,
 		sBTCContract,
 		sETHContract,
-		oracle,
-		timestamp,
 		exchanger,
 		exchangeState,
 		exchangeFeeRate,
@@ -139,7 +139,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				const amountOfSrcExchanged = toUnit('10');
 
 				beforeEach(async () => {
-					await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
+					await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 					await sUSDContract.issue(owner, toUnit('100'));
 					await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
 				});
@@ -272,9 +272,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 					await fastForward(10);
 					// base rate of sETH is 100 from shared setup above
-					await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
-						from: oracle,
-					});
+					await updateRates([sETH], [toUnit('300')]);
 					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 				});
 				it('then the synth is suspended', async () => {
@@ -287,9 +285,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 					await fastForward(10);
 					// base rate of sETH is 100 from shared setup above
-					await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
-						from: oracle,
-					});
+					await updateRates([sETH], [toUnit('33')]);
 					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 				});
 				it('then the synth is suspended', async () => {
@@ -307,9 +303,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						beforeEach(async () => {
 							await fastForward(10);
 							// base rate of sETH is 100 from shared setup above
-							await exchangeRates.updateRates([sETH], [toUnit('300')], await currentTime(), {
-								from: oracle,
-							});
+							await updateRates([sETH], [toUnit('300')]);
 							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 						});
 						it('then the synth is not suspended', async () => {
@@ -322,9 +316,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						beforeEach(async () => {
 							await fastForward(10);
 							// base rate of sETH is 100 from shared setup above
-							await exchangeRates.updateRates([sETH], [toUnit('33')], await currentTime(), {
-								from: oracle,
-							});
+							await updateRates([sETH], [toUnit('33')]);
 							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 						});
 						it('then the synth is not suspended', async () => {
@@ -667,14 +659,7 @@ contract('Exchanger (spec tests)', async accounts => {
 			describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 				beforeEach(async () => {
 					// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 9000:1
-					await exchangeRates.updateRates(
-						[sEUR, sETH, sBTC],
-						['2', '100', '9000'].map(toUnit),
-						timestamp,
-						{
-							from: oracle,
-						}
-					);
+					await updateRates([sEUR, sETH, sBTC], ['2', '100', '9000'].map(toUnit));
 				});
 				describe('and the exchange fee rate is 1% for easier human consumption', () => {
 					beforeEach(async () => {
@@ -858,11 +843,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 											beforeEach(async () => {
 												await fastForward(5);
-												timestamp = await currentTime();
-
-												await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
-													from: oracle,
-												});
+												await updateRates([sEUR], ['4'].map(toUnit));
 											});
 											it('then settlement reclaimAmount shows a reclaim of half the entire balance of sEUR', async () => {
 												const expected = calculateExpectedSettlementAmount({
@@ -1084,12 +1065,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										describe('when the price halves for sUSD:sEUR to 1:1', () => {
 											beforeEach(async () => {
 												await fastForward(5);
-
-												timestamp = await currentTime();
-
-												await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
-													from: oracle,
-												});
+												await updateRates([sEUR], ['1'].map(toUnit));
 											});
 											it('then settlement rebateAmount shows a rebate of half the entire balance of sEUR', async () => {
 												const expected = calculateExpectedSettlementAmount({
@@ -1118,12 +1094,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												describe('and then the price increases for sUSD:sEUR to 2:1', () => {
 													beforeEach(async () => {
 														await fastForward(5);
-
-														timestamp = await currentTime();
-
-														await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
-															from: oracle,
-														});
+														await updateRates([sEUR], ['2'].map(toUnit));
 													});
 													describe('when settlement is invoked', () => {
 														describe('when another minute passes', () => {
@@ -1332,12 +1303,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											describe('when the price returns to sUSD:sEUR to 2:1', () => {
 												beforeEach(async () => {
 													await fastForward(12);
-
-													timestamp = await currentTime();
-
-													await exchangeRates.updateRates([sEUR], ['2'].map(toUnit), timestamp, {
-														from: oracle,
-													});
+													await updateRates([sEUR], ['2'].map(toUnit));
 												});
 												it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
 													const settlement = await exchanger.settlementOwing(account1, sEUR);
@@ -1351,11 +1317,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												describe('when another minute elapses and the sETH price changes', () => {
 													beforeEach(async () => {
 														await fastForward(60);
-														timestamp = await currentTime();
-
-														await exchangeRates.updateRates([sEUR], ['3'].map(toUnit), timestamp, {
-															from: oracle,
-														});
+														await updateRates([sEUR], ['3'].map(toUnit));
 													});
 													it('then settlement reclaimAmount still shows 0 reclaim and 0 refund as the timeout period ended', async () => {
 														const settlement = await exchanger.settlementOwing(account1, sEUR);
@@ -1411,11 +1373,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											describe('when the price doubles for sUSD:sEUR to 4:1', () => {
 												beforeEach(async () => {
 													await fastForward(5);
-													timestamp = await currentTime();
-
-													await exchangeRates.updateRates([sEUR], ['4'].map(toUnit), timestamp, {
-														from: oracle,
-													});
+													await updateRates([sEUR], ['4'].map(toUnit));
 												});
 												it('then settlement shows a rebate rebateAmount', async () => {
 													const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
@@ -1442,16 +1400,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												});
 												describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
 													beforeEach(async () => {
-														await fastForward(5);
-														timestamp = await currentTime();
-														await exchangeRates.updateRates(
-															[sBTC],
-															['20000'].map(toUnit),
-															timestamp,
-															{
-																from: oracle,
-															}
-														);
+														await updateRates([sBTC], ['20000'].map(toUnit));
 													});
 													it('then the reclaimAmount is whats left when subtracting the rebate', async () => {
 														const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
@@ -1506,16 +1455,8 @@ contract('Exchanger (spec tests)', async accounts => {
 															let expectedFromSecond;
 															beforeEach(async () => {
 																await fastForward(5);
-																timestamp = await currentTime();
 
-																await exchangeRates.updateRates(
-																	[sBTC],
-																	['10000'].map(toUnit),
-																	timestamp,
-																	{
-																		from: oracle,
-																	}
-																);
+																await updateRates([sBTC], ['10000'].map(toUnit));
 
 																expectedFromFirst = calculateExpectedSettlementAmount({
 																	amount: amountOfSrcExchanged,
@@ -1927,11 +1868,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 								describe('when that synth has a fresh rate', () => {
 									beforeEach(async () => {
-										const timestamp = await currentTime();
-
-										await exchangeRates.updateRates([sAUD], ['0.75'].map(toUnit), timestamp, {
-											from: oracle,
-										});
+										await updateRates([sAUD], ['0.75'].map(toUnit));
 									});
 									describe(`when the user ${type} into that synth`, () => {
 										beforeEach(async () => {
@@ -2754,14 +2691,7 @@ contract('Exchanger (spec tests)', async accounts => {
 			const updateRate = ({ target, rate }) => {
 				beforeEach(async () => {
 					await fastForward(10);
-					await exchangeRates.updateRates(
-						[target],
-						[toUnit(rate.toString())],
-						await currentTime(),
-						{
-							from: oracle,
-						}
-					);
+					await updateRates([target], [toUnit(rate.toString())]);
 				});
 			};
 
@@ -2846,13 +2776,10 @@ contract('Exchanger (spec tests)', async accounts => {
 								beforeEach(async () => {
 									// sETH over deviation and sEUR slight change
 									await fastForward(10);
-									await exchangeRates.updateRates(
+									await updateAggregatorRates(
+										exchangeRates,
 										[sETH, sEUR],
-										[toUnit(baseRate * 3).toString(), toUnit('1.9')],
-										await currentTime(),
-										{
-											from: oracle,
-										}
+										[toUnit(baseRate * 3).toString(), toUnit('1.9')]
 									);
 								});
 								describe('and another user exchanges sETH to sEUR', () => {
@@ -2875,13 +2802,10 @@ contract('Exchanger (spec tests)', async accounts => {
 								beforeEach(async () => {
 									// sEUR over deviation and sETH slight change
 									await fastForward(10);
-									await exchangeRates.updateRates(
+									await updateAggregatorRates(
+										exchangeRates,
 										[sETH, sEUR],
-										[toUnit(baseRate * 1.1).toString(), toUnit('10')],
-										await currentTime(),
-										{
-											from: oracle,
-										}
+										[toUnit(baseRate * 1.1).toString(), toUnit('10')]
 									);
 								});
 								describe('and another user exchanges sEUR to sETH', () => {
@@ -3073,21 +2997,12 @@ contract('Exchanger (spec tests)', async accounts => {
 								describe('when a recent price rate is set way outside of the threshold', () => {
 									beforeEach(async () => {
 										await fastForward(10);
-										await exchangeRates.updateRates([sETH], [toUnit('1000')], await currentTime(), {
-											from: oracle,
-										});
+										await updateRates([sETH], [toUnit('1000')]);
 									});
 									describe('and then put back to normal', () => {
 										beforeEach(async () => {
 											await fastForward(10);
-											await exchangeRates.updateRates(
-												[sETH],
-												[baseRate.toString()],
-												await currentTime(),
-												{
-													from: oracle,
-												}
-											);
+											await updateRates([sETH], [baseRate.toString()]);
 										});
 										assertSpike({
 											from: sUSD,
@@ -3500,9 +3415,14 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
+	async function updateRates(keys, rates) {
+		await updateAggregatorRates(exchangeRates, keys, rates);
+	}
+
 	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
+			const synths = ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
 
 			({
 				Exchanger: exchanger,
@@ -3524,7 +3444,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
-				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
+				synths: synths,
 				contracts: [
 					// L1 specific
 					'Synthetix',
@@ -3548,8 +3468,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				},
 			}));
 
-			// Send a price update to guarantee we're not stale.
-			oracle = account1;
+			await setupPriceAggregators(exchangeRates, owner, synths.map(toBytes32));
 
 			amountIssued = toUnit('1000');
 
@@ -3561,15 +3480,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			timestamp = await currentTime();
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
+			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
+			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
+			await setupPriceAggregators(exchangeRates, owner, keys);
+			await updateRates(keys, rates);
 
 			// set a 0.5% exchange fee rate (1/200)
 			exchangeFeeRate = toUnit('0.005');
@@ -3610,6 +3524,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	describe('With L2 configuration (MintableSynthetix, Exchanger, ExchangeRates)', () => {
 		before(async () => {
+			const synths = ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
 			({
 				Exchanger: exchanger,
 				Synthetix: synthetix,
@@ -3630,7 +3545,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
-				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
+				synths: synths,
 				contracts: [
 					// L2 specific
 					'MintableSynthetix',
@@ -3650,8 +3565,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				],
 			}));
 
-			// Send a price update to guarantee we're not stale.
-			oracle = account1;
+			await setupPriceAggregators(exchangeRates, owner, synths.map(toBytes32));
 
 			amountIssued = toUnit('1000');
 
@@ -3663,15 +3577,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			timestamp = await currentTime();
-			await exchangeRates.updateRates(
-				[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
-			);
+			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
+			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
+			await setupPriceAggregators(exchangeRates, owner, keys);
+			await updateRates(keys, rates);
 
 			// set a 0.5% exchange fee rate (1/200)
 			exchangeFeeRate = toUnit('0.005');
