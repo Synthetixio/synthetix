@@ -333,7 +333,7 @@ module.exports = {
 
 		const flexibleStorageTypes = [
 			['uint', 'getUIntValue', '0'],
-			['uints', 'getUIntValues', ['0', '0', '0']],
+			['uints', 'getUIntValues', ['0', '0', '0', '0']],
 			['int', 'getIntValue', '0'],
 			['address', 'getAddressValue', ZERO_ADDRESS],
 			['bool', 'getBoolValue', false],

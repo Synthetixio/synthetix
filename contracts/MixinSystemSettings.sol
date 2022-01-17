@@ -149,12 +149,11 @@ contract MixinSystemSettings is MixinResolver {
     /// @return threshold, weight decay, rounds, and max fee
     function getExchangeDynamicFeeConfig() internal view returns (DynamicFeeConfig memory) {
         bytes32[] memory keys = new bytes32[](4);
-        uint[] memory values = new uint[](4);
         keys[0] = SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD;
         keys[1] = SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY;
         keys[2] = SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS;
         keys[3] = SETTING_EXCHANGE_MAX_DYNAMIC_FEE;
-        values = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
+        uint[] memory values = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
         return DynamicFeeConfig({threshold: values[0], weightDecay: values[1], rounds: values[2], maxFee: values[3]});
     }
 
