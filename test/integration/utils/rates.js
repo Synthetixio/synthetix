@@ -112,7 +112,7 @@ async function _setMissingRates({ ctx }) {
 	for (const currencyKey of currencyKeys) {
 		const rate = await ctx.contracts.ExchangeRates.rateForCurrency(currencyKey);
 		if (rate.toString() === '0') {
-			addAggregatorAndSetRate({ ctx, currencyKey, rate: ethers.utils.parseEther('1') });
+			await addAggregatorAndSetRate({ ctx, currencyKey, rate: ethers.utils.parseEther('1') });
 		}
 	}
 }
