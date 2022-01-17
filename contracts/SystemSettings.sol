@@ -233,9 +233,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
-    function setIssuanceRatio(uint issuanceRatio) external onlyOwner {
-        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, issuanceRatio);
-        emit IssuanceRatioUpdated(issuanceRatio);
+    function setIssuanceRatio(uint ratio) external onlyOwner {
+        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, ratio);
+        emit IssuanceRatioUpdated(ratio);
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
@@ -262,8 +262,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setTargetThreshold(uint percent) external onlyOwner {
-        uint targetThreshold = flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, percent);
-        emit TargetThresholdUpdated(targetThreshold);
+        uint threshold = flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, percent);
+        emit TargetThresholdUpdated(threshold);
     }
 
     function setLiquidationDelay(uint time) external onlyOwner {

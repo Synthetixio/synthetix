@@ -77,7 +77,7 @@ contract('DynamicFee', accounts => {
 			threshold,
 			weightDecay
 		);
-		assert.bnClose(dynamicFee, toUnit(20.6442753020364).div(toBN(10000)), 1e9);
+		assert.bnClose(dynamicFee, toUnit(20.6442753020364).div(toBN(10000)), 1e4);
 	});
 
 	it('Fee is similar to dynamic-fee-calc.csv rounds 32-22, first one above threshold', async () => {
@@ -99,7 +99,7 @@ contract('DynamicFee', accounts => {
 			threshold,
 			weightDecay
 		);
-		assert.bnClose(dynamicFee, toUnit(7.99801523256557).div(toBN(10000)), 1e9);
+		assert.bnClose(dynamicFee, toUnit(7.99801523256557).div(toBN(10000)), 1e4);
 	});
 
 	it('Fee is similar to dynamic-fee-calc.csv rounds 72-63, 70% above threshold', async () => {
@@ -122,7 +122,7 @@ contract('DynamicFee', accounts => {
 			threshold,
 			weightDecay
 		);
-		assert.bnClose(dynamicFee, toUnit(183.663338097394).div(toBN(10000)), 1e9);
+		assert.bnClose(dynamicFee, toUnit(183.663338097394).div(toBN(10000)), 1e4);
 	});
 
 	it('Fee is similar to dynamic-fee-calc.csv rounds 67-58, 50% above threshold', async () => {
@@ -144,6 +144,6 @@ contract('DynamicFee', accounts => {
 			threshold,
 			weightDecay
 		);
-		assert.bnClose(dynamicFee, toUnit(45.0272321178039).div(toBN(10000)), 1e9);
+		assert.bnClose(dynamicFee, toUnit(45.0272321178039).div(toBN(10000)), 1e4);
 	});
 });
