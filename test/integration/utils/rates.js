@@ -1,20 +1,19 @@
 const ethers = require('ethers');
 const { setSystemSetting } = require('./settings');
-const {
-	toBytes32,
-	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
-} = require('../../..');
+const { toBytes32 } = require('../../..');
 const { createMockAggregatorFactory } = require('../../utils')();
 
 async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
-	// try to add the missing rates
-	await _setMissingRates({ ctx });
-	// check again
 	if (await _areRatesInvalid({ ctx })) {
-		await _printRatesInfo({ ctx });
-		throw new Error('Rates are still invalid after updating.');
+		// try to add the missing rates
+		await _setMissingRates({ ctx });
+		// check again
+		if (await _areRatesInvalid({ ctx })) {
+			await _printRatesInfo({ ctx });
+			throw new Error('Rates are still invalid after updating.');
+		}
 	}
 
 	if (await _isCacheInvalid({ ctx })) {
@@ -24,6 +23,28 @@ async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 			throw new Error('Cache is still invalid after updating it.');
 		}
 	}
+}
+
+/// this creates and adds a new aggregator (even if a previous one exists) and sets the latest rate in it
+async function addAggregatorAndSetRate({ ctx, currencyKey, rate }) {
+	const owner = ctx.users.owner;
+	const exchangeRates = ctx.contracts.ExchangeRates.connect(owner);
+
+	// factory for price aggregators contracts
+	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
+
+	// deploy an aggregator
+	const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
+
+	// set decimals
+	await (await aggregator.setDecimals(18)).wait();
+	// push the new price
+	// for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
+	const { timestamp } = await ctx.provider.getBlock();
+	await (await aggregator.setLatestAnswer(rate, timestamp)).wait();
+	// }
+	// set the aggregator in ExchangeRates
+	await (await exchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 }
 
 async function _isCacheInvalid({ ctx }) {
@@ -87,26 +108,12 @@ async function _setMissingRates({ ctx }) {
 		currencyKeys = await _getAvailableCurrencyKeys({ ctx });
 	}
 
-	const owner = ctx.users.owner;
-	const ExchangeRates = ctx.contracts.ExchangeRates.connect(owner);
-
-	// factory for price aggregators contracts
-	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
-
-	// got over all rates and add aggregators
+	// got over all rates and add aggregators if rate is missing
 	for (const currencyKey of currencyKeys) {
-		// deploy an aggregator
-		let aggregator = await MockAggregatorFactory.deploy();
-		aggregator = aggregator.connect(owner);
-		// set decimals
-		await (await aggregator.setDecimals(18)).wait();
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			const { timestamp } = await ctx.provider.getBlock();
-			// push the new price
-			await (await aggregator.setLatestAnswer(ethers.utils.parseEther('1'), timestamp)).wait();
+		const rate = await ctx.contracts.ExchangeRates.rateForCurrency(currencyKey);
+		if (rate.toString() === '0') {
+			addAggregatorAndSetRate({ ctx, currencyKey, rate: ethers.utils.parseEther('1') });
 		}
-		// set the aggregator in ExchangeRates
-		await (await ExchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 	}
 }
 
@@ -129,28 +136,9 @@ async function getRate({ ctx, symbol }) {
 	return ExchangeRates.rateForCurrency(toBytes32(symbol));
 }
 
-async function setRate({ ctx, symbol, rate }) {
-	const ExchangeRates = ctx.contracts.ExchangeRates.connect(ctx.users.owner);
-
-	// factory for price aggregators contracts
-	const MockAggregatorFactory = await createMockAggregatorFactory(ctx.users.owner);
-
-	// deploy an aggregator
-	let aggregator = await MockAggregatorFactory.deploy();
-	aggregator = aggregator.connect(ctx.users.owner);
-
-	const { timestamp } = await ctx.provider.getBlock();
-	// set decimals
-	await (await aggregator.setDecimals(18)).wait();
-	// push the new price
-	await (await aggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
-	// set the aggregator in ExchangeRates
-	await (await ExchangeRates.addAggregator(toBytes32(symbol), aggregator.address)).wait();
-}
-
 module.exports = {
 	increaseStalePeriodAndCheckRatesAndCache,
+	addAggregatorAndSetRate,
 	getRate,
-	setRate,
 	updateCache,
 };
