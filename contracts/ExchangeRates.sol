@@ -32,8 +32,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     // List of aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;
 
-    mapping(bytes32 => mapping(uint => RateAndUpdatedTime)) public cacheRates;
-
     // ========== CONSTRUCTOR ==========
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
@@ -450,13 +448,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // which are used in atomic swaps and fee reclamation
             return (SafeDecimalMath.unit(), 0);
         } else {
-            // read cache
-            RateAndUpdatedTime memory cachedEntry = cacheRates[currencyKey][roundId];
-            if (cachedEntry.rate != 0) {
-                return (cachedEntry.rate, cachedEntry.time);
-            }
-
-            // if no valid cache entry - read from aggregator
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
             if (aggregator != AggregatorV2V3Interface(0)) {
                 // this view from the aggregator is the most gas efficient but it can throw when there's no data,
