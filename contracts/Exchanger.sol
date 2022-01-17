@@ -777,12 +777,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param sourceCurrencyKey The source currency key
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        external
-        view
-        returns (uint exchangeFeeRate)
-    {
-        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
+        return _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
@@ -790,16 +786,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate
-    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint feeRate)
-    {
+    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
-        feeRate = baseRate.add(_dynamicFeeForExchange(sourceCurrencyKey, destinationCurrencyKey));
+        uint feeRate = baseRate.add(_dynamicFeeForExchange(sourceCurrencyKey, destinationCurrencyKey));
         // cap fee rate to 100% to prevent negative amounts
-        feeRate = feeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : feeRate;
+        return feeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : feeRate;
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
@@ -814,26 +806,22 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) internal view returns (uint feeRate) {
+    ) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
         uint dynamicFee =
             _dynamicFeeForExchangeAtRounds(sourceCurrencyKey, destinationCurrencyKey, roundIdForSrc, roundIdForDest);
-        feeRate = baseRate.add(dynamicFee);
+        uint feeRate = baseRate.add(dynamicFee);
         // cap fee rate to 100% to prevent negative amounts
-        feeRate = feeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : feeRate;
+        return feeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : feeRate;
     }
 
-    function _dynamicFeeForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint dynamicFee)
-    {
+    function _dynamicFeeForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        dynamicFee = _dynamicFeeForCurrency(destinationCurrencyKey, config);
+        uint dynamicFee = _dynamicFeeForCurrency(destinationCurrencyKey, config);
         dynamicFee = dynamicFee.add(_dynamicFeeForCurrency(sourceCurrencyKey, config));
         // cap to maxFee
-        dynamicFee = dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
+        return dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
     }
 
     function _dynamicFeeForExchangeAtRounds(
@@ -841,29 +829,25 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) internal view returns (uint dynamicFee) {
+    ) internal view returns (uint) {
         DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        dynamicFee = _dynamicFeeForCurrencytRound(destinationCurrencyKey, roundIdForDest, config);
+        uint dynamicFee = _dynamicFeeForCurrencytRound(destinationCurrencyKey, roundIdForDest, config);
         dynamicFee = dynamicFee.add(_dynamicFeeForCurrencytRound(sourceCurrencyKey, roundIdForSrc, config));
         // cap to maxFee
-        dynamicFee = dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
+        return dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
     }
 
     /// @notice Get dynamic dynamicFee for a given currency key (SIP-184)
     /// @param currencyKey The given currency key
     /// @param config dynamic fee calculation configuration params
     /// @return The dyanmic dynamicFee
-    function _dynamicFeeForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config)
-        internal
-        view
-        returns (uint dynamicFee)
-    {
+    function _dynamicFeeForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config) internal view returns (uint) {
         // No dynamic dynamicFee for sUSD
         if (currencyKey == sUSD) return 0;
         uint[] memory prices;
         uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        dynamicFee = _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
+        return _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
     }
 
     /// @notice Get dynamicFee for a given currency key (SIP-184)
@@ -875,12 +859,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 currencyKey,
         uint roundId,
         DynamicFeeConfig memory config
-    ) internal view returns (uint dynamicFee) {
+    ) internal view returns (uint) {
         // No dynamic dynamicFee for sUSD
         if (currencyKey == sUSD) return 0;
         uint[] memory prices;
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        dynamicFee = _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
+        return _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
     }
 
     /// @notice Calculate dynamic fee according to SIP-184
@@ -892,12 +876,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint[] memory prices,
         uint threshold,
         uint weightDecay
-    ) internal pure returns (uint dynamicFee) {
+    ) internal pure returns (uint) {
         uint size = prices.length;
         // short circuit if there is a single price
         if (size <= 1) {
-            return dynamicFee;
+            return 0;
         }
+
+        uint dynamicFee = 0; // start with 0
         // go backwards in price array
         for (uint i = size - 1; i > 0; i--) {
             // apply decay from previous round (will be 0 for first round)
@@ -907,6 +893,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // add to total fee
             dynamicFee = dynamicFee.add(deviation);
         }
+        return dynamicFee;
     }
 
     /// absolute price deviation ratio used by dynamic fee calculation
@@ -916,16 +903,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint price,
         uint previousPrice,
         uint threshold
-    ) public pure returns (uint deviationRatio) {
+    ) public pure returns (uint) {
         if (previousPrice == 0) {
             return 0; // don't divide by zero
         }
         // abs difference between prices
         uint absDelta = price > previousPrice ? price - previousPrice : previousPrice - price;
         // relative to previous price
-        deviationRatio = absDelta.divideDecimal(previousPrice);
+        uint deviationRatio = absDelta.divideDecimal(previousPrice);
         // only the positive difference from threshold
-        deviationRatio = deviationRatio > threshold ? deviationRatio - threshold : 0;
+        return deviationRatio > threshold ? deviationRatio - threshold : 0;
     }
 
     function getAmountsForExchange(
