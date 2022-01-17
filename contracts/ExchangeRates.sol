@@ -22,7 +22,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeDecimalMath for uint;
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
-    bytes32 internal constant SUSD = "sUSD";
+    //slither-disable-next-line naming-convention
+    bytes32 internal constant sUSD = "sUSD";
 
     // Decentralized oracle networks that feed into pricing aggregators
     mapping(bytes32 => AggregatorV2V3Interface) public aggregators;
@@ -250,7 +251,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
-        if (currencyKey == SUSD) {
+        if (currencyKey == sUSD) {
             return (rateAndTime.rate, false);
         }
         return (
@@ -276,7 +277,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // do one lookup of the rate & time to minimize gas
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
-            if (!anyRateInvalid && currencyKeys[i] != SUSD) {
+            if (!anyRateInvalid && currencyKeys[i] != sUSD) {
                 anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time);
             }
         }
@@ -385,7 +386,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
         // sUSD rate is 1.0
-        if (currencyKey == SUSD) {
+        if (currencyKey == sUSD) {
             return RateAndUpdatedTime({rate: uint216(SafeDecimalMath.unit()), time: 0});
         } else {
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
@@ -411,7 +412,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        if (currencyKey == SUSD) {
+        if (currencyKey == sUSD) {
             return 1; // consistent with ChainLink Oracle that start at round 1
         }
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
@@ -422,7 +423,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
         // short circuit sUSD
-        if (currencyKey == SUSD) {
+        if (currencyKey == sUSD) {
             // sUSD has no rounds, and 0 time is preferrable for "volatility" heuristics
             // which are used in atomic swaps and fee reclamation
             return (SafeDecimalMath.unit(), 0);
@@ -482,7 +483,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsStale(bytes32 currencyKey, uint _rateStalePeriod) internal view returns (bool) {
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == SUSD) return false;
+        if (currencyKey == sUSD) return false;
 
         return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
     }
@@ -493,7 +494,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint _rateStalePeriod
     ) internal view returns (bool) {
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == SUSD) return false;
+        if (currencyKey == sUSD) return false;
 
         (, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
         return _rateIsStaleWithTime(_rateStalePeriod, time);
@@ -505,7 +506,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
         // sUSD is a special case and is never invalid
-        if (currencyKey == SUSD) return false;
+        if (currencyKey == sUSD) return false;
         address aggregator = address(aggregators[currencyKey]);
         // when no aggregator or when the flags haven't been setup
         if (aggregator == address(0) || flags == FlagsInterface(0)) {
