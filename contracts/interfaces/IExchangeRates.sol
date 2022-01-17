@@ -25,14 +25,6 @@ interface IExchangeRates {
         bytes32 destinationCurrencyKey
     ) external view returns (uint value);
 
-    function effectiveValueAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) external view returns (uint value);
-
     function effectiveValueAndRates(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
