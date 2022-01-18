@@ -30,7 +30,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
