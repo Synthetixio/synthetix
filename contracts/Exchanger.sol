@@ -831,8 +831,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint roundIdForDest
     ) internal view returns (uint) {
         DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        uint dynamicFee = _dynamicFeeForCurrencytRound(destinationCurrencyKey, roundIdForDest, config);
-        dynamicFee = dynamicFee.add(_dynamicFeeForCurrencytRound(sourceCurrencyKey, roundIdForSrc, config));
+        uint dynamicFee = _dynamicFeeForCurrencyRound(destinationCurrencyKey, roundIdForDest, config);
+        dynamicFee = dynamicFee.add(_dynamicFeeForCurrencyRound(sourceCurrencyKey, roundIdForSrc, config));
         // cap to maxFee
         return dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
     }
@@ -855,7 +855,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param roundId The round id
     /// @param config dynamic fee calculation configuration params
     /// @return The dyanmic dynamicFee
-    function _dynamicFeeForCurrencytRound(
+    function _dynamicFeeForCurrencyRound(
         bytes32 currencyKey,
         uint roundId,
         DynamicFeeConfig memory config
@@ -877,15 +877,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint threshold,
         uint weightDecay
     ) internal pure returns (uint) {
-        uint size = prices.length;
-        // short circuit if there is a single price
-        if (size <= 1) {
+        // don't underflow
+        if (prices.length == 0) {
             return 0;
         }
 
         uint dynamicFee = 0; // start with 0
         // go backwards in price array
-        for (uint i = size - 1; i > 0; i--) {
+        for (uint i = prices.length - 1; i > 0; i--) {
             // apply decay from previous round (will be 0 for first round)
             dynamicFee = dynamicFee.multiplyDecimal(weightDecay);
             // calculate price deviation

@@ -375,7 +375,7 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'exchangeDynamicFeeThreshold',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(exchangeDynamicFeeThreshold),
 		write: 'setExchangeDynamicFeeThreshold',
 		writeArg: exchangeDynamicFeeThreshold,
 		comment: 'Set exchange dynamic fee threshold (SIP-184)',
@@ -388,7 +388,7 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'exchangeDynamicFeeWeightDecay',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(exchangeDynamicFeeWeightDecay),
 		write: 'setExchangeDynamicFeeWeightDecay',
 		writeArg: exchangeDynamicFeeWeightDecay,
 		comment: 'Set exchange dynamic fee weight decay (SIP-184)',
@@ -399,7 +399,7 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'exchangeDynamicFeeRounds',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(exchangeDynamicFeeRounds),
 		write: 'setExchangeDynamicFeeRounds',
 		writeArg: exchangeDynamicFeeRounds,
 		comment: 'Set exchange dynamic fee rounds (SIP-184)',
@@ -410,7 +410,7 @@ module.exports = async ({
 		target: SystemSettings,
 		read: 'exchangeMaxDynamicFee',
 		readTarget: previousSystemSettings,
-		expected: input => input !== '0', // only change if zero
+		expected: allowZeroOrUpdateIfNonZero(exchangeMaxDynamicFee),
 		write: 'setExchangeMaxDynamicFee',
 		writeArg: exchangeMaxDynamicFee,
 		comment: 'Set exchange max dynamic fee (SIP-184)',

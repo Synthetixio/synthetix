@@ -1,4 +1,4 @@
-pragma solidity ^0.5.16;
+pragma solidity >=0.4.24;
 
 // https://docs.synthetix.io/contracts/source/interfaces/iflexiblestorage
 interface IFlexibleStorage {
