@@ -22,7 +22,6 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 } = require('../..');
 
 contract('Synth', async accounts => {
@@ -82,10 +81,8 @@ contract('Synth', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			// Send a price update to guarantee we're not stale.
-			await updateAggregatorRates(exchangeRates, [SNX], ['0.1'].map(toUnit));
-		}
+		// Send a price update to guarantee we're not stale.
+		await updateAggregatorRates(exchangeRates, [SNX], ['0.1'].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
@@ -736,10 +733,8 @@ contract('Synth', async accounts => {
 					contracts: [{ contract: 'Synth', properties: { currencyKey: sEUR } }],
 				}));
 
-				for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-					// Send a price update to guarantee we're not stale.
-					await updateAggregatorRates(exchangeRates, [sEUR], ['1'].map(toUnit));
-				}
+				// Send a price update to guarantee we're not stale.
+				await updateAggregatorRates(exchangeRates, [sEUR], ['1'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 			});
 

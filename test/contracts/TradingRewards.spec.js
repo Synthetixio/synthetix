@@ -10,10 +10,7 @@ const {
 	setupPriceAggregators,
 	updateAggregatorRates,
 } = require('./helpers');
-const {
-	toBytes32,
-	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 /*
  * This tests the TradingRewards contract's integration
@@ -112,9 +109,7 @@ contract('TradingRewards', accounts => {
 		});
 
 		before('set exchange rates', async () => {
-			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				await updateAggregatorRates(exchangeRates, [sETH, sBTC, SNX], Object.values(rates));
-			}
+			await updateAggregatorRates(exchangeRates, [sETH, sBTC, SNX], Object.values(rates));
 
 			await setExchangeFeeRateForSynths({
 				owner,

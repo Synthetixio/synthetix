@@ -21,7 +21,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: { DEBT_SNAPSHOT_STALE_TIME, EXCHANGE_DYNAMIC_FEE_ROUNDS },
+	defaults: { DEBT_SNAPSHOT_STALE_TIME },
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -287,13 +287,11 @@ contract('DebtCache', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			await updateAggregatorRates(
-				exchangeRates,
-				[sAUD, sEUR, SNX, sETH, ETH, iETH],
-				['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
-			);
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			[sAUD, sEUR, SNX, sETH, ETH, iETH],
+			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
+		);
 
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({

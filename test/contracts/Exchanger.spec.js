@@ -2157,9 +2157,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						aggregator = await MockAggregator.new({ from: owner });
 						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
 						// set a 0 rate to prevent invalid rate from causing a revert on exchange
-						for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-							await aggregator.setLatestAnswer('0', await currentTime());
-						}
+						await aggregator.setLatestAnswer('0', await currentTime());
 					});
 
 					describe('when exchanging into that synth', () => {
@@ -3216,12 +3214,10 @@ contract('Exchanger (spec tests)', async accounts => {
 
 								describe('and the aggregator has a rate (so the exchange succeeds)', () => {
 									beforeEach(async () => {
-										for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-											await aggregator.setLatestAnswer(
-												convertToAggregatorPrice(100),
-												await currentTime()
-											);
-										}
+										await aggregator.setLatestAnswer(
+											convertToAggregatorPrice(100),
+											await currentTime()
+										);
 									});
 									describe('when a user exchanges out of the aggregated rate into sUSD', () => {
 										beforeEach(async () => {
@@ -3501,9 +3497,7 @@ contract('Exchanger (spec tests)', async accounts => {
 			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
-			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				await updateRates(keys, rates);
-			}
+			await updateRates(keys, rates);
 
 			exchangeFeeRate = toUnit('0.005');
 			await setExchangeFeeRateForSynths({
@@ -3599,9 +3593,7 @@ contract('Exchanger (spec tests)', async accounts => {
 			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
-			for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-				await updateRates(keys, rates);
-			}
+			await updateRates(keys, rates);
 
 			// set a 0.5% exchange fee rate (1/200)
 			exchangeFeeRate = toUnit('0.005');

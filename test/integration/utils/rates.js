@@ -39,10 +39,8 @@ async function addAggregatorAndSetRate({ ctx, currencyKey, rate }) {
 	// set decimals
 	await (await aggregator.setDecimals(18)).wait();
 	// push the new price
-	// for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
 	const { timestamp } = await ctx.provider.getBlock();
 	await (await aggregator.setLatestAnswer(rate, timestamp)).wait();
-	// }
 	// set the aggregator in ExchangeRates
 	await (await exchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 }

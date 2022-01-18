@@ -8,7 +8,6 @@ const { assert } = require('./common');
 const { currentTime, toUnit } = require('../utils')();
 const {
 	toBytes32,
-	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
 } = require('../..');
 
@@ -140,9 +139,7 @@ module.exports = {
 		// set up any missing aggregators
 		await setupMissingPriceAggregators(exchangeRates, owner, keys);
 
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			await updateAggregatorRates(exchangeRates, keys, rates);
-		}
+		await updateAggregatorRates(exchangeRates, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 

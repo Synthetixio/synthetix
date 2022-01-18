@@ -15,10 +15,7 @@ const {
 	updateAggregatorRates,
 } = require('./helpers');
 
-const {
-	toBytes32,
-	defaults: { EXCHANGE_DYNAMIC_FEE_ROUNDS },
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
@@ -64,9 +61,7 @@ contract('CollateralShort', async accounts => {
 	const updateRatesWithDefaults = async () => {
 		const sBTC = toBytes32('sBTC');
 
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
-		}
+		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const setupShort = async () => {

@@ -32,7 +32,7 @@ const {
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME, EXCHANGE_DYNAMIC_FEE_ROUNDS },
+	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME },
 } = require('../..');
 
 contract('Issuer (via Synthetix)', async accounts => {
@@ -119,13 +119,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-			await updateAggregatorRates(
-				exchangeRates,
-				[sAUD, sEUR, SNX, sETH],
-				['0.5', '1.25', '0.1', '200'].map(toUnit)
-			);
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			[sAUD, sEUR, SNX, sETH],
+			['0.5', '1.25', '0.1', '200'].map(toUnit)
+		);
 
 		// set a 0.3% default exchange fee rate
 		const exchangeFeeRate = toUnit('0.003');
@@ -719,9 +717,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 						describe('when the synth has a rate', () => {
 							beforeEach(async () => {
-								for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS; i++) {
-									await updateAggregatorRates(exchangeRates, [currencyKey], [toUnit('2')]);
-								}
+								await updateAggregatorRates(exchangeRates, [currencyKey], [toUnit('2')]);
 							});
 
 							describe('when another user exchanges into the synth', () => {
