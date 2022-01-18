@@ -393,8 +393,9 @@
 			},
 			"Synthetix": {
 				"address": "0xff4287311138ad3BD051F84524B2eA3A682944a5",
-				"status": "current",
-				"keccak256": "0xbbe79669c2586e5f0a7f35a0577d21b881e0e083b9fc297fa16d6c1de064c749"
+				"status": "replaced",
+				"keccak256": "0xbbe79669c2586e5f0a7f35a0577d21b881e0e083b9fc297fa16d6c1de064c749",
+				"replaced_in": "v2.56.1"
 			},
 			"DebtCache": {
 				"address": "0xe1f47188168837485527A5B44E7FA7ca55F29C65",
@@ -502,8 +503,9 @@
 			},
 			"FeePool": {
 				"address": "0xc08db5823a7c1DC8fe9894F51A05799F1262bAC0",
-				"status": "current",
-				"keccak256": "0x8a65c401cfedc5e54b3544097f5873fff54bed8a0facdd2db530c816e53a93e0"
+				"status": "replaced",
+				"keccak256": "0x8a65c401cfedc5e54b3544097f5873fff54bed8a0facdd2db530c816e53a93e0",
+				"replaced_in": "v2.55.0"
 			},
 			"DebtCache": {
 				"address": "0x01f8C5e421172B67cc14B7f5F369cfb10de0acD4",
@@ -538,8 +540,9 @@
 			},
 			"WrapperFactory": {
 				"address": "0x620C8800Ec73aC705151EC8327913c2910cC46B1",
-				"status": "current",
-				"keccak256": "0x0a16f80beda8876e3b17af0e6841cac26e959ab3806b581aeea027c2bd9cf8d7"
+				"status": "replaced",
+				"keccak256": "0x0a16f80beda8876e3b17af0e6841cac26e959ab3806b581aeea027c2bd9cf8d7",
+				"replaced_in": "v2.55.0"
 			}
 		}
 	},
@@ -565,6 +568,46 @@
 				"address": "0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
 				"status": "current",
 				"keccak256": "0xcbf35931a8a63393fb545169c8cb2be9b1bdee327053ee54e0482f84caa52479"
+			}
+		}
+	},
+	"v2.55.0": {
+		"tag": "v2.55.0",
+		"fulltag": "v2.55.0",
+		"release": "Atria",
+		"network": "mainnet",
+		"date": "2021-12-03T00:55:48-05:00",
+		"commit": "36df74f7de3157ed962cca4a285e7e3c78134b7a",
+		"contracts": {
+			"FeePool": {
+				"address": "0xbc12131c93Da011B2844FA76c373A8cf5b0db4B5",
+				"status": "current",
+				"keccak256": "0xb89f33e39e3b4c3f010dd3f4ee922c00778b73845226e3edd97715ead2888cd5"
+			},
+			"WrapperFactory": {
+				"address": "0x27be2EFAd45DeBd732C1EBf5C9F7b49D498D4a93",
+				"status": "current",
+				"keccak256": "0x582cac91f50cfefc154d67097081d0dd0d4877333df51c3cfe19485f80ef7e74"
+			}
+		}
+	},
+	"v2.56.1": {
+		"tag": "v2.56.1",
+		"fulltag": "v2.56.1",
+		"release": "Alhena",
+		"network": "mainnet",
+		"date": "2021-12-15T18:16:59-05:00",
+		"commit": "324105690195d2c0925ffbfffe5d0bba8e98fad7",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x20eBfbdD14c9D8093E9AC33e736Ac61bbaC90092",
+				"status": "current",
+				"keccak256": "0x87c92d55af4f4b01932ec25770439770836ed60b9652a3f4ab1ec6e0d82d302a"
+			},
+			"CollateralEth": {
+				"address": "0x308AD16ef90fe7caCb85B784A603CB6E71b1A41a",
+				"status": "current",
+				"keccak256": "0xd83c3667bcacd4d33cf0fc649cee03d85e7d3914abb7ce6c9898e6ee1d66da81"
 			}
 		}
 	}

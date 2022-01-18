@@ -1,7 +1,7 @@
 const { fastForward } = require('../../test-utils/rpc');
 const { wait } = require('../../test-utils/wait');
 const { getSystemSetting } = require('./settings');
-const { updateExchangeRatesIfNeeded } = require('./rates');
+const { increaseStalePeriodAndCheckRatesAndCache } = require('./rates');
 
 async function skipWaitingPeriod({ ctx }) {
 	await _dualFastForward({
@@ -24,6 +24,13 @@ async function skipMinimumStakeTime({ ctx }) {
 	});
 }
 
+async function skipLiquidationDelay({ ctx }) {
+	await _dualFastForward({
+		ctx,
+		seconds: await getSystemSetting({ ctx, settingName: 'liquidationDelay' }),
+	});
+}
+
 /*
  * Fast forwards the L1 chain and waits for the
  * L2 chain to sync to the new timestamp.
@@ -35,11 +42,12 @@ async function _dualFastForward({ ctx, seconds }) {
 
 	await fastForward({ seconds: parseInt(seconds), provider: l1Ctx.provider });
 	await wait({ seconds: 6 });
-	await updateExchangeRatesIfNeeded({ ctx });
+	await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 }
 
 module.exports = {
 	skipWaitingPeriod,
 	skipFeePeriod,
 	skipMinimumStakeTime,
+	skipLiquidationDelay,
 };

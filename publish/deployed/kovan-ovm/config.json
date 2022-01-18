@@ -181,5 +181,8 @@
 	},
 	"OwnerRelayOnOptimism": {
 		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
 	}
 }

@@ -380,10 +380,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _notImplemented();
     }
 
-    function liquidateDelinquentAccount(address, uint) external returns (bool) {
-        _notImplemented();
-    }
-
     function mintSecondary(address, uint) external {
         _notImplemented();
     }
@@ -439,6 +435,25 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 snxRedeemed,
+        uint256 amountLiquidated,
+        address liquidator
+    ) internal {
+        proxy._emit(
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,

@@ -100,12 +100,12 @@ module.exports = {
 		};
 		const entries = sizeOfContracts({ contractToObjectMap });
 		const tableData = [
-			['Contract', 'Size', 'Percent of Limit', 'Increase'].map(x => yellow(x)),
+			['Contract', 'Length', 'KB', 'Percent of Limit', 'Increase'].map(x => yellow(x)),
 		].concat(
-			entries.reverse().map(({ file, length, pcent }) => {
+			entries.reverse().map(({ file, length, bytes, pcent }) => {
 				const prevSizeIfAny = previousSizes.find(candidate => candidate.file === file);
 
-				return [file, length, pcent, sizeChange({ prevSizeIfAny, length })].map(content =>
+				return [file, length, bytes, pcent, sizeChange({ prevSizeIfAny, length })].map(content =>
 					pcentToColorFnc({ pcent, content })
 				);
 			})

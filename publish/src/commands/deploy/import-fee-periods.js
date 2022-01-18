@@ -154,7 +154,6 @@ module.exports = async ({
 		const importArgs = [
 			index,
 			feePeriod.feePeriodId,
-			feePeriod.startingDebtIndex,
 			feePeriod.startTime,
 			feePeriod.feesToDistribute,
 			feePeriod.feesClaimed,
@@ -179,7 +178,6 @@ module.exports = async ({
 					`FeePool newFeePool = FeePool(${FeePool.address})`,
 					`(
 						uint64 feePeriodId_${index},
-						uint64 startingDebtIndex_${index},
 						uint64 startTime_${index},
 						uint feesToDistribute_${index},
 						uint feesClaimed_${index},
@@ -189,7 +187,6 @@ module.exports = async ({
 					`newFeePool.importFeePeriod(
 						${index},
 						feePeriodId_${index},
-						startingDebtIndex_${index},
 						startTime_${index},
 						feesToDistribute_${index},
 						feesClaimed_${index},

@@ -3,13 +3,15 @@ require('dotenv').config();
 
 const path = require('path');
 
+/// for some weird reason the order of these imports is important:
+/// ./hardhat needs to be imported after hardhat-interact (error otherwise)
+///  and hardhat-gas-reporter needs to be imported after ./hardhat (otherwise no gas reports)
+require('hardhat-interact');
+require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
-require('hardhat-interact');
-
-require('./hardhat');
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
@@ -57,7 +59,7 @@ module.exports = {
 			url: 'http://localhost:8545',
 		},
 		mainnet: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
 			chainId: 1,
 		},
 		'mainnet-ovm': {
@@ -83,5 +85,6 @@ module.exports = {
 	},
 	mocha: {
 		timeout: 120e3, // 120s
+		retries: 3,
 	},
 };
