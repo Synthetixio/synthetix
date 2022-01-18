@@ -258,10 +258,6 @@ describe('publish scripts', () => {
 				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
 				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
 				SystemSettings = getContract({ target: 'SystemSettings' });
-				// Disable exchange dynamic fee so that we can neglect it
-				// Using 1 so that it wouldn't get override back to default by redeployment
-				const tx = await SystemSettings.setExchangeDynamicFeeRounds('1', overrides);
-				await tx.wait();
 
 				Liquidations = getContract({ target: 'Liquidations' });
 
@@ -334,7 +330,6 @@ describe('publish scripts', () => {
 					let newRateForsUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
-					let newExchangeDynamicFeeRounds;
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
@@ -351,7 +346,6 @@ describe('publish scripts', () => {
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
-						newExchangeDynamicFeeRounds = '1';
 
 						let tx;
 
@@ -469,10 +463,6 @@ describe('publish scripts', () => {
 								newAtomicTwapWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
-							assert.strictEqual(
-								(await SystemSettings.exchangeDynamicFeeRounds()).toString(),
-								newExchangeDynamicFeeRounds
-							);
 							assert.strictEqual(
 								(
 									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
