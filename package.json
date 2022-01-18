@@ -15,7 +15,6 @@
 		"build:ci": "node .circleci/pack.js",
 		"slither": "python3 -m venv .venv && .venv/bin/python -m pip install slither-analyzer && .venv/bin/python -m slither .",
 		"pack": "webpack --mode production",
-		"prepublishOnly": "npm run describe && npm run pack",
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node",
 		"fork:mainnet": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
 		"test": "hardhat test",
