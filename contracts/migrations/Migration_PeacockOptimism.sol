@@ -6,7 +6,6 @@ import "../AddressResolver.sol";
 import "../Proxy.sol";
 import "../FeePoolEternalStorage.sol";
 import "../FeePoolState.sol";
-import "../RewardEscrow.sol";
 import "../FeePool.sol";
 
 interface ISynthetixNamedContract {
@@ -16,43 +15,40 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_PeacockOptimism is BaseMigration {
-    // https://kovan-explorer.optimism.io/address/0x73570075092502472E4b61A7058Df1A4a1DB12f2;
-    address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
+    // https://explorer.optimism.io/address/0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
+    address public constant OWNER = 0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://kovan-explorer.optimism.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6
-    AddressResolver public constant addressresolver_i = AddressResolver(0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6);
-    // https://kovan-explorer.optimism.io/address/0xd8c8887A629F98C56686Be6aEEDAae7f8f75D599
-    Proxy public constant proxyfeepool_i = Proxy(0xd8c8887A629F98C56686Be6aEEDAae7f8f75D599);
-    // https://kovan-explorer.optimism.io/address/0x0A1d3bde7751e92971891FB034AcDE4C271de408
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x0A1d3bde7751e92971891FB034AcDE4C271de408);
-    // https://kovan-explorer.optimism.io/address/0x2e542fA43A19F3F07230dD125f9f81411141362F
-    FeePoolState public constant feepoolstate_i = FeePoolState(0x2e542fA43A19F3F07230dD125f9f81411141362F);
-    // https://kovan-explorer.optimism.io/address/0x9952e42fF92149f48b3b7dee3f921A6DD106F79F
-    RewardEscrow public constant rewardescrow_i = RewardEscrow(0x9952e42fF92149f48b3b7dee3f921A6DD106F79F);
-    // https://kovan-explorer.optimism.io/address/0x129fd2f3a799bD156e8c00599760AfC2f0f953dA
-    FeePool public constant feepool_i = FeePool(0x129fd2f3a799bD156e8c00599760AfC2f0f953dA);
+    // https://explorer.optimism.io/address/0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C
+    AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
+    // https://explorer.optimism.io/address/0x4a16A42407AA491564643E1dfc1fd50af29794eF
+    Proxy public constant proxyfeepool_i = Proxy(0x4a16A42407AA491564643E1dfc1fd50af29794eF);
+    // https://explorer.optimism.io/address/0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8
+    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
+    // https://explorer.optimism.io/address/0x6e0d26cffc3a63d763F1546f749bf62ebC7d72D8
+    FeePoolState public constant feepoolstate_i = FeePoolState(0x6e0d26cffc3a63d763F1546f749bf62ebC7d72D8);
+    // https://explorer.optimism.io/address/0xFDf3Be612c65464AEB4859047350a6220F304F52
+    FeePool public constant feepool_i = FeePool(0xFDf3Be612c65464AEB4859047350a6220F304F52);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://kovan-explorer.optimism.io/address/0x129fd2f3a799bD156e8c00599760AfC2f0f953dA
-        address public constant new_FeePool_contract = 0x129fd2f3a799bD156e8c00599760AfC2f0f953dA;
+    // https://explorer.optimism.io/address/0xFDf3Be612c65464AEB4859047350a6220F304F52
+        address public constant new_FeePool_contract = 0xFDf3Be612c65464AEB4859047350a6220F304F52;
 
     constructor() public BaseMigration(OWNER) {}
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
-        contracts = new address[](6);
+        contracts = new address[](5);
         contracts[0]= address(addressresolver_i);
         contracts[1]= address(proxyfeepool_i);
         contracts[2]= address(feepooleternalstorage_i);
         contracts[3]= address(feepoolstate_i);
-        contracts[4]= address(rewardescrow_i);
-        contracts[5]= address(feepool_i);
+        contracts[4]= address(feepool_i);
     }
 
     function migrate(address currentOwner) external onlyDeployer {
@@ -74,8 +70,6 @@ contract Migration_PeacockOptimism is BaseMigration {
         feepooleternalstorage_i.setAssociatedContract(new_FeePool_contract);
         // Ensure the FeePool contract can write to its State;
         feepoolstate_i.setFeePool(IFeePool(new_FeePool_contract));
-        // Ensure the legacy RewardEscrow contract is connected to the FeePool contract;
-        rewardescrow_i.setFeePool(IFeePool(new_FeePool_contract));
         // Import fee period from existing fee pool at index 0;
         importFeePeriod_0();
         // Import fee period from existing fee pool at index 1;
@@ -110,29 +104,27 @@ contract Migration_PeacockOptimism is BaseMigration {
 
     
     function addressresolver_rebuildCaches_1() internal {
-        MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](13);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xB613d148E47525478bD8A91eF7Cf2F7F63d81858);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x15e7Aa4Cd2C74750b5DCaC9B8B21B9189552BBaD);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x42d9ac3ebebb9479f24360847350b4F7EADECE50);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0xb7469A575b7931532F09AEe2882835A0249064a0);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0xD32c1443Dde2d248cE1bE42BacBb65Db0A4aAF10);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x6E6e2e9b7769CbA76aFC1e6CAd795CD3Ce0772a1);
-        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x66C203BcF339460698c48a2B589eBD91de4984E7);
-        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0xE73EB48B9E725E563775fF38cb67Ae09bF34c791);
-        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x319D190584248280e3084A4692C6472A8dA5CA26);
-        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x1f99f5CbFC3b5Fd804dCc7F7780148F06423AC70);
-        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0xc7960401a5Ca5A201d41Cf6532C7d2803f8D5Ce4);
-        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0xD170549da4115c39EC42D6101eAAE5604F26150d);
-        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(new_FeePool_contract);
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](11);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x47eE58801C1AC44e54FF2651aE50525c5cfc66d0);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0xFe06fbe87E9f705B5D337D82dF8Fd812774974F9);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xA2412e0654CdD40F5677Aaad1a0c572e75dF246C);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x27be2EFAd45DeBd732C1EBf5C9F7b49D498D4a93);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x78aAA3fb165deCAA729DFE3cf0E97Ab6FCF484da);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xBD2657CF89F930F27eE1854EF4B389773DF43b29);
+        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x8Ce809a955DB85b41e7A378D7659e348e0C6AdD2);
+        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0xF33e7B48538C9D0480a48f3b5eEf79026e2a28f6);
+        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x308AD16ef90fe7caCb85B784A603CB6E71b1A41a);
+        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0xEbCe9728E2fDdC26C9f4B00df5180BdC5e184953);
+        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(new_FeePool_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
     
     function importFeePeriod_0() internal {
-        // https://kovan-explorer.optimism.io/address/0x2F737bf6a32bf3AcBef4d5148DA507569204Fb61;
-        FeePool existingFeePool = FeePool(0x2F737bf6a32bf3AcBef4d5148DA507569204Fb61);
-        // https://kovan-explorer.optimism.io/address/0x129fd2f3a799bD156e8c00599760AfC2f0f953dA;
-        FeePool newFeePool = FeePool(0x129fd2f3a799bD156e8c00599760AfC2f0f953dA);
+        // https://explorer.optimism.io/address/0xbc12131c93Da011B2844FA76c373A8cf5b0db4B5;
+        FeePool existingFeePool = FeePool(0xbc12131c93Da011B2844FA76c373A8cf5b0db4B5);
+        // https://explorer.optimism.io/address/0xFDf3Be612c65464AEB4859047350a6220F304F52;
+        FeePool newFeePool = FeePool(0xFDf3Be612c65464AEB4859047350a6220F304F52);
         (
                         uint64 feePeriodId_0,
                         uint64 startingDebtIndex_0,
@@ -156,10 +148,10 @@ contract Migration_PeacockOptimism is BaseMigration {
 
     
     function importFeePeriod_1() internal {
-        // https://kovan-explorer.optimism.io/address/0x2F737bf6a32bf3AcBef4d5148DA507569204Fb61;
-        FeePool existingFeePool = FeePool(0x2F737bf6a32bf3AcBef4d5148DA507569204Fb61);
-        // https://kovan-explorer.optimism.io/address/0x129fd2f3a799bD156e8c00599760AfC2f0f953dA;
-        FeePool newFeePool = FeePool(0x129fd2f3a799bD156e8c00599760AfC2f0f953dA);
+        // https://explorer.optimism.io/address/0xbc12131c93Da011B2844FA76c373A8cf5b0db4B5;
+        FeePool existingFeePool = FeePool(0xbc12131c93Da011B2844FA76c373A8cf5b0db4B5);
+        // https://explorer.optimism.io/address/0xFDf3Be612c65464AEB4859047350a6220F304F52;
+        FeePool newFeePool = FeePool(0xFDf3Be612c65464AEB4859047350a6220F304F52);
         (
                         uint64 feePeriodId_1,
                         uint64 startingDebtIndex_1,
