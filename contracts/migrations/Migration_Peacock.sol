@@ -16,32 +16,32 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_Peacock is BaseMigration {
-    // https://kovan.etherscan.io/address/0x73570075092502472E4b61A7058Df1A4a1DB12f2;
-    address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
+    // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
+    address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://kovan.etherscan.io/address/0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6
-    AddressResolver public constant addressresolver_i = AddressResolver(0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6);
-    // https://kovan.etherscan.io/address/0xc43b833F93C3896472dED3EfF73311f571e38742
-    Proxy public constant proxyfeepool_i = Proxy(0xc43b833F93C3896472dED3EfF73311f571e38742);
-    // https://kovan.etherscan.io/address/0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D);
-    // https://kovan.etherscan.io/address/0x78b70223d9Fa1a0abE6cD967472Fa04fEf3C7586
-    FeePoolState public constant feepoolstate_i = FeePoolState(0x78b70223d9Fa1a0abE6cD967472Fa04fEf3C7586);
-    // https://kovan.etherscan.io/address/0x8c6680412e914932A9abC02B6c7cbf690e583aFA
-    RewardEscrow public constant rewardescrow_i = RewardEscrow(0x8c6680412e914932A9abC02B6c7cbf690e583aFA);
-    // https://kovan.etherscan.io/address/0x288cA161F9382d54dD27803AbF45C78Da95D19b0
-    FeePool public constant feepool_i = FeePool(0x288cA161F9382d54dD27803AbF45C78Da95D19b0);
+    // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
+    AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
+    // https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309
+    Proxy public constant proxyfeepool_i = Proxy(0xb440DD674e1243644791a4AdfE3A2AbB0A92d309);
+    // https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB
+    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
+    // https://etherscan.io/address/0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02
+    FeePoolState public constant feepoolstate_i = FeePoolState(0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02);
+    // https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F
+    RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
+    // https://etherscan.io/address/0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd
+    FeePool public constant feepool_i = FeePool(0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://kovan.etherscan.io/address/0x288cA161F9382d54dD27803AbF45C78Da95D19b0
-        address public constant new_FeePool_contract = 0x288cA161F9382d54dD27803AbF45C78Da95D19b0;
+    // https://etherscan.io/address/0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd
+        address public constant new_FeePool_contract = 0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -68,6 +68,8 @@ contract Migration_Peacock is BaseMigration {
         addressresolver_importAddresses_0();
         // Rebuild the resolver caches in all MixinResolver contracts - batch 1;
         addressresolver_rebuildCaches_1();
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
+        addressresolver_rebuildCaches_2();
         // Ensure the ProxyFeePool contract has the correct FeePool target set;
         proxyfeepool_i.setTarget(Proxyable(new_FeePool_contract));
         // Ensure the FeePool contract can write to its EternalStorage;
@@ -111,35 +113,45 @@ contract Migration_Peacock is BaseMigration {
     
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x64ac15AB583fFfA6a7401B83E3aA5cf4Ad1aA92A);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x52DCF4f0019E16455621De5f792C5e7BE4cdAA81);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x2Ef87CE145476A895ef2D442d826aED1CFaf5627);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x6B4D3e213e10d9238c1a1A87E493687cc2eb1DD0);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0xB98c6031344EB6007e94A8eDbc0ee28C13c66290);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x26b814c9fA4C0512D84373f80d4B92408CD13960);
-        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x880477aE972Ca606cC7D47496E077514e978231B);
-        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0x0D9D97E38d19885441f8be74fE88C3294300C866);
-        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x16A5ED828fD7F03B0c3F4E261Ea519112c4fa2f4);
-        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x376684744fb828D67B1659f6D3D754938dc1Ec4b);
-        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x67FbB70d887e8E493611D273E94aD12fE7a7Da4e);
-        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0xe2d39AB610fEe4C7FC591003553c7557C880eD04);
-        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0x56a8953C03FC8b859140D5C6f7e7f24dD611d419);
-        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0xa2aFD3FaA2b69a334DD5493031fa59B7779a3CBf);
-        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0x7fA8b2D1F640Ac31f08046d0502147Ed430DdAb2);
-        addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(0x44Af736495544a726ED15CB0EBe2d87a6bCC1832);
-        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25);
-        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0x5AD5469D8A1Eee2cF7c8B8205CbeD95A032cdff3);
-        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0x9712DdCC43F42402acC483e297eeFf650d18D354);
-        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(new_FeePool_contract);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x2A417C61B8062363e4ff50900779463b45d235f6);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xC2F1F551bfAd1E9A3b4816513bFd41d77f40F915);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x02f9bC46beD33acdB9cb002fe346734CeF8a9480);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0xAFDd6B5A8aB32156dBFb4060ff87F6d9E31191bA);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xe301da3d2D3e96e57D05b8E557656629cDdbe7A0);
+        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x4ed5c5D5793f86c8a85E1a96E37b6d374DE0E85A);
+        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0x005d19CA7ff9D79a5Bdf0805Fc01D9D7c53B6827);
+        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0xde3892383965FBa6eC434bE6350F85f140098708);
+        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x39DDbbb113AF3434048b9d8018a3e99d67C6eE0D);
+        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0xe2f532c389deb5E42DCe53e78A9762949A885455);
+        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0x2B3eb5eF0EF06f2E02ef60B3F36Be4793d321353);
+        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0xc70B42930BD8D30A79B55415deC3be60827559f7);
+        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0x3FFE35c3d412150C3B91d3E22eBA60E16030C608);
+        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0x8f9fa817200F5B95f9572c8Acf2b31410C00335a);
+        addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(0x0705F0716b12a703d4F8832Ec7b97C61771f0361);
+        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0xfA60918C4417b64E722ca15d79C751c1f24Ab995);
+        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0xcc3aab773e2171b2E257Ee17001400eE378aa52B);
+        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0xe59dFC746D566EB40F92ed0B162004e24E3AC932);
+        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(0xC1AAE9d18bBe386B102435a8632C8063d31e747C);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
     
+    function addressresolver_rebuildCaches_2() internal {
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](4);
+        addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x5c8344bcdC38F1aB5EB5C1d4a35DdEeA522B5DfA);
+        addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0xaa03aB31b55DceEeF845C8d17890CC61cD98eD04);
+        addressresolver_rebuildCaches_destinations_2_0[2] = MixinResolver(0x1F2c3a1046c32729862fcB038369696e3273a516);
+        addressresolver_rebuildCaches_destinations_2_0[3] = MixinResolver(new_FeePool_contract);
+        addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
+    }
+
+    
     function importFeePeriod_0() internal {
-        // https://kovan.etherscan.io/address/0xE532C9336934DA37aacc0143D07314d7F9D2a8c0;
-        FeePool existingFeePool = FeePool(0xE532C9336934DA37aacc0143D07314d7F9D2a8c0);
-        // https://kovan.etherscan.io/address/0x288cA161F9382d54dD27803AbF45C78Da95D19b0;
-        FeePool newFeePool = FeePool(0x288cA161F9382d54dD27803AbF45C78Da95D19b0);
+        // https://etherscan.io/address/0xc398406FFfBEd5B0680e706634490062CB1DB579;
+        FeePool existingFeePool = FeePool(0xc398406FFfBEd5B0680e706634490062CB1DB579);
+        // https://etherscan.io/address/0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd;
+        FeePool newFeePool = FeePool(0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd);
         (
                         uint64 feePeriodId_0,
                         uint64 startingDebtIndex_0,
@@ -163,10 +175,10 @@ contract Migration_Peacock is BaseMigration {
 
     
     function importFeePeriod_1() internal {
-        // https://kovan.etherscan.io/address/0xE532C9336934DA37aacc0143D07314d7F9D2a8c0;
-        FeePool existingFeePool = FeePool(0xE532C9336934DA37aacc0143D07314d7F9D2a8c0);
-        // https://kovan.etherscan.io/address/0x288cA161F9382d54dD27803AbF45C78Da95D19b0;
-        FeePool newFeePool = FeePool(0x288cA161F9382d54dD27803AbF45C78Da95D19b0);
+        // https://etherscan.io/address/0xc398406FFfBEd5B0680e706634490062CB1DB579;
+        FeePool existingFeePool = FeePool(0xc398406FFfBEd5B0680e706634490062CB1DB579);
+        // https://etherscan.io/address/0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd;
+        FeePool newFeePool = FeePool(0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd);
         (
                         uint64 feePeriodId_1,
                         uint64 startingDebtIndex_1,
