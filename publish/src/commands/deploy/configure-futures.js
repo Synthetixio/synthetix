@@ -3,9 +3,6 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 const w3utils = require('web3-utils');
-const {
-	utils: { parseEther },
-} = require('ethers');
 
 module.exports = async ({
 	deployer,
@@ -21,10 +18,7 @@ module.exports = async ({
 
 	if (!useOvm) return;
 
-	const {
-		FuturesMarketSettings: futuresMarketSettings,
-		ExchangeRates: exchangeRates,
-	} = deployer.deployedContracts;
+	const { FuturesMarketSettings: futuresMarketSettings } = deployer.deployedContracts;
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -71,26 +65,27 @@ module.exports = async ({
 		comment: 'Set the minimum reward for liquidating a futures position (SIP-80)',
 	});
 
-	const futuresAssets = futuresMarkets.map(x => x.asset);
+	// const futuresAssets = futuresMarkets.map(x => x.asset);
 
 	// Some market parameters invoke a recomputation of the funding rate, and
 	// thus require exchange rates to be fresh. We assume production networks
 	// have fresh funding rates at the time of deployment.
-	if (freshDeploy || network === 'local') {
-		const { timestamp } = await deployer.provider.getBlock();
-		const DUMMY_PRICE = parseEther('1').toString();
 
-		console.log(gray(`Updating ExchangeRates for futures assets: ` + futuresAssets.join(', ')));
+	// if (freshDeploy || network === 'local') {
+	// 	const { timestamp } = await deployer.provider.getBlock();
+	// 	const DUMMY_PRICE = parseEther('1').toString();
 
-		for (const key of futuresAssets.map(toBytes32)) {
-			await runStep({
-				contract: 'ExchangeRates',
-				target: exchangeRates,
-				write: `updateRates`,
-				writeArg: [[key], [DUMMY_PRICE], timestamp],
-			});
-		}
-	}
+	// 	console.log(gray(`Updating ExchangeRates for futures assets: ` + futuresAssets.join(', ')));
+
+	// 	for (const key of futuresAssets.map(toBytes32)) {
+	// 		await runStep({
+	// 			contract: 'ExchangeRates',
+	// 			target: exchangeRates,
+	// 			write: `updateRates`,
+	// 			writeArg: [[key], [DUMMY_PRICE], timestamp],
+	// 		});
+	// 	}
+	// }
 
 	//
 	// Configure parameters for each market.
@@ -120,7 +115,7 @@ module.exports = async ({
 			makerFee: w3utils.toWei(makerFee),
 			takerFeeNextPrice: w3utils.toWei(takerFeeNextPrice),
 			makerFeeNextPrice: w3utils.toWei(makerFeeNextPrice),
-			nextPriceConfirmWindow: w3utils.toBN(nextPriceConfirmWindow),
+			nextPriceConfirmWindow: nextPriceConfirmWindow,
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
 			maxFundingRate: w3utils.toWei(maxFundingRate),

@@ -2,25 +2,28 @@
 	"SystemSettings": {
 		"deploy": false
 	},
-	"SynthetixBridgeToBase": {
-		"deploy": false
-	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
-	"TradingRewards": {
+	"DebtCache": {
 		"deploy": false
 	},
-	"DebtCache": {
+	"Depot": {
+		"deploy": false
+	},
+	"TradingRewards": {
 		"deploy": false
 	},
 	"EscrowChecker": {
 		"deploy": false
 	},
 	"ExchangeRates": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
 		"deploy": false
 	},
 	"Exchanger": {
@@ -63,6 +66,9 @@
 		"deploy": false
 	},
 	"RewardEscrow": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
 		"deploy": false
 	},
 	"RewardsDistribution": {
@@ -110,22 +116,13 @@
 	"TokenStatesUSD": {
 		"deploy": false
 	},
-	"CollateralManager": {
-		"deploy": false
-	},
-	"RewardEscrowV2": {
-		"deploy": false
-	},
 	"TokenStatesETH": {
 		"deploy": false
 	},
-	"ProxysETH": {
-		"deploy": false
-	},
-	"SynthsETH": {
-		"deploy": false
-	},
 	"TokenStatesBTC": {
+		"deploy": false
+	},
+	"ProxysETH": {
 		"deploy": false
 	},
 	"ProxysBTC": {
@@ -134,58 +131,46 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
-	"TokenStatesLINK": {
+	"SynthsETH": {
 		"deploy": false
 	},
-	"ProxysLINK": {
-		"deploy": false
-	},
-	"SynthsLINK": {
-		"deploy": false
-	},
-	"TokenStatesUNI": {
-		"deploy": false
-	},
-	"ProxysUNI": {
-		"deploy": false
-	},
-	"SynthsUNI": {
-		"deploy": false
-	},
-	"TokenStatesAAVE": {
-		"deploy": false
-	},
-	"ProxysAAVE": {
-		"deploy": false
-	},
-	"SynthsAAVE": {
-		"deploy": false
-	},
-	"EtherWrapper": {
-		"deploy": false
-	},
-	"CollateralShort": {
+	"SynthetixBridgeToBase": {
 		"deploy": false
 	},
 	"CollateralUtil": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
+	"CollateralManager": {
 		"deploy": false
 	},
 	"CollateralManagerState": {
 		"deploy": false
 	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketBTC": {
+		"deploy": false
+	},
 	"FuturesMarketBTC": {
 		"deploy": false
 	},
-	"FuturesMarketData": {
+	"ProxyFuturesMarketETH": {
 		"deploy": false
 	},
 	"FuturesMarketETH": {
 		"deploy": false
 	},
+	"ProxyFuturesMarketLINK": {
+		"deploy": false
+	},
 	"FuturesMarketLINK": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketManager": {
 		"deploy": false
 	},
 	"FuturesMarketManager": {
@@ -194,16 +179,16 @@
 	"FuturesMarketSettings": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketBTC": {
+	"FuturesMarketData": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketETH": {
+	"WrapperFactory": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketLINK": {
+	"OwnerRelayOnOptimism": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketManager": {
+	"SynthRedeemer": {
 		"deploy": false
 	}
 }

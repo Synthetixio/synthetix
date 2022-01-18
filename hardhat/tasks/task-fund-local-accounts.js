@@ -4,11 +4,7 @@ const { yellow } = require('chalk');
 const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
-const {
-	getSource,
-	getTarget,
-	constants: { OVM_GAS_PRICE_GWEI },
-} = require('../../index');
+const { getSource, getTarget } = require('../../index');
 
 const { loadUsers } = require('../../test/integration/utils/users');
 const { ensureBalance } = require('../util/balances');
@@ -45,27 +41,15 @@ async function fundAccounts({ ctx, accounts }) {
 			ctx,
 			symbol: 'SNX',
 			user: { address: account },
-			balance: ethers.utils.parseEther('1000000000'),
+			balance: ethers.utils.parseEther('100000000'),
 		});
 
 		await ensureBalance({
 			ctx,
 			symbol: 'sUSD',
 			user: { address: account },
-			balance: ethers.utils.parseEther('1000000000'),
+			balance: ethers.utils.parseEther('100000000'),
 		});
-	}
-}
-
-async function whitelistAccounts({ ctx }, accounts) {
-	let { SynthsUSD, SynthsETH } = ctx.contracts;
-
-	for (const account of accounts) {
-		SynthsUSD = SynthsUSD.connect(ctx.users.owner);
-		await SynthsUSD.addWhitelistCanTransfer(account);
-
-		SynthsETH = SynthsETH.connect(ctx.users.owner);
-		await SynthsETH.addWhitelistCanTransfer(account);
 	}
 }
 
@@ -74,7 +58,7 @@ const defaultAccounts = [
 	// '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 
 	// kovan-ovm-futures deployer
-	'0x19C6e6B49D529C2ae16dCC794f08a93dd813859D',
+	'0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882',
 	// futures keeper
 	'0x96D6C55a500782ba07aefb4f620dF2a94CDc7bA7',
 	// faucet
@@ -101,7 +85,7 @@ task('fund-local-accounts')
 		ctx.users = {};
 		ctx.deploymentPath = deploymentPath;
 		ctx.provider = _setupProvider({ url: providerUrl });
-		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
+		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits(1, 'gwei');
 
 		if (privateKey) {
 			ctx.users.owner = new ethers.Wallet(privateKey, ctx.provider);
@@ -112,11 +96,6 @@ task('fund-local-accounts')
 		connectContracts({ ctx });
 
 		console.log(`Using account ${ctx.users.owner.address}`);
-
-		await whitelistAccounts({ ctx }, [
-			ctx.users.owner.address,
-			'0xC2ecD777d06FFDF8B3179286BEabF52B67E9d991',
-		]);
 
 		await fundAccounts({
 			ctx,
