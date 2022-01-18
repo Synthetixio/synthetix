@@ -842,8 +842,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param config dynamic fee calculation configuration params
     /// @return The dyanmic dynamicFee
     function _dynamicFeeForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config) internal view returns (uint) {
-        // No dynamic dynamicFee for sUSD
-        if (currencyKey == sUSD) return 0;
+        // no dynamic dynamicFee for sUSD or too few rounds
+        if (currencyKey == sUSD || config.rounds <= 1) {
+            return 0;
+        }
         uint[] memory prices;
         uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
@@ -860,8 +862,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint roundId,
         DynamicFeeConfig memory config
     ) internal view returns (uint) {
-        // No dynamic dynamicFee for sUSD
-        if (currencyKey == sUSD) return 0;
+        // no dynamic dynamicFee for sUSD or too few rounds
+        if (currencyKey == sUSD || config.rounds <= 1) {
+            return 0;
+        }
         uint[] memory prices;
         (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
         return _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);

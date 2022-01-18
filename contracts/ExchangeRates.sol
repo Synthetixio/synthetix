@@ -483,8 +483,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsStale(bytes32 currencyKey, uint _rateStalePeriod) internal view returns (bool) {
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == sUSD) return false;
-
+        if (currencyKey == sUSD) {
+            return false;
+        }
         return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
     }
 
@@ -494,8 +495,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint _rateStalePeriod
     ) internal view returns (bool) {
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == sUSD) return false;
-
+        if (currencyKey == sUSD) {
+            return false;
+        }
         (, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
         return _rateIsStaleWithTime(_rateStalePeriod, time);
     }
@@ -506,7 +508,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
         // sUSD is a special case and is never invalid
-        if (currencyKey == sUSD) return false;
+        if (currencyKey == sUSD) {
+            return false;
+        }
         address aggregator = address(aggregators[currencyKey]);
         // when no aggregator or when the flags haven't been setup
         if (aggregator == address(0) || flags == FlagsInterface(0)) {
