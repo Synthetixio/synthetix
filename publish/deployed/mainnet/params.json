@@ -1,7 +1,7 @@
 [
 	{
 		"name": "EXCHANGE_DYNAMIC_FEE_ROUNDS",
-		"value": "1"
+		"value": "0"
 	},
 	{
 		"name": "DEX_PRICE_AGGREGATOR",
