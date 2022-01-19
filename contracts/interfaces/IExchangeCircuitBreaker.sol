@@ -15,9 +15,6 @@ interface IExchangeCircuitBreaker {
     function lastExchangeRate(bytes32 currencyKey) external view returns (uint);
 
     // Mutative functions
-
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external;
-
     function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
 
     function rateWithBreakCircuit(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken);

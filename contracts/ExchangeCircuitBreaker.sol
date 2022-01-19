@@ -136,21 +136,6 @@ contract ExchangeCircuitBreaker is Owned, MixinSystemSettings, IExchangeCircuitB
     }
 
     /**
-     * SIP-78
-     *
-     * sets the last-rate to an externally provided value
-     * access restricted to only the ExchageRates contract, and is used there in setInversePricing
-     * for iSynths
-     * emits LastRateOverriden
-     * TODO: deprecate when iSynths are removed from the system
-     */
-    function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
-        require(rate > 0, "Rate must be above 0");
-        emit LastRateOverriden(currencyKey, _lastExchangeRate[currencyKey], rate);
-        _lastExchangeRate[currencyKey] = rate;
-    }
-
-    /**
      * SIP-139
      * resets the stored value for _lastExchangeRate for multiple currencies to the latest rate
      * can be used to un-suspend synths after a suspension happenned

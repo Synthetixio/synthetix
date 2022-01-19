@@ -48,64 +48,12 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		cicruitBreaker,
 		amountIssued,
 		systemSettings,
-		systemStatus,
-		resolver;
+		systemStatus;
 
 	// utility function update rates for aggregators that are already set up
 	async function updateRates(keys, rates) {
 		await updateAggregatorRates(exchangeRates, keys, rates);
 	}
-
-	const itSetsLastExchangeRateForSynth = () => {
-		describe('setLastExchangeRateForSynth() SIP-78', () => {
-			it('cannot be invoked by any user', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: cicruitBreaker.setLastExchangeRateForSynth,
-					args: [sEUR, toUnit('100')],
-					accounts,
-					reason: 'Restricted to ExchangeRates',
-				});
-			});
-
-			describe('when ExchangeRates is spoofed using an account', () => {
-				beforeEach(async () => {
-					await resolver.importAddresses([toBytes32('ExchangeRates')], [account1], {
-						from: owner,
-					});
-					await cicruitBreaker.rebuildCache();
-				});
-				it('reverts when invoked by ExchangeRates with a 0 rate', async () => {
-					await assert.revert(
-						cicruitBreaker.setLastExchangeRateForSynth(sEUR, '0', { from: account1 }),
-						'Rate must be above 0'
-					);
-				});
-				describe('when invoked with a real rate by ExchangeRates', () => {
-					let resetTx;
-					beforeEach(async () => {
-						resetTx = await cicruitBreaker.setLastExchangeRateForSynth(sEUR, toUnit('1.9'), {
-							from: account1,
-						});
-					});
-					it('then lastExchangeRate is set for the synth', async () => {
-						assert.bnEqual(await cicruitBreaker.lastExchangeRate(sEUR), toUnit('1.9'));
-					});
-					it('then it emits an LastRateOverriden', async () => {
-						const logs = await getDecodedLogs({
-							hash: resetTx.tx,
-							contracts: [cicruitBreaker],
-						});
-						decodedEventEqual({
-							log: logs.find(({ name }) => name === 'LastRateOverriden'),
-							event: 'LastRateOverriden',
-							emittedFrom: cicruitBreaker.address,
-							args: [sEUR, toUnit('0'), toUnit('1.9')],
-						});
-					});
-				});
-			});
-		});
-	};
 
 	const itDeviatesCorrectly = () => {
 		describe('priceDeviationThresholdFactor()', () => {
@@ -473,7 +421,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 				SynthsUSD: sUSDContract,
 				SynthsETH: sETHContract,
 				SystemSettings: systemSettings,
-				AddressResolver: resolver,
 			} = await setupAllContracts({
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
@@ -527,8 +474,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 
 		itDeviatesCorrectly();
 
-		itSetsLastExchangeRateForSynth();
-
 		itPricesSpikeDeviation();
 	});
 
@@ -543,7 +488,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 				SynthsUSD: sUSDContract,
 				SynthsETH: sETHContract,
 				SystemSettings: systemSettings,
-				AddressResolver: resolver,
 			} = await setupAllContracts({
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
@@ -592,8 +536,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		});
 
 		itDeviatesCorrectly();
-
-		itSetsLastExchangeRateForSynth();
 
 		itPricesSpikeDeviation();
 	});
