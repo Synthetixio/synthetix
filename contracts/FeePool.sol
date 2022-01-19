@@ -256,7 +256,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _recentFeePeriodsStorage(0).startTime = uint64(now);
 
         // Inform Issuer to start recording for the new fee period
-        issuer().setCurrentPeriodId(newFeePeriodId);
+        issuer().setCurrentPeriodId(uint128(newFeePeriodId));
 
         emitFeePeriodClosed(_recentFeePeriodsStorage(1).feePeriodId);
     }

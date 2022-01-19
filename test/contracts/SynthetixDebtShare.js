@@ -235,6 +235,11 @@ contract('SynthetixDebtShare', async accounts => {
 				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('2'));
 				assert.bnEqual(await synthetixDebtShare.totalSupplyOnPeriod(1), toUnit('1'));
 			});
+
+			it('prohibits lower period IDs in the future', async () => {
+				await assert.revert(synthetixDebtShare.setCurrentPeriodId(toUnit('5')));
+				await assert.revert(synthetixDebtShare.setCurrentPeriodId(toUnit('10')));
+			});
 		});
 	});
 

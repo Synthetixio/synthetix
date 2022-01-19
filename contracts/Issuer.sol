@@ -624,7 +624,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function setCurrentPeriodId(uint periodId) external {
+    function setCurrentPeriodId(uint128 periodId) external {
         require(msg.sender == address(feePool()), "Must be fee pool");
         synthetixDebtShare().setCurrentPeriodId(periodId);
     }
