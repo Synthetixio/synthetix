@@ -24,6 +24,13 @@ async function skipMinimumStakeTime({ ctx }) {
 	});
 }
 
+async function skipLiquidationDelay({ ctx }) {
+	await _dualFastForward({
+		ctx,
+		seconds: await getSystemSetting({ ctx, settingName: 'liquidationDelay' }),
+	});
+}
+
 /*
  * Fast forwards the L1 chain and waits for the
  * L2 chain to sync to the new timestamp.
@@ -42,4 +49,5 @@ module.exports = {
 	skipWaitingPeriod,
 	skipFeePeriod,
 	skipMinimumStakeTime,
+	skipLiquidationDelay,
 };

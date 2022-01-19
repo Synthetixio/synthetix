@@ -431,6 +431,11 @@
 			"layer": "ovm",
 			"sources": ["CollateralEth"],
 			"released": "ovm"
+		},
+		{
+			"sip": 200,
+			"layer": "both",
+			"sources": ["FeePool"]
 		}
 	],
 	"releases": [
@@ -768,7 +773,7 @@
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Peacock (Optimism)",
@@ -778,7 +783,7 @@
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Alsephina",
