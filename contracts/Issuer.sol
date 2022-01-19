@@ -162,11 +162,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
-    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal view returns (uint) {
+    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
         return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
     }
 
-    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal view returns (uint) {
+    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
         return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
     }
 

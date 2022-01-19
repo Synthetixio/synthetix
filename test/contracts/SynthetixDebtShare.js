@@ -55,9 +55,7 @@ contract('SynthetixDebtShare', async accounts => {
 			expected: [
 				'mintShare',
 				'burnShare',
-				'transfer',
 				'transferFrom',
-				'approve',
 				'importAddresses',
 				'setCurrentPeriodId',
 				'addAuthorizedBroker',
@@ -210,7 +208,7 @@ contract('SynthetixDebtShare', async accounts => {
 	});
 
 	describe('setCurrentPeriodId()', () => {
-		it('fails when burning more than user has minted', async () => {
+		it('is only invokable by issuer', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: synthetixDebtShare.setCurrentPeriodId,
 				args: [toUnit('10')],

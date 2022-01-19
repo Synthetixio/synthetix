@@ -24,7 +24,9 @@ interface ISynthetixDebtShare {
 
     function burnShare(address account, uint256 amount) external;
 
-    function transfer(address to, uint256 amount) external returns(bool);
+    function approve(address, uint256) external pure returns (bool);
+
+    function transfer(address to, uint256 amount) external pure returns(bool);
 
     function transferFrom(address from, address to, uint256 amount) external returns(bool);
 

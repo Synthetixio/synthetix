@@ -101,7 +101,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         return balance.divideDecimal(totalSupplyOnPeriod[periodId]);
     }
 
-    function allowance(address account, address spender) public view returns (uint) {
+    function allowance(address, address spender) public view returns (uint) {
         if (authorizedBrokers[spender]) {
             return uint(-1);
         }
@@ -147,11 +147,11 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         emit Burn(account, amount);
     }
 
-    function approve(address spender, uint256 amount) external {
+    function approve(address, uint256) external pure returns(bool) {
         revert("debt shares are not transferrable");
     }
 
-    function transfer(address to, uint256 amount) external returns(bool) {
+    function transfer(address, uint256) external pure returns(bool) {
         revert("debt shares are not transferrable");
     }
 
