@@ -68,13 +68,21 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     function balanceOfOnPeriod(address account, uint periodId) public view returns (uint) {
         uint accountPeriodHistoryCount = balances[account].length;
-        for (int i = int(accountPeriodHistoryCount) - 1;i >= int(MAX_PERIOD_ITERATE < accountPeriodHistoryCount ? accountPeriodHistoryCount - MAX_PERIOD_ITERATE : 0);i--) {
+
+        int oldestHistoryIterate = int(MAX_PERIOD_ITERATE < accountPeriodHistoryCount ? accountPeriodHistoryCount - MAX_PERIOD_ITERATE : 0);
+        int i;
+        for (i = int(accountPeriodHistoryCount) - 1;i >= oldestHistoryIterate;i--) {
             if (balances[account][uint(i)].periodId <= periodId) {
                 return uint(balances[account][uint(i)].amount);
             }
         }
 
-        return 0;
+        // if we got past the beginning of the history, then their balance is 0
+        if (i < 0) {
+            return 0;
+        } else {
+            revert("SynthetixDebtShare: not found in recent history");
+        }
     }
 
     function totalSupply() public view returns (uint) {

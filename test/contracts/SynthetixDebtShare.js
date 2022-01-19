@@ -38,14 +38,6 @@ contract('SynthetixDebtShare', async accounts => {
 		await synthetixDebtShare.addAuthorizedBroker(owner);
 	});
 
-	/* let lastSnapshotId;
-	before(async () => {
-		lastSnapshotId = await takeSnapshot();
-	});
-
-	beforeEach(async () => {
-		await restoreSnapshot(lastSnapshotId);
-	}); */
 	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only expected functions are mutative', async () => {
@@ -373,6 +365,8 @@ contract('SynthetixDebtShare', async accounts => {
 	});
 
 	describe('balanceOfOnPeriod()', () => {
+		addSnapshotBeforeRestoreAfterEach();
+
 		it('returns 0 balance initially', async () => {
 			assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('0'));
 		});
@@ -429,7 +423,39 @@ contract('SynthetixDebtShare', async accounts => {
 							toUnit('80')
 						);
 					});
+
+					it('still remembers 0 balance before first mint', async () => {
+						assert.bnEqual(await synthetixDebtShare.balanceOfOnPeriod(account2, 0), 0);
+					});
 				});
+			});
+		});
+
+		describe('when there is long period history', () => {
+			beforeEach(async () => {
+				// one account changes balance every period
+				for (let i = 1; i < 20; i++) {
+					await synthetixDebtShare.setCurrentPeriodId(toUnit(i.toString()), { from: issuer });
+					await synthetixDebtShare.mintShare(account1, toUnit('1'), { from: issuer });
+				}
+			});
+
+			it('has correct latest balance', async () => {
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('19'));
+			});
+
+			it('has balance from a couple periods ago', async () => {
+				assert.bnEqual(
+					await synthetixDebtShare.balanceOfOnPeriod(account1, toUnit('15')),
+					toUnit('15')
+				);
+			});
+
+			it('reverts on oldest period', async () => {
+				await assert.revert(
+					synthetixDebtShare.balanceOfOnPeriod(account1, 1),
+					'SynthetixDebtShare: not found in recent history'
+				);
 			});
 		});
 	});
