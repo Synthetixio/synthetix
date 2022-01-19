@@ -6,16 +6,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const BN = require('bn.js');
 
-const { fastForward, getEthBalance, toUnit, fromUnit } = require('../utils')();
+const { fastForward, getEthBalance, toUnit, fromUnit, currentTime } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
-const {
-	ensureOnlyExpectedMutativeFunctions,
-	setStatus,
-	setupPriceAggregators,
-	updateAggregatorRates,
-} = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, setStatus } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
@@ -25,7 +20,6 @@ contract('CollateralEth', async accounts => {
 
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
-	const sBTC = toBytes32('sBTC');
 
 	const oneETH = toUnit(1);
 	const twoETH = toUnit(2);
@@ -42,7 +36,7 @@ contract('CollateralEth', async accounts => {
 	let loan;
 	let id;
 
-	const [, owner, , account1, account2] = accounts;
+	const [, owner, oracle, account1, account2] = accounts;
 
 	let ceth,
 		managerState,
@@ -107,8 +101,6 @@ contract('CollateralEth', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
-
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
@@ -147,7 +139,17 @@ contract('CollateralEth', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+			from: oracle,
+		});
+
+		const sBTC = toBytes32('sBTC');
+
+		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
+			from: oracle,
+		});
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -217,19 +219,28 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('when the price falls by 25% our c ratio is 150%', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(75)]);
+				await exchangeRates.updateRates([sETH], ['75'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
 			it('when the price increases by 100% our c ratio is 400%', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(200)]);
+				await exchangeRates.updateRates([sETH], ['200'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(4));
 			});
 
 			it('when the price falls by 50% our cratio is 100%', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await exchangeRates.updateRates([sETH], ['50'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1));
 			});
@@ -250,7 +261,10 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('price changes should not change the cratio', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(75)]);
+				await exchangeRates.updateRates([sETH], ['75'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
@@ -265,7 +279,7 @@ contract('CollateralEth', async accounts => {
 			assert.bnClose(sUSDAmount, toUnit('200'), '100');
 
 			// $260 worth of eth should allow $200 (0.02) of sBTC to be issued.
-			const sBTCAmount = await ceth.maxLoan(toUnit('2.6'), sBTC);
+			const sBTCAmount = await ceth.maxLoan(toUnit('2.6'), toBytes32('sBTC'));
 
 			assert.bnEqual(sBTCAmount, toUnit('0.02'));
 		});
@@ -777,7 +791,11 @@ contract('CollateralEth', async accounts => {
 			let liquidationAmount;
 
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(90)]);
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([sETH], ['90'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
 				await issuesUSDToAccount(toUnit(1000), account2);
 
 				liquidatorEthBalBefore = new BN(await getEthBalance(account2));
@@ -838,7 +856,11 @@ contract('CollateralEth', async accounts => {
 			let liquidatorEthBalBefore;
 
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([sETH], ['50'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
 				loan = await ceth.loans(id);
 
 				await issuesUSDToAccount(toUnit(1000), account2);

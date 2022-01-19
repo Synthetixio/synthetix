@@ -2,14 +2,8 @@ const { contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
 const { setupAllContracts } = require('./setup');
-const { toUnit, multiplyDecimal } = require('../utils')();
-const {
-	setExchangeFeeRateForSynths,
-	getDecodedLogs,
-	decodedEventEqual,
-	setupPriceAggregators,
-	updateAggregatorRates,
-} = require('./helpers');
+const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
+const { setExchangeFeeRateForSynths, getDecodedLogs, decodedEventEqual } = require('./helpers');
 const { toBytes32 } = require('../..');
 
 /*
@@ -21,9 +15,9 @@ const { toBytes32 } = require('../..');
 contract('TradingRewards', accounts => {
 	const [, owner, account1] = accounts;
 
-	const synths = ['sUSD', 'sETH', 'sBTC', 'SNX'];
+	const synths = ['sUSD', 'sETH', 'sBTC'];
 	const synthKeys = synths.map(toBytes32);
-	const [sUSD, sETH, sBTC, SNX] = synthKeys;
+	const [sUSD, sETH, sBTC] = synthKeys;
 
 	let synthetix, exchanger, exchangeRates, rewards, resolver, systemSettings;
 	let sUSDContract, sETHContract, sBTCContract;
@@ -37,7 +31,6 @@ contract('TradingRewards', accounts => {
 	const rates = {
 		[sETH]: toUnit('100'),
 		[sBTC]: toUnit('12000'),
-		[SNX]: toUnit('0.2'),
 	};
 
 	let feesPaidUSD;
@@ -98,8 +91,6 @@ contract('TradingRewards', accounts => {
 					'CollateralManager',
 				],
 			}));
-
-			await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
 		});
 
 		before('BRRRRRR', async () => {
@@ -109,7 +100,12 @@ contract('TradingRewards', accounts => {
 		});
 
 		before('set exchange rates', async () => {
-			await updateAggregatorRates(exchangeRates, [sETH, sBTC, SNX], Object.values(rates));
+			const oracle = account1;
+			const timestamp = await currentTime();
+
+			await exchangeRates.updateRates([sETH, sBTC], Object.values(rates), timestamp, {
+				from: oracle,
+			});
 
 			await setExchangeFeeRateForSynths({
 				owner,

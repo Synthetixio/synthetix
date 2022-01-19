@@ -14,6 +14,7 @@ module.exports = async ({
 	currentSynthetixSupply,
 	currentWeekOfInflation,
 	deployer,
+	oracleAddress,
 	useOvm,
 }) => {
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
@@ -58,7 +59,7 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'ExchangeRates',
 		source: useOvm ? 'ExchangeRates' : 'ExchangeRatesWithDexPricing',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [account, oracleAddress, addressOf(readProxyForResolver), [], []],
 	});
 
 	await deployer.deployContract({

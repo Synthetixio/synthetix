@@ -433,11 +433,6 @@
 			"released": "ovm"
 		},
 		{
-			"sip": 196,
-			"layer": "both",
-			"sources": ["ExchangeRates"]
-		},
-		{
 			"sip": 200,
 			"layer": "both",
 			"sources": ["FeePool"]

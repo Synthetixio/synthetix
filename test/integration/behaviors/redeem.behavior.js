@@ -6,7 +6,7 @@ const {
 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
-const { increaseStalePeriodAndCheckRatesAndCache } = require('../utils/rates');
+const { updateExchangeRatesIfNeeded } = require('../utils/rates');
 
 function itCanRedeem({ ctx }) {
 	describe('redemption of deprecated synths', () => {
@@ -57,7 +57,7 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before('update rates and take snapshot if needed', async () => {
-			await increaseStalePeriodAndCheckRatesAndCache({ ctx });
+			await updateExchangeRatesIfNeeded({ ctx });
 		});
 
 		before('record total system debt', async () => {

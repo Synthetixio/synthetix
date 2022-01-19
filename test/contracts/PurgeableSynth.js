@@ -8,7 +8,7 @@ const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
-const { fastForward, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -20,8 +20,6 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
-	setupPriceAggregators,
-	updateAggregatorRates,
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
@@ -29,7 +27,7 @@ const { setupAllContracts } = require('./setup');
 contract('PurgeableSynth', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, iETH];
-	const [deployerAccount, owner, , , account1, account2] = accounts;
+	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
 	let exchangeRates,
 		exchanger,
@@ -38,6 +36,7 @@ contract('PurgeableSynth', accounts => {
 		sAUDContract,
 		iETHContract,
 		systemStatus,
+		timestamp,
 		addressResolver,
 		debtCache,
 		issuer;
@@ -72,7 +71,7 @@ contract('PurgeableSynth', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, iETH]);
+		timestamp = await currentTime();
 	});
 
 	beforeEach(async () => {
@@ -156,10 +155,13 @@ contract('PurgeableSynth', accounts => {
 
 		describe("when there's a price for the purgeable synth", () => {
 			beforeEach(async () => {
-				await updateAggregatorRates(
-					exchangeRates,
+				await exchangeRates.updateRates(
 					[sAUD, SNX, iETH],
-					['0.5', '1', '170'].map(toUnit)
+					['0.5', '1', '170'].map(toUnit),
+					timestamp,
+					{
+						from: oracle,
+					}
 				);
 				await debtCache.takeDebtSnapshot();
 			});
@@ -205,7 +207,9 @@ contract('PurgeableSynth', accounts => {
 					});
 					describe('when rates are received', () => {
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [iETH], ['170'].map(toUnit));
+							await exchangeRates.updateRates([iETH], ['170'].map(toUnit), await currentTime(), {
+								from: oracle,
+							});
 							await debtCache.takeDebtSnapshot();
 						});
 						it('then purge() still works as expected', async () => {
@@ -318,7 +322,9 @@ contract('PurgeableSynth', accounts => {
 	describe('Replacing an existing Synth with a Purgeable one to purge and remove it', () => {
 		describe('when sAUD has a price', () => {
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sAUD], ['0.776845993'].map(toUnit));
+				await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
+					from: oracle,
+				});
 				await debtCache.takeDebtSnapshot();
 			});
 			describe('when a user holds some sAUD', () => {
