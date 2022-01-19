@@ -4,7 +4,7 @@ const { artifacts, contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const { fastForward, toUnit } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
@@ -14,6 +14,8 @@ const {
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
 	setStatus,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const {
@@ -41,8 +43,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		exchangeRates,
 		sUSDContract,
 		sETHContract,
-		oracle,
-		timestamp,
 		exchanger,
 		exchangeFeeRate,
 		cicruitBreaker,
@@ -50,6 +50,11 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		systemSettings,
 		systemStatus,
 		resolver;
+
+	// utility function update rates for aggregators that are already set up
+	async function updateRates(keys, rates) {
+		await updateAggregatorRates(exchangeRates, keys, rates);
+	}
 
 	const itSetsLastExchangeRateForSynth = () => {
 		describe('setLastExchangeRateForSynth() SIP-78', () => {
@@ -164,14 +169,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 			const updateRate = ({ target, rate }) => {
 				beforeEach(async () => {
 					await fastForward(10);
-					await exchangeRates.updateRates(
-						[target],
-						[toUnit(rate.toString())],
-						await currentTime(),
-						{
-							from: oracle,
-						}
-					);
+					await updateRates([target], [toUnit(rate.toString())]);
 				});
 			};
 
@@ -257,14 +255,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 								beforeEach(async () => {
 									// sETH over deviation and sEUR slight change
 									await fastForward(10);
-									await exchangeRates.updateRates(
-										[sETH, sEUR],
-										[toUnit(baseRate * 3).toString(), toUnit('1.9')],
-										await currentTime(),
-										{
-											from: oracle,
-										}
-									);
+									await updateRates([sETH, sEUR], [toUnit(baseRate * 3).toString(), toUnit('1.9')]);
 								});
 								describe('and another user exchanges sETH to sEUR', () => {
 									beforeEach(async () => {
@@ -286,13 +277,9 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 								beforeEach(async () => {
 									// sEUR over deviation and sETH slight change
 									await fastForward(10);
-									await exchangeRates.updateRates(
+									await updateRates(
 										[sETH, sEUR],
-										[toUnit(baseRate * 1.1).toString(), toUnit('10')],
-										await currentTime(),
-										{
-											from: oracle,
-										}
+										[toUnit(baseRate * 1.1).toString(), toUnit('10')]
 									);
 								});
 								describe('and another user exchanges sEUR to sETH', () => {
@@ -468,79 +455,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 							});
 						});
 					});
-
-					describe('edge case: resetting an iSynth resets the lastExchangeRate (SIP-78)', () => {
-						describe('when setInversePricing is invoked with no underlying rate', () => {
-							it('it does not revert', async () => {
-								await exchangeRates.setInversePricing(
-									iETH,
-									toUnit(4000),
-									toUnit(6500),
-									toUnit(1000),
-									false,
-									false,
-									{
-										from: owner,
-									}
-								);
-							});
-						});
-						describe('when an iSynth is set with inverse pricing and has a price in bounds', () => {
-							beforeEach(async () => {
-								await exchangeRates.setInversePricing(
-									iBTC,
-									toUnit(4000),
-									toUnit(6500),
-									toUnit(1000),
-									false,
-									false,
-									{
-										from: owner,
-									}
-								);
-							});
-							// in-bounds update
-							updateRate({ target: iBTC, rate: 4100 });
-
-							describe('when a user exchanges into the iSynth', () => {
-								beforeEach(async () => {
-									await synthetix.exchange(sUSD, toUnit('100'), iBTC, { from: account1 });
-								});
-								it('then last exchange rate is correct', async () => {
-									assert.bnEqual(await cicruitBreaker.lastExchangeRate(iBTC), toUnit(3900));
-								});
-								describe('when the inverse is reset with different limits, yielding a rate above the deviation factor', () => {
-									beforeEach(async () => {
-										await exchangeRates.setInversePricing(
-											iBTC,
-											toUnit(8000),
-											toUnit(10500),
-											toUnit(5000),
-											false,
-											false,
-											{
-												from: owner,
-											}
-										);
-									});
-									describe('when a user exchanges into the iSynth', () => {
-										beforeEach(async () => {
-											await synthetix.exchange(sUSD, toUnit('100'), iBTC, {
-												from: account1,
-											});
-										});
-										it('then the synth is not suspended', async () => {
-											const { suspended } = await systemStatus.synthSuspension(iBTC);
-											assert.ok(!suspended);
-										});
-										it('and the last exchange rate is the new rate (locked at lower limit)', async () => {
-											assert.bnEqual(await cicruitBreaker.lastExchangeRate(iBTC), toUnit(10500));
-										});
-									});
-								});
-							});
-						});
-					});
 				});
 			});
 		});
@@ -585,9 +499,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 				},
 			}));
 
-			// Send a price update to guarantee we're not stale.
-			oracle = account1;
-
 			amountIssued = toUnit('1000');
 
 			// give the first two accounts 1000 sUSD each
@@ -598,14 +509,10 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			timestamp = await currentTime();
-			await exchangeRates.updateRates(
+			await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, SNX, sETH, sBTC, iBTC]);
+			await updateRates(
 				[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
+				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit)
 			);
 
 			// set a 0.5% exchange fee rate (1/200)
@@ -658,9 +565,6 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 				],
 			}));
 
-			// Send a price update to guarantee we're not stale.
-			oracle = account1;
-
 			amountIssued = toUnit('1000');
 
 			// give the first two accounts 1000 sUSD each
@@ -671,14 +575,10 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			timestamp = await currentTime();
-			await exchangeRates.updateRates(
+			await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, SNX, sETH, sBTC, iBTC]);
+			await updateRates(
 				[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-				timestamp,
-				{
-					from: oracle,
-				}
+				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit)
 			);
 
 			// set a 0.5% exchange fee rate (1/200)
