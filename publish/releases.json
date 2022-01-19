@@ -435,7 +435,8 @@
 		{
 			"sip": 200,
 			"layer": "both",
-			"sources": ["FeePool"]
+			"sources": ["FeePool"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -768,7 +769,7 @@
 		},
 		{
 			"name": "Peacock",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 57
@@ -778,7 +779,7 @@
 		{
 			"name": "Peacock (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 57
