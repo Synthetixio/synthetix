@@ -3,13 +3,15 @@ require('dotenv').config();
 
 const path = require('path');
 
+/// for some weird reason the order of these imports is important:
+/// ./hardhat needs to be imported after hardhat-interact (error otherwise)
+///  and hardhat-gas-reporter needs to be imported after ./hardhat (otherwise no gas reports)
+require('hardhat-interact');
+require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
-require('hardhat-interact');
-
-require('./hardhat');
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
