@@ -124,14 +124,7 @@ const setupContract = async ({
 
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
-		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
-		if (artifact._json.contractName === 'SystemSettings') {
-			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
-			SystemSettingsLib.link(safeDecimalMath);
-			artifact.link(await SystemSettingsLib.new());
-		} else {
-			artifact.link(safeDecimalMath);
-		}
+		await artifact.link(await artifacts.require('SafeDecimalMath').new());
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);

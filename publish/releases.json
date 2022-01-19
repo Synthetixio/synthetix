@@ -421,11 +421,6 @@
 			"released": "both"
 		},
 		{
-			"sip": 193,
-			"layer": "both",
-			"sources": ["SystemSettings", "SystemSettingsLib"]
-		},
-		{
 			"sip": 194,
 			"layer": "ovm",
 			"sources": ["Synthetix"],
