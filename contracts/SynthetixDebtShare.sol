@@ -26,12 +26,30 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     /* ========== STATE VARIABLES ========== */
 
+    /**
+     * Addresses selected by owner which are allowed to call `transferFrom` to manage debt shares
+     */
     mapping(address => bool) public authorizedBrokers;
 
+    /**
+     * Records a user's balance as it changes from period to period.
+     * The last item in the array always represents the user's most recent balance
+     * The intermediate balance is only recorded if 
+     * `currentPeriodId` differs (which would happen upon a call to `setCurrentPeriodId`)
+     */
     mapping(address => PeriodBalance[]) public balances;
 
+    /**
+     * Records totalSupply as it changes from period to period
+     * Similar to `balances`, the `totalSupplyOnPeriod` at index `currentPeriodId` matches the current total supply
+     * Any other period ID would represent its most recent totalSupply before the period ID changed.
+     */
     mapping(uint => uint) public totalSupplyOnPeriod;
 
+    /**
+     * Period ID used for recording accounting changes
+     * Can only increment
+     */
     uint128 public currentPeriodId;
 
     /* ERC20 fields. */
