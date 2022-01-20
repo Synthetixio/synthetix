@@ -402,7 +402,7 @@
 			],
 			"released": "both"
 		},
-    {
+    	{
 			"sip": 184,
 			"layer": "both",
 			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
@@ -416,7 +416,7 @@
 				"Issuer",
 				"SynthetixDebtShare"
 			]
-    },
+    	},
 		{
 			"sip": 187,
 			"layer": "both",
