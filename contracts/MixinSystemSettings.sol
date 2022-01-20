@@ -7,6 +7,7 @@ import "./interfaces/IFlexibleStorage.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinsystemsettings
 contract MixinSystemSettings is MixinResolver {
+    // must match the one defined SystemSettingsLib, defined in both places due to sol v0.5 limitations
     bytes32 internal constant SETTING_CONTRACT_NAME = "SystemSettings";
 
     bytes32 internal constant SETTING_WAITING_PERIOD_SECS = "waitingPeriodSecs";
@@ -18,7 +19,13 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
+    /* ========== Exchange Fees Related ========== */
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
+    bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD = "exchangeDynamicFeeThreshold";
+    bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY = "exchangeDynamicFeeWeightDecay";
+    bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS = "exchangeDynamicFeeRounds";
+    bytes32 internal constant SETTING_EXCHANGE_MAX_DYNAMIC_FEE = "exchangeMaxDynamicFee";
+    /* ========== End Exchange Fees Related ========== */
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
@@ -34,8 +41,6 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_WRAPPER_MAX_TOKEN_AMOUNT = "wrapperMaxTokens";
     bytes32 internal constant SETTING_WRAPPER_MINT_FEE_RATE = "wrapperMintFeeRate";
     bytes32 internal constant SETTING_WRAPPER_BURN_FEE_RATE = "wrapperBurnFeeRate";
-    bytes32 internal constant SETTING_MIN_CRATIO = "minCratio";
-    bytes32 internal constant SETTING_NEW_COLLATERAL_MANAGER = "newCollateralManager";
     bytes32 internal constant SETTING_INTERACTION_DELAY = "interactionDelay";
     bytes32 internal constant SETTING_COLLAPSE_FEE_RATE = "collapseFeeRate";
     bytes32 internal constant SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK = "atomicMaxVolumePerBlock";
@@ -49,6 +54,13 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     enum CrossDomainMessageGasLimits {Deposit, Escrow, Reward, Withdrawal, Relay}
+
+    struct DynamicFeeConfig {
+        uint threshold;
+        uint weightDecay;
+        uint rounds;
+        uint maxFee;
+    }
 
     constructor(address _resolver) internal MixinResolver(_resolver) {}
 
@@ -124,6 +136,7 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD);
     }
 
+    /* ========== Exchange Related Fees ========== */
     function getExchangeFeeRate(bytes32 currencyKey) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
@@ -131,6 +144,20 @@ contract MixinSystemSettings is MixinResolver {
                 keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, currencyKey))
             );
     }
+
+    /// @notice Get exchange dynamic fee related keys
+    /// @return threshold, weight decay, rounds, and max fee
+    function getExchangeDynamicFeeConfig() internal view returns (DynamicFeeConfig memory) {
+        bytes32[] memory keys = new bytes32[](4);
+        keys[0] = SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD;
+        keys[1] = SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY;
+        keys[2] = SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS;
+        keys[3] = SETTING_EXCHANGE_MAX_DYNAMIC_FEE;
+        uint[] memory values = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
+        return DynamicFeeConfig({threshold: values[0], weightDecay: values[1], rounds: values[2], maxFee: values[3]});
+    }
+
+    /* ========== End Exchange Related Fees ========== */
 
     function getMinimumStakeTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME);
@@ -177,22 +204,6 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, wrapper))
-            );
-    }
-
-    function getMinCratio(address collateral) internal view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral))
-            );
-    }
-
-    function getNewCollateralManager(address collateral) internal view returns (address) {
-        return
-            flexibleStorage().getAddressValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral))
             );
     }
 
