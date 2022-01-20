@@ -773,12 +773,24 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     /* ========== Exchange Related Fees ========== */
-    /// @notice public function to get the fee for a given exchange
+    /// @notice public function to get the total fee rate for a given exchange
     /// @param sourceCurrencyKey The source currency key
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
         return _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+    }
+
+    /// @notice public function to get the dynamic fee rate for a given exchange
+    /// @param sourceCurrencyKey The source currency key
+    /// @param destinationCurrencyKey The destination currency key
+    /// @return The exchange dynamic fee rate
+    function dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint)
+    {
+        return _dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
@@ -789,7 +801,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
-        uint feeRate = baseRate.add(_dynamicFeeForExchange(sourceCurrencyKey, destinationCurrencyKey));
+        uint feeRate = baseRate.add(_dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey));
         // cap fee rate to 100% to prevent negative amounts
         return feeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : feeRate;
     }
@@ -810,29 +822,33 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
         uint dynamicFee =
-            _dynamicFeeForExchangeAtRounds(sourceCurrencyKey, destinationCurrencyKey, roundIdForSrc, roundIdForDest);
+            _dynamicFeeRateForExchangeAtRounds(sourceCurrencyKey, destinationCurrencyKey, roundIdForSrc, roundIdForDest);
         uint feeRate = baseRate.add(dynamicFee);
         // cap fee rate to 100% to prevent negative amounts
         return feeRate > SafeDecimalMath.unit() ? SafeDecimalMath.unit() : feeRate;
     }
 
-    function _dynamicFeeForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
+    function _dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        view
+        returns (uint)
+    {
         DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        uint dynamicFee = _dynamicFeeForCurrency(destinationCurrencyKey, config);
-        dynamicFee = dynamicFee.add(_dynamicFeeForCurrency(sourceCurrencyKey, config));
+        uint dynamicFee = _dynamicFeeRateForCurrency(destinationCurrencyKey, config);
+        dynamicFee = dynamicFee.add(_dynamicFeeRateForCurrency(sourceCurrencyKey, config));
         // cap to maxFee
         return dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
     }
 
-    function _dynamicFeeForExchangeAtRounds(
+    function _dynamicFeeRateForExchangeAtRounds(
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint) {
         DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        uint dynamicFee = _dynamicFeeForCurrencyRound(destinationCurrencyKey, roundIdForDest, config);
-        dynamicFee = dynamicFee.add(_dynamicFeeForCurrencyRound(sourceCurrencyKey, roundIdForSrc, config));
+        uint dynamicFee = _dynamicFeeRateForCurrencyRound(destinationCurrencyKey, roundIdForDest, config);
+        dynamicFee = dynamicFee.add(_dynamicFeeRateForCurrencyRound(sourceCurrencyKey, roundIdForSrc, config));
         // cap to maxFee
         return dynamicFee > config.maxFee ? config.maxFee : dynamicFee;
     }
@@ -841,15 +857,13 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param currencyKey The given currency key
     /// @param config dynamic fee calculation configuration params
     /// @return The dyanmic dynamicFee
-    function _dynamicFeeForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config) internal view returns (uint) {
+    function _dynamicFeeRateForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config) internal view returns (uint) {
         // no dynamic dynamicFee for sUSD or too few rounds
         if (currencyKey == sUSD || config.rounds <= 1) {
             return 0;
         }
-        uint[] memory prices;
         uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        return _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
+        return _dynamicFeeRateForCurrencyRound(currencyKey, roundId, config);
     }
 
     /// @notice Get dynamicFee for a given currency key (SIP-184)
@@ -857,7 +871,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param roundId The round id
     /// @param config dynamic fee calculation configuration params
     /// @return The dyanmic dynamicFee
-    function _dynamicFeeForCurrencyRound(
+    function _dynamicFeeRateForCurrencyRound(
         bytes32 currencyKey,
         uint roundId,
         DynamicFeeConfig memory config

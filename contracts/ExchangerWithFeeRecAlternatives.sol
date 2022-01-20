@@ -279,7 +279,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             baseRate = getExchangeFeeRate(destinationCurrencyKey);
         }
 
-        return baseRate.add(_dynamicFeeForExchange(sourceCurrencyKey, destinationCurrencyKey));
+        return baseRate.add(_dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey));
     }
 
     function _getAmountsForAtomicExchangeMinusFees(
