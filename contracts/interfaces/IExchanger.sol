@@ -4,6 +4,27 @@ import "./IVirtualSynth.sol";
 
 // https://docs.synthetix.io/contracts/source/interfaces/iexchanger
 interface IExchanger {
+    struct ExchangeEntrySettlement {
+        bytes32 src;
+        uint amount;
+        bytes32 dest;
+        uint reclaim;
+        uint rebate;
+        uint srcRoundIdAtPeriodEnd;
+        uint destRoundIdAtPeriodEnd;
+        uint timestamp;
+    }
+
+    struct ExchangeEntry {
+        uint sourceRate;
+        uint destinationRate;
+        uint destinationAmount;
+        uint exchangeFeeRate;
+        uint exchangeDynamicFeeRate;
+        uint roundIdForSrc;
+        uint roundIdForDest;
+    }
+
     // Views
     function calculateAmountAfterSettlement(
         address from,
@@ -31,6 +52,11 @@ interface IExchanger {
         external
         view
         returns (uint exchangeFeeRate);
+
+    function dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint);
 
     function getAmountsForExchange(
         uint sourceAmount,

@@ -15,6 +15,8 @@ interface IExchangeRates {
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
+    function anyRateIsInvalidAtRound(bytes32[] calldata currencyKeys, uint[] calldata roundIds) external view returns (bool);
+
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory);
 
     function effectiveValue(
@@ -27,6 +29,21 @@ interface IExchangeRates {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        );
+
+    function effectiveValueAndRatesAtRound(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        uint roundIdForSrc,
+        uint roundIdForDest
     )
         external
         view
@@ -49,14 +66,6 @@ interface IExchangeRates {
             uint systemSourceRate,
             uint systemDestinationRate
         );
-
-    function effectiveValueAtRound(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        uint roundIdForSrc,
-        uint roundIdForDest
-    ) external view returns (uint value);
 
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint);
 
@@ -85,10 +94,11 @@ interface IExchangeRates {
 
     function rateStalePeriod() external view returns (uint);
 
-    function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
-        external
-        view
-        returns (uint[] memory rates, uint[] memory times);
+    function ratesAndUpdatedTimeForCurrencyLastNRounds(
+        bytes32 currencyKey,
+        uint numRounds,
+        uint roundId
+    ) external view returns (uint[] memory rates, uint[] memory times);
 
     function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
         external
