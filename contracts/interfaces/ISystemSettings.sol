@@ -42,11 +42,7 @@ interface ISystemSettings {
     function etherWrapperBurnFeeRate() external view returns (uint);
 
     function etherWrapperMintFeeRate() external view returns (uint);
-
-    function minCratio(address collateral) external view returns (uint);
-
-    function collateralManager(address collateral) external view returns (address);
-
+    
     function interactionDelay(address collateral) external view returns (uint);
 
     function atomicMaxVolumePerBlock() external view returns (uint);
