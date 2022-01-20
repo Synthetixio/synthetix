@@ -76,10 +76,10 @@ library SystemSettingsLib {
     function setIssuanceRatio(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
-        uint issuanceRatio
+        uint ratio
     ) external {
-        require(issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, issuanceRatio);
+        require(ratio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, ratio);
     }
 
     function setTradingRewardsEnabled(
@@ -120,12 +120,12 @@ library SystemSettingsLib {
     function setTargetThreshold(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
-        uint _percent
-    ) external returns (uint targetThreshold) {
-        require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
-        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
+        uint percent
+    ) external returns (uint threshold) {
+        require(percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
+        threshold = percent.mul(SafeDecimalMath.unit()).div(100);
 
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, targetThreshold);
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, threshold);
     }
 
     function setLiquidationDelay(
