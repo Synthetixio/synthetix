@@ -4,7 +4,7 @@ interface ILiquidator {
     // Views
     function liquidationOpen(address account) external view returns (bool);
 
-    function instantLiquidationOpen(address account) external view returns (bool);
+    function selfLiquidationOpen(address account) external view returns (bool);
 
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;

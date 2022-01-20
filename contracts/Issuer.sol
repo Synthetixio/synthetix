@@ -576,7 +576,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
 
         // // Check account is liquidation open
-        // require(liquidator().isOpenForLiquidation(account), "Account not open for liquidation");
+        // require(liquidator().liquidationOpen(account), "Account not open for liquidation");
 
         // // require liquidator has enough sUSD
         // require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
@@ -626,25 +626,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         amountToLiquidate = 0;
     }
 
-    function instantLiquidation(
-        address account,
-        uint susdAmount,
-        address liquidator
-    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-        // TODO: instant liquidation
-        totalRedeemed = 0;
-        amountToLiquidate = 0;
-    }
-
-    function selfLiquidation(
-        address account,
-        uint susdAmount,
-        address liquidator
-    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-        // TODO: Self liquidation
-        totalRedeemed = 0;
-        amountToLiquidate = 0;
-    }
+    // function selfLiquidation(
+    //     address account,
+    //     uint susdAmount,
+    //     address liquidator
+    // ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+    //     // TODO: Self liquidation
+    //     totalRedeemed = 0;
+    //     amountToLiquidate = 0;
+    // }
 
     function setCurrentPeriodId(uint128 periodId) external {
         require(msg.sender == address(feePool()), "Must be fee pool");

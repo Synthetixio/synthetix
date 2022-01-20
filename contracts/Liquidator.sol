@@ -119,7 +119,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return false;
     }
 
-    function instantLiquidationOpen(address account) external view returns (bool) {
+    function selfLiquidationOpen(address account) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
