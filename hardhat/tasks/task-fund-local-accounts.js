@@ -89,7 +89,7 @@ task('fund-local-accounts')
 		ctx.users = {};
 		ctx.deploymentPath = deploymentPath;
 		ctx.provider = _setupProvider(ctx);
-		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits(1, 'gwei');
+		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits('1', 'gwei');
 
 		if (privateKey) {
 			ctx.users.owner = new ethers.Wallet(privateKey, ctx.provider);
