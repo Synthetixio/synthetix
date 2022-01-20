@@ -169,6 +169,32 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);
     }
 
+    function setSelfLiquidationPenalty(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint penalty
+    ) external {
+        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);
+    }
+
+    function setFlagReward(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint reward
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, reward);
+    }
+
+    function setLiquidateReward(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint reward
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, reward);
+    }
+
     function setRateStalePeriod(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,

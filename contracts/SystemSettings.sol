@@ -79,19 +79,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationPenalty();
     }
 
-    /* SIP-302: Upgrade Liquidation Mechanism */
-    function instantLiquidationDelay() external view returns (uint) {
-        return getInstantLiquidationDelay();
-    }
-
-    function instantLiquidationRatio() external view returns (uint) {
-        return getInstantLiquidationRatio();
-    }
-
-    function instantLiquidationPenalty() external view returns (uint) {
-        return getInstantLiquidationPenalty();
-    }
-
+    // SIP-148: Upgrade Liquidation Mechanism
+    // adds self liquidations and rewards for flagging and liquidating
     function selfLiquidationPenalty() external view returns (uint) {
         return getSelfLiquidationPenalty();
     }
@@ -103,7 +92,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function liquidateReward() external view returns (uint) {
         return getLiquidateReward();
     }
-    /* End SIP-302 */
 
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
@@ -287,54 +275,19 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit LiquidationPenaltyUpdated(penalty);
     }
 
-    function setInstantLiquidationDelay(uint _time) external onlyOwner {
-        require(_time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_DELAY, _time);
-
-        emit InstantLiquidationDelayUpdated(_time);
+    function setSelfLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSelfLiquidationPenalty(SETTING_SELF_LIQUIDATION_PENALTY, penalty);
+        emit SelfLiquidationPenaltyUpdated(penalty);
     }
 
-    function setInstantLiquidationRatio(uint _ratio) external onlyOwner {
-        require(
-            _ratio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getInstantLiquidationPenalty())),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
-        );
-
-        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_ratio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_RATIO, _ratio);
-
-        emit InstantLiquidationRatioUpdated(_ratio);
+    function setFlagReward(uint reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD, reward);
+        emit FlagRewardUpdated(reward);
     }
 
-    function setInstantLiquidationPenalty(uint _penalty) external onlyOwner {
-        require(_penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_INSTANT_LIQUIDATION_PENALTY, _penalty);
-
-        emit InstantLiquidationPenaltyUpdated(_penalty);
-    }
-
-    function setSelfLiquidationPenalty(uint _penalty) external onlyOwner {
-        require(_penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_PENALTY, _penalty);
-
-        emit SelfLiquidationPenaltyUpdated(_penalty);
-    }
-
-    function setFlagReward(uint _reward) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD, _reward);
-
-        emit FlagRewardUpdated(_reward);
-    }
-
-    function setLiquidateReward(uint _reward) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD, _reward);
-
-        emit LiquidateRewardUpdated(_reward);
+    function setLiquidateReward(uint reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD, reward);
+        emit LiquidateRewardUpdated(reward);
     }
 
     function setRateStalePeriod(uint period) external onlyOwner {
@@ -475,9 +428,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
-    event InstantLiquidationDelayUpdated(uint newDelay);
-    event InstantLiquidationRatioUpdated(uint newRatio);
-    event InstantLiquidationPenaltyUpdated(uint newPenalty);
     event SelfLiquidationPenaltyUpdated(uint newPenalty);
     event FlagRewardUpdated(uint newReward);
     event LiquidateRewardUpdated(uint newReward);
