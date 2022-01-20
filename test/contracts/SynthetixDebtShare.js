@@ -544,7 +544,6 @@ contract('SynthetixDebtShare', async accounts => {
 			});
 		});
 
-
 		describe('when invoked by owner', () => {
 			beforeEach(async () => {
 				await synthetixDebtShare.importAddresses([account1], [toUnit('20')], { from: owner });
