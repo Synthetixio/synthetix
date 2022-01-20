@@ -85,6 +85,10 @@ contract('SystemSettings', async accounts => {
 				'setWrapperBurnFeeRate',
 				'setWrapperMaxTokenAmount',
 				'setWrapperMintFeeRate',
+				'setExchangeDynamicFeeThreshold',
+				'setExchangeDynamicFeeWeightDecay',
+				'setExchangeDynamicFeeRounds',
+				'setExchangeMaxDynamicFee',
 			],
 		});
 	});
@@ -1481,6 +1485,92 @@ contract('SystemSettings', async accounts => {
 			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
 				assert.eventEqual(txn, 'WrapperBurnFeeRateUpdated', [testWrapperAddress, newValue]);
 			});
+		});
+	});
+
+	describe('setExchangeDynamicFeeThreshold()', () => {
+		const threshold = toUnit('0.004');
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setExchangeDynamicFeeThreshold,
+				args: [threshold],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setExchangeDynamicFeeThreshold(threshold, { from: owner });
+			const actual = await systemSettings.exchangeDynamicFeeThreshold();
+			assert.bnEqual(
+				actual,
+				threshold,
+				'Configured exchange dynamic fee threshold is set correctly'
+			);
+			assert.eventEqual(txn, 'ExchangeDynamicFeeThresholdUpdated', [threshold]);
+		});
+	});
+
+	describe('setExchangeDynamicFeeWeightDecay()', () => {
+		const weightDecay = toUnit('0.9');
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setExchangeDynamicFeeWeightDecay,
+				args: [weightDecay],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setExchangeDynamicFeeWeightDecay(weightDecay, {
+				from: owner,
+			});
+			const actual = await systemSettings.exchangeDynamicFeeWeightDecay();
+			assert.bnEqual(
+				actual,
+				weightDecay,
+				'Configured exchange dynamic fee weight decay is set correctly'
+			);
+			assert.eventEqual(txn, 'ExchangeDynamicFeeWeightDecayUpdated', [weightDecay]);
+		});
+	});
+
+	describe('setExchangeDynamicFeeRounds()', () => {
+		const rounds = '10';
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setExchangeDynamicFeeRounds,
+				args: [rounds],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setExchangeDynamicFeeRounds(rounds, { from: owner });
+			const actual = await systemSettings.exchangeDynamicFeeRounds();
+			assert.equal(actual, rounds, 'Configured exchange dynamic fee rounds is set correctly');
+			assert.eventEqual(txn, 'ExchangeDynamicFeeRoundsUpdated', [rounds]);
+		});
+	});
+
+	describe('setExchangeMaxDynamicFee()', () => {
+		const maxDynamicFee = toUnit('1');
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setExchangeMaxDynamicFee,
+				args: [maxDynamicFee],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setExchangeMaxDynamicFee(maxDynamicFee, { from: owner });
+			const actual = await systemSettings.exchangeMaxDynamicFee();
+			assert.bnEqual(actual, maxDynamicFee, 'Configured exchange max dynamic fee is set correctly');
+			assert.eventEqual(txn, 'ExchangeMaxDynamicFeeUpdated', [maxDynamicFee]);
 		});
 	});
 });

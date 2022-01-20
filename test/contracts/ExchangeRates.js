@@ -949,7 +949,7 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() shows first entry for sUSD', async () => {
-				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3'), [
+				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3', '0'), [
 					[toUnit('1'), '0', '0'],
 					[0, 0, 0],
 				]);
@@ -957,7 +957,7 @@ contract('Exchange Rates', async accounts => {
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() returns 0s for other currencies without updates', async () => {
 				const fiveZeros = new Array(5).fill('0');
 				await setupAggregators([sJPY]);
-				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5'), [
+				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5', '0'), [
 					fiveZeros,
 					fiveZeros,
 				]);
@@ -1012,7 +1012,7 @@ contract('Exchange Rates', async accounts => {
 							it('then it returns zeros', async () => {
 								const fiveZeros = new Array(5).fill('0');
 								assert.deepEqual(
-									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5'),
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sAUD, '5', '0'),
 									[fiveZeros, fiveZeros]
 								);
 							});
@@ -1020,7 +1020,7 @@ contract('Exchange Rates', async accounts => {
 						describe('when invoked for an aggregated price', () => {
 							it('then it returns the rates as expected', async () => {
 								assert.deepEqual(
-									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '3'),
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '3', '0'),
 									[
 										[toUnit('102'), toUnit('101'), toUnit('100')],
 										['1002', '1001', '1000'],
@@ -1030,7 +1030,7 @@ contract('Exchange Rates', async accounts => {
 
 							it('then it returns the rates as expected, even over the edge', async () => {
 								assert.deepEqual(
-									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5'),
+									await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sJPY, '5', '0'),
 									[
 										[toUnit('102'), toUnit('101'), toUnit('100'), '0', '0'],
 										['1002', '1001', '1000', '0', '0'],
@@ -1111,7 +1111,7 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 
-				describe('effectiveValueAtRound()', () => {
+				describe('effectiveValueAndRatesAtRound()', () => {
 					describe('when both aggregated prices have been given three rates with current timestamps', () => {
 						beforeEach(async () => {
 							await setupAggregators([sBNB]);
@@ -1126,43 +1126,61 @@ contract('Exchange Rates', async accounts => {
 						});
 						it('accepts various changes to src roundId', async () => {
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '1'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '1', '1')
+								)[0],
 								toUnit('0.1')
 							);
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '2', '1'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '2', '1')
+								)[0],
 								toUnit('0.2')
 							);
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '3', '1'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '3', '1')
+								)[0],
 								toUnit('0.3')
 							);
 						});
 						it('accepts various changes to dest roundId', async () => {
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '1'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '1', '1')
+								)[0],
 								toUnit('0.1')
 							);
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '2'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '1', '2')
+								)[0],
 								toUnit('0.05')
 							);
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '1', '3'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '1', '3')
+								)[0],
 								toUnit('0.025')
 							);
 						});
 						it('and combinations therein', async () => {
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '2', '2'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '2', '2')
+								)[0],
 								toUnit('0.1')
 							);
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '3', '3'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '3', '3')
+								)[0],
 								toUnit('0.075')
 							);
 							assert.bnEqual(
-								await instance.effectiveValueAtRound(sJPY, toUnit('1'), sBNB, '3', '2'),
+								(
+									await instance.effectiveValueAndRatesAtRound(sJPY, toUnit('1'), sBNB, '3', '2')
+								)[0],
 								toUnit('0.15')
 							);
 						});

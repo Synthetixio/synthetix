@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISystemSettings.sol";
 import "./SystemSettingsLib.sol";
@@ -84,9 +83,37 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getRateStalePeriod();
     }
 
+    /* ========== Exchange Related Fees ========== */
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getExchangeFeeRate(currencyKey);
     }
+
+    // SIP-184 Dynamic Fee
+    /// @notice Get the dynamic fee threshold
+    /// @return The dynamic fee threshold
+    function exchangeDynamicFeeThreshold() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().threshold;
+    }
+
+    /// @notice Get the dynamic fee weight decay per round
+    /// @return The dynamic fee weight decay per round
+    function exchangeDynamicFeeWeightDecay() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().weightDecay;
+    }
+
+    /// @notice Get the dynamic fee total rounds for calculation
+    /// @return The dynamic fee total rounds for calculation
+    function exchangeDynamicFeeRounds() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().rounds;
+    }
+
+    /// @notice Get the max dynamic fee
+    /// @return The max dynamic fee
+    function exchangeMaxDynamicFee() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().maxFee;
+    }
+
+    /* ========== End Exchange Related Fees ========== */
 
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();
@@ -206,9 +233,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
-    function setIssuanceRatio(uint issuanceRatio) external onlyOwner {
-        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, issuanceRatio);
-        emit IssuanceRatioUpdated(issuanceRatio);
+    function setIssuanceRatio(uint ratio) external onlyOwner {
+        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, ratio);
+        emit IssuanceRatioUpdated(ratio);
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
@@ -235,8 +262,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setTargetThreshold(uint percent) external onlyOwner {
-        uint targetThreshold = flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, percent);
-        emit TargetThresholdUpdated(targetThreshold);
+        uint threshold = flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, percent);
+        emit TargetThresholdUpdated(threshold);
     }
 
     function setLiquidationDelay(uint time) external onlyOwner {
@@ -266,6 +293,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit RateStalePeriodUpdated(period);
     }
 
+    /* ========== Exchange Fees Related ========== */
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
         external
         onlyOwner
@@ -274,6 +302,48 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         for (uint i = 0; i < synthKeys.length; i++) {
             emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
+    }
+
+    /// @notice Set exchange dynamic fee threshold constant in decimal ratio
+    /// @param threshold The exchange dynamic fee threshold
+    /// @return uint threshold constant
+    function setExchangeDynamicFeeThreshold(uint threshold) external onlyOwner {
+        require(threshold != 0, "Threshold cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD, threshold);
+
+        emit ExchangeDynamicFeeThresholdUpdated(threshold);
+    }
+
+    /// @notice Set exchange dynamic fee weight decay constant
+    /// @param weightDecay The exchange dynamic fee weight decay
+    /// @return uint weight decay constant
+    function setExchangeDynamicFeeWeightDecay(uint weightDecay) external onlyOwner {
+        require(weightDecay != 0, "Weight decay cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, weightDecay);
+
+        emit ExchangeDynamicFeeWeightDecayUpdated(weightDecay);
+    }
+
+    /// @notice Set exchange dynamic fee last N rounds with minimum 2 rounds
+    /// @param rounds The exchange dynamic fee last N rounds
+    /// @return uint dynamic fee last N rounds
+    function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS, rounds);
+
+        emit ExchangeDynamicFeeRoundsUpdated(rounds);
+    }
+
+    /// @notice Set max exchange dynamic fee
+    /// @param maxFee The max exchange dynamic fee
+    /// @return uint dynamic fee last N rounds
+    function setExchangeMaxDynamicFee(uint maxFee) external onlyOwner {
+        require(maxFee != 0, "Max dynamic fee cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_MAX_DYNAMIC_FEE, maxFee);
+
+        emit ExchangeMaxDynamicFeeUpdated(maxFee);
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
@@ -400,7 +470,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
+    /* ========== Exchange Fees Related ========== */
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event ExchangeDynamicFeeThresholdUpdated(uint dynamicFeeThreshold);
+    event ExchangeDynamicFeeWeightDecayUpdated(uint dynamicFeeWeightDecay);
+    event ExchangeDynamicFeeRoundsUpdated(uint dynamicFeeRounds);
+    event ExchangeMaxDynamicFeeUpdated(uint maxDynamicFee);
+    /* ========== End Exchange Fees Related ========== */
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
