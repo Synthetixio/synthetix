@@ -56,16 +56,21 @@ jobs:
       - run:
           command: npm run fork:mainnet
           background: true
+      - run:
+          command: PROVIDER_URL=http://mainnet.optimism.io npm run fork:ovm
+          background: true
       - cmd-wait-for-port:
           port: 8545
+      - cmd-wait-for-port:
+          port: 9991
       - run:
-          name: Run integration tests on l1
+          name: Run integration tests on l2
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat test:integration:l1 --use-fork
+              npx hardhat test:integration:l2 --use-fork
             else
-              npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork
+              npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
             fi;
   job-integration-tests:
     working_directory: ~/repo
