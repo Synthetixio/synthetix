@@ -1,39 +1,37 @@
 const { getUsers } = require('../../../index');
 const { loadLocalWallets } = require('../../test-utils/wallets');
 
-async function loadUsers({ ctx, network }) {
+async function loadUsers({ ctx }) {
+	ctx.users = {};
 	let wallets = [];
 
 	// Retrieve and create wallets
-	if (ctx.fork) {
-		wallets = wallets.concat(_getWallets({ ctx, provider: ctx.provider }));
-	}
 	wallets = wallets.concat(loadLocalWallets({ provider: ctx.provider }));
 
 	// Build ctx.users
-	ctx.users = {};
 	ctx.users.owner = wallets[0];
+	ctx.users.deployer = wallets[0];
 	ctx.users.someUser = wallets[1];
 	ctx.users.otherUser = wallets[2];
 	for (let i = 3; i < wallets.length; i++) {
 		ctx.users[`user${i}`] = wallets[i];
 	}
+
+	if (ctx.fork) {
+		ctx.users = { ...ctx.users, ..._getWallets({ ctx, provider: ctx.provider }) };
+	}
 }
 
 function _getWallets({ ctx, provider }) {
-	const users = getUsers(ctx);
+	const usersArray = getUsers(ctx);
 
-	const signers = users
-		.filter(user => user.name !== 'fee')
-		.filter(user => user.name !== 'zero')
-		.map(user => {
-			const signer = provider.getSigner(user.address);
-			signer.address = signer._address;
+	const usersObj = {};
+	for (const user of usersArray) {
+		usersObj[user.name] = provider.getSigner(user.address);
+		usersObj[user.name].address = user.address;
+	}
 
-			return signer;
-		});
-
-	return signers;
+	return usersObj;
 }
 
 module.exports = {

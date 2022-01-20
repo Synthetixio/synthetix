@@ -493,6 +493,7 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		'kovan-ovm': Object.assign({}, base),
 		'mainnet-ovm': Object.assign({}, base, {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
+			deployer: '0x3C05B1239B223c969540FeFc0270227a2B00e047',
 		}),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),

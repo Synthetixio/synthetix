@@ -62,7 +62,7 @@ jobs:
       - cmd-wait-for-port:
           port: 8545
       - cmd-wait-for-port:
-          port: 9991
+          port: 9545
       - run:
           name: Run integration tests on l2
           command: |
@@ -70,7 +70,7 @@ jobs:
             if [ -z "$NEW_CONTRACTS" ]; then
               npx hardhat test:integration:l2 --use-fork
             else
-              npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
+              npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork --provider-port 9545
             fi;
   job-integration-tests:
     working_directory: ~/repo
