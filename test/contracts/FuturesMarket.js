@@ -115,8 +115,6 @@ contract('FuturesMarket', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
-				'ProxyFuturesMarketBTC',
-				'ProxyFuturesMarketETH',
 				'FuturesMarketBTC',
 				'AddressResolver',
 				'FeePool',
@@ -124,6 +122,7 @@ contract('FuturesMarket', accounts => {
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'Synthetix',
+				'CollateralManager',
 				'DebtCache',
 			],
 		}));

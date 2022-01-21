@@ -44,7 +44,6 @@ contract('FuturesMarketSettings', accounts => {
 			contracts: [
 				'FuturesMarketSettings',
 				'FuturesMarketManager',
-				'Proxy',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
