@@ -72,15 +72,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"RewardEscrow": {
-			"name": "RewardEscrow",
-			"address": "0x9952e42fF92149f48b3b7dee3f921A6DD106F79F",
-			"source": "RewardEscrow",
-			"link": "https://kovan-explorer.optimism.io/address/0x9952e42fF92149f48b3b7dee3f921A6DD106F79F",
-			"timestamp": "2021-01-14T17:20:33.145Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"RewardEscrowV2": {
 			"name": "RewardEscrowV2",
 			"address": "0xB613d148E47525478bD8A91eF7Cf2F7F63d81858",
