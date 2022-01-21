@@ -431,6 +431,9 @@ workflows:
       - job-fork-tests:
           requires:
             - job-prepare
+      - job-fork-tests-ovm:
+          requires:
+            - job-prepare
       - job-simulate-release:
           requires:
             - job-prepare
