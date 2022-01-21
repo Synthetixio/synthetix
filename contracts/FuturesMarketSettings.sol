@@ -205,7 +205,11 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     // must be recomputed, otherwise already-accrued but unrealised funding in the market can change.
 
     function _recomputeFunding(bytes32 _baseAsset) internal {
-        IFuturesMarket(_futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
+        IFuturesMarket market = IFuturesMarket(_futuresMarketManager().marketForAsset(_baseAsset));
+        if (market.marketSize() > 0) {
+            // only recompute funding when market has positions, this check is important for initial setup
+            market.recomputeFunding();
+        }
     }
 
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) public onlyOwner {
