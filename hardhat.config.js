@@ -3,6 +3,10 @@ require('dotenv').config();
 
 const path = require('path');
 
+/// for some weird reason the order of these imports is important:
+/// ./hardhat needs to be imported after hardhat-interact (error otherwise)
+///  and hardhat-gas-reporter needs to be imported after ./hardhat (otherwise no gas reports)
+require('hardhat-interact');
 require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
@@ -54,6 +58,22 @@ module.exports = {
 			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
 		},
+		mainnet: {
+			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
+			chainId: 1,
+		},
+		'mainnet-ovm': {
+			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
+			chainId: 10,
+		},
+		kovan: {
+			url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			chainId: 42,
+		},
+		'kovan-ovm': {
+			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
+			chainId: 69,
+		},
 	},
 	gasReporter: {
 		enabled: false,
@@ -65,5 +85,6 @@ module.exports = {
 	},
 	mocha: {
 		timeout: 120e3, // 120s
+		retries: 3,
 	},
 };

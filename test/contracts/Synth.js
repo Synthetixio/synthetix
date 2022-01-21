@@ -9,12 +9,14 @@ const Synth = artifacts.require('Synth');
 
 const { setupAllContracts } = require('./setup');
 
-const { currentTime, toUnit, bytesToString } = require('../utils')();
+const { toUnit, bytesToString } = require('../utils')();
 const {
 	issueSynthsToUser,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	setStatus,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const {
@@ -25,7 +27,7 @@ const {
 contract('Synth', async accounts => {
 	const [sUSD, SNX, sEUR] = ['sUSD', 'SNX', 'sEUR'].map(toBytes32);
 
-	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
+	const [deployerAccount, owner, , , account1, account2] = accounts;
 
 	let feePool,
 		FEE_ADDRESS,
@@ -71,18 +73,16 @@ contract('Synth', async accounts => {
 			],
 		}));
 
+		await setupPriceAggregators(exchangeRates, owner, [sEUR]);
+
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		const timestamp = await currentTime();
-
 		// Send a price update to guarantee we're not stale.
-		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [SNX], ['0.1'].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
@@ -733,12 +733,8 @@ contract('Synth', async accounts => {
 					contracts: [{ contract: 'Synth', properties: { currencyKey: sEUR } }],
 				}));
 
-				const timestamp = await currentTime();
-
 				// Send a price update to guarantee we're not stale.
-				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
-					from: oracle,
-				});
+				await updateAggregatorRates(exchangeRates, [sEUR], ['1'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 			});
 

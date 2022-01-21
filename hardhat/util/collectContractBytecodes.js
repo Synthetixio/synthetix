@@ -42,7 +42,7 @@ function collectContractBytesCodes() {
 				const jsonFileContents = fs.readFileSync(jsonfilePath);
 				const artifacts = JSON.parse(jsonFileContents);
 
-				contractBytecodes[contractName] = artifacts.bytecode;
+				contractBytecodes[contractName] = artifacts.deployedBytecode;
 			} else {
 				searchRecurse({ entryPath: path.join(entryPath, contractFolder) });
 			}

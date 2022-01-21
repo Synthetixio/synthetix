@@ -55,12 +55,10 @@ class SafeBatchSubmitter {
 
 			let matchedTxnIsPending = false;
 
-			for (const {
-				nonce,
-				dataDecoded: {
+			for (const { nonce, dataDecoded } of pendingTxns.results) {
+				const {
 					parameters: [{ valueDecoded }],
-				},
-			} of pendingTxns.results) {
+				} = dataDecoded || { parameters: [{ valueDecoded: [] }] };
 				// figure out what the next unused nonce position is (including everything else in the queue)
 				this.unusedNoncePosition = Math.max(this.unusedNoncePosition, nonce + 1);
 				matchedTxnIsPending =

@@ -1,4 +1,5 @@
 {
 	"buidler_cache_directory": "build/cache",
-	"hardhat_artifacts_directory": "build/artifacts"
+	"hardhat_artifacts_directory": "build/artifacts",
+	"detectors_to_exclude": "reentrancy-events"
 }
