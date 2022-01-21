@@ -72,15 +72,6 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"RewardEscrow": {
-			"name": "RewardEscrow",
-			"address": "0xd32138018210edA0028240638f35b70ECC0D8C22",
-			"source": "RewardEscrow",
-			"link": "https://etherscan.io/address/0xd32138018210edA0028240638f35b70ECC0D8C22",
-			"timestamp": "2021-01-15T05:40:59.117Z",
-			"txn": "",
-			"network": "mainnet"
-		},
 		"RewardEscrowV2": {
 			"name": "RewardEscrowV2",
 			"address": "0x47eE58801C1AC44e54FF2651aE50525c5cfc66d0",
