@@ -163,5 +163,11 @@
 	},
 	"CollateralEth": {
 		"deploy": false
+	},
+	"StakingRewardssUSDDAIUniswapV3": {
+		"deploy": true
+	},
+	"StakingRewardsSNXWETHUniswapV3": {
+		"deploy": true
 	}
 }
