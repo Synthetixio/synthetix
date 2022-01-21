@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
 const { getSource, getTarget } = require('../../index');
+const { loadConnections } = require('../../publish/src/util');
 
 const { loadUsers } = require('../../test/integration/utils/users');
 const { ensureBalance } = require('../util/balances');
@@ -25,12 +26,14 @@ function connectContracts({ ctx }) {
 	});
 }
 
-function _setupProvider({ url }) {
-	return new ethers.providers.JsonRpcProvider({
-		url,
-		pollingInterval: 50,
-		timeout: 600000,
+function _setupProvider({ providerUrl, network, useOvm }) {
+	const { providerUrl: envProviderUrl } = loadConnections({
+		network,
+		useOvm,
 	});
+
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl || envProviderUrl);
+	return provider;
 }
 
 async function fundAccounts({ ctx, accounts }) {
@@ -52,6 +55,12 @@ async function fundAccounts({ ctx, accounts }) {
 		});
 	}
 }
+
+const takeDebtSnapshot = async ({ contracts, users }) => {
+	console.log('Taking debt snapshot');
+	const connectedDebtCache = contracts.DebtCache.connect(users.owner);
+	await connectedDebtCache.takeDebtSnapshot();
+};
 
 const defaultAccounts = [
 	// Hardhat account #1 (deployer)
@@ -80,12 +89,13 @@ task('fund-local-accounts')
 		const { account, providerUrl, targetNetwork, privateKey, deploymentPath } = taskArguments;
 
 		const ctx = {};
+		ctx.providerUrl = providerUrl;
 		ctx.network = targetNetwork;
 		ctx.useOvm = true;
 		ctx.users = {};
 		ctx.deploymentPath = deploymentPath;
-		ctx.provider = _setupProvider({ url: providerUrl });
-		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits(1, 'gwei');
+		ctx.provider = _setupProvider(ctx);
+		ctx.provider.getGasPrice = async () => ethers.utils.parseUnits('1', 'gwei');
 
 		if (privateKey) {
 			ctx.users.owner = new ethers.Wallet(privateKey, ctx.provider);
@@ -96,7 +106,7 @@ task('fund-local-accounts')
 		connectContracts({ ctx });
 
 		console.log(`Using account ${ctx.users.owner.address}`);
-
+		await takeDebtSnapshot({ contracts: ctx.contracts, users: ctx.users });
 		await fundAccounts({
 			ctx,
 			accounts: account ? [account] : defaultAccounts,
