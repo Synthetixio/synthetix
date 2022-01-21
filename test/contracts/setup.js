@@ -3,7 +3,7 @@
 const { artifacts, web3, log } = require('hardhat');
 
 const { toWei, toBN } = web3.utils;
-const { toUnit, currentTime } = require('../utils')();
+const { toUnit } = require('../utils')();
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
 const {
@@ -675,7 +675,7 @@ const setupAllContracts = async ({
 	contracts = [],
 	synths = [],
 }) => {
-	const [, owner, oracle] = accounts;
+	const [, owner] = accounts;
 
 	// Copy mocks into the return object, this allows us to include them in the
 	// AddressResolver
@@ -807,6 +807,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{
@@ -974,6 +975,10 @@ const setupAllContracts = async ({
 			contract: 'FuturesMarketManager',
 			deps: ['AddressResolver', 'Exchanger'],
 		},
+		{
+			contract: 'FuturesMarketSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
@@ -982,6 +987,8 @@ const setupAllContracts = async ({
 				'Proxy',
 				'AddressResolver',
 				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'SystemStatus',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
@@ -998,10 +1005,7 @@ const setupAllContracts = async ({
 				'ExchangeCircuitBreaker',
 			],
 		},
-		{
-			contract: 'FuturesMarketSettings',
-			deps: ['AddressResolver', 'FlexibleStorage'],
-		},
+
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 	];
 
@@ -1234,7 +1238,6 @@ const setupAllContracts = async ({
 		]);
 
 		if (returnObj['FuturesMarketSettings']) {
-			const time = await currentTime();
 			const promises = [
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
@@ -1256,10 +1259,9 @@ const setupAllContracts = async ({
 			// TODO: fetch settings per-market programmatically
 			const setupFuturesMarket = async asset => {
 				const assetKey = toBytes32(asset);
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await Promise.all([
-					returnObj['ExchangeRates'].updateRates([assetKey], [toUnit('1')], time, {
-						from: oracle,
-					}),
+					updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]),
 					returnObj['FuturesMarketSettings'].setParameters(
 						assetKey,
 						toWei('0.003'), // 0.3% taker fee

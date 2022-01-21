@@ -33,7 +33,7 @@ contract('FuturesMarketManager', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
-				'Proxy',
+				// 'Proxy',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',

@@ -1,9 +1,10 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toWei, toBN } = web3.utils;
 const { toBytes32 } = require('../../');
-const { currentTime, toUnit } = require('../utils')();
+const { toUnit } = require('../utils')();
 const { setupContract, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
+const { updateAggregatorRates } = require('./helpers');
 
 const FuturesMarket = artifacts.require('FuturesMarket');
 
@@ -16,7 +17,6 @@ contract('FuturesMarketData', accounts => {
 		futuresMarketData,
 		exchangeRates,
 		exchangeCircuitBreaker,
-		oracle,
 		sUSD,
 		baseAsset;
 	const newAsset = toBytes32('sETH');
@@ -28,9 +28,7 @@ contract('FuturesMarketData', accounts => {
 	const traderInitialBalance = toUnit(1000000);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await exchangeRates.updateRates([asset], [price], await currentTime(), {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [asset], [price]);
 		// reset the last price to the new price, so that we don't trip the breaker
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {
@@ -66,8 +64,6 @@ contract('FuturesMarketData', accounts => {
 				'CollateralManager',
 			],
 		}));
-
-		oracle = await exchangeRates.oracle();
 
 		// Add a couple of additional markets.
 		for (const key of ['sETH', 'sLINK']) {

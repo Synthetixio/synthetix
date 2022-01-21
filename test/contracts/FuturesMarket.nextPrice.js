@@ -1,11 +1,11 @@
 const { contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
-const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
+const { toUnit, multiplyDecimal } = require('../utils')();
 const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { getDecodedLogs, decodedEventEqual } = require('./helpers');
+const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
 contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 	let proxyFuturesMarket,
@@ -14,7 +14,6 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 		futuresMarket,
 		exchangeRates,
 		exchangeCircuitBreaker,
-		oracle,
 		sUSD,
 		feePool;
 
@@ -30,9 +29,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 	const initialPrice = toUnit('100');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await exchangeRates.updateRates([asset], [price], await currentTime(), {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [asset], [price]);
 		// reset the last price to the new price, so that we don't trip the breaker
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {
@@ -72,7 +69,6 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 		}));
 
 		// Update the rate so that it is not invalid
-		oracle = await exchangeRates.oracle();
 		await setPrice(baseAsset, initialPrice);
 
 		// Issue the trader some sUSD

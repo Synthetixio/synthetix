@@ -9,6 +9,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	ensureOnlyExpectedMutativeFunctions,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const MockExchanger = artifacts.require('MockExchanger');
@@ -35,7 +36,6 @@ contract('FuturesMarket', accounts => {
 		exchangeRates,
 		exchangeCircuitBreaker,
 		addressResolver,
-		oracle,
 		sUSD,
 		synthetix,
 		feePool,
@@ -66,9 +66,7 @@ contract('FuturesMarket', accounts => {
 	const initialFundingIndex = toBN(4);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await exchangeRates.updateRates([asset], [price], await currentTime(), {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [asset], [price]);
 		// reset the last price to the new price, so that we don't trip the breaker
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {
@@ -126,13 +124,11 @@ contract('FuturesMarket', accounts => {
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'Synthetix',
-				'CollateralManager',
 				'DebtCache',
 			],
 		}));
 
 		// Update the rate so that it is not invalid
-		oracle = await exchangeRates.oracle();
 		await setPrice(baseAsset, initialPrice);
 
 		// Issue the trader some sUSD
