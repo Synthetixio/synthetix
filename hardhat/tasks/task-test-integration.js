@@ -156,12 +156,10 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 		const providerUrl = (hre.config.providerUrl = 'http://localhost');
 		const providerPortL1 = (hre.config.providerPortL1 = '9545');
 		const providerPortL2 = (hre.config.providerPortL2 = '8545');
-		const buildPathEvm = path.join(__dirname, '..', '..', BUILD_FOLDER);
-		const buildPathOvm = path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
+		const buildPath = path.join(__dirname, '..', '..', BUILD_FOLDER);
 
 		if (taskArguments.compile) {
-			await compileInstance({ useOvm: false, buildPath: buildPathEvm });
-			await compileInstance({ useOvm: true, buildPath: buildPathOvm });
+			await compileInstance({ useOvm: false, buildPath: buildPath });
 		}
 
 		if (taskArguments.deploy) {
@@ -169,14 +167,14 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 				useOvm: false,
 				providerUrl,
 				providerPort: providerPortL1,
-				buildPath: buildPathEvm,
+				buildPath: buildPath,
 			});
 
 			await deployInstance({
 				useOvm: true,
 				providerUrl,
 				providerPort: providerPortL2,
-				buildPath: buildPathOvm,
+				buildPath: buildPath,
 			});
 		}
 
