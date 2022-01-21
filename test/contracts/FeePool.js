@@ -767,13 +767,9 @@ contract('FeePool', async accounts => {
 			});
 
 			it('should disallow closing the current fee period too early', async () => {
-				const feePeriodDuration = await feePool.feePeriodDuration();
-
 				// Close the current one so we know exactly what we're dealing with
 				await closeFeePeriod();
 
-				// Try to close the new fee period 5 seconds early
-				await fastForward(feePeriodDuration.sub(web3.utils.toBN('5')));
 				await assert.revert(
 					feePool.closeCurrentFeePeriod({ from: account1 }),
 					'Too early to close fee period'

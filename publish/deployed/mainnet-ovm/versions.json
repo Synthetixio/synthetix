@@ -581,8 +581,9 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0xbc12131c93Da011B2844FA76c373A8cf5b0db4B5",
-				"status": "current",
-				"keccak256": "0xb89f33e39e3b4c3f010dd3f4ee922c00778b73845226e3edd97715ead2888cd5"
+				"status": "replaced",
+				"keccak256": "0xb89f33e39e3b4c3f010dd3f4ee922c00778b73845226e3edd97715ead2888cd5",
+				"replaced_in": "v2.57.1"
 			},
 			"WrapperFactory": {
 				"address": "0x27be2EFAd45DeBd732C1EBf5C9F7b49D498D4a93",
@@ -608,6 +609,21 @@
 				"address": "0x308AD16ef90fe7caCb85B784A603CB6E71b1A41a",
 				"status": "current",
 				"keccak256": "0xd83c3667bcacd4d33cf0fc649cee03d85e7d3914abb7ce6c9898e6ee1d66da81"
+			}
+		}
+	},
+	"v2.57.1": {
+		"tag": "v2.57.1",
+		"fulltag": "v2.57.1",
+		"release": "Peacock",
+		"network": "mainnet",
+		"date": "2022-01-19T13:57:54-08:00",
+		"commit": "a13d8b6fc913901b542a7db01729930930495543",
+		"contracts": {
+			"FeePool": {
+				"address": "0xFDf3Be612c65464AEB4859047350a6220F304F52",
+				"status": "current",
+				"keccak256": "0xdb500335962961757d10ccbded7e9de457824b4c2d428c8c9aa63f18a5ca3914"
 			}
 		}
 	}

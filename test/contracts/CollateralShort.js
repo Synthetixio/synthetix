@@ -59,6 +59,8 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
+		const sBTC = toBytes32('sBTC');
+
 		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
