@@ -4,7 +4,7 @@ const { toBytes32 } = require('../../');
 const { toUnit } = require('../utils')();
 const { setupContract, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
-const { updateAggregatorRates } = require('./helpers');
+const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
 const FuturesMarket = artifacts.require('FuturesMarket');
 
@@ -66,24 +66,25 @@ contract('FuturesMarketData', accounts => {
 		}));
 
 		// Add a couple of additional markets.
-		for (const key of ['sETH', 'sLINK']) {
+		for (const symbol of ['sETH', 'sLINK']) {
 			const proxy = await setupContract({
 				accounts,
-				contract: 'ProxyFuturesMarket' + key,
+				contract: 'ProxyFuturesMarket' + symbol,
 				source: 'Proxy',
 				args: [accounts[1]],
 				cache: { FuturesMarketManager: futuresMarketManager },
 			});
+			const assetKey = toBytes32(symbol);
 
 			const market = await setupContract({
 				accounts,
-				contract: 'FuturesMarket' + key,
+				contract: 'FuturesMarket' + symbol,
 				source: 'FuturesMarket',
 				args: [
 					proxy.address,
 					accounts[1],
 					addressResolver.address,
-					toBytes32(key), // base asset
+					assetKey, // base asset
 				],
 			});
 
@@ -91,11 +92,12 @@ contract('FuturesMarketData', accounts => {
 			await addressResolver.rebuildCaches([market.address], { from: owner });
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
-			await setPrice(toBytes32(key), toUnit(1000));
+			await setupPriceAggregators(exchangeRates, owner, [assetKey]);
+			await setPrice(assetKey, toUnit(1000));
 
 			// Now that the market exists we can set the all its parameters
 			await futuresMarketSettings.setParameters(
-				toBytes32(key),
+				assetKey,
 				toWei('0.005'), // 0.5% taker fee
 				toWei('0.001'), // 0.1% maker fee
 				toWei('0.0005'), // 0.05% taker fee next price
