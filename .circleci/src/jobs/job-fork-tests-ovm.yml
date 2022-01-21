@@ -5,7 +5,7 @@ steps:
   - attach_workspace:
       at: .
   - run:
-      command: PROVIDER_URL=http://mainnet.optimism.io npm run fork:ovm
+      command: npm run fork:ovm
       background: true
   - cmd-wait-for-port:
       port: 8545
@@ -15,7 +15,7 @@ steps:
         # Only compile and deploy when there are new contracts
         NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
         if [ -z "$NEW_CONTRACTS" ]; then
-          npx hardhat test:integration:l2 --use-fork --provider-port 9545
+          npx hardhat test:integration:l2 --use-fork
         else
           npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
         fi;
