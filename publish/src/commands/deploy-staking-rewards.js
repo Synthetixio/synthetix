@@ -43,10 +43,11 @@ const deployStakingRewards = async ({
 	deploymentPath,
 	privateKey,
 	yes,
+	useOvm,
 	dryRun = false,
 } = {}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	const {
@@ -112,6 +113,7 @@ const deployStakingRewards = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
+		useOvm,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -139,6 +141,7 @@ const deployStakingRewards = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useOvm,
 	});
 
 	const { account } = deployer;
@@ -308,6 +311,7 @@ module.exports = {
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(deployStakingRewards),
 };
