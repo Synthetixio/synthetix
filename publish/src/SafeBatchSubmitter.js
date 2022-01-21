@@ -88,8 +88,8 @@ class SafeBatchSubmitter {
 			return { transactions };
 		}
 		const safeTransaction = await safe.createTransaction(transactions);
-		await safe.signTransaction(batchTxn);
-		const safeTxHash = await safe.getTransactionHash(batchTxn);
+		await safe.signTransaction(safeTransaction);
+		const safeTxHash = await safe.getTransactionHash(safeTransaction);
 		const senderAddress = await signer.getAddress();
 
 		try {
