@@ -56,6 +56,12 @@ async function fundAccounts({ ctx, accounts }) {
 	}
 }
 
+const takeDebtSnapshot = async ({ contracts, users }) => {
+	console.log('Taking debt snapshot');
+	const connectedDebtCache = contracts.DebtCache.connect(users.owner);
+	await connectedDebtCache.takeDebtSnapshot();
+};
+
 const defaultAccounts = [
 	// Hardhat account #1 (deployer)
 	// '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -100,7 +106,7 @@ task('fund-local-accounts')
 		connectContracts({ ctx });
 
 		console.log(`Using account ${ctx.users.owner.address}`);
-
+		await takeDebtSnapshot({ contracts: ctx.contracts, users: ctx.users });
 		await fundAccounts({
 			ctx,
 			accounts: account ? [account] : defaultAccounts,
