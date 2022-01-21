@@ -20,11 +20,16 @@ task('node', 'Run a node')
 		const network = taskArguments.targetNetwork;
 		const useOvm = taskArguments.useOvm;
 		if (network !== 'local') {
+			const networkHostReplace = (taskArguments.useOvm ? 'optimism-' : '') + network;
+
 			if (network === 'mainnet') {
-				taskArguments.fork = process.env.PROVIDER_URL_MAINNET;
+				taskArguments.fork = process.env.PROVIDER_URL_MAINNET.replace(
+					'network',
+					networkHostReplace
+				);
 			}
 			taskArguments.fork =
-				taskArguments.fork || process.env.PROVIDER_URL.replace('network', network);
+				taskArguments.fork || process.env.PROVIDER_URL.replace('network', networkHostReplace);
 
 			console.log(yellow(`Forking ${network}...`));
 		}
