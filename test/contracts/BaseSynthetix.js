@@ -820,6 +820,9 @@ contract('BaseSynthetix', async accounts => {
 		});
 
 		it("should lock newly received synthetix if the user's collaterisation is too high", async () => {
+			// Disable Dynamic fee so that we can neglect it.
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			// Set sEUR for purposes of this test
 			await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('0.75')]);
 			await debtCache.takeDebtSnapshot();
@@ -860,6 +863,9 @@ contract('BaseSynthetix', async accounts => {
 		});
 
 		it('should unlock synthetix when collaterisation ratio changes', async () => {
+			// Disable Dynamic fee so that we can neglect it.
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			// prevent circuit breaker from firing by upping the threshold to factor 5
 			await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
 
