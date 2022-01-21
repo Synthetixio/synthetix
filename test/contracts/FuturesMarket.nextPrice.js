@@ -54,8 +54,6 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
-				'ProxyFuturesMarketBTC',
-				'ProxyFuturesMarketETH',
 				'FuturesMarketBTC',
 				'AddressResolver',
 				'FeePool',
