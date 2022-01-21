@@ -98,7 +98,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 		hre.config.providerPortL1 = '9545';
 		const providerPortL2 = (hre.config.providerPortL2 = taskArguments.providerPort);
 		const useOvm = true;
-		const buildPath = path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
+		const buildPath = path.join(__dirname, '..', '..', BUILD_FOLDER);
 
 		if (taskArguments.compile) {
 			await compileInstance({ useOvm, buildPath });
