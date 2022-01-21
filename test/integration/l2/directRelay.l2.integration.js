@@ -1,12 +1,8 @@
 const { assert } = require('../../contracts/common');
 const { bootstrapL2 } = require('../utils/bootstrap');
 
-const {
-	defaults: { TEMP_OWNER_DEFAULT_DURATION },
-} = require('../../..');
-
 // skipped because tempOwner no longer will work for fork tests
-describe('tempOwner directRelay integration tests (L2)', () => {
+describe.skip('tempOwner directRelay integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
@@ -84,7 +80,6 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 		});
 
 		describe.skip('when changing an L2 system setting with directRelay', () => {
-
 			before('call setMinimumStakeTime directly', async () => {
 				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
 					newMinimumStakeTime,
