@@ -23,8 +23,10 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 	});
 
 	it('shows that the L2 relay was deployed with the correct parameters', async () => {
-		assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
-		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
+		if (!ctx.fork) {
+			assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
+			assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
+		}
 	});
 
 	describe('when SystemSettings on L2 is owned by an EOA', () => {
@@ -39,13 +41,6 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 		});
 
 		describe('when nominating the L2 relay as the owner of the L2 SystemSettings', () => {
-			before('check fork', async () => {
-				// on fork, directRelay doesn't work
-				if (ctx.fork) {
-					this.skip();
-				}
-			});
-
 			before('nominate the relay as the new ower', async () => {
 				const tx = await SystemSettingsL2.connect(ownerL2).nominateNewOwner(
 					OwnerRelayOnOptimism.address
@@ -80,6 +75,13 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 
 		it('shows that the current owner of SystemSettings is the L2 relay', async () => {
 			assert.equal(await SystemSettingsL2.owner(), OwnerRelayOnOptimism.address);
+		});
+
+		before('check fork', async () => {
+			// on fork, directRelay doesn't work
+			if (ctx.fork) {
+				this.skip();
+			}
 		});
 
 		before('store minimumStakeTime', async () => {
