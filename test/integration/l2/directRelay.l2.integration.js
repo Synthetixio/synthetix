@@ -12,6 +12,13 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 	// Contracts
 	let AddressResolverL2, OwnerRelayOnOptimism, SystemSettingsL2;
 
+	before('check fork', async function() {
+		// on fork, directRelay doesn't work
+		if (ctx.fork) {
+			this.skip();
+		}
+	});
+
 	before('target contracts and users', () => {
 		({
 			OwnerRelayOnOptimism,
@@ -23,10 +30,8 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 	});
 
 	it('shows that the L2 relay was deployed with the correct parameters', async () => {
-		if (!ctx.fork) {
-			assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
-			assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
-		}
+		assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
+		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
 	});
 
 	describe('when SystemSettings on L2 is owned by an EOA', () => {
@@ -82,13 +87,6 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 		});
 
 		describe('when changing an L2 system setting with directRelay', () => {
-			before('check fork', async () => {
-				// on fork, directRelay doesn't work
-				if (ctx.fork) {
-					this.skip();
-				}
-			});
-
 			before('call setMinimumStakeTime directly', async () => {
 				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
 					newMinimumStakeTime,
