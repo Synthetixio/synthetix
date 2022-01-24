@@ -13,6 +13,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
@@ -29,6 +30,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
 
     // ========== CONSTRUCTOR ==========
 
@@ -48,11 +50,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
+        addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[4] = CONTRACT_LIQUIDATORREWARDS;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -69,6 +72,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
+    }
+
+    function liquidatorRewards() internal view returns (ILiquidatorRewards) {
+        return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
     }
 
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
@@ -308,27 +315,27 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
-        // TODO: Transfer SNX redeemed to the LiquidatorRewards
-        // Transfer SNX redeemed to messageSender
+        // Transfer SNX redeemed to the LiquidatorRewards contract
         // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
-        return _transferByProxy(account, messageSender, totalRedeemed);
+        return _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
     }
 
-    function selfLiquidation(address account, uint susdAmount)
+    function selfLiquidateAccount(address account, uint susdAmount)
         external
         systemActive
         optionalProxy
         returns (bool)
     {
+        require(account == messageSender, "Only the account owner can self liquidate");
+        
         (uint totalRedeemed, uint amountLiquidated) =
-            issuer().selfLiquidation(account, susdAmount, messageSender);
+            issuer().selfLiquidateAccount(account, susdAmount);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
-        // TODO: Transfer SNX redeemed to the LiquidatorRewards
-        // Transfer SNX redeemed to messageSender
+        // Transfer SNX redeemed to the LiquidatorRewards contract
         // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
-        return _transferByProxy(account, messageSender, totalRedeemed);
+        return _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
     }
 
     function exchangeWithTrackingForInitiator(

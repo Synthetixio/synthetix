@@ -125,7 +125,7 @@ interface ISynthetix {
     // Liquidations
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
 
-    function selfLiquidation(address account, uint susdAmount) external returns (bool);
+    function selfLiquidateAccount(address account, uint susdAmount) external returns (bool);
 
     // Restricted Functions
 
