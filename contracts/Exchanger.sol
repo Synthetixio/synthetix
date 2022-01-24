@@ -920,7 +920,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint price,
         uint previousPrice,
         uint threshold
-    ) public pure returns (uint) {
+    ) internal pure returns (uint) {
         if (previousPrice == 0) {
             return 0; // don't divide by zero
         }

@@ -8,6 +8,8 @@ import "./SafeDecimalMath.sol";
 
 /// This library is to reduce SystemSettings contract size only and is not really
 /// a proper library - so it shares knowledge of implementation details
+/// Some of the setters were refactored into this library, and some setters remain in the
+/// contract itself (SystemSettings)
 library SystemSettingsLib {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
