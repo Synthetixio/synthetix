@@ -421,4 +421,15 @@ library SystemSettingsLib {
             _threshold
         );
     }
+
+    function setExchangeMaxDynamicFee(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint maxFee
+    ) external {
+        require(maxFee != 0, "Max dynamic fee cannot be 0");
+        require(maxFee <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
+    }
 }

@@ -38,6 +38,7 @@ const {
 		EXCHANGE_DYNAMIC_FEE_ROUNDS,
 		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
 		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+		// EXCHANGE_MAX_DYNAMIC_FEE,
 	},
 } = require('../..');
 
@@ -578,6 +579,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 				describe('dynamic fee when rates change', () => {
 					const threshold = toBN(EXCHANGE_DYNAMIC_FEE_THRESHOLD);
+					// const maxRate = toBN(EXCHANGE_MAX_DYNAMIC_FEE);
 
 					it('initial fee is correct', async () => {
 						assert.bnEqual(await exchanger.feeRateForExchange(sUSD, sBTC), bipsCrypto);
@@ -637,10 +639,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.bnEqual(await exchanger.feeRateForExchange(sUSD, sBTC), bipsCrypto);
 						});
 
-						it('10% spike result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(110)]);
-							// price diff ratio (10%)- threshold
-							const expectedDynamicFee = toUnit(0.1).sub(threshold);
+						it('5% spike result in correct dynamic fee', async () => {
+							await updateRates([sETH], [toUnit(105)]);
+							// price diff ratio (5%)- threshold
+							const expectedDynamicFee = toUnit(0.05).sub(threshold);
 							assert.bnEqual(
 								await exchanger.feeRateForExchange(sUSD, sETH),
 								bipsCrypto.add(expectedDynamicFee)
@@ -653,10 +655,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.bnEqual(await exchanger.feeRateForExchange(sUSD, sBTC), bipsCrypto);
 						});
 
-						it('10% drop result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(90)]);
-							// price diff ratio (10%)- threshold
-							const expectedDynamicFee = toUnit(0.1).sub(threshold);
+						it('5% drop result in correct dynamic fee', async () => {
+							await updateRates([sETH], [toUnit(95)]);
+							// price diff ratio (5%)- threshold
+							const expectedDynamicFee = toUnit(0.05).sub(threshold);
 							assert.bnEqual(
 								await exchanger.feeRateForExchange(sUSD, sETH),
 								bipsCrypto.add(expectedDynamicFee)
@@ -670,9 +672,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						it('trading between two spiked rates is correctly calculated ', async () => {
-							await updateRates([sETH, sBTC], [toUnit(110), toUnit(5500)]);
-							// base fee + (price diff ratio (10%)- threshold) * 2
-							const expectedDynamicFee = toUnit(0.1)
+							await updateRates([sETH, sBTC], [toUnit(102), toUnit(5100)]);
+							// base fee + (price diff ratio (2%)- threshold) * 2
+							const expectedDynamicFee = toUnit(0.02)
 								.sub(threshold)
 								.mul(toBN(2));
 							assert.bnEqual(
@@ -696,9 +698,9 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					it('dynamic fee decays with time', async () => {
-						await updateRates([sETH], [toUnit(110)]);
-						// (price diff ratio (10%)- threshold)
-						let expectedDynamicFee = toUnit(0.1).sub(threshold);
+						await updateRates([sETH], [toUnit(105)]);
+						// (price diff ratio (5%)- threshold)
+						let expectedDynamicFee = toUnit(0.05).sub(threshold);
 						assert.bnEqual(
 							await exchanger.feeRateForExchange(sUSD, sETH),
 							bipsCrypto.add(expectedDynamicFee)
@@ -711,7 +713,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						const decay = toBN(EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY);
 
 						// next round
-						await updateRates([sETH], [toUnit(110)]);
+						await updateRates([sETH], [toUnit(105)]);
 						expectedDynamicFee = multiplyDecimal(expectedDynamicFee, decay);
 						assert.bnEqual(
 							await exchanger.feeRateForExchange(sUSD, sETH),
@@ -723,7 +725,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						);
 
 						// another round
-						await updateRates([sETH], [toUnit(110)]);
+						await updateRates([sETH], [toUnit(105)]);
 						expectedDynamicFee = multiplyDecimal(expectedDynamicFee, decay);
 						assert.bnEqual(
 							await exchanger.feeRateForExchange(sUSD, sETH),
@@ -736,7 +738,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						// EXCHANGE_DYNAMIC_FEE_ROUNDS after spike dynamic fee is 0
 						for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS - 3; i++) {
-							await updateRates([sETH], [toUnit(110)]);
+							await updateRates([sETH], [toUnit(105)]);
 						}
 						assert.bnEqual(await exchanger.feeRateForExchange(sUSD, sETH), bipsCrypto);
 						assert.bnEqual(await exchanger.dynamicFeeRateForExchange(sUSD, sETH), 0);
