@@ -309,7 +309,7 @@ describe('publish scripts', () => {
 						assert.strictEqual(
 							(
 								await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
-							).toString(),
+							)[0].toString(),
 							rate
 						);
 					}
@@ -466,7 +466,7 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								(
 									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
-								).toString(),
+								)[0].toString(),
 								newRateForsUSD
 							);
 						});
