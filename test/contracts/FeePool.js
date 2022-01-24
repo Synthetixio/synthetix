@@ -208,14 +208,6 @@ contract('FeePool', async accounts => {
 				reason: 'RewardsDistribution only',
 			});
 		});
-		it('appendAccountIssuanceRecord() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: feePool.appendAccountIssuanceRecord,
-				accounts,
-				args: [account1, toUnit('0.001'), '0'],
-				reason: 'Issuer and SynthetixState only',
-			});
-		});
 	});
 
 	describe('when the issuanceRatio is 0.2', () => {
@@ -880,6 +872,50 @@ contract('FeePool', async accounts => {
 				assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
 			});
 
+			it('should allow a user to claim their fees in sUSD after burning @gasprofile', async () => {
+				// Issue 10,000 sUSD for two different accounts.
+				await synthetix.transfer(account1, toUnit('1000000'), {
+					from: owner,
+				});
+
+				await synthetix.issueSynths(toUnit('10000'), { from: owner });
+				await synthetix.issueSynths(toUnit('10000'), { from: account1 });
+
+				await synthetix.exchange(sUSD, toUnit(100), sAUD, { from: account1 });
+
+				await closeFeePeriod();
+
+				// Transfer back some sUSD so that we can settle our debt.
+				await synthetix.transfer(owner, await sUSDContract.balanceOf(account1), {
+					from: account1,
+				});
+
+				// Settle our debt
+				await synthetix.burnSynths(toUnit('999999'), { from: owner });
+
+				assert.bnEqual(
+					await synthetix.debtBalanceOf(owner, toBytes32('sUSD')),
+					toUnit('0'),
+					'account has debt remaining'
+				);
+
+				// Assert that we have correct values in the fee pool
+				const feesAvailableUSD = await feePool.feesAvailable(owner);
+				const oldsUSDBalance = await sUSDContract.balanceOf(owner);
+
+				// Now we should be able to claim them.
+				const claimFeesTx = await feePool.claimFees({ from: owner });
+
+				assert.eventEqual(claimFeesTx, 'FeesClaimed', {
+					sUSDAmount: feesAvailableUSD[0],
+					snxRewards: feesAvailableUSD[1],
+				});
+
+				const newUSDBalance = await sUSDContract.balanceOf(owner);
+				// We should have our fees
+				assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+			});
+
 			it('should allow a user to claim their fees if they minted debt during period', async () => {
 				// Issue 10,000 sUSD for two different accounts.
 				await synthetix.transfer(account1, toUnit('1000000'), {
@@ -1203,22 +1239,16 @@ contract('FeePool', async accounts => {
 		});
 
 		describe('effectiveDebtRatioForPeriod', async () => {
-			it('should revert if period is > than FEE_PERIOD_LENGTH', async () => {
+			it('should return 0 if period is > than FEE_PERIOD_LENGTH', async () => {
 				// returns length of periods
 				const length = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 
 				// adding an extra period should revert as not available (period rollsover at last one)
-				await assert.revert(
-					feePool.effectiveDebtRatioForPeriod(owner, length + 1),
-					'Exceeds the FEE_PERIOD_LENGTH'
-				);
+				await assert.bnEqual(await feePool.effectiveDebtRatioForPeriod(owner, length + 1), 0);
 			});
 
-			it('should revert if checking current unclosed period ', async () => {
-				await assert.revert(
-					feePool.effectiveDebtRatioForPeriod(owner, 0),
-					'Current period is not closed yet'
-				);
+			it('should return 0 if checking current unclosed period ', async () => {
+				await assert.bnEqual(await feePool.effectiveDebtRatioForPeriod(owner, 0), 0);
 			});
 		});
 
