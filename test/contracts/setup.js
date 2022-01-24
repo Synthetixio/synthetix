@@ -3,7 +3,7 @@
 const { artifacts, web3, log } = require('hardhat');
 
 const { toWei, toBN } = web3.utils;
-const { toUnit, currentTime } = require('../utils')();
+const { toUnit } = require('../utils')();
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
 const {
@@ -107,6 +107,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 const setupContract = async ({
 	accounts,
 	contract,
+	source = undefined, // if a separate source file should be used
 	mock = undefined, // if contract is GenericMock, this is the name of the contract being mocked
 	forContract = undefined, // when a contract is deployed for another (like Proxy for FeePool)
 	cache = {},
@@ -116,7 +117,7 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, , fundsWallet] = accounts;
 
-	const artifact = artifacts.require(contract);
+	const artifact = artifacts.require(source || contract);
 
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
@@ -127,7 +128,7 @@ const setupContract = async ({
 	};
 
 	// if it needs library linking
-	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
+	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
 		if (artifact._json.contractName === 'SystemSettings') {
 			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
@@ -299,7 +300,7 @@ const setupContract = async ({
 		if (process.env.DEBUG) {
 			log(
 				'Deployed',
-				contract + (forContract ? ' for ' + forContract : ''),
+				contract + (source ? ` (${source})` : '') + (forContract ? ' for ' + forContract : ''),
 				mock ? 'mock of ' + mock : '',
 				'to',
 				instance.address
@@ -675,7 +676,7 @@ const setupAllContracts = async ({
 	contracts = [],
 	synths = [],
 }) => {
-	const [, owner, oracle] = accounts;
+	const [, owner] = accounts;
 
 	// Copy mocks into the return object, this allows us to include them in the
 	// AddressResolver
@@ -807,6 +808,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{
@@ -974,14 +976,23 @@ const setupAllContracts = async ({
 			contract: 'FuturesMarketManager',
 			deps: ['AddressResolver', 'Exchanger'],
 		},
+		{
+			contract: 'FuturesMarketSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
+			// contract: 'TestableFuturesMarket',
+			// forContract: 'FuturesMarketBTC',
+			// resolverAlias: 'FuturesMarketBTC',
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
 			deps: [
 				'Proxy',
 				'AddressResolver',
 				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'SystemStatus',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
@@ -998,10 +1009,7 @@ const setupAllContracts = async ({
 				'ExchangeCircuitBreaker',
 			],
 		},
-		{
-			contract: 'FuturesMarketSettings',
-			deps: ['AddressResolver', 'FlexibleStorage'],
-		},
+
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 	];
 
@@ -1074,7 +1082,7 @@ const setupAllContracts = async ({
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, resolverAlias, mocks = [], forContract } of contractsToFetch) {
+	for (const { contract, source, resolverAlias, mocks = [], forContract } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		// for all mocks required for this contract
@@ -1104,6 +1112,7 @@ const setupAllContracts = async ({
 		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
+			source,
 			forContract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
@@ -1234,7 +1243,6 @@ const setupAllContracts = async ({
 		]);
 
 		if (returnObj['FuturesMarketSettings']) {
-			const time = await currentTime();
 			const promises = [
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
@@ -1256,10 +1264,9 @@ const setupAllContracts = async ({
 			// TODO: fetch settings per-market programmatically
 			const setupFuturesMarket = async asset => {
 				const assetKey = toBytes32(asset);
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
 				await Promise.all([
-					returnObj['ExchangeRates'].updateRates([assetKey], [toUnit('1')], time, {
-						from: oracle,
-					}),
 					returnObj['FuturesMarketSettings'].setParameters(
 						assetKey,
 						toWei('0.003'), // 0.3% taker fee
