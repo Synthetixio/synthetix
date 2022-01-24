@@ -2,7 +2,7 @@ const { assert } = require('../../contracts/common');
 const { bootstrapL2 } = require('../utils/bootstrap');
 
 // skipped because tempOwner no longer will work for fork tests
-describe.skip('tempOwner directRelay integration tests (L2)', () => {
+describe('tempOwner directRelay integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
@@ -39,6 +39,13 @@ describe.skip('tempOwner directRelay integration tests (L2)', () => {
 		});
 
 		describe('when nominating the L2 relay as the owner of the L2 SystemSettings', () => {
+			before('check fork', async () => {
+				// on fork, directRelay doesn't work
+				if (ctx.fork) {
+					this.skip();
+				}
+			});
+
 			before('nominate the relay as the new ower', async () => {
 				const tx = await SystemSettingsL2.connect(ownerL2).nominateNewOwner(
 					OwnerRelayOnOptimism.address
@@ -79,7 +86,14 @@ describe.skip('tempOwner directRelay integration tests (L2)', () => {
 			originalMinimumStakeTime = await SystemSettingsL2.minimumStakeTime();
 		});
 
-		describe.skip('when changing an L2 system setting with directRelay', () => {
+		describe('when changing an L2 system setting with directRelay', () => {
+			before('check fork', async () => {
+				// on fork, directRelay doesn't work
+				if (ctx.fork) {
+					this.skip();
+				}
+			});
+
 			before('call setMinimumStakeTime directly', async () => {
 				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
 					newMinimumStakeTime,
