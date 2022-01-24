@@ -78,19 +78,27 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationPenalty();
     }
 
-    // SIP-148: Upgrade Liquidation Mechanism
-    // adds self liquidations and rewards for flagging and liquidating
+    /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
+
+    /// @notice Get the penalty for self liquidation
+    /// @return The self liquidation penalty
     function selfLiquidationPenalty() external view returns (uint) {
         return getSelfLiquidationPenalty();
     }
 
+    /// @notice Get the reward for flagging an account for liquidation
+    /// @return The reward for flagging an account
     function flagReward() external view returns (uint) {
         return getFlagReward();
     }
 
+    /// @notice Get the reward for liquidating an account
+    /// @return The reward for performing a forced liquidation
     function liquidateReward() external view returns (uint) {
         return getLiquidateReward();
     }
+
+    /* ========== End SIP-148 ========== */
 
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
