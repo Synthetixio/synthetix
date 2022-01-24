@@ -77,13 +77,6 @@ describe('tempOwner directRelay integration tests (L2)', () => {
 			assert.equal(await SystemSettingsL2.owner(), OwnerRelayOnOptimism.address);
 		});
 
-		before('check fork', async () => {
-			// on fork, directRelay doesn't work
-			if (ctx.fork) {
-				this.skip();
-			}
-		});
-
 		before('store minimumStakeTime', async () => {
 			originalMinimumStakeTime = await SystemSettingsL2.minimumStakeTime();
 		});
