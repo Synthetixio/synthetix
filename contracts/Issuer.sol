@@ -568,73 +568,69 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function liquidateDelinquentAccount(
-        address account,
+        address delinquentAccount,
         uint susdAmount,
-        address liquidator
+        address liquidatorAccount
     ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-        // // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        // require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidatorAccount, sUSD), "sUSD needs to be settled");
 
-        // // Check account is liquidation open
-        // require(liquidator().liquidationOpen(account), "Account not open for liquidation");
+        // Check account is liquidation open
+        require(liquidator().forcedLiquidationOpen(delinquentAccount), "Account not open for liquidation");
 
-        // // require liquidator has enough sUSD
-        // require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+        // TODO: reduce debt share
 
-        // uint liquidationPenalty = liquidator().liquidationPenalty();
+        uint liquidationPenalty = liquidator().liquidationPenalty();
 
-        // // What is their debt in sUSD?
-        // (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
-        // (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
-        // _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
+        // What is their debt share?
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(delinquentAccount), sUSD);
+        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
+        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
-        // uint collateralForAccount = _collateral(account);
-        // uint amountToFixRatio =
-        //     liquidator().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
+        uint collateralForAccount = _collateral(delinquentAccount);
+        uint amountToFixRatio =
+            liquidator().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
 
-        // // Cap amount to liquidate to repair collateral ratio based on issuance ratio
-        // amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
+        amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
 
-        // // what's the equivalent amount of snx for the amountToLiquidate?
-        // uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
+        // what's the equivalent amount of snx for the amountToLiquidate?
+        uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
 
-        // // Add penalty
-        // totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+        // Add penalty
+        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
-        // // if total SNX to redeem is greater than account's collateral
-        // // account is under collateralised, liquidate all collateral and reduce sUSD to burn
-        // if (totalRedeemed > collateralForAccount) {
-        //     // set totalRedeemed to all transferable collateral
-        //     totalRedeemed = collateralForAccount;
+        // if total SNX to redeem is greater than account's collateral
+        // account is under collateralised, liquidate all collateral and reduce sUSD to burn
+        if (totalRedeemed > collateralForAccount) {
+            // set totalRedeemed to all transferable collateral
+            totalRedeemed = collateralForAccount;
 
-        //     // whats the equivalent sUSD to burn for all collateral less penalty
-        //     amountToLiquidate = _snxToUSD(
-        //         collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
-        //         snxRate
-        //     );
-        // }
+            // whats the equivalent sUSD to burn for all collateral less penalty
+            amountToLiquidate = _snxToUSD(
+                collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
+                snxRate
+            );
+        }
 
-        // // burn sUSD from messageSender (liquidator) and reduce account's debt
-        // _burnSynths(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
+        // burn sUSD from messageSender (liquidatorAccount) and reduce account's debt
+        _burnSynths(delinquentAccount, liquidatorAccount, amountToLiquidate, debtBalance, totalDebtIssued);
 
-        // // Remove liquidation flag if amount liquidated fixes ratio
-        // if (amountToLiquidate == amountToFixRatio) {
-        //     // Remove liquidation
-        //     liquidator().removeAccountInLiquidation(account);
-        // }
-        totalRedeemed = 0;
-        amountToLiquidate = 0;
+        // Remove liquidation flag if amount liquidated fixes ratio
+        if (amountToLiquidate == amountToFixRatio) {
+            // Remove liquidation
+            liquidator().removeAccountInLiquidation(delinquentAccount);
+        }
     }
 
-    // function selfLiquidation(
-    //     address account,
-    //     uint susdAmount,
-    //     address liquidator
-    // ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-    //     // TODO: Self liquidation
-    //     totalRedeemed = 0;
-    //     amountToLiquidate = 0;
-    // }
+    function selfLiquidateAccount(
+        address account,
+        uint susdAmount
+    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
+        // TODO: Self liquidation
+        
+        
+    }
 
     function setCurrentPeriodId(uint128 periodId) external {
         require(msg.sender == address(feePool()), "Must be fee pool");

@@ -16,7 +16,8 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/liquidator
+/// @title Upgrade Liquidation Mechanism V2 (SIP-148)
+/// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15.
 contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -91,6 +92,18 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return getLiquidationPenalty();
     }
 
+    function selfLiquidationPenalty() external view returns (uint) {
+        return getSelfLiquidationPenalty();
+    }
+
+    function liquidateReward() external view returns (uint) {
+        return getLiquidateReward();
+    }
+
+    function flagReward() external view returns (uint) {
+        return getFlagReward();
+    }
+
     function liquidationCollateralRatio() external view returns (uint) {
         return SafeDecimalMath.unit().divideDecimalRound(getLiquidationRatio());
     }
@@ -100,12 +113,12 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return liquidation.deadline;
     }
 
-    // TODO: handle self liquidation
-    function liquidationOpen(address account) external view returns (bool) {
+    /// @notice Determines if an account is eligible for forced liquidation
+    /// @dev An account with no SNX collateral will not be open for liquidation since the ratio is 0
+    function forcedLiquidationOpen(address account) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
 
-        // Liquidation closed if collateral ratio less than or equal target issuance Ratio
-        // Account with no snx collateral will also not be open for liquidation (ratio is 0)
+        // Not open for liquidation if collateral ratio is less than or equal to target issuance ratio
         if (accountCollateralisationRatio <= getIssuanceRatio()) {
             return false;
         }
@@ -119,22 +132,11 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return false;
     }
 
+    /// @notice Determines if an account is eligible for self liquidation
+    /// @dev An account is eligible to self liquidate if its c-ratio is below the target c-ratio
     function selfLiquidationOpen(address account) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
-
-        // Liquidation closed if collateral ratio less than or equal target issuance Ratio
-        // Account with no snx collateral will also not be open for liquidation (ratio is 0)
-        if (accountCollateralisationRatio <= getIssuanceRatio()) {
-            return false;
-        }
-
-        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
-
-        // liquidation cap at issuanceRatio is checked above
-        if (_deadlinePassed(liquidation.deadline)) {
-            return true;
-        }
-        return false;
+        return (accountCollateralisationRatio <= getIssuanceRatio());
     }
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool) {

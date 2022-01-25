@@ -90,15 +90,14 @@ interface IIssuer {
     function setCurrentPeriodId(uint periodId) external;
 
     function liquidateDelinquentAccount(
-        address account,
+        address delinquentAccount,
         uint susdAmount,
-        address liquidator
+        address liquidatorAccount
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
     
     // Used to self-liquidate an account back to the target c-ratio (issuanceRatio).
-    function selfLiquidation(
+    function selfLiquidateAccount(
         address account,
-        uint susdAmount,
-        address liquidator
+        uint susdAmount
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
 }
