@@ -982,7 +982,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
         if (tooVolatile) {
-            // TODO: should this continue or return (0,0,0)?
+            // no-op, in order to prevent charging a high that's over the max
+            return (0, 0, 0);
         }
 
         uint destinationAmount;
