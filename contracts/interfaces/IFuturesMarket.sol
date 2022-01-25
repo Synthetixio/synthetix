@@ -9,13 +9,13 @@ interface IFuturesMarket {
 
     function baseAsset() external view returns (bytes32 key);
 
-    function marketSize() external view returns (uint size);
+    function marketSize() external view returns (uint128 size);
 
-    function marketSkew() external view returns (int skew);
+    function marketSkew() external view returns (int128 skew);
 
-    function fundingLastRecomputed() external view returns (uint timestamp);
+    function fundingLastRecomputed() external view returns (uint32 timestamp);
 
-    function fundingSequence(uint index) external view returns (int netFunding);
+    function fundingSequence(uint index) external view returns (int128 netFunding);
 
     function positions(address account)
         external

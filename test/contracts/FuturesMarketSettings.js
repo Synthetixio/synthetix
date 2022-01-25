@@ -67,6 +67,13 @@ contract('FuturesMarketSettings', accounts => {
 		mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
+			fncName: 'marketSize',
+			returns: ['1'],
+		});
+
+		mockGenericContractFnc({
+			instance: mockFuturesMarketBTC,
+			mock: 'FuturesMarket',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
