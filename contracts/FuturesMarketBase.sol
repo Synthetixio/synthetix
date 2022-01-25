@@ -756,16 +756,14 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     }
 
     function _marketDebt(uint price) internal view returns (uint) {
-        if (marketSkew == 0) {
-            // short circuit and also convenient during setup
+        // short circuit and also convenient during setup
+        if (marketSkew == 0 && _entryDebtCorrection == 0) {
+            // if these are 0, the resulting calculation is necessarily zero as well
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
-        int totalDebt =
-            int(marketSkew).multiplyDecimal(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
-                _entryDebtCorrection
-            );
-
+        int priceWithFunding = int(price).add(_nextFundingEntry(fundingSequence.length, price));
+        int totalDebt = int(marketSkew).multiplyDecimal(priceWithFunding).add(_entryDebtCorrection);
         return uint(_max(totalDebt, 0));
     }
 

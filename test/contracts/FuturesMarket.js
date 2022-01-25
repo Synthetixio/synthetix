@@ -63,7 +63,7 @@ contract('FuturesMarket', accounts => {
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
 
-	const initialFundingIndex = toBN(4);
+	const initialFundingIndex = toBN(0);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(exchangeRates, [asset], [price]);
