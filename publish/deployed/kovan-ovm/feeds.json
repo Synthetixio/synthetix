@@ -1,19 +1,19 @@
 {
 	"SNX": {
 		"asset": "SNX",
-		"feed": "0xd2906e9fDA8BE1418614f614FE393f2fFbd1Cb4A"
+		"feed": "0x38D2f492B4Ef886E71D111c592c9338374e1bd8d"
 	},
 	"ETH": {
 		"asset": "ETH",
-		"feed": "0xa35dB7f3aBE4091999143dA8AdC20B6ad9e514c4"
+		"feed": "0x7f8847242a530E809E17bF2DA5D2f9d2c4A43261"
 	},
 	"BTC": {
 		"asset": "BTC",
-		"feed": "0xfb510c34959E51986d0b73c345fd9d5A9090ED15"
+		"feed": "0xd9BdB42229F1aefe47Cdf028408272686445D3ff"
 	},
 	"LINK": {
 		"asset": "LINK",
-		"feed": "0x087bcF4C0aa8Ff652a9BDd6E1b2Ea8C2Ee8f5F8c"
+		"feed": "0x4e5A8fe9d533dec45C7CB57D548B049785BA9861"
 	},
 	"UNI": {
 		"asset": "UNI",

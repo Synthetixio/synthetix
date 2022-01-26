@@ -33,7 +33,7 @@ function bootstrapL1({ ctx }) {
 function bootstrapL2({ ctx }) {
 	before('bootstrap layer 2 instance', async () => {
 		ctx.useOvm = true;
-		ctx.l1mock = { useOvm: false };
+		ctx.fork = hre.config.fork;
 
 		ctx.addedSynths = hre.config.addedSynths || [];
 
@@ -44,15 +44,22 @@ function bootstrapL2({ ctx }) {
 		 * the L1 chain and waiting for the L2 chain to sync.
 		 * Direct fast forwarding on the L2 chain is not possible because the rpc does not support
 		 * the method evm_increaseTime.
+		 *
+		 * L1 provider is not needed when fork testing
 		 * */
-		ctx.l1mock.provider = _setupProvider({
-			url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
-		});
+		if (!ctx.fork) {
+			ctx.l1mock = { useOvm: false };
+			ctx.l1mock.provider = _setupProvider({
+				url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
+			});
+
+			await loadUsers({ ctx: ctx.l1mock });
+		}
+
 		ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
 
-		await loadUsers({ ctx: ctx.l1mock });
 		await loadUsers({ ctx });
 
 		connectContracts({ ctx });
@@ -66,10 +73,12 @@ function bootstrapL2({ ctx }) {
 			balance: ethers.utils.parseEther('1000000'),
 		});
 
-		startOpsHeartbeat({
-			l1Wallet: ctx.l1mock.users.user9,
-			l2Wallet: ctx.users.user9,
-		});
+		if (!ctx.fork) {
+			startOpsHeartbeat({
+				l1Wallet: ctx.l1mock.users.user9,
+				l2Wallet: ctx.users.user9,
+			});
+		}
 	});
 }
 
