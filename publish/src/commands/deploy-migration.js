@@ -124,7 +124,6 @@ const deployMigration = async ({
 		path,
 	});
 
-
 	// always appending to mainnet owner actions now
 	const { ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
 		deploymentPath: getPathToNetwork({ network, useOvm }),
