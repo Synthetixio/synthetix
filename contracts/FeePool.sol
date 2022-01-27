@@ -244,8 +244,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         delete _recentFeePeriods[_currentFeePeriod];
 
         // Open up the new fee period.
-        // Increment periodId from the recent closed period feePeriodId
-        uint newFeePeriodId = uint256(_recentFeePeriodsStorage(1).feePeriodId).add(1);
+        // periodID is set to the current timestamp for compatibility with other systems taking snapshots on the debt shares
+        uint newFeePeriodId = now;
         _recentFeePeriodsStorage(0).feePeriodId = uint64(newFeePeriodId);
         _recentFeePeriodsStorage(0).startTime = uint64(now);
 

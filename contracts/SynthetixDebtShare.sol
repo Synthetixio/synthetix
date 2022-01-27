@@ -22,7 +22,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
-    uint internal constant MAX_PERIOD_ITERATE = 10;
+    uint internal constant MAX_PERIOD_ITERATE = 30;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -30,6 +30,13 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
      * Addresses selected by owner which are allowed to call `transferFrom` to manage debt shares
      */
     mapping(address => bool) public authorizedBrokers;
+
+    /**
+     * Addresses selected by owner which are allowed to call `takeSnapshot`
+     * `takeSnapshot` is not public because only a small number of snapshots can be retained for a period of time, and so they
+     * must be controlled to prevent censorship
+     */
+    mapping(address => bool) public authorizedToSnapshot;
 
     /**
      * Records a user's balance as it changes from period to period.
@@ -134,20 +141,30 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function addAuthorizedBroker(address authorizedBroker) external onlyOwner {
-        authorizedBrokers[authorizedBroker] = true;
-        emit ChangeAuthorizedBroker(authorizedBroker, true);
+    function addAuthorizedBroker(address target) external onlyOwner {
+        authorizedBrokers[target] = true;
+        emit ChangeAuthorizedBroker(target, true);
     }
 
-    function removeAuthorizedBroker(address authorizedBroker) external onlyOwner {
-        authorizedBrokers[authorizedBroker] = false;
-        emit ChangeAuthorizedBroker(authorizedBroker, false);
+    function removeAuthorizedBroker(address target) external onlyOwner {
+        authorizedBrokers[target] = false;
+        emit ChangeAuthorizedBroker(target, false);
     }
 
-    function setCurrentPeriodId(uint128 newPeriodId) external onlyIssuer {
-        require(newPeriodId > currentPeriodId, "period id must always increase");
-        totalSupplyOnPeriod[newPeriodId] = totalSupplyOnPeriod[currentPeriodId];
-        currentPeriodId = newPeriodId;
+    function addAuthorizedToSnapshot(address target) external onlyOwner {
+        authorizedToSnapshot[target] = true;
+        emit ChangeAuthorizedToSnapshot(target, true);
+    }
+
+    function removeAuthorizedToSnapshot(address target) external onlyOwner {
+        authorizedToSnapshot[target] = false;
+        emit ChangeAuthorizedToSnapshot(target, false);
+    }
+
+    function takeSnapshot(uint128 id) external onlyAuthorizedToSnapshot {
+        require(id > currentPeriodId, "period id must always increase");
+        totalSupplyOnPeriod[id] = totalSupplyOnPeriod[currentPeriodId];
+        currentPeriodId = id;
     }
         
     function mintShare(address account, uint256 amount) external onlyIssuer {
@@ -253,6 +270,11 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         _;
     }
 
+    modifier onlyAuthorizedToSnapshot() {
+        require(authorizedToSnapshot[msg.sender] || msg.sender == requireAndGetAddress(CONTRACT_ISSUER), "SynthetixDebtShare: not authorized to snapshot");
+        _;
+    }
+
     modifier onlyAuthorizedBrokers() {
         require(authorizedBrokers[msg.sender], "SynthetixDebtShare: only brokers can transferFrom");
         _;
@@ -269,4 +291,5 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     event Transfer(address indexed from, address indexed to, uint value);
 
     event ChangeAuthorizedBroker(address indexed authorizedBroker, bool authorized);
+    event ChangeAuthorizedToSnapshot(address indexed authorizedToSnapshot, bool authorized);
 }

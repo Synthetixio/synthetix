@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const FeePool = artifacts.require('FeePool');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
-const { fastForward, toUnit, fromUnit, multiplyDecimal } = require('../utils')();
+const { fastForward, toUnit, toBN, fromUnit, multiplyDecimal } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -243,25 +243,21 @@ contract('FeePool', async accounts => {
 			const feeInUSD = exchange.sub(amountReceivedFromExchange(exchange));
 
 			// First period
-			assert.deepEqual(await feePool.recentFeePeriods(0), {
-				feePeriodId: 3,
-				feesToDistribute: 0,
-				feesClaimed: 0,
+			assert.deepInclude(await feePool.recentFeePeriods(0), {
+				feesToDistribute: toBN(0),
+				feesClaimed: toBN(0),
 			});
 
 			// Second period
-			assert.deepEqual(await feePool.recentFeePeriods(1), {
-				feePeriodId: 2,
-				feesToDistribute: feeInUSD,
-				feesClaimed: feeInUSD.divRound(web3.utils.toBN('2')),
-			});
+			const secondPeriod = await feePool.recentFeePeriods(1);
+			assert.bnEqual(secondPeriod.feesToDistribute, feeInUSD);
+			assert.bnEqual(secondPeriod.feesClaimed, feeInUSD.divRound(web3.utils.toBN('2')));
 
 			// Everything else should be zero
 			for (let i = 3; i < length; i++) {
-				assert.deepEqual(await feePool.recentFeePeriods(i), {
-					feePeriodId: 0,
-					feesToDistribute: 0,
-					feesClaimed: 0,
+				assert.deepInclude(await feePool.recentFeePeriods(i), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
 				});
 			}
 
@@ -273,17 +269,16 @@ contract('FeePool', async accounts => {
 
 			// All periods except last should now be 0
 			for (let i = 0; i < length - 1; i++) {
-				assert.deepEqual(await feePool.recentFeePeriods(i), {
-					feesToDistribute: 0,
-					feesClaimed: 0,
+				assert.deepInclude(await feePool.recentFeePeriods(i), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
 				});
 			}
 
 			// Last period should have rolled over fees to distribute
-			assert.deepEqual(await feePool.recentFeePeriods(length - 1), {
-				feesToDistribute: feeInUSD.div(web3.utils.toBN('2')),
-				feesClaimed: 0,
-			});
+			const lastPeriod = await feePool.recentFeePeriods(length - 1);
+			assert.bnEqual(lastPeriod.feesToDistribute, toBN(feeInUSD.div(web3.utils.toBN('2'))));
+			assert.bnEqual(lastPeriod.feesClaimed, toBN(0));
 		});
 
 		it('should correctly calculate the totalFeesAvailable for a single open period', async () => {
@@ -511,28 +506,24 @@ contract('FeePool', async accounts => {
 			it('should allow account1 to close the current fee period', async () => {
 				await fastForward(await feePool.feePeriodDuration());
 
+				const lastFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
 				const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 				assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
 				// Assert that our first period is new.
-				assert.deepEqual(await feePool.recentFeePeriods(0), {
-					feePeriodId: 2,
-					feesToDistribute: 0,
-					feesClaimed: 0,
-				});
+				assert.bnNotEqual((await feePool.recentFeePeriods(0)).feePeriodId, lastFeePeriodId);
 
 				// And that the second was the old one
-				assert.deepEqual(await feePool.recentFeePeriods(1), {
-					feePeriodId: 1,
-					feesToDistribute: 0,
-					feesClaimed: 0,
-				});
+				assert.bnEqual((await feePool.recentFeePeriods(1)).feePeriodId, lastFeePeriodId);
 
 				// fast forward and close another fee Period
 				await fastForward(await feePool.feePeriodDuration());
 
+				const secondFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
 				const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
-				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
+				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
 			});
 			it('should import feePeriods and close the current fee period correctly', async () => {
 				// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
@@ -579,10 +570,9 @@ contract('FeePool', async accounts => {
 				assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
 
 				// Assert that our first period is new.
-				assert.deepEqual(await feePool.recentFeePeriods(0), {
-					feePeriodId: 23,
-					feesToDistribute: 0,
-					feesClaimed: 0,
+				assert.deepInclude(await feePool.recentFeePeriods(0), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
 				});
 
 				// And that the second was the old one and fees and rewards rolled over
@@ -620,17 +610,15 @@ contract('FeePool', async accounts => {
 				});
 
 				// Assert that our first period is new.
-				assert.deepEqual(await feePool.recentFeePeriods(0), {
-					feePeriodId: 2,
-					feesToDistribute: 0,
-					feesClaimed: 0,
+				assert.deepInclude(await feePool.recentFeePeriods(0), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
 				});
 
 				// And that the second was the old one
-				assert.deepEqual(await feePool.recentFeePeriods(1), {
-					feePeriodId: 1,
-					feesToDistribute: 0,
-					feesClaimed: 0,
+				assert.deepInclude(await feePool.recentFeePeriods(1), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
 				});
 			});
 			it('should correctly roll over unclaimed fees when closing fee periods', async () => {
@@ -708,6 +696,8 @@ contract('FeePool', async accounts => {
 				});
 				const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
 
+				const oldFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
 				// And walk it forward one fee period.
 				await closeFeePeriod();
 
@@ -716,14 +706,14 @@ contract('FeePool', async accounts => {
 				// First period
 				const firstPeriod = await feePool.recentFeePeriods(0);
 
-				assert.bnEqual(firstPeriod.feePeriodId, 2);
+				assert.bnNotEqual(firstPeriod.feePeriodId, oldFeePeriodId);
 				assert.bnEqual(firstPeriod.feesToDistribute, 0);
 				assert.bnEqual(firstPeriod.feesClaimed, 0);
 
 				// Second period
 				const secondPeriod = await feePool.recentFeePeriods(1);
 
-				assert.bnEqual(secondPeriod.feePeriodId, 1);
+				assert.bnEqual(secondPeriod.feePeriodId, oldFeePeriodId);
 				assert.bnEqual(secondPeriod.feesToDistribute, fee);
 				assert.bnEqual(secondPeriod.feesClaimed, 0);
 
