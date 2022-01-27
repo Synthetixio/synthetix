@@ -684,6 +684,11 @@ contract('Exchanger (spec tests)', async accounts => {
 								maxDynamicFeeRate,
 								true,
 							]);
+							// view reverts
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sUSD, sETH),
+								'too volatile'
+							);
 							// control
 							assert.deepEqual(await exchanger.feeRateForExchange(sUSD, sBTC), [bipsCrypto, false]);
 						});
@@ -698,6 +703,11 @@ contract('Exchanger (spec tests)', async accounts => {
 								maxDynamicFeeRate,
 								true,
 							]);
+							// view reverts
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sUSD, sETH),
+								'too volatile'
+							);
 							// control
 							assert.deepEqual(await exchanger.feeRateForExchange(sUSD, sBTC), [bipsCrypto, false]);
 						});
@@ -747,6 +757,15 @@ contract('Exchanger (spec tests)', async accounts => {
 								maxDynamicFeeRate,
 								true,
 							]);
+							// view reverts
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sETH, sBTC),
+								'too volatile'
+							);
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sBTC, sETH),
+								'too volatile'
+							);
 						});
 					});
 
@@ -766,16 +785,25 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						// should work for no change
 						assert.ok(await echangeSuccessful());
+						// view doesn't revert
+						await exchanger.getAmountsForExchange(toUnit('1'), sETH, sUSD);
 
 						// spike the rate a little
 						await updateRates([sETH], [toUnit(103)]);
 						// should still work
 						assert.ok(await echangeSuccessful());
+						// view doesn't revert
+						await exchanger.getAmountsForExchange(toUnit('1'), sETH, sUSD);
 
 						// spike the rate too much
 						await updateRates([sETH], [toUnit(110)]);
 						// should not work now
 						assert.notOk(await echangeSuccessful());
+						// view reverts
+						await assert.revert(
+							exchanger.getAmountsForExchange(toUnit('1'), sETH, sUSD),
+							'too volatile'
+						);
 					});
 
 					it('dynamic fee decays with time', async () => {
@@ -2131,6 +2159,11 @@ contract('Exchanger (spec tests)', async accounts => {
 										exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
 										'src/dest rate stale or flagged'
 									);
+									// view reverts
+									await assert.revert(
+										exchanger.getAmountsForExchange(toUnit('1'), sUSD, sAUD),
+										'stale'
+									);
 								});
 								it('settling still works ', async () => {
 									await synthetix.settle(sAUD, { from: account1 });
@@ -2420,6 +2453,13 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					describe('when exchanging into that synth', () => {
+						it('getAmountsForExchange reverts due to invalid rate', async () => {
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sUSD, sETH),
+								'synth rate invalid'
+							);
+						});
+
 						it('then it causes a suspension from price deviation as the price is 9', async () => {
 							const { tx: hash } = await synthetix.exchange(sUSD, toUnit('1'), sETH, {
 								from: account1,
@@ -2437,12 +2477,24 @@ contract('Exchanger (spec tests)', async accounts => {
 							const { suspended, reason } = await systemStatus.synthSuspension(sETH);
 							assert.ok(suspended);
 							assert.equal(reason, '65');
+
+							// check view reverts since synth is now suspended
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sUSD, sETH),
+								'suspended'
+							);
 						});
 					});
 					describe('when exchanging out of that synth', () => {
 						beforeEach(async () => {
 							// give the user some sETH
 							await sETHContract.issue(account1, toUnit('1'));
+						});
+						it('getAmountsForExchange reverts due to invalid rate', async () => {
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sETH, sUSD),
+								'synth rate invalid'
+							);
 						});
 						it('then it causes a suspension from price deviation', async () => {
 							// await assert.revert(
@@ -2462,6 +2514,12 @@ contract('Exchanger (spec tests)', async accounts => {
 							const { suspended, reason } = await systemStatus.synthSuspension(sETH);
 							assert.ok(suspended);
 							assert.equal(reason, '65');
+
+							// check view reverts since synth is now suspended
+							await assert.revert(
+								exchanger.getAmountsForExchange(toUnit('1'), sETH, sUSD),
+								'suspended'
+							);
 						});
 					});
 				});

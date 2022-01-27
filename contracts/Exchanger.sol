@@ -978,13 +978,32 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
+        // The checks are added for consistency with the checks performed in _exchange()
+        // The reverts (instead of no-op returns) are used order to prevent incorrect usage in calling contracts
+        // (The no-op in _exchange() is in order to trigger system suspension if needed)
+
+        // check synths active
+        systemStatus().requireSynthActive(sourceCurrencyKey);
+        systemStatus().requireSynthActive(destinationCurrencyKey);
+
+        // check rates don't deviate above ciruit breaker allowed deviation
+        require(
+            !_isSynthRateInvalid(sourceCurrencyKey, exchangeRates().rateForCurrency(sourceCurrencyKey)),
+            "synth rate invalid"
+        );
+        require(
+            !_isSynthRateInvalid(destinationCurrencyKey, exchangeRates().rateForCurrency(destinationCurrencyKey)),
+            "synth rate invalid"
+        );
+
+        // check rates not stale or flagged
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+
         bool tooVolatile;
         (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
 
-        if (tooVolatile) {
-            // no-op, in order to prevent charging a high that's over the max
-            return (0, 0, 0);
-        }
+        // check rates volatility result
+        require(!tooVolatile, "exchange rates too volatile");
 
         uint destinationAmount;
         uint destinationRate;
@@ -993,11 +1012,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             sourceAmount,
             destinationCurrencyKey
         );
-
-        // Return when invalid rate
-        if (destinationRate == 0) {
-            return (destinationAmount, 0, 0);
-        }
 
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
