@@ -2,11 +2,10 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./ExchangeRates.sol";
-import "./MixinSystemSettings.sol";
 import "./interfaces/IDexPriceAggregator.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerateswithdexpricing
-contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
+contract ExchangeRatesWithDexPricing is ExchangeRates {
     bytes32 public constant CONTRACT_NAME = "ExchangeRatesWithDexPricing";
 
     bytes32 internal constant SETTING_DEX_PRICE_AGGREGATOR = "dexPriceAggregator";
@@ -81,15 +80,15 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         uint preBufferValue;
 
         if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
-            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap/Chainlink aggregator for the other if necessary
+            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
             uint sourceRate =
-                usePureChainlinkPriceForSource ? systemSourceRate : _getUsdRateFromDexAggregator(sourceCurrencyKey);
+                usePureChainlinkPriceForSource ? systemSourceRate : _getRateFromDexAggregator(sourceCurrencyKey);
             uint destRate =
-                usePureChainlinkPriceForDest ? systemDestinationRate : _getUsdRateFromDexAggregator(destinationCurrencyKey);
+                usePureChainlinkPriceForDest ? systemDestinationRate : _getRateFromDexAggregator(destinationCurrencyKey);
 
             preBufferValue = sourceAmount.mul(sourceRate).div(destRate);
         } else {
-            // Otherwise, we get the price from Uniswap/Chainlink aggregator
+            // Otherwise, we get the price from Uniswap
             IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
             require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
             IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
@@ -108,7 +107,7 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         value = pClbufValue < preBufferValue ? pClbufValue : preBufferValue; // min
     }
 
-    function _getUsdRateFromDexAggregator(bytes32 currencyKey) internal view returns (uint) {
+    function _getRateFromDexAggregator(bytes32 currencyKey) internal view returns (uint) {
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
