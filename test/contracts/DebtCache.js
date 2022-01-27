@@ -297,7 +297,6 @@ contract('DebtCache', async accounts => {
 			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
 		);
 
-		// set a 0.3% default exchange fee rate
 		const exchangeFeeRate = toUnit('0.003');
 		await setExchangeFeeRateForSynths({
 			owner,
@@ -989,6 +988,9 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('exchanging between synths updates sUSD debt total due to fees', async () => {
+				// Disable Dynamic fee so that we can neglect it.
+				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 				await systemSettings.setExchangeFeeRateForSynths(
 					[sAUD, sUSD, sEUR],
 					[toUnit(0.1), toUnit(0.1), toUnit(0.1)],
@@ -1011,9 +1013,12 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('exchanging between synths updates debt properly when prices have changed', async () => {
+				// Zero exchange fees so that we can neglect them.
 				await systemSettings.setExchangeFeeRateForSynths([sAUD, sUSD], [toUnit(0), toUnit(0)], {
 					from: owner,
 				});
+				// Disable Dynamic fee so that we can neglect it.
+				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 				await sEURContract.issue(account1, toUnit(20));
 				await debtCache.takeDebtSnapshot();
@@ -1035,9 +1040,13 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('settlement updates debt totals', async () => {
+				// Zero exchange fees so that we can neglect them.
 				await systemSettings.setExchangeFeeRateForSynths([sAUD, sEUR], [toUnit(0), toUnit(0)], {
 					from: owner,
 				});
+				// Disable Dynamic fee so that we can neglect it.
+				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 				await sAUDContract.issue(account1, toUnit(100));
 
 				await debtCache.takeDebtSnapshot();

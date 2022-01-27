@@ -8,6 +8,8 @@ import "./SafeDecimalMath.sol";
 
 /// This library is to reduce SystemSettings contract size only and is not really
 /// a proper library - so it shares knowledge of implementation details
+/// Some of the setters were refactored into this library, and some setters remain in the
+/// contract itself (SystemSettings)
 library SystemSettingsLib {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -76,10 +78,10 @@ library SystemSettingsLib {
     function setIssuanceRatio(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
-        uint issuanceRatio
+        uint ratio
     ) external {
-        require(issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, issuanceRatio);
+        require(ratio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, ratio);
     }
 
     function setTradingRewardsEnabled(
@@ -120,12 +122,12 @@ library SystemSettingsLib {
     function setTargetThreshold(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
-        uint _percent
-    ) external returns (uint targetThreshold) {
-        require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
-        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
+        uint percent
+    ) external returns (uint threshold) {
+        require(percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
+        threshold = percent.mul(SafeDecimalMath.unit()).div(100);
 
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, targetThreshold);
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, threshold);
     }
 
     function setLiquidationDelay(
@@ -418,5 +420,16 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _threshold
         );
+    }
+
+    function setExchangeMaxDynamicFee(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint maxFee
+    ) external {
+        require(maxFee != 0, "Max dynamic fee cannot be 0");
+        require(maxFee <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
     }
 }

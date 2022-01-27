@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
-const { getRate, setRate } = require('../utils/rates');
+const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 const { skipLiquidationDelay } = require('../utils/skip');
 
@@ -46,7 +46,11 @@ function itCanLiquidate({ ctx }) {
 
 		before('exchange rate is set', async () => {
 			exchangeRate = await getRate({ ctx, symbol: 'SNX' });
-			await setRate({ ctx, symbol: 'SNX', rate: '1000000000000000000' });
+			await addAggregatorAndSetRate({
+				ctx,
+				currencyKey: toBytes32('SNX'),
+				rate: '1000000000000000000',
+			});
 		});
 
 		before('someUser stakes their SNX', async () => {
@@ -59,7 +63,11 @@ function itCanLiquidate({ ctx }) {
 
 		describe('getting marked', () => {
 			before('exchange rate changes to allow liquidation', async () => {
-				await setRate({ ctx, symbol: 'SNX', rate: '200000000000000000' });
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: '200000000000000000',
+				});
 			});
 
 			before('liquidation is marked', async () => {
@@ -67,7 +75,11 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			after('restore exchange rate', async () => {
-				await setRate({ ctx, symbol: 'SNX', rate: exchangeRate.toString() });
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: exchangeRate.toString(),
+				});
 			});
 
 			it('still not open for liquidation', async () => {

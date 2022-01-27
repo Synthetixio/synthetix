@@ -75,6 +75,12 @@ module.exports = {
 			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
 			chainId: 69,
 		},
+		local: {
+			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
+		},
+		'local-ovm': {
+			url: process.env.OVM_PROVIDER_URL || 'http://localhost:9545/',
+		},
 	},
 	gasReporter: {
 		enabled: false,

@@ -188,7 +188,7 @@ contract ExchangeCircuitBreaker is Owned, MixinSystemSettings, IExchangeCircuitB
         }
 
         // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
-        (uint[] memory rates, ) = _exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4);
+        (uint[] memory rates, ) = _exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4, 0);
 
         // start at index 1 to ignore current rate
         for (uint i = 1; i < rates.length; i++) {
