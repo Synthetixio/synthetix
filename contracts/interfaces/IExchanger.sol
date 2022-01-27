@@ -51,12 +51,12 @@ interface IExchanger {
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         external
         view
-        returns (uint exchangeFeeRate);
+        returns (uint exchangeFeeRate, bool tooVolatile);
 
     function dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         external
         view
-        returns (uint);
+        returns (uint feeRate, bool tooVolatile);
 
     function getAmountsForExchange(
         uint sourceAmount,
