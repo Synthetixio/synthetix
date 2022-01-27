@@ -70,29 +70,39 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
             uint systemDestinationRate
         )
     {
-        IERC20 sourceEquivalent;
-        IERC20 destEquivalent;
-
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
         );
 
-        // Use the pure Chainlink rate or Uni-V3/Chainlink rate based on SCCP configuration for the source
-        if (getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey)) {
-            sourceEquivalent = systemSourceRate; // TODO: Resolve casting issue, will need a different approach.
-        } else {
-            sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
-            require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
-        }
+        bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
+        bool usePureChainlinkPriceForDestination = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
 
-        // Use the pure Chainlink rate or Uni-V3/Chainlink rate based on SCCP configuration for the destination
-        if (getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey)) {
-            destEquivalent = systemDestinationRate; // TODO: Resolve casting issue, will need a different approach.
+        uint preBufferValue;
+        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDestination) {
+            uint sourceRate;
+            uint destRate;
+
+            if (usePureChainlinkPriceForSource) {
+                sourceRate = systemSourceRate;
+            } else {
+                sourceRate = _getRateFromUniswap(sourceCurrencyKey);
+            }
+
+            if (usePureChainlinkPriceForDestination) {
+                destRate = systemDestinationRate;
+            } else {
+                destRate = _getRateFromUniswap(destinationCurrencyKey);
+            }
+
+            preBufferValue = sourceAmount.mul(sourceRate).div(destRate);
         } else {
-            destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
-            require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
+            // If we can't rely on the pure chainlink price for either, get the price from their shared uniswap pool
+            IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
+            IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
+
+            preBufferValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
         }
 
         // Derive P_CLBUF from highest configured buffer between source and destination synth
@@ -101,11 +111,15 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
         uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
-        // refactired due to stack too deep
-        uint pDexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
-
         // Final value is minimum output between P_CLBUF and P_TWAP
-        value = pClbufValue < pDexValue ? pClbufValue : pDexValue; // min
+        value = pClbufValue < preBufferValue ? pClbufValue : preBufferValue; // min
+    }
+
+    function _getRateFromUniswap(bytes32 currencyKey) internal view returns (uint) {
+        IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
+        require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
+        IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
+        return _dexPriceDestinationValue(inputEquivalent, susdEquivalent, 1);
     }
 
     function _dexPriceDestinationValue(
