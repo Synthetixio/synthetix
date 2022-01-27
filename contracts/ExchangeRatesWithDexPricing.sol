@@ -91,7 +91,9 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         } else {
             // Otherwise, we get the price from Uniswap/Chainlink aggregator
             IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
+            require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
             IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
+            require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
             preBufferValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
         }

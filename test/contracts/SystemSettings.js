@@ -89,6 +89,7 @@ contract('SystemSettings', async accounts => {
 				'setExchangeDynamicFeeWeightDecay',
 				'setExchangeDynamicFeeRounds',
 				'setExchangeMaxDynamicFee',
+				'setPureChainlinkPriceForAtomicSwapsEnabled',
 			],
 		});
 	});
