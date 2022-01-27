@@ -2,10 +2,11 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./ExchangeRates.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IDexPriceAggregator.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerateswithdexpricing
-contract ExchangeRatesWithDexPricing is ExchangeRates {
+contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
     bytes32 public constant CONTRACT_NAME = "ExchangeRatesWithDexPricing";
 
     bytes32 internal constant SETTING_DEX_PRICE_AGGREGATOR = "dexPriceAggregator";
@@ -69,17 +70,31 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             uint systemDestinationRate
         )
     {
-        IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
-        require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
-
-        IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
-        require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
+        IERC20 sourceEquivalent;
+        IERC20 destEquivalent;
 
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
         );
+
+        // Use the pure Chainlink rate or Uni-V3/Chainlink rate based on SCCP configuration for the source
+        if (getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey)) {
+            sourceEquivalent = systemSourceRate; // TODO: Resolve casting issue, will need a different approach.
+        } else {
+            sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
+            require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
+        }
+
+        // Use the pure Chainlink rate or Uni-V3/Chainlink rate based on SCCP configuration for the destination
+        if (getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey)) {
+            destEquivalent = systemDestinationRate; // TODO: Resolve casting issue, will need a different approach.
+        } else {
+            destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
+            require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
+        }
+
         // Derive P_CLBUF from highest configured buffer between source and destination synth
         uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
         uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
