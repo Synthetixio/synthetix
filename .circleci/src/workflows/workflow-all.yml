@@ -31,6 +31,8 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-fork-tests:
       {{> require-prepare.yml}}
+  - job-fork-tests-ovm:
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Simulate release on fork & test
