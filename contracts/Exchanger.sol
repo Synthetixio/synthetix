@@ -1005,13 +1005,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // check rates volatility result
         require(!tooVolatile, "exchange rates too volatile");
 
-        uint destinationAmount;
-        uint destinationRate;
-        (destinationAmount, , destinationRate) = exchangeRates().effectiveValueAndRates(
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey
-        );
+        (uint destinationAmount, , ) =
+            exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
