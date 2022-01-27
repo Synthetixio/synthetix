@@ -157,8 +157,8 @@ const deployMigration = async ({
 	for (const addr of requiringOwnership) {
 		console.log('Nominating ownership: ', addr);
 
-		const contract = new ethers.Contract(addr, compiled['Owned'].abi);
-		performTransactionalStep({
+		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
+		await performTransactionalStep({
 			account: signer.address,
 			contract: contract.address,
 			target: contract,
