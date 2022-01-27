@@ -77,28 +77,18 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         );
 
         bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
-        bool usePureChainlinkPriceForDestination = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
-
+        bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
         uint preBufferValue;
-        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDestination) {
-            uint sourceRate;
-            uint destRate;
 
-            if (usePureChainlinkPriceForSource) {
-                sourceRate = systemSourceRate;
-            } else {
-                sourceRate = _getRateFromUniswap(sourceCurrencyKey);
-            }
-
-            if (usePureChainlinkPriceForDestination) {
-                destRate = systemDestinationRate;
-            } else {
-                destRate = _getRateFromUniswap(destinationCurrencyKey);
-            }
+        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
+            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
+            uint sourceRate = usePureChainlinkPriceForSource ? systemSourceRate : _getRateFromUniswap(sourceCurrencyKey);
+            uint destRate =
+                usePureChainlinkPriceForDest ? systemDestinationRate : _getRateFromUniswap(destinationCurrencyKey);
 
             preBufferValue = sourceAmount.mul(sourceRate).div(destRate);
         } else {
-            // If we can't rely on the pure chainlink price for either, get the price from their shared uniswap pool
+            // Otherwise, we get the price from their shared uniswap pool
             IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
             IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
 
