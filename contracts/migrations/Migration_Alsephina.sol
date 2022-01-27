@@ -69,14 +69,8 @@ contract Migration_Alsephina is BaseMigration {
     address public constant new_SystemSettings_contract = 0x47247c67E761d885965B880C0d6a42c350862c63;
     // https://kovan.etherscan.io/address/0xEb3A9651cFaE0eCAECCf8c8b0581A6311F6C5921
     address public constant new_ExchangeRates_contract = 0xEb3A9651cFaE0eCAECCf8c8b0581A6311F6C5921;
-    // https://kovan.etherscan.io/address/0x288cA161F9382d54dD27803AbF45C78Da95D19b0
-    address public constant new_FeePool_contract = 0x288cA161F9382d54dD27803AbF45C78Da95D19b0;
-    // https://kovan.etherscan.io/address/0x2346860A4B189161187303B24442389C4363b4D1
-    address public constant new_Synthetix_contract = 0x2346860A4B189161187303B24442389C4363b4D1;
     // https://kovan.etherscan.io/address/0x1c4811F6FDd6a8F7F26A1d11191Ab5F95Abf6E1E
     address public constant new_Exchanger_contract = 0x1c4811F6FDd6a8F7F26A1d11191Ab5F95Abf6E1E;
-    // https://kovan.etherscan.io/address/0x2Ef87CE145476A895ef2D442d826aED1CFaf5627
-    address public constant new_Issuer_contract = 0x2Ef87CE145476A895ef2D442d826aED1CFaf5627;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -113,20 +107,8 @@ contract Migration_Alsephina is BaseMigration {
             "Invalid contract supplied for ExchangeRates"
         );
         require(
-            ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool",
-            "Invalid contract supplied for FeePool"
-        );
-        require(
-            ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
-            "Invalid contract supplied for Synthetix"
-        );
-        require(
             ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives",
             "Invalid contract supplied for Exchanger"
-        );
-        require(
-            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
-            "Invalid contract supplied for Issuer"
         );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
@@ -139,28 +121,10 @@ contract Migration_Alsephina is BaseMigration {
         addressresolver_rebuildCaches_1();
         // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
         addressresolver_rebuildCaches_2();
-        // Ensure the ProxyFeePool contract has the correct FeePool target set;
-        proxyfeepool_i.setTarget(Proxyable(new_FeePool_contract));
-        // Ensure the FeePool contract can write to its EternalStorage;
-        feepooleternalstorage_i.setAssociatedContract(new_FeePool_contract);
-        // Ensure the SNX proxy has the correct Synthetix target set;
-        proxyerc20_i.setTarget(Proxyable(new_Synthetix_contract));
-        // Ensure the SNX proxy has the correct Synthetix target set;
-        proxysynthetix_i.setTarget(Proxyable(new_Synthetix_contract));
         // Ensure the Exchanger contract can write to its State;
         exchangestate_i.setAssociatedContract(new_Exchanger_contract);
         // Ensure the Exchanger contract can suspend synths - see SIP-65;
         systemstatus_i.updateAccessControl("Synth", new_Exchanger_contract, true, false);
-        // Ensure the Synthetix contract can write to its TokenState contract;
-        tokenstatesynthetix_i.setAssociatedContract(new_Synthetix_contract);
-        // Ensure that Synthetix can write to its State contract;
-        synthetixstate_i.setAssociatedContract(new_Issuer_contract);
-        // Ensure the legacy RewardEscrow contract is connected to the Synthetix contract;
-        rewardescrow_i.setSynthetix(ISynthetix(new_Synthetix_contract));
-        // Ensure the legacy RewardEscrow contract is connected to the FeePool contract;
-        rewardescrow_i.setFeePool(IFeePool(new_FeePool_contract));
-        // Ensure the RewardsDistribution has Synthetix set as its authority for distribution;
-        rewardsdistribution_i.setAuthority(new_Synthetix_contract);
         // Ensure the ExchangeRates contract has the standalone feed for SNX;
         exchangerates_i.addAggregator("SNX", 0x31f93DA9823d737b7E44bdee0DF389Fe62Fd1AcD);
         // Ensure the ExchangeRates contract has the standalone feed for ETH;
@@ -213,22 +177,16 @@ contract Migration_Alsephina is BaseMigration {
     }
 
     function addressresolver_importAddresses_0() internal {
-        bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](7);
+        bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](4);
         addressresolver_importAddresses_names_0_0[0] = bytes32("SystemSettingsLib");
         addressresolver_importAddresses_names_0_0[1] = bytes32("SystemSettings");
         addressresolver_importAddresses_names_0_0[2] = bytes32("ExchangeRates");
-        addressresolver_importAddresses_names_0_0[3] = bytes32("FeePool");
-        addressresolver_importAddresses_names_0_0[4] = bytes32("Synthetix");
-        addressresolver_importAddresses_names_0_0[5] = bytes32("Exchanger");
-        addressresolver_importAddresses_names_0_0[6] = bytes32("Issuer");
-        address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](7);
+        addressresolver_importAddresses_names_0_0[3] = bytes32("Exchanger");
+        address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](4);
         addressresolver_importAddresses_destinations_0_1[0] = address(new_SystemSettingsLib_contract);
         addressresolver_importAddresses_destinations_0_1[1] = address(new_SystemSettings_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_ExchangeRates_contract);
-        addressresolver_importAddresses_destinations_0_1[3] = address(new_FeePool_contract);
-        addressresolver_importAddresses_destinations_0_1[4] = address(new_Synthetix_contract);
-        addressresolver_importAddresses_destinations_0_1[5] = address(new_Exchanger_contract);
-        addressresolver_importAddresses_destinations_0_1[6] = address(new_Issuer_contract);
+        addressresolver_importAddresses_destinations_0_1[3] = address(new_Exchanger_contract);
         addressresolver_i.importAddresses(
             addressresolver_importAddresses_names_0_0,
             addressresolver_importAddresses_destinations_0_1
@@ -241,7 +199,7 @@ contract Migration_Alsephina is BaseMigration {
         addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x9880cfA7B81E8841e216ebB32687A2c9551ae333);
         addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x0b6f83DB2dE6cDc3cB57DC0ED79D07267F6fdc2A);
         addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(new_Exchanger_contract);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(new_Issuer_contract);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0xa4Ac258D9796f079443be218AAA4428824172851);
         addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x44Af736495544a726ED15CB0EBe2d87a6bCC1832);
         addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x53baE964339e8A742B5b47F6C10bbfa8Ff138F34);
         addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25);
@@ -266,10 +224,10 @@ contract Migration_Alsephina is BaseMigration {
         addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0x56a8953C03FC8b859140D5C6f7e7f24dD611d419);
         addressresolver_rebuildCaches_destinations_2_0[2] = MixinResolver(0xa2aFD3FaA2b69a334DD5493031fa59B7779a3CBf);
         addressresolver_rebuildCaches_destinations_2_0[3] = MixinResolver(0x7fA8b2D1F640Ac31f08046d0502147Ed430DdAb2);
-        addressresolver_rebuildCaches_destinations_2_0[4] = MixinResolver(new_FeePool_contract);
+        addressresolver_rebuildCaches_destinations_2_0[4] = MixinResolver(0x69A9d122654E6FA8BE179462ff4553D6419a60fE);
         addressresolver_rebuildCaches_destinations_2_0[5] = MixinResolver(0xBBfAd9112203b943f26320B330B75BABF6e2aF2a);
         addressresolver_rebuildCaches_destinations_2_0[6] = MixinResolver(0xD134Db47DDF5A6feB245452af17cCAf92ee53D3c);
-        addressresolver_rebuildCaches_destinations_2_0[7] = MixinResolver(new_Synthetix_contract);
+        addressresolver_rebuildCaches_destinations_2_0[7] = MixinResolver(0xf59A5D8Af09848Cd8bcFBF14A4a5A2323d0dE83c);
         addressresolver_rebuildCaches_destinations_2_0[8] = MixinResolver(0xFa01a0494913b150Dd37CbE1fF775B08f108dEEa);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
