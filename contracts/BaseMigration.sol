@@ -30,9 +30,4 @@ contract BaseMigration is Owned {
     function _requireDeployer() private view {
         require(msg.sender == deployer, "Only the deployer can invoke this");
     }
-
-    modifier onlyDeployer() {
-        _requireDeployer();
-        _;
-    }
 }
