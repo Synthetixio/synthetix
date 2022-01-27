@@ -81,14 +81,15 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         uint preBufferValue;
 
         if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
-            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
-            uint sourceRate = usePureChainlinkPriceForSource ? systemSourceRate : _getRateFromUniswap(sourceCurrencyKey);
+            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap/Chainlink aggregator for the other if necessary
+            uint sourceRate =
+                usePureChainlinkPriceForSource ? systemSourceRate : _getUsdRateFromDexAggregator(sourceCurrencyKey);
             uint destRate =
-                usePureChainlinkPriceForDest ? systemDestinationRate : _getRateFromUniswap(destinationCurrencyKey);
+                usePureChainlinkPriceForDest ? systemDestinationRate : _getUsdRateFromDexAggregator(destinationCurrencyKey);
 
             preBufferValue = sourceAmount.mul(sourceRate).div(destRate);
         } else {
-            // Otherwise, we get the price from their shared uniswap pool
+            // Otherwise, we get the price from Uniswap/Chainlink aggregator
             IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
             IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
 
@@ -105,7 +106,7 @@ contract ExchangeRatesWithDexPricing is MixinSystemSettings, ExchangeRates {
         value = pClbufValue < preBufferValue ? pClbufValue : preBufferValue; // min
     }
 
-    function _getRateFromUniswap(bytes32 currencyKey) internal view returns (uint) {
+    function _getUsdRateFromDexAggregator(bytes32 currencyKey) internal view returns (uint) {
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
