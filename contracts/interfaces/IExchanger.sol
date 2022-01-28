@@ -58,11 +58,6 @@ interface IExchanger {
         view
         returns (uint feeRate, bool tooVolatile);
 
-    function dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        external
-        view
-        returns (uint);
-
     function getAmountsForExchange(
         uint sourceAmount,
         bytes32 sourceCurrencyKey,
