@@ -90,7 +90,7 @@ contract Migration_Alsephina is BaseMigration {
         contracts[11] = address(systemsettings_i);
     }
 
-    function migrate(address currentOwner) external onlyDeployer {
+    function migrate(address currentOwner) external onlyOwner {
         require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
         require(
