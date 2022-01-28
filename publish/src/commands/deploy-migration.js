@@ -1,11 +1,19 @@
 'use strict';
 
 const fs = require('fs');
+const qs = require('querystring');
+const solc = require('solc');
+const axios = require('axios');
 const path = require('path');
 const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
-const { getUsers } = require('../../..');
+const {
+	getUsers,
+	constants: { FLATTENED_FOLDER },
+} = require('../../..');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
+
+const { optimizerRuns } = require('./build').DEFAULTS;
 
 const {
 	ensureNetwork,
@@ -51,7 +59,7 @@ const deployMigration = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, etherscanUrl } = loadConnections({
 		network,
 		useOvm,
 	});
@@ -145,8 +153,8 @@ const deployMigration = async ({
 
 		const contract = new ethers.Contract(addr, compiled['Owned'].abi);
 
-		const txn = await contract.populateTransaction.nominateOwnership(deployedContract.address);
-		const actionName = `${addr}.nominateOwnership(${deployedContract.address})`;
+		const txn = await contract.populateTransaction.nominateNewOwner(deployedContract.address);
+		const actionName = `${addr}.nominateNewOwner(${deployedContract.address})`;
 
 		const ownerAction = {
 			key: actionName,
@@ -170,8 +178,51 @@ const deployMigration = async ({
 
 	appendOwnerAction(ownerAction);
 
+	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl });
+
 	console.log(gray(`Done.`));
 };
+
+async function verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl }) {
+	const readFlattened = () => {
+		const flattenedFilename = path.join(
+			buildPath,
+			FLATTENED_FOLDER,
+			`migrations/Migration_${releaseName}.sol`
+		);
+		try {
+			return fs.readFileSync(flattenedFilename).toString();
+		} catch (err) {
+			throw Error(`Cannot read file ${flattenedFilename}`);
+		}
+	};
+
+	const runs = optimizerRuns;
+
+	// The version reported by solc-js is too verbose and needs a v at the front
+	const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
+
+	await axios.post(
+		etherscanUrl,
+		qs.stringify({
+			module: 'contract',
+			action: 'verifysourcecode',
+			contractaddress: deployedContract.address,
+			sourceCode: readFlattened(),
+			contractname: 'Migration_' + releaseName,
+			constructorArguements: '',
+			compilerversion: solcVersion,
+			optimizationUsed: 1,
+			runs,
+			apikey: process.env.ETHERSCAN_KEY,
+		}),
+		{
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+		}
+	);
+}
 
 module.exports = {
 	deployMigration,
