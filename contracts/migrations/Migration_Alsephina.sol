@@ -75,20 +75,19 @@ contract Migration_Alsephina is BaseMigration {
     constructor() public BaseMigration(OWNER) {}
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
-        contracts = new address[](13);
+        contracts = new address[](12);
         contracts[0] = address(addressresolver_i);
         contracts[1] = address(proxyfeepool_i);
         contracts[2] = address(feepooleternalstorage_i);
         contracts[3] = address(proxyerc20_i);
-        contracts[4] = address(proxysynthetix_i);
-        contracts[5] = address(exchangestate_i);
-        contracts[6] = address(systemstatus_i);
-        contracts[7] = address(tokenstatesynthetix_i);
-        contracts[8] = address(synthetixstate_i);
-        contracts[9] = address(rewardescrow_i);
-        contracts[10] = address(rewardsdistribution_i);
-        contracts[11] = address(exchangerates_i);
-        contracts[12] = address(systemsettings_i);
+        contracts[4] = address(exchangestate_i);
+        contracts[5] = address(systemstatus_i);
+        contracts[6] = address(tokenstatesynthetix_i);
+        contracts[7] = address(synthetixstate_i);
+        contracts[8] = address(rewardescrow_i);
+        contracts[9] = address(rewardsdistribution_i);
+        contracts[10] = address(exchangerates_i);
+        contracts[11] = address(systemsettings_i);
     }
 
     function migrate(address currentOwner) external onlyDeployer {
