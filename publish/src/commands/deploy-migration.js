@@ -23,6 +23,7 @@ const {
 	loadAndCheckRequiredSources,
 	appendOwnerActionGenerator,
 } = require('../util');
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const {
 	wrap,
@@ -59,7 +60,12 @@ const deployMigration = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanUrl } = loadConnections({
+	const {
+		providerUrl,
+		privateKey: envPrivateKey,
+		etherscanUrl,
+		explorerLinkPrefix,
+	} = loadConnections({
 		network,
 		useOvm,
 	});
@@ -152,18 +158,18 @@ const deployMigration = async ({
 		console.log('Nominating ownership: ', addr);
 
 		const contract = new ethers.Contract(addr, compiled['Owned'].abi);
+		performTransactionalStep({
+			account: signer.address,
+			contract: contract.address,
+			target: contract,
+			write: 'nominateNewOwner',
+			writeArg: [deployedContract.address],
 
-		const txn = await contract.populateTransaction.nominateNewOwner(deployedContract.address);
-		const actionName = `${addr}.nominateNewOwner(${deployedContract.address})`;
-
-		const ownerAction = {
-			key: actionName,
-			target: txn.to,
-			action: actionName,
-			data: txn.data,
-		};
-
-		appendOwnerAction(ownerAction);
+			signer,
+			explorerLinkPrefix,
+			ownerActions,
+			ownerActionsFile,
+		});
 	}
 
 	const actionName = `Migration_${releaseName}.migrate(${ownerAddress})`;
