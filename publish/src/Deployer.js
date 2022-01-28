@@ -48,7 +48,7 @@ class Deployer {
 
 		// use the default owner when in a fork or in local mode and no private key supplied
 		if ((useFork || network === 'local') && !privateKey) {
-			const ownerAddress = getUsers({ network, user: 'owner' }).address; // protocolDAO
+			const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
 			this.signer = this.provider.getSigner(ownerAddress);
 			this.signer.address = ownerAddress;
 		} else {
@@ -184,7 +184,7 @@ class Deployer {
 			// Any contract after SafeDecimalMath can automatically get linked.
 			// Doing this with bytecode that doesn't require the library is a no-op.
 			let bytecode = compiled.evm.bytecode.object;
-			['SafeDecimalMath', 'Math'].forEach(contractName => {
+			['SafeDecimalMath', 'Math', 'SystemSettingsLib'].forEach(contractName => {
 				if (this.deployedContracts[contractName]) {
 					bytecode = linker.linkBytecode(bytecode, {
 						[source + '.sol']: {

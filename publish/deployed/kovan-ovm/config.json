@@ -62,9 +62,6 @@
 	"SynthetixEscrow": {
 		"deploy": false
 	},
-	"RewardEscrow": {
-		"deploy": false
-	},
 	"RewardsDistribution": {
 		"deploy": false
 	},
@@ -180,6 +177,9 @@
 		"deploy": false
 	},
 	"OwnerRelayOnOptimism": {
+		"deploy": false
+	},
+	"CollateralEth": {
 		"deploy": false
 	}
 }
