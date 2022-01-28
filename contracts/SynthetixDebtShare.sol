@@ -22,7 +22,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
-    uint internal constant MAX_PERIOD_ITERATE = 10;
+    uint internal constant MAX_PERIOD_ITERATE = 30;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -30,6 +30,13 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
      * Addresses selected by owner which are allowed to call `transferFrom` to manage debt shares
      */
     mapping(address => bool) public authorizedBrokers;
+
+    /**
+     * Addresses selected by owner which are allowed to call `takeSnapshot`
+     * `takeSnapshot` is not public because only a small number of snapshots can be retained for a period of time, and so they
+     * must be controlled to prevent censorship
+     */
+    mapping(address => bool) public authorizedToSnapshot;
 
     /**
      * Records a user's balance as it changes from period to period.
@@ -46,16 +53,18 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
      */
     mapping(uint => uint) public totalSupplyOnPeriod;
 
+
+    /* ERC20 fields. */
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
     /**
      * Period ID used for recording accounting changes
      * Can only increment
      */
     uint128 public currentPeriodId;
 
-    /* ERC20 fields. */
-    string public name;
-    string public symbol;
-    uint8 public decimals;
 
     bool public isInitialized = false;
 
@@ -108,16 +117,10 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     }
 
     function sharePercent(address account) external view returns (uint) {
-        uint balance = balanceOf(account);
-
-        if (balance == 0) {
-            return 0;
-        }
-
-        return balance.divideDecimal(totalSupply());
+        return sharePercentOnPeriod(account, currentPeriodId);
     }
 
-    function sharePercentOnPeriod(address account, uint periodId) external view returns (uint) {
+    function sharePercentOnPeriod(address account, uint periodId) public view returns (uint) {
         uint balance = balanceOfOnPeriod(account, periodId);
         
         if (balance == 0) {
@@ -138,18 +141,30 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function addAuthorizedBroker(address authorizedBroker) external onlyOwner {
-        authorizedBrokers[authorizedBroker] = true;
+    function addAuthorizedBroker(address target) external onlyOwner {
+        authorizedBrokers[target] = true;
+        emit ChangeAuthorizedBroker(target, true);
     }
 
-    function removeAuthorizedBroker(address authorizedBroker) external onlyOwner {
-        authorizedBrokers[authorizedBroker] = false;
+    function removeAuthorizedBroker(address target) external onlyOwner {
+        authorizedBrokers[target] = false;
+        emit ChangeAuthorizedBroker(target, false);
     }
 
-    function setCurrentPeriodId(uint128 newPeriodId) external onlyIssuer {
-        require(newPeriodId > currentPeriodId, "period id must always increase");
-        totalSupplyOnPeriod[newPeriodId] = totalSupplyOnPeriod[currentPeriodId];
-        currentPeriodId = newPeriodId;
+    function addAuthorizedToSnapshot(address target) external onlyOwner {
+        authorizedToSnapshot[target] = true;
+        emit ChangeAuthorizedToSnapshot(target, true);
+    }
+
+    function removeAuthorizedToSnapshot(address target) external onlyOwner {
+        authorizedToSnapshot[target] = false;
+        emit ChangeAuthorizedToSnapshot(target, false);
+    }
+
+    function takeSnapshot(uint128 id) external onlyAuthorizedToSnapshot {
+        require(id > currentPeriodId, "period id must always increase");
+        totalSupplyOnPeriod[id] = totalSupplyOnPeriod[currentPeriodId];
+        currentPeriodId = id;
     }
         
     function mintShare(address account, uint256 amount) external onlyIssuer {
@@ -182,6 +197,8 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     }
 
     function transferFrom(address from, address to, uint256 amount) external onlyAuthorizedBrokers returns(bool) {
+        require(to != address(0), "ERC20: send to the zero address");
+
         _deductBalance(from, amount);
         _increaseBalance(to, amount);
 
@@ -231,18 +248,18 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     function _deductBalance(address account, uint amount) internal {
         uint accountBalanceCount = balances[account].length;
 
-        if (accountBalanceCount == 0) {
-            revert("SynthetixDebtShare: account has no share to deduct");
-        }
+        require(accountBalanceCount != 0, "SynthetixDebtShare: account has no share to deduct");
+
+        uint128 newAmount = uint128(uint(balances[account][accountBalanceCount - 1].amount).sub(amount));
 
         if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
             balances[account].push(PeriodBalance(
-                uint128(uint(balances[account][accountBalanceCount - 1].amount).sub(amount)), 
+                newAmount, 
                 currentPeriodId
             ));
         }
         else {
-            balances[account][accountBalanceCount - 1].amount = uint128(uint(balances[account][accountBalanceCount - 1].amount).sub(amount));
+            balances[account][accountBalanceCount - 1].amount = newAmount;
         }
     }
 
@@ -250,6 +267,11 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     modifier onlyIssuer() {
         require(msg.sender == requireAndGetAddress(CONTRACT_ISSUER), "SynthetixDebtShare: only issuer can mint/burn");
+        _;
+    }
+
+    modifier onlyAuthorizedToSnapshot() {
+        require(authorizedToSnapshot[msg.sender] || msg.sender == requireAndGetAddress(CONTRACT_ISSUER), "SynthetixDebtShare: not authorized to snapshot");
         _;
     }
 
@@ -267,4 +289,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     event Mint(address indexed account, uint amount);
     event Burn(address indexed account, uint amount);
     event Transfer(address indexed from, address indexed to, uint value);
+
+    event ChangeAuthorizedBroker(address indexed authorizedBroker, bool authorized);
+    event ChangeAuthorizedToSnapshot(address indexed authorizedToSnapshot, bool authorized);
 }

@@ -36,6 +36,12 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 			`Symbol ${symbol} not yet supported. TODO: Support via exchanging sUSD to other Synths.`
 		);
 	}
+
+	// sanity check
+	const newBalance = await _readBalance({ ctx, symbol, user });
+	if (newBalance.lt(amount)) {
+		throw new Error(`Failed to get required ${amount} ${symbol} for ${user.address}`);
+	}
 }
 
 async function _getETHFromOtherUsers({ ctx, user, amount }) {

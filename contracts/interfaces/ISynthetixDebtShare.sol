@@ -18,7 +18,7 @@ interface ISynthetixDebtShare {
 
     // Mutative functions
 
-    function setCurrentPeriodId(uint128 newPeriodId) external;
+    function takeSnapshot(uint128 id) external;
 
     function mintShare(address account, uint256 amount) external;
 
@@ -30,7 +30,11 @@ interface ISynthetixDebtShare {
 
     function transferFrom(address from, address to, uint256 amount) external returns(bool);
 
-    function addAuthorizedBroker(address authorizedBroker) external;
+    function addAuthorizedBroker(address target) external;
 
-    function removeAuthorizedBroker(address authorizedBroker) external;
+    function removeAuthorizedBroker(address target) external;
+
+    function addAuthorizedToSnapshot(address target) external;
+
+    function removeAuthorizedToSnapshot(address target) external;
 }

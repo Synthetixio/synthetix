@@ -87,7 +87,7 @@ interface IIssuer {
         uint balance
     ) external;
 
-    function setCurrentPeriodId(uint periodId) external;
+    function setCurrentPeriodId(uint128 periodId) external;
 
     function liquidateDelinquentAccount(
         address delinquentAccount,
