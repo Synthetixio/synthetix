@@ -95,10 +95,6 @@ contract Migration_Alsephina is BaseMigration {
         require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
         require(
-            ISynthetixNamedContract(new_SystemSettingsLib_contract).CONTRACT_NAME() == "SystemSettingsLib",
-            "Invalid contract supplied for SystemSettingsLib"
-        );
-        require(
             ISynthetixNamedContract(new_SystemSettings_contract).CONTRACT_NAME() == "SystemSettings",
             "Invalid contract supplied for SystemSettings"
         );
