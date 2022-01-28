@@ -259,8 +259,5 @@
 	},
 	"OwnerRelayOnEthereum": {
 		"deploy": false
-	},
-	"SystemSettingsLib": {
-		"deploy": false
 	}
 }

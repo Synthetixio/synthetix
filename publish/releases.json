@@ -808,7 +808,7 @@
 				"major": 2,
 				"minor": 58
 			},
-			"sips": [184, 193, 196]
+			"sips": []
 		},
 		{
 			"name": "Alsephina (Optimism)",
@@ -818,7 +818,7 @@
 				"major": 2,
 				"minor": 58
 			},
-			"sips": [184, 193, 196]
+			"sips": []
 		},
 		{
 			"name": "Mirzam",
