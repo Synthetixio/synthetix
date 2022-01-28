@@ -368,6 +368,54 @@ module.exports = async ({
 		comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
 	});
 
+	// SIP-184 Exchange Dynamic Fee Rate
+	const exchangeDynamicFeeThreshold = await getDeployParameter('EXCHANGE_DYNAMIC_FEE_THRESHOLD');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'exchangeDynamicFeeThreshold',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(exchangeDynamicFeeThreshold),
+		write: 'setExchangeDynamicFeeThreshold',
+		writeArg: exchangeDynamicFeeThreshold,
+		comment: 'Set exchange dynamic fee threshold (SIP-184)',
+	});
+	const exchangeDynamicFeeWeightDecay = await getDeployParameter(
+		'EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY'
+	);
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'exchangeDynamicFeeWeightDecay',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(exchangeDynamicFeeWeightDecay),
+		write: 'setExchangeDynamicFeeWeightDecay',
+		writeArg: exchangeDynamicFeeWeightDecay,
+		comment: 'Set exchange dynamic fee weight decay (SIP-184)',
+	});
+	const exchangeDynamicFeeRounds = await getDeployParameter('EXCHANGE_DYNAMIC_FEE_ROUNDS');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'exchangeDynamicFeeRounds',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(exchangeDynamicFeeRounds),
+		write: 'setExchangeDynamicFeeRounds',
+		writeArg: exchangeDynamicFeeRounds,
+		comment: 'Set exchange dynamic fee rounds (SIP-184)',
+	});
+	const exchangeMaxDynamicFee = await getDeployParameter('EXCHANGE_MAX_DYNAMIC_FEE');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'exchangeMaxDynamicFee',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(exchangeMaxDynamicFee),
+		write: 'setExchangeMaxDynamicFee',
+		writeArg: exchangeMaxDynamicFee,
+		comment: 'Set exchange max dynamic fee (SIP-184)',
+	});
+
 	// SIP-120 Atomic swap settings
 	if (SystemSettings.atomicMaxVolumePerBlock) {
 		// TODO (SIP-120): finish configuring new atomic exchange system settings

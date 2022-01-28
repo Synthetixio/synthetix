@@ -1,1 +1,12 @@
-[]
+[
+	{
+		"name": "sUSDDAIUniswapV3",
+		"stakingToken": "0x88ccdbba89e073c5dc08b9c84dfc1fdc152c0dac",
+		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "SNXWETHUniswapV3",
+		"stakingToken": "0x83beefb4ca39af649d03969b442c0e9f4e1732d8",
+		"rewardsToken": "ProxyERC20"
+	}
+]

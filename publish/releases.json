@@ -403,6 +403,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 184,
+			"layer": "both",
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
+		},
+		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
@@ -441,6 +446,12 @@
 			"sip": 196,
 			"layer": "both",
 			"sources": ["ExchangeRates"]
+		},
+		{
+			"sip": 200,
+			"layer": "both",
+			"sources": ["FeePool"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -773,22 +784,22 @@
 		},
 		{
 			"name": "Peacock",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Peacock (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Alsephina",

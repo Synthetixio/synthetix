@@ -21,7 +21,8 @@ module.exports = function({ accounts }) {
 	});
 
 	before(async () => {
-		ExchangerWithFeeRecAlternatives.link(await artifacts.require('SafeDecimalMath').new());
+		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		ExchangerWithFeeRecAlternatives.link(safeDecimalMath);
 	});
 
 	beforeEach(async () => {
@@ -110,6 +111,14 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedWithExchangeRatesValidityAtRound: ({ valid = true }, cb) => {
+			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
+				beforeEach(async () => {
+					this.mocks.ExchangeRates.smocked.anyRateIsInvalidAtRound.will.return.with(!valid);
+				});
+				cb();
+			});
+		},
 		whenMockedWithNoPriorExchangesToSettle: cb => {
 			describe(`when mocked with no prior exchanges to settle`, () => {
 				beforeEach(async () => {
@@ -135,6 +144,14 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedWithUintsSystemSetting: ({ setting, value }, cb) => {
+			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
+				beforeEach(async () => {
+					this.flexibleStorageMock.mockSystemSetting({ setting, value, type: 'uints' });
+				});
+				cb();
+			});
+		},
 		whenMockedWithSynthUintSystemSetting: ({ setting, synth, value }, cb) => {
 			const settingForSynth = web3.utils.soliditySha3(
 				{ type: 'bytes32', value: toBytes32(setting) },
@@ -156,6 +173,16 @@ module.exports = function({ accounts }) {
 			describe(`when mocked with exchange rates giving an effective value of 1:1`, () => {
 				beforeEach(async () => {
 					this.mocks.ExchangeRates.smocked.effectiveValueAndRates.will.return.with(
+						(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
+					);
+				});
+				cb();
+			});
+		},
+		whenMockedEffectiveRateAsEqualAtRound: cb => {
+			describe(`when mocked with exchange rates giving an effective value of 1:1`, () => {
+				beforeEach(async () => {
+					this.mocks.ExchangeRates.smocked.effectiveValueAndRatesAtRound.will.return.with(
 						(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
 					);
 				});

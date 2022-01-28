@@ -117,25 +117,34 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _getCurrentRoundId(currencyKey);
     }
 
-    function effectiveValueAtRound(
+    function effectiveValueAndRatesAtRound(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) external view returns (uint value) {
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        (sourceRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         // If there's no change in the currency, then just return the amount they gave us
-        if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
-
-        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
-        if (destRate == 0) {
-            // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
-            // to aggregator upgrades)
-            return 0;
+        if (sourceCurrencyKey == destinationCurrencyKey) {
+            destinationRate = sourceRate;
+            value = sourceAmount;
+        } else {
+            (destinationRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+            // prevent divide-by 0 error (this happens if the dest is not a valid rate)
+            if (destinationRate > 0) {
+                // Calculate the effective value by going from source -> USD -> destination
+                value = sourceAmount.multiplyDecimalRound(sourceRate).divideDecimalRound(destinationRate);
+            }
         }
-        // Calculate the effective value by going from source -> USD -> destination
-        value = sourceAmount.multiplyDecimalRound(srcRate).divideDecimalRound(destRate);
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
@@ -202,15 +211,20 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _getRateAndUpdatedTime(currencyKey).rate;
     }
 
-    function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
-        external
-        view
-        returns (uint[] memory rates, uint[] memory times)
-    {
+    /// @notice getting N rounds of rates for a currency at a specific round
+    /// @param currencyKey the currency key
+    /// @param numRounds the number of rounds to get
+    /// @param roundId the round id
+    /// @return a list of rates and a list of times
+    function ratesAndUpdatedTimeForCurrencyLastNRounds(
+        bytes32 currencyKey,
+        uint numRounds,
+        uint roundId
+    ) external view returns (uint[] memory rates, uint[] memory times) {
         rates = new uint[](numRounds);
         times = new uint[](numRounds);
 
-        uint roundId = _getCurrentRoundId(currencyKey);
+        roundId = roundId > 0 ? roundId : _getCurrentRoundId(currencyKey);
         for (uint i = 0; i < numRounds; i++) {
             // fetch the rate and treat is as current, so inverse limits if frozen will always be applied
             // regardless of current rate
@@ -299,6 +313,30 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return false;
     }
 
+    /// this method checks whether any rate is:
+    /// 1. flagged
+    /// 2. stale with respect to current time (now)
+    function anyRateIsInvalidAtRound(bytes32[] calldata currencyKeys, uint[] calldata roundIds)
+        external
+        view
+        returns (bool)
+    {
+        // Loop through each key and check whether the data point is stale.
+
+        require(roundIds.length == currencyKeys.length, "roundIds must be the same length as currencyKeys");
+
+        uint256 _rateStalePeriod = getRateStalePeriod();
+        bool[] memory flagList = getFlagsForRates(currencyKeys);
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            if (flagList[i] || _rateIsStaleAtRound(currencyKeys[i], roundIds[i], _rateStalePeriod)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function synthTooVolatileForAtomicExchange(bytes32) external view returns (bool) {
         _notImplemented();
     }
@@ -379,7 +417,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
         if (currencyKey == sUSD) {
-            return 0; // no roundIds for sUSD
+            return 0;
         }
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
         if (aggregator != AggregatorV2V3Interface(0)) {
@@ -395,7 +433,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return (SafeDecimalMath.unit(), 0);
         } else {
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
-
             if (aggregator != AggregatorV2V3Interface(0)) {
                 // this view from the aggregator is the most gas efficient but it can throw when there's no data,
                 // so let's call it low-level to suppress any reverts
@@ -450,9 +487,23 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsStale(bytes32 currencyKey, uint _rateStalePeriod) internal view returns (bool) {
         // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == sUSD) return false;
-
+        if (currencyKey == sUSD) {
+            return false;
+        }
         return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
+    }
+
+    function _rateIsStaleAtRound(
+        bytes32 currencyKey,
+        uint roundId,
+        uint _rateStalePeriod
+    ) internal view returns (bool) {
+        // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
+        if (currencyKey == sUSD) {
+            return false;
+        }
+        (, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
+        return _rateIsStaleWithTime(_rateStalePeriod, time);
     }
 
     function _rateIsStaleWithTime(uint _rateStalePeriod, uint _time) internal view returns (bool) {
@@ -461,7 +512,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
         // sUSD is a special case and is never invalid
-        if (currencyKey == sUSD) return false;
+        if (currencyKey == sUSD) {
+            return false;
+        }
         address aggregator = address(aggregators[currencyKey]);
         // when no aggregator or when the flags haven't been setup
         if (aggregator == address(0) || flags == FlagsInterface(0)) {

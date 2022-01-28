@@ -6,12 +6,6 @@ import "./MixinFuturesNextPriceOrders.sol";
 import "./MixinFuturesViews.sol";
 import "./interfaces/IFuturesMarket.sol";
 
-// Internal references
-import "./interfaces/IExchangeCircuitBreaker.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IERC20.sol";
-
 /*
  * Synthetic Futures
  * =================
