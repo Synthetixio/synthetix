@@ -2162,7 +2162,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									// view reverts
 									await assert.revert(
 										exchanger.getAmountsForExchange(toUnit('1'), sUSD, sAUD),
-										'stale'
+										'invalid'
 									);
 								});
 								it('settling still works ', async () => {
