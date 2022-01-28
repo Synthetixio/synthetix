@@ -559,8 +559,8 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(account3Rewards[1], rewardsAmount, '1');
 
 			// Accounts 2 & 3 claim
+			await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 			await feePool.claimFees({ from: account2 });
-			// updateRatesWithDefaults();
 			await feePool.claimFees({ from: account3 });
 
 			// Accounts 2 & 3 now have the rewards escrowed
@@ -635,6 +635,9 @@ contract('Rewards Integration Tests', accounts => {
 			await synthetix.mint({ from: owner });
 
 			// Do some exchanging to generateFees
+			// disable dynamic fee here otherwise it will flag rates as too volatile
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, sUSD, sBTC);
 			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account1 });
 			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account2 });

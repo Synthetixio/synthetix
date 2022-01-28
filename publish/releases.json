@@ -403,6 +403,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 184,
+			"layer": "both",
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
+		},
+		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
@@ -436,6 +441,11 @@
 			"layer": "ovm",
 			"sources": ["CollateralEth"],
 			"released": "ovm"
+		},
+		{
+			"sip": 196,
+			"layer": "both",
+			"sources": ["ExchangeRates"]
 		},
 		{
 			"sip": 200,
@@ -798,7 +808,7 @@
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Alsephina (Optimism)",
@@ -808,7 +818,7 @@
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Mirzam",

@@ -2051,6 +2051,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 			// ****************************************
 
 			it("should prevent more issuance if the user's collaterisation changes to be insufficient", async () => {
+				// disable dynamic fee here as it will prevent exchange due to fees spiking too much
+				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 				// Set sEUR for purposes of this test
 				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('0.75')]);
 				await debtCache.takeDebtSnapshot();

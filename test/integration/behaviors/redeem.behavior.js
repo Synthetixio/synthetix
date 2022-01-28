@@ -18,8 +18,8 @@ function itCanRedeem({ ctx }) {
 
 		before('target contracts and users', () => {
 			const { addedSynths } = ctx;
-			// when no added synths, then just use sDEFI for testing (useful for the simulation)
-			synth = addedSynths.length ? addedSynths[0].name : 'sDEFI';
+			// when no added synths, then just use sETH for testing (useful for the simulation)
+			synth = addedSynths.length ? addedSynths[0].name : 'sBTC';
 
 			({
 				Synthetix,

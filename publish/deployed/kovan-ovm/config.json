@@ -62,9 +62,6 @@
 	"SynthetixEscrow": {
 		"deploy": false
 	},
-	"RewardEscrow": {
-		"deploy": false
-	},
 	"RewardsDistribution": {
 		"deploy": false
 	},
@@ -183,6 +180,9 @@
 		"deploy": false
 	},
 	"CollateralEth": {
+		"deploy": false
+	},
+	"SystemSettingsLib": {
 		"deploy": false
 	}
 }
