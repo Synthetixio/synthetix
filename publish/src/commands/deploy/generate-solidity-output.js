@@ -206,7 +206,7 @@ contract Migration_${releaseName} is BaseMigration {
 			.join('\n\t\t')}
 	}
 
-	function migrate(address currentOwner) external onlyDeployer {
+	function migrate(address currentOwner) external onlyOwner {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
 		${Object.entries(newContractsBeingAdded)

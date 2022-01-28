@@ -117,7 +117,6 @@ const deployMigration = async ({
 
 	console.log(green(`\nSuccessfully deployed: ${deployedContract.address}\n`));
 
-	// append owner action to run the actual migration
 	const { getPathToNetwork } = wrap({
 		network,
 		useOvm,
@@ -138,6 +137,27 @@ const deployMigration = async ({
 		// 'https://',
 	});
 
+	// run nominations
+	const requiringOwnership = await deployedContract.contractsRequiringOwnership();
+
+	for (const addr of requiringOwnership) {
+		console.log('Nominating ownership: ', addr);
+
+		const contract = new ethers.Contract(addr, compiled['Owned'].abi);
+
+		const txn = await contract.populateTransaction.nominateOwnership(deployedContract.address);
+		const actionName = `${addr}.nominateOwnership(${deployedContract.address})`;
+
+		const ownerAction = {
+			key: actionName,
+			target: txn.to,
+			action: actionName,
+			data: txn.data,
+		};
+
+		appendOwnerAction(ownerAction);
+	}
+
 	const actionName = `Migration_${releaseName}.migrate(${ownerAddress})`;
 	const txn = await deployedContract.populateTransaction.migrate(ownerAddress);
 
@@ -150,7 +170,7 @@ const deployMigration = async ({
 
 	appendOwnerAction(ownerAction);
 
-	console.log(gray(`All contracts deployed on "${network}" network:`));
+	console.log(gray(`Done.`));
 };
 
 module.exports = {
