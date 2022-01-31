@@ -77,16 +77,18 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
         bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
-        uint preBufferValue;
+        uint dexPrice;
 
         if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
             // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
             uint sourceRate =
-                usePureChainlinkPriceForSource ? systemSourceRate : _getRateFromDexAggregator(sourceCurrencyKey);
+                usePureChainlinkPriceForSource ? systemSourceRate : _getPriceFromDexAggregatorForSource(sourceCurrencyKey);
             uint destRate =
-                usePureChainlinkPriceForDest ? systemDestinationRate : _getRateFromDexAggregator(destinationCurrencyKey);
+                usePureChainlinkPriceForDest
+                    ? systemDestinationRate
+                    : _getPriceFromDexAggregatorForDest(destinationCurrencyKey);
 
-            preBufferValue = sourceAmount.mul(sourceRate).div(destRate);
+            dexPrice = sourceAmount.mul(sourceRate).div(destRate);
         } else {
             // Otherwise, we get the price from Uniswap
             IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
@@ -94,24 +96,34 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
             require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
-            preBufferValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
+            dexPrice = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
         }
 
-        // Derive P_CLBUF from highest configured buffer between source and destination synth
+        // Derive chainlinkPriceWithBuffer from highest configured buffer between source and destination synth
         uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
         uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
         uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
-        uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
+        uint chainlinkPriceWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
-        // Final value is minimum output between P_CLBUF and P_TWAP
-        value = pClbufValue < preBufferValue ? pClbufValue : preBufferValue; // min
+        // Final value is minimum output between the price from Chainlink with a buffer and the price from Uniswap.
+        value = chainlinkPriceWithBuffer < dexPrice ? chainlinkPriceWithBuffer : dexPrice; // min
     }
 
-    function _getRateFromDexAggregator(bytes32 currencyKey) internal view returns (uint) {
+    function _getPriceFromDexAggregatorForSource(bytes32 currencyKey) internal view returns (uint) {
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
         return _dexPriceDestinationValue(inputEquivalent, susdEquivalent, 1);
+    }
+
+    function _getPriceFromDexAggregatorForDest(bytes32 currencyKey) internal view returns (uint) {
+        // Because slippage is asymmetical on UniV3, we want the exchange rate from usd -> currencyKey to get the price, but invert it to get currencyKey's price in USD
+        // TODO: Pretty sure SafeDecimalMath.unit().div() won't fly
+        // TODO: Roll into above function with a flag?
+        IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
+        require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
+        IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
+        return SafeDecimalMath.unit().div(_dexPriceDestinationValue(susdEquivalent, inputEquivalent, 1));
     }
 
     function _dexPriceDestinationValue(

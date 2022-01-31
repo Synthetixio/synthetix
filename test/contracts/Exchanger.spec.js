@@ -1249,7 +1249,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-														'but less than the total initially',
+													'but less than the total initially',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1286,7 +1286,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-														'and more than the total initially and the exchangefee rate changed',
+													'and more than the total initially and the exchangefee rate changed',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1856,7 +1856,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														);
 													}
 												});
-												it('then all succeed', () => {});
+												it('then all succeed', () => { });
 												it('when one more is tried, then if fails', async () => {
 													await assert.revert(
 														synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
@@ -2994,6 +2994,136 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 				});
 			});
+
+			describe.only('when we can use the pure Chainlink price', () => {
+
+				beforeEach(async () => {
+
+					// Set up Chainlink Prices
+					const susdChainlinkPrice = toUnit('1');
+					const susdAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sUSD, susdAggregator.address, { from: owner });
+					await susdAggregator.setLatestAnswer(susdChainlinkPrice, await currentTime());
+
+					const seurChainlinkPrice = toUnit('1.2');
+					const seurAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sEUR, seurAggregator.address, { from: owner });
+					await seurAggregator.setLatestAnswer(seurChainlinkPrice, await currentTime());
+
+					const saudChainlinkPrice = toUnit('0.7');
+					const saudAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sAUD, saudAggregator.address, { from: owner });
+					await saudAggregator.setLatestAnswer(saudChainlinkPrice, await currentTime());
+
+					const sbtcChainlinkPrice = toUnit('40000');
+					const sbtcAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sBTC, sbtcAggregator.address, { from: owner });
+					await sbtcAggregator.setLatestAnswer(sbtcChainlinkPrice, await currentTime());
+
+					// Set up Uniswap Price Aggregator with different prices
+					const dexPriceAggregator = await MockDexPriceAggregator.new();
+					await dexPriceAggregator.setAssetToAssetRate(sUSDContract.address, toUnit('1'));
+					await dexPriceAggregator.setAssetToAssetRate(sEURContract.address, toUnit('1.1'));
+					await dexPriceAggregator.setAssetToAssetRate(sAUDContract.address, toUnit('0.8'));
+					await dexPriceAggregator.setAssetToAssetRate(sBTCContract.address, toUnit('50000'));
+					await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
+
+					// Add Synth Equivalents to System Settings
+					const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
+					const sbtcDexEquivalentToken = await MockToken.new('esBTC equivalent', 'esBTC', '18');
+					const seurDexEquivalentToken = await MockToken.new('esEUR equivalent', 'esEUR', '18');
+					const saudDexEquivalentToken = await MockToken.new('esAUD equivalent', 'esAUD', '18');
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sUSD,
+						susdDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sBTC,
+						sbtcDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sEUR,
+						seurDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sAUD,
+						saudDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+
+					// Set Forex to use the pure Chainlink price
+					for (const forexCurrencyKey of [sAUD, sEUR, sUSD]) {
+						await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
+							forexCurrencyKey,
+							true,
+							{
+								from: owner,
+							}
+						);
+					}
+
+				});
+
+				describe('for the source currency', () => {
+					// sEUR -> sBTC
+					const amountIn = toUnit('100');
+					let amountReceived;
+					let amountFee;
+					let exchangeFeeRate;
+
+					beforeEach(async () => {
+						await sEURContract.issue(account1, amountIn);
+
+						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), {
+							from: account1,
+						});
+						({
+							amountReceived,
+							exchangeFeeRate,
+							fee: amountFee,
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC));
+
+					});
+
+					it('completed the exchange atomically', async () => {
+						assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
+						assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+					});
+
+					it('used the correct atomic exchange rate', async () => {
+						const expectedAmountWithoutFees = multiplyDecimal(amountIn, ethOnDex);
+						const expectedAmount = expectedAmountWithoutFees.sub(amountFee);
+						assert.bnEqual(amountReceived, expectedAmount);
+					});
+
+				});
+
+				describe('for the destination currency', () => {
+					/*
+					On a sBTC -> sEUR trade worth 1 sBTC:
+					
+					Given sEUR is configured to trade at purely the chainlink price, with 1.20 sUSD per EUR, and sBTC is configured to trade as per the specification laid out in SIP-120 resulting in a price of sUSD 50,000 per bitcoin.
+					The user receives 41,666.666 sEUR before factoring in fees.
+					*/
+				});
+
+				describe('for both the source and destination currency', () => {
+					// sEUR -> sAUD
+				});
+
+			})
+
 		});
 	};
 

@@ -433,6 +433,7 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _enabled
         );
+    }
 
     function setExchangeMaxDynamicFee(
         IFlexibleStorage flexibleStorage,
@@ -443,6 +444,5 @@ library SystemSettingsLib {
         require(maxFee <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
-
     }
 }

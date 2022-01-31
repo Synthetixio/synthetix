@@ -135,13 +135,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        // One of src/dest synth must be sUSD (checked below for gas optimization reasons)
-        require(
-            !exchangeRates().synthTooVolatileForAtomicExchange(
-                sourceCurrencyKey == sUSD ? destinationCurrencyKey : sourceCurrencyKey
-            ),
-            "Src/dest synth too volatile"
-        );
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
@@ -189,7 +184,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
             sourceSusdValue = systemConvertedAmount;
         } else {
-            revert("Src/dest synth must be sUSD");
+            // Otherwise, convert source to sUSD value
+            (, , , sourceSusdValue, , ) = _getAmountsForAtomicExchangeMinusFees(amountReceived, sourceCurrencyKey, sUSD);
         }
 
         // Check and update atomic volume limit
