@@ -163,19 +163,39 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 		}
 
 		if (taskArguments.deploy) {
+			const network = 'local';
+
+			await prepareDeploy({
+				network,
+				synthsToAdd,
+				useOvm: false,
+				useReleases: false,
+				useSips: false,
+			});
 			await deployInstance({
+				addNewSynths: true,
 				useOvm: false,
 				providerUrl,
 				providerPort: providerPortL1,
 				buildPath: buildPath,
 			});
 
+			await prepareDeploy({
+				network,
+				synthsToAdd,
+				useOvm: true,
+				useReleases: false,
+				useSips: false,
+			});
 			await deployInstance({
+				addNewSynths: true,
 				useOvm: true,
 				providerUrl,
 				providerPort: providerPortL2,
 				buildPath: buildPath,
 			});
+
+			hre.config.addedSynths = synthsToAdd;
 		}
 
 		await connectInstances({
