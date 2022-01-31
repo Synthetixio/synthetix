@@ -4,8 +4,6 @@ pragma solidity ^0.5.16;
 import "./ExchangeRates.sol";
 import "./interfaces/IDexPriceAggregator.sol";
 
-import "hardhat/console.sol";
-
 // https://docs.synthetix.io/contracts/source/contracts/exchangerateswithdexpricing
 contract ExchangeRatesWithDexPricing is ExchangeRates {
     bytes32 public constant CONTRACT_NAME = "ExchangeRatesWithDexPricing";

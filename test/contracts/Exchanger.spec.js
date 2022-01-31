@@ -2996,6 +2996,10 @@ contract('Exchanger (spec tests)', async accounts => {
 			});
 
 			describe.only('when we can use the pure Chainlink price', () => {
+				let amountIn;
+				let amountReceived;
+				let amountFee;
+				let exchangeFeeRate;
 
 				beforeEach(async () => {
 
@@ -3072,43 +3076,47 @@ contract('Exchanger (spec tests)', async accounts => {
 
 				describe('for the source currency', () => {
 					// sEUR -> sBTC
-					const amountIn = toUnit('100');
-					let amountReceived;
-					let amountFee;
-					let exchangeFeeRate;
 
 					beforeEach(async () => {
+						amountIn = toUnit('41666.666');
 						await sEURContract.issue(account1, amountIn);
 
-						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), {
-							from: account1,
-						});
 						({
 							amountReceived,
 							exchangeFeeRate,
 							fee: amountFee,
 						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC));
+
+						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), {
+							from: account1,
+						});
+
 					});
 
 					it('completed the exchange atomically', async () => {
-						assert.bnEqual(await sEURContract.balanceOf(account1), amountIssued.sub(amountIn));
+						assert.bnEqual(await sEURContract.balanceOf(account1), 0);
 						assert.bnEqual(await sBTCContract.balanceOf(account1), amountReceived);
 					});
 
 					it('used the correct atomic exchange rate', async () => {
-						const expectedAmountWithoutFees = multiplyDecimal(amountIn, toUnit('50000')); // TODO: Set this appropriately
-						const expectedAmount = expectedAmountWithoutFees.sub(amountFee);
-						assert.bnEqual(amountReceived, expectedAmount);
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); //pure chainlink price
+						const expectedAmountInBtc = divideDecimal(expectedAmountInUsd, toUnit('50000')); //dex
+						assert.bnEqual(amountReceived, expectedAmountInBtc);
 					});
 
+					it('updates atomic volume correctly', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); //pure chainlink price
+						const lastAtomicVolume = await exchanger.lastAtomicVolume();
+						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
+					})
 				});
 
 				describe('for the destination currency', () => {
+					// sBTC -> sEUR
+
 					/*
-					On a sBTC -> sEUR trade worth 1 sBTC:
-					
-					Given sEUR is configured to trade at purely the chainlink price, with 1.20 sUSD per EUR, and sBTC is configured to trade as per the specification laid out in SIP-120 resulting in a price of sUSD 50,000 per bitcoin.
-					The user receives 41,666.666 sEUR before factoring in fees.
+					   From the SIP: Given sEUR is configured to trade at purely the chainlink price, with 1.20 sUSD per EUR, and sBTC is configured to trade as per the specification laid out in SIP-120 resulting in a price of sUSD 50,000 per bitcoin.
+					   The user receives 41,666.666 sEUR before factoring in fees.
 					*/
 				});
 
