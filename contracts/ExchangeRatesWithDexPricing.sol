@@ -119,19 +119,12 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     }
 
     function _getPriceFromDexAggregatorForDest(bytes32 currencyKey) internal view returns (uint) {
-        IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
-        require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
-        IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
-        return _dexPriceDestinationValue(inputEquivalent, susdEquivalent, 1);
-        /*
         // Because slippage is asymmetical on UniV3, we want the exchange rate from usd -> currencyKey to get the price, but invert it to get currencyKey's price in USD
-        // TODO: Pretty sure SafeDecimalMath.unit().div() won't fly
-        // TODO: Roll into above function with a flag?
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
-        return SafeDecimalMath.unit().div(_dexPriceDestinationValue(susdEquivalent, inputEquivalent, 1));
-        */
+        return
+            SafeDecimalMath.unit().div(_dexPriceDestinationValue(susdEquivalent, inputEquivalent, SafeDecimalMath.unit()));
     }
 
     function _dexPriceDestinationValue(
