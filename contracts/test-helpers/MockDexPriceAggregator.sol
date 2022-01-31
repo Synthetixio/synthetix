@@ -4,8 +4,6 @@ import "../interfaces/IDexPriceAggregator.sol";
 import "../interfaces/IERC20.sol";
 import "../SafeDecimalMath.sol";
 
-import "hardhat/console.sol";
-
 contract MockDexPriceAggregator is IDexPriceAggregator {
     using SafeDecimalMath for uint;
 
@@ -21,11 +19,7 @@ contract MockDexPriceAggregator is IDexPriceAggregator {
         if (assetToAssetShouldRevert) {
             revert("mock assetToAsset() reverted");
         }
-
-        uint inDecimals = IERC20(tokenIn).decimals();
-        uint outDecimals = IERC20(tokenOut).decimals();
-
-        // TODO: Normalize decimals
+        // Assumes equivalent decimals on in and out tokens
         return (rates[tokenIn] * (amountIn)) / (rates[tokenOut]);
     }
 
