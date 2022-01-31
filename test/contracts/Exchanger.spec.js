@@ -3000,11 +3000,6 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 
 					// Set up Chainlink Prices
-					const susdChainlinkPrice = toUnit('1');
-					const susdAggregator = await MockAggregator.new({ from: owner });
-					await exchangeRates.addAggregator(sUSD, susdAggregator.address, { from: owner });
-					await susdAggregator.setLatestAnswer(susdChainlinkPrice, await currentTime());
-
 					const seurChainlinkPrice = toUnit('1.2');
 					const seurAggregator = await MockAggregator.new({ from: owner });
 					await exchangeRates.addAggregator(sEUR, seurAggregator.address, { from: owner });
@@ -3019,14 +3014,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					const sbtcAggregator = await MockAggregator.new({ from: owner });
 					await exchangeRates.addAggregator(sBTC, sbtcAggregator.address, { from: owner });
 					await sbtcAggregator.setLatestAnswer(sbtcChainlinkPrice, await currentTime());
-
-					// Set up Uniswap Price Aggregator with different prices
-					const dexPriceAggregator = await MockDexPriceAggregator.new();
-					await dexPriceAggregator.setAssetToAssetRate(sUSDContract.address, toUnit('1'));
-					await dexPriceAggregator.setAssetToAssetRate(sEURContract.address, toUnit('1.1'));
-					await dexPriceAggregator.setAssetToAssetRate(sAUDContract.address, toUnit('0.8'));
-					await dexPriceAggregator.setAssetToAssetRate(sBTCContract.address, toUnit('50000'));
-					await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
 
 					// Add Synth Equivalents to System Settings
 					const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
@@ -3062,6 +3049,14 @@ contract('Exchanger (spec tests)', async accounts => {
 						}
 					);
 
+					// Set up Uniswap Price Aggregator with different prices
+					const dexPriceAggregator = await MockDexPriceAggregator.new();
+					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit('1'));
+					await dexPriceAggregator.setAssetToAssetRate(seurDexEquivalentToken.address, toUnit('1.1'));
+					await dexPriceAggregator.setAssetToAssetRate(saudDexEquivalentToken.address, toUnit('0.8'));
+					await dexPriceAggregator.setAssetToAssetRate(sbtcDexEquivalentToken.address, toUnit('50000'));
+					await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
+
 					// Set Forex to use the pure Chainlink price
 					for (const forexCurrencyKey of [sAUD, sEUR, sUSD]) {
 						await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
@@ -3093,16 +3088,15 @@ contract('Exchanger (spec tests)', async accounts => {
 							exchangeFeeRate,
 							fee: amountFee,
 						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC));
-
 					});
 
 					it('completed the exchange atomically', async () => {
-						assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
-						assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+						assert.bnEqual(await sEURContract.balanceOf(account1), amountIssued.sub(amountIn));
+						assert.bnEqual(await sBTCContract.balanceOf(account1), amountReceived);
 					});
 
 					it('used the correct atomic exchange rate', async () => {
-						const expectedAmountWithoutFees = multiplyDecimal(amountIn, ethOnDex);
+						const expectedAmountWithoutFees = multiplyDecimal(amountIn, toUnit('50000')); // TODO: Set this appropriately
 						const expectedAmount = expectedAmountWithoutFees.sub(amountFee);
 						assert.bnEqual(amountReceived, expectedAmount);
 					});
