@@ -208,26 +208,28 @@ async function verifyMigrationContract({ deployedContract, releaseName, buildPat
 	// The version reported by solc-js is too verbose and needs a v at the front
 	const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
 
-	await axios.post(
-		etherscanUrl,
-		qs.stringify({
-			module: 'contract',
-			action: 'verifysourcecode',
-			contractaddress: deployedContract.address,
-			sourceCode: readFlattened(),
-			contractname: 'Migration_' + releaseName,
-			constructorArguements: '',
-			compilerversion: solcVersion,
-			optimizationUsed: 1,
-			runs,
-			apikey: process.env.ETHERSCAN_KEY,
-		}),
-		{
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-			},
-		}
-	);
+	const payload = {
+		module: 'contract',
+		action: 'verifysourcecode',
+		contractaddress: deployedContract.address,
+		sourceCode: readFlattened(),
+		contractName: 'Migration_' + releaseName,
+		constructorArguements: '',
+		compilerversion: solcVersion,
+		optimizationUsed: 1,
+		runs,
+		apikey: process.env.ETHERSCAN_KEY,
+	};
+
+	console.log('verify on etherscan:', payload);
+
+	const response = await axios.post(etherscanUrl, qs.stringify(payload), {
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+		},
+	});
+
+	console.log(green('etherscan verify response:'), response.data.message);
 }
 
 module.exports = {
