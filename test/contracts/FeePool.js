@@ -875,11 +875,6 @@ contract('FeePool', async accounts => {
 
 				await closeFeePeriod();
 
-				// Transfer back some sUSD so that we can settle our debt.
-				await synthetix.transfer(owner, await sUSDContract.balanceOf(account1), {
-					from: account1,
-				});
-
 				// Settle our debt
 				await synthetix.burnSynths(toUnit('999999'), { from: owner });
 
