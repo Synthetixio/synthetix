@@ -188,6 +188,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 				useSips: false,
 			});
 			await deployInstance({
+				addNewSynths: true,
 				useOvm: true,
 				providerUrl,
 				providerPort: providerPortL2,
