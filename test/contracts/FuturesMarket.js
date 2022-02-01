@@ -26,6 +26,7 @@ const Status = {
 	NotPermitted: 8,
 	NilOrder: 9,
 	NoPositionOpen: 10,
+	PriceTooVolatile: 11,
 };
 
 contract('FuturesMarket', accounts => {
@@ -40,6 +41,7 @@ contract('FuturesMarket', accounts => {
 		synthetix,
 		feePool,
 		debtCache,
+		systemSettings,
 		systemStatus;
 
 	const owner = accounts[1];
@@ -109,6 +111,7 @@ contract('FuturesMarket', accounts => {
 			FeePool: feePool,
 			DebtCache: debtCache,
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
@@ -121,6 +124,7 @@ contract('FuturesMarket', accounts => {
 				'ExchangeRates',
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
+				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',
@@ -129,6 +133,10 @@ contract('FuturesMarket', accounts => {
 
 		// Update the rate so that it is not invalid
 		await setPrice(baseAsset, initialPrice);
+
+		// disable dynamic fee for most tests
+		// it will be enabled for specific tests
+		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 		// Issue the trader some sUSD
 		for (const t of [trader, trader2, trader3]) {

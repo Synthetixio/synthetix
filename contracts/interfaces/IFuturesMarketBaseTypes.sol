@@ -14,7 +14,8 @@ interface IFuturesMarketBaseTypes {
         InsufficientMargin,
         NotPermitted,
         NilOrder,
-        NoPositionOpen
+        NoPositionOpen,
+        PriceTooVolatile
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
