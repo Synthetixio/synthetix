@@ -205,7 +205,7 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          command: npm run fork:mainnet
+          command: npm run fork --target-network mainnet --port 8545
           background: true
       - cmd-wait-for-port:
           port: 8545
