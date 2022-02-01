@@ -214,7 +214,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
         // it is not important since at the time of order execution it will be refunded and the correct
-        // dynamic fee will be charded.
+        // dynamic fee will be charged.
         return _orderFee(params, 0);
     }
 

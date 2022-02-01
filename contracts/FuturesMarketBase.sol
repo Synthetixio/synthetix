@@ -569,7 +569,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much on an issue on a rollup though.
+    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
         return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
     }
@@ -724,9 +724,10 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
-        // note: mutative rateWithBreakCircuit is used here instead of rateWithInvalid view, despite
-        //  reverting immediately after if circuit is broken. This is in order to persist last-rate
-        //  exchangeCircuitBreaker in the happy case (last rate is what used for determining the deviation)
+        // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
+        //  despite reverting immediately after if circuit is broken, which may seem silly.
+        //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
+        //  because last-rate is what used for measuring the deviation for subsequent trades.
         (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset);
         // revert if price is invalid or circuit was broken
         // note: we revert here, which means that circuit is not really broken (is not persisted), this is
