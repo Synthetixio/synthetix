@@ -12,21 +12,23 @@ describe('withdraw() integration tests (L1, L2)', () => {
 	const amountToWithdraw = ethers.utils.parseEther('10');
 
 	let owner;
-	let Synthetix, SynthetixBridgeToBase;
+	let Synthetix, SynthetixL1, SynthetixBridgeToBase;
 
-	let ownerBalance;
+	let ownerBalance, ownerL1Balance;
 
 	let withdrawalReceipt;
 
 	describe('when the owner withdraws SNX', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToBase } = ctx.l2.contracts);
+			({ Synthetix: SynthetixL1 } = ctx.l1.contracts);
 
 			owner = ctx.l2.users.owner;
 		});
 
 		before('record balances', async () => {
 			ownerBalance = await Synthetix.balanceOf(owner.address);
+			ownerL1Balance = await SynthetixL1.balanceOf(owner.address);
 		});
 
 		before('make the withdrawal', async () => {
@@ -55,24 +57,14 @@ describe('withdraw() integration tests (L1, L2)', () => {
 				}
 			});
 
-			before('target contracts and users', () => {
-				({ Synthetix } = ctx.l1.contracts);
-
-				owner = ctx.l1.users.owner;
-			});
-
-			before('record balances', async () => {
-				ownerBalance = await Synthetix.balanceOf(owner.address);
-			});
-
 			before('wait for withdrawal finalization', async () => {
 				await finalizationOnL1({ ctx, transactionHash: withdrawalReceipt.transactionHash });
 			});
 
 			it('increases the owner balance', async () => {
 				assert.bnEqual(
-					await Synthetix.balanceOf(owner.address),
-					ownerBalance.add(amountToWithdraw)
+					await SynthetixL1.balanceOf(owner.address),
+					ownerL1Balance.add(amountToWithdraw)
 				);
 			});
 		});

@@ -8,6 +8,8 @@ import "./SafeDecimalMath.sol";
 
 /// This library is to reduce SystemSettings contract size only and is not really
 /// a proper library - so it shares knowledge of implementation details
+/// Some of the setters were refactored into this library, and some setters remain in the
+/// contract itself (SystemSettings)
 library SystemSettingsLib {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -418,5 +420,16 @@ library SystemSettingsLib {
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _threshold
         );
+    }
+
+    function setExchangeMaxDynamicFee(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint maxFee
+    ) external {
+        require(maxFee != 0, "Max dynamic fee cannot be 0");
+        require(maxFee <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
     }
 }
