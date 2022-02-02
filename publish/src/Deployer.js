@@ -333,6 +333,8 @@ class Deployer {
 
 	async deployContract({
 		name,
+		library = false,
+		skipResolver = false,
 		source = name,
 		args = [],
 		deps = [],
@@ -353,11 +355,22 @@ class Deployer {
 		}
 
 		// Deploys contract according to configuration
-		const deployedContract = await this._deploy({ name, source, args, deps, force, dryRun });
+		const deployedContract = await this._deploy({
+			name,
+			library,
+			source,
+			args,
+			deps,
+			force,
+			dryRun,
+		});
 
 		if (!deployedContract) {
 			return;
 		}
+
+		deployedContract.library = library;
+		deployedContract.skipResolver = skipResolver;
 
 		// Updates `config.json` and `deployment.json`, as well as to
 		// the local variable newContractsDeployed

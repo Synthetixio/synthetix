@@ -93,7 +93,7 @@ task(
 		const Factory = new ethers.ContractFactory(
 			Migration.interface,
 			Migration.bytecode,
-			provider.getSigner(getUsers({ network: 'mainnet', user: 'deployer' }).address)
+			provider.getSigner(getUsers({ network: 'mainnet', user: 'owner' }).address)
 		);
 
 		const migration = await Factory.deploy();
