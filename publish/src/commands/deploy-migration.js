@@ -1,11 +1,19 @@
 'use strict';
 
 const fs = require('fs');
+const qs = require('querystring');
+const solc = require('solc');
+const axios = require('axios');
 const path = require('path');
 const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
-const { getUsers } = require('../../..');
+const {
+	getUsers,
+	constants: { FLATTENED_FOLDER },
+} = require('../../..');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
+
+const { optimizerRuns } = require('./build').DEFAULTS;
 
 const {
 	ensureNetwork,
@@ -15,6 +23,7 @@ const {
 	loadAndCheckRequiredSources,
 	appendOwnerActionGenerator,
 } = require('../util');
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const {
 	wrap,
@@ -51,7 +60,12 @@ const deployMigration = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	const {
+		providerUrl,
+		privateKey: envPrivateKey,
+		etherscanUrl,
+		explorerLinkPrefix,
+	} = loadConnections({
 		network,
 		useOvm,
 	});
@@ -117,7 +131,6 @@ const deployMigration = async ({
 
 	console.log(green(`\nSuccessfully deployed: ${deployedContract.address}\n`));
 
-	// append owner action to run the actual migration
 	const { getPathToNetwork } = wrap({
 		network,
 		useOvm,
@@ -138,6 +151,27 @@ const deployMigration = async ({
 		// 'https://',
 	});
 
+	// run nominations
+	const requiringOwnership = await deployedContract.contractsRequiringOwnership();
+
+	for (const addr of requiringOwnership) {
+		console.log('Nominating ownership: ', addr);
+
+		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
+		await performTransactionalStep({
+			account: signer.address,
+			contract: contract.address,
+			target: contract,
+			write: 'nominateNewOwner',
+			writeArg: [deployedContract.address],
+
+			signer,
+			explorerLinkPrefix,
+			ownerActions,
+			ownerActionsFile,
+		});
+	}
+
 	const actionName = `Migration_${releaseName}.migrate(${ownerAddress})`;
 	const txn = await deployedContract.populateTransaction.migrate(ownerAddress);
 
@@ -150,8 +184,53 @@ const deployMigration = async ({
 
 	appendOwnerAction(ownerAction);
 
-	console.log(gray(`All contracts deployed on "${network}" network:`));
+	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl });
+
+	console.log(gray(`Done.`));
 };
+
+async function verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl }) {
+	const readFlattened = () => {
+		const flattenedFilename = path.join(
+			buildPath,
+			FLATTENED_FOLDER,
+			`migrations/Migration_${releaseName}.sol`
+		);
+		try {
+			return fs.readFileSync(flattenedFilename).toString();
+		} catch (err) {
+			throw Error(`Cannot read file ${flattenedFilename}`);
+		}
+	};
+
+	const runs = optimizerRuns;
+
+	// The version reported by solc-js is too verbose and needs a v at the front
+	const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
+
+	const payload = {
+		module: 'contract',
+		action: 'verifysourcecode',
+		contractaddress: deployedContract.address,
+		sourceCode: readFlattened(),
+		contractName: 'Migration_' + releaseName,
+		constructorArguements: '',
+		compilerversion: solcVersion,
+		optimizationUsed: 1,
+		runs,
+		apikey: process.env.ETHERSCAN_KEY,
+	};
+
+	console.log('verify on etherscan:', payload);
+
+	const response = await axios.post(etherscanUrl, qs.stringify(payload), {
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+		},
+	});
+
+	console.log(green('etherscan verify response:'), response.data.message);
+}
 
 module.exports = {
 	deployMigration,

@@ -65,7 +65,9 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
      */
     uint128 public currentPeriodId;
 
-
+    /**
+     * Prevents the owner from making further changes to debt shares after initial import
+     */
     bool public isInitialized = false;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
@@ -104,12 +106,8 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
             }
         }
 
-        // if we got past the beginning of the history, then their balance is 0
-        if (i < 0) {
-            return 0;
-        } else {
-            revert("SynthetixDebtShare: not found in recent history");
-        }
+        require(i < 0, "SynthetixDebtShare: not found in recent history");
+        return 0;
     }
 
     function totalSupply() public view returns (uint) {
@@ -179,7 +177,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     }
 
     function burnShare(address account, uint256 amount) external onlyIssuer {
-        require(account != address(0), "ERC20: mint to the zero address");
+        require(account != address(0), "ERC20: burn from zero address");
 
         _deductBalance(account, amount);
 
@@ -233,15 +231,15 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         if (accountBalanceCount == 0) {
             balances[account].push(PeriodBalance(uint128(amount), uint128(currentPeriodId)));
         }
-        else if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
-            balances[account].push(PeriodBalance(
-                uint128(uint(balances[account][accountBalanceCount - 1].amount).add(amount)), 
-                currentPeriodId
-            ));
-        }
         else {
-            balances[account][accountBalanceCount - 1].amount = 
-                uint128(uint(balances[account][accountBalanceCount - 1].amount).add(amount));
+            uint128 newAmount = uint128(uint(balances[account][accountBalanceCount - 1].amount).add(amount));
+
+            if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
+                balances[account].push(PeriodBalance(newAmount, currentPeriodId));
+            }
+            else {
+                balances[account][accountBalanceCount - 1].amount = newAmount;
+            }
         }
     }
 

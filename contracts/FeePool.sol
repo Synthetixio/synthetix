@@ -245,9 +245,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
         // Open up the new fee period.
         // periodID is set to the current timestamp for compatibility with other systems taking snapshots on the debt shares
-        uint newFeePeriodId = now;
+        uint newFeePeriodId = block.timestamp;
         _recentFeePeriodsStorage(0).feePeriodId = uint64(newFeePeriodId);
-        _recentFeePeriodsStorage(0).startTime = uint64(now);
+        _recentFeePeriodsStorage(0).startTime = uint64(block.timestamp);
 
         // Inform Issuer to start recording for the new fee period
         issuer().setCurrentPeriodId(uint128(newFeePeriodId));
@@ -332,7 +332,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         uint rewardsToDistribute,
         uint rewardsClaimed
     ) external optionalProxy_onlyOwner onlyDuringSetup {
-        _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
+        require(feePeriodIndex < FEE_PERIOD_LENGTH, "invalid fee period index");
+
+        _recentFeePeriods[feePeriodIndex] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
             startTime: uint64(startTime),
             feesToDistribute: feesToDistribute,
@@ -587,12 +589,14 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // If it's zero, they haven't issued, and they have no fees OR rewards.
         if (ownershipPercentage == 0) return (0, 0);
 
+        FeePeriod storage fp = _recentFeePeriodsStorage(period);
+
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
-        uint feesFromPeriod = _recentFeePeriodsStorage(period).feesToDistribute.multiplyDecimal(ownershipPercentage);
+        uint feesFromPeriod = fp.feesToDistribute.multiplyDecimal(ownershipPercentage);
 
         uint rewardsFromPeriod =
-            _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(ownershipPercentage);
+            fp.rewardsToDistribute.multiplyDecimal(ownershipPercentage);
 
         return (feesFromPeriod, rewardsFromPeriod);
     }
@@ -646,12 +650,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         bool isWrapper = msg.sender == address(wrapperFactory());
 
         require(isExchanger || isSynth || isCollateral || isEtherWrapper || isWrapper, "Only Internal Contracts");
-        _;
-    }
-
-    modifier onlyIssuer {
-        bool isIssuer = msg.sender == address(issuer());
-        require(isIssuer, "Issuer only");
         _;
     }
 
