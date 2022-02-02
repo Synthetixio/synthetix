@@ -276,11 +276,7 @@ const setupContract = async ({
 		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
-		FuturesMarketManager: [
-			tryGetAddressOf('ProxyFuturesMarketManager'),
-			owner,
-			tryGetAddressOf('AddressResolver'),
-		],
+		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
 			tryGetAddressOf('AddressResolver'),
@@ -553,14 +549,6 @@ const setupContract = async ({
 				[true, true, true, true, true],
 				{ from: owner }
 			);
-		},
-		async FuturesMarketManager() {
-			await Promise.all([
-				cache['ProxyFuturesMarketManager'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyFuturesMarketManager'].address, {
-					from: owner,
-				}),
-			]);
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
@@ -965,7 +953,6 @@ const setupAllContracts = async ({
 			contract: 'CollateralShort',
 			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
-		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{
 			contract: 'FuturesMarketManager',
 			deps: ['AddressResolver', 'Exchanger'],

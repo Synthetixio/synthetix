@@ -15,14 +15,13 @@ const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesMarketManager', accounts => {
-	let proxyFuturesMarketManager, futuresMarketManager, sUSD, debtCache, synthetix, addressResolver;
+	let futuresMarketManager, sUSD, debtCache, synthetix, addressResolver;
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const initialMint = toUnit('100000');
 
 	before(async () => {
 		({
-			ProxyFuturesMarketManager: proxyFuturesMarketManager,
 			FuturesMarketManager: futuresMarketManager,
 			SynthsUSD: sUSD,
 			DebtCache: debtCache,
@@ -33,7 +32,6 @@ contract('FuturesMarketManager', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
-				// 'Proxy',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -60,7 +58,7 @@ contract('FuturesMarketManager', accounts => {
 		it('only expected functions are mutable', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketManager.abi,
-				ignoreParents: ['Owned', 'MixinResolver', 'Proxyable'],
+				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: [
 					'addMarkets',
 					'removeMarkets',
@@ -133,13 +131,13 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'MarketAdded',
-				emittedFrom: proxyFuturesMarketManager.address,
+				emittedFrom: futuresMarketManager.address,
 				args: [addresses[0], keys[0]],
 				log: decodedLogs[0],
 			});
 			decodedEventEqual({
 				event: 'MarketAdded',
-				emittedFrom: proxyFuturesMarketManager.address,
+				emittedFrom: futuresMarketManager.address,
 				args: [addresses[1], keys[1]],
 				log: decodedLogs[1],
 			});
@@ -182,13 +180,13 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'MarketRemoved',
-				emittedFrom: proxyFuturesMarketManager.address,
+				emittedFrom: futuresMarketManager.address,
 				args: [addresses[0], currencyKeys[0]],
 				log: decodedLogs[0],
 			});
 			decodedEventEqual({
 				event: 'MarketRemoved',
-				emittedFrom: proxyFuturesMarketManager.address,
+				emittedFrom: futuresMarketManager.address,
 				args: [addresses[1], currencyKeys[1]],
 				log: decodedLogs[1],
 			});
@@ -243,13 +241,15 @@ contract('FuturesMarketManager', accounts => {
 				skipPostDeploy: true,
 			});
 
+			const revertReason = 'Only the contract owner may perform this action';
+
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.addMarkets,
 				args: [[market.address]],
 				accounts,
 				address: owner,
 				skipPassCheck: false,
-				reason: 'Owner only function',
+				reason: revertReason,
 			});
 
 			await onlyGivenAddressCanInvoke({
@@ -258,7 +258,7 @@ contract('FuturesMarketManager', accounts => {
 				accounts,
 				address: owner,
 				skipPassCheck: false,
-				reason: 'Owner only function',
+				reason: revertReason,
 			});
 
 			await onlyGivenAddressCanInvoke({
@@ -267,7 +267,7 @@ contract('FuturesMarketManager', accounts => {
 				accounts,
 				address: owner,
 				skipPassCheck: false,
-				reason: 'Owner only function',
+				reason: revertReason,
 			});
 		});
 	});

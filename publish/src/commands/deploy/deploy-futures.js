@@ -26,34 +26,15 @@ module.exports = async ({
 
 	console.log(gray(`\n------ DEPLOY FUTURES MARKETS ------\n`));
 
-	const proxyFuturesMarketManager = await deployer.deployContract({
-		name: 'ProxyFuturesMarketManager',
-		source: 'Proxy',
-		args: [account],
-	});
-
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
 		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
-		args: useOvm
-			? [addressOf(proxyFuturesMarketManager), account, addressOf(ReadProxyAddressResolver)]
-			: [],
+		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
 		deps: ['ReadProxyAddressResolver'],
 	});
 
 	if (!useOvm) {
 		return;
-	}
-
-	if (proxyFuturesMarketManager && futuresMarketManager) {
-		await runStep({
-			contract: 'ProxyFuturesMarketManager',
-			target: proxyFuturesMarketManager,
-			read: 'target',
-			expected: input => input === addressOf(futuresMarketManager),
-			write: 'setTarget',
-			writeArg: addressOf(futuresMarketManager),
-		});
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
