@@ -6,103 +6,177 @@ import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Inheritance
+import "./Owned.sol";
+import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ILiquidatorRewards.sol";
-import "./Pausable.sol";
 
-// TODO: An updated version of the current Staking Rewards contract that will do the following:
-/*
-    * remove the time based component of the staking rewards.
+// Internal references
+import "./interfaces/ISynthetixDebtShare.sol";
+import "./interfaces/IIssuer.sol";
+import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/ISynthetix.sol";
 
-    * When staker's mint and burn sUSD, the amount of debt shares they have will be updated in the liquidation rewards contract.
-
-    * The debt shares mechanism will be used in the liquidation reward contract to distribute the liquidated SNX.
-    (support tracking the debt shares of each staker, allowing them to claim the liquidated SNX at anytime).
-*/
-
-/// @title Liquidator Rewards Contract
-/// @notice This contract handles the distribution and claiming of liquidated SNX as defined in SIP-148.
-contract LiquidatorRewards is ILiquidatorRewards, ReentrancyGuard, Pausable {
+/// @title Upgrade Liquidation Mechanism V2 (SIP-148)
+/// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15.
+contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public rewardsToken;
+    IERC20 public rewardsToken; // SNX
+    IERC20 public stakingToken; // SDS
+
+    uint public escrowDuration = 52 weeks;
+    uint256 public periodFinish = 0;
+    uint256 public rewardRate = 0;
+    uint256 public lastUpdateTime;
+    uint256 public rewardPerTokenStored;  
 
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
-    uint256 private _totalSupply;
-    mapping(address => uint256) private _balances;
+    bytes32 public constant CONTRACT_NAME = "LiquidatorRewards";
+
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _owner,
-        address _rewardsToken
-    ) public Owned(_owner) {
+        address _resolver,
+        address _rewardsToken,
+        address _stakingToken
+    ) public Owned(_owner) MixinSystemSettings(_resolver) {
         rewardsToken = IERC20(_rewardsToken);
+        stakingToken = IERC20(_stakingToken);
     }
 
     /* ========== VIEWS ========== */
 
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](4);
+        newAddresses[0] = CONTRACT_SYNTHETIXDEBTSHARE;
+        newAddresses[1] = CONTRACT_ISSUER;
+        newAddresses[2] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[3] = CONTRACT_SYNTHETIX;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
-    function balanceOf(address account) external view returns (uint256) {
-        return _balances[account];
+    function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
+        return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIXDEBTSHARE));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
+    }
+
+    function synthetix() internal view returns (ISynthetix) {
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    }
+
+    /// @notice This returns the total supply of debt shares in the system.
+    function totalSupply() public view returns (uint256) {
+        return synthetixDebtShare().totalSupply();
+    }
+
+    /// @notice This returns the debt share balance of a given account.
+    function balanceOf(address account) public view returns (uint256) {
+        return synthetixDebtShare().balanceOf(account);
+    }
+
+    function lastTimeRewardApplicable() public view returns (uint256) {
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
+    }
+
+    function rewardPerToken() public view returns (uint256) {
+        if (totalSupply() == 0) {
+            return rewardPerTokenStored;
+        }
+        return
+            rewardPerTokenStored.add(
+                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(totalSupply())
+            );
+    }
+
+    function earned(address account) public view returns (uint256) {
+        return balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // TODO: Claiming liquidated SNX will create a vesting entry for 12 months on the escrow contract.
-    function getReward() public nonReentrant {
+    function getRewards() public nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardsToken.safeTransfer(msg.sender, reward);
+            rewardsToken.approve(address(rewardEscrowV2()), reward);
+            rewardEscrowV2().createEscrowEntry(msg.sender, reward, escrowDuration);
             emit RewardPaid(msg.sender, reward);
         }
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    // function notifyRewardAmount(uint256 reward) external onlyRewardsDistribution updateReward(address(0)) {
-    //     if (block.timestamp >= periodFinish) {
-    //         rewardRate = reward.div(rewardsDuration);
-    //     } else {
-    //         uint256 remaining = periodFinish.sub(block.timestamp);
-    //         uint256 leftover = remaining.mul(rewardRate);
-    //         rewardRate = reward.add(leftover).div(rewardsDuration);
-    //     }
+    /// @notice This is called only by the Issuer to update the rewards for when a given account's debt balance changes.
+    function notifyDebtChange(address account) external onlyIssuer updateReward(account) { }
 
-    //     // Ensure the provided reward amount is not more than the balance in the contract.
-    //     // This keeps the reward rate in the right range, preventing overflows due to
-    //     // very high values of rewardRate in the earned and rewardsPerToken functions;
-    //     // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-    //     uint balance = rewardsToken.balanceOf(address(this));
-    //     require(rewardRate <= balance.div(rewardsDuration), "Provided reward too high");
+    // TODO: finish notifyRewardAmount implementation
+    /// @notice This is called only by Synthetix after an account is liquidated and the SNX rewards are sent to the escrow.
+    function notifyRewardAmount(uint256 reward) external onlySynthetix updateReward(address(0)) {
+        // Ensure the provided reward amount is not more than the balance in the contract.
+        uint balance = rewardsToken.balanceOf(address(this));
+        require(reward <= balance, "Provided reward too high");
 
-    //     lastUpdateTime = block.timestamp;
-    //     periodFinish = block.timestamp.add(rewardsDuration);
-    //     emit RewardAdded(reward);
-    // }
+        lastUpdateTime = block.timestamp;
+        emit RewardAdded(reward);
+    }
+
+    // would need ownership if we wanna keep this
+    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
+    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
+        require(tokenAddress != address(stakingToken), "Cannot withdraw the staking token");
+        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
+        emit Recovered(tokenAddress, tokenAmount);
+    }
 
     /* ========== MODIFIERS ========== */
 
-    // modifier updateReward(address account) {
-    //     rewardPerTokenStored = rewardPerToken();
-    //     lastUpdateTime = lastTimeRewardApplicable();
-    //     if (account != address(0)) {
-    //         rewards[account] = earned(account);
-    //         userRewardPerTokenPaid[account] = rewardPerTokenStored;
-    //     }
-    //     _;
-    // }
+    modifier updateReward(address account) {
+        rewardPerTokenStored = rewardPerToken();
+        lastUpdateTime = lastTimeRewardApplicable();
+        if (account != address(0)) {
+            rewards[account] = earned(account);
+            userRewardPerTokenPaid[account] = rewardPerTokenStored;
+        }
+        _;
+    }
+
+    modifier onlyIssuer {
+        bool isIssuer = msg.sender == address(issuer());
+        require(isIssuer, "Issuer only");
+        _;
+    }
+
+    modifier onlySynthetix {
+        bool isSynthetix = msg.sender == address(synthetix());
+        require(isSynthetix, "Synthetix only");
+        _;
+    }
 
     /* ========== EVENTS ========== */
 
     event RewardAdded(uint256 reward);
     event RewardPaid(address indexed user, uint256 reward);
+    event Recovered(address token, uint256 amount);
 }

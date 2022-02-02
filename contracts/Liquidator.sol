@@ -17,7 +17,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
 
 /// @title Upgrade Liquidation Mechanism V2 (SIP-148)
-/// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15.
+/// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15
 contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -36,6 +36,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     /* ========== CONSTANTS ========== */
+
+    bytes32 public constant CONTRACT_NAME = "Liquidator";
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
@@ -209,8 +211,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         emit AccountFlaggedForLiquidation(account, deadline);
     }
 
-    // Internal function to remove account from liquidator
-    // Does not check collateral ratio is fixed
+    /// @notice This function is called by the Issuer to remove an account's liquidation entry
+    /// @dev The Issuer must check if the account's c-ratio is fixed before removing
     function removeAccountInLiquidation(address account) external onlyIssuer {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         if (liquidation.deadline > 0) {
@@ -218,9 +220,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         }
     }
 
-    // Public function to allow an account to remove from liquidator
-    // Checks collateral ratio is fixed - below target issuance ratio
-    // Check SNX rate is not stale
+    /// @notice External function to allow anyone to remove an account's liquidation entry
+    /// @dev This function checks if the account's c-ratio is OK and that the rate of SNX is not stale
     function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("SNX") {
         systemStatus().requireSystemActive();
 

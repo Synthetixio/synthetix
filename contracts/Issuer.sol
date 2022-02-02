@@ -21,6 +21,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidator.sol";
+import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
@@ -85,6 +86,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
+    bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
@@ -93,7 +95,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](11);
+        bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -105,6 +107,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[8] = CONTRACT_LIQUIDATOR;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[11] = CONTRACT_LIQUIDATORREWARDS;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -130,6 +133,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function liquidator() internal view returns (ILiquidator) {
         return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
+    }
+
+    function liquidatorRewards() internal view returns (ILiquidatorRewards) {
+        return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -791,6 +798,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         else {
             sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
+        
+        // make sure to notify the LiquidatorRewards contract about this account's debt change.
+        liquidatorRewards().notifyDebtChange(from);
     }
 
     function _removeFromDebtRegister(
@@ -810,6 +820,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
             sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
+
+        // make sure to notify the LiquidatorRewards contract about this account's debt change.
+        liquidatorRewards().notifyDebtChange(from);
     }
 
     /* ========== MODIFIERS ========== */
