@@ -1,15 +1,18 @@
 const ethers = require('ethers');
 const { setSystemSetting } = require('./settings');
 const { toBytes32 } = require('../../..');
+const { createMockAggregatorFactory } = require('../../utils')();
 
-async function updateExchangeRatesIfNeeded({ ctx }) {
+async function increaseStalePeriodAndCheckRatesAndCache({ ctx }) {
 	await setSystemSetting({ ctx, settingName: 'rateStalePeriod', newValue: '1000000000' });
 
 	if (await _areRatesInvalid({ ctx })) {
-		await _setNewRates({ ctx });
+		// try to add the missing rates
+		await _setMissingRates({ ctx });
+		// check again
 		if (await _areRatesInvalid({ ctx })) {
 			await _printRatesInfo({ ctx });
-			throw new Error('Rates are still invalid after updating them.');
+			throw new Error('Rates are still invalid after updating.');
 		}
 	}
 
@@ -20,6 +23,26 @@ async function updateExchangeRatesIfNeeded({ ctx }) {
 			throw new Error('Cache is still invalid after updating it.');
 		}
 	}
+}
+
+/// this creates and adds a new aggregator (even if a previous one exists) and sets the latest rate in it
+async function addAggregatorAndSetRate({ ctx, currencyKey, rate }) {
+	const owner = ctx.users.owner;
+	const exchangeRates = ctx.contracts.ExchangeRates.connect(owner);
+
+	// factory for price aggregators contracts
+	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
+
+	// deploy an aggregator
+	const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
+
+	// set decimals
+	await (await aggregator.setDecimals(18)).wait();
+	// push the new price
+	const { timestamp } = await ctx.provider.getBlock();
+	await (await aggregator.setLatestAnswer(rate, timestamp)).wait();
+	// set the aggregator in ExchangeRates
+	await (await exchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
 }
 
 async function _isCacheInvalid({ ctx }) {
@@ -71,35 +94,25 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 		.concat(['SNX', 'ETH'].map(toBytes32));
 }
 
-async function _getCurrentRates({ ctx, currencyKeys }) {
-	const { ExchangeRates } = ctx.contracts;
-
-	const rates = [];
-	for (const currencyKey of currencyKeys) {
-		const rate = await ExchangeRates.rateForCurrency(currencyKey);
-
-		// Simualte any exchange rates that are 0.
-		const newRate = rate.toString() === '0' ? ethers.utils.parseEther('1') : rate;
-
-		rates.push(newRate);
+async function _setMissingRates({ ctx }) {
+	let currencyKeys;
+	if (ctx.fork) {
+		// this adds a rate for only e.g. sREDEEMER in fork mode (which is not an existing synth
+		// but is added to test the redeeming functionality)
+		// All other synths should have feeds in fork mode
+		currencyKeys = (ctx.addedSynths || []).map(o => toBytes32(o.name));
+	} else {
+		// set missing rates for all synths, since not in fork mode we don't have existing feeds
+		currencyKeys = await _getAvailableCurrencyKeys({ ctx });
 	}
 
-	return rates;
-}
-
-async function _setNewRates({ ctx }) {
-	let { ExchangeRates } = ctx.contracts;
-	const oracle = await ExchangeRates.oracle();
-	const signer = ctx.fork ? ctx.provider.getSigner(oracle) : ctx.users.owner;
-	ExchangeRates = ExchangeRates.connect(signer);
-
-	const currencyKeys = await _getAvailableCurrencyKeys({ ctx });
-	const { timestamp } = await ctx.provider.getBlock();
-
-	const rates = await _getCurrentRates({ ctx, currencyKeys });
-
-	const tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
-	await tx.wait();
+	// got over all rates and add aggregators if rate is missing
+	for (const currencyKey of currencyKeys) {
+		const rate = await ctx.contracts.ExchangeRates.rateForCurrency(currencyKey);
+		if (rate.toString() === '0') {
+			await addAggregatorAndSetRate({ ctx, currencyKey, rate: ethers.utils.parseEther('1') });
+		}
+	}
 }
 
 async function _updateCache({ ctx }) {
@@ -121,21 +134,9 @@ async function getRate({ ctx, symbol }) {
 	return ExchangeRates.rateForCurrency(toBytes32(symbol));
 }
 
-async function setRate({ ctx, symbol, rate }) {
-	const ExchangeRates = ctx.contracts.ExchangeRates.connect(ctx.users.owner);
-	const MockAggregator = ctx.contracts.MockAggregator.connect(ctx.users.owner);
-
-	const { timestamp } = await ctx.provider.getBlock();
-
-	await (await MockAggregator.setDecimals(18)).wait();
-	await (await MockAggregator.setLatestAnswer(ethers.utils.parseEther(rate), timestamp)).wait();
-	await (await ExchangeRates.addAggregator(toBytes32(symbol), MockAggregator.address)).wait();
-	await MockAggregator.setLatestAnswer(rate, timestamp);
-}
-
 module.exports = {
-	updateExchangeRatesIfNeeded,
+	increaseStalePeriodAndCheckRatesAndCache,
+	addAggregatorAndSetRate,
 	getRate,
-	setRate,
 	updateCache,
 };

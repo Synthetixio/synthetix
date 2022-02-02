@@ -1,7 +1,7 @@
 const { fastForward } = require('../../test-utils/rpc');
 const { wait } = require('../../test-utils/wait');
 const { getSystemSetting } = require('./settings');
-const { updateExchangeRatesIfNeeded } = require('./rates');
+const { increaseStalePeriodAndCheckRatesAndCache } = require('./rates');
 
 async function skipWaitingPeriod({ ctx }) {
 	await _dualFastForward({
@@ -42,7 +42,7 @@ async function _dualFastForward({ ctx, seconds }) {
 
 	await fastForward({ seconds: parseInt(seconds), provider: l1Ctx.provider });
 	await wait({ seconds: 6 });
-	await updateExchangeRatesIfNeeded({ ctx });
+	await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 }
 
 module.exports = {

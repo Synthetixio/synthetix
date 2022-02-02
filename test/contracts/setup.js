@@ -4,6 +4,8 @@ const { artifacts, web3, log } = require('hardhat');
 
 const { toWei } = web3.utils;
 const { toUnit } = require('../utils')();
+const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
+
 const {
 	toBytes32,
 	getUsers,
@@ -18,6 +20,10 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
+		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+		EXCHANGE_DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_MAX_DYNAMIC_FEE,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
@@ -108,7 +114,7 @@ const setupContract = async ({
 	skipPostDeploy = false,
 	properties = {},
 }) => {
-	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
+	const [deployerAccount, owner, , fundsWallet] = accounts;
 
 	const artifact = artifacts.require(contract);
 
@@ -120,9 +126,18 @@ const setupContract = async ({
 		);
 	};
 
-	// if it needs library linking
+	// Linking libraries if needed
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
-		await artifact.link(await artifacts.require('SafeDecimalMath').new());
+		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		if (artifact._json.contractName === 'SystemSettings') {
+			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
+			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
+			SystemSettingsLib.link(safeDecimalMath);
+			artifact.link(await SystemSettingsLib.new());
+		} else {
+			// SafeDecimalMath -> anything else that expects linking
+			artifact.link(safeDecimalMath);
+		}
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -146,20 +161,8 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
-		ExchangeRates: [
-			owner,
-			oracle,
-			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')],
-			[toWei('0.2', 'ether')],
-		],
-		ExchangeRatesWithDexPricing: [
-			owner,
-			oracle,
-			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')],
-			[toWei('0.2', 'ether')],
-		],
+		ExchangeRates: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeRatesWithDexPricing: [owner, tryGetAddressOf('AddressResolver')],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
@@ -562,7 +565,7 @@ const setupContract = async ({
 						instance,
 						mock,
 						fncName: 'feeRateForExchange',
-						returns: [toWei('0.0030')],
+						returns: [toWei('0.0030'), '0'],
 					}),
 				]);
 			} else if (mock === 'ExchangeState') {
@@ -1103,6 +1106,21 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(EXCHANGE_DYNAMIC_FEE_THRESHOLD, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
+				EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(EXCHANGE_DYNAMIC_FEE_ROUNDS, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setExchangeMaxDynamicFee(EXCHANGE_MAX_DYNAMIC_FEE, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,
@@ -1131,6 +1149,13 @@ const setupAllContracts = async ({
 			.filter(contract => contract.setAddressResolver)
 			.map(mock => mock.setAddressResolver(returnObj['AddressResolver'].address))
 	);
+
+	if (returnObj['ExchangeRates']) {
+		// setup SNX price feed
+		const SNX = toBytes32('SNX');
+		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
+		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+	}
 
 	return returnObj;
 };

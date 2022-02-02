@@ -4,11 +4,16 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const { toUnit, fastForward } = require('../utils')();
 
 const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
-const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+	setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
 
 const {
 	toBytes32,
@@ -16,7 +21,7 @@ const {
 } = require('../..');
 
 contract('CollateralManager', async accounts => {
-	const [, owner, oracle, , account1] = accounts;
+	const [, owner, , , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
@@ -58,17 +63,7 @@ contract('CollateralManager', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		const sBTC = toBytes32('sBTC');
-
-		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -126,6 +121,8 @@ contract('CollateralManager', async accounts => {
 				'CollateralShort',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
 
 		maxDebt = toUnit(50000000);
 

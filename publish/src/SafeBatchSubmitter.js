@@ -55,10 +55,12 @@ class SafeBatchSubmitter {
 
 			let matchedTxnIsPending = false;
 
-			for (const { nonce, dataDecoded } of pendingTxns.results) {
-				const {
+			for (const {
+				nonce,
+				dataDecoded: {
 					parameters: [{ valueDecoded }],
-				} = dataDecoded || { parameters: [{ valueDecoded: [] }] };
+				},
+			} of pendingTxns.results) {
 				// figure out what the next unused nonce position is (including everything else in the queue)
 				this.unusedNoncePosition = Math.max(this.unusedNoncePosition, nonce + 1);
 				matchedTxnIsPending =
@@ -78,19 +80,20 @@ class SafeBatchSubmitter {
 	}
 
 	async submit() {
-		const { safe, transactions, safeAddress, service, unusedNoncePosition: nonce } = this;
+		const { safe, transactions, safeAddress, service, signer, unusedNoncePosition: nonce } = this;
 		if (!safe) {
 			throw Error('Safe must first be initialized');
 		}
 		if (!transactions.length) {
 			return { transactions };
 		}
-		const batchTxn = await safe.createTransaction(...transactions);
-		const txHash = await safe.getTransactionHash(batchTxn);
-		const signature = await safe.signTransactionHash(txHash);
+		const safeTransaction = await safe.createTransaction(transactions);
+		await safe.signTransaction(safeTransaction);
+		const safeTxHash = await safe.getTransactionHash(safeTransaction);
+		const senderAddress = await signer.getAddress();
 
 		try {
-			await service.proposeTransaction(safeAddress, batchTxn.data, txHash, signature);
+			await service.proposeTransaction({ safeAddress, senderAddress, safeTransaction, safeTxHash });
 
 			return { transactions, nonce };
 		} catch (err) {

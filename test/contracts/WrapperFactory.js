@@ -4,13 +4,15 @@ const { contract, artifacts, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, toUnit } = require('../utils')();
+const { toUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	getDecodedLogs,
 	decodedEventEqual,
+	setupPriceAggregators,
+	updateAggregatorRates,
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
@@ -22,7 +24,7 @@ contract('WrapperFactory', async accounts => {
 	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
 	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
 
-	const [, owner, oracle, , account1] = accounts;
+	const [, owner, , , account1] = accounts;
 
 	let addressResolver,
 		flexibleStorage,
@@ -32,8 +34,7 @@ contract('WrapperFactory', async accounts => {
 		FEE_ADDRESS,
 		sUSDSynth,
 		wrapperFactory,
-		weth,
-		timestamp;
+		weth;
 
 	before(async () => {
 		({
@@ -66,12 +67,10 @@ contract('WrapperFactory', async accounts => {
 		}));
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
-		timestamp = await currentTime();
 
 		// Depot requires ETH rates
-		await exchangeRates.updateRates([sETH, ETH], ['1500', '1500'].map(toUnit), timestamp, {
-			from: oracle,
-		});
+		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
+		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

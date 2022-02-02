@@ -42,6 +42,31 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
+  job-fork-tests-ovm:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:16.13-ubuntu
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run fork:ovm
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run:
+          name: Run integration tests on l2
+          command: |
+            NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
+            if [ -z "$NEW_CONTRACTS" ]; then
+              npx hardhat test:integration:l2 --use-fork
+            else
+              npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
+            fi;
   job-fork-tests:
     working_directory: ~/repo
     docker:
@@ -57,15 +82,15 @@ jobs:
           command: npm run fork:mainnet
           background: true
       - cmd-wait-for-port:
-          port: 8545
+          port: 9545
       - run:
           name: Run integration tests on l1
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat test:integration:l1 --use-fork
+              npx hardhat test:integration:l1 --use-fork --provider-port 9545
             else
-              npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork
+              npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
             fi;
   job-integration-tests:
     working_directory: ~/repo
@@ -180,7 +205,7 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          command: npm run fork:mainnet
+          command: npm run fork -- --target-network mainnet --port 8545
           background: true
       - cmd-wait-for-port:
           port: 8545
@@ -404,6 +429,9 @@ workflows:
           requires:
             - job-prepare
       - job-fork-tests:
+          requires:
+            - job-prepare
+      - job-fork-tests-ovm:
           requires:
             - job-prepare
       - job-simulate-release:

@@ -51,7 +51,7 @@
 			},
 			"RewardEscrow": {
 				"address": "0xd32138018210edA0028240638f35b70ECC0D8C22",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0a23762f25143cc09e9e45c41872fbaaf6c35ff873a3cc969674c6d5be3c1d60"
 			},
 			"RewardEscrowV2": {
