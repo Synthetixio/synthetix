@@ -143,7 +143,15 @@ class Deployer {
 		return params;
 	}
 
-	async _deploy({ name, source, args = [], deps = [], force = false, dryRun = this.dryRun }) {
+	async _deploy({
+		name,
+		library,
+		source,
+		args = [],
+		deps = [],
+		force = false,
+		dryRun = this.dryRun,
+	}) {
 		if (!this.config[name] && !force) {
 			console.log(yellow(`Skipping ${name} as it is NOT in contract flags file for deployment.`));
 			return;
@@ -274,6 +282,7 @@ class Deployer {
 				`Settings for contract: ${name} specify an existing contract, but cannot find address or ABI.`
 			);
 		}
+		deployedContract.library = library;
 
 		// append new deployedContract
 		this.deployedContracts[name] = deployedContract;
@@ -281,7 +290,7 @@ class Deployer {
 		return deployedContract;
 	}
 
-	async _updateResults({ name, source, deployed, address }) {
+	async _updateResults({ name, library, source, deployed, address }) {
 		let timestamp = new Date();
 		let txn = '';
 		if (this.config[name] && !this.config[name].deploy) {
@@ -293,6 +302,7 @@ class Deployer {
 		// now update the deployed contract information
 		this.deployment.targets[name] = {
 			name,
+			library,
 			address,
 			source,
 			link: `${getExplorerLinkPrefix({ network, useOvm })}/address/${
@@ -333,6 +343,7 @@ class Deployer {
 
 	async deployContract({
 		name,
+		library = false,
 		source = name,
 		args = [],
 		deps = [],
@@ -353,7 +364,15 @@ class Deployer {
 		}
 
 		// Deploys contract according to configuration
-		const deployedContract = await this._deploy({ name, source, args, deps, force, dryRun });
+		const deployedContract = await this._deploy({
+			name,
+			library,
+			source,
+			args,
+			deps,
+			force,
+			dryRun,
+		});
 
 		if (!deployedContract) {
 			return;
@@ -363,6 +382,7 @@ class Deployer {
 		// the local variable newContractsDeployed
 		await this._updateResults({
 			name,
+			library,
 			source: deployedContract.source,
 			deployed: deployedContract.justDeployed,
 			address: deployedContract.address,
