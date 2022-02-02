@@ -283,14 +283,10 @@ const setupContract = async ({
 		],
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
-			tryGetAddressOf('ProxyFuturesMarketBTC'),
-			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
 		],
 		FuturesMarketETH: [
-			tryGetAddressOf('ProxyFuturesMarketETH'),
-			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'), // base asset
 		],
@@ -569,19 +565,11 @@ const setupContract = async ({
 		async FuturesMarketBTC() {
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
-				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
-					from: owner,
-				}),
 			]);
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
-				cache['ProxyFuturesMarketETH'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyFuturesMarketETH'].address, {
-					from: owner,
-				}),
 			]);
 		},
 		async GenericMock() {
@@ -986,15 +974,10 @@ const setupAllContracts = async ({
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
-		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
-			// contract: 'TestableFuturesMarket',
-			// forContract: 'FuturesMarketBTC',
-			// resolverAlias: 'FuturesMarketBTC',
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
 			deps: [
-				'Proxy',
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
@@ -1003,12 +986,10 @@ const setupAllContracts = async ({
 				'ExchangeCircuitBreaker',
 			],
 		},
-		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
 			deps: [
-				'Proxy',
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FlexibleStorage',

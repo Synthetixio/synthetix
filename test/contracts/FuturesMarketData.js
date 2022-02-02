@@ -70,13 +70,6 @@ contract('FuturesMarketData', accounts => {
 
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
-			const proxy = await setupContract({
-				accounts,
-				contract: 'ProxyFuturesMarket' + symbol,
-				source: 'Proxy',
-				args: [accounts[1]],
-				cache: { FuturesMarketManager: futuresMarketManager },
-			});
 			const assetKey = toBytes32(symbol);
 
 			const market = await setupContract({
@@ -84,14 +77,11 @@ contract('FuturesMarketData', accounts => {
 				contract: 'FuturesMarket' + symbol,
 				source: 'FuturesMarket',
 				args: [
-					proxy.address,
-					accounts[1],
 					addressResolver.address,
 					assetKey, // base asset
 				],
 			});
 
-			await proxy.setTarget(market.address, { from: owner });
 			await addressResolver.rebuildCaches([market.address], { from: owner });
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 

@@ -73,39 +73,16 @@ module.exports = async ({
 
 	for (const asset of futuresMarkets.map(x => x.asset)) {
 		const marketName = 'FuturesMarket' + asset.slice('1'); // remove s prefix
-		const proxyName = 'Proxy' + marketName;
 		const baseAsset = toBytes32(asset);
-
-		const proxyFuturesMarket = await deployer.deployContract({
-			name: proxyName,
-			source: 'Proxy',
-			args: [account],
-		});
 
 		const futuresMarket = await deployer.deployContract({
 			name: marketName,
 			source: 'FuturesMarket',
-			args: [
-				addressOf(proxyFuturesMarket),
-				account,
-				addressOf(ReadProxyAddressResolver),
-				baseAsset,
-			],
+			args: [addressOf(ReadProxyAddressResolver), baseAsset],
 		});
 
 		if (futuresMarket) {
 			deployedFuturesMarkets.push(addressOf(futuresMarket));
-		}
-
-		if (proxyFuturesMarket && futuresMarket) {
-			await runStep({
-				contract: proxyName,
-				target: proxyFuturesMarket,
-				read: 'target',
-				expected: input => input === addressOf(futuresMarket),
-				write: 'setTarget',
-				writeArg: addressOf(futuresMarket),
-			});
 		}
 	}
 

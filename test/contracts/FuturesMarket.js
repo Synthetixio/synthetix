@@ -33,8 +33,7 @@ const Status = {
 };
 
 contract('FuturesMarket', accounts => {
-	let proxyFuturesMarket,
-		futuresMarketSettings,
+	let futuresMarketSettings,
 		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
@@ -103,7 +102,6 @@ contract('FuturesMarket', accounts => {
 
 	before(async () => {
 		({
-			ProxyFuturesMarketBTC: proxyFuturesMarket,
 			FuturesMarketSettings: futuresMarketSettings,
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
@@ -165,7 +163,7 @@ contract('FuturesMarket', accounts => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarket.abi,
-				ignoreParents: ['Owned', 'Proxyable', 'MixinFuturesMarketSettings'],
+				ignoreParents: ['MixinFuturesMarketSettings'],
 				expected: [
 					'transferMargin',
 					'withdrawAllMargin',
@@ -357,7 +355,7 @@ contract('FuturesMarket', accounts => {
 
 					decodedEventEqual({
 						event: 'PositionModified',
-						emittedFrom: proxyFuturesMarket.address,
+						emittedFrom: futuresMarket.address,
 						args: [
 							toBN('1'),
 							trader,
@@ -699,14 +697,14 @@ contract('FuturesMarket', accounts => {
 
 				decodedEventEqual({
 					event: 'MarginTransferred',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [trader3, toUnit('1000')],
 					log: decodedLogs[2],
 				});
 
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						toBN('1'),
 						trader3,
@@ -745,14 +743,14 @@ contract('FuturesMarket', accounts => {
 
 				decodedEventEqual({
 					event: 'MarginTransferred',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [trader3, toUnit('-1000')],
 					log: decodedLogs[2],
 				});
 
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						toBN('1'),
 						trader3,
@@ -913,7 +911,7 @@ contract('FuturesMarket', accounts => {
 			});
 			decodedEventEqual({
 				event: 'PositionModified',
-				emittedFrom: proxyFuturesMarket.address,
+				emittedFrom: futuresMarket.address,
 				args: [toBN('1'), trader, margin.sub(fee), size, size, price, toBN(2), fee],
 				log: decodedLogs[2],
 			});
@@ -1414,7 +1412,7 @@ contract('FuturesMarket', accounts => {
 
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						toBN('1'),
 						trader,
@@ -3255,7 +3253,7 @@ contract('FuturesMarket', accounts => {
 				});
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						positionId,
 						trader,
@@ -3270,7 +3268,7 @@ contract('FuturesMarket', accounts => {
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [positionId, trader, noBalance, positionSize, newPrice, liquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
@@ -3356,7 +3354,7 @@ contract('FuturesMarket', accounts => {
 				});
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						positionId,
 						trader3,
@@ -3371,7 +3369,7 @@ contract('FuturesMarket', accounts => {
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [positionId, trader3, noBalance, positionSize, newPrice, liquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
@@ -3445,7 +3443,7 @@ contract('FuturesMarket', accounts => {
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						positionId,
 						trader,
@@ -3460,7 +3458,7 @@ contract('FuturesMarket', accounts => {
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [positionId, trader, noBalance, positionSize, newPrice, toUnit('100')],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
@@ -3817,7 +3815,7 @@ contract('FuturesMarket', accounts => {
 
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [
 						toBN('1'),
 						trader,
