@@ -627,13 +627,13 @@
 			}
 		}
 	},
-	"v2.58.0-alpha": {
-		"tag": "v2.58.0-alpha",
-		"fulltag": "v2.58.0-alpha",
-		"release": "Alsephina",
+	"v2.57.2": {
+		"tag": "v2.57.2",
+		"fulltag": "v2.57.2",
+		"release": "Peacock",
 		"network": "mainnet",
-		"date": "2022-01-29T08:54:14+11:00",
-		"commit": "729f800e51b769c73923f30526267407cc3b142f",
+		"date": "2022-01-21T13:55:44-05:00",
+		"commit": "e99509e2b0f0054a5513f2203b8b7660cae38947",
 		"contracts": {
 			"StakingRewardssUSDDAIUniswapV3": {
 				"address": "0x7E11c004d20b502729918687E6E6777b28499085",
@@ -646,5 +646,13 @@
 				"keccak256": "0x9841ea1c48ac32392a4bfd0ed581d0950963aa09e866407736fc8b2adb6a25dd"
 			}
 		}
+	},
+	"v2.58.0-alpha": {
+		"tag": "v2.58.0-alpha",
+		"fulltag": "v2.58.0-alpha",
+		"release": "Alsephina",
+		"network": "mainnet",
+		"date": "2022-01-29T08:54:14+11:00",
+		"commit": "729f800e51b769c73923f30526267407cc3b142f"
 	}
 }
