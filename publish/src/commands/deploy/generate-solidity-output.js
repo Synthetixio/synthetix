@@ -31,7 +31,6 @@ module.exports = async ({
 	sourceOf,
 	useOvm,
 }) => {
-	console.log('newcontractsbeingadded: \n\n\n', newContractsBeingAdded);
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
 

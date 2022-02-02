@@ -32,6 +32,7 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
+	gnosisSafe,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	gasLimit = DEFAULTS.gasLimit,
@@ -102,7 +103,7 @@ const owner = async ({
 
 	let safeBatchSubmitter;
 	if (!useFork) {
-		safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: newOwner });
+		safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: gnosisSafe });
 	}
 
 	if (!safeBatchSubmitter) {
@@ -471,6 +472,7 @@ module.exports = {
 				'-o, --new-owner <value>',
 				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
+			.option('--gnosis-safe <value>', 'The address of the Gnosis Safe')
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
 			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
 			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
