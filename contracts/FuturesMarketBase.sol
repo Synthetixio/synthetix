@@ -1,8 +1,6 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Owned.sol";
-import "./Proxyable.sol";
 import "./MixinFuturesMarketSettings.sol";
 import "./interfaces/IFuturesMarketBaseTypes.sol";
 
@@ -80,7 +78,7 @@ interface IFuturesMarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
-contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarketBaseTypes {
+contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseTypes {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -160,12 +158,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address payable _proxy,
-        address _owner,
-        address _resolver,
-        bytes32 _baseAsset
-    ) public Owned(_owner) Proxyable(_proxy) MixinFuturesMarketSettings(_resolver) {
+    constructor(address _resolver, bytes32 _baseAsset) public MixinFuturesMarketSettings(_resolver) {
         baseAsset = _baseAsset;
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
@@ -743,7 +736,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         int funding = _nextFundingEntry(sequenceLength, price);
         fundingSequence.push(int128(funding));
         fundingLastRecomputed = uint32(block.timestamp);
-        emitFundingRecomputed(funding);
+        emit FundingRecomputed(funding);
 
         return sequenceLength;
     }
@@ -837,9 +830,9 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         // Emit relevant events
         if (marginDelta != 0) {
-            emitMarginTransferred(sender, marginDelta);
+            emit MarginTransferred(sender, marginDelta);
         }
-        emitPositionModified(position.id, sender, position.margin, position.size, 0, price, fundingIndex, 0);
+        emit PositionModified(position.id, sender, position.margin, position.size, 0, price, fundingIndex, 0);
     }
 
     // udpates the stored position margin in place (on the stored position)
@@ -888,18 +881,18 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
      * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
-    function transferMargin(int marginDelta) external optionalProxy {
+    function transferMargin(int marginDelta) external {
         uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
-        _transferMargin(marginDelta, price, fundingIndex, messageSender);
+        _transferMargin(marginDelta, price, fundingIndex, msg.sender);
     }
 
     /*
      * Withdraws all accessible margin in a position. This will leave some remaining margin
      * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
      */
-    function withdrawAllMargin() external optionalProxy {
-        address sender = messageSender;
+    function withdrawAllMargin() external {
+        address sender = msg.sender;
         uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
         int marginDelta = -int(_accessibleMargin(positions[sender], fundingIndex, price));
@@ -947,7 +940,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
             position.lastFundingIndex = uint64(params.fundingIndex);
         }
         // emit the modification event
-        emitPositionModified(
+        emit PositionModified(
             id,
             sender,
             newPosition.margin,
@@ -963,7 +956,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
      * Adjust the sender's position size.
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
-    function modifyPosition(int sizeDelta) external optionalProxy {
+    function modifyPosition(int sizeDelta) external {
         uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
         TradeParams memory params =
@@ -974,7 +967,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
-        _modifyPosition(messageSender, params);
+        _modifyPosition(msg.sender, params);
     }
 
     function _revertIfPriceOutsideBounds(
@@ -995,7 +988,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         int sizeDelta,
         uint minPrice,
         uint maxPrice
-    ) external optionalProxy {
+    ) external {
         uint price = _assetPriceRequireChecks();
         _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
         TradeParams memory params =
@@ -1006,14 +999,14 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
-        _modifyPosition(messageSender, params);
+        _modifyPosition(msg.sender, params);
     }
 
     /*
      * Submit an order to close a position.
      */
-    function closePosition() external optionalProxy {
-        int size = positions[messageSender].size;
+    function closePosition() external {
+        int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
         TradeParams memory params =
@@ -1024,14 +1017,14 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
-        _modifyPosition(messageSender, params);
+        _modifyPosition(msg.sender, params);
     }
 
     /*
      * Submit an order to close a position; reverts if the asset price is outside the specified bounds.
      */
-    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external optionalProxy {
-        int size = positions[messageSender].size;
+    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external {
+        int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
         _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
@@ -1043,7 +1036,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
-        _modifyPosition(messageSender, params);
+        _modifyPosition(msg.sender, params);
     }
 
     function _liquidatePosition(
@@ -1075,8 +1068,8 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         uint liqFee = _liquidationFee(positionSize, price);
         _manager().issueSUSD(liquidator, liqFee);
 
-        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
-        emitPositionLiquidated(positionId, account, liquidator, positionSize, price, liqFee);
+        emit PositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
+        emit PositionLiquidated(positionId, account, liquidator, positionSize, price, liqFee);
 
         // Send any positive margin buffer to the fee pool
         if (remMargin > liqFee) {
@@ -1089,27 +1082,18 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
      * `canLiquidate(account)` is true, and reverts otherwise.
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
-    function liquidatePosition(address account) external optionalProxy {
+    function liquidatePosition(address account) external {
         uint price = _assetPriceRequireChecks();
         uint fundingIndex = _recomputeFunding(price);
 
         _revertIfError(!_canLiquidate(positions[account], fundingIndex, price), Status.CannotLiquidate);
 
-        _liquidatePosition(account, messageSender, fundingIndex, price);
+        _liquidatePosition(account, msg.sender, fundingIndex, price);
     }
 
     /* ========== EVENTS ========== */
 
-    function addressToBytes32(address input) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(input)));
-    }
-
     event MarginTransferred(address indexed account, int marginDelta);
-    bytes32 internal constant SIG_MARGINTRANSFERRED = keccak256("MarginTransferred(address,int256)");
-
-    function emitMarginTransferred(address account, int marginDelta) internal {
-        proxy._emit(abi.encode(marginDelta), 2, SIG_MARGINTRANSFERRED, addressToBytes32(account), 0, 0);
-    }
 
     event PositionModified(
         uint indexed id,
@@ -1121,28 +1105,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         uint fundingIndex,
         uint fee
     );
-    bytes32 internal constant SIG_POSITIONMODIFIED =
-        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
-
-    function emitPositionModified(
-        uint id,
-        address account,
-        uint margin,
-        int size,
-        int tradeSize,
-        uint lastPrice,
-        uint fundingIndex,
-        uint fee
-    ) internal {
-        proxy._emit(
-            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
-            3,
-            SIG_POSITIONMODIFIED,
-            bytes32(id),
-            addressToBytes32(account),
-            0
-        );
-    }
 
     event PositionLiquidated(
         uint indexed id,
@@ -1152,31 +1114,6 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         uint price,
         uint fee
     );
-    bytes32 internal constant SIG_POSITIONLIQUIDATED =
-        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
-
-    function emitPositionLiquidated(
-        uint id,
-        address account,
-        address liquidator,
-        int size,
-        uint price,
-        uint fee
-    ) internal {
-        proxy._emit(
-            abi.encode(size, price, fee),
-            4,
-            SIG_POSITIONLIQUIDATED,
-            bytes32(id),
-            addressToBytes32(account),
-            addressToBytes32(liquidator)
-        );
-    }
 
     event FundingRecomputed(int funding);
-    bytes32 internal constant SIG_FUNDINGRECOMPUTED = keccak256("FundingRecomputed(int256)");
-
-    function emitFundingRecomputed(int funding) internal {
-        proxy._emit(abi.encode(funding), 1, SIG_FUNDINGRECOMPUTED, 0, 0, 0);
-    }
 }

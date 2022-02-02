@@ -61,10 +61,5 @@ import "./interfaces/IFuturesMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
 contract FuturesMarket is IFuturesMarket, FuturesMarketBase, MixinFuturesNextPriceOrders, MixinFuturesViews {
-    constructor(
-        address payable _proxy,
-        address _owner,
-        address _resolver,
-        bytes32 _baseAsset
-    ) public FuturesMarketBase(_proxy, _owner, _resolver, _baseAsset) {}
+    constructor(address _resolver, bytes32 _baseAsset) public FuturesMarketBase(_resolver, _baseAsset) {}
 }
