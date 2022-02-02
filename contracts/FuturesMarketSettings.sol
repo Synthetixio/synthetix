@@ -99,13 +99,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         return _skewScaleUSD(_baseAsset);
     }
 
-    /*
-     * The maximum speed that the funding rate can move per day.
-     */
-    function maxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
-        return _maxFundingRateDelta(_baseAsset);
-    }
-
     function parameters(bytes32 _baseAsset)
         external
         view
@@ -118,8 +111,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,
-            uint _skewScaleUSD,
-            uint _maxFundingRateDelta
+            uint _skewScaleUSD
         )
     {
         return _parameters(_baseAsset);
@@ -223,11 +215,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
-    function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
-        _recomputeFunding(_baseAsset);
-        _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
-    }
-
     function setParameters(
         bytes32 _baseAsset,
         uint _takerFee,
@@ -238,8 +225,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _maxLeverage,
         uint _maxMarketValueUSD,
         uint _maxFundingRate,
-        uint _skewScaleUSD,
-        uint _maxFundingRateDelta
+        uint _skewScaleUSD
     ) external onlyOwner {
         _recomputeFunding(_baseAsset);
         setTakerFee(_baseAsset, _takerFee);
@@ -251,7 +237,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
         setMaxFundingRate(_baseAsset, _maxFundingRate);
         setSkewScaleUSD(_baseAsset, _skewScaleUSD);
-        setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {

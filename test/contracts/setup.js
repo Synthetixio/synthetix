@@ -1267,7 +1267,6 @@ const setupAllContracts = async ({
 						toWei('100000'), // 100000 max market debt
 						toWei('0.1'), // 10% max funding rate
 						toWei('100000'), // 100000 USD skewScaleUSD
-						toWei('0.0125'), // 1.25% per hour max funding rate of change
 						{ from: owner }
 					),
 				]);

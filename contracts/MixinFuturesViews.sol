@@ -78,8 +78,7 @@ contract MixinFuturesViews is FuturesMarketBase {
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint skewScaleUSD,
-            uint maxFundingRateDelta
+            uint skewScaleUSD
         )
     {
         return _parameters(baseAsset);

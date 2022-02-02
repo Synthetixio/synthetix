@@ -63,7 +63,6 @@ contract('FuturesMarket', accounts => {
 	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
 	const skewScaleUSD = toUnit('100000');
-	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
@@ -191,7 +190,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
 			assert.bnEqual(parameters.skewScaleUSD, skewScaleUSD);
-			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
 		});
 
 		it('prices are properly fetched', async () => {
@@ -2641,7 +2639,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-6'), toUnit('0.01'));
 
 				await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
-				let time = await currentTime();
+				const time = await currentTime();
 
 				assert.bnEqual(
 					await futuresMarket.fundingSequenceLength(),
@@ -2669,22 +2667,6 @@ contract('FuturesMarket', accounts => {
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
 					toUnit('-120'),
-					toUnit('0.01')
-				);
-
-				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, toUnit('0.05'), {
-					from: owner,
-				});
-				time = await currentTime();
-
-				assert.bnEqual(
-					await futuresMarket.fundingSequenceLength(),
-					initialFundingIndex.add(toBN(8))
-				);
-				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
-				assert.bnClose(
-					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(7))),
-					toUnit('-126'),
 					toUnit('0.01')
 				);
 			});
@@ -3576,11 +3558,7 @@ contract('FuturesMarket', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setMaxFundingRateDelta(baseAsset, 0, { from: owner }),
-					'Invalid price'
-				);
-				await assert.revert(
-					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
+					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
 						from: owner,
 					}),
 					'Invalid price'
@@ -3769,8 +3747,7 @@ contract('FuturesMarket', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(baseAsset, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, 0, { from: owner });
-				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, {
+				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});
@@ -3852,8 +3829,7 @@ contract('FuturesMarket', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(baseAsset, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, 0, { from: owner });
-				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, {
+				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});

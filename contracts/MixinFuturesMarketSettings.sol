@@ -23,7 +23,6 @@ contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
 
     // Global settings
     // minimum liquidation fee payable to liquidator
@@ -95,10 +94,6 @@ contract MixinFuturesMarketSettings is MixinResolver {
         return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
     }
 
-    function _maxFundingRateDelta(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA);
-    }
-
     function _parameters(bytes32 _baseAsset)
         internal
         view
@@ -111,8 +106,7 @@ contract MixinFuturesMarketSettings is MixinResolver {
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint skewScaleUSD,
-            uint maxFundingRateDelta
+            uint skewScaleUSD
         )
     {
         takerFee = _takerFee(_baseAsset);
@@ -124,7 +118,6 @@ contract MixinFuturesMarketSettings is MixinResolver {
         maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
         maxFundingRate = _maxFundingRate(_baseAsset);
         skewScaleUSD = _skewScaleUSD(_baseAsset);
-        maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 
     function _minKeeperFee() internal view returns (uint) {

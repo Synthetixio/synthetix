@@ -55,8 +55,7 @@ interface IFuturesMarket {
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint skewScaleUSD,
-            uint maxFundingRateDelta
+            uint skewScaleUSD
         );
 
     function currentFundingRate() external view returns (int fundingRate);

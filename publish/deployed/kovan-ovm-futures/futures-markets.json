@@ -9,8 +9,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
-		"maxFundingRateDelta": "0.0125"
+		"skewScaleUSD": "50000000"
 	},
 	{
 		"asset": "sETH",
@@ -22,8 +21,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
-		"maxFundingRateDelta": "0.0125"
+		"skewScaleUSD": "50000000"
 	},
 	{
 		"asset": "sLINK",
@@ -35,7 +33,6 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
-		"maxFundingRateDelta": "0.0125"
+		"skewScaleUSD": "50000000"
 	}
 ]
