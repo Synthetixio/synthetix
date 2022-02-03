@@ -103,18 +103,26 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         external
         view
         returns (
-            uint _takerFee,
-            uint _makerFee,
-            uint _takerFeeNextPrice,
-            uint _makerFeeNextPrice,
-            uint _nextPriceConfirmWindow,
-            uint _maxLeverage,
-            uint _maxMarketValueUSD,
-            uint _maxFundingRate,
-            uint _skewScaleUSD
+            uint takerFee,
+            uint makerFee,
+            uint takerFeeNextPrice,
+            uint makerFeeNextPrice,
+            uint nextPriceConfirmWindow,
+            uint maxLeverage,
+            uint maxMarketValueUSD,
+            uint maxFundingRate,
+            uint skewScaleUSD
         )
     {
-        return _parameters(_baseAsset);
+        takerFee = _takerFee(_baseAsset);
+        makerFee = _makerFee(_baseAsset);
+        takerFeeNextPrice = _takerFeeNextPrice(_baseAsset);
+        makerFeeNextPrice = _makerFeeNextPrice(_baseAsset);
+        nextPriceConfirmWindow = _nextPriceConfirmWindow(_baseAsset);
+        maxLeverage = _maxLeverage(_baseAsset);
+        maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
+        maxFundingRate = _maxFundingRate(_baseAsset);
+        skewScaleUSD = _skewScaleUSD(_baseAsset);
     }
 
     /*

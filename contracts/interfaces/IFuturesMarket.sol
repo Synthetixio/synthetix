@@ -32,37 +32,11 @@ interface IFuturesMarket {
 
     function marketSizes() external view returns (uint long, uint short);
 
-    function maxOrderSizes()
-        external
-        view
-        returns (
-            uint long,
-            uint short,
-            bool invalid
-        );
-
     function marketDebt() external view returns (uint debt, bool isInvalid);
-
-    function parameters()
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        );
 
     function currentFundingRate() external view returns (int fundingRate);
 
     function unrecordedFunding() external view returns (int funding, bool invalid);
-
-    function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool invalid);
 
     function fundingSequenceLength() external view returns (uint length);
 
@@ -80,13 +54,9 @@ interface IFuturesMarket {
 
     function liquidationPrice(address account) external view returns (uint price, bool invalid);
 
-    function liquidationMargin(address account) external view returns (uint lMargin);
-
     function liquidationFee(address account) external view returns (uint);
 
     function canLiquidate(address account) external view returns (bool);
-
-    function currentLeverage(address account) external view returns (int leverage, bool invalid);
 
     function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
 

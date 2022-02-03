@@ -11,47 +11,20 @@ contract MixinFuturesViews is FuturesMarketBase {
     /*
      * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
      */
-    function assetPrice() external view returns (uint price, bool invalid) {
-        return _assetPrice();
+    function assetPrice() public view returns (uint price, bool invalid) {
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
+        // Ensure we catch uninitialised rates or suspended state / synth
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
+        return (price, invalid);
     }
 
-    function _marketSizes() internal view returns (uint long, uint short) {
+    /*
+     * Sizes of the long and short sides of the market (in sUSD)
+     */
+    function marketSizes() public view returns (uint long, uint short) {
         int size = int(marketSize);
         int skew = marketSkew;
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
-    }
-
-    /*
-     * The total number of base units on each side of the market.
-     */
-    function marketSizes() external view returns (uint long, uint short) {
-        return _marketSizes();
-    }
-
-    /*
-     * The remaining units on each side of the market left to be filled before hitting the cap.
-     */
-    function _maxOrderSizes(uint price) internal view returns (uint, uint) {
-        (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimal(int(price));
-        return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
-    }
-
-    /*
-     * The maximum size in base units of an order on each side of the market that will not exceed the max market value.
-     */
-    function maxOrderSizes()
-        external
-        view
-        returns (
-            uint long,
-            uint short,
-            bool invalid
-        )
-    {
-        (uint price, bool isInvalid) = _assetPrice();
-        (uint longSize, uint shortSize) = _maxOrderSizes(price);
-        return (longSize, shortSize, isInvalid);
     }
 
     /*
@@ -59,29 +32,8 @@ contract MixinFuturesViews is FuturesMarketBase {
      * The total market debt is equivalent to the sum of remaining margins in all open positions.
      */
     function marketDebt() external view returns (uint debt, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_marketDebt(price), isInvalid);
-    }
-
-    /*
-     * The basic settings of this market, which determine trading fees and funding rate behaviour.
-     */
-    function parameters()
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        )
-    {
-        return _parameters(baseAsset);
     }
 
     /*
@@ -89,7 +41,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
      */
     function currentFundingRate() external view returns (int) {
-        (uint price, ) = _assetPrice();
+        (uint price, ) = assetPrice();
         return _currentFundingRate(price);
     }
 
@@ -98,17 +50,8 @@ contract MixinFuturesViews is FuturesMarketBase {
      * been persisted in the funding sequence.
      */
     function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_unrecordedFunding(price), isInvalid);
-    }
-
-    /*
-     * Computes the net funding that was accrued between any two funding sequence indices.
-     * If endIndex is equal to the funding sequence length, then unrecorded funding will be included.
-     */
-    function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_netFundingPerUnit(startIndex, endIndex, price), isInvalid);
     }
 
     /*
@@ -122,7 +65,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * The notional value of a position is its size multiplied by the current price. Margin and leverage are ignored.
      */
     function notionalValue(address account) external view returns (int value, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_notionalValue(positions[account].size, price), isInvalid);
     }
 
@@ -130,7 +73,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * The PnL of a position is the change in its notional value. Funding is not taken into account.
      */
     function profitLoss(address account) external view returns (int pnl, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_profitLoss(positions[account], price), isInvalid);
     }
 
@@ -138,7 +81,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * The funding accrued in a position since it was opened; this does not include PnL.
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_accruedFunding(positions[account], fundingSequence.length, price), isInvalid);
     }
 
@@ -146,7 +89,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * The initial margin plus profit and funding; returns zero balance if losses exceed the initial margin.
      */
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
@@ -155,20 +98,8 @@ contract MixinFuturesViews is FuturesMarketBase {
      * true value slightly.
      */
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
-    }
-
-    /**
-     * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee.
-     * Reverts if position size is 0.
-     * @param account address of the position account
-     * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
-     */
-    function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(positions[account].size != 0, "0 size position");
-        (uint price, ) = _assetPrice();
-        return _liquidationMargin(int(positions[account].size), price);
     }
 
     /*
@@ -179,7 +110,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * A position's accurate liquidation price can move around slightly due to accrued funding.
      */
     function liquidationPrice(address account) external view returns (uint price, bool invalid) {
-        (uint aPrice, bool isInvalid) = _assetPrice();
+        (uint aPrice, bool isInvalid) = assetPrice();
         uint liqPrice = _liquidationPrice(positions[account], aPrice);
         return (liqPrice, isInvalid);
     }
@@ -192,7 +123,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      *  in sUSD fixed point decimal units or 0 if account is not liquidatable.
      */
     function liquidationFee(address account) external view returns (uint) {
-        (uint price, bool invalid) = _assetPrice();
+        (uint price, bool invalid) = assetPrice();
         if (!invalid && _canLiquidate(positions[account], fundingSequence.length, price)) {
             return _liquidationFee(int(positions[account].size), price);
         } else {
@@ -207,18 +138,8 @@ contract MixinFuturesViews is FuturesMarketBase {
      * True if and only if a position is ready to be liquidated.
      */
     function canLiquidate(address account) external view returns (bool) {
-        (uint price, bool invalid) = _assetPrice();
+        (uint price, bool invalid) = assetPrice();
         return !invalid && _canLiquidate(positions[account], fundingSequence.length, price);
-    }
-
-    /*
-     * Equivalent to the position's notional value divided by its remaining margin.
-     */
-    function currentLeverage(address account) external view returns (int leverage, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        Position storage position = positions[account];
-        uint remainingMargin_ = _remainingMargin(position, fundingSequence.length, price);
-        return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 
     /*
@@ -230,7 +151,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      * too high due to recent volatility.
      */
     function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
+        (uint price, bool isInvalid) = assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
         TradeParams memory params =
             TradeParams({
@@ -259,7 +180,7 @@ contract MixinFuturesViews is FuturesMarketBase {
         )
     {
         bool invalid;
-        (price, invalid) = _assetPrice();
+        (price, invalid) = assetPrice();
         if (invalid) {
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
         }

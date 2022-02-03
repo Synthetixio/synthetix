@@ -94,32 +94,6 @@ contract MixinFuturesMarketSettings is MixinResolver {
         return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
     }
 
-    function _parameters(bytes32 _baseAsset)
-        internal
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        )
-    {
-        takerFee = _takerFee(_baseAsset);
-        makerFee = _makerFee(_baseAsset);
-        takerFeeNextPrice = _takerFeeNextPrice(_baseAsset);
-        makerFeeNextPrice = _makerFeeNextPrice(_baseAsset);
-        nextPriceConfirmWindow = _nextPriceConfirmWindow(_baseAsset);
-        maxLeverage = _maxLeverage(_baseAsset);
-        maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
-        maxFundingRate = _maxFundingRate(_baseAsset);
-        skewScaleUSD = _skewScaleUSD(_baseAsset);
-    }
-
     function _minKeeperFee() internal view returns (uint) {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE);
     }

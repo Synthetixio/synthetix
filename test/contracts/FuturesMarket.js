@@ -180,8 +180,8 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('static parameters are set properly at construction', async () => {
-			const parameters = await futuresMarket.parameters();
 			assert.equal(await futuresMarket.baseAsset(), baseAsset);
+			const parameters = await futuresMarketSettings.parameters(baseAsset);
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);
 			assert.bnEqual(parameters.takerFeeNextPrice, takerFeeNextPrice);
@@ -202,7 +202,7 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('market size and skew', async () => {
-			const minScale = (await futuresMarket.parameters()).skewScaleUSD;
+			const minScale = (await futuresMarketSettings.parameters(baseAsset)).skewScaleUSD;
 			const price = 100;
 			let sizes = await futuresMarket.marketSizes();
 			let marketSkew = await futuresMarket.marketSkew();
@@ -2386,7 +2386,10 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
-			const minScale = divideDecimal((await futuresMarket.parameters()).skewScaleUSD, price);
+			const minScale = divideDecimal(
+				(await futuresMarketSettings.parameters(baseAsset)).skewScaleUSD,
+				price
+			);
 			const maxFundingRate = await futuresMarket.maxFundingRate();
 			// Market is 24 units long skewed (24 / 100000)
 			await futuresMarket.modifyPosition(toUnit('24'), { from: trader });

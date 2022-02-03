@@ -215,13 +215,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
     /* ---------- Market Details ---------- */
 
-    function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
-        // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
-        return (price, invalid);
-    }
-
     /*
      * The size of the skew relative to the size of the market skew scaler.
      * This value can be outside of [-1, 1] values.
