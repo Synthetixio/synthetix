@@ -357,7 +357,6 @@ class Deployer {
 		// Deploys contract according to configuration
 		const deployedContract = await this._deploy({
 			name,
-			library,
 			source,
 			args,
 			deps,
