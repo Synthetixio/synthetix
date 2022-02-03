@@ -108,7 +108,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
-        return (_netFundingPerUnit(startIndex, endIndex, fundingSequence.length, price), isInvalid);
+        return (_netFundingPerUnit(startIndex, endIndex, price), isInvalid);
     }
 
     /*
@@ -176,12 +176,11 @@ contract MixinFuturesViews is FuturesMarketBase {
      * margin has run out. When they have just enough margin left to pay a liquidator, then they are liquidated.
      * If a position is long, then it is safe as long as the current price is above the liquidation price; if it is
      * short, then it is safe whenever the current price is below the liquidation price.
-     * A position's accurate liquidation price can move around slightly due to accrued funding - this contribution
-     * can be omitted by passing false to includeFunding.
+     * A position's accurate liquidation price can move around slightly due to accrued funding.
      */
-    function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
+    function liquidationPrice(address account) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice();
-        uint liqPrice = _liquidationPrice(positions[account], includeFunding, aPrice);
+        uint liqPrice = _liquidationPrice(positions[account], aPrice);
         return (liqPrice, isInvalid);
     }
 
@@ -275,7 +274,7 @@ contract MixinFuturesViews is FuturesMarketBase {
             });
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(positions[sender], params);
 
-        liqPrice = _liquidationPrice(newPosition, true, newPosition.lastPrice);
+        liqPrice = _liquidationPrice(newPosition, newPosition.lastPrice);
         return (newPosition.margin, newPosition.size, newPosition.lastPrice, liqPrice, fee_, status_);
     }
 }

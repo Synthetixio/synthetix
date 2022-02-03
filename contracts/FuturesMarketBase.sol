@@ -246,30 +246,24 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
     }
 
-    /*
-     * The current funding rate, rescaled to a percentage per second.
-     */
-    function _currentFundingRatePerSecond(uint price) internal view returns (int) {
-        return _currentFundingRate(price) / 1 days;
-    }
-
     function _unrecordedFunding(uint price) internal view returns (int funding) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
-        return _currentFundingRatePerSecond(price).multiplyDecimal(int(price)).mul(elapsed);
+        // The current funding rate, rescaled to a percentage per second.
+        int currentFundingRatePerSecond = _currentFundingRate(price) / 1 days;
+        return currentFundingRatePerSecond.multiplyDecimal(int(price)).mul(elapsed);
     }
 
     /*
      * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
-    function _nextFundingEntry(uint sequenceLength, uint price) internal view returns (int funding) {
-        return int(fundingSequence[sequenceLength.sub(1)]).add(_unrecordedFunding(price));
+    function _nextFundingEntry(uint price) internal view returns (int funding) {
+        return int(fundingSequence[fundingSequence.length.sub(1)]).add(_unrecordedFunding(price));
     }
 
     function _netFundingPerUnit(
         uint startIndex,
         uint endIndex,
-        uint sequenceLength,
         uint price
     ) internal view returns (int) {
         int result;
@@ -280,8 +274,8 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         }
 
         // Determine whether we should include unrecorded funding.
-        if (endIndex == sequenceLength) {
-            result = _nextFundingEntry(sequenceLength, price);
+        if (endIndex == fundingSequence.length) {
+            result = _nextFundingEntry(price);
         } else {
             result = fundingSequence[endIndex];
         }
@@ -349,7 +343,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         if (lastModifiedIndex == 0) {
             return 0; // The position does not exist -- no funding.
         }
-        int net = _netFundingPerUnit(lastModifiedIndex, endFundingIndex, fundingSequence.length, price);
+        int net = _netFundingPerUnit(lastModifiedIndex, endFundingIndex, price);
         return int(position.size).multiplyDecimal(net);
     }
 
@@ -433,11 +427,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return remaining.sub(inaccessible);
     }
 
-    function _liquidationPrice(
-        Position memory position,
-        bool includeFunding,
-        uint currentPrice
-    ) internal view returns (uint) {
+    function _liquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
         int positionSize = int(position.size);
 
         // short circuit
@@ -445,17 +435,8 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             return 0;
         }
 
-        // calculate funding if needed
-        int fundingPerUnit = 0;
-        if (includeFunding) {
-            // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
-            fundingPerUnit = _netFundingPerUnit(
-                position.lastFundingIndex,
-                fundingSequence.length,
-                fundingSequence.length,
-                currentPrice
-            );
-        }
+        // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
+        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, fundingSequence.length, currentPrice);
 
         // minimum margin beyond which position can be liqudiated
         uint liqMargin = _liquidationMargin(positionSize, currentPrice);
@@ -727,14 +708,14 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     }
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
-        uint sequenceLength = fundingSequence.length;
+        uint sequenceLengthBefore = fundingSequence.length;
 
-        int funding = _nextFundingEntry(sequenceLength, price);
+        int funding = _nextFundingEntry(price);
         fundingSequence.push(int128(funding));
         fundingLastRecomputed = uint32(block.timestamp);
         emit FundingRecomputed(funding);
 
-        return sequenceLength;
+        return sequenceLengthBefore;
     }
 
     /*
@@ -780,7 +761,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
-        int priceWithFunding = int(price).add(_nextFundingEntry(fundingSequence.length, price));
+        int priceWithFunding = int(price).add(_nextFundingEntry(price));
         int totalDebt = int(marketSkew).multiplyDecimal(priceWithFunding).add(_entryDebtCorrection);
         return uint(_max(totalDebt, 0));
     }
@@ -954,12 +935,11 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function modifyPosition(int sizeDelta) external {
         uint price = _assetPriceRequireChecks();
-        uint fundingIndex = _recomputeFunding(price);
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                fundingIndex: fundingIndex,
+                fundingIndex: _recomputeFunding(price),
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });

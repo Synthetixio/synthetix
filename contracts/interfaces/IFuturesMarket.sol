@@ -78,7 +78,7 @@ interface IFuturesMarket {
 
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid);
 
-    function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid);
+    function liquidationPrice(address account) external view returns (uint price, bool invalid);
 
     function liquidationMargin(address account) external view returns (uint lMargin);
 

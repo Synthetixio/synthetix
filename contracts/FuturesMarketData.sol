@@ -287,7 +287,7 @@ contract FuturesMarketData {
     }
 
     function _liquidationPrice(IFuturesMarket market, address account) internal view returns (uint) {
-        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
+        (uint liquidationPrice, ) = market.liquidationPrice(account);
         return liquidationPrice;
     }
 
