@@ -405,7 +405,8 @@
     	{
 			"sip": 184,
 			"layer": "both",
-			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
+			"released": "both"
 		},
 		{
 			"sip": 185,
@@ -438,7 +439,8 @@
 		{
 			"sip": 193,
 			"layer": "both",
-			"sources": ["SystemSettings", "SystemSettingsLib"]
+			"sources": ["SystemSettings", "SystemSettingsLib"],
+			"released": "both"
 		},
 		{
 			"sip": 194,
@@ -455,7 +457,8 @@
 		{
 			"sip": 196,
 			"layer": "both",
-			"sources": ["ExchangeRates"]
+			"sources": ["ExchangeRates"],
+			"released": "both"
 		},
 		{
 			"sip": 200,
@@ -813,22 +816,22 @@
 		},
 		{
 			"name": "Alsephina",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Alsephina (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Mirzam",

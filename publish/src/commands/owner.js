@@ -100,7 +100,10 @@ const owner = async ({
 
 	let relayers;
 
-	const safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: newOwner });
+	let safeBatchSubmitter;
+	if (!useFork) {
+		safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: newOwner });
+	}
 
 	if (!safeBatchSubmitter) {
 		console.log(gray('New owner is not a Gnosis safe.'));

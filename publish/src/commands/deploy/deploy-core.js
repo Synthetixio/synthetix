@@ -28,6 +28,7 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'SystemSettingsLib',
+		library: true,
 	});
 
 	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
