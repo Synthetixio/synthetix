@@ -79,11 +79,11 @@ const migrateDebtShares = async ({
 	const { abi: synthetixABI } = deployment.sources[deployment.targets['Synthetix'].source];
 	const Synthetix = new ethers.Contract(synthetixAddress, synthetixABI, provider);
 
-	// const { address: debtSharesAddress } = deployment.targets['SynthetixDebtShare'];
-	/* const { abi: debtSharesABI } = deployment.sources[
+	const { address: debtSharesAddress } = deployment.targets['SynthetixDebtShare'];
+	const { abi: debtSharesABI } = deployment.sources[
 		deployment.targets['SynthetixDebtShare'].source
-	]; */
-	// const SynthetixDebtShare = new ethers.Contract(debtSharesAddress, debtSharesABI, provider);
+	];
+	const SynthetixDebtShare = new ethers.Contract(debtSharesAddress, debtSharesABI, provider);
 
 	// get a list of addresses
 	const addrs = fs.readFileSync(etherscanAddressCsv).toString('utf8');
@@ -143,7 +143,7 @@ const migrateDebtShares = async ({
 			ownerActions,
 			ownerActionsFile,
 			signer,
-			// target: SynthetixDebtShare,
+			target: SynthetixDebtShare,
 			write: 'importAddresses',
 			writeArg: [addrs, amounts], // explicitly pass array of args so array not splat as params
 		});
