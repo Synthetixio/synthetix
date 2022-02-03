@@ -10,7 +10,7 @@ const TokenState = artifacts.require('TokenState');
 const LegacyTokenState = artifacts.require('LegacyTokenState');
 const VirtualSynth = artifacts.require('VirtualSynth');
 
-const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('BaseMigration', async accounts => {
 	const [deployerAccount, owner] = accounts;

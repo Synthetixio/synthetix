@@ -87,7 +87,6 @@ task(
 		const Migration = await hre.ethers.getContractFactory(`Migration_${taskArguments.release}`);
 
 		const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-		const ownerAddress = getUsers({ network: 'mainnet', user: 'owner' }).address;
 
 		// but deploy this new migration contract using regular ethers onto the fork (using Migration.deploy won't deploy to the fork as needed)
 		const Factory = new ethers.ContractFactory(
