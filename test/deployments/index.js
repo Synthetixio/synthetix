@@ -30,7 +30,7 @@ describe('deployments', () => {
 			[]
 		)
 		.forEach(({ network, useOvm }) => {
-			(['goerli', 'kovan'].indexOf(network) > -1 ? describe.skip : describe)(
+			(['goerli'].indexOf(network) > -1 ? describe.skip : describe)(
 				`${network}${useOvm ? '-ovm' : ''}`,
 				() => {
 					const { getTarget, getSource, getStakingRewards, getSynths } = wrap({
