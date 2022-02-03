@@ -396,11 +396,9 @@ const owner = async ({
 			]);
 			if (safeBatchSubmitter) {
 				await safeBatchSubmitter.appendTransaction({
-					to: '0x0e16A6876210841577b233C4165d7B7EdF640b8a',
+					to: OwnerRelayOnEthereum.address,
 					data: batchData,
 				});
-
-				console.log('go2');
 			} else {
 				try {
 					await confirmOrEnd(
@@ -431,7 +429,6 @@ const owner = async ({
 		}
 
 		if (safeBatchSubmitter) {
-			console.log('go3');
 			const { nonce } = await safeBatchSubmitter.submit();
 
 			console.log(

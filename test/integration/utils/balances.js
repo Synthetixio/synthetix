@@ -149,10 +149,24 @@ async function _getsUSD({ ctx, user, amount }) {
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
 
+	const tmpWallet = await ethers.Wallet.createRandom().connect(ctx.provider);
+
+	await _getETHFromOtherUsers({
+		ctx,
+		symbol: 'ETH',
+		user: tmpWallet,
+		amount: ethers.utils.parseEther('1'),
+	});
+
+	tx = await Synthetix.transfer(tmpWallet.address, requiredSNX.mul(2));
+	await tx.wait();
+
+	Synthetix = Synthetix.connect(tmpWallet);
+
 	tx = await Synthetix.issueSynths(amount);
 	await tx.wait();
 
-	SynthsUSD = SynthsUSD.connect(ctx.users.owner);
+	SynthsUSD = SynthsUSD.connect(tmpWallet);
 
 	tx = await SynthsUSD.transfer(user.address, amount);
 	await tx.wait();

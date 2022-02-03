@@ -662,17 +662,7 @@ describe('publish scripts', () => {
 							const startTime = daysAgo((i + 1) * 6);
 							addPeriod((i + 1).toString(), startTime.toString());
 
-							const tx = await FeePool.importFeePeriod(
-								i,
-								i + 1,
-								0,
-								startTime,
-								3,
-								4,
-								5,
-								6,
-								overrides
-							);
+							const tx = await FeePool.importFeePeriod(i, i + 1, 0, startTime, 3, 4, 5, overrides);
 							await tx.wait();
 						}
 					});
