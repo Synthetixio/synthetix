@@ -328,5 +328,8 @@
 	},
 	"SynthsETHBTC": {
 		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
 	}
 }

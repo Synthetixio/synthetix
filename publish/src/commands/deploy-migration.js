@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const qs = require('querystring');
-const solc = require('solc');
 const axios = require('axios');
 const path = require('path');
 const ethers = require('ethers');
@@ -128,8 +127,12 @@ const deployMigration = async ({
 	);
 
 	const deployedContract = await migrationContract.deploy();
-
 	console.log(green(`\nSuccessfully deployed: ${deployedContract.address}\n`));
+
+	// TODO: hardcode the contract address to avoid re-deploying when
+	// const deployedContract = new ethers.Contract(
+	// 	"0xbla", compiled['Migration_' + releaseName].abi, signer
+	// );
 
 	const { getPathToNetwork } = wrap({
 		network,
@@ -162,6 +165,8 @@ const deployMigration = async ({
 			account: signer.address,
 			contract: contract.address,
 			target: contract,
+			read: 'nominatedOwner',
+			expected: input => input === deployedContract.address,
 			write: 'nominateNewOwner',
 			writeArg: [deployedContract.address],
 
@@ -205,31 +210,33 @@ async function verifyMigrationContract({ deployedContract, releaseName, buildPat
 
 	const runs = optimizerRuns;
 
-	// The version reported by solc-js is too verbose and needs a v at the front
+	// this is imported here because otherwise errors aren't helpful
+	// because it pukes a bunch of gibberish
+	const solc = require('solc');
+
+	// // The version reported by solc-js is too verbose and needs a v at the front
 	const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
 
-	const payload = {
-		module: 'contract',
-		action: 'verifysourcecode',
-		contractaddress: deployedContract.address,
-		sourceCode: readFlattened(),
-		contractName: 'Migration_' + releaseName,
-		constructorArguements: '',
-		compilerversion: solcVersion,
-		optimizationUsed: 1,
-		runs,
-		apikey: process.env.ETHERSCAN_KEY,
-	};
-
-	console.log('verify on etherscan:', payload);
-
-	const response = await axios.post(etherscanUrl, qs.stringify(payload), {
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-		},
-	});
-
-	console.log(green('etherscan verify response:'), response.data.message);
+	await axios.post(
+		etherscanUrl,
+		qs.stringify({
+			module: 'contract',
+			action: 'verifysourcecode',
+			contractaddress: deployedContract.address,
+			sourceCode: readFlattened(),
+			contractname: 'Migration_' + releaseName,
+			constructorArguements: '',
+			compilerversion: solcVersion,
+			optimizationUsed: 1,
+			runs,
+			apikey: process.env.ETHERSCAN_KEY,
+		}),
+		{
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+		}
+	);
 }
 
 module.exports = {
