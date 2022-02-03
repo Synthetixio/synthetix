@@ -15,21 +15,22 @@ const { toBytes32, wrap, networks } = require('../..');
 describe('deployments', () => {
 	networks
 		.filter(n => n !== 'local')
-		.reduce((memo, network) => {
-			memo.push(
-				{
-					network,
-					useOvm: false,
-				},
-				{
-					network,
-					useOvm: true,
-				}
-			);
-			return memo;
-		}, [])
+		.reduce(
+			(memo, network) =>
+				memo.concat(
+					{
+						network,
+						useOvm: false,
+					},
+					{
+						network,
+						useOvm: true,
+					}
+				),
+			[]
+		)
 		.forEach(({ network, useOvm }) => {
-			(['goerli'].indexOf(network) > -1 ? describe.skip : describe)(
+			(['goerli', 'kovan'].indexOf(network) > -1 ? describe.skip : describe)(
 				`${network}${useOvm ? '-ovm' : ''}`,
 				() => {
 					const { getTarget, getSource, getStakingRewards, getSynths } = wrap({
@@ -50,7 +51,7 @@ describe('deployments', () => {
 					const getContract = ({ source, target }) =>
 						new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
-					beforeEach(function() {
+					beforeEach(() => {
 						web3 = new Web3();
 
 						const connections = loadConnections({
@@ -58,12 +59,13 @@ describe('deployments', () => {
 							useOvm,
 						});
 
-						console.log(connections.providerUrl);
-						this.skip();
 						web3 = new Web3(new Web3.providers.HttpProvider(connections.providerUrl));
 
 						contracts = {
-							Synthetix: getContract({ source: 'Synthetix', target: 'ProxyERC20' }),
+							Synthetix: getContract({
+								source: useOvm ? 'MintableSynthetix' : 'Synthetix',
+								target: 'ProxyERC20',
+							}),
 							ExchangeRates: getContract({ target: 'ExchangeRates' }),
 						};
 					});
