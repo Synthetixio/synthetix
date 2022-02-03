@@ -209,12 +209,21 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         uint supply = totalSupplyOnPeriod[currentPeriodId];
 
         for (uint i = 0; i < accounts.length; i++) {
-            _increaseBalance(accounts[i], amounts[i]);
-
-            supply = supply.add(amounts[i]);
-
-            emit Transfer(address(0), accounts[i], amounts[i]);
-            emit Mint(accounts[i], amounts[i]);
+            uint curBalance = balanceOf(accounts[i]);
+            if (curBalance < amounts[i]) {
+                uint amount = amounts[i] - curBalance;
+                _increaseBalance(accounts[i], amount);
+                supply = supply.add(amount);
+                emit Mint(accounts[i], amount);
+                emit Transfer(address(0), accounts[i], amount);
+            }
+            else if (curBalance > amounts[i]) {
+                uint amount = curBalance - amounts[i];
+                _deductBalance(accounts[i], amount);
+                supply = supply.sub(amount);
+                emit Burn(accounts[i], amount);
+                emit Transfer(accounts[i], address(0), amount);
+            }
         }
 
         totalSupplyOnPeriod[currentPeriodId] = supply;
