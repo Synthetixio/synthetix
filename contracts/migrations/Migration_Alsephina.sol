@@ -57,9 +57,7 @@ contract Migration_Alsephina is BaseMigration {
         contracts[4] = address(systemsettings_i);
     }
 
-    function migrate(address currentOwner) external onlyOwner {
-        require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
-
+    function migrate() external onlyOwner {
         require(
             ISynthetixNamedContract(new_SystemSettings_contract).CONTRACT_NAME() == "SystemSettings",
             "Invalid contract supplied for SystemSettings"
