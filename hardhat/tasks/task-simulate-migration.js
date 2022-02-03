@@ -81,7 +81,7 @@ task(
 		console.log(gray('Now running hardhat compile to flatten and compile the migration contracts'));
 
 		// now compile the contract that was invariably created
-		await hre.run('compile', { everything: true, optimizer: true });
+		await hre.run('compile', { optimizer: true });
 
 		// get artifacts via hardhat/ethers
 		const Migration = await hre.ethers.getContractFactory(`Migration_${taskArguments.release}`);

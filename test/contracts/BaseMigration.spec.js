@@ -46,23 +46,8 @@ contract('BaseMigration', async accounts => {
 			});
 		});
 
-		it('deployer is set', async () => {
-			assert.equal(await instance.deployer(), deployerAccount);
-		});
-
 		it('owner is set', async () => {
 			assert.equal(await instance.owner(), owner);
-		});
-
-		describe('when the onlyDeployer modifier is used', () => {
-			it('only allows the deployer to execute', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: instance.canOnlyBeRunByDeployer,
-					args: [],
-					address: deployerAccount,
-					accounts,
-				});
-			});
 		});
 
 		describe('when ownership needs returning', () => {
