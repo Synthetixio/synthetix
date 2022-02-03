@@ -123,7 +123,7 @@ task(
 
 		console.log(gray(`Beginning the migration`));
 
-		const txn = await migration.migrate(ownerAddress, {
+		const txn = await migration.migrate({
 			gasLimit: ethers.BigNumber.from(12e6),
 		});
 

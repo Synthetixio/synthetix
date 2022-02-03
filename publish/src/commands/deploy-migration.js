@@ -178,7 +178,7 @@ const deployMigration = async ({
 	}
 
 	const actionName = `Migration_${releaseName}.migrate(${ownerAddress})`;
-	const txn = await deployedContract.populateTransaction.migrate(ownerAddress);
+	const txn = await deployedContract.populateTransaction.migrate();
 
 	const ownerAction = {
 		key: actionName,
