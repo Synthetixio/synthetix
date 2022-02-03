@@ -30,6 +30,7 @@ const migrateDebtShares = async ({
 	maxPriorityFeePerGas,
 	providerUrl,
 	etherscanAddressCsv,
+	threshold,
 	batchSize = 500,
 }) => {
 	ensureNetwork(network);
@@ -75,13 +76,14 @@ const migrateDebtShares = async ({
 
 	// get synthetix system contract
 	const { address: synthetixAddress } = deployment.targets['ProxySynthetix'];
-	const { address: debtSharesAddress } = deployment.targets['SynthetixDebtShare'];
 	const { abi: synthetixABI } = deployment.sources[deployment.targets['Synthetix'].source];
-	const { abi: debtSharesABI } = deployment.sources[
-		deployment.targets['SynthetixDebtShare'].source
-	];
 	const Synthetix = new ethers.Contract(synthetixAddress, synthetixABI, provider);
-	const SynthetixDebtShare = new ethers.Contract(debtSharesAddress, debtSharesABI, provider);
+
+	// const { address: debtSharesAddress } = deployment.targets['SynthetixDebtShare'];
+	/* const { abi: debtSharesABI } = deployment.sources[
+		deployment.targets['SynthetixDebtShare'].source
+	]; */
+	// const SynthetixDebtShare = new ethers.Contract(debtSharesAddress, debtSharesABI, provider);
 
 	// get a list of addresses
 	const addrs = fs.readFileSync(etherscanAddressCsv).toString('utf8');
@@ -91,6 +93,9 @@ const migrateDebtShares = async ({
 	const addressCollateralAmounts = [];
 
 	const sUSD = ethers.utils.formatBytes32String('sUSD');
+
+	let totalDebtAccounted = ethers.BigNumber.from(0);
+	let totalDebtForgiven = ethers.BigNumber.from(0);
 
 	await async.eachOfLimit(lines, 30, async (line, i) => {
 		if (line === '') return;
@@ -104,15 +109,25 @@ const migrateDebtShares = async ({
 		try {
 			const debtBalanceOf = await Synthetix.debtBalanceOf(address, sUSD);
 
-			if (debtBalanceOf.gt(0)) {
+			if (debtBalanceOf.gt(ethers.utils.parseEther(threshold))) {
 				addressCollateralAmounts.push({ address, debtBalanceOf });
+				totalDebtAccounted = totalDebtAccounted.add(debtBalanceOf);
+			} else {
+				totalDebtForgiven = totalDebtForgiven.add(debtBalanceOf);
 			}
 		} catch (err) {
 			console.log('had error for address', address, err);
 		}
 	});
 
-	console.log('recorded', addressCollateralAmounts.length, 'addresses with debt');
+	console.log(
+		'recorded',
+		addressCollateralAmounts.length,
+		'addresses with debt totalling',
+		ethers.utils.formatEther(totalDebtAccounted),
+		'forgiving',
+		ethers.utils.formatEther(totalDebtForgiven)
+	);
 
 	for (let i = 0; i < addressCollateralAmounts.length; i += batchSize) {
 		const batch = addressCollateralAmounts.slice(i, i + batchSize);
@@ -128,7 +143,7 @@ const migrateDebtShares = async ({
 			ownerActions,
 			ownerActionsFile,
 			signer,
-			target: SynthetixDebtShare,
+			// target: SynthetixDebtShare,
 			write: 'importAddresses',
 			writeArg: [addrs, amounts], // explicitly pass array of args so array not splat as params
 		});
@@ -160,6 +175,11 @@ module.exports = {
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
 			.option('--etherscan-address-csv <file>', 'CSV of all addresses to scan', 'snx-addrs.csv')
+			.option(
+				'--threshold <amount>',
+				'Forgive debt amounts for holders who have less than the given threshold of debt',
+				'0'
+			)
 			.option('--batch-size', 'Number of addresses per import transaction', 500)
 			.action(migrateDebtShares),
 };
