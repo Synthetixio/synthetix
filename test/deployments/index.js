@@ -41,6 +41,8 @@ describe('deployments', () => {
 						network,
 					});
 
+					console.log(connections.providerUrl);
+
 					web3 = new Web3(new Web3.providers.HttpProvider(connections.providerUrl));
 
 					contracts = {
