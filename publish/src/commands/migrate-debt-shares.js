@@ -139,9 +139,9 @@ const migrateDebtShares = async ({
 
 		await performTransactionalStep({
 			contract: 'SynthetixDebtShare',
-			//encodeABI: network === 'mainnet',
-			//maxFeePerGas,
-			//maxPriorityFeePerGas,
+			// encodeABI: network === 'mainnet',
+			// maxFeePerGas,
+			// maxPriorityFeePerGas,
 			ownerActions,
 			ownerActionsFile,
 			signer,
