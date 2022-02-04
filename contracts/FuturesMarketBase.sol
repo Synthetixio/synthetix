@@ -939,38 +939,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         _modifyPosition(msg.sender, params);
     }
 
-    function _revertIfPriceOutsideBounds(
-        uint price,
-        uint minPrice,
-        uint maxPrice
-    ) internal view {
-        _revertIfError(price < minPrice || maxPrice < price, Status.PriceOutOfBounds);
-    }
-
-    /*
-     * Adjust the sender's position size, but with an acceptable slippage range in case
-     * the price updates while the transaction is in flight.
-     * Reverts if the oracle price is outside the specified bounds, or the resulting position is too large,
-     * outside the max leverage, or is liquidating.
-     */
-    function modifyPositionWithPriceBounds(
-        int sizeDelta,
-        uint minPrice,
-        uint maxPrice
-    ) external {
-        uint price = _assetPriceRequireChecks();
-        _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                fundingIndex: _recomputeFunding(price),
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
-            });
-        _modifyPosition(msg.sender, params);
-    }
-
     /*
      * Submit an order to close a position.
      */
@@ -978,25 +946,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: -size,
-                price: price,
-                fundingIndex: _recomputeFunding(price),
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
-            });
-        _modifyPosition(msg.sender, params);
-    }
-
-    /*
-     * Submit an order to close a position; reverts if the asset price is outside the specified bounds.
-     */
-    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external {
-        int size = positions[msg.sender].size;
-        _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireChecks();
-        _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
         TradeParams memory params =
             TradeParams({
                 sizeDelta: -size,

@@ -88,15 +88,7 @@ interface IFuturesMarket {
 
     function executeNextPriceOrder(address account) external;
 
-    function modifyPositionWithPriceBounds(
-        int sizeDelta,
-        uint minPrice,
-        uint maxPrice
-    ) external;
-
     function closePosition() external;
-
-    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external;
 
     function liquidatePosition(address account) external;
 }

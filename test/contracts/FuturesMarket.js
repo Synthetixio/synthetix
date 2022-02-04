@@ -167,9 +167,7 @@ contract('FuturesMarket', accounts => {
 					'transferMargin',
 					'withdrawAllMargin',
 					'modifyPosition',
-					'modifyPositionWithPriceBounds',
 					'closePosition',
-					'closePositionWithPriceBounds',
 					'liquidatePosition',
 					'recomputeFunding',
 					'submitNextPriceOrder',
@@ -988,55 +986,6 @@ contract('FuturesMarket', accounts => {
 			);
 			const postDetails = await futuresMarket.postTradeDetails(toBN('0'), trader);
 			assert.equal(postDetails.status, Status.NilOrder);
-		});
-
-		it('Cannot modify a position if the price has slipped too far', async () => {
-			const startPrice = toUnit('200');
-			await setPrice(baseAsset, startPrice);
-
-			const margin = toUnit('1000');
-			const minPrice = multiplyDecimal(startPrice, toUnit(1).sub(toUnit('0.01')));
-			const maxPrice = multiplyDecimal(startPrice, toUnit(1).add(toUnit('0.01')));
-
-			await futuresMarket.transferMargin(margin, { from: trader });
-			await futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), minPrice, maxPrice, {
-				from: trader,
-			});
-
-			// Slips +1%.
-			await setPrice(baseAsset, maxPrice.add(toBN(1)));
-			await assert.revert(
-				futuresMarket.modifyPositionWithPriceBounds(toUnit('-1'), minPrice, maxPrice, {
-					from: trader,
-				}),
-				'Price out of acceptable range'
-			);
-			await assert.revert(
-				futuresMarket.closePositionWithPriceBounds(minPrice, maxPrice, {
-					from: trader,
-				}),
-				'Price out of acceptable range'
-			);
-
-			// Slips -1%.
-			await setPrice(baseAsset, minPrice.sub(toBN(1)));
-			await assert.revert(
-				futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), minPrice, maxPrice, {
-					from: trader,
-				}),
-				'Price out of acceptable range'
-			);
-			await assert.revert(
-				futuresMarket.closePositionWithPriceBounds(minPrice, maxPrice, {
-					from: trader,
-				}),
-				'Price out of acceptable range'
-			);
-
-			await setPrice(baseAsset, startPrice);
-			await futuresMarket.closePositionWithPriceBounds(minPrice, maxPrice, {
-				from: trader,
-			});
 		});
 
 		it('Cannot modify a position if it is liquidating', async () => {
@@ -3573,26 +3522,8 @@ contract('FuturesMarket', accounts => {
 				);
 			});
 
-			it('then modifyPositionWithPriceBounds reverts', async () => {
-				await assert.revert(
-					futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), toUnit('0.9'), toUnit('1.2'), {
-						from: trader,
-					}),
-					'Invalid price'
-				);
-			});
-
 			it('then closePosition reverts', async () => {
 				await assert.revert(futuresMarket.closePosition({ from: trader }), 'Invalid price');
-			});
-
-			it('then closePositionWithPriceBounds reverts', async () => {
-				await assert.revert(
-					futuresMarket.closePositionWithPriceBounds(toUnit('0.9'), toUnit('1.2'), {
-						from: trader,
-					}),
-					'Invalid price'
-				);
 			});
 
 			it('then liquidatePosition reverts', async () => {
@@ -3650,25 +3581,8 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
-			it('after modifyPositionWithPriceBounds', async () => {
-				await futuresMarket.modifyPositionWithPriceBounds(
-					toUnit('1'),
-					toUnit('50'),
-					toUnit('200'),
-					{ from: trader }
-				);
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
-			});
-
 			it('after closePosition', async () => {
 				await futuresMarket.closePosition({ from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
-			});
-
-			it('after closePositionWithPriceBounds reverts', async () => {
-				await futuresMarket.closePositionWithPriceBounds(toUnit('50'), toUnit('200'), {
-					from: trader,
-				});
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 		});
@@ -3710,19 +3624,7 @@ contract('FuturesMarket', accounts => {
 					futuresMarket.modifyPosition(toUnit('1'), { from: trader }),
 					revertMessage
 				);
-				await assert.revert(
-					futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), toUnit('105'), toUnit('115'), {
-						from: trader,
-					}),
-					revertMessage
-				);
 				await assert.revert(futuresMarket.closePosition({ from: trader }), revertMessage);
-				await assert.revert(
-					futuresMarket.closePositionWithPriceBounds(toUnit('105'), toUnit('115'), {
-						from: trader,
-					}),
-					revertMessage
-				);
 			});
 
 			it('margin modifying actions do not revert', async () => {
@@ -3801,16 +3703,6 @@ contract('FuturesMarket', accounts => {
 			it('mutative actions do not revert', async () => {
 				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
 				await futuresMarket.closePosition({ from: trader });
-
-				await futuresMarket.modifyPositionWithPriceBounds(
-					toUnit('1'),
-					toUnit('100'),
-					toUnit('115'),
-					{ from: trader }
-				);
-				await futuresMarket.closePositionWithPriceBounds(toUnit('100'), toUnit('115'), {
-					from: trader,
-				});
 
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.withdrawAllMargin({ from: trader });
