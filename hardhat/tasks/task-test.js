@@ -3,6 +3,7 @@ const { types, task, subtask } = require('hardhat/config');
 const { TASK_TEST_RUN_MOCHA_TESTS } = require('hardhat/builtin-tasks/task-names');
 const { gray, yellow } = require('chalk');
 const optimizeIfRequired = require('../util/optimizeIfRequired');
+const isCI = require('is-ci');
 
 // Override builtin "test:run-mocha-tests" subtask so we can use the local mocha
 // installation, which is up to date and allows us to run parallel tests.
@@ -52,6 +53,15 @@ task('test')
 
 		if (gasOutputFile) {
 			hre.config.gasReporter.outputFile = gasOutputFile;
+		}
+
+		// When using CircleCI, output the test metadata
+		// See https://circleci.com/docs/2.0/collect-test-data
+		if (isCI) {
+			hre.config.mocha.reporter = 'mocha-junit-reporter';
+			hre.config.mocha.reporterOptions = {
+				mochaFile: '/tmp/junit/test-results.[hash].xml',
+			};
 		}
 
 		await runSuper(taskArguments);
