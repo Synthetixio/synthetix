@@ -402,12 +402,22 @@
 			],
 			"released": "both"
 		},
-		{
+    	{
 			"sip": 184,
 			"layer": "both",
 			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
 			"released": "both"
 		},
+		{
+			"sip": 185,
+			"layer": "both",
+			"sources": [
+				"Synthetix",
+				"FeePool",
+				"Issuer",
+				"SynthetixDebtShare"
+			]
+    	},
 		{
 			"sip": 187,
 			"layer": "both",

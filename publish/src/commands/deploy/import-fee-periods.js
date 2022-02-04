@@ -86,7 +86,7 @@ module.exports = async ({
 				);
 			} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
 				throw Error(
-					`The initial fee period is more than one week ago - this is likely an error. ` +
+					`The initial fee period is more than one week ago (${period.startTime}) - this is likely an error. ` +
 						`Please check to make sure you are using the correct FeePool source (this should ` +
 						`be the one most recently replaced). Given: ${explorerLinkPrefix}/address/${ExistingFeePool.address}`
 				);
@@ -154,7 +154,6 @@ module.exports = async ({
 		const importArgs = [
 			index,
 			feePeriod.feePeriodId,
-			feePeriod.startingDebtIndex,
 			feePeriod.startTime,
 			feePeriod.feesToDistribute,
 			feePeriod.feesClaimed,
@@ -179,7 +178,7 @@ module.exports = async ({
 					`FeePool newFeePool = FeePool(${FeePool.address})`,
 					`(
 						uint64 feePeriodId_${index},
-						uint64 startingDebtIndex_${index},
+						uint64 unused_${index},
 						uint64 startTime_${index},
 						uint feesToDistribute_${index},
 						uint feesClaimed_${index},
@@ -189,7 +188,6 @@ module.exports = async ({
 					`newFeePool.importFeePeriod(
 						${index},
 						feePeriodId_${index},
-						startingDebtIndex_${index},
 						startTime_${index},
 						feesToDistribute_${index},
 						feesClaimed_${index},
