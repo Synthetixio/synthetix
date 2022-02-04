@@ -656,13 +656,22 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
+							periodsAdded.push([`${startTime}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
 							addPeriod((i + 1).toString(), startTime.toString());
 
-							const tx = await FeePool.importFeePeriod(i, i + 1, 0, startTime, 3, 4, 5, overrides);
+							const tx = await FeePool.importFeePeriod(
+								i,
+								startTime,
+								startTime,
+								3,
+								4,
+								5,
+								6,
+								overrides
+							);
 							await tx.wait();
 						}
 					});
@@ -1093,15 +1102,14 @@ describe('publish scripts', () => {
 									'ExchangeState',
 									'FeePool',
 									'FeePoolEternalStorage',
-									'FeePoolState',
 									'Issuer',
 									'Liquidations',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
 									'Synthetix',
+									'SynthetixDebtShare',
 									'SynthetixEscrow',
-									'SynthetixState',
 									'SynthsETH',
 									'SynthsUSD',
 									'SystemStatus',
