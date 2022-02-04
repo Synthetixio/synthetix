@@ -259,19 +259,13 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         uint endIndex,
         uint price
     ) internal view returns (int) {
-        int result;
-
         // If the end index is not later than the start index, no funding has accrued.
         if (endIndex <= startIndex) {
             return 0;
         }
 
         // Determine whether we should include unrecorded funding.
-        if (endIndex == fundingSequence.length) {
-            result = _nextFundingEntry(price);
-        } else {
-            result = fundingSequence[endIndex];
-        }
+        int result = endIndex == fundingSequence.length ? _nextFundingEntry(price) : fundingSequence[endIndex];
 
         // Compute the net difference between start and end indices.
         return result.sub(fundingSequence[startIndex]);
@@ -467,27 +461,18 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     }
 
     /**
-     * The margin buffer to maintain above the liquidation fee. The buffer is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
-     * so that stakers would not leak value to liquidators through minting rewards that are not from the
-     * account's margin.
-     * @param positionSize size of position in fixed point decimal baseAsset units
-     * @param price price of single baseAsset unit in sUSD fixed point decimal units
-     * @return lBuffer liquidation buffer to be paid to liquidator in sUSD fixed point decimal units
-     */
-    function _liquidationBuffer(int positionSize, uint price) internal view returns (uint lBuffer) {
-        // size * price * buffer-ratio
-        return _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-    }
-
-    /**
      * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
+     * @dev The liquidation margin contains a buffer that is proportional to the position
+     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * so that stakers would not leak value to liquidators through minting rewards that are not from the
+     * account's margin.
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
-        return _liquidationBuffer(positionSize, price).add(_liquidationFee(positionSize, price));
+        uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
+        return liquidationBuffer.add(_liquidationFee(positionSize, price));
     }
 
     function _canLiquidate(
@@ -928,15 +913,16 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function modifyPosition(int sizeDelta) external {
         uint price = _assetPriceRequireChecks();
-        TradeParams memory params =
+        _modifyPosition(
+            msg.sender,
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
                 fundingIndex: _recomputeFunding(price),
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
-            });
-        _modifyPosition(msg.sender, params);
+            })
+        );
     }
 
     /*
@@ -946,15 +932,16 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
-        TradeParams memory params =
+        _modifyPosition(
+            msg.sender,
             TradeParams({
                 sizeDelta: -size,
                 price: price,
                 fundingIndex: _recomputeFunding(price),
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
-            });
-        _modifyPosition(msg.sender, params);
+            })
+        );
     }
 
     function _liquidatePosition(

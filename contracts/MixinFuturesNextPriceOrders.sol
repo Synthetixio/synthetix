@@ -186,17 +186,17 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
 
         // the correct price for the past round
         (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.targetRoundId);
-        // set up the trade params
-        TradeParams memory params =
+        // execute or revert
+        _modifyPosition(
+            account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
                 fundingIndex: fundingIndex, // using the next-price fees
                 takerFee: _takerFeeNextPrice(baseAsset),
                 makerFee: _makerFeeNextPrice(baseAsset)
-            });
-        // execute or revert
-        _modifyPosition(account, params);
+            })
+        );
 
         // remove stored order
         delete nextPriceOrders[account];
