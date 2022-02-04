@@ -19,3 +19,8 @@ steps:
         else
           npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
         fi;
+  - run: mkdir ~/junit
+  - store_test_results:
+      path: ~/junit
+  - store_artifacts:
+      path: ~/junit

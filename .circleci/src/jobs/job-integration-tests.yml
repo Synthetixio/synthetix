@@ -43,3 +43,8 @@ steps:
       name: Run dual layer 1 and layer 2 integration tests
       command: |
         npx hardhat test:integration:dual --deploy
+  - run: mkdir ~/junit
+  - store_test_results:
+      path: ~/junit
+  - store_artifacts:
+      path: ~/junit
