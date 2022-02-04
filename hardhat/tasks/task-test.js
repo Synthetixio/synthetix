@@ -54,5 +54,10 @@ task('test')
 			hre.config.gasReporter.outputFile = gasOutputFile;
 		}
 
+		hre.config.mocha.reporter = 'mocha-junit-reporter';
+		hre.config.mocha.reporterOptions = {
+			mochaFile: '~/junit/test-results.[hash].xml',
+		};
+
 		await runSuper(taskArguments);
 	});
