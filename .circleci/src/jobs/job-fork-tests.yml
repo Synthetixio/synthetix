@@ -4,7 +4,6 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: mkdir /tmp/junit
   - run:
       command: npm run fork:mainnet
       background: true
