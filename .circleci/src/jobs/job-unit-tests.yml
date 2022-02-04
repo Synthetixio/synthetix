@@ -7,13 +7,14 @@ steps:
   - attach_workspace:
       at: .
   - run: npx hardhat compile --showsize --optimizer
+  - run: mkdir ~/junit
   - run:
       name: Test and output gas used
       command: |
         set +e
         circleci tests glob 'test/contracts/*.js' |
         circleci tests split |
-        xargs npm test -- --gas
+        xargs npm test -- --gas --reporter mocha-junit-reporter --reporter-options mochaFile=~/junit/test-results.xml
         EXIT_CODE=$?
         printf "\\n"
         exit $EXIT_CODE
@@ -25,12 +26,6 @@ steps:
       root: .
       paths:
         - gasReporterOutput-*.json
-  - run: mkdir ~/junit
-  - run:
-      command: mocha test ./test/contracts --reporter mocha-junit-reporter
-      environment:
-        MOCHA_FILE: ~/junit/test-results.xml
-      when: always
   - store_test_results:
       path: ~/junit
   - store_artifacts:
