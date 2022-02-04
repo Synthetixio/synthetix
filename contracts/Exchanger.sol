@@ -786,7 +786,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @return The exchange fee rate, and whether the rates are too volatile
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
         (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-        require(!tooVolatile, "too volatile to trade");
+        require(!tooVolatile, "too volatile");
         return feeRate;
     }
 
