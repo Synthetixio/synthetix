@@ -20,10 +20,8 @@ steps:
       paths:
         - node_modules
         - .npm-cache
-  - run: mkdir ~/junit
   - persist_to_workspace:
       root: .
       paths:
         - node_modules
         - .npm-cache
-        - junit

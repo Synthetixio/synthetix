@@ -53,6 +53,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: mkdir ~/junit
       - run:
           command: npm run fork:ovm
           background: true
@@ -82,6 +83,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: mkdir ~/junit
       - run:
           command: npm run fork:mainnet
           background: true
@@ -133,6 +135,7 @@ jobs:
           port: 8545
       - cmd-wait-for-port:
           port: 9545
+      - run: mkdir ~/junit
       - run:
           name: Run isolated layer 1 integration tests
           command: |
@@ -200,13 +203,11 @@ jobs:
           paths:
             - node_modules
             - .npm-cache
-      - run: mkdir ~/junit
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
             - .npm-cache
-            - junit
   job-simulate-release:
     working_directory: ~/repo
     docker:
@@ -357,6 +358,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --showsize --optimizer
+      - run: mkdir ~/junit
       - run:
           name: Test and output gas used
           command: |

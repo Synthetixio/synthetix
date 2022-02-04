@@ -4,6 +4,7 @@ steps:
   - checkout
   - attach_workspace:
       at: .
+  - run: mkdir ~/junit
   - run:
       command: npm run fork:ovm
       background: true
