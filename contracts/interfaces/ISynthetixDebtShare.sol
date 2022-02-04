@@ -4,6 +4,8 @@ pragma solidity >=0.4.24;
 interface ISynthetixDebtShare {
     // Views
 
+    function currentPeriodId() external view returns (uint128);
+
     function allowance(address account, address spender) external view returns (uint);
 
     function balanceOf(address account) external view returns (uint);

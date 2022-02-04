@@ -165,9 +165,12 @@
 		"deploy": false
 	},
 	"StakingRewardssUSDDAIUniswapV3": {
-		"deploy": true
+		"deploy": false
 	},
 	"StakingRewardsSNXWETHUniswapV3": {
-		"deploy": true
+		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
 	}
 }

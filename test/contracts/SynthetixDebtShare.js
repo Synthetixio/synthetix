@@ -15,6 +15,8 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
+const ethers = require('ethers');
+
 contract('SynthetixDebtShare', async accounts => {
 	const [owner, issuer, account1, account2] = accounts;
 
@@ -596,22 +598,40 @@ contract('SynthetixDebtShare', async accounts => {
 		});
 
 		describe('when invoked by owner', () => {
+			let txn1, txn2;
+
 			beforeEach(async () => {
-				await synthetixDebtShare.importAddresses([account1], [toUnit('20')], { from: owner });
+				txn1 = await synthetixDebtShare.importAddresses([account1], [toUnit('20')], {
+					from: owner,
+				});
 				await synthetixDebtShare.importAddresses([account2, issuer], [toUnit('10'), toUnit('10')], {
 					from: owner,
 				});
 				await synthetixDebtShare.importAddresses([account2], [toUnit('50')], { from: owner });
+				txn2 = await synthetixDebtShare.importAddresses([account2], [toUnit('30')], {
+					from: owner,
+				});
 			});
 
 			it('sets total supply', async () => {
-				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('90'));
+				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('60'));
 			});
 
-			it('accumulates balances', async () => {
+			it('sets balances balances', async () => {
 				assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('20'));
-				assert.bnEqual(await synthetixDebtShare.balanceOf(account2), toUnit('60'));
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account2), toUnit('30'));
 				assert.bnEqual(await synthetixDebtShare.balanceOf(issuer), toUnit('10'));
+			});
+
+			it('emits events', async () => {
+				assert.eventEqual(txn1.logs[0], 'Mint', [account1, toUnit('20')]);
+				assert.eventEqual(txn1.logs[1], 'Transfer', [
+					ethers.constants.AddressZero,
+					account1,
+					toUnit('20'),
+				]);
+
+				assert.eventEqual(txn2.logs[0], 'Burn', [account2, toUnit('20')]);
 			});
 		});
 	});

@@ -1030,7 +1030,7 @@ contract('Rewards Integration Tests', accounts => {
 			// however only   721,053.846153846153846153 Claimable after rounding to 18 decimals
 			const transaction = await feePool.claimFees({ from: account1 });
 			assert.eventEqual(transaction, 'FeesClaimed', {
-				sUSDAmount: feesAvailableUSDAcc1[0].sub(toUnit('0.000000000000000001')),
+				sUSDAmount: feesAvailableUSDAcc1[0],
 				snxRewards: feesAvailableUSDAcc1[1],
 			});
 		});
