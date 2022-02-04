@@ -239,6 +239,12 @@ const setupContract = async ({
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidator: [owner, tryGetAddressOf('AddressResolver')],
+		LiquidatorRewards: [
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			tryGetAddressOf('Synthetix'),
+			tryGetAddressOf('SynthetixDebtShare'),
+		],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -666,7 +672,11 @@ const setupAllContracts = async ({
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidator' },
-		{ contract: 'Liquidator', deps: ['EternalStorage', 'FlexibleStorage'] },
+		{ contract: 'Liquidator', deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage'] },
+		{
+			contract: 'LiquidatorRewards',
+			deps: ['AddressResolver', 'Liquidator', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
+		},
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
@@ -768,6 +778,7 @@ const setupAllContracts = async ({
 				'SynthetixEscrow',
 				'RewardsDistribution',
 				'Liquidator',
+				'LiquidatorRewards',
 			],
 			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
@@ -1087,15 +1098,6 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
-			returnObj['SystemSettings'].setInstantLiquidationDelay(INSTANT_LIQUIDATION_DELAY, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setInstantLiquidationRatio(INSTANT_LIQUIDATION_RATIO, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setInstantLiquidationPenalty(INSTANT_LIQUIDATION_PENALTY, {
-				from: owner,
-			}),
 			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
 				from: owner,
 			}),
