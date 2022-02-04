@@ -25,3 +25,4 @@ steps:
       paths:
         - node_modules
         - .npm-cache
+  - run: mkdir ~/junit

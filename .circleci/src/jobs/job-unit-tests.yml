@@ -26,6 +26,6 @@ steps:
       paths:
         - gasReporterOutput-*.json
   - store_test_results:
-      path: reports
+      path: ~/junit
   - store_artifacts:
-      path: ./reports/mocha/test-results.xml
+      path: ~/junit

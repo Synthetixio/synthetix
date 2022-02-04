@@ -44,6 +44,6 @@ steps:
       command: |
         npx hardhat test:integration:dual --deploy
   - store_test_results:
-      path: reports
+      path: ~/junit
   - store_artifacts:
-      path: ./reports/mocha/test-results.xml
+      path: ~/junit

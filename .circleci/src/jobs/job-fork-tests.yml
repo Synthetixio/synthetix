@@ -20,6 +20,6 @@ steps:
           npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
         fi;
   - store_test_results:
-      path: reports
+      path: ~/junit
   - store_artifacts:
-      path: ./reports/mocha/test-results.xml
+      path: ~/junit
