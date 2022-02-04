@@ -59,6 +59,9 @@
 	"FeePool": {
 		"deploy": true
 	},
+	"FeePoolState": {
+		"deploy": true
+	},
 	"FeePoolEternalStorage": {
 		"deploy": true
 	},
@@ -98,7 +101,7 @@
 	"RewardsDistribution": {
 		"deploy": true
 	},
-	"SynthetixDebtShare": {
+	"SynthetixState": {
 		"deploy": true
 	},
 	"SystemStatus": {

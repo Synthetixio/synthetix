@@ -85,7 +85,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
-        _recentFeePeriodsStorage(0).startTime = uint64(now);
+        _recentFeePeriodsStorage(0).startTime = uint64(block.timestamp);
     }
 
     /* ========== VIEWS ========== */
@@ -342,6 +342,11 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             rewardsToDistribute: rewardsToDistribute,
             rewardsClaimed: rewardsClaimed
         });
+
+        // make sure recording is aware of the actual period id
+        if (feePeriodIndex == 0) {
+            issuer().setCurrentPeriodId(uint128(feePeriodId));
+        }
     }
 
     /**
