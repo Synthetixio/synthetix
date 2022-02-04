@@ -31,7 +31,7 @@ steps:
       port: 8545
   - cmd-wait-for-port:
       port: 9545
-  - run: mkdir ~/junit
+  - run: mkdir /tmp/junit
   - run:
       name: Run isolated layer 1 integration tests
       command: |
@@ -45,6 +45,6 @@ steps:
       command: |
         npx hardhat test:integration:dual --deploy
   - store_test_results:
-      path: ~/junit
+      path: /tmp/junit/
   - store_artifacts:
-      path: ~/junit
+      path: /tmp/junit/

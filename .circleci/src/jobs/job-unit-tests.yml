@@ -7,7 +7,7 @@ steps:
   - attach_workspace:
       at: .
   - run: npx hardhat compile --showsize --optimizer
-  - run: mkdir ~/junit
+  - run: mkdir /tmp/junit
   - run:
       name: Test and output gas used
       command: |
@@ -27,6 +27,6 @@ steps:
       paths:
         - gasReporterOutput-*.json
   - store_test_results:
-      path: ~/junit
+      path: /tmp/junit/
   - store_artifacts:
-      path: ~/junit
+      path: /tmp/junit/
