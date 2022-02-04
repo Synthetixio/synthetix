@@ -99,6 +99,4 @@ interface IIssuer {
     function selfLiquidateAccount(
         address account
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
-
-    function setCurrentPeriodId(uint128 periodId) external;
 }
