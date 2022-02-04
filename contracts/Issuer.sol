@@ -95,7 +95,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](11);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -667,6 +667,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Reduce debt share of account by the amount to liquidate.
         _removeFromDebtRegister(account, amountToLiquidate, debtBalance, totalDebtIssued);
+    }
+
+    function setCurrentPeriodId(uint128 periodId) external {
+        require(msg.sender == address(feePool()), "Must be fee pool");
+
+        ISynthetixDebtShare sds = synthetixDebtShare();
+
+        if (sds.currentPeriodId() < periodId) {
+            sds.takeSnapshot(periodId);
+        }
     }
 
     function setCurrentPeriodId(uint128 periodId) external {
