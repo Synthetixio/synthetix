@@ -25,6 +25,7 @@ steps:
       root: .
       paths:
         - gasReporterOutput-*.json
+  - run: mkdir ~/junit
   - store_test_results:
       path: ~/junit
   - store_artifacts:
