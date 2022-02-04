@@ -25,10 +25,9 @@ steps:
       root: .
       paths:
         - gasReporterOutput-*.json
-  - run: npm install
   - run: mkdir ~/junit
   - run:
-      command: mocha test --reporter mocha-junit-reporter
+      command: mocha test ./test/contracts --reporter mocha-junit-reporter
       environment:
         MOCHA_FILE: ~/junit/test-results.xml
       when: always
