@@ -206,9 +206,7 @@ contract Migration_${releaseName} is BaseMigration {
 			.join('\n\t\t')}
 	}
 
-	function migrate(address currentOwner) external onlyOwner {
-		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
-
+	function migrate() external onlyOwner {
 		${Object.entries(newContractsBeingAdded)
 			.filter(([, { name, library }]) => !/^Proxy/.test(name) && !library) // ignore the check for proxies and libraries
 			.map(
