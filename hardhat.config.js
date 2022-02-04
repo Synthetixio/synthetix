@@ -94,7 +94,7 @@ module.exports = {
 		retries: 3,
 		reporter: 'mocha-junit-reporter',
 		reporterOptions: {
-			mochaFile: '/tmp/junit/test-results.xml',
+			mochaFile: '/tmp/junit/test-results.[hash].xml',
 		},
 	},
 };
