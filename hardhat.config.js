@@ -92,5 +92,9 @@ module.exports = {
 	mocha: {
 		timeout: 120e3, // 120s
 		retries: 3,
+		reporter: 'mocha-junit-reporter',
+		reporterOptions: {
+			mochaFile: '~/junit/test-results.[hash].xml',
+		},
 	},
 };
