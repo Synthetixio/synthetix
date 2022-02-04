@@ -67,7 +67,6 @@ jobs:
             else
               npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
             fi;
-      - run: mkdir ~/junit
       - store_test_results:
           path: ~/junit
       - store_artifacts:
@@ -97,7 +96,6 @@ jobs:
             else
               npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
             fi;
-      - run: mkdir ~/junit
       - store_test_results:
           path: ~/junit
       - store_artifacts:
@@ -147,7 +145,6 @@ jobs:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
             npx hardhat test:integration:dual --deploy
-      - run: mkdir ~/junit
       - store_test_results:
           path: ~/junit
       - store_artifacts:
@@ -203,11 +200,13 @@ jobs:
           paths:
             - node_modules
             - .npm-cache
+      - run: mkdir ~/junit
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
             - .npm-cache
+            - junit
   job-simulate-release:
     working_directory: ~/repo
     docker:
@@ -376,7 +375,6 @@ jobs:
           root: .
           paths:
             - gasReporterOutput-*.json
-      - run: mkdir ~/junit
       - store_test_results:
           path: ~/junit
       - store_artifacts:
