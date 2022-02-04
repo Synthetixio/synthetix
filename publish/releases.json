@@ -840,7 +840,7 @@
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [185]
 		},
 		{
 			"name": "Mirzam (Optimism)",
@@ -850,7 +850,7 @@
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [185]
 		},
 		{
 			"name": "Alphard",
