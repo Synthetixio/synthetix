@@ -29,7 +29,6 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
     IERC20 public stakingToken; // SDS
 
     uint public escrowDuration = 52 weeks;
-    uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;  
@@ -96,20 +95,24 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
         return synthetixDebtShare().balanceOf(account);
     }
 
-    function lastTimeRewardApplicable() public view returns (uint256) {
-        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
-    }
-
     function rewardPerToken() public view returns (uint256) {
         if (totalSupply() == 0) {
             return rewardPerTokenStored;
         }
         return
             rewardPerTokenStored.add(
-                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(totalSupply())
+                block.timestamp.sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(totalSupply())
             );
     }
 
+    /*
+        For `lastUpdateTime` <= t <= `block.timestamp`:
+        Rewards per user = R * l(u,t) / L(t)
+
+        R = reward rate
+        L(t) = total debt share balance at time t
+        l(u,t) = account debt share balance at time t
+    */
     function earned(address account) public view returns (uint256) {
         return balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
@@ -120,6 +123,7 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
+            rewardRate -= reward;
             rewardsToken.approve(address(rewardEscrowV2()), reward);
             rewardEscrowV2().createEscrowEntry(msg.sender, reward, escrowDuration);
             emit RewardPaid(msg.sender, reward);
@@ -128,21 +132,18 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    /// @notice This is called only by the Issuer to update the rewards for when a given account's debt balance changes.
+    /// @notice This is called only by the Issuer to update when a given account's debt balance changes.
     function notifyDebtChange(address account) external onlyIssuer updateReward(account) { }
 
-    // TODO: finish notifyRewardAmount implementation
-    /// @notice This is called only by Synthetix after an account is liquidated and the SNX rewards are sent to the escrow.
-    function notifyRewardAmount(uint256 reward) external onlySynthetix updateReward(address(0)) {
+    /// @notice This is called only by Synthetix after an account is liquidated and the SNX rewards are sent to this contract.
+    function notifyRewardAmount(uint256 reward) external onlySynthetix updateReward(address(0)) {        
         // Ensure the provided reward amount is not more than the balance in the contract.
         uint balance = rewardsToken.balanceOf(address(this));
         require(reward <= balance, "Provided reward too high");
-
-        lastUpdateTime = block.timestamp;
+        rewardRate += reward;
         emit RewardAdded(reward);
     }
 
-    // would need ownership if we wanna keep this
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
     function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
         require(tokenAddress != address(stakingToken), "Cannot withdraw the staking token");
@@ -154,7 +155,7 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
 
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = lastTimeRewardApplicable();
+        lastUpdateTime = block.timestamp;
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
