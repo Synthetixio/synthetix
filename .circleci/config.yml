@@ -205,7 +205,6 @@ jobs:
           paths:
             - node_modules
             - .npm-cache
-      - run: mkdir /tmp/junit
   job-simulate-release:
     working_directory: ~/repo
     docker:
