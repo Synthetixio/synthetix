@@ -53,7 +53,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: mkdir ~/junit
+      - run: mkdir /tmp/junit
       - run:
           command: npm run fork:ovm
           background: true
@@ -69,9 +69,9 @@ jobs:
               npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
             fi;
       - store_test_results:
-          path: ~/junit
+          path: /tmp/junit/
       - store_artifacts:
-          path: ~/junit
+          path: /tmp/junit/
   job-fork-tests:
     working_directory: ~/repo
     docker:
@@ -83,7 +83,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: mkdir ~/junit
+      - run: mkdir /tmp/junit
       - run:
           command: npm run fork:mainnet
           background: true
@@ -99,9 +99,9 @@ jobs:
               npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
             fi;
       - store_test_results:
-          path: ~/junit
+          path: /tmp/junit/
       - store_artifacts:
-          path: ~/junit
+          path: /tmp/junit/
   job-integration-tests:
     working_directory: ~/repo
     machine:
@@ -135,7 +135,7 @@ jobs:
           port: 8545
       - cmd-wait-for-port:
           port: 9545
-      - run: mkdir ~/junit
+      - run: mkdir /tmp/junit
       - run:
           name: Run isolated layer 1 integration tests
           command: |
@@ -149,9 +149,9 @@ jobs:
           command: |
             npx hardhat test:integration:dual --deploy
       - store_test_results:
-          path: ~/junit
+          path: /tmp/junit/
       - store_artifacts:
-          path: ~/junit
+          path: /tmp/junit/
   job-lint:
     working_directory: ~/repo
     docker:
@@ -358,7 +358,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --showsize --optimizer
-      - run: mkdir ~/junit
+      - run: mkdir /tmp/junit
       - run:
           name: Test and output gas used
           command: |
@@ -378,9 +378,9 @@ jobs:
           paths:
             - gasReporterOutput-*.json
       - store_test_results:
-          path: ~/junit
+          path: /tmp/junit/
       - store_artifacts:
-          path: ~/junit
+          path: /tmp/junit/
   job-validate-deployments:
     working_directory: ~/repo
     docker:
