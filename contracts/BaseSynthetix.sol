@@ -405,7 +405,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _systemActive() private {
+    function _systemActive() private view {
         systemStatus().requireSystemActive();
     }
 
@@ -414,7 +414,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _issuanceActive() private {
+    function _issuanceActive() private view {
         systemStatus().requireIssuanceActive();
     }
 
@@ -423,7 +423,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _exchangeActive(bytes32 src, bytes32 dest) private {
+    function _exchangeActive(bytes32 src, bytes32 dest) private view {
         systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
     }
 
@@ -432,7 +432,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _onlyExchanger() private {
+    function _onlyExchanger() private view {
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
     }
 
