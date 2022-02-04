@@ -18,6 +18,7 @@ contract('FuturesMarketData', accounts => {
 		exchangeRates,
 		exchangeCircuitBreaker,
 		sUSD,
+		systemSettings,
 		baseAsset;
 	const newAsset = toBytes32('sETH');
 
@@ -47,6 +48,7 @@ contract('FuturesMarketData', accounts => {
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH', 'sLINK'],
@@ -60,6 +62,7 @@ contract('FuturesMarketData', accounts => {
 				'ExchangeRates',
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
+				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
 			],
@@ -116,6 +119,9 @@ contract('FuturesMarketData', accounts => {
 
 		// Update the rates to ensure they aren't stale
 		await setPrice(baseAsset, toUnit(100));
+
+		// disable dynamic fee for simpler testing
+		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 		// Issue the traders some sUSD
 		await sUSD.issue(trader1, traderInitialBalance);

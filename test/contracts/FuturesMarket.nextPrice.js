@@ -15,6 +15,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 		exchangeRates,
 		exchangeCircuitBreaker,
 		sUSD,
+		systemSettings,
 		feePool;
 
 	const owner = accounts[1];
@@ -48,6 +49,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
 			FeePool: feePool,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
@@ -60,6 +62,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				'ExchangeRates',
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
+				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',
@@ -68,6 +71,10 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 		// Update the rate so that it is not invalid
 		await setPrice(baseAsset, initialPrice);
+
+		// disable dynamic fee for most tests
+		// it will be enabled for specific tests
+		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 		// Issue the trader some sUSD
 		for (const t of [trader, trader2, trader3]) {
@@ -590,6 +597,56 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 						});
 					});
 				});
+			});
+		});
+	});
+
+	describe('when dynamic fee is enabled', () => {
+		beforeEach(async () => {
+			const dynamicFeeRounds = 4;
+			// set multiple past rounds
+			for (let i = 0; i < dynamicFeeRounds; i++) {
+				await setPrice(baseAsset, initialPrice);
+			}
+			// enable dynamic fees
+			await systemSettings.setExchangeDynamicFeeRounds(dynamicFeeRounds, { from: owner });
+		});
+
+		describe('when dynamic fee is too high (price too volatile)', () => {
+			const spikedPrice = multiplyDecimal(initialPrice, toUnit(1.1));
+			beforeEach(async () => {
+				// set up a healthy position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+				// submit an order
+				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+
+				// spike the price
+				await setPrice(baseAsset, spikedPrice);
+			});
+
+			it('canceling an order works', async () => {
+				await futuresMarket.cancelNextPriceOrder(trader, { from: trader });
+			});
+
+			it('submitting an order reverts', async () => {
+				// cancel existing
+				await futuresMarket.cancelNextPriceOrder(trader, { from: trader });
+
+				await assert.revert(
+					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					'Price too volatile'
+				);
+			});
+
+			it('executing an order reverts', async () => {
+				// advance to next round (same price, should be still volatile)
+				await setPrice(baseAsset, spikedPrice);
+
+				await assert.revert(
+					futuresMarket.executeNextPriceOrder(trader, { from: trader }),
+					'Price too volatile'
+				);
 			});
 		});
 	});

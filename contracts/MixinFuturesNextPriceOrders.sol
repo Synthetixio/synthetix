@@ -125,7 +125,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
     /**
      * @notice Tries to execute a previously submitted next-price order.
      * Reverts if:
-     * - There is no otder
+     * - There is no order
      * - Target roundId wasn't reached yet
      * - Order is stale (target roundId is too low compared to current roundId).
      * - Order fails for accounting reason (e.g. margin was removed, leverage exceeded, etc)
@@ -210,9 +210,12 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // modify params to spot fee
         params.takerFee = _takerFee(baseAsset);
         params.makerFee = _makerFee(baseAsset);
-        // commit fee is equal to the spot fee that would be paid
-        // this is to prevent free cancellation manipulations (by e.g. withdrawing the margin)
-        return _orderFee(params);
+        // Commit fee is equal to the spot fee that would be paid.
+        // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
+        // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
+        // it is not important since at the time of order execution it will be refunded and the correct
+        // dynamic fee will be charged.
+        return _orderFee(params, 0);
     }
 
     ///// Events

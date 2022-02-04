@@ -15,6 +15,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
@@ -92,6 +93,9 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     // This is the same unit as used inside `SignedSafeDecimalMath`.
     int private constant _UNIT = int(10**uint(18));
 
+    //slither-disable-next-line naming-convention
+    bytes32 internal constant sUSD = "sUSD";
+
     /* ========== STATE VARIABLES ========== */
 
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
@@ -140,6 +144,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -177,6 +182,7 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         _errorMessages[uint8(Status.NotPermitted)] = "Not permitted by this address";
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
+        _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
     }
 
     /* ========== VIEWS ========== */
@@ -185,16 +191,21 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[2] = CONTRACT_FUTURESMARKETSETTINGS;
-        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_EXCHANGER;
+        newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[3] = CONTRACT_FUTURESMARKETSETTINGS;
+        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
         return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    }
+
+    function _exchanger() internal view returns (IExchanger) {
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function _systemStatus() internal view returns (ISystemStatus) {
@@ -542,22 +553,25 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         return _notionalValue(position.size, price).divideDecimal(int(remainingMargin_));
     }
 
-    function _orderFee(TradeParams memory params) internal view returns (uint fee) {
+    function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal view returns (uint fee) {
+        // usd value of the difference in position
         int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
 
-        if (_sameSide(notionalDiff, marketSkew)) {
-            // If the order is submitted on the same side as the skew, increasing it.
-            // The taker fee is charged on the increase.
-            fee = _abs(notionalDiff.multiplyDecimal(int(params.takerFee)));
-        } else {
-            // Otherwise if the order is opposite to the skew,
-            // the maker fee is charged on new notional value up to the size of the existing skew,
-            // and the taker fee is charged on any new skew they induce on the order's side of the market.
-            fee = _abs(notionalDiff.multiplyDecimal(int(params.makerFee)));
-        }
-
+        // If the order is submitted on the same side as the skew, increasing it. The taker fee is charged.
+        // Otherwise if the order is opposite to the skew, the maker fee is charged.
         // the case where the order flips the skew is ignored for simplicity due to being negligible
         // in both size of effect and frequency of occurrence
+        uint staticRate = _sameSide(notionalDiff, marketSkew) ? params.takerFee : params.makerFee;
+        uint feeRate = staticRate.add(dynamicFeeRate);
+        return _abs(notionalDiff.multiplyDecimal(int(feeRate)));
+    }
+
+    /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
+    /// this assumes dynamic fee is symmetric in direction of trade.
+    /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
+    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
+    function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
+        return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
@@ -581,9 +595,17 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
 
         int newSize = int(oldPos.size).add(params.sizeDelta);
 
+        // get the dynamic fee rate SIP-184
+        (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
+        if (tooVolatile) {
+            return (oldPos, 0, Status.PriceTooVolatile);
+        }
+
+        // calculate the total fee for exchange
+        fee = _orderFee(params, dynamicFeeRate);
+
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        fee = _orderFee(params);
         (uint newMargin, Status status) = _realisedMargin(oldPos, params.fundingIndex, params.price, -int(fee));
         if (_isError(status)) {
             return (oldPos, 0, status);
@@ -702,8 +724,15 @@ contract FuturesMarketBase is Owned, Proxyable, MixinFuturesMarketSettings, IFut
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
+        // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
+        //  despite reverting immediately after if circuit is broken, which may seem silly.
+        //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
+        //  because last-rate is what used for measuring the deviation for subsequent trades.
         (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset);
         // revert if price is invalid or circuit was broken
+        // note: we revert here, which means that circuit is not really broken (is not persisted), this is
+        //  because the futures methods and interface are designed for reverts, and do not support no-op
+        //  return values.
         _revertIfError(circuitBroken, Status.InvalidPrice);
         return price;
     }

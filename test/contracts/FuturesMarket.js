@@ -1,7 +1,10 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toBytes32 } = require('../..');
-const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
+const {
+	toBytes32,
+	defaults: { EXCHANGE_DYNAMIC_FEE_THRESHOLD },
+} = require('../..');
 const { toBN } = web3.utils;
+const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -26,6 +29,7 @@ const Status = {
 	NotPermitted: 8,
 	NilOrder: 9,
 	NoPositionOpen: 10,
+	PriceTooVolatile: 11,
 };
 
 contract('FuturesMarket', accounts => {
@@ -34,12 +38,14 @@ contract('FuturesMarket', accounts => {
 		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
+		exchanger,
 		exchangeCircuitBreaker,
 		addressResolver,
 		sUSD,
 		synthetix,
 		feePool,
 		debtCache,
+		systemSettings,
 		systemStatus;
 
 	const owner = accounts[1];
@@ -102,6 +108,7 @@ contract('FuturesMarket', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
+			Exchanger: exchanger,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
@@ -109,6 +116,7 @@ contract('FuturesMarket', accounts => {
 			FeePool: feePool,
 			DebtCache: debtCache,
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
@@ -119,8 +127,10 @@ contract('FuturesMarket', accounts => {
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
+				'Exchanger',
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
+				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',
@@ -129,6 +139,10 @@ contract('FuturesMarket', accounts => {
 
 		// Update the rate so that it is not invalid
 		await setPrice(baseAsset, initialPrice);
+
+		// disable dynamic fee for most tests
+		// it will be enabled for specific tests
+		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 		// Issue the trader some sUSD
 		for (const t of [trader, trader2, trader3]) {
@@ -3690,6 +3704,160 @@ contract('FuturesMarket', accounts => {
 					from: trader,
 				});
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+		});
+	});
+
+	describe('when dynamic fee is enabled', () => {
+		beforeEach(async () => {
+			const dynamicFeeRounds = 4;
+			// set multiple past rounds
+			for (let i = 0; i < dynamicFeeRounds; i++) {
+				await setPrice(baseAsset, initialPrice);
+			}
+			// enable dynamic fees
+			await systemSettings.setExchangeDynamicFeeRounds(dynamicFeeRounds, { from: owner });
+		});
+
+		describe('when tooVolatile is true', () => {
+			beforeEach(async () => {
+				// set up a healthy position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+
+				// set up a would be liqudatable position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
+				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 });
+
+				// spike the price
+				await setPrice(baseAsset, multiplyDecimal(initialPrice, toUnit(1.1)));
+				// check is too volatile
+				assert.ok(
+					(await exchanger.dynamicFeeRateForExchange(toBytes32('sUSD'), baseAsset)).tooVolatile
+				);
+			});
+
+			it('position modifying actions revert', async () => {
+				const revertMessage = 'Price too volatile';
+
+				await assert.revert(
+					futuresMarket.modifyPosition(toUnit('1'), { from: trader }),
+					revertMessage
+				);
+				await assert.revert(
+					futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), toUnit('105'), toUnit('115'), {
+						from: trader,
+					}),
+					revertMessage
+				);
+				await assert.revert(futuresMarket.closePosition({ from: trader }), revertMessage);
+				await assert.revert(
+					futuresMarket.closePositionWithPriceBounds(toUnit('105'), toUnit('115'), {
+						from: trader,
+					}),
+					revertMessage
+				);
+			});
+
+			it('margin modifying actions do not revert', async () => {
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.withdrawAllMargin({ from: trader });
+			});
+
+			it('liquidations do not revert', async () => {
+				await futuresMarket.liquidatePosition(trader2, { from: trader });
+			});
+
+			it('futuresMarketSettings parameter changes do not revert', async () => {
+				await futuresMarketSettings.setMaxFundingRate(baseAsset, 0, { from: owner });
+				await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('100'), { from: owner });
+				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, 0, { from: owner });
+				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, {
+					from: owner,
+				});
+			});
+		});
+
+		describe('when dynamic fee is non zero, but tooVolatile false', () => {
+			const priceDiff = 1.03;
+			const spikedRate = multiplyDecimal(initialPrice, toUnit(priceDiff));
+			const threshold = toBN(EXCHANGE_DYNAMIC_FEE_THRESHOLD);
+			const expectedRate = toUnit(priceDiff)
+				.sub(toUnit(1))
+				.sub(threshold);
+			const margin = toUnit('1000');
+
+			beforeEach(async () => {
+				// set up margin
+				await futuresMarket.transferMargin(margin, { from: trader });
+				// spike the price
+				await setPrice(baseAsset, spikedRate);
+				// check is not too volatile
+				const res = await exchanger.dynamicFeeRateForExchange(toBytes32('sUSD'), baseAsset);
+				// check dynamic fee is as expected
+				assert.bnClose(res.feeRate, expectedRate, toUnit('0.0000001'));
+				assert.notOk(res.tooVolatile);
+			});
+
+			it('order fee is calculated and applied correctly', async () => {
+				const orderSize = toUnit('1');
+
+				// expected fee is dynamic fee + taker fee
+				const expectedFee = multiplyDecimal(spikedRate, expectedRate.add(takerFee));
+
+				// check view
+				const res = await futuresMarket.orderFee(orderSize);
+				assert.bnClose(res.fee, expectedFee, toUnit('0.0000001'));
+
+				// check event from modifying a position
+				const tx = await futuresMarket.modifyPosition(orderSize, { from: trader });
+
+				// correct fee is properly recorded and deducted.
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
+
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: proxyFuturesMarket.address,
+					args: [
+						toBN('1'),
+						trader,
+						margin.sub(expectedFee),
+						orderSize,
+						orderSize,
+						spikedRate,
+						toBN(3),
+						expectedFee,
+					],
+					log: decodedLogs[2],
+					bnCloseVariance: toUnit('0.0000001'),
+				});
+			});
+
+			it('mutative actions do not revert', async () => {
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				await futuresMarket.closePosition({ from: trader });
+
+				await futuresMarket.modifyPositionWithPriceBounds(
+					toUnit('1'),
+					toUnit('100'),
+					toUnit('115'),
+					{ from: trader }
+				);
+				await futuresMarket.closePositionWithPriceBounds(toUnit('100'), toUnit('115'), {
+					from: trader,
+				});
+
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.withdrawAllMargin({ from: trader });
+			});
+
+			it('futuresMarketSettings parameter changes do not revert', async () => {
+				await futuresMarketSettings.setMaxFundingRate(baseAsset, 0, { from: owner });
+				await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('100'), { from: owner });
+				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, 0, { from: owner });
+				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, {
+					from: owner,
+				});
 			});
 		});
 	});

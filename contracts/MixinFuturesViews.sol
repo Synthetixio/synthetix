@@ -225,10 +225,15 @@ contract MixinFuturesViews is FuturesMarketBase {
 
     /*
      * Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
-     * expensive than ones that decrease it; closing positions implies a different fee rate.
+     * expensive than ones that decrease it. Dynamic fee is added according to the recent volatility
+     * according to SIP-184.
+     * @param sizeDelta size of the order in baseAsset units (negative numbers for shorts / selling)
+     * @return fee in sUSD decimal, and invalid boolean flag for invalid rates or dynamic fee that is
+     * too high due to recent volatility.
      */
     function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
+        (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
@@ -237,7 +242,7 @@ contract MixinFuturesViews is FuturesMarketBase {
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
-        return (_orderFee(params), isInvalid);
+        return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
     }
 
     /*

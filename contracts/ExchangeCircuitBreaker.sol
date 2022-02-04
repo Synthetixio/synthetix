@@ -201,13 +201,6 @@ contract ExchangeCircuitBreaker is Owned, MixinSystemSettings, IExchangeCircuitB
         return false;
     }
 
-    // ========== MODIFIERS ==========
-
-    modifier onlyExchangeRates() {
-        require(msg.sender == address(_exchangeRates()), "Restricted to ExchangeRates");
-        _;
-    }
-
     // ========== EVENTS ==========
 
     // @notice signals that a the "last rate" was overriden by one of the admin methods
