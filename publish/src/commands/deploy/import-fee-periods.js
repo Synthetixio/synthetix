@@ -86,7 +86,7 @@ module.exports = async ({
 				);
 			} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
 				throw Error(
-					`The initial fee period is more than one week ago - this is likely an error. ` +
+					`The initial fee period is more than one week ago (${period.startTime}) - this is likely an error. ` +
 						`Please check to make sure you are using the correct FeePool source (this should ` +
 						`be the one most recently replaced). Given: ${explorerLinkPrefix}/address/${ExistingFeePool.address}`
 				);
