@@ -309,7 +309,6 @@ const actions = {
 
 		const ExchangeRates = getContract({
 			contract: 'ExchangeRates',
-			source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
 			network,
 			useOvm,
 			provider,

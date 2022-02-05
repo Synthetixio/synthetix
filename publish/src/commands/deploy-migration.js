@@ -177,8 +177,8 @@ const deployMigration = async ({
 		});
 	}
 
-	const actionName = `Migration_${releaseName}.migrate(${ownerAddress})`;
-	const txn = await deployedContract.populateTransaction.migrate(ownerAddress);
+	const actionName = `Migration_${releaseName}.migrate()`;
+	const txn = await deployedContract.populateTransaction.migrate();
 
 	const ownerAction = {
 		key: actionName,
@@ -188,6 +188,22 @@ const deployMigration = async ({
 	};
 
 	appendOwnerAction(ownerAction);
+
+	for (const addr of requiringOwnership) {
+		console.log('post accept ownership: ', addr);
+
+		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
+		const txnData = await contract.interface.encodeFunctionData('acceptOwnership', []);
+
+		const ownerAction = {
+			key: `${contract.address}.acceptOwnership()`,
+			target: contract.address,
+			action: actionName,
+			data: txnData,
+		};
+
+		appendOwnerAction(ownerAction);
+	}
 
 	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl });
 
