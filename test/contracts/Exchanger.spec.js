@@ -3709,7 +3709,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					await systemSettings.setExchangeFeeRateForSynths([sUSD], [newFxBIPS], {
 						from: owner,
 					});
-					const sUSDRate = (await exchanger.feeRateForExchange(empty, sUSD))[0];
+					const sUSDRate = await exchanger.feeRateForExchange(empty, sUSD);
 					assert.bnEqual(sUSDRate, newFxBIPS);
 				});
 
@@ -3723,13 +3723,13 @@ contract('Exchanger (spec tests)', async accounts => {
 						}
 					);
 					// Read all rates
-					const sAUDRate = (await exchanger.feeRateForExchange(empty, sAUD))[0];
+					const sAUDRate = await exchanger.feeRateForExchange(empty, sAUD);
 					assert.bnEqual(sAUDRate, newFxBIPS);
-					const sUSDRate = (await exchanger.feeRateForExchange(empty, sUSD))[0];
+					const sUSDRate = await exchanger.feeRateForExchange(empty, sUSD);
 					assert.bnEqual(sUSDRate, newFxBIPS);
-					const sBTCRate = (await exchanger.feeRateForExchange(empty, sBTC))[0];
+					const sBTCRate = await exchanger.feeRateForExchange(empty, sBTC);
 					assert.bnEqual(sBTCRate, newCryptoBIPS);
-					const sETHRate = (await exchanger.feeRateForExchange(empty, sETH))[0];
+					const sETHRate = await exchanger.feeRateForExchange(empty, sETH);
 					assert.bnEqual(sETHRate, newCryptoBIPS);
 				});
 			});
