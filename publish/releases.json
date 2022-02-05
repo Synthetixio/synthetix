@@ -402,7 +402,7 @@
 			],
 			"released": "both"
 		},
-    	{
+		{
 			"sip": 184,
 			"layer": "both",
 			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
@@ -411,13 +411,8 @@
 		{
 			"sip": 185,
 			"layer": "both",
-			"sources": [
-				"Synthetix",
-				"FeePool",
-				"Issuer",
-				"SynthetixDebtShare"
-			]
-    	},
+			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"]
+		},
 		{
 			"sip": 187,
 			"layer": "both",
@@ -840,7 +835,7 @@
 				"major": 2,
 				"minor": 59
 			},
-			"sips": [185]
+			"sips": []
 		},
 		{
 			"name": "Mirzam (Optimism)",
@@ -850,7 +845,7 @@
 				"major": 2,
 				"minor": 59
 			},
-			"sips": [185]
+			"sips": []
 		},
 		{
 			"name": "Alphard",
@@ -859,7 +854,7 @@
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		},
 		{
 			"name": "Alphard (Optimism)",
@@ -869,7 +864,7 @@
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		}
 	]
 }
