@@ -465,6 +465,11 @@
 			"layer": "both",
 			"sources": ["FeePool"],
 			"released": "both"
+		},
+		{
+			"sip": 209,
+			"layer": "both",
+			"sources": ["Exchanger"]
 		}
 	],
 	"releases": [
