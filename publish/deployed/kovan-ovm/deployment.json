@@ -227,11 +227,11 @@
 		},
 		"Exchanger": {
 			"name": "Exchanger",
-			"address": "0x65a200D47Ef8BABb624E4571b43981f56d6f7a64",
+			"address": "0x7B49bAfad6d255880F7844a022DbdB1De5440Fe5",
 			"source": "Exchanger",
-			"link": "https://kovan-explorer.optimism.io/address/0x65a200D47Ef8BABb624E4571b43981f56d6f7a64",
-			"timestamp": "2022-01-28T00:49:26.000Z",
-			"txn": "https://kovan-explorer.optimism.io/tx/0xc78bfe3153438c6cc4759f8218e1fb3647de9727d8fe0174081100c66b7993a3",
+			"link": "https://kovan-explorer.optimism.io/address/0x7B49bAfad6d255880F7844a022DbdB1De5440Fe5",
+			"timestamp": "2022-02-05T01:40:20.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0xbfacf93a355e9898e7ba6dbe863518c1842b4aae27b6d16997bed81fcb166a6c",
 			"network": "kovan"
 		},
 		"ExchangeState": {
@@ -14949,13 +14949,8 @@
 					"type": "function"
 				},
 				{
-					"constant": false,
+					"constant": true,
 					"inputs": [
-						{
-							"internalType": "bytes32",
-							"name": "",
-							"type": "bytes32"
-						},
 						{
 							"internalType": "uint256",
 							"name": "",
@@ -16674,11 +16669,6 @@
 							"internalType": "uint256",
 							"name": "feeRate",
 							"type": "uint256"
-						},
-						{
-							"internalType": "bool",
-							"name": "tooVolatile",
-							"type": "bool"
 						}
 					],
 					"payable": false,

@@ -455,6 +455,11 @@
 			"layer": "both",
 			"sources": ["FeePool"],
 			"released": "both"
+		},
+		{
+			"sip": 209,
+			"layer": "both",
+			"sources": ["Exchanger"]
 		}
 	],
 	"releases": [
@@ -830,7 +835,7 @@
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [209]
 		},
 		{
 			"name": "Mirzam (Optimism)",
@@ -840,7 +845,7 @@
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [209]
 		},
 		{
 			"name": "Alphard",
