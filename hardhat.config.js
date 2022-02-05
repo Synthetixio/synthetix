@@ -3,8 +3,8 @@ require('dotenv').config();
 
 const path = require('path');
 
-/// for some weird reason the order of these imports is important:
-/// ./hardhat needs to be imported after hardhat-interact (error otherwise)
+/// the order of these imports is important (due to custom overrides):
+/// ./hardhat needs to be imported after hardhat-interact and after solidity-coverage.
 ///  and hardhat-gas-reporter needs to be imported after ./hardhat (otherwise no gas reports)
 require('hardhat-interact');
 require('solidity-coverage');
