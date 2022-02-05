@@ -7,10 +7,10 @@ const path = require('path');
 /// ./hardhat needs to be imported after hardhat-interact (error otherwise)
 ///  and hardhat-gas-reporter needs to be imported after ./hardhat (otherwise no gas reports)
 require('hardhat-interact');
+require('solidity-coverage');
 require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
-require('solidity-coverage');
 require('hardhat-gas-reporter');
 
 const {

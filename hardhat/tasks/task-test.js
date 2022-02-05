@@ -18,6 +18,13 @@ subtask(TASK_TEST_RUN_MOCHA_TESTS).setAction(async ({ testFiles }, { config }) =
 	return testFailures;
 });
 
+let coverage = false;
+
+task('coverage').setAction(async (taskArguments, hre, runSuper) => {
+	coverage = true;
+	await runSuper(taskArguments);
+});
+
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
@@ -57,7 +64,7 @@ task('test')
 
 		// When using CircleCI, output the test metadata
 		// See https://circleci.com/docs/2.0/collect-test-data
-		if (isCI) {
+		if (isCI && !coverage) {
 			hre.config.mocha.reporter = 'mocha-junit-reporter';
 			hre.config.mocha.reporterOptions = {
 				mochaFile: '/tmp/junit/test-results.[hash].xml',
