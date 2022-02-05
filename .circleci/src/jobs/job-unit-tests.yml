@@ -25,3 +25,7 @@ steps:
       root: .
       paths:
         - gasReporterOutput-*.json
+  - store_test_results:
+      path: /tmp/junit/
+  - store_artifacts:
+      path: /tmp/junit/

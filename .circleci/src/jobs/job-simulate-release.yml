@@ -17,3 +17,7 @@ steps:
         if [ ! -z "$UPCOMING_RELEASE" ]; then
           npx hardhat simulate:migration --generate --test
         fi;
+  - store_test_results:
+      path: /tmp/junit/
+  - store_artifacts:
+      path: /tmp/junit/
