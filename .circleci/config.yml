@@ -212,6 +212,7 @@ jobs:
       - run:
           name: Simulate release on L1 fork
           command: |
+            UPCOMING_RELEASE=$(node bin.js releases --layer=base --unreleased --with-sources --name-only)
             if [ ! -z "$UPCOMING_RELEASE" ]; then
               npx hardhat simulate:migration --generate --test
             fi;

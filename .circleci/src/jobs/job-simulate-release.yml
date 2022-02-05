@@ -13,6 +13,7 @@ steps:
       name: Simulate release on L1 fork
       command: |
         # Only compile and deploy when there are new contracts
+        UPCOMING_RELEASE=$(node bin.js releases --layer=base --unreleased --with-sources --name-only)
         if [ ! -z "$UPCOMING_RELEASE" ]; then
           npx hardhat simulate:migration --generate --test
         fi;
