@@ -859,7 +859,7 @@
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		},
 		{
 			"name": "Alphard (Optimism)",
@@ -869,7 +869,7 @@
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		}
 	]
 }

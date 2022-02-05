@@ -558,6 +558,15 @@ const setupContract = async ({
 						returns: [toWei('0')],
 					}),
 				]);
+			} else if (mock === 'Issuer') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'debtBalanceOf',
+						returns: [toWei('0')],
+					}),
+				]);
 			} else if (mock === 'ExchangeState') {
 				await Promise.all([
 					mockGenericContractFnc({
