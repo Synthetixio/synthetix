@@ -555,7 +555,7 @@ const setupContract = async ({
 						instance,
 						mock,
 						fncName: 'feeRateForExchange',
-						returns: [toWei('0.0030'), '0'],
+						returns: [toWei('0.0030')],
 					}),
 				]);
 			} else if (mock === 'Issuer') {

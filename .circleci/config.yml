@@ -67,6 +67,10 @@ jobs:
             else
               npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
             fi;
+      - store_test_results:
+          path: /tmp/junit/
+      - store_artifacts:
+          path: /tmp/junit/
   job-fork-tests:
     working_directory: ~/repo
     docker:
@@ -92,6 +96,10 @@ jobs:
             else
               npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
             fi;
+      - store_test_results:
+          path: /tmp/junit/
+      - store_artifacts:
+          path: /tmp/junit/
   job-integration-tests:
     working_directory: ~/repo
     machine:
@@ -137,6 +145,10 @@ jobs:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
             npx hardhat test:integration:dual --deploy
+      - store_test_results:
+          path: /tmp/junit/
+      - store_artifacts:
+          path: /tmp/junit/
   job-lint:
     working_directory: ~/repo
     docker:
@@ -216,6 +228,10 @@ jobs:
             if [ ! -z "$UPCOMING_RELEASE" ]; then
               npx hardhat simulate:migration --release "$UPCOMING_RELEASE" --generate --test
             fi;
+      - store_test_results:
+          path: /tmp/junit/
+      - store_artifacts:
+          path: /tmp/junit/
   job-static-analysis:
     working_directory: ~/repo
     docker:
@@ -361,6 +377,10 @@ jobs:
           root: .
           paths:
             - gasReporterOutput-*.json
+      - store_test_results:
+          path: /tmp/junit/
+      - store_artifacts:
+          path: /tmp/junit/
   job-validate-deployments:
     working_directory: ~/repo
     docker:
