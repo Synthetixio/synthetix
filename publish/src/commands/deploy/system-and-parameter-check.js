@@ -84,7 +84,7 @@ module.exports = async ({
 					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
-			throw Error('Cannot deploy. Halted.');
+			throw err;
 		}
 	}
 

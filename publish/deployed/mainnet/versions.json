@@ -3950,8 +3950,9 @@
 			},
 			"Exchanger": {
 				"address": "0x3e343E89F4fF8057806F54F2208940B1Cd5C40ca",
-				"status": "current",
-				"keccak256": "0x56b78b843c7799d50e8f605021af227bee40cca2098e23b490a7927d092c91aa"
+				"status": "replaced",
+				"keccak256": "0x56b78b843c7799d50e8f605021af227bee40cca2098e23b490a7927d092c91aa",
+				"replaced_in": "v2.59.0"
 			},
 			"SystemSettings": {
 				"address": "0x80d65Bb7b9436A86c1928F93D6E7cc186987Ac54",
@@ -3962,6 +3963,21 @@
 				"address": "0xa62F71D599Ec6179B4f6569adD69ffC7E1A7a1c5",
 				"status": "current",
 				"keccak256": "0x371f31315fadd13809d51123c75dcc31e199ae69b8df9c968cb46aca50831d1f"
+			}
+		}
+	},
+	"v2.59.0": {
+		"tag": "v2.59.0",
+		"fulltag": "v2.59.0",
+		"release": "Mirzam",
+		"network": "mainnet",
+		"date": "2022-02-07T15:02:06-05:00",
+		"commit": "515481b3502b3b3cab6eb7cb525a01f45090eb98",
+		"contracts": {
+			"Exchanger": {
+				"address": "0x426Be4cC70066b2C42Edb1aE838c741069b1972c",
+				"status": "current",
+				"keccak256": "0x4c78d2e4e3ddc980b1de8babc52ce9d06155ae2f5a4fbc2a7d4b868ac6088b41"
 			}
 		}
 	}
