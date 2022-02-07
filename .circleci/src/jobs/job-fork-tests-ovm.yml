@@ -19,3 +19,7 @@ steps:
         else
           npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
         fi;
+  - store_test_results:
+      path: /tmp/junit/
+  - store_artifacts:
+      path: /tmp/junit/
