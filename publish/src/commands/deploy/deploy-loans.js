@@ -25,8 +25,8 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		const weth = await deployer.deployContract({
 			name: 'WETH',
 			source: 'WETH',
+			skipResolver: true,
 		});
-		weth.skipResolver = true;
 		WETH_ADDRESS = weth.address;
 	}
 

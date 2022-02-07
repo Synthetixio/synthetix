@@ -309,7 +309,7 @@ describe('publish scripts', () => {
 						assert.strictEqual(
 							(
 								await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
-							)[0].toString(),
+							).toString(),
 							rate
 						);
 					}
@@ -466,7 +466,7 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								(
 									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
-								)[0].toString(),
+								).toString(),
 								newRateForsUSD
 							);
 						});
@@ -656,7 +656,7 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
+							periodsAdded.push([`${startTime}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
@@ -664,8 +664,7 @@ describe('publish scripts', () => {
 
 							const tx = await FeePool.importFeePeriod(
 								i,
-								i + 1,
-								0,
+								startTime,
 								startTime,
 								3,
 								4,
@@ -1103,15 +1102,14 @@ describe('publish scripts', () => {
 									'ExchangeState',
 									'FeePool',
 									'FeePoolEternalStorage',
-									'FeePoolState',
 									'Issuer',
 									'Liquidations',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
 									'Synthetix',
+									'SynthetixDebtShare',
 									'SynthetixEscrow',
-									'SynthetixState',
 									'SynthsETH',
 									'SynthsUSD',
 									'SystemStatus',

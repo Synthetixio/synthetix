@@ -15,7 +15,11 @@ steps:
         # Only compile and deploy when there are new contracts
         NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
         if [ -z "$NEW_CONTRACTS" ]; then
-          npx hardhat test:integration:l1 --use-fork --provider-port 9545
+          npx hardhat test:integration:l1 --compile --use-fork --provider-port 9545
         else
           npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
         fi;
+  - store_test_results:
+      path: /tmp/junit/
+  - store_artifacts:
+      path: /tmp/junit/

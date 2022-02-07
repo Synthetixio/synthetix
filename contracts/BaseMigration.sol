@@ -3,11 +3,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 
 contract BaseMigration is Owned {
-    address public deployer;
-
-    constructor(address _owner) internal Owned(_owner) {
-        deployer = msg.sender;
-    }
+    constructor(address _owner) internal Owned(_owner) {}
 
     // safety value to return ownership (anyone can invoke)
     function returnOwnership(address forContract) public {
@@ -25,14 +21,5 @@ contract BaseMigration is Owned {
 
             require(legacySuccess, "Legacy nomination failed");
         }
-    }
-
-    function _requireDeployer() private view {
-        require(msg.sender == deployer, "Only the deployer can invoke this");
-    }
-
-    modifier onlyDeployer() {
-        _requireDeployer();
-        _;
     }
 }

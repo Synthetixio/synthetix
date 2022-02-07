@@ -14,7 +14,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
-import "./interfaces/ISynthetixState.sol";
+import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -79,10 +79,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -94,19 +93,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](11);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
-        newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[3] = CONTRACT_SYNTHETIXDEBTSHARE;
         newAddresses[4] = CONTRACT_FEEPOOL;
         newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[6] = CONTRACT_REWARDESCROW_V2;
         newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[8] = CONTRACT_LIQUIDATIONS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
-        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[10] = CONTRACT_SYNTHREDEEMER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -122,8 +120,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
+    function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
+        return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIXDEBTSHARE));
     }
 
     function feePool() internal view returns (IFeePool) {
@@ -136,10 +134,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
-    }
-
-    function collateralManager() internal view returns (ICollateralManager) {
-        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
@@ -160,6 +154,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function issuanceRatio() external view returns (uint) {
         return getIssuanceRatio();
+    }
+
+    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
+        return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
+    }
+
+    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
+        return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -203,7 +205,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return (debt.divideDecimalRound(currencyRate), anyRateIsInvalid || currencyRateInvalid);
     }
 
-    function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
+    function _debtBalanceOfAndTotalDebt(uint debtShareBalance, bytes32 currencyKey)
         internal
         view
         returns (
@@ -212,10 +214,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             bool anyRateIsInvalid
         )
     {
-        ISynthetixState state = synthetixState();
-
-        // What was their initial debt ownership?
-        (uint initialDebtOwnership, uint debtEntryIndex) = state.issuanceData(_issuer);
 
         // What's the total value of the system excluding ETH backed synths in their requested currency?
         (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynths(currencyKey, true);
@@ -223,22 +221,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // If it's zero, they haven't issued, and they have no debt.
         // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
         // if they have 0 SNX, but it's a necessary trade-off
-        if (initialDebtOwnership == 0) return (0, totalSystemValue, anyRateIsInvalid);
+        if (debtShareBalance == 0) return (0, totalSystemValue, anyRateIsInvalid);
 
-        // Figure out the global debt percentage delta from when they entered the system.
-        // This is a high precision integer of 27 (1e27) decimals.
-        uint currentDebtOwnership =
-            state
-                .lastDebtLedgerEntry()
-                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
-                .multiplyDecimalRoundPrecise(initialDebtOwnership);
-
-        // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance =
-            totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(currentDebtOwnership);
-
-        // Convert back into 18 decimals (1e18)
-        debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, totalSystemValue, synthetixDebtShare().totalSupply());
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
@@ -260,7 +245,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             bool anyRateIsInvalid
         )
     {
-        (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_issuer, sUSD);
+        (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), sUSD);
         (uint issuable, bool isInvalid) = _maxIssuableSynths(_issuer);
         maxIssuable = issuable;
         anyRateIsInvalid = anyRateIsInvalid || isInvalid;
@@ -292,7 +277,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
         uint totalOwnedSynthetix = _collateral(_issuer);
 
-        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_issuer, SNX);
+        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), SNX);
 
         // it's more gas intensive to put this check here if they have 0 SNX, but it complies with the interface
         if (totalOwnedSynthetix == 0) return (0, anyRateIsInvalid);
@@ -359,15 +344,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint debtBalance) {
-        ISynthetixState state = synthetixState();
+        ISynthetixDebtShare sds = synthetixDebtShare();
 
         // What was their initial debt ownership?
-        (uint initialDebtOwnership, ) = state.issuanceData(_issuer);
+        uint debtShareBalance = sds.balanceOf(_issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
-        if (initialDebtOwnership == 0) return 0;
+        if (debtShareBalance == 0) return 0;
 
-        (debtBalance, , ) = _debtBalanceOfAndTotalDebt(_issuer, currencyKey);
+        (debtBalance, , ) = _debtBalanceOfAndTotalDebt(debtShareBalance, currencyKey);
     }
 
     function remainingIssuableSynths(address _issuer)
@@ -401,7 +386,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // 100 SNX to be locked in their wallet to maintain their collateralisation ratio
         // The locked synthetix value can exceed their balance.
         uint debtBalance;
-        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, SNX);
+        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), SNX);
         uint lockedSynthetixValue = debtBalance.divideDecimalRound(getIssuanceRatio());
 
         // If we exceed the balance, no SNX are transferable, otherwise the difference is.
@@ -523,6 +508,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
+        require(amount > 0, "Issuer: cannot issue 0 synths");
+
         _issueSynths(from, amount, false);
     }
 
@@ -591,7 +578,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint liquidationPenalty = liquidations().liquidationPenalty();
 
         // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
@@ -631,6 +618,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
+    function setCurrentPeriodId(uint128 periodId) external {
+        require(msg.sender == address(feePool()), "Must be fee pool");
+
+        ISynthetixDebtShare sds = synthetixDebtShare();
+
+        if (sds.currentPeriodId() < periodId) {
+            sds.takeSnapshot(periodId);
+        }
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireRatesNotInvalid(bool anyRateIsInvalid) internal pure {
@@ -660,7 +657,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
+        _addToDebtRegister(from, amount, totalSystemDebt);
 
         // record issue timestamp
         _setLastIssueEvent(from);
@@ -670,9 +667,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Account for the issued debt in the cache
         debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
-
-        // Store their locked SNX amount to determine their fee % for the period
-        _appendAccountIssuanceRecord(from);
     }
 
     function _burnSynths(
@@ -696,9 +690,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Account for the burnt debt in the cache.
         debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountBurnt));
-
-        // Store their debtRatio against a fee period to determine their fee/rewards % for the period
-        _appendAccountIssuanceRecord(debtAccount);
     }
 
     // If burning to target, `amount` is ignored, and the correct quantity of sUSD is burnt to reach the target
@@ -719,7 +710,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             }
         }
 
-        (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(from, sUSD);
+        (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(from), sUSD);
         (uint maxIssuableSynthsForAccount, bool snxRateInvalid) = _maxIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
         require(existingDebt > 0, "No debt to forgive");
@@ -746,50 +737,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
     }
 
-    function _appendAccountIssuanceRecord(address from) internal {
-        uint initialDebtOwnership;
-        uint debtEntryIndex;
-        (initialDebtOwnership, debtEntryIndex) = synthetixState().issuanceData(from);
-        feePool().appendAccountIssuanceRecord(from, initialDebtOwnership, debtEntryIndex);
-    }
-
     function _addToDebtRegister(
         address from,
         uint amount,
-        uint existingDebt,
         uint totalDebtIssued
     ) internal {
-        ISynthetixState state = synthetixState();
+        ISynthetixDebtShare sds = synthetixDebtShare();
 
-        // What will the new total be including the new value?
-        uint newTotalDebtIssued = amount.add(totalDebtIssued);
-
-        // What is their percentage (as a high precision int) of the total debt?
-        uint debtPercentage = amount.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-        // And what effect does this percentage change have on the global debt holding of other issuers?
-        // The delta specifically needs to not take into account any existing debt as it's already
-        // accounted for in the delta from when they issued previously.
-        // The delta is a high precision integer.
-        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
-
-        // And what does their debt ownership look like including this previous stake?
-        if (existingDebt > 0) {
-            debtPercentage = amount.add(existingDebt).divideDecimalRoundPrecise(newTotalDebtIssued);
-        } else {
-            // If they have no debt, they're a new issuer; record this.
-            state.incrementTotalIssuerCount();
+        // it is possible (eg in tests, system initialized with extra debt) to have issued debt without any shares issued
+        // in which case, the first account to mint gets the debt. yw.
+        if (sds.totalSupply() == 0) {
+            sds.mintShare(from, amount);
         }
-
-        // Save the debt entry parameters
-        state.setCurrentIssuanceData(from, debtPercentage);
-
-        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
-        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
-        if (state.debtLedgerLength() > 0) {
-            state.appendDebtLedgerValue(state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
-        } else {
-            state.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());
+        else {
+            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
     }
 
@@ -799,40 +760,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint existingDebt,
         uint totalDebtIssued
     ) internal {
-        ISynthetixState state = synthetixState();
+        ISynthetixDebtShare sds = synthetixDebtShare();
 
-        // What will the new total after taking out the withdrawn amount
-        uint newTotalDebtIssued = totalDebtIssued.sub(debtToRemove);
+        uint currentDebtShare = sds.balanceOf(from);
 
-        uint delta = 0;
-
-        // What will the debt delta be if there is any debt left?
-        // Set delta to 0 if no more debt left in system after user
-        if (newTotalDebtIssued > 0) {
-            // What is the percentage of the withdrawn debt (as a high precision int) of the total debt after?
-            uint debtPercentage = debtToRemove.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-            // And what effect does this percentage change have on the global debt holding of other issuers?
-            // The delta specifically needs to not take into account any existing debt as it's already
-            // accounted for in the delta from when they issued previously.
-            delta = SafeDecimalMath.preciseUnit().add(debtPercentage);
-        }
-
-        // Are they exiting the system, or are they just decreasing their debt position?
         if (debtToRemove == existingDebt) {
-            state.setCurrentIssuanceData(from, 0);
-            state.decrementTotalIssuerCount();
-        } else {
-            // What percentage of the debt will they be left with?
-            uint newDebt = existingDebt.sub(debtToRemove);
-            uint newDebtPercentage = newDebt.divideDecimalRoundPrecise(newTotalDebtIssued);
-
-            // Store the debt percentage and debt ledger as high precision integers
-            state.setCurrentIssuanceData(from, newDebtPercentage);
+            sds.burnShare(from, currentDebtShare);
         }
-
-        // Update our cumulative ledger. This is also a high precision integer.
-        state.appendDebtLedgerValue(state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
+        else {
+            uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
+            sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
+        }
     }
 
     /* ========== MODIFIERS ========== */
