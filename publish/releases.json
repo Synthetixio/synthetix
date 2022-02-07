@@ -459,7 +459,8 @@
 		{
 			"sip": 209,
 			"layer": "both",
-			"sources": ["Exchanger"]
+			"sources": ["Exchanger"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -830,7 +831,7 @@
 		},
 		{
 			"name": "Mirzam",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 59
@@ -840,7 +841,7 @@
 		{
 			"name": "Mirzam (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 59
