@@ -65,7 +65,7 @@ class SafeBatchSubmitter {
 				this.unusedNoncePosition = Math.max(this.unusedNoncePosition, nonce + 1);
 				matchedTxnIsPending =
 					matchedTxnIsPending ||
-					valueDecoded.find(
+					(valueDecoded || []).find(
 						entry => entry.to === to && entry.data === data && entry.value === value
 					);
 			}

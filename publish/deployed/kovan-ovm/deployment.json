@@ -13544,13 +13544,8 @@
 					"type": "function"
 				},
 				{
-					"constant": false,
+					"constant": true,
 					"inputs": [
-						{
-							"internalType": "bytes32",
-							"name": "",
-							"type": "bytes32"
-						},
 						{
 							"internalType": "uint256",
 							"name": "",

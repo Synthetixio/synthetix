@@ -195,8 +195,9 @@ const deployMigration = async ({
 		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
 		const txnData = await contract.interface.encodeFunctionData('acceptOwnership', []);
 
+		const actionName = `${contract.address}.acceptOwnership()`;
 		const ownerAction = {
-			key: `${contract.address}.acceptOwnership()`,
+			key: actionName,
 			target: contract.address,
 			action: actionName,
 			data: txnData,
