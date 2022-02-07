@@ -82,7 +82,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
         (uint price, bool isInvalid) = assetPrice();
-        return (_accruedFunding(positions[account], fundingSequence.length, price), isInvalid);
+        return (_accruedFunding(positions[account], price), isInvalid);
     }
 
     /*
@@ -90,7 +90,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
         (uint price, bool isInvalid) = assetPrice();
-        return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
+        return (_remainingMargin(positions[account], price), isInvalid);
     }
 
     /*
@@ -99,7 +99,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
         (uint price, bool isInvalid) = assetPrice();
-        return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
+        return (_accessibleMargin(positions[account], price), isInvalid);
     }
 
     /*
@@ -124,7 +124,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function liquidationFee(address account) external view returns (uint) {
         (uint price, bool invalid) = assetPrice();
-        if (!invalid && _canLiquidate(positions[account], fundingSequence.length, price)) {
+        if (!invalid && _canLiquidate(positions[account], price)) {
             return _liquidationFee(int(positions[account].size), price);
         } else {
             // theoretically we can calculate a value, but this value is always incorrect because
@@ -139,7 +139,7 @@ contract MixinFuturesViews is FuturesMarketBase {
      */
     function canLiquidate(address account) external view returns (bool) {
         (uint price, bool invalid) = assetPrice();
-        return !invalid && _canLiquidate(positions[account], fundingSequence.length, price);
+        return !invalid && _canLiquidate(positions[account], price);
     }
 
     /*
@@ -157,7 +157,6 @@ contract MixinFuturesViews is FuturesMarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                fundingIndex: 0, // doesn't matter for fee calculation
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });
@@ -189,7 +188,6 @@ contract MixinFuturesViews is FuturesMarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                fundingIndex: fundingSequence.length,
                 takerFee: _takerFee(baseAsset),
                 makerFee: _makerFee(baseAsset)
             });

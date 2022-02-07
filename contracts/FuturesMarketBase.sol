@@ -151,7 +151,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     struct TradeParams {
         int sizeDelta;
         uint price;
-        uint fundingIndex;
         uint takerFee;
         uint makerFee;
     }
@@ -251,24 +250,12 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
     function _nextFundingEntry(uint price) internal view returns (int funding) {
-        return int(fundingSequence[fundingSequence.length.sub(1)]).add(_unrecordedFunding(price));
+        return int(fundingSequence[_latestFundingIndex()]).add(_unrecordedFunding(price));
     }
 
-    function _netFundingPerUnit(
-        uint startIndex,
-        uint endIndex,
-        uint price
-    ) internal view returns (int) {
-        // If the end index is not later than the start index, no funding has accrued.
-        if (endIndex <= startIndex) {
-            return 0;
-        }
-
-        // Determine whether we should include unrecorded funding.
-        int result = endIndex == fundingSequence.length ? _nextFundingEntry(price) : fundingSequence[endIndex];
-
+    function _netFundingPerUnit(uint startIndex, uint price) internal view returns (int) {
         // Compute the net difference between start and end indices.
-        return result.sub(fundingSequence[startIndex]);
+        return _nextFundingEntry(price).sub(fundingSequence[startIndex]);
     }
 
     /* ---------- Position Details ---------- */
@@ -321,28 +308,20 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return int(position.size).multiplyDecimal(priceShift);
     }
 
-    function _accruedFunding(
-        Position memory position,
-        uint endFundingIndex,
-        uint price
-    ) internal view returns (int funding) {
+    function _accruedFunding(Position memory position, uint price) internal view returns (int funding) {
         uint lastModifiedIndex = position.lastFundingIndex;
         if (lastModifiedIndex == 0) {
             return 0; // The position does not exist -- no funding.
         }
-        int net = _netFundingPerUnit(lastModifiedIndex, endFundingIndex, price);
+        int net = _netFundingPerUnit(lastModifiedIndex, price);
         return int(position.size).multiplyDecimal(net);
     }
 
     /*
      * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
      */
-    function _marginPlusProfitFunding(
-        Position memory position,
-        uint endFundingIndex,
-        uint price
-    ) internal view returns (int) {
-        int funding = _accruedFunding(position, endFundingIndex, price);
+    function _marginPlusProfitFunding(Position memory position, uint price) internal view returns (int) {
+        int funding = _accruedFunding(position, price);
         return int(position.margin).add(_profitLoss(position, price)).add(funding);
     }
 
@@ -354,11 +333,10 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function _realisedMargin(
         Position memory position,
-        uint currentFundingIndex,
         uint price,
         int marginDelta
     ) internal view returns (uint margin, Status statusCode) {
-        int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
+        int newMargin = _marginPlusProfitFunding(position, price).add(marginDelta);
         if (newMargin < 0) {
             return (0, Status.InsufficientMargin);
         }
@@ -374,22 +352,14 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return (uMargin, Status.Ok);
     }
 
-    function _remainingMargin(
-        Position memory position,
-        uint endFundingIndex,
-        uint price
-    ) internal view returns (uint) {
-        int remaining = _marginPlusProfitFunding(position, endFundingIndex, price);
+    function _remainingMargin(Position memory position, uint price) internal view returns (uint) {
+        int remaining = _marginPlusProfitFunding(position, price);
 
         // If the margin went past zero, the position should have been liquidated - return zero remaining margin.
         return uint(_max(0, remaining));
     }
 
-    function _accessibleMargin(
-        Position memory position,
-        uint fundingIndex,
-        uint price
-    ) internal view returns (uint) {
+    function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
@@ -406,7 +376,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             inaccessible = inaccessible.add(milli);
         }
 
-        uint remaining = _remainingMargin(position, fundingIndex, price);
+        uint remaining = _remainingMargin(position, price);
         if (remaining <= inaccessible) {
             return 0;
         }
@@ -423,7 +393,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         }
 
         // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
-        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, fundingSequence.length, currentPrice);
+        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, currentPrice);
 
         // minimum margin beyond which position can be liqudiated
         uint liqMargin = _liquidationMargin(positionSize, currentPrice);
@@ -475,17 +445,13 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return liquidationBuffer.add(_liquidationFee(positionSize, price));
     }
 
-    function _canLiquidate(
-        Position memory position,
-        uint fundingIndex,
-        uint price
-    ) internal view returns (bool) {
+    function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
         // No liquidating empty positions.
         if (position.size == 0) {
             return false;
         }
 
-        return _remainingMargin(position, fundingIndex, price) <= _liquidationMargin(int(position.size), price);
+        return _remainingMargin(position, price) <= _liquidationMargin(int(position.size), price);
     }
 
     function _currentLeverage(
@@ -522,6 +488,10 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
     }
 
+    function _latestFundingIndex() internal view returns (uint) {
+        return fundingSequence.length.sub(1); // at least one element is pushed in constructor
+    }
+
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
         internal
         view
@@ -537,7 +507,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         }
 
         // The order is not submitted if the user's existing position needs to be liquidated.
-        if (_canLiquidate(oldPos, params.fundingIndex, params.price)) {
+        if (_canLiquidate(oldPos, params.price)) {
             return (oldPos, 0, Status.CanLiquidate);
         }
 
@@ -554,14 +524,14 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        (uint newMargin, Status status) = _realisedMargin(oldPos, params.fundingIndex, params.price, -int(fee));
+        (uint newMargin, Status status) = _realisedMargin(oldPos, params.price, -int(fee));
         if (_isError(status)) {
             return (oldPos, 0, status);
         }
         Position memory newPos =
             Position({
                 id: oldPos.id,
-                lastFundingIndex: uint64(params.fundingIndex),
+                lastFundingIndex: uint64(_latestFundingIndex()),
                 margin: uint128(newMargin),
                 lastPrice: uint128(params.price),
                 size: int128(newSize)
@@ -756,7 +726,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     function _transferMargin(
         int marginDelta,
         uint price,
-        uint fundingIndex,
         address sender
     ) internal {
         // Transfer no tokens if marginDelta is 0
@@ -781,29 +750,29 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         }
 
         Position storage position = positions[sender];
-        _updatePositionMargin(position, fundingIndex, price, marginDelta);
+        _updatePositionMargin(position, price, marginDelta);
 
         // Emit relevant events
         if (marginDelta != 0) {
             emit MarginTransferred(sender, marginDelta);
         }
-        emit PositionModified(position.id, sender, position.margin, position.size, 0, price, fundingIndex, 0);
+        emit PositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
     }
 
     // udpates the stored position margin in place (on the stored position)
     function _updatePositionMargin(
         Position storage position,
-        uint fundingIndex,
         uint price,
         int marginDelta
     ) internal {
         Position memory oldPosition = position;
         // Determine new margin, ensuring that the result is positive.
-        (uint margin, Status status) = _realisedMargin(oldPosition, fundingIndex, price, marginDelta);
+        (uint margin, Status status) = _realisedMargin(oldPosition, price, marginDelta);
         _revertIfError(status);
 
         // Update the debt correction.
         int positionSize = position.size;
+        uint fundingIndex = _latestFundingIndex();
         _applyDebtCorrection(
             Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
             Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
@@ -838,8 +807,8 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function transferMargin(int marginDelta) external {
         uint price = _assetPriceRequireChecks();
-        uint fundingIndex = _recomputeFunding(price);
-        _transferMargin(marginDelta, price, fundingIndex, msg.sender);
+        _recomputeFunding(price);
+        _transferMargin(marginDelta, price, msg.sender);
     }
 
     /*
@@ -849,9 +818,9 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     function withdrawAllMargin() external {
         address sender = msg.sender;
         uint price = _assetPriceRequireChecks();
-        uint fundingIndex = _recomputeFunding(price);
-        int marginDelta = -int(_accessibleMargin(positions[sender], fundingIndex, price));
-        _transferMargin(marginDelta, price, fundingIndex, sender);
+        _recomputeFunding(price);
+        int marginDelta = -int(_accessibleMargin(positions[sender], price));
+        _transferMargin(marginDelta, price, sender);
     }
 
     function _modifyPosition(address sender, TradeParams memory params) internal {
@@ -877,6 +846,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
         // Record the trade
         uint64 id = oldPosition.id;
+        uint fundingIndex = _latestFundingIndex();
         if (newPosition.size == 0) {
             // If the position is being closed, we no longer need to track these details.
             delete position.id;
@@ -892,7 +862,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             position.id = id;
             position.size = newPosition.size;
             position.lastPrice = uint128(params.price);
-            position.lastFundingIndex = uint64(params.fundingIndex);
+            position.lastFundingIndex = uint64(fundingIndex);
         }
         // emit the modification event
         emit PositionModified(
@@ -902,7 +872,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             newPosition.size,
             params.sizeDelta,
             params.price,
-            params.fundingIndex,
+            fundingIndex,
             fee
         );
     }
@@ -913,15 +883,10 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function modifyPosition(int sizeDelta) external {
         uint price = _assetPriceRequireChecks();
+        _recomputeFunding(price);
         _modifyPosition(
             msg.sender,
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                fundingIndex: _recomputeFunding(price),
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
-            })
+            TradeParams({sizeDelta: sizeDelta, price: price, takerFee: _takerFee(baseAsset), makerFee: _makerFee(baseAsset)})
         );
     }
 
@@ -932,28 +897,22 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireChecks();
+        _recomputeFunding(price);
         _modifyPosition(
             msg.sender,
-            TradeParams({
-                sizeDelta: -size,
-                price: price,
-                fundingIndex: _recomputeFunding(price),
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
-            })
+            TradeParams({sizeDelta: -size, price: price, takerFee: _takerFee(baseAsset), makerFee: _makerFee(baseAsset)})
         );
     }
 
     function _liquidatePosition(
         address account,
         address liquidator,
-        uint fundingIndex,
         uint price
     ) internal {
         Position storage position = positions[account];
 
         // get remaining margin for sending any leftover buffer to fee pool
-        uint remMargin = _remainingMargin(position, fundingIndex, price);
+        uint remMargin = _remainingMargin(position, price);
 
         // Record updates to market size and debt.
         int positionSize = position.size;
@@ -961,6 +920,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         marketSkew = int128(int(marketSkew).sub(positionSize));
         marketSize = uint128(uint(marketSize).sub(_abs(positionSize)));
 
+        uint fundingIndex = _latestFundingIndex();
         _applyDebtCorrection(
             Position(0, uint64(fundingIndex), 0, uint128(price), 0),
             Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
@@ -989,11 +949,11 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function liquidatePosition(address account) external {
         uint price = _assetPriceRequireChecks();
-        uint fundingIndex = _recomputeFunding(price);
+        _recomputeFunding(price);
 
-        _revertIfError(!_canLiquidate(positions[account], fundingIndex, price), Status.CannotLiquidate);
+        _revertIfError(!_canLiquidate(positions[account], price), Status.CannotLiquidate);
 
-        _liquidatePosition(account, msg.sender, fundingIndex, price);
+        _liquidatePosition(account, msg.sender, price);
     }
 
     /* ========== EVENTS ========== */

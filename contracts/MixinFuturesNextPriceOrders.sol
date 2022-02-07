@@ -43,7 +43,6 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                fundingIndex: fundingIndex,
                 takerFee: _takerFeeNextPrice(baseAsset),
                 makerFee: _makerFeeNextPrice(baseAsset)
             });
@@ -53,7 +52,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // deduct fees from margin
         uint commitDeposit = _nextPriceCommitDeposit(params);
         uint keeperDeposit = _minKeeperFee();
-        _updatePositionMargin(position, fundingIndex, price, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(position, price, -int(commitDeposit + keeperDeposit));
         // emit event for modidying the position (subtracting the fees from margin)
         emit PositionModified(position.id, msg.sender, position.margin, position.size, 0, price, fundingIndex, 0);
 
@@ -104,7 +103,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             Position storage position = positions[account];
             uint price = _assetPriceRequireChecks();
             uint fundingIndex = _recomputeFunding(price);
-            _updatePositionMargin(position, fundingIndex, price, int(order.keeperDeposit));
+            _updatePositionMargin(position, price, int(order.keeperDeposit));
 
             // emit event for modidying the position (add the fee to margin)
             emit PositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
@@ -180,7 +179,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         uint fundingIndex = _recomputeFunding(currentPrice);
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(position, fundingIndex, currentPrice, int(toRefund));
+        _updatePositionMargin(position, currentPrice, int(toRefund));
         // emit event for modidying the position (refunding fee/s)
         emit PositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
@@ -192,7 +191,6 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
-                fundingIndex: fundingIndex, // using the next-price fees
                 takerFee: _takerFeeNextPrice(baseAsset),
                 makerFee: _makerFeeNextPrice(baseAsset)
             })

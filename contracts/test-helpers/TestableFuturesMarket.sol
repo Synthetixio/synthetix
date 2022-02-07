@@ -57,7 +57,7 @@ contract TestableFuturesMarket is FuturesMarket {
     function currentLeverage(address account) external view returns (int leverage, bool invalid) {
         (uint price, bool isInvalid) = assetPrice();
         Position storage position = positions[account];
-        uint remainingMargin_ = _remainingMargin(position, fundingSequence.length, price);
+        uint remainingMargin_ = _remainingMargin(position, price);
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 }
