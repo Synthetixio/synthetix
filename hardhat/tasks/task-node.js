@@ -22,7 +22,7 @@ task('node', 'Run a node')
 		if (network !== 'local') {
 			const networkHostReplace = (taskArguments.useOvm ? 'optimism-' : '') + network;
 
-			if (network === 'mainnet') {
+			if (network === 'mainnet' && !useOvm) {
 				taskArguments.fork = process.env.PROVIDER_URL_MAINNET.replace(
 					'network',
 					networkHostReplace
