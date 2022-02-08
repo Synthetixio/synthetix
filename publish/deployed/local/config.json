@@ -74,10 +74,13 @@
 	"Issuer": {
 		"deploy": true
 	},
-	"EternalStorageLiquidations": {
+	"EternalStorageLiquidator": {
 		"deploy": true
 	},
-	"Liquidations": {
+	"Liquidator": {
+		"deploy": true
+	},
+	"LiquidatorRewards": {
 		"deploy": true
 	},
 	"SupplySchedule": {

@@ -124,6 +124,12 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'LiquidatorRewards',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver), ZERO_ADDRESS, ZERO_ADDRESS],
+	});
+
+	await deployer.deployContract({
 		name: 'FeePoolEternalStorage',
 		args: [account, ZERO_ADDRESS],
 	});
