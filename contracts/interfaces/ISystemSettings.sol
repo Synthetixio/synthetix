@@ -16,7 +16,7 @@ interface ISystemSettings {
     function liquidationDelay() external view returns (uint);
 
     function liquidationRatio() external view returns (uint);
-    
+
     function liquidationPenalty() external view returns (uint);
 
     function selfLiquidationPenalty() external view returns (uint);

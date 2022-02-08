@@ -79,7 +79,6 @@ contract('SystemSettings', async accounts => {
 				'setSelfLiquidationPenalty',
 				'setLiquidateReward',
 				'setFlagReward',
-				'setMinCratio',
 				'setMinimumStakeTime',
 				'setPriceDeviationThresholdFactor',
 				'setRateStalePeriod',
