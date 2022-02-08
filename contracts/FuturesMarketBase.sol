@@ -128,7 +128,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
     /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
-     * Then marketSkew * (_assetPrice() + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
+     * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
      */
     int128 internal _entryDebtCorrection;
@@ -639,6 +639,17 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         }
     }
 
+    /*
+     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
+     * Public because used both externally and internally
+     */
+    function assetPrice() public view returns (uint price, bool invalid) {
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
+        // Ensure we catch uninitialised rates or suspended state / synth
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
+        return (price, invalid);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Market Operations ---------- */
@@ -647,7 +658,9 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
      * This is mutative because the circuit breaker stores the last price on every invocation.
      */
-    function _assetPriceRequireChecks() internal returns (uint) {
+    function _assetPriceRequireSystemChecks() internal returns (uint) {
+        // check that futures markets aren't suspended, revert with appropriate message
+        _systemStatus().requireFuturesActive();
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
@@ -675,12 +688,26 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return sequenceLengthBefore;
     }
 
-    /*
+    /**
      * Pushes a new entry to the funding sequence at the current price and funding rate.
+     * @dev Admin only method accessible to FuturesMarketSettings. This is admin only because:
+     * - When system parameters change, funding should be recomputed, but system may be paused
+     *   during that time for any reason, so this method needs to work even if system is paused.
+     *   But in that case, it shouldn't be accessible to external accounts.
      */
     function recomputeFunding() external returns (uint lastIndex) {
+        // only FuturesMarketSettings is allowed to use this method
         _revertIfError(msg.sender != _settings(), Status.NotPermitted);
-        return _recomputeFunding(_assetPriceRequireChecks());
+        // This method is the only mutative method that uses the view _assetPrice()
+        // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
+        // This is because this method is used by system settings when changing funding related
+        // parameters, so needs to function even when system / market is paused. E.g. to facilitate
+        // market migration.
+        (uint price, bool invalid) = assetPrice();
+        // A check for a valid price is still in place, to ensure that a system settings action
+        // doesn't take place when the price is invalid (e.g. some oracle issue).
+        require(!invalid, "Invalid price");
+        return _recomputeFunding(price);
     }
 
     /*
@@ -823,7 +850,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external {
-        uint price = _assetPriceRequireChecks();
+        uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _transferMargin(marginDelta, price, msg.sender);
     }
@@ -834,7 +861,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function withdrawAllMargin() external {
         address sender = msg.sender;
-        uint price = _assetPriceRequireChecks();
+        uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         int marginDelta = -int(_accessibleMargin(positions[sender], price));
         _transferMargin(marginDelta, price, sender);
@@ -899,7 +926,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
     function modifyPosition(int sizeDelta) external {
-        uint price = _assetPriceRequireChecks();
+        uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _modifyPosition(
             msg.sender,
@@ -913,7 +940,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     function closePosition() external {
         int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireChecks();
+        uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _modifyPosition(
             msg.sender,
@@ -965,7 +992,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
     function liquidatePosition(address account) external {
-        uint price = _assetPriceRequireChecks();
+        uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
 
         _revertIfError(!_canLiquidate(positions[account], price), Status.CannotLiquidate);

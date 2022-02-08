@@ -3504,29 +3504,17 @@ contract('FuturesMarket', accounts => {
 				);
 			});
 
-			it('then transferMargin reverts', async () => {
+			it('then mutative market actions revert', async () => {
 				await assert.revert(
 					futuresMarket.transferMargin(toUnit('1000'), { from: trader }),
 					'Invalid price'
 				);
-			});
-
-			it('then withdrawAllMargin reverts', async () => {
 				await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), 'Invalid price');
-			});
-
-			it('then modifyPosition reverts', async () => {
 				await assert.revert(
 					futuresMarket.modifyPosition(toUnit('1'), { from: trader }),
 					'Invalid price'
 				);
-			});
-
-			it('then closePosition reverts', async () => {
 				await assert.revert(futuresMarket.closePosition({ from: trader }), 'Invalid price');
-			});
-
-			it('then liquidatePosition reverts', async () => {
 				await assert.revert(
 					futuresMarket.liquidatePosition(trader, { from: trader }),
 					'Invalid price'
@@ -3584,6 +3572,74 @@ contract('FuturesMarket', accounts => {
 			it('after closePosition', async () => {
 				await futuresMarket.closePosition({ from: trader });
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+			});
+		});
+	});
+
+	describe('Futures suspension scenarios', () => {
+		const revertMessage = 'Futures markets are suspended';
+
+		describe('when futures markets are suspended', () => {
+			beforeEach(async () => {
+				// prepare a position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// suspend
+				await systemStatus.suspendFutures(toUnit(0), { from: owner });
+			});
+
+			it('then mutative market actions revert', async () => {
+				await assert.revert(
+					futuresMarket.transferMargin(toUnit('1000'), { from: trader }),
+					revertMessage
+				);
+				await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), revertMessage);
+				await assert.revert(
+					futuresMarket.modifyPosition(toUnit('1'), { from: trader }),
+					revertMessage
+				);
+				await assert.revert(futuresMarket.closePosition({ from: trader }), revertMessage);
+				await assert.revert(
+					futuresMarket.liquidatePosition(trader, { from: trader }),
+					revertMessage
+				);
+			});
+
+			it('then futuresMarketSettings parameter changes do not revert', async () => {
+				await futuresMarketSettings.setMaxFundingRate(baseAsset, 0, { from: owner });
+				await futuresMarketSettings.setSkewScaleUSD(baseAsset, toUnit('100'), { from: owner });
+				await futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
+					from: owner,
+				});
+			});
+
+			it('futuresMarketSettings parameter changes still revert if price is invalid', async () => {
+				await setPrice(baseAsset, toUnit('1'), false); // circuit breaker will revert
+				await assert.revert(
+					futuresMarketSettings.setParameters(baseAsset, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
+						from: owner,
+					}),
+					'Invalid price'
+				);
+			});
+
+			describe('when futures markets are resumed', () => {
+				beforeEach(async () => {
+					// suspend
+					await systemStatus.resumeFutures({ from: owner });
+				});
+
+				it('then mutative market actions work', async () => {
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					await futuresMarket.transferMargin(toUnit('100'), { from: trader });
+					await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+					await futuresMarket.closePosition({ from: trader });
+
+					// set up for liquidation
+					await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+					await setPrice(baseAsset, toUnit('1'));
+					await futuresMarket.liquidatePosition(trader, { from: trader2 });
+				});
 			});
 		});
 	});
