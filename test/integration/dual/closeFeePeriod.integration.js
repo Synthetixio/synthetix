@@ -53,7 +53,7 @@ describe('closeCurrentFeePeriod() integration tests (L1, L2)', () => {
 				await finalizationOnL2({ ctx, transactionHash: closeReceipt.transactionHash });
 			});
 
-			it('increases the owner balance', async () => {
+			it('has new fee pool', async () => {
 				const newFeePeriod = await FeePool.recentFeePeriods(0);
 				assert.bnNotEqual(newFeePeriod.feePeriodId, prevFeePeriod.feePeriodId);
 			});
