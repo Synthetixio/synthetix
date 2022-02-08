@@ -799,13 +799,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // in which case, the first account to mint gets the debt. yw.
         if (sds.totalSupply() == 0) {
             sds.mintShare(from, amount);
+            liquidatorRewards().notifyDebtChange(from, int(amount));
         }
         else {
-            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
+            uint amountToMint = _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply());
+            sds.mintShare(from, amountToMint);
+            liquidatorRewards().notifyDebtChange(from, int(amountToMint));
         }
-        
-        // make sure to notify the LiquidatorRewards contract about this account's debt change.
-        liquidatorRewards().notifyDebtChange(from);
     }
 
     function _removeFromDebtRegister(
@@ -820,14 +820,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         if (debtToRemove == existingDebt) {
             sds.burnShare(from, currentDebtShare);
+            liquidatorRewards().notifyDebtChange(from, -int(currentDebtShare));
         }
         else {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
-            sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
+            uint amountToBurn = balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare;
+            sds.burnShare(from, amountToBurn);
+            liquidatorRewards().notifyDebtChange(from, -int(amountToBurn));
         }
-
-        // make sure to notify the LiquidatorRewards contract about this account's debt change.
-        liquidatorRewards().notifyDebtChange(from);
     }
 
     /* ========== MODIFIERS ========== */

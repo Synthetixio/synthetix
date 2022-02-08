@@ -29,11 +29,10 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
     IERC20 public stakingToken; // SDS
 
     uint public escrowDuration = 52 weeks;
-    uint256 public rewardRate = 0;
-    uint256 public lastUpdateTime;
-    uint256 public rewardPerTokenStored;  
+    uint256 public accumulatedRewards = 0;
+    uint256 public rewardPerTokenStored;
 
-    mapping(address => uint256) public userRewardPerTokenPaid;
+    mapping(address => uint256) public userRewardPerTokenPaid; // change to uint128 
     mapping(address => uint256) public rewards;
 
     bytes32 public constant CONTRACT_NAME = "LiquidatorRewards";
@@ -95,35 +94,34 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
         return synthetixDebtShare().balanceOf(account);
     }
 
-    function rewardPerToken() public view returns (uint256) {
+    function rewardPerToken(int amount) public view returns (uint256) {
         if (totalSupply() == 0) {
             return rewardPerTokenStored;
         }
-        return
-            rewardPerTokenStored.add(
-                block.timestamp.sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(totalSupply())
-            );
+
+        if (amount < 0) {
+            return
+                rewardPerTokenStored.add(
+                    (accumulatedRewards).mul(1e18).div(totalSupply().sub(uint(amount)))
+                );
+        } else {
+            return
+                rewardPerTokenStored.add(
+                    (accumulatedRewards).mul(1e18).div(totalSupply().add(uint(amount)))
+                );
+        }
     }
 
-    /*
-        For `lastUpdateTime` <= t <= `block.timestamp`:
-        Rewards per user = R * l(u,t) / L(t)
-
-        R = reward rate
-        L(t) = total debt share balance at time t
-        l(u,t) = account debt share balance at time t
-    */
-    function earned(address account) public view returns (uint256) {
-        return balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
+    function earned(address account, int amount) public view returns (uint256) {
+        return balanceOf(account).mul(rewardPerToken(amount).sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function getRewards() public nonReentrant updateReward(msg.sender) {
+    function getRewards() public nonReentrant updateReward(msg.sender, 0) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardRate -= reward;
             rewardsToken.approve(address(rewardEscrowV2()), reward);
             rewardEscrowV2().createEscrowEntry(msg.sender, reward, escrowDuration);
             emit RewardPaid(msg.sender, reward);
@@ -133,14 +131,14 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     /// @notice This is called only by the Issuer to update when a given account's debt balance changes.
-    function notifyDebtChange(address account) external onlyIssuer updateReward(account) { }
+    function notifyDebtChange(address account, int amount) external onlyIssuer updateReward(account, amount) { }
 
     /// @notice This is called only by Synthetix after an account is liquidated and the SNX rewards are sent to this contract.
-    function notifyRewardAmount(uint256 reward) external onlySynthetix updateReward(address(0)) {        
+    function notifyRewardAmount(uint256 reward) external onlySynthetix {        
         // Ensure the provided reward amount is not more than the balance in the contract.
         uint balance = rewardsToken.balanceOf(address(this));
         require(reward <= balance, "Provided reward too high");
-        rewardRate += reward;
+        accumulatedRewards += reward;
         emit RewardAdded(reward);
     }
 
@@ -153,12 +151,12 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
 
     /* ========== MODIFIERS ========== */
 
-    modifier updateReward(address account) {
-        rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = block.timestamp;
+    modifier updateReward(address account, int amount) {
+        rewardPerTokenStored = rewardPerToken(amount);
         if (account != address(0)) {
-            rewards[account] = earned(account);
+            rewards[account] = earned(account, amount);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
+            accumulatedRewards = 0;
         }
         _;
     }
