@@ -21,7 +21,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
-import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
 import "./Proxyable.sol";
@@ -84,7 +83,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -98,7 +96,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -109,9 +107,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[8] = CONTRACT_LIQUIDATIONS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
-        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_INFO;
+        newAddresses[10] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[11] = CONTRACT_EXT_AGGREGATOR_DEBT_INFO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -143,10 +140,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
-    function collateralManager() internal view returns (ICollateralManager) {
-        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
-    }
-
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
@@ -176,11 +169,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
-    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal view returns (uint) {
+    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
         return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
     }
 
-    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal view returns (uint) {
+    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
         return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
     }
 
@@ -238,20 +231,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // What's the total value of the system excluding ETH backed synths in their requested currency?
         (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
 
-        // If it's zero, they haven't issued, and they have no debt.
-        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
         // if they have 0 SNX, but it's a necessary trade-off
-        if (debtShareBalance == 0) {
-            return (0, snxBackedAmount, debtInfoStale);
-        }
-        
-        // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
-        (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+        if (debtShareBalance == 0) return (0, totalSystemValue, anyRateIsInvalid);
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(currencyRate);
-        totalSystemValue = snxBackedAmount;
-        
-        anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, totalSystemValue, synthetixDebtShare().totalSupply());
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
@@ -372,10 +355,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function debtBalanceOf(address _issuer, bytes32 currencyKey) external view returns (uint debtBalance) {
-        ISynthetixDebtShare debtShare = synthetixDebtShare();
+        ISynthetixDebtShare sds = synthetixDebtShare();
 
         // What was their initial debt ownership?
-        uint debtShareBalance = debtShare.balanceOf(_issuer);
+        uint debtShareBalance = sds.balanceOf(_issuer);
 
         // If it's zero, they haven't issued, and they have no debt.
         if (debtShareBalance == 0) return 0;
@@ -646,9 +629,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function setCurrentPeriodId(uint periodId) external {
+    function setCurrentPeriodId(uint128 periodId) external {
         require(msg.sender == address(feePool()), "Must be fee pool");
-        synthetixDebtShare().setCurrentPeriodId(periodId);
+
+        ISynthetixDebtShare sds = synthetixDebtShare();
+
+        if (sds.currentPeriodId() < periodId) {
+            sds.takeSnapshot(periodId);
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

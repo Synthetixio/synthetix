@@ -10,11 +10,13 @@ require('./common'); // import common test scaffolding
 
 const { setupContract, setupAllContracts } = require('./setup');
 
-const { currentTime, fastForward, toUnit } = require('../utils')();
+const { fastForward, toUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
+	setupPriceAggregators,
+	updateAggregatorRates,
 	updateRatesWithDefaults,
 	setStatus,
 } = require('./helpers');
@@ -33,8 +35,6 @@ contract('BaseSynthetix', async accounts => {
 		exchangeRates,
 		debtCache,
 		escrow,
-		oracle,
-		timestamp,
 		addressResolver,
 		systemSettings,
 		systemStatus,
@@ -70,9 +70,7 @@ contract('BaseSynthetix', async accounts => {
 			],
 		}));
 
-		// Send a price update to guarantee we're not stale.
-		oracle = account1;
-		timestamp = await currentTime();
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -185,14 +183,6 @@ contract('BaseSynthetix', async accounts => {
 			});
 		});
 
-		it('liquidateDelinquentAccount should revert no matter who the caller is', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: baseSynthetix.liquidateDelinquentAccount,
-				accounts,
-				args: [account1, amount],
-				reason: 'Cannot be run on this layer',
-			});
-		});
 		it('mintSecondary should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.mintSecondary,
@@ -416,7 +406,7 @@ contract('BaseSynthetix', async accounts => {
 		});
 		describe('when a user has exchanged into sETH', () => {
 			beforeEach(async () => {
-				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
+				await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 
 				await baseSynthetix.issueSynths(toUnit('100'), { from: owner });
 				await baseSynthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
@@ -444,13 +434,10 @@ contract('BaseSynthetix', async accounts => {
 				// fast forward to get past initial SNX setting
 				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 
-				timestamp = await currentTime();
-
-				await exchangeRates.updateRates(
+				await updateAggregatorRates(
+					exchangeRates,
 					[sAUD, sEUR, sETH],
-					['0.5', '1.25', '100'].map(toUnit),
-					timestamp,
-					{ from: oracle }
+					['0.5', '1.25', '100'].map(toUnit)
 				);
 				await debtCache.takeDebtSnapshot();
 			});
@@ -459,9 +446,7 @@ contract('BaseSynthetix', async accounts => {
 			});
 			describe('when SNX is also set', () => {
 				beforeEach(async () => {
-					timestamp = await currentTime();
-
-					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, { from: oracle });
+					await updateAggregatorRates(exchangeRates, [SNX], ['1'].map(toUnit));
 				});
 				it('then no stale rates', async () => {
 					assert.equal(await baseSynthetix.anySynthOrSNXRateIsInvalid(), false);
@@ -471,11 +456,7 @@ contract('BaseSynthetix', async accounts => {
 					beforeEach(async () => {
 						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 
-						timestamp = await currentTime();
-
-						await exchangeRates.updateRates([SNX, sAUD], ['0.1', '0.78'].map(toUnit), timestamp, {
-							from: oracle,
-						});
+						await updateAggregatorRates(exchangeRates, [SNX, sAUD], ['0.1', '0.78'].map(toUnit));
 					});
 
 					it('then anySynthOrSNXRateIsInvalid() returns true', async () => {
@@ -532,7 +513,7 @@ contract('BaseSynthetix', async accounts => {
 
 		beforeEach(async () => {
 			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
+			await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 		});
 
 		it('should transfer using the ERC20 transfer function @gasprofile', async () => {
@@ -720,19 +701,23 @@ contract('BaseSynthetix', async accounts => {
 				it('should not allow transfer if the exchange rate for SNX is stale', async () => {
 					await ensureTransferReverts();
 
-					const timestamp = await currentTime();
-
 					// now give some synth rates
 					await aggregatorDebtInfo.setOverrideTimestamp(0);
 
+
+					await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['0.5', '1.25'].map(toUnit));
+					await debtCache.takeDebtSnapshot();
+
+					await ensureTransferReverts();
+
+					// the remainder of the synths have prices
+					await updateAggregatorRates(exchangeRates, [sETH], ['100'].map(toUnit));
 					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
 
 					// now give SNX rate
-					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
-						from: oracle,
-					});
+					await updateAggregatorRates(exchangeRates, [SNX], ['1'].map(toUnit));
 
 					// now SNX transfer should work
 					await baseSynthetix.transfer(account2, value, { from: account1 });
@@ -744,12 +729,8 @@ contract('BaseSynthetix', async accounts => {
 				it('should not allow transfer if debt aggregator is stale', async () => {
 					await ensureTransferReverts();
 
-					const timestamp = await currentTime();
-
 					// now give SNX rate
-					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
-						from: oracle,
-					});
+					await updateAggregatorRates(exchangeRates, [SNX], ['1'].map(toUnit));
 					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
@@ -839,9 +820,11 @@ contract('BaseSynthetix', async accounts => {
 		});
 
 		it("should lock newly received synthetix if the user's collaterisation is too high", async () => {
+			// Disable Dynamic fee so that we can neglect it.
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			// Set sEUR for purposes of this test
-			const timestamp1 = await currentTime();
-			await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
+			await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('0.75')]);
 			await debtCache.takeDebtSnapshot();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
@@ -869,8 +852,7 @@ contract('BaseSynthetix', async accounts => {
 			});
 
 			// Increase the value of sEUR relative to synthetix
-			const timestamp2 = await currentTime();
-			await exchangeRates.updateRates([sEUR], [toUnit('2.10')], timestamp2, { from: oracle });
+			await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('2.10')]);
 			await debtCache.takeDebtSnapshot();
 
 			// Ensure that the new synthetix account1 receives cannot be transferred out.
@@ -881,14 +863,16 @@ contract('BaseSynthetix', async accounts => {
 		});
 
 		it('should unlock synthetix when collaterisation ratio changes', async () => {
+			// Disable Dynamic fee so that we can neglect it.
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
 			// prevent circuit breaker from firing by upping the threshold to factor 5
 			await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
 
 			// Set sAUD for purposes of this test
-			const timestamp1 = await currentTime();
 			const aud2usdrate = toUnit('2');
 
-			await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
+			await updateAggregatorRates(exchangeRates, [sAUD], [aud2usdrate]);
 			await debtCache.takeDebtSnapshot();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
@@ -910,9 +894,8 @@ contract('BaseSynthetix', async accounts => {
 			await baseSynthetix.exchange(sUSD, issuedSynths, sAUD, { from: account1 });
 
 			// Increase the value of sAUD relative to synthetix
-			const timestamp2 = await currentTime();
 			const newAUDExchangeRate = toUnit('1');
-			await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
+			await updateAggregatorRates(exchangeRates, [sAUD], [newAUDExchangeRate]);
 			await debtCache.takeDebtSnapshot();
 
 			const transferable2 = await baseSynthetix.transferableSynthetix(account1);

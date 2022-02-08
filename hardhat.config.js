@@ -3,13 +3,15 @@ require('dotenv').config();
 
 const path = require('path');
 
+/// the order of these imports is important (due to custom overrides):
+/// ./hardhat needs to be imported after hardhat-interact and after solidity-coverage.
+///  and hardhat-gas-reporter needs to be imported after ./hardhat (otherwise no gas reports)
+require('hardhat-interact');
+require('solidity-coverage');
+require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
-require('solidity-coverage');
 require('hardhat-gas-reporter');
-require('hardhat-interact');
-
-require('./hardhat');
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
@@ -33,7 +35,6 @@ module.exports = {
 	},
 	paths: {
 		sources: './contracts',
-		ignore: /migrations\//,
 		tests: './test/contracts',
 		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
 		cache: path.join(BUILD_FOLDER, CACHE_FOLDER),
@@ -57,7 +58,7 @@ module.exports = {
 			url: 'http://localhost:8545',
 		},
 		mainnet: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
 			chainId: 1,
 		},
 		'mainnet-ovm': {
@@ -72,6 +73,12 @@ module.exports = {
 			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
 			chainId: 69,
 		},
+		local: {
+			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
+		},
+		'local-ovm': {
+			url: process.env.OVM_PROVIDER_URL || 'http://localhost:9545/',
+		},
 	},
 	gasReporter: {
 		enabled: false,
@@ -83,5 +90,6 @@ module.exports = {
 	},
 	mocha: {
 		timeout: 120e3, // 120s
+		retries: 3,
 	},
 };

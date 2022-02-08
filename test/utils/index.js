@@ -371,11 +371,11 @@ module.exports = ({ web3 } = {}) => {
 
 		assert.ok(
 			actual.gte(expected.sub(variance)),
-			`Number is too small to be close (Delta between actual and expected is ${actualDelta.toString()}, but variance was only ${variance.toString()}`
+			`Number is too small to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()}`
 		);
 		assert.ok(
 			actual.lte(expected.add(variance)),
-			`Number is too large to be close (Delta between actual and expected is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
+			`Number is too large to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
 		);
 	};
 
@@ -528,6 +528,18 @@ module.exports = ({ web3 } = {}) => {
 		return latestSolTimestamp > earliestCompiledTimestamp;
 	};
 
+	// create a factory to deploy mock price aggregators
+	const createMockAggregatorFactory = async account => {
+		const { compiled } = loadCompiledFiles({ buildPath });
+		const {
+			abi,
+			evm: {
+				bytecode: { object: bytecode },
+			},
+		} = compiled['MockAggregatorV2V3'];
+		return new ethers.ContractFactory(abi, bytecode, account);
+	};
+
 	const setupProvider = ({ providerUrl, privateKey, publicKey }) => {
 		const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
@@ -580,6 +592,7 @@ module.exports = ({ web3 } = {}) => {
 		divideDecimalRound,
 		powerToDecimal,
 
+		toBN,
 		toUnit,
 		fromUnit,
 
@@ -606,6 +619,7 @@ module.exports = ({ web3 } = {}) => {
 
 		loadLocalUsers,
 		isCompileRequired,
+		createMockAggregatorFactory,
 
 		setupProvider,
 		getContract,

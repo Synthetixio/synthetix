@@ -6,14 +6,12 @@ const pLimit = require('p-limit');
 const ethers = require('ethers');
 const isCI = require('is-ci');
 
-const { loadCompiledFiles } = require('../../publish/src/solidity');
 const { loadLocalWallets } = require('../test-utils/wallets');
 const { fastForward } = require('../test-utils/rpc');
 
 const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployShortingRewardsCmd = require('../../publish/src/commands/deploy-shorting-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
-const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
 
 const commands = {
@@ -97,6 +95,7 @@ describe('publish scripts', () => {
 	let sETH;
 	let provider;
 	let overrides;
+	let MockAggregatorFactory;
 
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
@@ -135,7 +134,7 @@ describe('publish scripts', () => {
 			url: 'http://localhost:8545',
 		});
 
-		const { isCompileRequired } = testUtils();
+		const { isCompileRequired, createMockAggregatorFactory } = testUtils();
 
 		// load accounts used by local EVM
 		const wallets = loadLocalWallets({ provider });
@@ -153,6 +152,8 @@ describe('publish scripts', () => {
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
+
+		MockAggregatorFactory = await createMockAggregatorFactory(accounts.deployer);
 
 		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
@@ -195,15 +196,6 @@ describe('publish scripts', () => {
 				);
 
 			const createMockAggregator = async () => {
-				// get last build
-				const { compiled } = loadCompiledFiles({ buildPath });
-				const {
-					abi,
-					evm: {
-						bytecode: { object: bytecode },
-					},
-				} = compiled['MockAggregatorV2V3'];
-				const MockAggregatorFactory = new ethers.ContractFactory(abi, bytecode, accounts.deployer);
 				const MockAggregator = await MockAggregatorFactory.deploy({ gasLimit, gasPrice });
 
 				const tx = await MockAggregator.setDecimals('8', {
@@ -664,7 +656,7 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
+							periodsAdded.push([`${startTime}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
@@ -672,8 +664,7 @@ describe('publish scripts', () => {
 
 							const tx = await FeePool.importFeePeriod(
 								i,
-								i + 1,
-								0,
+								startTime,
 								startTime,
 								3,
 								4,
@@ -1117,6 +1108,7 @@ describe('publish scripts', () => {
 									'RewardsDistribution',
 									'SupplySchedule',
 									'Synthetix',
+									'SynthetixDebtShare',
 									'SynthetixEscrow',
 									'SynthsETH',
 									'SynthsUSD',

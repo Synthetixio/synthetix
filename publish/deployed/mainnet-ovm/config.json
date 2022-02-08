@@ -160,5 +160,17 @@
 	},
 	"OwnerRelayOnOptimism": {
 		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"StakingRewardssUSDDAIUniswapV3": {
+		"deploy": false
+	},
+	"StakingRewardsSNXWETHUniswapV3": {
+		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
 	}
 }

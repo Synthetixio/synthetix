@@ -374,6 +374,14 @@
 			"released": "base"
 		},
 		{
+			"sip": 165,
+			"layer": "both",
+			"sources": [
+				"FeePool",
+				"Issuer"
+			]
+		},
+		{
 			"sip": 169,
 			"layer": "base",
 			"released": "base"
@@ -403,29 +411,68 @@
 			"released": "both"
 		},
 		{
-			"sip": 185,
+			"sip": 184,
 			"layer": "both",
-			"sources": [
-				"Synthetix",
-				"FeePool",
-				"Issuer",
-				"SynthetixDebtShare"
-			]
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
+			"released": "both"
 		},
 		{
 			"sip": 185,
 			"layer": "both",
-			"sources": [
-				"Synthetix",
-				"FeePool",
-				"Issuer",
-				"SynthetixDebtShare"
-			]
+			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"]
 		},
 		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 188,
+			"layer": "base",
+			"sources": [],
+			"released": "base"
+		},
+		{
+			"sip": 192,
+			"layer": "both",
+			"sources": ["WrapperFactory"],
+			"released": "both"
+		},
+		{
+			"sip": 193,
+			"layer": "both",
+			"sources": ["SystemSettings", "SystemSettingsLib"],
+			"released": "both"
+		},
+		{
+			"sip": 194,
+			"layer": "ovm",
+			"sources": ["Synthetix"],
+			"released": "ovm"
+		},
+		{
+			"sip": 195,
+			"layer": "ovm",
+			"sources": ["CollateralEth"],
+			"released": "ovm"
+		},
+		{
+			"sip": 196,
+			"layer": "both",
+			"sources": ["ExchangeRates"],
+			"released": "both"
+		},
+		{
+			"sip": 200,
+			"layer": "both",
+			"sources": ["FeePool"],
+			"released": "both"
+		},
+		{
+			"sip": 209,
+			"layer": "both",
+			"sources": ["Exchanger"],
 			"released": "both"
 		}
 	],
@@ -721,98 +768,98 @@
 		},
 		{
 			"name": "Atria",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 55
 			},
-			"sips": []
+			"sips": [192]
 		},
 		{
 			"name": "Atria (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 55
 			},
-			"sips": []
+			"sips": [192]
 		},
 		{
 			"name": "Alhena",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 56
 			},
-			"sips": []
+			"sips": [188]
 		},
 		{
 			"name": "Alhena (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 56
 			},
-			"sips": []
+			"sips": [194, 195]
 		},
 		{
 			"name": "Peacock",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Peacock (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 57
 			},
-			"sips": []
+			"sips": [200]
 		},
 		{
 			"name": "Alsephina",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Alsephina (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Mirzam",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [209]
 		},
 		{
 			"name": "Mirzam (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [209]
 		},
 		{
 			"name": "Alphard",

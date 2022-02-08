@@ -65,6 +65,11 @@
 		"subclass": "MultiCollateralSynth"
 	},
 	{
+		"name": "sETHBTC",
+		"asset": "ETHBTC",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
 		"name": "sDEFI",
 		"asset": "DEFI",
 		"index": [

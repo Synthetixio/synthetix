@@ -15,6 +15,8 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
+const ethers = require('ethers');
+
 contract('SynthetixDebtShare', async accounts => {
 	const [owner, issuer, account1, account2] = accounts;
 
@@ -38,14 +40,6 @@ contract('SynthetixDebtShare', async accounts => {
 		await synthetixDebtShare.addAuthorizedBroker(owner);
 	});
 
-	/* let lastSnapshotId;
-	before(async () => {
-		lastSnapshotId = await takeSnapshot();
-	});
-
-	beforeEach(async () => {
-		await restoreSnapshot(lastSnapshotId);
-	}); */
 	addSnapshotBeforeRestoreAfterEach();
 
 	it('ensure only expected functions are mutative', async () => {
@@ -55,13 +49,13 @@ contract('SynthetixDebtShare', async accounts => {
 			expected: [
 				'mintShare',
 				'burnShare',
-				'transfer',
 				'transferFrom',
-				'approve',
 				'importAddresses',
-				'setCurrentPeriodId',
+				'takeSnapshot',
 				'addAuthorizedBroker',
 				'removeAuthorizedBroker',
+				'addAuthorizedToSnapshot',
+				'removeAuthorizedToSnapshot',
 				'finishSetup',
 				'rebuildCache',
 			],
@@ -123,7 +117,7 @@ contract('SynthetixDebtShare', async accounts => {
 		describe('on new period', async () => {
 			beforeEach(async () => {
 				await synthetixDebtShare.mintShare(account1, toUnit('10'), { from: issuer });
-				await synthetixDebtShare.setCurrentPeriodId(toUnit('10'), { from: issuer });
+				await synthetixDebtShare.takeSnapshot(toUnit('10'), { from: issuer });
 			});
 
 			it('mints', async () => {
@@ -136,7 +130,7 @@ contract('SynthetixDebtShare', async accounts => {
 			describe('on another new period', () => {
 				beforeEach(async () => {
 					await synthetixDebtShare.mintShare(account1, toUnit('20'), { from: issuer });
-					await synthetixDebtShare.setCurrentPeriodId(toUnit('50'), { from: issuer });
+					await synthetixDebtShare.takeSnapshot(toUnit('50'), { from: issuer });
 				});
 
 				it('previous period is preserved', async () => {
@@ -170,7 +164,7 @@ contract('SynthetixDebtShare', async accounts => {
 		describe('when account already has shares minted', () => {
 			beforeEach(async () => {
 				await synthetixDebtShare.mintShare(account1, toUnit('50'), { from: issuer });
-				await synthetixDebtShare.setCurrentPeriodId(toUnit('10'), { from: issuer });
+				await synthetixDebtShare.takeSnapshot(toUnit('10'), { from: issuer });
 			});
 
 			it('cannot burn more shares than the account has', async () => {
@@ -191,7 +185,7 @@ contract('SynthetixDebtShare', async accounts => {
 			describe('on another new period', () => {
 				beforeEach(async () => {
 					await synthetixDebtShare.burnShare(account1, toUnit('20'), { from: issuer });
-					await synthetixDebtShare.setCurrentPeriodId(toUnit('50'), { from: issuer });
+					await synthetixDebtShare.takeSnapshot(toUnit('50'), { from: issuer });
 				});
 
 				it('previous period is preserved', async () => {
@@ -209,21 +203,31 @@ contract('SynthetixDebtShare', async accounts => {
 		});
 	});
 
-	describe('setCurrentPeriodId()', () => {
-		it('fails when burning more than user has minted', async () => {
+	describe('takeSnapshot()', () => {
+		it('is only invokable by issuer', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: synthetixDebtShare.setCurrentPeriodId,
+				fnc: synthetixDebtShare.takeSnapshot,
 				args: [toUnit('10')],
 				address: issuer,
 				accounts,
-				reason: 'SynthetixDebtShare: only issuer can mint/burn',
+				reason: 'SynthetixDebtShare: not authorized to snapshot',
+			});
+		});
+
+		describe('when authorized to snapshot address is set', () => {
+			beforeEach(async () => {
+				await synthetixDebtShare.addAuthorizedToSnapshot(account1);
+			});
+
+			it('becomes invokable by authorized snapshotter', async () => {
+				await synthetixDebtShare.takeSnapshot(toUnit('10'), { from: account1 });
 			});
 		});
 
 		describe('when successfully invoked', () => {
 			beforeEach(async () => {
 				await synthetixDebtShare.mintShare(account1, toUnit('1'), { from: issuer });
-				await synthetixDebtShare.setCurrentPeriodId(toUnit('10'), { from: issuer });
+				await synthetixDebtShare.takeSnapshot(toUnit('10'), { from: issuer });
 				await synthetixDebtShare.mintShare(account1, toUnit('1'), { from: issuer });
 			});
 
@@ -234,6 +238,11 @@ contract('SynthetixDebtShare', async accounts => {
 			it('rolls totalSupply', async () => {
 				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('2'));
 				assert.bnEqual(await synthetixDebtShare.totalSupplyOnPeriod(1), toUnit('1'));
+			});
+
+			it('prohibits lower period IDs in the future', async () => {
+				await assert.revert(synthetixDebtShare.takeSnapshot(toUnit('5')));
+				await assert.revert(synthetixDebtShare.takeSnapshot(toUnit('10')));
 			});
 		});
 	});
@@ -272,6 +281,45 @@ contract('SynthetixDebtShare', async accounts => {
 
 				it('sets broker', async () => {
 					assert.bnEqual(await synthetixDebtShare.authorizedBrokers(account1), false);
+				});
+			});
+		});
+	});
+
+	describe('authorized to snapshot functions', () => {
+		it('only owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetixDebtShare.addAuthorizedToSnapshot,
+				args: [ZERO_ADDRESS],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetixDebtShare.removeAuthorizedToSnapshot,
+				args: [ZERO_ADDRESS],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			beforeEach(async () => {
+				await synthetixDebtShare.addAuthorizedToSnapshot(account1, { from: owner });
+			});
+
+			it('sets authorization', async () => {
+				assert.bnEqual(await synthetixDebtShare.authorizedToSnapshot(account1), true);
+			});
+
+			describe('when broker is removed', () => {
+				beforeEach(async () => {
+					await synthetixDebtShare.removeAuthorizedToSnapshot(account1, { from: owner });
+				});
+
+				it('sets authorization', async () => {
+					assert.bnEqual(await synthetixDebtShare.authorizedToSnapshot(account1), false);
 				});
 			});
 		});
@@ -326,11 +374,11 @@ contract('SynthetixDebtShare', async accounts => {
 
 	describe('allowance()', () => {
 		it('returns 0 for non-brokers', async () => {
-			assert.bnEqual(await synthetixDebtShare.allowance(account1, ZERO_ADDRESS), toUnit('0'));
+			assert.bnEqual(await synthetixDebtShare.allowance(account1, account1), toUnit('0'));
 		});
 
 		it('returns MAX_UINT for brokers', async () => {
-			assert.bnNotEqual(await synthetixDebtShare.allowance(account1, owner), toUnit('0'));
+			assert.bnNotEqual(await synthetixDebtShare.allowance(owner, owner), toUnit('0'));
 		});
 	});
 
@@ -370,6 +418,8 @@ contract('SynthetixDebtShare', async accounts => {
 	});
 
 	describe('balanceOfOnPeriod()', () => {
+		addSnapshotBeforeRestoreAfterEach();
+
 		it('returns 0 balance initially', async () => {
 			assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('0'));
 		});
@@ -387,7 +437,7 @@ contract('SynthetixDebtShare', async accounts => {
 
 			describe('when period changes', () => {
 				beforeEach(async () => {
-					await synthetixDebtShare.setCurrentPeriodId(toUnit('100'), { from: issuer });
+					await synthetixDebtShare.takeSnapshot(toUnit('100'), { from: issuer });
 				});
 
 				it('returns correct percentages for last period', async () => {
@@ -426,7 +476,39 @@ contract('SynthetixDebtShare', async accounts => {
 							toUnit('80')
 						);
 					});
+
+					it('still remembers 0 balance before first mint', async () => {
+						assert.bnEqual(await synthetixDebtShare.balanceOfOnPeriod(account2, 0), 0);
+					});
 				});
+			});
+		});
+
+		describe('when there is long period history', () => {
+			beforeEach(async () => {
+				// one account changes balance every period
+				for (let i = 1; i < 100; i++) {
+					await synthetixDebtShare.takeSnapshot(toUnit(i.toString()), { from: issuer });
+					await synthetixDebtShare.mintShare(account1, toUnit('1'), { from: issuer });
+				}
+			});
+
+			it('has correct latest balance', async () => {
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('99'));
+			});
+
+			it('has balance from a couple periods ago', async () => {
+				assert.bnEqual(
+					await synthetixDebtShare.balanceOfOnPeriod(account1, toUnit('95')),
+					toUnit('95')
+				);
+			});
+
+			it('reverts on oldest period', async () => {
+				await assert.revert(
+					synthetixDebtShare.balanceOfOnPeriod(account1, 10),
+					'SynthetixDebtShare: not found in recent history'
+				);
 			});
 		});
 	});
@@ -459,7 +541,7 @@ contract('SynthetixDebtShare', async accounts => {
 
 			describe('when period changes', () => {
 				beforeEach(async () => {
-					await synthetixDebtShare.setCurrentPeriodId(toUnit('100'), { from: issuer });
+					await synthetixDebtShare.takeSnapshot(toUnit('100'), { from: issuer });
 				});
 
 				it('returns correct percentages for last period', async () => {
@@ -499,6 +581,80 @@ contract('SynthetixDebtShare', async accounts => {
 						);
 					});
 				});
+			});
+		});
+	});
+
+	describe('importAddresses()', () => {
+		it('should disallow import outside of owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetixDebtShare.importAddresses,
+				args: [[account2], [toUnit('0.1')]],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when invoked by owner', () => {
+			let txn1, txn2;
+
+			beforeEach(async () => {
+				txn1 = await synthetixDebtShare.importAddresses([account1], [toUnit('20')], {
+					from: owner,
+				});
+				await synthetixDebtShare.importAddresses([account2, issuer], [toUnit('10'), toUnit('10')], {
+					from: owner,
+				});
+				await synthetixDebtShare.importAddresses([account2], [toUnit('50')], { from: owner });
+				txn2 = await synthetixDebtShare.importAddresses([account2], [toUnit('30')], {
+					from: owner,
+				});
+			});
+
+			it('sets total supply', async () => {
+				assert.bnEqual(await synthetixDebtShare.totalSupply(), toUnit('60'));
+			});
+
+			it('sets balances balances', async () => {
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account1), toUnit('20'));
+				assert.bnEqual(await synthetixDebtShare.balanceOf(account2), toUnit('30'));
+				assert.bnEqual(await synthetixDebtShare.balanceOf(issuer), toUnit('10'));
+			});
+
+			it('emits events', async () => {
+				assert.eventEqual(txn1.logs[0], 'Mint', [account1, toUnit('20')]);
+				assert.eventEqual(txn1.logs[1], 'Transfer', [
+					ethers.constants.AddressZero,
+					account1,
+					toUnit('20'),
+				]);
+
+				assert.eventEqual(txn2.logs[0], 'Burn', [account2, toUnit('20')]);
+			});
+		});
+	});
+
+	describe('finishSetup()', () => {
+		it('should disallow another from minting', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetixDebtShare.finishSetup,
+				args: [],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when invoked by owner', () => {
+			beforeEach(async () => {
+				await synthetixDebtShare.finishSetup({ from: owner });
+			});
+
+			it('becomes initialized', async () => {
+				assert.isTrue(await synthetixDebtShare.isInitialized());
 			});
 		});
 	});

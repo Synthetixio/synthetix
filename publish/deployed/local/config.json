@@ -388,5 +388,8 @@
 	},
 	"ext:AggregatorDebtInfo": {
 		"deploy": true
+	},
+	"SystemSettingsLib": {
+		"deploy": true
 	}
 }

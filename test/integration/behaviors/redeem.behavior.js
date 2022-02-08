@@ -6,7 +6,7 @@ const {
 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
-const { updateExchangeRatesIfNeeded } = require('../utils/rates');
+const { increaseStalePeriodAndCheckRatesAndCache } = require('../utils/rates');
 
 function itCanRedeem({ ctx }) {
 	describe('redemption of deprecated synths', () => {
@@ -18,8 +18,8 @@ function itCanRedeem({ ctx }) {
 
 		before('target contracts and users', () => {
 			const { addedSynths } = ctx;
-			// when no added synths, then just use sDEFI for testing (useful for the simulation)
-			synth = addedSynths.length ? addedSynths[0].name : 'sDEFI';
+			// when no added synths, then just use sETH for testing (useful for the simulation)
+			synth = addedSynths.length ? addedSynths[0].name : 'sBTC';
 
 			({
 				Synthetix,
@@ -57,7 +57,7 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before('update rates and take snapshot if needed', async () => {
-			await updateExchangeRatesIfNeeded({ ctx });
+			await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 		});
 
 		before('record total system debt', async () => {

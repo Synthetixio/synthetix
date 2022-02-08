@@ -46,6 +46,8 @@ const JSONreplacer = (key, value) => {
 };
 const stringify = input => JSON.stringify(input, JSONreplacer, '\t') + '\n';
 
+const allowZeroOrUpdateIfNonZero = param => input => param === '0' || input !== '0';
+
 const ensureNetwork = network => {
 	if (!networks.includes(network)) {
 		throw Error(
@@ -272,6 +274,7 @@ const assignGasOptions = async ({ tx, provider, maxFeePerGas, maxPriorityFeePerG
 };
 
 module.exports = {
+	allowZeroOrUpdateIfNonZero,
 	ensureNetwork,
 	ensureDeploymentPath,
 	getDeploymentPathForNetwork,
