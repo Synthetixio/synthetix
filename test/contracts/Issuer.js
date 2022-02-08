@@ -43,7 +43,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [owner, account1, account2, account3, account6] = accounts;
+	const [, owner, account1, account2, account3, account6] = accounts;
 
 	let synthetix,
 		systemStatus,

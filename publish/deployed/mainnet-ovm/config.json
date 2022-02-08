@@ -170,6 +170,9 @@
 	"StakingRewardsSNXWETHUniswapV3": {
 		"deploy": false
 	},
+	"ext:AggregatorDebtInfo": {
+		"deploy": false
+	},
 	"SystemSettingsLib": {
 		"deploy": false
 	}
