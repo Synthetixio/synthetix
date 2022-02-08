@@ -175,7 +175,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             "Atomic rate deviates too much"
         );
 
-        // Ensure src/dest synth is sUSD and determine sUSD value of exchange
+        // Determine sUSD value of exchange
         uint sourceSusdValue;
         if (sourceCurrencyKey == sUSD) {
             // Use after-settled amount as this is amount converted (not sourceAmount)
@@ -185,7 +185,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             sourceSusdValue = systemConvertedAmount;
         } else {
             // Otherwise, convert source to sUSD value
-            (, , , sourceSusdValue, , ) = _getAmountsForAtomicExchangeMinusFees(amountReceived, sourceCurrencyKey, sUSD);
+            (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
+                _getAmountsForAtomicExchangeMinusFees(sourceAmount, sourceCurrencyKey, sUSD);
+            sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
         }
 
         // Check and update atomic volume limit

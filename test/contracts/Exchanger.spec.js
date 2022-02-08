@@ -2794,11 +2794,6 @@ contract('Exchanger (spec tests)', async accounts => {
 							await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - i * 5 * 60);
 						}
 
-						// DexPriceAggregator
-						const dexPriceAggregator = await MockDexPriceAggregator.new();
-						await dexPriceAggregator.setAssetToAssetRate(ethOnDex);
-						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
-
 						// Synth equivalents (needs ability to read into decimals)
 						const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
 						const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
@@ -2826,6 +2821,12 @@ contract('Exchanger (spec tests)', async accounts => {
 						await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, web3.utils.toBN(2), {
 							from: owner,
 						});
+
+						// DexPriceAggregator
+						const dexPriceAggregator = await MockDexPriceAggregator.new();
+						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, ethOnDex);
+						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit('1'));
+						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
 					});
 
 					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {
@@ -2979,11 +2980,10 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			});
 
-			describe.only('when we can use the pure Chainlink price', () => {
+			describe('when we can use the pure Chainlink price', () => {
 				let amountIn;
 				let amountReceived;
 				let amountFee;
-				let exchangeFeeRate;
 
 				beforeEach(async () => {
 
@@ -3062,19 +3062,16 @@ contract('Exchanger (spec tests)', async accounts => {
 					// sEUR -> sBTC
 
 					beforeEach(async () => {
-						amountIn = toUnit('41666.666');
+						amountIn = toUnit('10000');
 						await sEURContract.issue(account1, amountIn);
-
 						({
 							amountReceived,
 							exchangeFeeRate,
 							fee: amountFee,
 						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC));
-
 						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), {
 							from: account1,
 						});
-
 					});
 
 					it('completed the exchange atomically', async () => {
@@ -3083,13 +3080,13 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					it('used the correct atomic exchange rate', async () => {
-						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); //pure chainlink price
-						const expectedAmountInBtc = divideDecimal(expectedAmountInUsd, toUnit('50000')); //dex
-						assert.bnEqual(amountReceived, expectedAmountInBtc);
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const expectedAmountInBtc = divideDecimal(expectedAmountInUsd, toUnit('50000')); // dex
+						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInBtc);
 					});
 
 					it('updates atomic volume correctly', async () => {
-						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); //pure chainlink price
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
 						const lastAtomicVolume = await exchanger.lastAtomicVolume();
 						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
 					})
@@ -3102,10 +3099,73 @@ contract('Exchanger (spec tests)', async accounts => {
 					   From the SIP: Given sEUR is configured to trade at purely the chainlink price, with 1.20 sUSD per EUR, and sBTC is configured to trade as per the specification laid out in SIP-120 resulting in a price of sUSD 50,000 per bitcoin.
 					   The user receives 41,666.666 sEUR before factoring in fees.
 					*/
+
+					beforeEach(async () => {
+						amountIn = toUnit('1');
+						await sBTCContract.issue(account1, amountIn);
+						({
+							amountReceived,
+							exchangeFeeRate,
+							fee: amountFee,
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sBTC, sEUR));
+						await synthetix.exchangeAtomically(sBTC, amountIn, sEUR, toBytes32(), {
+							from: account1,
+						});
+					});
+
+					it('completed the exchange atomically', async () => {
+						assert.bnEqual(await sBTCContract.balanceOf(account1), 0);
+						assert.bnEqual(await sEURContract.balanceOf(account1), amountReceived);
+					});
+
+					// This passes when the CL price is higher than the dex price for BTC
+					it('used the correct atomic exchange rate', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex (this is working with 40k right now)
+						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure					
+						// We expect 41666666666666666666666
+						// It's taking the CL price for BTC when it should be the dex because chainlink is lower
+						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInEur);
+					});
+
+					it('updates atomic volume correctly', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex
+						const lastAtomicVolume = await exchanger.lastAtomicVolume();
+						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
+					})
 				});
 
 				describe('for both the source and destination currency', () => {
 					// sEUR -> sAUD
+
+					beforeEach(async () => {
+						amountIn = toUnit('10000');
+						await sEURContract.issue(account1, amountIn);
+						({
+							amountReceived,
+							exchangeFeeRate,
+							fee: amountFee,
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sAUD));
+						await synthetix.exchangeAtomically(sEUR, amountIn, sAUD, toBytes32(), {
+							from: account1,
+						});
+					});
+
+					it('completed the exchange atomically', async () => {
+						assert.bnEqual(await sEURContract.balanceOf(account1), 0);
+						assert.bnEqual(await sAUDContract.balanceOf(account1), amountReceived);
+					});
+
+					it('used the correct atomic exchange rate', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const expectedAmountInAud = divideDecimal(expectedAmountInUsd, toUnit('0.7')); // pure chainlink price
+						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInAud);
+					});
+
+					it('updates atomic volume correctly', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const lastAtomicVolume = await exchanger.lastAtomicVolume();
+						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
+					})
 				});
 
 			})

@@ -113,7 +113,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
-        return _dexPriceDestinationValue(inputEquivalent, susdEquivalent, 1);
+        return _dexPriceDestinationValue(inputEquivalent, susdEquivalent, 1).mul(10**uint(inputEquivalent.decimals())); // TODO: confirm the .decimals() call should be on inputEquivalent or susdEquivalent
     }
 
     function _getPriceFromDexAggregatorForDest(bytes32 currencyKey) internal view returns (uint) {
@@ -121,8 +121,12 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
+
         return
-            SafeDecimalMath.unit().div(_dexPriceDestinationValue(susdEquivalent, inputEquivalent, SafeDecimalMath.unit()));
+            SafeDecimalMath
+                .unit()
+                .div(_dexPriceDestinationValue(susdEquivalent, inputEquivalent, SafeDecimalMath.unit()))
+                .mul(10**uint(inputEquivalent.decimals())); // TODO: confirm the .decimals() call should be on inputEquivalent or susdEquivalent
     }
 
     function _dexPriceDestinationValue(
