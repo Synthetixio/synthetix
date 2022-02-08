@@ -27,6 +27,8 @@ import "./Proxyable.sol";
 
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
+import "hardhat/console.sol";
+
 interface IProxy {
     function target() external view returns (address);
 }
@@ -231,10 +233,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // What's the total value of the system excluding ETH backed synths in their requested currency?
         (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
 
-        // if they have 0 SNX, but it's a necessary trade-off
-        if (debtShareBalance == 0) return (0, totalSystemValue, anyRateIsInvalid);
+        if (debtShareBalance == 0) {
+            return (0, snxBackedAmount, debtInfoStale);
+        }
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, totalSystemValue, synthetixDebtShare().totalSupply());
+        // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
+        (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(currencyRate);
+        totalSystemValue = snxBackedAmount;
+
+        anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {

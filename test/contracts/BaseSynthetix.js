@@ -10,7 +10,7 @@ require('./common'); // import common test scaffolding
 
 const { setupContract, setupAllContracts } = require('./setup');
 
-const { fastForward, toUnit } = require('../utils')();
+const { currentTime, fastForward, toUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -703,7 +703,6 @@ contract('BaseSynthetix', async accounts => {
 
 					// now give some synth rates
 					await aggregatorDebtInfo.setOverrideTimestamp(0);
-
 
 					await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['0.5', '1.25'].map(toUnit));
 					await debtCache.takeDebtSnapshot();

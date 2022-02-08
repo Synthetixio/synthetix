@@ -37,7 +37,7 @@ contract('DebtCache', async accounts => {
 	].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [deployerAccount, owner, , account1, account2] = accounts;
+	const [deployerAccount, owner, account1] = accounts;
 
 	const oneETH = toUnit('1.0');
 	const twoETH = toUnit('2.0');

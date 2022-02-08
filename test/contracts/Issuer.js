@@ -43,7 +43,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [, owner, , account1, account2, account3, account6] = accounts;
+	const [owner, account1, account2, account3, account6] = accounts;
 
 	let synthetix,
 		systemStatus,
@@ -313,13 +313,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 					beforeEach(async () => {
 						await fastForward(10);
 						// Send a price update to give the synth rates
-						await exchangeRates.updateRates(
+
+						await updateAggregatorRates(
+							exchangeRates,
 							[sAUD, sEUR, sETH, ETH, SNX],
-							['0.5', '1.25', '100', '100', '2'].map(toUnit),
-							await currentTime(),
-							{ from: oracle }
+							['0.5', '1.25', '100', '100', '2'].map(toUnit)
 						);
-						await debtCache.takeDebtSnapshot();
 					});
 
 					describe('when numerous issues in many currencies', () => {
@@ -2157,6 +2156,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// Increase the value of sEUR relative to synthetix
 				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('1.1')]);
 				await debtCache.takeDebtSnapshot();
+
+				console.log('issuing');
 
 				await assert.revert(
 					synthetix.issueSynths(synthsToNotIssueYet, { from: account1 }),

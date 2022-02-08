@@ -33,7 +33,7 @@ const {
 const CLAIM_AMOUNT_DELTA_TOLERATED = '50';
 
 contract('FeePool', async accounts => {
-	const [deployerAccount, owner, oracle, relayer, account1, account2] = accounts;
+	const [deployerAccount, owner, relayer, account1, account2] = accounts;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -849,31 +849,28 @@ contract('FeePool', async accounts => {
 					});
 				});
 			});
+
 			it('should allow account1 to close the current fee period', async () => {
 				await fastForward(await feePool.feePeriodDuration());
 
-				const transaction = await feePool.closeSecondary('1', '2', { from: relayer });
+				const lastFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
+				const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 				assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
 
 				// Assert that our first period is new.
-				assert.deepEqual(await feePool.recentFeePeriods(0), {
-					feePeriodId: 2,
-					feesToDistribute: 0,
-					feesClaimed: 0,
-				});
+				assert.bnNotEqual((await feePool.recentFeePeriods(0)).feePeriodId, lastFeePeriodId);
 
 				// And that the second was the old one
-				assert.deepEqual(await feePool.recentFeePeriods(1), {
-					feePeriodId: 1,
-					feesToDistribute: 0,
-					feesClaimed: 0,
-				});
+				assert.bnEqual((await feePool.recentFeePeriods(1)).feePeriodId, lastFeePeriodId);
 
 				// fast forward and close another fee Period
 				await fastForward(await feePool.feePeriodDuration());
 
-				const secondPeriodClose = await feePool.closeSecondary('1', '2', { from: relayer });
-				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: 2 });
+				const secondFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
+				const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
+				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
 			});
 			it('should import feePeriods and close the current fee period correctly', async () => {
 				// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
@@ -916,14 +913,13 @@ contract('FeePool', async accounts => {
 
 				await fastForward(await feePool.feePeriodDuration());
 
-				const transaction = await feePool.closeSecondary('1', '2', { from: relayer });
+				const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
 				assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
 
 				// Assert that our first period is new.
-				assert.deepEqual(await feePool.recentFeePeriods(0), {
-					feePeriodId: 23,
-					feesToDistribute: 0,
-					feesClaimed: 0,
+				assert.deepInclude(await feePool.recentFeePeriods(0), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
 				});
 
 				// And that the second was the old one and fees and rewards rolled over

@@ -25,7 +25,7 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'Math',
 	});
-	
+
 	await deployer.deployContract({
 		name: 'SystemSettingsLib',
 		library: true,
