@@ -1,11 +1,18 @@
-const ethers = require('ethers');
-const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
+const { bootstrapDual } = require('../utils/bootstrap');
+
+const { toBytes32 } = require('../../../index');
+
 const { exchangeSomething } = require('../utils/exchanging');
 const { ensureBalance } = require('../utils/balances');
 const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
 
-function itCanStake({ ctx }) {
+const ethers = require('ethers');
+
+describe('stakingt & claiming integration tests (L1, L2)', () => {
+	const ctx = this;
+	bootstrapDual({ ctx });
+
 	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('1000');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
@@ -43,6 +50,43 @@ function itCanStake({ ctx }) {
 					balancesUSD.add(amountToIssueAndBurnsUSD)
 				);
 			});
+
+			describe('claiming', () => {
+				before('exchange something', async () => {
+					await exchangeSomething({ ctx });
+				});
+
+				describe.skip('when the fee period closes', () => {
+					before('skip fee period', async () => {
+						await skipFeePeriod({ ctx });
+					});
+
+					before('close the current fee period', async () => {
+						FeePool = FeePool.connect(ctx.users.owner);
+
+						const tx = await FeePool.closeCurrentFeePeriod();
+						await tx.wait();
+					});
+
+					describe('when the user claims rewards', () => {
+						before('record balances', async () => {
+							balancesUSD = await SynthsUSD.balanceOf(user.address);
+						});
+
+						before('claim', async () => {
+							FeePool = FeePool.connect(user);
+
+							const tx = await FeePool.claimFees();
+							const { gasUsed } = await tx.wait();
+							console.log(`claimFees() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+						});
+
+						it('shows a slight increase in the users sUSD balance', async () => {
+							assert.bnGt(await SynthsUSD.balanceOf(user.address), balancesUSD);
+						});
+					});
+				});
+			});
 		});
 
 		describe('when the user burns sUSD', () => {
@@ -75,8 +119,4 @@ function itCanStake({ ctx }) {
 			});
 		});
 	});
-}
-
-module.exports = {
-	itCanStake,
-};
+});
