@@ -246,45 +246,45 @@ describe('deployments', () => {
 								});
 							});
 						});
-						describe('address resolver correctly set', () => {
-							Object.entries(targets)
-								.filter(
-									([, { source }]) => !!sources[source].abi.find(({ name }) => name === 'resolver')
-								)
-								.forEach(([target, { source }]) => {
-									let Contract;
-									let foundResolver;
-									beforeEach(async () => {
-										Contract = getContract({
-											source,
-											target,
-										});
-										foundResolver = await Contract.methods.resolver().call();
+					});
+					describe('address resolver correctly set', () => {
+						Object.entries(targets)
+							.filter(
+								([, { source }]) => !!sources[source].abi.find(({ name }) => name === 'resolver')
+							)
+							.forEach(([target, { source }]) => {
+								let Contract;
+								let foundResolver;
+								beforeEach(async () => {
+									Contract = getContract({
+										source,
+										target,
 									});
-									it(`${target} has correct address resolver`, async () => {
-										assert.ok(
-											foundResolver === targets['AddressResolver'].address ||
-												targets['ReadProxyAddressResolver'].address
-										);
-									});
-
-									it(`${target} isResolverCached is true`, async () => {
-										// not every contract with a resolver will actually be a MixinResolver, so
-										// only check those with the MixinResolver.isResolverCached function
-										if ('isResolverCached' in Contract.methods) {
-											// prior to Shaula (v2.35.x), contracts with isResolverCached took the old resolver as an argument
-											const usesLegacy = !!Contract.options.jsonInterface.find(
-												({ name }) => name === 'isResolverCached'
-											).inputs.length;
-											assert.ok(
-												await Contract.methods
-													.isResolverCached(...[].concat(usesLegacy ? foundResolver : []))
-													.call()
-											);
-										}
-									});
+									foundResolver = await Contract.methods.resolver().call();
 								});
-						});
+								it(`${target} has correct address resolver`, async () => {
+									assert.ok(
+										foundResolver === targets['AddressResolver'].address ||
+											targets['ReadProxyAddressResolver'].address
+									);
+								});
+
+								it(`${target} isResolverCached is true`, async () => {
+									// not every contract with a resolver will actually be a MixinResolver, so
+									// only check those with the MixinResolver.isResolverCached function
+									if ('isResolverCached' in Contract.methods) {
+										// prior to Shaula (v2.35.x), contracts with isResolverCached took the old resolver as an argument
+										const usesLegacy = !!Contract.options.jsonInterface.find(
+											({ name }) => name === 'isResolverCached'
+										).inputs.length;
+										assert.ok(
+											await Contract.methods
+												.isResolverCached(...[].concat(usesLegacy ? foundResolver : []))
+												.call()
+										);
+									}
+								});
+							});
 					});
 				}
 			);
