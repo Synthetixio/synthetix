@@ -3095,11 +3095,6 @@ contract('Exchanger (spec tests)', async accounts => {
 				describe('for the destination currency', () => {
 					// sBTC -> sEUR
 
-					/*
-					   From the SIP: Given sEUR is configured to trade at purely the chainlink price, with 1.20 sUSD per EUR, and sBTC is configured to trade as per the specification laid out in SIP-120 resulting in a price of sUSD 50,000 per bitcoin.
-					   The user receives 41,666.666 sEUR before factoring in fees.
-					*/
-
 					beforeEach(async () => {
 						amountIn = toUnit('1');
 						await sBTCContract.issue(account1, amountIn);
@@ -3118,12 +3113,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.bnEqual(await sEURContract.balanceOf(account1), amountReceived);
 					});
 
-					// This passes when the CL price is higher than the dex price for BTC
 					it('used the correct atomic exchange rate', async () => {
-						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex (this is working with 40k right now)
-						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure					
-						// We expect 41666666666666666666666
-						// It's taking the CL price for BTC when it should be the dex because chainlink is lower
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex
+						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure			
 						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInEur);
 					});
 

@@ -88,7 +88,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
                     ? systemDestinationRate
                     : _getPriceFromDexAggregatorForDest(destinationCurrencyKey);
 
-            dexPrice = sourceAmount.mul(sourceRate).div(destRate);
+            value = sourceAmount.mul(sourceRate).div(destRate);
         } else {
             // Otherwise, we get the price from Uniswap
             IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
@@ -97,16 +97,16 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
             dexPrice = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
+
+            // Derive chainlinkPriceWithBuffer from highest configured buffer between source and destination synth
+            uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
+            uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
+            uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
+            uint chainlinkPriceWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
+
+            // Final value is minimum output between the price from Chainlink with a buffer and the price from Uniswap.
+            value = chainlinkPriceWithBuffer < dexPrice ? chainlinkPriceWithBuffer : dexPrice; // min
         }
-
-        // Derive chainlinkPriceWithBuffer from highest configured buffer between source and destination synth
-        uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
-        uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
-        uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
-        uint chainlinkPriceWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
-
-        // Final value is minimum output between the price from Chainlink with a buffer and the price from Uniswap.
-        value = chainlinkPriceWithBuffer < dexPrice ? chainlinkPriceWithBuffer : dexPrice; // min
     }
 
     function _getPriceFromDexAggregatorForSource(bytes32 currencyKey) internal view returns (uint) {
