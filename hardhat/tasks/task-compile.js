@@ -11,18 +11,12 @@ task('compile')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('failOversize', 'Fail if any contract is oversize')
 	.addFlag('native', 'Compile with the native solc compiler')
-	.addFlag('everything', 'Compile all subfolders regardless of ignore patterns')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		if (taskArguments.native) {
 			hre.config.solc.native = true;
 		}
 
 		optimizeIfRequired({ hre, taskArguments });
-
-		// remove ignore pattern if requested
-		if (taskArguments.everything) {
-			hre.config.paths.ignore = undefined;
-		}
 
 		await runSuper(taskArguments);
 

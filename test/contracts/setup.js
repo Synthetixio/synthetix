@@ -182,6 +182,7 @@ const setupContract = async ({
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
+		SynthetixDebtShare: [owner, tryGetAddressOf('AddressResolver')],
 		BaseSynthetix: [
 			tryGetAddressOf('ProxyERC20BaseSynthetix'),
 			tryGetAddressOf('TokenStateBaseSynthetix'),
@@ -223,7 +224,6 @@ const setupContract = async ({
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
-		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
@@ -311,18 +311,6 @@ const setupContract = async ({
 	}
 
 	const postDeployTasks = {
-		async Issuer() {
-			await Promise.all(
-				[].concat(
-					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-					tryInvocationIfNotMocked({
-						name: 'SynthetixState',
-						fncName: 'setAssociatedContract',
-						args: [instance.address],
-					}) || []
-				)
-			);
-		},
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
@@ -473,13 +461,6 @@ const setupContract = async ({
 					)
 					.concat(
 						tryInvocationIfNotMocked({
-							name: 'FeePoolState',
-							fncName: 'setFeePool',
-							args: [instance.address],
-						}) || []
-					)
-					.concat(
-						tryInvocationIfNotMocked({
 							name: 'FeePoolEternalStorage',
 							fncName: 'setAssociatedContract',
 							args: [instance.address],
@@ -594,7 +575,16 @@ const setupContract = async ({
 						instance,
 						mock,
 						fncName: 'feeRateForExchange',
-						returns: [toWei('0.0030'), '0'],
+						returns: [toWei('0.0030')],
+					}),
+				]);
+			} else if (mock === 'Issuer') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'debtBalanceOf',
+						returns: [toWei('0')],
 					}),
 				]);
 			} else if (mock === 'ExchangeState') {
@@ -683,12 +673,7 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemSettings'],
 			mocks: ['ExchangeCircuitBreaker'],
 		},
-		{
-			contract: 'ExchangeRatesWithDexPricing',
-			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
-		},
-		{ contract: 'SynthetixState' },
+		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
@@ -720,7 +705,6 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
-		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
@@ -763,7 +747,6 @@ const setupAllContracts = async ({
 			mocks: [
 				'CollateralManager',
 				'Synthetix',
-				'SynthetixState',
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
@@ -772,7 +755,13 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'SynthRedeemer',
 			],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
+			deps: [
+				'AddressResolver',
+				'SystemStatus',
+				'FlexibleStorage',
+				'DebtCache',
+				'SynthetixDebtShare',
+			],
 		},
 		{
 			contract: 'ExchangeCircuitBreaker',
@@ -792,6 +781,11 @@ const setupAllContracts = async ({
 				'DebtCache',
 				'ExchangeCircuitBreaker',
 			],
+		},
+		{
+			contract: 'ExchangeRatesWithDexPricing',
+			resolverAlias: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
@@ -824,15 +818,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'SynthetixState',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'BaseSynthetix',
@@ -845,15 +831,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'SynthetixState',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'MintableSynthetix',
@@ -873,7 +851,6 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
-				'SynthetixState',
 			],
 		},
 		{
@@ -903,7 +880,6 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'Exchanger',
 				'Issuer',
-				'SynthetixState',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'DelegateApprovals',
@@ -915,7 +891,7 @@ const setupAllContracts = async ({
 				'FuturesMarketManager',
 				'WrapperFactory',
 			],
-			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
+			deps: ['SystemStatus', 'SynthetixDebtShare', 'AddressResolver'],
 		},
 		{
 			contract: 'CollateralState',

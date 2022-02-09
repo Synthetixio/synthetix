@@ -16,11 +16,10 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/ISynthetix.sol";
-import "./FeePoolState.sol";
+import "./interfaces/ISynthetixDebtShare.sol";
 import "./FeePoolEternalStorage.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
@@ -45,7 +44,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     // This struct represents the issuance activity that's happened in a fee period.
     struct FeePeriod {
         uint64 feePeriodId;
-        uint64 startingDebtIndex;
         uint64 startTime;
         uint feesToDistribute;
         uint feesClaimed;
@@ -66,12 +64,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_FEEPOOLSTATE = "FeePoolState";
+    bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_FEEPOOLETERNALSTORAGE = "FeePoolEternalStorage";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
@@ -91,27 +87,25 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
-        _recentFeePeriodsStorage(0).startTime = uint64(now);
+        _recentFeePeriodsStorage(0).startTime = uint64(block.timestamp);
     }
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[1] = CONTRACT_SYNTHETIX;
-        newAddresses[2] = CONTRACT_FEEPOOLSTATE;
-        newAddresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
-        newAddresses[4] = CONTRACT_EXCHANGER;
-        newAddresses[5] = CONTRACT_ISSUER;
-        newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
-        newAddresses[7] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[9] = CONTRACT_REWARDSDISTRIBUTION;
-        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[11] = CONTRACT_ETHER_WRAPPER;
-        newAddresses[12] = CONTRACT_FUTURES_MARKET_MANAGER;
-        newAddresses[13] = CONTRACT_WRAPPER_FACTORY;
+        newAddresses[1] = CONTRACT_SYNTHETIXDEBTSHARE;
+        newAddresses[2] = CONTRACT_FEEPOOLETERNALSTORAGE;
+        newAddresses[3] = CONTRACT_EXCHANGER;
+        newAddresses[4] = CONTRACT_ISSUER;
+        newAddresses[5] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[7] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[8] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[9] = CONTRACT_WRAPPER_FACTORY;
+        newAddresses[10] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[11] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -119,12 +113,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function feePoolState() internal view returns (FeePoolState) {
-        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE));
+    function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
+        return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIXDEBTSHARE));
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
@@ -141,10 +131,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
-    }
-
-    function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
@@ -188,7 +174,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         view
         returns (
             uint64 feePeriodId,
-            uint64 startingDebtIndex,
+            uint64 unused, // required post 185 for api compatibility
             uint64 startTime,
             uint feesToDistribute,
             uint feesClaimed,
@@ -199,7 +185,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         FeePeriod memory feePeriod = _recentFeePeriodsStorage(index);
         return (
             feePeriod.feePeriodId,
-            feePeriod.startingDebtIndex,
+            0,
             feePeriod.startTime,
             feePeriod.feesToDistribute,
             feePeriod.feesClaimed,
@@ -210,31 +196,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     function _recentFeePeriodsStorage(uint index) internal view returns (FeePeriod storage) {
         return _recentFeePeriods[(_currentFeePeriod + index) % FEE_PERIOD_LENGTH];
-    }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    /**
-     * @notice Logs an accounts issuance data per fee period
-     * @param account Message.Senders account address
-     * @param debtRatio Debt percentage this account has locked after minting or burning their synth
-     * @param debtEntryIndex The index in the global debt ledger. synthetixState.issuanceData(account)
-     * @dev onlyIssuer to call me on synthetix.issue() & synthetix.burn() calls to store the locked SNX
-     * per fee period so we know to allocate the correct proportions of fees and rewards per period
-     */
-    function appendAccountIssuanceRecord(
-        address account,
-        uint debtRatio,
-        uint debtEntryIndex
-    ) external onlyIssuerAndSynthetixState {
-        feePoolState().appendAccountIssuanceRecord(
-            account,
-            debtRatio,
-            debtEntryIndex,
-            _recentFeePeriodsStorage(0).startingDebtIndex
-        );
-
-        emitIssuanceDebtRatioEntry(account, debtRatio, debtEntryIndex, _recentFeePeriodsStorage(0).startingDebtIndex);
     }
 
     /**
@@ -290,10 +251,13 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         delete _recentFeePeriods[_currentFeePeriod];
 
         // Open up the new fee period.
-        // Increment periodId from the recent closed period feePeriodId
-        _recentFeePeriodsStorage(0).feePeriodId = uint64(uint256(_recentFeePeriodsStorage(1).feePeriodId).add(1));
-        _recentFeePeriodsStorage(0).startingDebtIndex = uint64(synthetixState().debtLedgerLength());
-        _recentFeePeriodsStorage(0).startTime = uint64(now);
+        // periodID is set to the current timestamp for compatibility with other systems taking snapshots on the debt shares
+        uint newFeePeriodId = block.timestamp;
+        _recentFeePeriodsStorage(0).feePeriodId = uint64(newFeePeriodId);
+        _recentFeePeriodsStorage(0).startTime = uint64(block.timestamp);
+
+        // Inform Issuer to start recording for the new fee period
+        issuer().setCurrentPeriodId(uint128(newFeePeriodId));
 
         emitFeePeriodClosed(_recentFeePeriodsStorage(1).feePeriodId);
     }
@@ -369,24 +333,27 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     function importFeePeriod(
         uint feePeriodIndex,
         uint feePeriodId,
-        uint startingDebtIndex,
         uint startTime,
         uint feesToDistribute,
         uint feesClaimed,
         uint rewardsToDistribute,
         uint rewardsClaimed
-    ) public optionalProxy_onlyOwner onlyDuringSetup {
-        require(startingDebtIndex <= synthetixState().debtLedgerLength(), "Cannot import bad data");
+    ) external optionalProxy_onlyOwner onlyDuringSetup {
+        require(feePeriodIndex < FEE_PERIOD_LENGTH, "invalid fee period index");
 
-        _recentFeePeriods[_currentFeePeriod.add(feePeriodIndex).mod(FEE_PERIOD_LENGTH)] = FeePeriod({
+        _recentFeePeriods[feePeriodIndex] = FeePeriod({
             feePeriodId: uint64(feePeriodId),
-            startingDebtIndex: uint64(startingDebtIndex),
             startTime: uint64(startTime),
             feesToDistribute: feesToDistribute,
             feesClaimed: feesClaimed,
             rewardsToDistribute: rewardsToDistribute,
             rewardsClaimed: rewardsClaimed
         });
+
+        // make sure recording is aware of the actual period id
+        if (feePeriodIndex == 0) {
+            issuer().setCurrentPeriodId(uint128(feePeriodId));
+        }
     }
 
     /**
@@ -415,12 +382,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
                 // No need to continue iterating if we've recorded the whole amount;
                 if (remainingToAllocate == 0) return feesPaid;
-
-                // We've exhausted feePeriods to distribute and no fees remain in last period
-                // User last to claim would in this scenario have their remainder slashed
-                if (i == 0 && remainingToAllocate > 0) {
-                    remainingToAllocate = 0;
-                }
             }
         }
 
@@ -454,13 +415,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
                 // No need to continue iterating if we've recorded the whole amount;
                 if (remainingToAllocate == 0) return rewardPaid;
-
-                // We've exhausted feePeriods to distribute and no rewards remain in last period
-                // User last to claim would in this scenario have their remainder slashed
-                // due to rounding up of PreciseDecimal
-                if (i == 0 && remainingToAllocate > 0) {
-                    remainingToAllocate = 0;
-                }
             }
         }
         return rewardPaid;
@@ -586,24 +540,15 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     function feesByPeriod(address account) public view returns (uint[2][FEE_PERIOD_LENGTH] memory results) {
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
-        uint debtEntryIndex;
-        FeePoolState _feePoolState = feePoolState();
+        ISynthetixDebtShare sds = synthetixDebtShare();
 
-        (userOwnershipPercentage, debtEntryIndex) = _feePoolState.getAccountsDebtEntry(account, 0);
-
-        // If they don't have any debt ownership and they never minted, they don't have any fees.
-        // User ownership can reduce to 0 if user burns all synths,
-        // however they could have fees applicable for periods they had minted in before so we check debtEntryIndex.
-        if (debtEntryIndex == 0 && userOwnershipPercentage == 0) {
-            uint[2][FEE_PERIOD_LENGTH] memory nullResults;
-            return nullResults;
-        }
+        userOwnershipPercentage = sds.sharePercent(account);
 
         // The [0] fee period is not yet ready to claim, but it is a fee period that they can have
         // fees owing for, so we need to report on it anyway.
         uint feesFromPeriod;
         uint rewardsFromPeriod;
-        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage, debtEntryIndex);
+        (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage);
 
         results[0][0] = feesFromPeriod;
         results[0][1] = rewardsFromPeriod;
@@ -614,22 +559,11 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
-            uint next = i - 1;
-            uint nextPeriodStartingDebtIndex = _recentFeePeriodsStorage(next).startingDebtIndex;
+            uint64 periodId = _recentFeePeriodsStorage(i).feePeriodId;
+            if (lastFeeWithdrawal < periodId) {
+                userOwnershipPercentage = sds.sharePercentOnPeriod(account, uint(periodId));
 
-            // We can skip the period, as no debt minted during period (next period's startingDebtIndex is still 0)
-            if (nextPeriodStartingDebtIndex > 0 && lastFeeWithdrawal < _recentFeePeriodsStorage(i).feePeriodId) {
-                // We calculate a feePeriod's closingDebtIndex by looking at the next feePeriod's startingDebtIndex
-                // we can use the most recent issuanceData[0] for the current feePeriod
-                // else find the applicableIssuanceData for the feePeriod based on the StartingDebtIndex of the period
-                uint closingDebtIndex = uint256(nextPeriodStartingDebtIndex).sub(1);
-
-                // Gas optimisation - to reuse debtEntryIndex if found new applicable one
-                // if applicable is 0,0 (none found) we keep most recent one from issuanceData[0]
-                // return if userOwnershipPercentage = 0)
-                (userOwnershipPercentage, debtEntryIndex) = _feePoolState.applicableIssuanceData(account, closingDebtIndex);
-
-                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage, debtEntryIndex);
+                (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage);
 
                 results[i][0] = feesFromPeriod;
                 results[i][1] = rewardsFromPeriod;
@@ -645,64 +579,31 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      * @dev The reported fees owing for the current period [0] are just a
      * running balance until the fee period closes
      */
-    function _feesAndRewardsFromPeriod(
-        uint period,
-        uint ownershipPercentage,
-        uint debtEntryIndex
-    ) internal view returns (uint, uint) {
+    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage) internal view returns (uint, uint) {
         // If it's zero, they haven't issued, and they have no fees OR rewards.
         if (ownershipPercentage == 0) return (0, 0);
 
-        uint debtOwnershipForPeriod = ownershipPercentage;
-
-        // If period has closed we want to calculate debtPercentage for the period
-        if (period > 0) {
-            uint closingDebtIndex = uint256(_recentFeePeriodsStorage(period - 1).startingDebtIndex).sub(1);
-            debtOwnershipForPeriod = _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
-        }
+        FeePeriod storage fp = _recentFeePeriodsStorage(period);
 
         // Calculate their percentage of the fees / rewards in this period
         // This is a high precision integer.
-        uint feesFromPeriod = _recentFeePeriodsStorage(period).feesToDistribute.multiplyDecimal(debtOwnershipForPeriod);
+        uint feesFromPeriod = fp.feesToDistribute.multiplyDecimal(ownershipPercentage);
 
-        uint rewardsFromPeriod =
-            _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(debtOwnershipForPeriod);
+        uint rewardsFromPeriod = fp.rewardsToDistribute.multiplyDecimal(ownershipPercentage);
 
-        return (feesFromPeriod.preciseDecimalToDecimal(), rewardsFromPeriod.preciseDecimalToDecimal());
-    }
-
-    function _effectiveDebtRatioForPeriod(
-        uint closingDebtIndex,
-        uint ownershipPercentage,
-        uint debtEntryIndex
-    ) internal view returns (uint) {
-        // Figure out their global debt percentage delta at end of fee Period.
-        // This is a high precision integer.
-        ISynthetixState _synthetixState = synthetixState();
-        uint feePeriodDebtOwnership =
-            _synthetixState
-                .debtLedger(closingDebtIndex)
-                .divideDecimalRoundPrecise(_synthetixState.debtLedger(debtEntryIndex))
-                .multiplyDecimalRoundPrecise(ownershipPercentage);
-
-        return feePeriodDebtOwnership;
+        return (feesFromPeriod, rewardsFromPeriod);
     }
 
     function effectiveDebtRatioForPeriod(address account, uint period) external view returns (uint) {
-        require(period != 0, "Current period is not closed yet");
-        require(period < FEE_PERIOD_LENGTH, "Exceeds the FEE_PERIOD_LENGTH");
+        // if period is not closed yet, or outside of the fee period range, return 0 instead of reverting
+        if (period == 0 || period >= FEE_PERIOD_LENGTH) {
+            return 0;
+        }
 
         // If the period being checked is uninitialised then return 0. This is only at the start of the system.
-        if (_recentFeePeriodsStorage(period - 1).startingDebtIndex == 0) return 0;
+        if (_recentFeePeriodsStorage(period - 1).startTime == 0) return 0;
 
-        uint closingDebtIndex = uint256(_recentFeePeriodsStorage(period - 1).startingDebtIndex).sub(1);
-
-        uint ownershipPercentage;
-        uint debtEntryIndex;
-        (ownershipPercentage, debtEntryIndex) = feePoolState().applicableIssuanceData(account, closingDebtIndex);
-
-        // internal function will check closingDebtIndex has corresponding debtLedger entry
-        return _effectiveDebtRatioForPeriod(closingDebtIndex, ownershipPercentage, debtEntryIndex);
+        return synthetixDebtShare().sharePercentOnPeriod(account, uint(_recentFeePeriods[period].feePeriodId));
     }
 
     /**
@@ -750,13 +651,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _;
     }
 
-    modifier onlyIssuerAndSynthetixState {
-        bool isIssuer = msg.sender == address(issuer());
-        bool isSynthetixState = msg.sender == address(synthetixState());
-        require(isIssuer || isSynthetixState, "Issuer and SynthetixState only");
-        _;
-    }
-
     modifier notFeeAddress(address account) {
         require(account != FEE_ADDRESS, "Fee address not allowed");
         _;
@@ -768,31 +662,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /* ========== Proxy Events ========== */
-
-    event IssuanceDebtRatioEntry(
-        address indexed account,
-        uint debtRatio,
-        uint debtEntryIndex,
-        uint feePeriodStartingDebtIndex
-    );
-    bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG =
-        keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
-
-    function emitIssuanceDebtRatioEntry(
-        address account,
-        uint debtRatio,
-        uint debtEntryIndex,
-        uint feePeriodStartingDebtIndex
-    ) internal {
-        proxy._emit(
-            abi.encode(debtRatio, debtEntryIndex, feePeriodStartingDebtIndex),
-            2,
-            ISSUANCEDEBTRATIOENTRY_SIG,
-            bytes32(uint256(uint160(account))),
-            0,
-            0
-        );
-    }
 
     event FeePeriodClosed(uint feePeriodId);
     bytes32 private constant FEEPERIODCLOSED_SIG = keccak256("FeePeriodClosed(uint256)");

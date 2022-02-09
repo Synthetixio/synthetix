@@ -405,7 +405,13 @@
 		{
 			"sip": 184,
 			"layer": "both",
-			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"]
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
+			"released": "both"
+		},
+		{
+			"sip": 185,
+			"layer": "both",
+			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"]
 		},
 		{
 			"sip": 187,
@@ -428,7 +434,8 @@
 		{
 			"sip": 193,
 			"layer": "both",
-			"sources": ["SystemSettings", "SystemSettingsLib"]
+			"sources": ["SystemSettings", "SystemSettingsLib"],
+			"released": "both"
 		},
 		{
 			"sip": 194,
@@ -445,12 +452,19 @@
 		{
 			"sip": 196,
 			"layer": "both",
-			"sources": ["ExchangeRates"]
+			"sources": ["ExchangeRates"],
+			"released": "both"
 		},
 		{
 			"sip": 200,
 			"layer": "both",
 			"sources": ["FeePool"],
+			"released": "both"
+		},
+		{
+			"sip": 209,
+			"layer": "both",
+			"sources": ["Exchanger"],
 			"released": "both"
 		}
 	],
@@ -803,41 +817,41 @@
 		},
 		{
 			"name": "Alsephina",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Alsephina (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 58
 			},
-			"sips": []
+			"sips": [184, 193, 196]
 		},
 		{
 			"name": "Mirzam",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [209]
 		},
 		{
 			"name": "Mirzam (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 59
 			},
-			"sips": []
+			"sips": [209]
 		},
 		{
 			"name": "Alphard",

@@ -747,12 +747,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param sourceCurrencyKey The source currency key
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate, and whether the rates are too volatile
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        external
-        view
-        returns (uint feeRate, bool tooVolatile)
-    {
-        return _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
+        (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        require(!tooVolatile, "too volatile");
+        return feeRate;
     }
 
     /// @notice public function to get the dynamic fee rate for a given exchange

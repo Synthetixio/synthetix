@@ -181,5 +181,8 @@
 	},
 	"CollateralEth": {
 		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
 	}
 }

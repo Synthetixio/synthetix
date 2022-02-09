@@ -27,7 +27,8 @@ const safeInitializer = async ({ network, signer, safeAddress }) => {
 			!/Safe Proxy contract is not deployed in the current network/.test(err.message) &&
 			!/Safe contracts not found in the current network/.test(err.message)
 		) {
-			throw err;
+			// TODO: In the future we should throw here and get Gnosis to help fix these errors.
+			console.error(err.message);
 		}
 	}
 };

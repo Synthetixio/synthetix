@@ -339,4 +339,25 @@ contract('SafeDecimalMath', async () => {
 			toPreciseUnit('0.666666666666666666666666667')
 		);
 	});
+
+	// -----------------------
+	// decimalToPreciseDecimal
+	// -----------------------
+	it('converts decimalToPreciseDecimal', async () => {
+		assert.bnEqual(await instance.decimalToPreciseDecimal(toUnit('20')), toPreciseUnit('20'));
+	});
+
+	// -----------------------
+	// preciseDecimalToDecimal
+	// -----------------------
+	it('converts preciseDecimalToDecimal', async () => {
+		assert.bnEqual(
+			await instance.preciseDecimalToDecimal(toPreciseUnit('0.66666666666666666666')),
+			toUnit('0.666666666666666667')
+		);
+		assert.bnEqual(
+			await instance.preciseDecimalToDecimal(toPreciseUnit('0.33333333333333333333')),
+			toUnit('0.333333333333333333')
+		);
+	});
 });

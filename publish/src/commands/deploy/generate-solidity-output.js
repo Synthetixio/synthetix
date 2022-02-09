@@ -43,7 +43,7 @@ module.exports = async ({
 		runIndex,
 		{ skipSolidity, contract, target, writeArg, write, comment, customSolidity },
 	] of Object.entries(runSteps)) {
-		if (skipSolidity) {
+		if (skipSolidity || contract.library) {
 			continue;
 		}
 		if (comment) {
@@ -193,9 +193,9 @@ contract Migration_${releaseName} is BaseMigration {
 			([address, { name }]) =>
 				`${generateExplorerComment({
 					address,
-				})}\n\t\taddress public constant ${newContractVariableFunctor(name)} = ${address};`
+				})}\n\taddress public constant ${newContractVariableFunctor(name)} = ${address};`
 		)
-		.join('\n\t\t')}
+		.join('\n\t')}
 
 	constructor() public BaseMigration(OWNER) {}
 
@@ -206,11 +206,9 @@ contract Migration_${releaseName} is BaseMigration {
 			.join('\n\t\t')}
 	}
 
-	function migrate(address currentOwner) external onlyOwner {
-		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
-
+	function migrate() external onlyOwner {
 		${Object.entries(newContractsBeingAdded)
-			.filter(([, { name }]) => !/^Proxy/.test(name)) // ignore the check for proxies
+			.filter(([, { name, library }]) => !/^Proxy/.test(name) && !library) // ignore the check for proxies and libraries
 			.map(
 				([address, { name, source }]) =>
 					`require(ISynthetixNamedContract(${newContractVariableFunctor(

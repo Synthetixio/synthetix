@@ -28,6 +28,7 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'SystemSettingsLib',
+		library: true,
 	});
 
 	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
@@ -86,6 +87,12 @@ module.exports = async ({
 		name: 'SynthetixState',
 		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
 		args: [account, account],
+	});
+
+	await deployer.deployContract({
+		name: 'SynthetixDebtShare',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const proxyFeePool = await deployer.deployContract({

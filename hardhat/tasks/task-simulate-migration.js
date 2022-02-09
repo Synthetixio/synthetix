@@ -81,19 +81,18 @@ task(
 		console.log(gray('Now running hardhat compile to flatten and compile the migration contracts'));
 
 		// now compile the contract that was invariably created
-		await hre.run('compile', { everything: true, optimizer: true });
+		await hre.run('compile', { optimizer: true });
 
 		// get artifacts via hardhat/ethers
 		const Migration = await hre.ethers.getContractFactory(`Migration_${taskArguments.release}`);
 
 		const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-		const ownerAddress = getUsers({ network: 'mainnet', user: 'owner' }).address;
 
 		// but deploy this new migration contract using regular ethers onto the fork (using Migration.deploy won't deploy to the fork as needed)
 		const Factory = new ethers.ContractFactory(
 			Migration.interface,
 			Migration.bytecode,
-			provider.getSigner(getUsers({ network: 'mainnet', user: 'deployer' }).address)
+			provider.getSigner(getUsers({ network: 'mainnet', user: 'owner' }).address)
 		);
 
 		const migration = await Factory.deploy();
@@ -123,7 +122,7 @@ task(
 
 		console.log(gray(`Beginning the migration`));
 
-		const txn = await migration.migrate(ownerAddress, {
+		const txn = await migration.migrate({
 			gasLimit: ethers.BigNumber.from(12e6),
 		});
 
