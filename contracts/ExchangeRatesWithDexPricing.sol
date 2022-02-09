@@ -82,11 +82,13 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
             // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
             uint sourceRate =
-                usePureChainlinkPriceForSource ? systemSourceRate : _getPriceFromDexAggregatorForSource(sourceCurrencyKey);
+                usePureChainlinkPriceForSource
+                    ? systemSourceRate
+                    : _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount);
             uint destRate =
                 usePureChainlinkPriceForDest
                     ? systemDestinationRate
-                    : _getPriceFromDexAggregatorForDest(destinationCurrencyKey);
+                    : _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount);
 
             value = sourceAmount.mul(sourceRate).div(destRate);
         } else {
@@ -109,24 +111,19 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         }
     }
 
-    function _getPriceFromDexAggregatorForSource(bytes32 currencyKey) internal view returns (uint) {
-        IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
-        require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
-        IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
-        return _dexPriceDestinationValue(inputEquivalent, susdEquivalent, 1).mul(10**uint(inputEquivalent.decimals())); // TODO: confirm the .decimals() call should be on inputEquivalent or susdEquivalent
-    }
-
-    function _getPriceFromDexAggregatorForDest(bytes32 currencyKey) internal view returns (uint) {
-        // Because slippage is asymmetical on UniV3, we want the exchange rate from usd -> currencyKey to get the price, but invert it to get currencyKey's price in USD
+    /// @notice Retrieve the TWAP (time-weighted average price) of an asset from its Uniswap V3-equivalent pool
+    /// @param currencyKey The currency key of the synth to retrieve the price of
+    /// @param amount The amount of the asset we're interested in, which can effect the price by increasing the slippage
+    /// @return The price of the asset
+    function _getPriceFromDexAggregator(bytes32 currencyKey, uint amount) internal view returns (uint) {
         IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
 
         return
-            SafeDecimalMath
-                .unit()
-                .div(_dexPriceDestinationValue(susdEquivalent, inputEquivalent, SafeDecimalMath.unit()))
-                .mul(10**uint(inputEquivalent.decimals())); // TODO: confirm the .decimals() call should be on inputEquivalent or susdEquivalent
+            _dexPriceDestinationValue(inputEquivalent, susdEquivalent, amount).div(amount).mul(
+                10**uint(inputEquivalent.decimals())
+            );
     }
 
     function _dexPriceDestinationValue(
@@ -152,6 +149,16 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         // Similar to source amount, normalize decimals back to internal unit for output amount
         return (twapValueInEquivalent.mul(SafeDecimalMath.unit())).div(10**uint(destEquivalent.decimals()));
+    }
+
+    function _dexPriceSourceValue(
+        IERC20 sourceEquivalent,
+        IERC20 destEquivalent,
+        uint sourceAmount
+    ) internal view returns (uint) {
+        /* get the price going the other way */
+        /* change param names accordingly? */
+        return 0;
     }
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool) {
