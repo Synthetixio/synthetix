@@ -10,7 +10,7 @@ const {
 } = require('ethers');
 const {
 	getUsers,
-	releases: { releases },
+	getNextRelease,
 	constants: { CONTRACTS_FOLDER, MIGRATIONS_FOLDER },
 } = require('../../../..');
 
@@ -138,9 +138,7 @@ module.exports = async ({
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
 
-	const release = releases.find(({ released, ovm }) => !released && (useOvm ? ovm : !ovm));
-
-	const releaseName = release.name.replace(/[^\w]/g, '');
+	const { releaseName } = getNextRelease({ useOvm });
 
 	const generateExplorerComment = ({ address }) => `// ${explorerLinkPrefix}/address/${address}`;
 
@@ -206,9 +204,7 @@ contract Migration_${releaseName} is BaseMigration {
 			.join('\n\t\t')}
 	}
 
-	function migrate(address currentOwner) external onlyOwner {
-		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
-
+	function migrate() external onlyOwner {
 		${Object.entries(newContractsBeingAdded)
 			.filter(([, { name, library }]) => !/^Proxy/.test(name) && !library) // ignore the check for proxies and libraries
 			.map(

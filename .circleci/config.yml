@@ -63,7 +63,7 @@ jobs:
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat test:integration:l2 --use-fork
+              npx hardhat test:integration:l2 --compile --use-fork
             else
               npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
             fi;
@@ -92,7 +92,7 @@ jobs:
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat test:integration:l1 --use-fork --provider-port 9545
+              npx hardhat test:integration:l1 --compile --use-fork --provider-port 9545
             else
               npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
             fi;
@@ -226,7 +226,7 @@ jobs:
           command: |
             UPCOMING_RELEASE=$(node bin.js releases --layer=base --unreleased --with-sources --name-only)
             if [ ! -z "$UPCOMING_RELEASE" ]; then
-              npx hardhat simulate:migration --release "$UPCOMING_RELEASE" --generate --test
+              npx hardhat simulate:migration --generate --test
             fi;
       - store_test_results:
           path: /tmp/junit/
