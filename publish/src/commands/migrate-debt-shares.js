@@ -141,7 +141,7 @@ const migrateDebtShares = async ({
 			contract: 'SynthetixDebtShare',
 			// encodeABI: network === 'mainnet',
 			// maxFeePerGas,
-			//maxPriorityFeePerGas:  //ethers.utils.parseUnits('5', 'gwei'),
+			// maxPriorityFeePerGas:  //ethers.utils.parseUnits('5', 'gwei'),
 			ownerActions,
 			ownerActionsFile,
 			signer,
