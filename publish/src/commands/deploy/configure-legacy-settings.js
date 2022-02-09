@@ -53,10 +53,10 @@ module.exports = async ({
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControls',
 			writeArg: [
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
-				[true, true, true, true, true],
-				[true, true, true, true, true],
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth', 'Futures'].map(toBytes32),
+				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
+				[true, true, true, true, true, true],
+				[true, true, true, true, true, true],
 			],
 			comment: 'Ensure the owner can suspend and resume the protocol',
 		});

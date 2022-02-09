@@ -37,7 +37,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert
-        uint price = _assetPriceRequireChecks();
+        uint price = _assetPriceRequireSystemChecks();
         uint fundingIndex = _recomputeFunding(price);
         TradeParams memory params =
             TradeParams({
@@ -101,7 +101,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             // this is account owner
             // refund keeper fee to margin
             Position storage position = positions[account];
-            uint price = _assetPriceRequireChecks();
+            uint price = _assetPriceRequireSystemChecks();
             uint fundingIndex = _recomputeFunding(price);
             _updatePositionMargin(position, price, int(order.keeperDeposit));
 
@@ -175,7 +175,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         }
 
         Position storage position = positions[account];
-        uint currentPrice = _assetPriceRequireChecks();
+        uint currentPrice = _assetPriceRequireSystemChecks();
         uint fundingIndex = _recomputeFunding(currentPrice);
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course

@@ -13,6 +13,7 @@ contract SystemStatus is Owned, ISystemStatus {
     bytes32 public constant SECTION_SYSTEM = "System";
     bytes32 public constant SECTION_ISSUANCE = "Issuance";
     bytes32 public constant SECTION_EXCHANGE = "Exchange";
+    bytes32 public constant SECTION_FUTURES = "Futures";
     bytes32 public constant SECTION_SYNTH_EXCHANGE = "SynthExchange";
     bytes32 public constant SECTION_SYNTH = "Synth";
 
@@ -21,6 +22,8 @@ contract SystemStatus is Owned, ISystemStatus {
     Suspension public issuanceSuspension;
 
     Suspension public exchangeSuspension;
+
+    Suspension public futuresSuspension;
 
     mapping(bytes32 => Suspension) public synthExchangeSuspension;
 
@@ -57,6 +60,12 @@ contract SystemStatus is Owned, ISystemStatus {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
         _internalRequireSynthExchangeActive(currencyKey);
+    }
+
+    function requireFuturesActive() external view {
+        _internalRequireSystemActive();
+        _internalRequireExchangeActive();
+        _internalRequireFuturesActive();
     }
 
     function synthSuspended(bytes32 currencyKey) external view returns (bool) {
@@ -193,6 +202,20 @@ contract SystemStatus is Owned, ISystemStatus {
         exchangeSuspension.reason = 0;
     }
 
+    function suspendFutures(uint256 reason) external {
+        _requireAccessToSuspend(SECTION_FUTURES);
+        futuresSuspension.suspended = true;
+        futuresSuspension.reason = uint248(reason);
+        emit FuturesSuspended(reason);
+    }
+
+    function resumeFutures() external {
+        _requireAccessToResume(SECTION_FUTURES);
+        futuresSuspension.suspended = false;
+        emit FuturesResumed(uint256(futuresSuspension.reason));
+        futuresSuspension.reason = 0;
+    }
+
     function suspendSynthExchange(bytes32 currencyKey, uint256 reason) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
@@ -260,6 +283,10 @@ contract SystemStatus is Owned, ISystemStatus {
         require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
     }
 
+    function _internalRequireFuturesActive() internal view {
+        require(!futuresSuspension.suspended, "Futures markets are suspended. Operation prohibited");
+    }
+
     function _internalRequireSynthExchangeActive(bytes32 currencyKey) internal view {
         require(!synthExchangeSuspension[currencyKey].suspended, "Synth exchange suspended. Operation prohibited");
     }
@@ -316,6 +343,7 @@ contract SystemStatus is Owned, ISystemStatus {
             section == SECTION_SYSTEM ||
                 section == SECTION_ISSUANCE ||
                 section == SECTION_EXCHANGE ||
+                section == SECTION_FUTURES ||
                 section == SECTION_SYNTH_EXCHANGE ||
                 section == SECTION_SYNTH,
             "Invalid section supplied"
@@ -335,6 +363,9 @@ contract SystemStatus is Owned, ISystemStatus {
 
     event ExchangeSuspended(uint256 reason);
     event ExchangeResumed(uint256 reason);
+
+    event FuturesSuspended(uint256 reason);
+    event FuturesResumed(uint256 reason);
 
     event SynthExchangeSuspended(bytes32 currencyKey, uint256 reason);
     event SynthExchangeResumed(bytes32 currencyKey, uint256 reason);

@@ -543,10 +543,10 @@ const setupContract = async ({
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
 			await instance.updateAccessControls(
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[owner, owner, owner, owner, owner],
-				[true, true, true, true, true],
-				[true, true, true, true, true],
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth', 'Futures'].map(toBytes32),
+				[owner, owner, owner, owner, owner, owner],
+				[true, true, true, true, true, true],
+				[true, true, true, true, true, true],
 				{ from: owner }
 			);
 		},

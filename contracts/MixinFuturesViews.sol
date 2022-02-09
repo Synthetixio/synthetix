@@ -9,16 +9,6 @@ import "./FuturesMarketBase.sol";
  */
 contract MixinFuturesViews is FuturesMarketBase {
     /*
-     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
-     */
-    function assetPrice() public view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
-        // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
-        return (price, invalid);
-    }
-
-    /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
     function marketSizes() public view returns (uint long, uint short) {

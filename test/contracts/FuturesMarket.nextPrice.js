@@ -15,6 +15,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 		exchangeCircuitBreaker,
 		sUSD,
 		systemSettings,
+		systemStatus,
 		feePool;
 
 	const owner = accounts[1];
@@ -48,6 +49,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			SynthsUSD: sUSD,
 			FeePool: feePool,
 			SystemSettings: systemSettings,
+			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
@@ -162,6 +164,14 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 					'previous order exists'
 				);
 			});
+
+			it('if futures markets are suspended', async () => {
+				await systemStatus.suspendFutures(toUnit(0), { from: owner });
+				await assert.revert(
+					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					'Futures markets are suspended'
+				);
+			});
 		});
 	});
 
@@ -248,6 +258,14 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				spotFee = (await futuresMarket.orderFee(size))[0];
 				keeperFee = await futuresMarketSettings.minKeeperFee();
 				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+			});
+
+			it('cannot cancel if futures markets are suspended', async () => {
+				await systemStatus.suspendFutures(toUnit(0), { from: owner });
+				await assert.revert(
+					futuresMarket.cancelNextPriceOrder(trader, { from: trader }),
+					'Futures markets are suspended'
+				);
 			});
 
 			describe('account owner can cancel', () => {
@@ -550,6 +568,15 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 						it('from keeper', async () => {
 							await checkExecution(trader2, targetPrice, makerFeeNextPrice, spotTradeDetails);
 						});
+					});
+
+					it('reverts if futures markets are suspended', async () => {
+						await setPrice(baseAsset, targetPrice);
+						await systemStatus.suspendFutures(toUnit(0), { from: owner });
+						await assert.revert(
+							futuresMarket.executeNextPriceOrder(trader, { from: trader }),
+							'Futures markets are suspended'
+						);
 					});
 				});
 
