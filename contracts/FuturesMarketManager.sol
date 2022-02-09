@@ -18,7 +18,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketManager
-contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
+contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
 
@@ -36,11 +36,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address payable _proxy,
-        address _owner,
-        address _resolver
-    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */
 
@@ -120,7 +116,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /*
      * Add a set of new markets. Reverts if some market's asset already has a market.
      */
-    function addMarkets(address[] calldata marketsToAdd) external optionalProxy_onlyOwner {
+    function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToAdd[i];
@@ -130,7 +126,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
             require(marketForAsset[key] == address(0), "Market already exists for this asset");
             marketForAsset[key] = market;
             _markets.add(market);
-            emitMarketAdded(market, key);
+            emit MarketAdded(market, key);
         }
     }
 
@@ -144,21 +140,21 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
             require(marketForAsset[key] != address(0), "Unknown market");
             delete marketForAsset[key];
             _markets.remove(market);
-            emitMarketRemoved(market, key);
+            emit MarketRemoved(market, key);
         }
     }
 
     /*
      * Remove a set of markets. Reverts if any market is not known to the manager.
      */
-    function removeMarkets(address[] calldata marketsToRemove) external optionalProxy_onlyOwner {
+    function removeMarkets(address[] calldata marketsToRemove) external onlyOwner {
         return _removeMarkets(marketsToRemove);
     }
 
     /*
      * Remove the markets for a given set of assets. Reverts if any asset has no associated market.
      */
-    function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external optionalProxy_onlyOwner {
+    function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external onlyOwner {
         _removeMarkets(_marketsForAssets(assetsToRemove));
     }
 
@@ -213,7 +209,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /* ========== MODIFIERS ========== */
 
     function _requireIsMarket() internal view {
-        require(_markets.contains(messageSender) || _markets.contains(msg.sender), "Permitted only for markets");
+        require(_markets.contains(msg.sender), "Permitted only for markets");
     }
 
     modifier onlyMarkets() {
@@ -224,16 +220,6 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /* ========== EVENTS ========== */
 
     event MarketAdded(address market, bytes32 indexed asset);
-    bytes32 internal constant MARKETADDED_SIG = keccak256("MarketAdded(address,bytes32)");
-
-    function emitMarketAdded(address market, bytes32 asset) internal {
-        proxy._emit(abi.encode(market), 2, MARKETADDED_SIG, asset, 0, 0);
-    }
 
     event MarketRemoved(address market, bytes32 indexed asset);
-    bytes32 internal constant MARKETREMOVED_SIG = keccak256("MarketRemoved(address,bytes32)");
-
-    function emitMarketRemoved(address market, bytes32 asset) internal {
-        proxy._emit(abi.encode(market), 2, MARKETREMOVED_SIG, asset, 0, 0);
-    }
 }

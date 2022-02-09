@@ -11,7 +11,6 @@ interface IFuturesMarketSettings {
         uint maxMarketValueUSD;
         uint maxFundingRate;
         uint skewScaleUSD;
-        uint maxFundingRateDelta;
     }
 
     function takerFee(bytes32 _baseAsset) external view returns (uint);
@@ -32,8 +31,6 @@ interface IFuturesMarketSettings {
 
     function skewScaleUSD(bytes32 _baseAsset) external view returns (uint);
 
-    function maxFundingRateDelta(bytes32 _baseAsset) external view returns (uint);
-
     function parameters(bytes32 _baseAsset)
         external
         view
@@ -46,8 +43,7 @@ interface IFuturesMarketSettings {
             uint _maxLeverage,
             uint _maxMarketValueUSD,
             uint _maxFundingRate,
-            uint _skewScaleUSD,
-            uint _maxFundingRateDelta
+            uint _skewScaleUSD
         );
 
     function minKeeperFee() external view returns (uint);

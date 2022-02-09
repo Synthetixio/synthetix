@@ -8,8 +8,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
 contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
-	let proxyFuturesMarket,
-		futuresMarketSettings,
+	let futuresMarketSettings,
 		// futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
@@ -41,7 +40,6 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 	before(async () => {
 		({
-			ProxyFuturesMarketBTC: proxyFuturesMarket,
 			FuturesMarketSettings: futuresMarketSettings,
 			// FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
@@ -121,14 +119,14 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			// PositionModified
 			decodedEventEqual({
 				event: 'PositionModified',
-				emittedFrom: proxyFuturesMarket.address,
+				emittedFrom: futuresMarket.address,
 				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
 				log: decodedLogs[1],
 			});
 			// NextPriceOrderSubmitted
 			decodedEventEqual({
 				event: 'NextPriceOrderSubmitted',
-				emittedFrom: proxyFuturesMarket.address,
+				emittedFrom: futuresMarket.address,
 				args: [trader, size, roundId.add(toBN(1)), spotFee, keeperFee],
 				log: decodedLogs[2],
 			});
@@ -207,7 +205,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 					// PositionModified
 					decodedEventEqual({
 						event: 'PositionModified',
-						emittedFrom: proxyFuturesMarket.address,
+						emittedFrom: futuresMarket.address,
 						args: [toBN('1'), trader, currentMargin.add(keeperFee), 0, 0, price, toBN(2), 0],
 						log: decodedLogs[1],
 					});
@@ -232,7 +230,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				// NextPriceOrderRemoved
 				decodedEventEqual({
 					event: 'NextPriceOrderRemoved',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [trader, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
@@ -473,7 +471,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				const currentPrice = (await futuresMarket.assetPrice()).price;
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [toBN('1'), trader, expectedMargin, 0, 0, currentPrice, toBN(2), 0],
 					log: decodedLogs.slice(-4, -3)[0],
 				});
@@ -490,7 +488,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [toBN('1'), trader, expectedMargin, size, size, targetPrice, toBN(2), expectedFee],
 					log: decodedLogs.slice(-2, -1)[0],
 				});
@@ -498,7 +496,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				// NextPriceOrderRemoved
 				decodedEventEqual({
 					event: 'NextPriceOrderRemoved',
-					emittedFrom: proxyFuturesMarket.address,
+					emittedFrom: futuresMarket.address,
 					args: [trader, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});

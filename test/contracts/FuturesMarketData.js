@@ -70,13 +70,6 @@ contract('FuturesMarketData', accounts => {
 
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
-			const proxy = await setupContract({
-				accounts,
-				contract: 'ProxyFuturesMarket' + symbol,
-				source: 'Proxy',
-				args: [accounts[1]],
-				cache: { FuturesMarketManager: futuresMarketManager },
-			});
 			const assetKey = toBytes32(symbol);
 
 			const market = await setupContract({
@@ -84,14 +77,11 @@ contract('FuturesMarketData', accounts => {
 				contract: 'FuturesMarket' + symbol,
 				source: 'FuturesMarket',
 				args: [
-					proxy.address,
-					accounts[1],
 					addressResolver.address,
 					assetKey, // base asset
 				],
 			});
 
-			await proxy.setTarget(market.address, { from: owner });
 			await addressResolver.rebuildCaches([market.address], { from: owner });
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
@@ -110,7 +100,6 @@ contract('FuturesMarketData', accounts => {
 				toWei('1000000'), // 1000000 max total margin
 				toWei('0.2'), // 20% max funding rate
 				toWei('100000'), // 100000 USD skewScaleUSD
-				toWei('0.025'), // 2.5% per hour max funding rate of change
 				{ from: owner }
 			);
 		}
@@ -188,7 +177,6 @@ contract('FuturesMarketData', accounts => {
 
 			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
 			assert.bnEqual(details.fundingParameters.skewScaleUSD, params.skewScaleUSD);
-			assert.bnEqual(details.fundingParameters.maxFundingRateDelta, params.maxFundingRateDelta);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
 			const marketSizes = await futuresMarket.marketSizes();
@@ -230,7 +218,7 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details2.remainingMargin, remaining.marginRemaining);
 			const accessible = await futuresMarket.accessibleMargin(trader1);
 			assert.bnEqual(details2.accessibleMargin, accessible.marginAccessible);
-			const lp = await futuresMarket.liquidationPrice(trader1, true);
+			const lp = await futuresMarket.liquidationPrice(trader1);
 			assert.bnEqual(details2.liquidationPrice, lp[0]);
 			assert.equal(details.canLiquidatePosition, await futuresMarket.canLiquidate(trader1));
 		});

@@ -57,7 +57,6 @@ contract FuturesMarketData {
     struct FundingParameters {
         uint maxFundingRate;
         uint skewScaleUSD;
-        uint maxFundingRateDelta;
     }
 
     struct FeeRates {
@@ -145,8 +144,7 @@ contract FuturesMarketData {
             uint maxLeverage,
             uint maxMarketValueUSD,
             uint maxFundingRate,
-            uint skewScaleUSD,
-            uint maxFundingRateDelta
+            uint skewScaleUSD
         ) = _futuresMarketSettings().parameters(baseAsset);
         return
             IFuturesMarketSettings.Parameters(
@@ -158,8 +156,7 @@ contract FuturesMarketData {
                 maxLeverage,
                 maxMarketValueUSD,
                 maxFundingRate,
-                skewScaleUSD,
-                maxFundingRateDelta
+                skewScaleUSD
             );
     }
 
@@ -207,7 +204,7 @@ contract FuturesMarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(params.maxFundingRate, params.skewScaleUSD, params.maxFundingRateDelta);
+        return FundingParameters(params.maxFundingRate, params.skewScaleUSD);
     }
 
     function _marketSizes(IFuturesMarket market) internal view returns (Sides memory) {
@@ -290,7 +287,7 @@ contract FuturesMarketData {
     }
 
     function _liquidationPrice(IFuturesMarket market, address account) internal view returns (uint) {
-        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
+        (uint liquidationPrice, ) = market.liquidationPrice(account);
         return liquidationPrice;
     }
 

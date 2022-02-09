@@ -103,7 +103,6 @@ module.exports = async ({
 			maxMarketValueUSD,
 			maxFundingRate,
 			skewScaleUSD,
-			maxFundingRateDelta,
 		} = market;
 
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
@@ -120,7 +119,6 @@ module.exports = async ({
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
 			maxFundingRate: w3utils.toWei(maxFundingRate),
 			skewScaleUSD: w3utils.toWei(skewScaleUSD),
-			maxFundingRateDelta: w3utils.toWei(maxFundingRateDelta),
 		};
 
 		for (const setting in settings) {
