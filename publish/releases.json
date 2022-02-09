@@ -378,7 +378,8 @@
 			"layer": "both",
 			"sources": [
 				"FeePool",
-				"Issuer"
+				"Issuer",
+				"ext:AggregatorDebtInfo"
 			]
 		},
 		{
