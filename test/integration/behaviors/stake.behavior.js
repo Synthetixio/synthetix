@@ -1,9 +1,8 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
-const { exchangeSomething } = require('../utils/exchanging');
 const { ensureBalance } = require('../utils/balances');
-const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
+const { skipMinimumStakeTime } = require('../utils/skip');
 
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
@@ -11,11 +10,11 @@ function itCanStake({ ctx }) {
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
 		let user;
-		let Synthetix, SynthsUSD, FeePool;
+		let Synthetix, SynthsUSD;
 		let balancesUSD, debtsUSD;
 
 		before('target contracts and users', () => {
-			({ Synthetix, SynthsUSD, FeePool } = ctx.contracts);
+			({ Synthetix, SynthsUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
 		});
