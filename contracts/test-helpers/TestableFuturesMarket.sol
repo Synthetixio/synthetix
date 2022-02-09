@@ -46,7 +46,7 @@ contract TestableFuturesMarket is FuturesMarket {
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      */
     function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(positions[account].size != 0, "0 size position");
+        require(positions[account].size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
         (uint price, ) = assetPrice();
         return _liquidationMargin(int(positions[account].size), price);
     }

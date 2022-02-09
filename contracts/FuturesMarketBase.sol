@@ -223,12 +223,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(baseAsset).divideDecimal(price);
-
-        // parameters may not be set, don't divide by zero
-        if (skewScaleBaseAsset == 0) {
-            return 0;
-        }
-
+        require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
         return int(marketSkew).divideDecimal(int(skewScaleBaseAsset));
     }
 
@@ -331,7 +326,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * If the result is not an error, callers of this function that use it to update a position's margin
      * must ensure that this is accompanied by a corresponding debt correction update, as per `_applyDebtCorrection`.
      */
-    function _realisedMargin(
+    function _recomputeMarginWithDelta(
         Position memory position,
         uint price,
         int marginDelta
@@ -403,8 +398,10 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // Hence, expanding the definition of remainingMargin the exact price
         // at which a position can first be liquidated is:
         //     margin + profitLoss + funding =  liquidationMargin
-        //     profitLoss = (price - last-price) * positionSize
-        //     price  = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
+        //     substitute with: profitLoss = (price - last-price) * positionSize
+        //     and also with: funding = netFundingPerUnit * positionSize
+        //     we get: margin + (price - last-price) * positionSize + netFundingPerUnit * positionSize =  liquidationMargin
+        //     moving around: price  = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
         int result =
             int(position.lastPrice).add(int(liqMargin).sub(int(position.margin)).divideDecimal(positionSize)).sub(
                 fundingPerUnit
@@ -511,8 +508,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             return (oldPos, 0, Status.CanLiquidate);
         }
 
-        int newSize = int(oldPos.size).add(params.sizeDelta);
-
         // get the dynamic fee rate SIP-184
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
         if (tooVolatile) {
@@ -524,21 +519,27 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        (uint newMargin, Status status) = _realisedMargin(oldPos, params.price, -int(fee));
+        (uint newMargin, Status status) = _recomputeMarginWithDelta(oldPos, params.price, -int(fee));
         if (_isError(status)) {
             return (oldPos, 0, status);
         }
+
+        // construct new position
         Position memory newPos =
             Position({
                 id: oldPos.id,
                 lastFundingIndex: uint64(_latestFundingIndex()),
                 margin: uint128(newMargin),
                 lastPrice: uint128(params.price),
-                size: int128(newSize)
+                size: int128(int(oldPos.size).add(params.sizeDelta))
             });
 
-        // Check that the user has sufficient margin given their order.
-        // We don't check the margin requirement if the position size is decreasing
+        // always allow to decrease a position, otherwise a margin of minInitialMargin cen never
+        // decrease a position as as the price goes against them.
+        // we also add the paid out fee for the minInitialMargin because otherwise minInitialMargin
+        // is never the actual minMargin, because the first trade will always deduct
+        // a fee (so the margin that otherwise would need to be transferred would have to include the future
+        // fee as well, making the UX and definition of min-margin confusing).
         bool positionDecreasing = _sameSide(oldPos.size, newPos.size) && _abs(newPos.size) < _abs(oldPos.size);
         if (!positionDecreasing) {
             // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
@@ -548,11 +549,21 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             }
         }
 
-        // Check that the maximum leverage is not exceeded (ignoring the fee).
+        // check that new position margin is above liquidation margin
+        // (above, in _recomputeMarginWithDelta() we checked the old position, here we check the new one)
+        // Liquidation margin is considered without a fee, because it wouldn't make sense to allow
+        // a trade that will make the position liquidatable.
+        if (newMargin <= _liquidationMargin(newPos.size, params.price)) {
+            return (newPos, 0, Status.CanLiquidate);
+        }
+
+        // Check that the maximum leverage is not exceeded when considering new margin including the paid fee.
+        // The paid fee is considered for the benefit of UX of allowed max leverage, otherwise, the actual
+        // max leverage is always below the max leverage parameter since the fee paid for a trade reduces the margin.
         // We'll allow a little extra headroom for rounding errors.
         {
             // stack too deep
-            int leverage = newSize.multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
+            int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
             if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
@@ -600,9 +611,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     // True if and only if two positions a and b are on the same side of the market;
     // that is, if they have the same sign, or either of them is zero.
     function _sameSide(int a, int b) internal pure returns (bool) {
-        // Since we only care about the sign of the product, we don't care about overflow and
-        // aren't using SignedSafeDecimalMath
-        return 0 <= a * b;
+        return (a >= 0) == (b >= 0);
     }
 
     /*
@@ -679,9 +688,14 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
         /**
-        Debt correction calculation from the SIP https://sips.synthetix.io/sips/sip-80/
+        This method only returns the correction term for the debt calculation of the position, and not it's 
+        debt. This is needed for keeping track of the _markedDebt() in an efficient manner to allow O(1) marketDebt
+        calculation in _marketDebt().
+
+        Explanation of the full market debt calculation from the SIP https://sips.synthetix.io/sips/sip-80/:
+
         The overall market debt is the sum of the remaining margin in all positions. The intuition is that
-        the debt of a single positino is the value withdrawn upon closing that position.
+        the debt of a single position is the value withdrawn upon closing that position.
 
         single position remaining margin = initial-margin + profit-loss + accrued-funding =
             = initial-margin + q * (price - last-prise) + q * funding-accrued-per-unit
@@ -694,7 +708,9 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             = skew (price + funding) + sum( initial-margin + q * last-price + q * initial-funding )
 
         The last term: sum( initial-margin + q * last-price + q * initial-funding ) being the position debt correction
-            that is tracked with each position change. And the first term is calculated globally in _marketDebt(),
+            that is tracked with each position change using this method. 
+        
+        The first term and the full debt calculation using current skew, price, and funding is calculated globally in _marketDebt().
          */
         return
             int(position.margin).sub(
@@ -767,7 +783,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     ) internal {
         Position memory oldPosition = position;
         // Determine new margin, ensuring that the result is positive.
-        (uint margin, Status status) = _realisedMargin(oldPosition, price, marginDelta);
+        (uint margin, Status status) = _recomputeMarginWithDelta(oldPosition, price, marginDelta);
         _revertIfError(status);
 
         // Update the debt correction.
@@ -787,12 +803,13 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
             // The user can always decrease their margin if they have no position, or as long as:
             //     * they have sufficient margin to do so
-            //     * the resulting margin would not be lower than the minimum margin
+            //     * the resulting margin would not be lower than the liquidation margin or min initial margin
             //     * the resulting leverage is lower than the maximum leverage
             if (marginDelta < 0) {
                 _revertIfError(
-                    margin < _minInitialMargin() ||
-                        _maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin)),
+                    (margin < _minInitialMargin()) ||
+                        (margin <= _liquidationMargin(position.size, price)) ||
+                        (_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin))),
                     Status.InsufficientMargin
                 );
             }

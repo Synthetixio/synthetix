@@ -29,14 +29,12 @@ import "./interfaces/IFuturesMarket.sol";
  * As the funding rate is the same (but negated) on both sides of the market, there is an excess quantity of
  * funding being charged, which is collected by the debt pool, and serves to reduce the system debt.
  *
- * To combat front-running, the system does not confirm a user's order until the next price is received from
- * the oracle. Therefore opening a position is a three stage procedure: depositing margin, submitting an order,
- * and waiting for that order to be confirmed. The last transaction is performed by a keeper,
- * once a price update is detected.
- *
  * The contract architecture is as follows:
  *
  *     - FuturesMarket.sol:         one of these exists per asset. Margin is maintained isolated per market.
+ *                                  this contract is composed of several mixins: `base` contains all the core logic,
+ *                                  `nextPrice` contains the next-price order flows, and `views` contains logic
+ *                                  that is only used by external / manager contracts.
  *
  *     - FuturesMarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
  *                                  futures markets and the rest of the system. It accumulates the total debt
@@ -46,9 +44,6 @@ import "./interfaces/IFuturesMarket.sol";
  *                                  by SystemSettings, and provides an interface to modify these values. Other than
  *                                  the base asset, these settings determine the behaviour of each market.
  *                                  See that contract for descriptions of the meanings of each setting.
- *
- * Each futures market and the manager operates behind a proxy, and for efficiency they communicate with one another
- * using their underlying implementations.
  *
  * Technical note: internal functions within the FuturesMarket contract assume the following:
  *
