@@ -644,6 +644,12 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		return memo;
 	}, {});
 
+const getNextRelease = ({ useOvm }) => {
+	const release = releases.releases.find(({ released, ovm }) => !released && (useOvm ? ovm : !ovm));
+
+	return Object.assign({}, release, { releaseName: release.name.replace(/[^\w]/g, '') });
+};
+
 module.exports = {
 	chainIdMapping,
 	constants,
@@ -651,6 +657,7 @@ module.exports = {
 	defaults,
 	getAST,
 	getNetworkFromId,
+	getNextRelease,
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,

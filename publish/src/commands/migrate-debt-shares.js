@@ -31,7 +31,7 @@ const migrateDebtShares = async ({
 	providerUrl,
 	etherscanAddressCsv,
 	threshold,
-	batchSize = 500,
+	batchSize,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -83,7 +83,7 @@ const migrateDebtShares = async ({
 	const { abi: debtSharesABI } = deployment.sources[
 		deployment.targets['SynthetixDebtShare'].source
 	];
-	const SynthetixDebtShare = new ethers.Contract(debtSharesAddress, debtSharesABI, provider);
+	const SynthetixDebtShare = new ethers.Contract(debtSharesAddress, debtSharesABI, signer);
 
 	// get a list of addresses
 	const addrs = fs.readFileSync(etherscanAddressCsv).toString('utf8');
@@ -97,12 +97,12 @@ const migrateDebtShares = async ({
 	let totalDebtAccounted = ethers.BigNumber.from(0);
 	let totalDebtForgiven = ethers.BigNumber.from(0);
 
-	await async.eachOfLimit(lines, 30, async (line, i) => {
+	await async.eachOfLimit(lines, 50, async (line, i) => {
 		if (line === '') return;
 
-		const address = JSON.parse(line.split(',')[0]);
+		const address = line.split(',')[1];
 
-		if (i % 1000 === 0) {
+		if (i % 100 === 0) {
 			console.log('scanning address', i, 'of', lines.length);
 		}
 
@@ -135,11 +135,13 @@ const migrateDebtShares = async ({
 		const addrs = batch.map(a => a.address);
 		const amounts = batch.map(a => a.debtBalanceOf);
 
+		console.log('write action for import of addresses', i, 'through', i + batchSize);
+
 		await performTransactionalStep({
 			contract: 'SynthetixDebtShare',
-			encodeABI: network === 'mainnet',
-			maxFeePerGas,
-			maxPriorityFeePerGas,
+			// encodeABI: network === 'mainnet',
+			// maxFeePerGas,
+			// maxPriorityFeePerGas:  //ethers.utils.parseUnits('5', 'gwei'),
 			ownerActions,
 			ownerActionsFile,
 			signer,
@@ -147,8 +149,6 @@ const migrateDebtShares = async ({
 			write: 'importAddresses',
 			writeArg: [addrs, amounts], // explicitly pass array of args so array not splat as params
 		});
-
-		console.log('wrote action for import of addresses', i, 'through', i + batchSize);
 	}
 
 	console.log(green('Completed successfully'));
@@ -180,6 +180,6 @@ module.exports = {
 				'Forgive debt amounts for holders who have less than the given threshold of debt',
 				'0'
 			)
-			.option('--batch-size', 'Number of addresses per import transaction', 500)
+			.option('--batch-size <value>', 'Number of addresses per import transaction', 200)
 			.action(migrateDebtShares),
 };
