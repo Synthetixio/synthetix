@@ -419,7 +419,8 @@
 		{
 			"sip": 185,
 			"layer": "both",
-			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"]
+			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"],
+			"released": "both"
 		},
 		{
 			"sip": 187,
@@ -863,22 +864,22 @@
 		},
 		{
 			"name": "Alphard",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		},
 		{
 			"name": "Alphard (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		}
 	]
 }
