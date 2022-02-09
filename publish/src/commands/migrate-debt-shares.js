@@ -97,12 +97,12 @@ const migrateDebtShares = async ({
 	let totalDebtAccounted = ethers.BigNumber.from(0);
 	let totalDebtForgiven = ethers.BigNumber.from(0);
 
-	await async.eachOfLimit(lines, 30, async (line, i) => {
+	await async.eachOfLimit(lines, 50, async (line, i) => {
 		if (line === '') return;
 
-		const address = JSON.parse(line.split(',')[0]);
+		const address = line.split(',')[1];
 
-		if (i % 1000 === 0) {
+		if (i % 100 === 0) {
 			console.log('scanning address', i, 'of', lines.length);
 		}
 
@@ -141,7 +141,7 @@ const migrateDebtShares = async ({
 			contract: 'SynthetixDebtShare',
 			// encodeABI: network === 'mainnet',
 			// maxFeePerGas,
-			// maxPriorityFeePerGas,
+			// maxPriorityFeePerGas:  //ethers.utils.parseUnits('5', 'gwei'),
 			ownerActions,
 			ownerActionsFile,
 			signer,
@@ -180,6 +180,6 @@ module.exports = {
 				'Forgive debt amounts for holders who have less than the given threshold of debt',
 				'0'
 			)
-			.option('--batch-size <value>', 'Number of addresses per import transaction', 250)
+			.option('--batch-size <value>', 'Number of addresses per import transaction', 200)
 			.action(migrateDebtShares),
 };
