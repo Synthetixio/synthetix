@@ -212,7 +212,7 @@ contract('CollateralShort', async accounts => {
 			assert.equal(await short.collateralKey(), sUSD);
 			assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
 			assert.equal(await short.synths(1), toBytes32('SynthsETH'));
-			assert.bnEqual(await short.minCratio(), toUnit(1.2));
+			assert.bnEqual(await short.minCratio(), toUnit(1.35));
 		});
 
 		it('should access its dependencies via the address resolver', async () => {
@@ -543,11 +543,11 @@ contract('CollateralShort', async accounts => {
 
 		describe('Liquidating shorts', async () => {
 			const oneETH = toUnit(1);
-			const susdCollateral = toUnit('130');
-			const expectedCollateralRemaining = toUnit('108.000000000000000143');
-			const expectedCollateralLiquidated = toUnit('21.999999999999999857');
-			const expectedLiquidationAmount = toUnit('0.181818181818181817');
-			const expectedLoanRemaining = toUnit('0.818181818181818183');
+			const susdCollateral = toUnit('145');
+			const expectedCollateralRemaining = toUnit('54.000000000000002379');
+			const expectedCollateralLiquidated = toUnit('90.999999999999997621');
+			const expectedLiquidationAmount = toUnit('0.636363636363636347');
+			const expectedLoanRemaining = toUnit('0.363636363636363653');
 
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
@@ -562,7 +562,7 @@ contract('CollateralShort', async accounts => {
 				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(110)]);
 
 				// When the ETH price increases 10% to $110, the short
-				// which started at 130% should allow 0.18 ETH
+				// which started at 145% should allow 0.636 ETH
 				// to be liquidated to restore its c ratio and no more.
 
 				await issue(sETHSynth, oneETH, account2);
