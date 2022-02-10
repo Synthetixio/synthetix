@@ -289,5 +289,8 @@
 	},
 	"SystemSettingsLib": {
 		"deploy": false
+	},
+	"SynthetixDebtShare": {
+		"deploy": false
 	}
 }
