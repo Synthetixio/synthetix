@@ -41,10 +41,13 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
+	"EternalStorageLiquidator": {
 		"deploy": false
 	},
-	"Liquidations": {
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
 		"deploy": false
 	},
 	"RewardEscrow": {
