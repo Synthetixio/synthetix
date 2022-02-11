@@ -18,14 +18,14 @@ module.exports = async ({
 	const {
 		DelegateApprovals,
 		DelegateApprovalsEternalStorage,
-		EternalStorageLiquidations,
+		EternalStorageLiquidator,
 		Exchanger,
 		ExchangeState,
 		FeePool,
 		FeePoolEternalStorage,
 		FeePoolState,
 		Issuer,
-		Liquidations,
+		Liquidator,
 		ProxyERC20,
 		ProxyFeePool,
 		ProxySynthetix,
@@ -72,15 +72,15 @@ module.exports = async ({
 		});
 	}
 
-	if (Liquidations && EternalStorageLiquidations) {
+	if (Liquidator && EternalStorageLiquidator) {
 		await runStep({
-			contract: 'EternalStorageLiquidations',
-			target: EternalStorageLiquidations,
+			contract: 'EternalStorageLiquidator',
+			target: EternalStorageLiquidator,
 			read: 'associatedContract',
-			expected: input => input === addressOf(Liquidations),
+			expected: input => input === addressOf(Liquidator),
 			write: 'setAssociatedContract',
-			writeArg: addressOf(Liquidations),
-			comment: 'Ensure the Liquidations contract is allowed to write to its EternalStorage',
+			writeArg: addressOf(Liquidator),
+			comment: 'Ensure the Liquidator contract is allowed to write to its EternalStorage',
 		});
 	}
 

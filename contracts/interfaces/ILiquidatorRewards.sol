@@ -5,9 +5,7 @@ interface ILiquidatorRewards {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function earned(address account) external view returns (uint256);
-
-    function getRewardForDuration() external view returns (uint256);
+    function earned(address account, int amount) external view returns (uint256);
 
     function rewardPerToken(int amount) external view returns (uint256);
 

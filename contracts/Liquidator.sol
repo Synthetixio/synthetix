@@ -11,6 +11,7 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./EternalStorage.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
@@ -117,7 +118,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /// @notice Determines if an account is eligible for forced liquidation
     /// @dev An account with no SNX collateral will not be open for liquidation since the ratio is 0
-    function forcedLiquidationOpen(address account) external view returns (bool) {
+    function isForcedLiquidationOpen(address account) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Not open for liquidation if collateral ratio is less than or equal to target issuance ratio
@@ -127,8 +128,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
-        // liquidation cap at issuanceRatio is checked above
-        if (_deadlinePassed(liquidation.deadline)) {
+        // Open for liquidation if the deadline has passed and the user has enough SNX collateral.
+        if (_deadlinePassed(liquidation.deadline) && _hasEnoughCollateral(account)) {
             return true;
         }
         return false;
@@ -136,7 +137,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /// @notice Determines if an account is eligible for self liquidation
     /// @dev An account is eligible to self liquidate if its c-ratio is below the target c-ratio
-    function selfLiquidationOpen(address account) external view returns (bool) {
+    function isSelfLiquidationOpen(address account) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
         return (accountCollateralisationRatio <= getIssuanceRatio());
     }
@@ -150,6 +151,11 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         // check deadline is set > 0
         // check now > deadline
         return deadline > 0 && now > deadline;
+    }
+
+    function _hasEnoughCollateral(address account) internal view returns (bool) {
+        uint balance = IERC20(address(synthetix())).balanceOf(account);
+        return balance >= getLiquidateReward();
     }
 
     /**
@@ -207,6 +213,9 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         uint deadline = now.add(getLiquidationDelay());
 
         _storeLiquidationEntry(account, deadline, msg.sender);
+
+        // TODO: notify of flag reward somehow
+        
 
         emit AccountFlaggedForLiquidation(account, deadline);
     }

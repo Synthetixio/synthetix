@@ -23,7 +23,7 @@ const {
 const MockExchanger = artifacts.require('MockExchanger');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
-contract('Liquidations', accounts => {
+contract('Liquidator', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
 	const [deployerAccount, owner, , account1, alice, bob, carol, david] = accounts;
 	const week = 3600 * 24 * 7;
@@ -31,7 +31,7 @@ contract('Liquidations', accounts => {
 
 	let addressResolver,
 		exchangeRates,
-		liquidations,
+		liquidator,
 		sUSDContract,
 		synthetix,
 		systemSettings,
@@ -45,7 +45,7 @@ contract('Liquidations', accounts => {
 		({
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
-			Liquidations: liquidations,
+			Liquidator: liquidator,
 			SynthsUSD: sUSDContract,
 			Synthetix: synthetix,
 			SystemSettings: systemSettings,
@@ -62,7 +62,7 @@ contract('Liquidations', accounts => {
 				'FeePool',
 				'DebtCache',
 				'Issuer',
-				'Liquidations',
+				'Liquidator',
 				'SystemStatus', // test system status controls
 				'SystemSettings',
 				'Synthetix',
@@ -90,7 +90,7 @@ contract('Liquidations', accounts => {
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: liquidations.abi,
+			abi: liquidator.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'flagAccountForLiquidation',
@@ -102,7 +102,7 @@ contract('Liquidations', accounts => {
 
 	it('should set constructor params on deployment', async () => {
 		const instance = await setupContract({
-			contract: 'Liquidations',
+			contract: 'Liquidator',
 			accounts,
 			skipPostDeploy: true,
 			args: [account1, addressResolver.address],
@@ -114,23 +114,23 @@ contract('Liquidations', accounts => {
 
 	describe('Default settings', () => {
 		it('liquidation (issuance) ratio', async () => {
-			const liquidationRatio = await liquidations.liquidationRatio();
+			const liquidationRatio = await liquidator.liquidationRatio();
 			assert.bnEqual(liquidationRatio, LIQUIDATION_RATIO);
 		});
 		it('liquidation collateral ratio is inverted ratio', async () => {
-			const liquidationCollateralRatio = await liquidations.liquidationCollateralRatio();
+			const liquidationCollateralRatio = await liquidator.liquidationCollateralRatio();
 			assert.bnEqual(liquidationCollateralRatio, divideDecimal(toUnit('1'), LIQUIDATION_RATIO));
 		});
 		it('liquidation penalty ', async () => {
-			const liquidationPenalty = await liquidations.liquidationPenalty();
+			const liquidationPenalty = await liquidator.liquidationPenalty();
 			assert.bnEqual(liquidationPenalty, LIQUIDATION_PENALTY);
 		});
 		it('liquidation delay', async () => {
-			const liquidationDelay = await liquidations.liquidationDelay();
+			const liquidationDelay = await liquidator.liquidationDelay();
 			assert.bnEqual(liquidationDelay, LIQUIDATION_DELAY);
 		});
 		it('issuance ratio is correctly configured as a default', async () => {
-			assert.bnEqual(await liquidations.issuanceRatio(), ISSUANCE_RATIO);
+			assert.bnEqual(await liquidator.issuanceRatio(), ISSUANCE_RATIO);
 		});
 	});
 
@@ -152,13 +152,13 @@ contract('Liquidations', accounts => {
 				});
 				it('when flagAccountForLiquidation() is invoked, it reverts for rate stale', async () => {
 					await assert.revert(
-						liquidations.flagAccountForLiquidation(alice, { from: owner }),
+						liquidator.flagAccountForLiquidation(alice, { from: owner }),
 						'Rate invalid or not a synth'
 					);
 				});
 				it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts for rate stale', async () => {
 					await assert.revert(
-						liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
+						liquidator.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
 						'Rate invalid or not a synth'
 					);
 				});
@@ -175,7 +175,7 @@ contract('Liquidations', accounts => {
 				});
 				it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
-						liquidations.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
+						liquidator.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
 						'Operation prohibited'
 					);
 				});
@@ -196,12 +196,12 @@ contract('Liquidations', accounts => {
 						}
 					);
 
-					await liquidations.rebuildCache();
+					await liquidator.rebuildCache();
 					await systemSettings.rebuildCache();
 				});
 				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
 					await assert.revert(
-						liquidations.flagAccountForLiquidation(alice, { from: owner }),
+						liquidator.flagAccountForLiquidation(alice, { from: owner }),
 						'Liquidation ratio not set'
 					);
 				});
@@ -212,7 +212,7 @@ contract('Liquidations', accounts => {
 					});
 					it('when flagAccountForLiquidation() is invoked, it reverts with liquidation delay not set', async () => {
 						await assert.revert(
-							liquidations.flagAccountForLiquidation(alice, { from: owner }),
+							liquidator.flagAccountForLiquidation(alice, { from: owner }),
 							'Liquidation delay not set'
 						);
 					});
@@ -227,16 +227,16 @@ contract('Liquidations', accounts => {
 						from: owner,
 					});
 
-					// now have Liquidations resync its cache
-					await liquidations.rebuildCache();
+					// now have Liquidator resync its cache
+					await liquidator.rebuildCache();
 				});
 				it('removeAccountInLiquidation() can only be invoked by issuer', async () => {
 					await onlyGivenAddressCanInvoke({
-						fnc: liquidations.removeAccountInLiquidation,
+						fnc: liquidator.removeAccountInLiquidation,
 						args: [alice],
 						address: owner, // TODO: is this supposed to be issuer.address
 						accounts,
-						reason: 'Liquidations: Only the Issuer contract can perform this action',
+						reason: 'Liquidator: Only the Issuer contract can perform this action',
 					});
 				});
 			});
@@ -264,7 +264,7 @@ contract('Liquidations', accounts => {
 						const expectedAmount = toUnit('260.869565217391304347');
 
 						// amount of debt to redeem to fix
-						const susdToLiquidate = await liquidations.calculateAmountToFixCollateral(
+						const susdToLiquidate = await liquidator.calculateAmountToFixCollateral(
 							debtBefore,
 							collateralBefore
 						);
@@ -287,7 +287,7 @@ contract('Liquidations', accounts => {
 						const expectedAmount = toUnit('144.927536231884057971');
 
 						// amount of debt to redeem to fix
-						const susdToLiquidate = await liquidations.calculateAmountToFixCollateral(
+						const susdToLiquidate = await liquidator.calculateAmountToFixCollateral(
 							debtBefore,
 							collateralBefore
 						);
@@ -358,25 +358,25 @@ contract('Liquidations', accounts => {
 					await updateSNXPrice('1');
 				});
 				it('and liquidation Collateral Ratio is 200%', async () => {
-					assert.bnEqual(await liquidations.liquidationCollateralRatio(), toUnit('2'));
+					assert.bnEqual(await liquidator.liquidationCollateralRatio(), toUnit('2'));
 				});
 				it('and liquidation penalty is 10%', async () => {
-					assert.bnEqual(await liquidations.liquidationPenalty(), LIQUIDATION_PENALTY);
+					assert.bnEqual(await liquidator.liquidationPenalty(), LIQUIDATION_PENALTY);
 				});
 				it('and liquidation delay is 3 days', async () => {
-					assert.bnEqual(await liquidations.liquidationDelay(), LIQUIDATION_DELAY);
+					assert.bnEqual(await liquidator.liquidationDelay(), LIQUIDATION_DELAY);
 				});
 				describe('when Alice has not been flagged for liquidation', () => {
 					it('and Alice calls checkAndRemoveAccountInLiquidation then it reverts', async () => {
 						await assert.revert(
-							liquidations.checkAndRemoveAccountInLiquidation(alice, {
+							liquidator.checkAndRemoveAccountInLiquidation(alice, {
 								from: alice,
 							}),
 							'Account has no liquidation set'
 						);
 					});
 					it('then isLiquidationDeadlinePassed returns false as no liquidation set', async () => {
-						assert.isFalse(await liquidations.isLiquidationDeadlinePassed(alice));
+						assert.isFalse(await liquidator.isLiquidationDeadlinePassed(alice));
 					});
 				});
 				describe('when Bob flags Alice for liquidation', () => {
@@ -384,18 +384,18 @@ contract('Liquidations', accounts => {
 					let timeOfTransaction;
 					beforeEach(async () => {
 						timeOfTransaction = await currentTime();
-						flagForLiquidationTransaction = await liquidations.flagAccountForLiquidation(alice, {
+						flagForLiquidationTransaction = await liquidator.flagAccountForLiquidation(alice, {
 							from: bob,
 						});
 					});
 					it('then sets a deadline liquidation delay of 2 weeks', async () => {
-						const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+						const liquidationDeadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 						assert.isTrue(liquidationDeadline.gt(0));
 						assert.isTrue(liquidationDeadline.gt(timeOfTransaction));
 						assert.isTrue(liquidationDeadline.gt(timeOfTransaction + week * 2));
 					});
 					it('then emits an event accountFlaggedForLiquidation', async () => {
-						const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+						const liquidationDeadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 						assert.eventEqual(flagForLiquidationTransaction, 'AccountFlaggedForLiquidation', {
 							account: alice,
 							deadline: liquidationDeadline,
@@ -403,17 +403,17 @@ contract('Liquidations', accounts => {
 					});
 					describe('when deadline has passed and Alice issuance ratio is fixed as SNX price increases', () => {
 						beforeEach(async () => {
-							const delay = await liquidations.liquidationDelay();
+							const delay = await liquidator.liquidationDelay();
 
 							// fast forward to after deadline
 							await fastForward(delay + 100);
 
 							await updateSNXPrice(toUnit('6'));
 
-							const liquidationRatio = await liquidations.liquidationRatio();
+							const liquidationRatio = await liquidator.liquidationRatio();
 
 							const ratio = await synthetix.collateralisationRatio(alice);
-							const targetIssuanceRatio = await liquidations.issuanceRatio();
+							const targetIssuanceRatio = await liquidator.issuanceRatio();
 
 							// check Alice ratio is below liquidation ratio
 							assert.isTrue(ratio.lt(liquidationRatio));
@@ -422,19 +422,19 @@ contract('Liquidations', accounts => {
 							assert.isTrue(ratio.lte(targetIssuanceRatio));
 						});
 						it('then isLiquidationDeadlinePassed returns true', async () => {
-							assert.isTrue(await liquidations.isLiquidationDeadlinePassed(alice));
+							assert.isTrue(await liquidator.isLiquidationDeadlinePassed(alice));
 						});
 						it('then isOpenForLiquidation returns false as ratio equal to target issuance ratio', async () => {
-							assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+							assert.isFalse(await liquidator.isOpenForLiquidation(alice));
 						});
 					});
 					describe('given Alice issuance ratio is higher than the liquidation ratio', () => {
 						let liquidationRatio;
 						beforeEach(async () => {
-							liquidationRatio = await liquidations.liquidationRatio();
+							liquidationRatio = await liquidator.liquidationRatio();
 
 							const ratio = await synthetix.collateralisationRatio(alice);
-							const targetIssuanceRatio = await liquidations.issuanceRatio();
+							const targetIssuanceRatio = await liquidator.issuanceRatio();
 
 							// check Alice ratio is above or equal liquidation ratio
 							assert.isTrue(ratio.gte(liquidationRatio));
@@ -444,30 +444,30 @@ contract('Liquidations', accounts => {
 						});
 						describe('when the liquidation deadline has not passed', () => {
 							it('then isOpenForLiquidation returns false as deadline not passed', async () => {
-								assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+								assert.isFalse(await liquidator.isOpenForLiquidation(alice));
 							});
 							it('then isLiquidationDeadlinePassed returns false', async () => {
-								assert.isFalse(await liquidations.isLiquidationDeadlinePassed(alice));
+								assert.isFalse(await liquidator.isLiquidationDeadlinePassed(alice));
 							});
 						});
 						describe('fast forward 2 weeks, when the liquidation deadline has passed', () => {
 							beforeEach(async () => {
-								const delay = await liquidations.liquidationDelay();
+								const delay = await liquidator.liquidationDelay();
 
 								await fastForward(delay + 100);
 							});
 							it('then isLiquidationDeadlinePassed returns true', async () => {
-								assert.isTrue(await liquidations.isLiquidationDeadlinePassed(alice));
+								assert.isTrue(await liquidator.isLiquidationDeadlinePassed(alice));
 							});
 							it('then isOpenForLiquidation returns true', async () => {
-								assert.isTrue(await liquidations.isOpenForLiquidation(alice));
+								assert.isTrue(await liquidator.isOpenForLiquidation(alice));
 							});
 						});
 					});
 					describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {
 						it('then it fails for Bob as Alices address is already flagged', async () => {
 							await assert.revert(
-								liquidations.flagAccountForLiquidation(alice, {
+								liquidator.flagAccountForLiquidation(alice, {
 									from: bob,
 								}),
 								'Account already flagged for liquidation'
@@ -475,7 +475,7 @@ contract('Liquidations', accounts => {
 						});
 						it('then it fails for Carol Baskin as Alices address is already flagged', async () => {
 							await assert.revert(
-								liquidations.flagAccountForLiquidation(alice, {
+								liquidator.flagAccountForLiquidation(alice, {
 									from: carol,
 								}),
 								'Account already flagged for liquidation'
@@ -489,19 +489,16 @@ contract('Liquidations', accounts => {
 						});
 						describe('when Alice calls checkAndRemoveAccountInLiquidation', () => {
 							beforeEach(async () => {
-								removeFlagTransaction = await liquidations.checkAndRemoveAccountInLiquidation(
-									alice,
-									{
-										from: alice,
-									}
-								);
+								removeFlagTransaction = await liquidator.checkAndRemoveAccountInLiquidation(alice, {
+									from: alice,
+								});
 							});
 							it('then Alice liquidation entry is removed', async () => {
-								const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 								assert.bnEqual(deadline, 0);
 							});
 							it('then Alices account is not open for liquidation', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.bnEqual(isOpenForLiquidation, false);
 							});
 							it('then events AccountRemovedFromLiquidation are emitted', async () => {
@@ -534,11 +531,11 @@ contract('Liquidations', accounts => {
 								);
 							});
 							it('then Alice liquidation entry remains', async () => {
-								const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 								assert.isTrue(deadline > 0);
 							});
 							it('then Alices account is not open for liquidation', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.bnEqual(isOpenForLiquidation, false);
 							});
 							it('then Bob still has 100sUSD', async () => {
@@ -558,18 +555,18 @@ contract('Liquidations', accounts => {
 								await updateSNXPrice('1');
 								burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
 							});
-							// TODO: AccountRemovedFromLiquidation is emitted off the Liquidations contract
+							// TODO: AccountRemovedFromLiquidation is emitted off the Liquidator contract
 							xit('then AccountRemovedFromLiquidation event is emitted', async () => {
 								assert.eventEqual(burnTransaction, 'AccountRemovedFromLiquidation', {
 									account: alice,
 								});
 							});
 							it('then Alice liquidation entry is removed', async () => {
-								const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 								assert.bnEqual(deadline, 0);
 							});
 							it('then Alices account is not open for liquidation', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.bnEqual(isOpenForLiquidation, false);
 							});
 						});
@@ -589,11 +586,11 @@ contract('Liquidations', accounts => {
 								);
 							});
 							it('then Alice liquidation entry is still there', async () => {
-								const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 								assert.isTrue(deadline > 0);
 							});
 							it('then Alices account is still open for liquidation', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.isTrue(isOpenForLiquidation);
 							});
 						});
@@ -616,11 +613,11 @@ contract('Liquidations', accounts => {
 								);
 							});
 							it('then Alice liquidation entry is removed', async () => {
-								const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 								assert.bnEqual(deadline, 0);
 							});
 							it('then Alices account is not open for liquidation', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.bnEqual(isOpenForLiquidation, false);
 							});
 						});
@@ -643,11 +640,11 @@ contract('Liquidations', accounts => {
 								});
 							});
 							it('then Alice liquidation entry is removed', async () => {
-								const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 								assert.bnEqual(deadline, 0);
 							});
 							it('then Alices account is not open for liquidation', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.bnEqual(isOpenForLiquidation, false);
 							});
 						});
@@ -656,7 +653,7 @@ contract('Liquidations', accounts => {
 								await updateSNXPrice('1');
 							});
 							it('then isOpenForLiquidation returns true for Alice', async () => {
-								const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+								const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 								assert.equal(isOpenForLiquidation, true);
 							});
 							it('when carol calls liquidateDelinquentAccount but has 0 sUSD then revert', async () => {
@@ -689,16 +686,16 @@ contract('Liquidations', accounts => {
 							});
 							describe('when Alice calls checkAndRemoveAccountInLiquidation', () => {
 								beforeEach(async () => {
-									await liquidations.checkAndRemoveAccountInLiquidation(alice, {
+									await liquidator.checkAndRemoveAccountInLiquidation(alice, {
 										from: alice,
 									});
 								});
 								it('then Alices account is still open for liquidation', async () => {
-									const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+									const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 									assert.bnEqual(isOpenForLiquidation, true);
 								});
 								it('then Alice liquidation deadline still exists', async () => {
-									const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+									const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 									assert.notEqual(deadline, 0);
 								});
 							});
@@ -868,7 +865,7 @@ contract('Liquidations', accounts => {
 												);
 											});
 											it('then Bobs partially liquidates the 1000 sUSD to repair Alice to target issuance ratio', async () => {
-												const susdToFixRatio = await liquidations.calculateAmountToFixCollateral(
+												const susdToFixRatio = await liquidator.calculateAmountToFixCollateral(
 													aliceDebtBefore,
 													aliceSNXBefore
 												);
@@ -883,11 +880,11 @@ contract('Liquidations', accounts => {
 												);
 											});
 											it('then Alice liquidation entry is removed', async () => {
-												const deadline = await liquidations.getLiquidationDeadlineForAccount(alice);
+												const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
 												assert.bnEqual(deadline, 0);
 											});
 											it('then Alices account is not open for liquidation', async () => {
-												const isOpenForLiquidation = await liquidations.isOpenForLiquidation(alice);
+												const isOpenForLiquidation = await liquidator.isOpenForLiquidation(alice);
 												assert.bnEqual(isOpenForLiquidation, false);
 											});
 											it('then events AccountLiquidated & AccountRemovedFromLiquidation are emitted', async () => {
@@ -905,7 +902,7 @@ contract('Liquidations', accounts => {
 											});
 											it('then Alice issuanceRatio is now at the target issuanceRatio', async () => {
 												const aliceCRatioAfter = await synthetix.collateralisationRatio(alice);
-												const issuanceRatio = await liquidations.issuanceRatio();
+												const issuanceRatio = await liquidator.issuanceRatio();
 												assert.bnEqual(aliceCRatioAfter, issuanceRatio);
 											});
 										});
@@ -937,7 +934,7 @@ contract('Liquidations', accounts => {
 										aliceCollateralBefore = await synthetix.collateral(alice);
 
 										// Calc amount to fix ratio
-										amountToFixRatio = await liquidations.calculateAmountToFixCollateral(
+										amountToFixRatio = await liquidator.calculateAmountToFixCollateral(
 											aliceDebtBefore,
 											aliceCollateralBefore
 										);
@@ -960,11 +957,11 @@ contract('Liquidations', accounts => {
 											from: bob,
 										});
 
-										// Alice should have liquidations closed
-										assert.isFalse(await liquidations.isOpenForLiquidation(alice));
+										// Alice should have liquidator closed
+										assert.isFalse(await liquidator.isOpenForLiquidation(alice));
 
 										// Alice should have liquidation entry removed
-										assert.bnEqual(await liquidations.getLiquidationDeadlineForAccount(david), 0);
+										assert.bnEqual(await liquidator.getLiquidationDeadlineForAccount(david), 0);
 
 										// Bob's sUSD balance should be less amountToFixRatio
 										assert.bnEqual(
@@ -985,7 +982,7 @@ contract('Liquidations', accounts => {
 			});
 			it('then she should not be able to be flagged for liquidation', async () => {
 				await assert.revert(
-					liquidations.flagAccountForLiquidation(alice),
+					liquidator.flagAccountForLiquidation(alice),
 					'Account issuance ratio is less than liquidation ratio'
 				);
 			});
@@ -1027,12 +1024,12 @@ contract('Liquidations', accounts => {
 			describe('when Bob flags and tries to liquidate David', () => {
 				beforeEach(async () => {
 					// flag account for liquidation
-					await liquidations.flagAccountForLiquidation(david, {
+					await liquidator.flagAccountForLiquidation(david, {
 						from: bob,
 					});
 
 					// fastForward to after liquidation delay
-					const liquidationDeadline = await liquidations.getLiquidationDeadlineForAccount(david);
+					const liquidationDeadline = await liquidator.getLiquidationDeadlineForAccount(david);
 					await fastForwardAndUpdateRates(liquidationDeadline + 1);
 
 					// Drop SNX value to $0.1 after update rates resets to default
@@ -1045,7 +1042,7 @@ contract('Liquidations', accounts => {
 					await synthetix.issueMaxSynths({ from: bob });
 				});
 				it('then david is openForLiquidation', async () => {
-					assert.isTrue(await liquidations.isOpenForLiquidation(david));
+					assert.isTrue(await liquidator.isOpenForLiquidation(david));
 				});
 				describe('when the SNX rate is stale', () => {
 					beforeEach(async () => {
@@ -1077,21 +1074,21 @@ contract('Liquidations', accounts => {
 						assert.isTrue(davidDebt.gt(0));
 					});
 					it('then David wont be open for liquidation', async () => {
-						assert.isFalse(await liquidations.isOpenForLiquidation(david));
+						assert.isFalse(await liquidator.isOpenForLiquidation(david));
 					});
 					describe('then David should be able to check and remove liquidation flag as no more collateral left', () => {
 						let removeFlagTransaction;
 						beforeEach(async () => {
-							removeFlagTransaction = await liquidations.checkAndRemoveAccountInLiquidation(david, {
+							removeFlagTransaction = await liquidator.checkAndRemoveAccountInLiquidation(david, {
 								from: owner,
 							});
 						});
 						it('then David liquidation entry is removed', async () => {
-							const deadline = await liquidations.getLiquidationDeadlineForAccount(david);
+							const deadline = await liquidator.getLiquidationDeadlineForAccount(david);
 							assert.bnEqual(deadline, 0);
 						});
 						it('then David account is not open for liquidation', async () => {
-							assert.isFalse(await liquidations.isOpenForLiquidation(david));
+							assert.isFalse(await liquidator.isOpenForLiquidation(david));
 						});
 						it('then events AccountRemovedFromLiquidation are emitted', async () => {
 							assert.eventEqual(removeFlagTransaction, 'AccountRemovedFromLiquidation', {

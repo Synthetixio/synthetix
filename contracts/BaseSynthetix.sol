@@ -321,6 +321,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         require(success, "Transfer did not succeed");
 
         // Inform the LiquidatorRewards contract about the freshly redeemed SNX rewards.
+        // TODO: notify about flagger and liquidator rewards too
         liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;

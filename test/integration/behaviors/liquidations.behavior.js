@@ -11,10 +11,10 @@ function itCanLiquidate({ ctx }) {
 		let someUser;
 		let otherUser;
 		let exchangeRate;
-		let Synthetix, Liquidations, SystemSettings, SynthsUSD;
+		let Synthetix, Liquidator, LiquidatorRewards, SystemSettings, SynthsUSD;
 
 		before('target contracts and users', () => {
-			({ Synthetix, Liquidations, SystemSettings, SynthsUSD } = ctx.contracts);
+			({ Synthetix, Liquidator, LiquidatorRewards, SystemSettings, SynthsUSD } = ctx.contracts);
 
 			({ owner, someUser, otherUser } = ctx.users);
 
@@ -22,8 +22,12 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		before('system settings are set', async () => {
-			await SystemSettings.setIssuanceRatio(ethers.utils.parseEther('0.25'));
-			await SystemSettings.setLiquidationRatio(ethers.utils.parseEther('0.5'));
+			await SystemSettings.setIssuanceRatio(ethers.utils.parseEther('0.25')); // 400% c-ratio
+			await SystemSettings.setLiquidationRatio(ethers.utils.parseEther('0.5')); // 200% c-ratio
+			await SystemSettings.setLiquidationPenalty(ethers.utils.parseEther('0.3')); // 30% penalty
+			await SystemSettings.setSelfLiquidationPenalty(ethers.utils.parseEther('0.2')); // 20% penalty
+			await SystemSettings.setFlagReward(ethers.utils.parseEther('10')); // 10 SNX
+			await SystemSettings.setLiquidateReward(ethers.utils.parseEther('20')); // 20 SNX
 		});
 
 		before('ensure someUser has SNX', async () => {
@@ -31,15 +35,6 @@ function itCanLiquidate({ ctx }) {
 				ctx,
 				symbol: 'SNX',
 				user: someUser,
-				balance: ethers.utils.parseEther('100'),
-			});
-		});
-
-		before('ensure otherUser has sUSD', async () => {
-			await ensureBalance({
-				ctx,
-				symbol: 'sUSD',
-				user: otherUser,
 				balance: ethers.utils.parseEther('100'),
 			});
 		});
@@ -58,7 +53,7 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		it('cannot be liquidated at this point', async () => {
-			assert.equal(await Liquidations.isOpenForLiquidation(someUser.address), false);
+			assert.equal(await Liquidator.isForcedLiquidationOpen(someUser.address), false);
 		});
 
 		describe('getting marked', () => {
@@ -71,7 +66,7 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			before('liquidation is marked', async () => {
-				await Liquidations.connect(otherUser).flagAccountForLiquidation(someUser.address);
+				await Liquidator.connect(otherUser).flagAccountForLiquidation(someUser.address);
 			});
 
 			after('restore exchange rate', async () => {
@@ -83,11 +78,11 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			it('still not open for liquidation', async () => {
-				assert.equal(await Liquidations.isOpenForLiquidation(someUser.address), false);
+				assert.equal(await Liquidator.isForcedLiquidationOpen(someUser.address), false);
 			});
 
 			it('deadline has not passed yet', async () => {
-				assert.equal(await Liquidations.isLiquidationDeadlinePassed(someUser.address), false);
+				assert.equal(await Liquidator.isLiquidationDeadlinePassed(someUser.address), false);
 			});
 
 			describe('when the liquidation delay passes', () => {

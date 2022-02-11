@@ -2,13 +2,29 @@ pragma solidity >=0.4.24;
 
 interface ILiquidator {
     // Views
+    function issuanceRatio() external view returns (uint);
+
+    function liquidationDelay() external view returns (uint);
+
+    function liquidationRatio() external view returns (uint);
+
     function liquidationPenalty() external view returns (uint);
 
     function selfLiquidationPenalty() external view returns (uint);
 
-    function forcedLiquidationOpen(address account) external view returns (bool);
+    function liquidateReward() external view returns (uint);
 
-    function selfLiquidationOpen(address account) external view returns (bool);
+    function flagReward() external view returns (uint);
+
+    function liquidationCollateralRatio() external view returns (uint);
+
+    function getLiquidationDeadlineForAccount(address account) external view returns (uint);
+
+    function isForcedLiquidationOpen(address account) external view returns (bool);
+
+    function isSelfLiquidationOpen(address account) external view returns (bool);
+
+    function isLiquidationDeadlinePassed(address account) external view returns (bool);
 
     function calculateAmountToFixCollateral(uint debtBalance, uint collateral, bool isSelfLiquidation) external view returns (uint);
 

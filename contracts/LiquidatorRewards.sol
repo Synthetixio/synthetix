@@ -19,7 +19,7 @@ import "./interfaces/ISynthetix.sol";
 
 /// @title Upgrade Liquidation Mechanism V2 (SIP-148)
 /// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15.
-contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, ReentrancyGuard {
+contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -28,7 +28,7 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
     IERC20 public rewardsToken; // SNX
     IERC20 public stakingToken; // SDS
 
-    uint public escrowDuration = 52 weeks;
+    uint public constant escrowDuration = 52 weeks;
     uint256 public accumulatedRewards = 0;
     uint256 public rewardPerTokenStored;
 
@@ -118,7 +118,7 @@ contract LiquidatorRewards is Owned, MixinSystemSettings, ILiquidatorRewards, Re
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function getRewards() public nonReentrant updateReward(msg.sender, 0) {
+    function getReward() external nonReentrant updateReward(msg.sender, 0) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;

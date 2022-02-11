@@ -577,7 +577,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidatorAccount, sUSD), "sUSD needs to be settled");
 
         // Check if account is eligible for forced liquidation
-        require(liquidator().forcedLiquidationOpen(delinquentAccount), "Account not open for liquidation");
+        require(liquidator().isForcedLiquidationOpen(delinquentAccount), "Account not open for liquidation");
 
         // Get the penalty for forced liquidation
         uint liquidationPenalty = liquidator().liquidationPenalty();
@@ -631,7 +631,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(account, sUSD), "sUSD needs to be settled");
 
         // Check if account is eligible for self liquidation
-        require(liquidator().selfLiquidationOpen(account), "Account not open for self liquidation");
+        require(liquidator().isSelfLiquidationOpen(account), "Account not open for self liquidation");
 
         // Get the penalty for self liquidation
         uint selfLiquidationPenalty = liquidator().selfLiquidationPenalty();
