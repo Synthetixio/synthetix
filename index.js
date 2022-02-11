@@ -134,6 +134,10 @@ const defaults = {
 		crypto: w3utils.toWei('0.01'),
 		index: w3utils.toWei('0.01'),
 	},
+	EXCHANGE_DYNAMIC_FEE_THRESHOLD: w3utils.toWei('0.004'), // 40 bps
+	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: w3utils.toWei('0.9'), // dynamic fee weight decay for each round
+	EXCHANGE_DYNAMIC_FEE_ROUNDS: '10', // dynamic fee rounds
+	EXCHANGE_MAX_DYNAMIC_FEE: w3utils.toWei('0.05'), // cap max dynamic fee to 5%
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
@@ -490,9 +494,12 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		kovan: Object.assign({}, base),
-		'kovan-ovm': Object.assign({}, base),
+		'kovan-ovm': Object.assign({}, base, {
+			owner: '0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94',
+		}),
 		'mainnet-ovm': Object.assign({}, base, {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
+			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
 		}),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
@@ -634,6 +641,12 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		return memo;
 	}, {});
 
+const getNextRelease = ({ useOvm }) => {
+	const release = releases.releases.find(({ released, ovm }) => !released && (useOvm ? ovm : !ovm));
+
+	return Object.assign({}, release, { releaseName: release.name.replace(/[^\w]/g, '') });
+};
+
 module.exports = {
 	chainIdMapping,
 	constants,
@@ -641,6 +654,7 @@ module.exports = {
 	defaults,
 	getAST,
 	getNetworkFromId,
+	getNextRelease,
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,

@@ -42,8 +42,8 @@ module.exports = async ({
 		const allContracts = Object.entries(deployer.deployedContracts);
 		await Promise.all(
 			allContracts
-				// ignore adding contracts with the skipResolver option
-				.filter(([, contract]) => !contract.skipResolver)
+				// ignore adding contracts with the skipResolver and library options
+				.filter(([, contract]) => !contract.skipResolver && !contract.library)
 				.map(([name, contract]) => {
 					return limitPromise(async () => {
 						const isImported = await AddressResolver.areAddressesImported(

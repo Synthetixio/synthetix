@@ -7,11 +7,13 @@ require('dotenv').config();
 
 require('./src/commands/build').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
+require('./src/commands/deploy-migration').cmd(program);
 require('./src/commands/deploy-shorting-rewards').cmd(program);
 require('./src/commands/deploy-staking-rewards').cmd(program);
 require('./src/commands/deploy').cmd(program);
 require('./src/commands/extract-staking-balances').cmd(program);
 require('./src/commands/finalize-release').cmd(program);
+require('./src/commands/migrate-debt-shares').cmd(program);
 require('./src/commands/nominate').cmd(program);
 require('./src/commands/owner').cmd(program);
 require('./src/commands/persist-tokens').cmd(program);

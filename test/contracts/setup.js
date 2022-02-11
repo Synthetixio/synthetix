@@ -20,6 +20,10 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
+		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+		EXCHANGE_DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_MAX_DYNAMIC_FEE,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
@@ -122,9 +126,18 @@ const setupContract = async ({
 		);
 	};
 
-	// if it needs library linking
+	// Linking libraries if needed
 	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
-		await artifact.link(await artifacts.require('SafeDecimalMath').new());
+		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		if (artifact._json.contractName === 'SystemSettings') {
+			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
+			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
+			SystemSettingsLib.link(safeDecimalMath);
+			artifact.link(await SystemSettingsLib.new());
+		} else {
+			// SafeDecimalMath -> anything else that expects linking
+			artifact.link(safeDecimalMath);
+		}
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -163,6 +176,7 @@ const setupContract = async ({
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
+		SynthetixDebtShare: [owner, tryGetAddressOf('AddressResolver')],
 		BaseSynthetix: [
 			tryGetAddressOf('ProxyERC20BaseSynthetix'),
 			tryGetAddressOf('TokenStateBaseSynthetix'),
@@ -204,7 +218,6 @@ const setupContract = async ({
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
-		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
@@ -281,18 +294,6 @@ const setupContract = async ({
 	}
 
 	const postDeployTasks = {
-		async Issuer() {
-			await Promise.all(
-				[].concat(
-					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-					tryInvocationIfNotMocked({
-						name: 'SynthetixState',
-						fncName: 'setAssociatedContract',
-						args: [instance.address],
-					}) || []
-				)
-			);
-		},
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
@@ -443,13 +444,6 @@ const setupContract = async ({
 					)
 					.concat(
 						tryInvocationIfNotMocked({
-							name: 'FeePoolState',
-							fncName: 'setFeePool',
-							args: [instance.address],
-						}) || []
-					)
-					.concat(
-						tryInvocationIfNotMocked({
 							name: 'FeePoolEternalStorage',
 							fncName: 'setAssociatedContract',
 							args: [instance.address],
@@ -555,6 +549,15 @@ const setupContract = async ({
 						returns: [toWei('0.0030')],
 					}),
 				]);
+			} else if (mock === 'Issuer') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'debtBalanceOf',
+						returns: [toWei('0')],
+					}),
+				]);
 			} else if (mock === 'ExchangeState') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -622,12 +625,7 @@ const setupAllContracts = async ({
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
 		},
-		{
-			contract: 'ExchangeRatesWithDexPricing',
-			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
-		},
-		{ contract: 'SynthetixState' },
+		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
@@ -659,7 +657,6 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
-		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidations' },
@@ -702,7 +699,6 @@ const setupAllContracts = async ({
 			mocks: [
 				'CollateralManager',
 				'Synthetix',
-				'SynthetixState',
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
@@ -711,7 +707,13 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'SynthRedeemer',
 			],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
+			deps: [
+				'AddressResolver',
+				'SystemStatus',
+				'FlexibleStorage',
+				'DebtCache',
+				'SynthetixDebtShare',
+			],
 		},
 		{
 			contract: 'Exchanger',
@@ -725,6 +727,11 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'DebtCache',
 			],
+		},
+		{
+			contract: 'ExchangeRatesWithDexPricing',
+			resolverAlias: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
@@ -756,15 +763,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'SynthetixState',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'BaseSynthetix',
@@ -777,15 +776,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'Liquidations',
 			],
-			deps: [
-				'Issuer',
-				'SynthetixState',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'MintableSynthetix',
@@ -805,7 +796,6 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
-				'SynthetixState',
 			],
 		},
 		{
@@ -835,7 +825,6 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'Exchanger',
 				'Issuer',
-				'SynthetixState',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'DelegateApprovals',
@@ -846,7 +835,7 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'WrapperFactory',
 			],
-			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
+			deps: ['SystemStatus', 'SynthetixDebtShare', 'AddressResolver'],
 		},
 		{
 			contract: 'CollateralState',
@@ -1093,6 +1082,21 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(EXCHANGE_DYNAMIC_FEE_THRESHOLD, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
+				EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(EXCHANGE_DYNAMIC_FEE_ROUNDS, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setExchangeMaxDynamicFee(EXCHANGE_MAX_DYNAMIC_FEE, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,

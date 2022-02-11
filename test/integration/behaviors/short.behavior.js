@@ -14,7 +14,7 @@ const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
-		const amountOfsUSDRequired = parseEther('2000'); // sUSD
+		const amountOfsUSDRequired = parseEther('5000'); // sUSD
 		const amountToDeposit = parseEther('1000'); // sUSD
 		const amountToBorrow = parseEther('0.000001'); // sETH
 		const amountToExchange = parseEther('100'); // sUSD
