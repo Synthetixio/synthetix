@@ -63,7 +63,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		addressResolver,
 		synthRedeemer,
 		exchanger,
-		aggregatorDebtInfo;
+		aggregatorDebtRatio;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -87,7 +87,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 			SynthRedeemer: synthRedeemer,
-			'ext:AggregatorDebtInfo': aggregatorDebtInfo,
+			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -101,7 +101,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthetixEscrow',
 				'SystemSettings',
 				'Issuer',
-				'SingleNetworkAggregatorDebtInfo',
+				'SingleNetworkAggregatorIssuedSynths',
+				'SingleNetworkAggregatorDebtRatio',
 				'DebtCache',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
@@ -381,7 +382,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await synthetix.issueSynths(amountIssued, { from: account1 });
 							await debtCache.takeDebtSnapshot();
 
-							await aggregatorDebtInfo.setOverrideTimestamp(500); // really old timestamp
+							await aggregatorDebtRatio.setOverrideTimestamp(500); // really old timestamp
 						});
 						it('then isStale = true', async () => {
 							assert.isTrue((await issuer.allNetworksDebtInfo()).isStale);
@@ -1107,7 +1108,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					describe(`when debt aggregator is stale`, () => {
 						beforeEach(async () => {
-							await aggregatorDebtInfo.setOverrideTimestamp(500); // really old timestamp
+							await aggregatorDebtRatio.setOverrideTimestamp(500); // really old timestamp
 						});
 
 						it('reverts on issueSynths()', async () => {
@@ -1332,7 +1333,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					describe(`when debt aggregator is stale`, () => {
 						beforeEach(async () => {
-							await aggregatorDebtInfo.setOverrideTimestamp(500);
+							await aggregatorDebtRatio.setOverrideTimestamp(500);
 						});
 
 						it('then calling burn() reverts', async () => {

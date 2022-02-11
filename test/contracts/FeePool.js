@@ -74,7 +74,7 @@ contract('FeePool', async accounts => {
 		sUSDContract,
 		addressResolver,
 		wrapperFactory,
-		aggregatorDebtInfo,
+		aggregatorDebtRatio,
 		synthetixBridgeToOptimism,
 		synths;
 
@@ -93,7 +93,7 @@ contract('FeePool', async accounts => {
 			SynthsUSD: sUSDContract,
 			SystemStatus: systemStatus,
 			WrapperFactory: wrapperFactory,
-			'ext:AggregatorDebtInfo': aggregatorDebtInfo,
+			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -111,7 +111,8 @@ contract('FeePool', async accounts => {
 				'RewardsDistribution',
 				'DelegateApprovals',
 				'CollateralManager',
-				'SingleNetworkAggregatorDebtInfo',
+				'SingleNetworkAggregatorIssuedSynths',
+				'SingleNetworkAggregatorDebtRatio',
 				'WrapperFactory',
 			],
 		}));
@@ -996,7 +997,7 @@ contract('FeePool', async accounts => {
 
 				describe(`when debt aggregator is stale`, () => {
 					beforeEach(async () => {
-						await aggregatorDebtInfo.setOverrideTimestamp(500);
+						await aggregatorDebtRatio.setOverrideTimestamp(500);
 					});
 
 					it('reverts on claimFees', async () => {
@@ -1486,7 +1487,7 @@ contract('FeePool', async accounts => {
 
 				describe(`when debt aggregator is stale`, () => {
 					beforeEach(async () => {
-						await aggregatorDebtInfo.setOverrideTimestamp(500);
+						await aggregatorDebtRatio.setOverrideTimestamp(500);
 					});
 
 					it('reverts on claimOnBehalf', async () => {

@@ -329,7 +329,10 @@
 	"SynthsETHBTC": {
 		"deploy": false
 	},
-	"ext:AggregatorDebtInfo": {
+	"ext:AggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"ext:AggregatorDebtRatio": {
 		"deploy": false
 	},
 	"SystemSettingsLib": {

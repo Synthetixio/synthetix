@@ -91,14 +91,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
-    bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_INFO = "ext:AggregatorDebtInfo";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -110,7 +111,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[8] = CONTRACT_LIQUIDATIONS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[11] = CONTRACT_EXT_AGGREGATOR_DEBT_INFO;
+        newAddresses[11] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -159,12 +161,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function allNetworksDebtInfo() public view returns (uint256 debt, uint256 sharesSupply, bool isStale) {
-        (, int256 rawData, , uint updatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_INFO))
+
+        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
+            .latestRoundData();
+
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
             .latestRoundData();
         
-        debt = uint(rawData >> 128);
-        sharesSupply = uint(rawData) & 0xffffffffffffffffffffffffffffffff;
-        isStale = now - getRateStalePeriod() > updatedAt;
+        debt = uint(rawIssuedSynths);
+        sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
+        isStale = block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
+                block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
     }
 
     function issuanceRatio() external view returns (uint) {

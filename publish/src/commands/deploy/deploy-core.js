@@ -44,11 +44,17 @@ module.exports = async ({
 		args: [account],
 	});
 
-	console.log(gray(`\n------ DEPLOY SELF ORACLE ------\n`));
+	console.log(gray(`\n------ DEPLOY SELF ORACLES ------\n`));
 
 	await deployer.deployContract({
-		name: 'ext:AggregatorDebtInfo',
-		source: 'SingleNetworkAggregatorDebtInfo',
+		name: 'ext:AggregatorIssuedSynths',
+		source: 'SingleNetworkAggregatorIssuedSynths',
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'ext:AggregatorDebtRatio',
+		source: 'SingleNetworkAggregatorDebtRatio',
 		args: [addressOf(readProxyForResolver)],
 	});
 

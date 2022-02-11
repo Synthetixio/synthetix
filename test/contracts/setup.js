@@ -159,7 +159,8 @@ const setupContract = async ({
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
-		SingleNetworkAggregatorDebtInfo: [tryGetAddressOf('AddressResolver')],
+		SingleNetworkAggregatorIssuedSynths: [tryGetAddressOf('AddressResolver')],
+		SingleNetworkAggregatorDebtRatio: [tryGetAddressOf('AddressResolver')],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [owner, tryGetAddressOf('AddressResolver')],
@@ -616,8 +617,12 @@ const setupAllContracts = async ({
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
 		{
-			contract: 'SingleNetworkAggregatorDebtInfo',
-			resolverAlias: 'ext:AggregatorDebtInfo',
+			contract: 'SingleNetworkAggregatorIssuedSynths',
+			resolverAlias: 'ext:AggregatorIssuedSynths',
+		},
+		{
+			contract: 'SingleNetworkAggregatorDebtRatio',
+			resolverAlias: 'ext:AggregatorDebtRatio',
 		},
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
@@ -713,7 +718,8 @@ const setupAllContracts = async ({
 				'SynthRedeemer',
 			],
 			deps: [
-				'SingleNetworkAggregatorDebtInfo',
+				'SingleNetworkAggregatorIssuedSynths',
+				'SingleNetworkAggregatorDebtRatio',
 				'AddressResolver',
 				'SystemStatus',
 				'FlexibleStorage',
@@ -844,7 +850,8 @@ const setupAllContracts = async ({
 				'SynthetixBridgeToOptimism',
 			],
 			deps: [
-				'SingleNetworkAggregatorDebtInfo',
+				'SingleNetworkAggregatorIssuedSynths',
+				'SingleNetworkAggregatorDebtRatio',
 				'SystemStatus',
 				'SynthetixDebtShare',
 				'AddressResolver',

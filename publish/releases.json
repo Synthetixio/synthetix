@@ -379,7 +379,8 @@
 			"sources": [
 				"FeePool",
 				"Issuer",
-				"ext:AggregatorDebtInfo"
+				"ext:AggregatorIssuedSynths",
+				"ext:AggregatorDebtRatio"
 			]
 		},
 		{

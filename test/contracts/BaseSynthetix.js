@@ -38,7 +38,7 @@ contract('BaseSynthetix', async accounts => {
 		addressResolver,
 		systemSettings,
 		systemStatus,
-		aggregatorDebtInfo;
+		aggregatorDebtRatio;
 
 	before(async () => {
 		({
@@ -49,7 +49,7 @@ contract('BaseSynthetix', async accounts => {
 			DebtCache: debtCache,
 			SystemStatus: systemStatus,
 			SynthetixEscrow: escrow,
-			'ext:AggregatorDebtInfo': aggregatorDebtInfo,
+			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
@@ -693,7 +693,7 @@ contract('BaseSynthetix', async accounts => {
 					]);
 
 					// make aggregator debt info rate stale
-					await aggregatorDebtInfo.setOverrideTimestamp(await currentTime());
+					await aggregatorDebtRatio.setOverrideTimestamp(await currentTime());
 
 					// Now jump forward in time so the rates are stale
 					await fastForward((await exchangeRates.rateStalePeriod()) + 1);
@@ -702,7 +702,7 @@ contract('BaseSynthetix', async accounts => {
 					await ensureTransferReverts();
 
 					// now give some synth rates
-					await aggregatorDebtInfo.setOverrideTimestamp(0);
+					await aggregatorDebtRatio.setOverrideTimestamp(0);
 
 					await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['0.5', '1.25'].map(toUnit));
 					await debtCache.takeDebtSnapshot();
@@ -735,7 +735,7 @@ contract('BaseSynthetix', async accounts => {
 					await ensureTransferReverts();
 
 					// now give the aggregator debt info rate
-					await aggregatorDebtInfo.setOverrideTimestamp(0);
+					await aggregatorDebtRatio.setOverrideTimestamp(0);
 
 					// now SNX transfer should work
 					await baseSynthetix.transfer(account2, value, { from: account1 });
