@@ -41,12 +41,6 @@ describe('single relay integration tests (L1, L2)', () => {
 	it('shows that the L2 relay was deployed with the correct parameters', async () => {
 		assert.equal(await OwnerRelayOnOptimism.resolver(), AddressResolverL2.address);
 		assert.equal(await OwnerRelayOnOptimism.temporaryOwner(), ownerL2.address);
-
-		// Accept results within an hour
-		const expectedExpiry =
-			(await ctx.l1.provider.getBlock()).timestamp + TEMP_OWNER_DEFAULT_DURATION;
-		const expiryTime = (await OwnerRelayOnOptimism.expiryTime()).toString();
-		assert.bnClose(expectedExpiry, expiryTime, '3600');
 	});
 
 	describe('when SystemSettings on L2 is owned by an EOA', () => {
@@ -111,7 +105,7 @@ describe('single relay integration tests (L1, L2)', () => {
 				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelay(
 					SystemSettingsL2.address,
 					calldata,
-					0
+					1000000
 				);
 				relayReceipt = await tx.wait();
 			});
@@ -132,7 +126,7 @@ describe('single relay integration tests (L1, L2)', () => {
 				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelay(
 					SystemSettingsL2.address,
 					calldata,
-					0
+					1000000
 				);
 				relayReceipt = await tx.wait();
 

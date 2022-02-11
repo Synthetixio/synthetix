@@ -9,7 +9,7 @@ const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
 
 const ethers = require('ethers');
 
-describe('stakingt & claiming integration tests (L1, L2)', () => {
+describe('staking & claiming integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
@@ -22,13 +22,13 @@ describe('stakingt & claiming integration tests (L1, L2)', () => {
 		let balancesUSD, debtsUSD;
 
 		before('target contracts and users', () => {
-			({ Synthetix, SynthsUSD, FeePool } = ctx.contracts);
+			({ Synthetix, SynthsUSD, FeePool } = ctx.l1.contracts);
 
-			user = ctx.users.someUser;
+			user = ctx.l1.users.someUser;
 		});
 
 		before('ensure the user has enough SNX', async () => {
-			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
+			await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
 		});
 
 		describe('when the user issues sUSD', () => {
@@ -53,16 +53,16 @@ describe('stakingt & claiming integration tests (L1, L2)', () => {
 
 			describe('claiming', () => {
 				before('exchange something', async () => {
-					await exchangeSomething({ ctx });
+					await exchangeSomething({ ctx: ctx.l1 });
 				});
 
-				describe.skip('when the fee period closes', () => {
+				describe('when the fee period closes', () => {
 					before('skip fee period', async () => {
-						await skipFeePeriod({ ctx });
+						await skipFeePeriod({ ctx: ctx.l1 });
 					});
 
 					before('close the current fee period', async () => {
-						FeePool = FeePool.connect(ctx.users.owner);
+						FeePool = FeePool.connect(ctx.l1.users.owner);
 
 						const tx = await FeePool.closeCurrentFeePeriod();
 						await tx.wait();
@@ -87,35 +87,35 @@ describe('stakingt & claiming integration tests (L1, L2)', () => {
 					});
 				});
 			});
-		});
 
-		describe('when the user burns sUSD', () => {
-			before('skip min stake time', async () => {
-				await skipMinimumStakeTime({ ctx });
-			});
+			describe('when the user burns sUSD', () => {
+				before('skip min stake time', async () => {
+					await skipMinimumStakeTime({ ctx: ctx.l1 });
+				});
 
-			before('record debt', async () => {
-				debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
-			});
+				before('record debt', async () => {
+					debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+				});
 
-			before('burn sUSD', async () => {
-				Synthetix = Synthetix.connect(user);
+				before('burn sUSD', async () => {
+					Synthetix = Synthetix.connect(user);
 
-				const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
-				const { gasUsed } = await tx.wait();
-				console.log(`burnSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
-			});
+					const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
+					const { gasUsed } = await tx.wait();
+					console.log(`burnSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+				});
 
-			it('reduced the expected amount of debt', async () => {
-				const newDebtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
-				const debtReduction = debtsUSD.sub(newDebtsUSD);
+				it('reduced the expected amount of debt', async () => {
+					const newDebtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+					const debtReduction = debtsUSD.sub(newDebtsUSD);
 
-				const tolerance = ethers.utils.parseUnits('0.01', 'ether');
-				assert.bnClose(
-					debtReduction.toString(),
-					amountToIssueAndBurnsUSD.toString(),
-					tolerance.toString()
-				);
+					const tolerance = ethers.utils.parseUnits('0.01', 'ether');
+					assert.bnClose(
+						debtReduction.toString(),
+						amountToIssueAndBurnsUSD.toString(),
+						tolerance.toString()
+					);
+				});
 			});
 		});
 	});

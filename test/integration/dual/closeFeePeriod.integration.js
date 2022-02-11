@@ -2,6 +2,8 @@ const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
 
+const { skipFeePeriod } = require('../utils/skip');
+
 describe('closeCurrentFeePeriod() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
@@ -13,7 +15,7 @@ describe('closeCurrentFeePeriod() integration tests (L1, L2)', () => {
 
 	let closeReceipt;
 
-	describe('when the owner deposits SNX', () => {
+	describe('when fee period is closed', () => {
 		before('target contracts and users', () => {
 			({ FeePool } = ctx.l1.contracts);
 
@@ -22,6 +24,10 @@ describe('closeCurrentFeePeriod() integration tests (L1, L2)', () => {
 
 		before('record current fee period', async () => {
 			prevFeePeriod = await FeePool.recentFeePeriods(0);
+		});
+
+		before('skip fee period', async () => {
+			await skipFeePeriod({ ctx: ctx.l1 });
 		});
 
 		before('close fee pool on L1', async () => {
