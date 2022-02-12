@@ -62,7 +62,7 @@ contract('BaseSynthetix', async accounts => {
 				'SystemStatus',
 				'DebtCache',
 				'Issuer',
-				'SingleNetworkAggregatorDebtInfo',
+				'SingleNetworkAggregatorDebtRatio',
 				'Exchanger',
 				'RewardsDistribution',
 				'CollateralManager',

@@ -18,16 +18,6 @@ contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
 
     uint public overrideTimestamp;
 
-    struct Entry {
-        uint80 roundId;
-        int256 answer;
-        uint256 startedAt;
-        uint256 updatedAt;
-        uint80 answeredInRound;
-    }
-
-    mapping(uint => Entry) public entries;
-
     constructor(AddressResolver _resolver) public Owned(msg.sender) {
         resolver = _resolver;
     }
@@ -58,14 +48,12 @@ contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
         return 0;
     }
 
-    function getAnswer(uint256 _roundId) external view returns (int256) {
-        Entry memory entry = entries[_roundId];
-        return entry.answer;
+    function getAnswer(uint256 _roundId) external view returns (int256 answer) {
+        (,answer,,,) = getRoundData(uint80(_roundId));
     }
 
-    function getTimestamp(uint256 _roundId) external view returns (uint256) {
-        Entry memory entry = entries[_roundId];
-        return entry.updatedAt;
+    function getTimestamp(uint256 _roundId) external view returns (uint256 timestamp) {
+        (,,timestamp,,) = getRoundData(uint80(_roundId));
     }
 
     function getRoundData(uint80)
