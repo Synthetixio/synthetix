@@ -12,9 +12,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { smockit } = require('@eth-optimism/smock');
 
-const {
-	toBytes32,
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 const ethers = require('ethers');
 
