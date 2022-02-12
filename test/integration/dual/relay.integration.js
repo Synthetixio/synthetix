@@ -2,10 +2,6 @@ const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
 
-const {
-	defaults: { TEMP_OWNER_DEFAULT_DURATION },
-} = require('../../..');
-
 describe('single relay integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
