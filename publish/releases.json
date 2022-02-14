@@ -457,6 +457,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 199,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 200,
 			"layer": "both",
 			"sources": ["FeePool"],
@@ -872,6 +877,111 @@
 				"minor": 60
 			},
 			"sips": [185]
+		},
+		{
+			"name": "Polaris (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 61
+			},
+			"sips": [199]
+		},
+		{
+			"name": "Hamal",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 62
+			},
+			"sips": []
+		},
+		{
+			"name": "Hamal (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 62
+			},
+			"sips": []
+		},
+		{
+			"name": "Algieba",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 63
+			},
+			"sips": []
+		},
+		{
+			"name": "Algieba (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 63
+			},
+			"sips": []
+		},
+		{
+			"name": "Diphda",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": []
+		},
+		{
+			"name": "Diphda (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": []
+		},
+		{
+			"name": "Mizar",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": []
+		},
+		{
+			"name": "Mizar (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": []
+		},
+		{
+			"name": "Nunki",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 66
+			},
+			"sips": []
+		},
+		{
+			"name": "Nunki (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 66
+			},
+			"sips": []
 		}
 	]
 }

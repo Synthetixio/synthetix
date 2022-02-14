@@ -410,5 +410,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Alpha Finance"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Solana"
 	}
 }
