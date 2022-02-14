@@ -728,5 +728,30 @@
 				"keccak256": "0x403192bc309d6eee98ddbfaeed166b50c2665df94167c6970e785a65b71dd0e3"
 			}
 		}
+	},
+	"v2.61.0": {
+		"tag": "v2.61.0",
+		"fulltag": "v2.61.0",
+		"release": "Polaris",
+		"network": "mainnet",
+		"date": "2022-02-14T17:06:11-05:00",
+		"commit": "a87b887f101f42a28443494ffbed0524a822dc2a",
+		"contracts": {
+			"TokenStatesSOL": {
+				"address": "0x6825Dd6B5b83FBbFF1049A44dc808A10fe9a6719",
+				"status": "current",
+				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
+			},
+			"ProxysSOL": {
+				"address": "0x8b2F7Ae8cA8EE8428B6D76dE88326bB413db2766",
+				"status": "current",
+				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
+			},
+			"SynthsSOL": {
+				"address": "0x8ab13Ca3b6591554a086B7Ad2A012d25C3efD704",
+				"status": "current",
+				"keccak256": "0x2d4b290196733150f5b9834a29843e07cfbc79e0873af9a323c60c41f3e08272"
+			}
+		}
 	}
 }
