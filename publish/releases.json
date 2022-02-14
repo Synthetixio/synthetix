@@ -457,6 +457,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 199,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 200,
 			"layer": "both",
 			"sources": ["FeePool"],
@@ -874,15 +879,6 @@
 			"sips": [185]
 		},
 		{
-			"name": "Polaris",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 61
-			},
-			"sips": []
-		},
-		{
 			"name": "Polaris (Optimism)",
 			"ovm": true,
 			"released": false,
@@ -890,7 +886,7 @@
 				"major": 2,
 				"minor": 61
 			},
-			"sips": []
+			"sips": [199]
 		},
 		{
 			"name": "Hamal",

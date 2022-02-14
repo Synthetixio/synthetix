@@ -14,5 +14,9 @@
 	"LINK": {
 		"asset": "LINK",
 		"feed": "0xCc232dcFAAE6354cE191Bd574108c1aD03f86450"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"feed": "0xC663315f7aF904fbbB0F785c32046dFA03e85270"
 	}
 }

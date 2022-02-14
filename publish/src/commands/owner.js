@@ -40,7 +40,7 @@ const owner = async ({
 	useOvm,
 	useFork,
 	providerUrl,
-	skipOwnership = false,
+	skipAcceptance = false,
 	throwOnNotNominatedOwner = false,
 }) => {
 	ensureNetwork(network);
@@ -244,7 +244,7 @@ const owner = async ({
 	}
 
 	const warnings = [];
-	if (!skipOwnership) {
+	if (!skipAcceptance) {
 		console.log(gray('Looking for contracts whose ownership we should accept'));
 		// prevent dupes if some contracts are in there twice (looking at you ProxyERC20 and ProxyERC20sUSD)
 		const appendedOwnerCache = {};
@@ -429,6 +429,17 @@ const owner = async ({
 		}
 
 		if (safeBatchSubmitter) {
+			if (!yes) {
+				await confirmOrEnd(
+					gray(
+						`Confirm: Stage`,
+						yellow(`${Math.ceil(actions.length / batchSize)}`),
+						`batches to the safe with`,
+						yellow(actions.length),
+						'actions within the batch'
+					)
+				);
+			}
 			const { nonce } = await safeBatchSubmitter.submit();
 
 			console.log(
@@ -480,7 +491,7 @@ module.exports = {
 			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-			.option('-s, --skip-ownership', 'Skip ownership checks.')
+			.option('-s, --skip-acceptance', 'Skip ownership acceptance checks.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(
