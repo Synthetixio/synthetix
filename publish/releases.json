@@ -879,15 +879,6 @@
 			"sips": [185]
 		},
 		{
-			"name": "Polaris",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 61
-			},
-			"sips": []
-		},
-		{
 			"name": "Polaris (Optimism)",
 			"ovm": true,
 			"released": false,
