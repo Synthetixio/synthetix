@@ -15,7 +15,7 @@
 		"name": "COLLATERAL_MANAGER",
 		"value": {
 			"SYNTHS": ["sUSD", "sBTC", "sETH", "sLINK"],
-			"SHORTS": ["sBTC", "sETH", "sLINK"],
+			"SHORTS": ["sBTC", "sETH", "sLINK", "sSOL"],
 			"MAX_DEBT": "75000000000000000000000000",
 			"MAX_SKEW_RATE": "200000000000000000",
 			"BASE_BORROW_RATE": "950662938",
@@ -25,12 +25,19 @@
 	{
 		"name": "COLLATERAL_SHORT",
 		"value": {
-			"SYNTHS": ["sBTC", "sETH", "sLINK"],
+			"SYNTHS": ["sBTC", "sETH", "sLINK", "sSOL"],
 			"MIN_CRATIO": "1200000000000000000",
 			"MIN_COLLATERAL": "100000000000000000000",
 			"ISSUE_FEE_RATE": "4000000000000000",
 			"INTERACTION_DELAY": "0",
 			"COLLAPSE_FEE_RATE": "0"
+		}
+	},
+	{
+		"name": "COLLATERAL_ETH",
+		"value": {
+			"SYNTHS": ["sUSD", "sETH"],
+			"ISSUE_FEE_RATE": "0"
 		}
 	}
 ]
