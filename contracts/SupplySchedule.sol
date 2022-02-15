@@ -25,7 +25,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // Counter for number of weeks since the start of supply inflation
     uint public weekCounter;
 
-    uint public constant INFLATION_START_DATE = 1644969600; // 2022-02-16T00:00:00+00:00
+    uint public constant INFLATION_START_DATE = 1644364800; // 2022-02-09T00:00:00+00:00
 
     // The number of SNX rewarded to the caller of Synthetix.mint()
     uint public minterReward = 100 * SafeDecimalMath.unit();
