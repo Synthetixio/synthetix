@@ -46,6 +46,7 @@ module.exports = async ({
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
+	let inflationSupplyToDate;
 	let systemSuspended = false;
 	let systemSuspendedReason;
 
@@ -54,13 +55,9 @@ module.exports = async ({
 		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
 		// inflationSupplyToDate = total supply - 100m
-		const inflationSupplyToDate = parseUnits(currentSynthetixSupply.toString(), 'wei').sub(
+		inflationSupplyToDate = parseUnits(currentSynthetixSupply.toString(), 'wei').sub(
 			parseUnits((100e6).toString(), 'wei')
 		);
-
-		// current weekly inflation 75m / 52
-		const weeklyInflation = parseUnits((75e6 / 52).toString()).toString();
-		currentWeekOfInflation = inflationSupplyToDate.div(weeklyInflation);
 
 		// Check result is > 0 else set to 0 for currentWeek
 		currentWeekOfInflation = currentWeekOfInflation.gt(constants.Zero)
@@ -198,6 +195,7 @@ module.exports = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(formatUnits(currentSynthetixSupply) / 1e6)}m`,
+		'Inflation Supply to date': `${Math.round(formatUnits(inflationSupplyToDate) / 1e6)}m`,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
