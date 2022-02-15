@@ -23,7 +23,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const BN = require('bn.js');
 
 contract('SupplySchedule', async accounts => {
-	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
+	const initialWeeklySupply = toUnit(800000); // 800,000
 	const inflationStartDate = inflationStartTimestampInSecs;
 
 	const [, owner, synthetix, account1, account2] = accounts;

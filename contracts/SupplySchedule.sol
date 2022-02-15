@@ -77,7 +77,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      */
     function weeksSinceLastIssuance() public view returns (uint) {
         // Get weeks since lastMintEvent
-        // Return block.timestamp if lastMintEVent not set or is 0
+        // If lastMintEvent not set or 0, then start from inflation start date.
         uint timeDiff = lastMintEvent > 0 ? now.sub(lastMintEvent) : now.sub(INFLATION_START_DATE);
         return timeDiff.div(MINT_PERIOD_DURATION);
     }
