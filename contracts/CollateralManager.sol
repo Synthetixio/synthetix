@@ -27,7 +27,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     /* ========== CONSTANTS ========== */
 
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 private constant mimicUSD = "mimicUSD";
 
     uint private constant SECONDS_IN_A_YEAR = 31556926 * 1e18;
 
@@ -60,7 +60,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18;
 
-    // The maximum amount of debt in sUSD that can be issued by non snx collateral.
+    // The maximum amount of debt in mimicUSD that can be issued by non mime collateral.
     uint public maxDebt;
 
     // The rate that determines the skew limit maximum.
@@ -224,10 +224,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function getBorrowRate() public view returns (uint borrowRate, bool anyRateIsInvalid) {
-        // get the snx backed debt.
+        // get the mime backed debt.
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
 
-        // now get the non snx backed debt.
+        // now get the non mime backed debt.
         (uint nonSnxDebt, bool ratesInvalid) = totalLong();
 
         // the total.

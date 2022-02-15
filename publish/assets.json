@@ -5,8 +5,8 @@
 		"sign": "$",
 		"description": "US Dollars"
 	},
-	"SNX": {
-		"asset": "SNX",
+	"MIME": {
+		"asset": "MIME",
 		"category": "crypto",
 		"sign": "",
 		"description": "Synthetix Network Token"

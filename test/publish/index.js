@@ -24,7 +24,7 @@ const commands = {
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
 };
 
-const snx = require('../..');
+const mime = require('../..');
 const {
 	toBytes32,
 	constants: {
@@ -155,7 +155,7 @@ describe('publish scripts', () => {
 
 		MockAggregatorFactory = await createMockAggregatorFactory(accounts.deployer);
 
-		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
+		[sUSD, sBTC, sETH] = ['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32);
 
 		gasLimit = 8000000;
 		gasPrice = ethers.utils.parseUnits('5', 'gwei');
@@ -244,7 +244,7 @@ describe('publish scripts', () => {
 
 				sources = getSource();
 				targets = getTarget();
-				synths = getSynths().filter(({ name }) => name !== 'sUSD');
+				synths = getSynths().filter(({ name }) => name !== 'mimicUSD');
 
 				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
 				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
@@ -395,7 +395,7 @@ describe('publish scripts', () => {
 						await tx.wait();
 
 						tx = await SystemSettings.setExchangeFeeRateForSynths(
-							[toBytes32('sUSD')],
+							[toBytes32('mimicUSD')],
 							[newRateForsUSD],
 							overrides
 						);
@@ -465,7 +465,7 @@ describe('publish scripts', () => {
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
 							assert.strictEqual(
 								(
-									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
+									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('mimicUSD'))
 								).toString(),
 								newRateForsUSD
 							);
@@ -484,13 +484,13 @@ describe('publish scripts', () => {
 						JSON.parse(synthsJSON).map(({ name }) => name)
 					);
 				});
-				describe('when only sUSD and sETH is chosen as a synth', () => {
+				describe('when only mimicUSD and mimicETH is chosen as a synth', () => {
 					beforeEach(async () => {
 						fs.writeFileSync(
 							synthsJSONPath,
 							JSON.stringify([
-								{ name: 'sUSD', asset: 'USD' },
-								{ name: 'sETH', asset: 'ETH' },
+								{ name: 'mimicUSD', asset: 'USD' },
+								{ name: 'mimicETH', asset: 'ETH' },
 							])
 						);
 					});
@@ -514,9 +514,9 @@ describe('publish scripts', () => {
 							targets = getTarget();
 							Issuer = getContract({ target: 'Issuer' });
 						});
-						it('then only sUSD is added to the issuer', async () => {
+						it('then only mimicUSD is added to the issuer', async () => {
 							const keys = await Issuer.availableCurrencyKeys();
-							assert.deepStrictEqual(keys.map(hexToString), ['sUSD', 'sETH']);
+							assert.deepStrictEqual(keys.map(hexToString), ['mimicUSD', 'mimicETH']);
 						});
 					});
 				});
@@ -582,7 +582,7 @@ describe('publish scripts', () => {
 
 			describe('deploy-shorting-rewards', () => {
 				beforeEach(async () => {
-					const rewardsToDeploy = ['sBTC', 'sETH'];
+					const rewardsToDeploy = ['sBTC', 'mimicETH'];
 
 					await commands.deployShortingRewards({
 						network,
@@ -713,7 +713,7 @@ describe('publish scripts', () => {
 				});
 			});
 
-			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
+			describe('when ExchangeRates has prices MIME $0.30 and all synths $1', () => {
 				beforeEach(async () => {
 					// set default issuance of 0.2
 					const tx = await SystemSettings.setIssuanceRatio(
@@ -724,7 +724,7 @@ describe('publish scripts', () => {
 
 					// make sure exchange rates has prices for specific assets
 
-					const answersToSet = [{ asset: 'SNX', rate: 0.3 }].concat(
+					const answersToSet = [{ asset: 'MIME', rate: 0.3 }].concat(
 						synths.map(({ asset }) => {
 							// as the same assets are used for long and shorts, search by asset rather than
 							// name (currencyKey) here so that we don't accidentially override an inverse with
@@ -768,9 +768,9 @@ describe('publish scripts', () => {
 					}
 				});
 
-				describe('when transferring 100k SNX to user1', () => {
+				describe('when transferring 100k MIME to user1', () => {
 					beforeEach(async () => {
-						// transfer SNX to first account
+						// transfer MIME to first account
 						const tx = await Synthetix.transfer(
 							accounts.first.address,
 							ethers.utils.parseEther('100000'),
@@ -786,7 +786,7 @@ describe('publish scripts', () => {
 							const tx = await Synthetix.issueMaxSynths(overrides);
 							await tx.wait();
 						});
-						it('then the sUSD balanced must be 100k * 0.3 * 0.2 (default SystemSettings.issuanceRatio) = 6000', async () => {
+						it('then the mimicUSD balanced must be 100k * 0.3 * 0.2 (default SystemSettings.issuanceRatio) = 6000', async () => {
 							const balance = await callMethodWithRetry(
 								sUSDContract.balanceOf(accounts.first.address)
 							);
@@ -796,7 +796,7 @@ describe('publish scripts', () => {
 								'Balance should match'
 							);
 						});
-						describe('when user1 exchange 1000 sUSD for sETH (the MultiCollateralSynth)', () => {
+						describe('when user1 exchange 1000 mimicUSD for mimicETH (the MultiCollateralSynth)', () => {
 							let sETHBalanceAfterExchange;
 							beforeEach(async () => {
 								await Synthetix.exchange(sUSD, ethers.utils.parseEther('1000'), sETH, overrides);
@@ -804,7 +804,7 @@ describe('publish scripts', () => {
 									sETHContract.balanceOf(accounts.first.address)
 								);
 							});
-							it('then their sUSD balance is 5000', async () => {
+							it('then their mimicUSD balance is 5000', async () => {
 								const balance = await callMethodWithRetry(
 									sUSDContract.balanceOf(accounts.first.address)
 								);
@@ -814,7 +814,7 @@ describe('publish scripts', () => {
 									'Balance should match'
 								);
 							});
-							it('and their sETH balance is 1000 - the fee', async () => {
+							it('and their mimicETH balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
 									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), sUSD, sETH)
 								);
@@ -825,7 +825,7 @@ describe('publish scripts', () => {
 								);
 							});
 						});
-						describe('when user1 exchange 1000 sUSD for sBTC', () => {
+						describe('when user1 exchange 1000 mimicUSD for sBTC', () => {
 							let sBTCBalanceAfterExchange;
 							beforeEach(async () => {
 								const tx = await Synthetix.exchange(
@@ -839,7 +839,7 @@ describe('publish scripts', () => {
 									sBTCContract.balanceOf(accounts.first.address)
 								);
 							});
-							it('then their sUSD balance is 5000', async () => {
+							it('then their mimicUSD balance is 5000', async () => {
 								const balance = await callMethodWithRetry(
 									sUSDContract.balanceOf(accounts.first.address)
 								);
@@ -871,7 +871,7 @@ describe('publish scripts', () => {
 									tx = await Synthetix.burnSynths(ethers.utils.parseEther('10'), overrides);
 									await tx.wait();
 								});
-								it('then their sUSD balance is 4990', async () => {
+								it('then their mimicUSD balance is 4990', async () => {
 									const balance = await callMethodWithRetry(
 										sUSDContract.balanceOf(accounts.first.address)
 									);
@@ -906,7 +906,7 @@ describe('publish scripts', () => {
 												gasLimit,
 											});
 										});
-										it('then their sUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
+										it('then their mimicUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
 											const balance = await callMethodWithRetry(
 												sUSDContract.balanceOf(accounts.first.address)
 											);
@@ -1012,7 +1012,7 @@ describe('publish scripts', () => {
 								// update rates
 								const synthsToUpdate = synths
 									.filter(({ name }) => name !== 'sEUR')
-									.concat({ asset: 'SNX', rate: 1 });
+									.concat({ asset: 'MIME', rate: 1 });
 
 								for (const { asset } of synthsToUpdate) {
 									await setAggregatorAnswer({ asset, rate: 1 });

@@ -56,7 +56,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     function _initiateWithdraw(address to, uint amount) private {
-        require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable SNX");
+        require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable MIME");
 
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
@@ -83,7 +83,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external onlyOptimismBridge {
         IRewardEscrowV2 rewardEscrow = rewardEscrowV2();
-        // First, mint the escrowed SNX that are being migrated
+        // First, mint the escrowed MIME that are being migrated
         synthetix().mintSecondary(address(rewardEscrow), escrowedAmount);
         rewardEscrow.importVestingEntries(account, escrowedAmount, vestingEntries);
 

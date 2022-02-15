@@ -13,7 +13,7 @@ contract SynthUtil {
 
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 internal constant SUSD = "sUSD";
+    bytes32 internal constant mimicUSD = "mimicUSD";
 
     constructor(address resolver) public {
         addressResolverProxy = IAddressResolver(resolver);

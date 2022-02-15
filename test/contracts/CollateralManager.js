@@ -23,8 +23,8 @@ const {
 contract('CollateralManager', async accounts => {
 	const [, owner, , , account1] = accounts;
 
-	const sETH = toBytes32('sETH');
-	const sUSD = toBytes32('sUSD');
+	const mimicETH = toBytes32('mimicETH');
+	const mimicUSD = toBytes32('mimicUSD');
 	const sBTC = toBytes32('sBTC');
 
 	const name = 'Some name';
@@ -89,7 +89,7 @@ contract('CollateralManager', async accounts => {
 	};
 
 	const setupManager = async () => {
-		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
+		synths = ['mimicUSD', 'sBTC', 'mimicETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -174,23 +174,23 @@ contract('CollateralManager', async accounts => {
 
 		await ceth.addSynths(
 			['SynthsUSD', 'SynthsETH'].map(toBytes32),
-			['sUSD', 'sETH'].map(toBytes32),
+			['mimicUSD', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 		await cerc20.addSynths(
 			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
-			['sUSD', 'sBTC'].map(toBytes32),
+			['mimicUSD', 'sBTC'].map(toBytes32),
 			{ from: owner }
 		);
 		await short.addSynths(
 			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+			['sBTC', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addSynths(
 			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
-			[toBytes32('sUSD'), toBytes32('sBTC'), toBytes32('sETH')],
+			[toBytes32('mimicUSD'), toBytes32('sBTC'), toBytes32('mimicETH')],
 			{
 				from: owner,
 			}
@@ -208,14 +208,14 @@ contract('CollateralManager', async accounts => {
 		assert.isTrue(
 			await manager.areSynthsAndCurrenciesSet(
 				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
-				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+				['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32)
 			)
 		);
 
 		assert.isTrue(
 			await manager.areShortableSynthsSet(
 				['SynthsBTC', 'SynthsETH'].map(toBytes32),
-				['sBTC', 'sETH'].map(toBytes32)
+				['sBTC', 'mimicETH'].map(toBytes32)
 			)
 		);
 
@@ -297,19 +297,19 @@ contract('CollateralManager', async accounts => {
 			assert.isTrue(await manager.isSynthManaged(sETH));
 		});
 		it('should not allow duplicate synths to be added', async () => {
-			await manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('sUSD')], {
+			await manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('mimicUSD')], {
 				from: owner,
 			});
 			assert.isTrue(
 				await manager.areSynthsAndCurrenciesSet(
 					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
-					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+					['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32)
 				)
 			);
 		});
 		it('should revert when input array lengths dont match', async () => {
 			await assert.revert(
-				manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], [toBytes32('sUSD')], {
+				manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], [toBytes32('mimicUSD')], {
 					from: owner,
 				}),
 				'Input array length mismatch'
@@ -319,24 +319,24 @@ contract('CollateralManager', async accounts => {
 
 	describe('removing synths', async () => {
 		after('restore removed synth', async () => {
-			await manager.addSynths([toBytes32('SynthsETH')], [toBytes32('sETH')], {
+			await manager.addSynths([toBytes32('SynthsETH')], [toBytes32('mimicETH')], {
 				from: owner,
 			});
 			assert.isTrue(
 				await manager.areSynthsAndCurrenciesSet(
 					['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
-					['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+					['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32)
 				)
 			);
 		});
 		it('should successfully remove a synth', async () => {
-			await manager.removeSynths([toBytes32('SynthsETH')], [toBytes32('sETH')], {
+			await manager.removeSynths([toBytes32('SynthsETH')], [toBytes32('mimicETH')], {
 				from: owner,
 			});
 			assert.isTrue(
 				await manager.areSynthsAndCurrenciesSet(
 					['SynthsUSD', 'SynthsBTC'].map(toBytes32),
-					['sUSD', 'sBTC'].map(toBytes32)
+					['mimicUSD', 'sBTC'].map(toBytes32)
 				)
 			);
 		});
@@ -344,7 +344,7 @@ contract('CollateralManager', async accounts => {
 			await assert.revert(
 				manager.removeSynths(
 					[toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
-					[toBytes32('sUSD')],
+					[toBytes32('mimicUSD')],
 					{
 						from: owner,
 					}
@@ -390,11 +390,11 @@ contract('CollateralManager', async accounts => {
 			id = getid(tx);
 		});
 
-		it('should correctly get the total sUSD balance', async () => {
+		it('should correctly get the total mimicUSD balance', async () => {
 			assert.bnEqual(await manager.long(sUSD), toUnit(200));
 		});
 
-		it('should correctly get the total sETH balance', async () => {
+		it('should correctly get the total mimicETH balance', async () => {
 			assert.bnEqual(await manager.long(sETH), toUnit(1));
 		});
 
@@ -406,21 +406,21 @@ contract('CollateralManager', async accounts => {
 			assert.bnEqual(await manager.short(sETH), toUnit(1));
 		});
 
-		it('should get the total long balance in sUSD correctly', async () => {
+		it('should get the total long balance in mimicUSD correctly', async () => {
 			const total = await manager.totalLong();
 			const debt = total.susdValue;
 
 			assert.bnEqual(debt, toUnit(400));
 		});
 
-		it('should get the total short balance in sUSD correctly', async () => {
+		it('should get the total short balance in mimicUSD correctly', async () => {
 			const total = await manager.totalShort();
 			const debt = total.susdValue;
 
 			assert.bnEqual(debt, toUnit(100));
 		});
 
-		it('should get the total long and short balance in sUSD correctly', async () => {
+		it('should get the total long and short balance in mimicUSD correctly', async () => {
 			const total = await manager.totalLongAndShort();
 			const debt = total.susdValue;
 
@@ -444,7 +444,7 @@ contract('CollateralManager', async accounts => {
 			assert.isTrue(shortInvalid);
 		});
 
-		it('should reduce the sUSD balance when a loan is closed', async () => {
+		it('should reduce the mimicUSD balance when a loan is closed', async () => {
 			issue(sUSDSynth, toUnit(10), account1);
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });
@@ -452,7 +452,7 @@ contract('CollateralManager', async accounts => {
 			assert.bnEqual(await manager.long(sUSD), toUnit(100));
 		});
 
-		it('should reduce the total balance in sUSD when a loan is closed', async () => {
+		it('should reduce the total balance in mimicUSD when a loan is closed', async () => {
 			issue(sUSDSynth, toUnit(10), account1);
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });

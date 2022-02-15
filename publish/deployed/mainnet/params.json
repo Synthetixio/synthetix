@@ -10,13 +10,13 @@
 	{
 		"name": "ATOMIC_EQUIVALENTS_ON_DEX",
 		"value": {
-			"sUSD": {
-				"currencyKey": "sUSD",
+			"mimicUSD": {
+				"currencyKey": "mimicUSD",
 				"equivalent": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 				"token": "USDC"
 			},
-			"sETH": {
-				"currencyKey": "sETH",
+			"mimicETH": {
+				"currencyKey": "mimicETH",
 				"equivalent": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 				"token": "WETH"
 			},
@@ -30,29 +30,29 @@
 	{
 		"name": "ATOMIC_EXCHANGE_FEE_RATES",
 		"value": {
-			"sETH": "3000000000000000",
+			"mimicETH": "3000000000000000",
 			"sBTC": "3000000000000000",
-			"sUSD": "3000000000000000"
+			"mimicUSD": "3000000000000000"
 		}
 	},
 	{
 		"name": "ATOMIC_PRICE_BUFFER",
 		"value": {
-			"sETH": "1500000000000000",
+			"mimicETH": "1500000000000000",
 			"sBTC": "1500000000000000"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_CONSIDERATION_WINDOW",
 		"value": {
-			"sETH": "600",
+			"mimicETH": "600",
 			"sBTC": "600"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_UPDATE_THRESHOLD",
 		"value": {
-			"sETH": "3",
+			"mimicETH": "3",
 			"sBTC": "3"
 		}
 	}

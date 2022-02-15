@@ -60,7 +60,7 @@ module.exports = async ({
 			comment: 'Ensure the CollateralEth is connected to the CollateralManager',
 		});
 
-		const CollateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
+		const CollateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['mimicUSD', 'mimicETH']
 		await runStep({
 			contract: 'CollateralEth',
 			gasLimit: 1e6,
@@ -102,7 +102,7 @@ module.exports = async ({
 			comment: 'Ensure the CollateralErc20 contract is connected to the CollateralManager',
 		});
 
-		const CollateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
+		const CollateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['mimicUSD', 'sBTC']
 		await runStep({
 			contract: 'CollateralErc20',
 			gasLimit: 1e6,
@@ -144,7 +144,7 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract is connected to the CollateralManager',
 		});
 
-		const CollateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
+		const CollateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'mimicETH']
 		await runStep({
 			contract: 'CollateralShort',
 			gasLimit: 1e6,

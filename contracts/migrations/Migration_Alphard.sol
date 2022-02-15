@@ -103,7 +103,7 @@ contract Migration_Alphard is BaseMigration {
         feepooleternalstorage_i.setAssociatedContract(new_FeePool_contract);
         // Ensure the FeePool contract can write to its State;
         feepoolstate_i.setFeePool(IFeePool(new_FeePool_contract));
-        // Ensure the SNX proxy has the correct Synthetix target set;
+        // Ensure the MIME proxy has the correct Synthetix target set;
         proxysynthetix_i.setTarget(Proxyable(new_Synthetix_contract));
         // Ensure the Synthetix contract can write to its TokenState contract;
         tokenstatesynthetix_i.setAssociatedContract(new_Synthetix_contract);

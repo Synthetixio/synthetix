@@ -270,7 +270,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 		});
 
 		describe('forwardTokensToEscrow', () => {
-			describe('when some SNX tokens are accidentally transferred to the bridge', () => {
+			describe('when some MIME tokens are accidentally transferred to the bridge', () => {
 				const amount = toBN('999');
 				let initialAmount;
 				before(async () => {

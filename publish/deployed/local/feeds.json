@@ -1,5 +1,5 @@
 {
-	"SNX": { "asset": "SNX", "feed": "0x0" },
+	"MIME": { "asset": "MIME", "feed": "0x0" },
 	"ETH": { "asset": "ETH", "feed": "0x0" },
 	"COMP": { "asset": "COMP", "feed": "0x0" },
 	"KNC": { "asset": "KNC", "feed": "0x0" },

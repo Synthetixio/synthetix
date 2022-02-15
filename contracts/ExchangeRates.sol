@@ -23,7 +23,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
     //slither-disable-next-line naming-convention
-    bytes32 internal constant sUSD = "sUSD";
+    bytes32 internal constant mimicUSD = "mimicUSD";
 
     // Decentralized oracle networks that feed into pricing aggregators
     mapping(bytes32 => AggregatorV2V3Interface) public aggregators;
@@ -252,7 +252,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
-        if (currencyKey == sUSD) {
+        if (currencyKey == mimicUSD) {
             return (rateAndTime.rate, false);
         }
         return (
@@ -278,7 +278,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // do one lookup of the rate & time to minimize gas
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
-            if (!anyRateInvalid && currencyKeys[i] != sUSD) {
+            if (!anyRateInvalid && currencyKeys[i] != mimicUSD) {
                 anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time);
             }
         }
@@ -389,8 +389,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
-        // sUSD rate is 1.0
-        if (currencyKey == sUSD) {
+        // mimicUSD rate is 1.0
+        if (currencyKey == mimicUSD) {
             return RateAndUpdatedTime({rate: uint216(SafeDecimalMath.unit()), time: 0});
         } else {
             AggregatorV2V3Interface aggregator = aggregators[currencyKey];
@@ -416,7 +416,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getCurrentRoundId(bytes32 currencyKey) internal view returns (uint) {
-        if (currencyKey == sUSD) {
+        if (currencyKey == mimicUSD) {
             return 0;
         }
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
@@ -426,9 +426,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
-        // short circuit sUSD
-        if (currencyKey == sUSD) {
-            // sUSD has no rounds, and 0 time is preferrable for "volatility" heuristics
+        // short circuit mimicUSD
+        if (currencyKey == mimicUSD) {
+            // mimicUSD has no rounds, and 0 time is preferrable for "volatility" heuristics
             // which are used in atomic swaps and fee reclamation
             return (SafeDecimalMath.unit(), 0);
         } else {
@@ -486,8 +486,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _rateIsStale(bytes32 currencyKey, uint _rateStalePeriod) internal view returns (bool) {
-        // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == sUSD) {
+        // mimicUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
+        if (currencyKey == mimicUSD) {
             return false;
         }
         return _rateIsStaleWithTime(_rateStalePeriod, _getUpdatedTime(currencyKey));
@@ -498,8 +498,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint roundId,
         uint _rateStalePeriod
     ) internal view returns (bool) {
-        // sUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
-        if (currencyKey == sUSD) {
+        // mimicUSD is a special case and is never stale (check before an SLOAD of getRateAndUpdatedTime)
+        if (currencyKey == mimicUSD) {
             return false;
         }
         (, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
@@ -511,8 +511,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     }
 
     function _rateIsFlagged(bytes32 currencyKey, FlagsInterface flags) internal view returns (bool) {
-        // sUSD is a special case and is never invalid
-        if (currencyKey == sUSD) {
+        // mimicUSD is a special case and is never invalid
+        if (currencyKey == mimicUSD) {
             return false;
         }
         address aggregator = address(aggregators[currencyKey]);

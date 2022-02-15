@@ -42,7 +42,7 @@ contract('VirtualSynthMastercopy (unit tests)', async accounts => {
 
 		it('and the instance cannot be initialized again', async () => {
 			await assert.revert(
-				instance.initialize(mockSynth, mockResolver, owner, '10', toBytes32('sUSD')),
+				instance.initialize(mockSynth, mockResolver, owner, '10', toBytes32('mimicUSD')),
 				'vSynth already initialized'
 			);
 		});

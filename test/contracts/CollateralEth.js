@@ -23,8 +23,8 @@ contract('CollateralEth', async accounts => {
 	const YEAR = 31556926;
 	const INTERACTION_DELAY = 300;
 
-	const sUSD = toBytes32('sUSD');
-	const sETH = toBytes32('sETH');
+	const mimicUSD = toBytes32('mimicUSD');
+	const mimicETH = toBytes32('mimicETH');
 	const sBTC = toBytes32('sBTC');
 
 	const oneETH = toUnit(1);
@@ -75,7 +75,7 @@ contract('CollateralEth', async accounts => {
 	};
 
 	const setupMultiCollateral = async () => {
-		synths = ['sUSD', 'sETH'];
+		synths = ['mimicUSD', 'mimicETH'];
 		({
 			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
@@ -131,13 +131,13 @@ contract('CollateralEth', async accounts => {
 
 		await ceth.addSynths(
 			['SynthsUSD', 'SynthsETH'].map(toBytes32),
-			['sUSD', 'sETH'].map(toBytes32),
+			['mimicUSD', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addSynths(
 			['SynthsUSD', 'SynthsETH'].map(toBytes32),
-			['sUSD', 'sETH'].map(toBytes32),
+			['mimicUSD', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 		// rebuild the cache to add the synths we need.
@@ -259,7 +259,7 @@ contract('CollateralEth', async accounts => {
 
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
-			// $260 worth of eth should allow 200 sUSD to be issued.
+			// $260 worth of eth should allow 200 mimicUSD to be issued.
 			const sUSDAmount = await ceth.maxLoan(toUnit('2.6'), sUSD);
 
 			assert.bnClose(sUSDAmount, toUnit('200'), '100');
@@ -638,7 +638,7 @@ contract('CollateralEth', async accounts => {
 			});
 		});
 
-		describe('should allow repayments on an sUSD loan', async () => {
+		describe('should allow repayments on an mimicUSD loan', async () => {
 			// I'm not testing interest here, just that payment reduces the amounts.
 			const expectedString = '90000';
 
@@ -668,7 +668,7 @@ contract('CollateralEth', async accounts => {
 			});
 		});
 
-		describe('it should allow repayments on an sETH loan', async () => {
+		describe('it should allow repayments on an mimicETH loan', async () => {
 			// I don't want to test interest here. I just want to test repayment.
 			const expectedString = '40000';
 
@@ -772,7 +772,7 @@ contract('CollateralEth', async accounts => {
 			});
 		});
 
-		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
+		describe('should allow liquidations on an undercollateralised mimicUSD loan', async () => {
 			const liquidatedCollateral = new BN('1588888888888888880');
 			let liquidationAmount;
 
@@ -917,7 +917,7 @@ contract('CollateralEth', async accounts => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling close() succeeds', async () => {
-							// Give them some more sUSD to make up for the fees.
+							// Give them some more mimicUSD to make up for the fees.
 							await issuesUSDToAccount(tensUSD, account1);
 							await ceth.close(id, { from: account1 });
 						});
@@ -938,7 +938,7 @@ contract('CollateralEth', async accounts => {
 
 		describe('when it works', async () => {
 			beforeEach(async () => {
-				// Give them some more sUSD to make up for the fees.
+				// Give them some more mimicUSD to make up for the fees.
 				await issuesUSDToAccount(tensUSD, account1);
 
 				tx = await ceth.close(id, { from: account1 });

@@ -30,7 +30,7 @@ module.exports = async ({
 		const tokenStateForSynth = deployer.deployedContracts[`TokenState${currencyKey}`];
 		const proxyForSynth = deployer.deployedContracts[`Proxy${currencyKey}`];
 		const proxyERC20ForSynth =
-			currencyKey === 'sUSD' ? deployer.deployedContracts[`ProxyERC20sUSD`] : undefined;
+			currencyKey === 'mimicUSD' ? deployer.deployedContracts[`ProxyERC20sUSD`] : undefined;
 
 		let ExistingSynth;
 		try {
@@ -106,7 +106,7 @@ module.exports = async ({
 					expected: input => input === addressOf(synth),
 					write: 'setTarget',
 					writeArg: addressOf(synth),
-					comment: 'Ensure the special ERC20 proxy for sUSD has its target set to the Synth',
+					comment: 'Ensure the special ERC20 proxy for mimicUSD has its target set to the Synth',
 					// Skip solidity for this as on mainnet, ProxyERC20sUSD is already done via ProxysUSD above
 					skipSolidity: network === 'mainnet',
 				});

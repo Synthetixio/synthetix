@@ -263,7 +263,7 @@ contract('RewardsDistribution', async accounts => {
 				from: owner,
 			});
 
-			// Set the SNX Token Transfer Address
+			// Set the MIME Token Transfer Address
 			await rewardsDistribution.setSynthetixProxy(synthetix.address, {
 				from: owner,
 			});
@@ -311,7 +311,7 @@ contract('RewardsDistribution', async accounts => {
 			const authorityAddress = await rewardsDistribution.authority();
 			assert.equal(authorityAddress, authorityAddress);
 
-			// Transfer SNX to the RewardsDistribution contract address
+			// Transfer MIME to the RewardsDistribution contract address
 			await synthetix.methods['transfer(address,uint256)'](
 				rewardsDistribution.address,
 				totalToDistribute,
@@ -362,7 +362,7 @@ contract('RewardsDistribution', async accounts => {
 			const distributionsLength = await rewardsDistribution.distributionsLength();
 			assert.equal(distributionsLength, 2);
 
-			// Transfer SNX to the RewardsDistribution contract address
+			// Transfer MIME to the RewardsDistribution contract address
 			await synthetix.transfer(rewardsDistribution.address, totalToDistribute, { from: owner });
 
 			// Check RewardsDistribution balance

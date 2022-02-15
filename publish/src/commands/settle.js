@@ -258,7 +258,7 @@ const settle = async ({
 							await ExchangeRates.effectiveValue(
 								toCurrencyKey,
 								reclaimAmount > rebateAmount ? reclaimAmount.toString() : rebateAmount.toString(),
-								toBytes32('sUSD'),
+								toBytes32('mimicUSD'),
 								{ blockTag: blockNumber }
 							)
 					  )

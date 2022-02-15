@@ -26,7 +26,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     /* ========== ENCODED NAMES ========== */
 
-    bytes32 internal constant sUSD = "sUSD";
+    bytes32 internal constant mimicUSD = "mimicUSD";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
@@ -242,7 +242,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
             synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
         }
 
-        // in the case of a negative fee extra synths will be issued, billed to the snx stakers
+        // in the case of a negative fee extra synths will be issued, billed to the mime stakers
         _setTargetSynthIssued(reserves);
     }
 
@@ -264,7 +264,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
             synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
         }
 
-        // in the case of a negative fee fewer synths will be burned, billed to the snx stakers
+        // in the case of a negative fee fewer synths will be burned, billed to the mime stakers
         _setTargetSynthIssued(reserves);
     }
 

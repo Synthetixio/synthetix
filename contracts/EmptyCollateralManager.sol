@@ -21,11 +21,11 @@ contract EmptyCollateralManager is ICollateralManager {
         return 0;
     }
 
-    function totalLong() external view returns (uint susdValue, bool anyRateIsInvalid) {
+    function totalLong() external view returns (uint mimicUSDValue, bool anyRateIsInvalid) {
         return (0, false);
     }
 
-    function totalShort() external view returns (uint susdValue, bool anyRateIsInvalid) {
+    function totalShort() external view returns (uint mimicUSDValue, bool anyRateIsInvalid) {
         return (0, false);
     }
 

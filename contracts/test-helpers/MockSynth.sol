@@ -37,20 +37,20 @@ contract MockSynth is ExternStateToken {
 
     /**
      * @notice _transferToFeeAddress function
-     * non-sUSD synths are exchanged into sUSD via synthInitiatedExchange
+     * non-sUSD synths are exchanged into mimicUSD via synthInitiatedExchange
      * notify feePool to record amount as fee paid to feePool */
     function _transferToFeeAddress(address to, uint value) internal returns (bool) {
         uint amountInUSD;
 
-        // sUSD can be transferred to FEE_ADDRESS directly
-        if (currencyKey == "sUSD") {
+        // mimicUSD can be transferred to FEE_ADDRESS directly
+        if (currencyKey == "mimicUSD") {
             amountInUSD = value;
             _transferByProxy(messageSender, to, value);
         } else {
             // for now, do nothing
         }
 
-        // Notify feePool to record sUSD to distribute as fees
+        // Notify feePool to record mimicUSD to distribute as fees
         IFeePool(addressResolver.getAddress("FeePool")).recordFeePaid(amountInUSD);
 
         return true;
@@ -59,7 +59,7 @@ contract MockSynth is ExternStateToken {
     function transfer(address to, uint value) external optionalProxy returns (bool) {
         ISystemStatus(addressResolver.getAddress("SystemStatus")).requireSynthActive(currencyKey);
 
-        // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
+        // transfers to FEE_ADDRESS will be exchanged into mimicUSD and recorded as fee
         if (to == FEE_ADDRESS) {
             return _transferToFeeAddress(to, value);
         }

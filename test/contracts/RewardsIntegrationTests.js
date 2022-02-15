@@ -52,14 +52,14 @@ contract('Rewards Integration Tests', accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, SNX, iBTC, sETH, ETH] = [
-		'sUSD',
+	const [sUSD, sAUD, sEUR, sBTC, MIME, iBTC, sETH, ETH] = [
+		'mimicUSD',
 		'sAUD',
 		'sEUR',
 		'sBTC',
-		'SNX',
+		'MIME',
 		'iBTC',
-		'sETH',
+		'mimicETH',
 		'ETH',
 	].map(toBytes32);
 
@@ -152,7 +152,7 @@ contract('Rewards Integration Tests', accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
+			synths: ['mimicUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'mimicETH'],
 			contracts: [
 				'AddressResolver',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
@@ -188,15 +188,15 @@ contract('Rewards Integration Tests', accounts => {
 		// await fastForwardAndUpdateRates(YEAR + MINUTE);
 		await fastForwardAndUpdateRates(WEEK + MINUTE);
 
-		// Assign 1/3 of total SNX to 3 accounts
+		// Assign 1/3 of total MIME to 3 accounts
 		const snxTotalSupply = await synthetix.totalSupply();
 		const thirdOfSNX = third(snxTotalSupply);
 
-		await synthetix.transfer(account1, thirdOfSNX, { from: owner });
-		await synthetix.transfer(account2, thirdOfSNX, { from: owner });
-		await synthetix.transfer(account3, thirdOfSNX, { from: owner });
+		await synthetix.transfer(account1, thirdOfMIME, { from: owner });
+		await synthetix.transfer(account2, thirdOfMIME, { from: owner });
+		await synthetix.transfer(account3, thirdOfMIME, { from: owner });
 
-		// Get the SNX mintableSupply
+		// Get the MIME mintableSupply
 		periodOneMintableSupplyMinusMinterReward = (await supplySchedule.mintableSupply()).sub(
 			MINTER_SNX_REWARD
 		);
@@ -211,7 +211,7 @@ contract('Rewards Integration Tests', accounts => {
 		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
 	});
 
-	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {
+	describe('3 accounts with 33.33% MIME all issue MAX and claim rewards', async () => {
 		let FEE_PERIOD_LENGTH;
 		let CLAIMABLE_PERIODS;
 
@@ -276,7 +276,7 @@ contract('Rewards Integration Tests', accounts => {
 				// FastForward a little for minting
 				await fastForwardAndUpdateRates(MINUTE);
 
-				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				// Get the MIME mintableSupply - the minter reward of 200 SNX
 				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
 				// console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
 				// Mint the staking rewards
@@ -303,7 +303,7 @@ contract('Rewards Integration Tests', accounts => {
 				// FastForward a little for minting
 				await fastForwardAndUpdateRates(MINUTE);
 
-				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				// Get the MIME mintableSupply - the minter reward of 200 SNX
 				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
 				// console.log('mintedRewardsSupply', mintedRewardsSupply.toString());
 				// Mint the staking rewards
@@ -326,7 +326,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(totalRewardsAvailable, rewardsLessAccountClaims, '1000000000');
 		});
 
-		it('should mint SNX for the all claimable fee periods then all 3 accounts claim at the end of the claimable period', async () => {
+		it('should mint MIME for the all claimable fee periods then all 3 accounts claim at the end of the claimable period', async () => {
 			let mintedRewardsSupply;
 			// We are currently in the 2nd week, close it and the next
 			for (let i = 0; i <= CLAIMABLE_PERIODS - 1; i++) {
@@ -336,7 +336,7 @@ contract('Rewards Integration Tests', accounts => {
 				// FastForward a little for minting
 				await fastForwardAndUpdateRates(MINUTE);
 
-				// Get the SNX mintableSupply - the minter reward of 200 SNX
+				// Get the MIME mintableSupply - the minter reward of 200 SNX
 				mintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(MINTER_SNX_REWARD);
 
 				// Mint the staking rewards
@@ -365,7 +365,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(accThreeEscrowed.escrowAmount, twoWeeksRewards, '1000000000');
 		});
 
-		it('should rollover the unclaimed SNX rewards', async () => {
+		it('should rollover the unclaimed MIME rewards', async () => {
 			// Close all claimable periods
 			for (let i = 0; i <= CLAIMABLE_PERIODS; i++) {
 				// console.log('Close Fee Period', i);
@@ -401,7 +401,7 @@ contract('Rewards Integration Tests', accounts => {
 			);
 		});
 
-		it('should rollover the unclaimed SNX rewards on week over 2 terms', async () => {
+		it('should rollover the unclaimed MIME rewards on week over 2 terms', async () => {
 			for (let i = 0; i <= 2; i++) {
 				await fastForwardAndCloseFeePeriod();
 				// FastForward a bit to be able to mint
@@ -430,7 +430,7 @@ contract('Rewards Integration Tests', accounts => {
 			);
 		});
 
-		it('should rollover the partial unclaimed SNX rewards', async () => {
+		it('should rollover the partial unclaimed MIME rewards', async () => {
 			// await logFeePeriods();
 			for (let i = 0; i <= FEE_PERIOD_LENGTH; i++) {
 				// Get the Rewards to RollOver
@@ -512,7 +512,7 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(account1EscrowEntry.escrowAmount, rewardsAmount, gweiTolerance);
 		});
 
-		it('should allocate correct SNX rewards as others leave the system', async () => {
+		it('should allocate correct MIME rewards as others leave the system', async () => {
 			// Close Fee Period
 			// console.log('Close Fee Period');
 			await fastForwardAndCloseFeePeriod();
@@ -535,7 +535,7 @@ contract('Rewards Integration Tests', accounts => {
 			// FastForward into the second mintable week
 			await fastForwardAndUpdateRates(WEEK + MINUTE);
 
-			// Get the SNX mintableSupply for period 2
+			// Get the MIME mintableSupply for period 2
 			const period2MintedRewardsSupply = (await supplySchedule.mintableSupply()).sub(
 				MINTER_SNX_REWARD
 			);
@@ -633,12 +633,12 @@ contract('Rewards Integration Tests', accounts => {
 			await updateAggregatorRates(exchangeRates, [sBTC], ['10000'].map(toUnit));
 			await debtCache.takeDebtSnapshot();
 
-			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
+			// Account 3 (enters the system and) mints 10K mimicUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%
 			const potentialFee = exchangeFeeIncurred(toUnit('10000'));
 			await synthetix.issueSynths(tenK.sub(half(potentialFee)), { from: account3 });
 
-			// Get the SNX mintableSupply for week 2
+			// Get the MIME mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
 				MINTER_SNX_REWARD
 			);
@@ -738,7 +738,7 @@ contract('Rewards Integration Tests', accounts => {
 
 			// await synthetix.burnSynths(amountAfterExchangeInUSD, { from: account1 });
 
-			// // Get the SNX mintableSupply for week 3
+			// // Get the MIME mintableSupply for week 3
 			// // const periodThreeMintableSupply = (await supplySchedule.mintableSupply()).sub(
 			// // 	MINTER_SNX_REWARD
 			// // );
@@ -784,7 +784,7 @@ contract('Rewards Integration Tests', accounts => {
 			// // Acc1 mints 20K (40%) close p (40,40,20)');
 			// await synthetix.issueSynths(twentyK, { from: account1 });
 
-			// // Get the SNX mintableSupply for week 4
+			// // Get the MIME mintableSupply for week 4
 			// const periodFourMintableSupply = (await supplySchedule.mintableSupply()).sub(
 			// 	MINTER_SNX_REWARD
 			// );
@@ -818,7 +818,7 @@ contract('Rewards Integration Tests', accounts => {
 		});
 	});
 
-	describe('3 Accounts issue 10K sUSD each in week 1', async () => {
+	describe('3 Accounts issue 10K mimicUSD each in week 1', async () => {
 		beforeEach(async () => {
 			await synthetix.issueSynths(tenK, { from: account1 });
 			await synthetix.issueSynths(tenK, { from: account2 });
@@ -876,10 +876,10 @@ contract('Rewards Integration Tests', accounts => {
 			await synthetix.burnSynths(twentyK, { from: account1 });
 			// Acc 1 Issues 10K sUSD
 			await synthetix.issueSynths(tenK, { from: account1 });
-			// Acc 1 Issues 10K sUSD again
+			// Acc 1 Issues 10K mimicUSD again
 			await synthetix.issueSynths(tenK, { from: account1 });
 
-			// Get the SNX mintableSupply for week 2
+			// Get the MIME mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
 				MINTER_SNX_REWARD
 			);
@@ -943,7 +943,7 @@ contract('Rewards Integration Tests', accounts => {
 		});
 
 		it('should apply no penalty when users claim rewards above the penalty threshold ratio of 1%', async () => {
-			// Decrease SNX collateral price by .9%
+			// Decrease MIME collateral price by .9%
 			const currentRate = await exchangeRates.rateForCurrency(SNX);
 			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.009')));
 
@@ -967,7 +967,7 @@ contract('Rewards Integration Tests', accounts => {
 			);
 		});
 		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
-			// But if the price of SNX decreases a lot...
+			// But if the price of MIME decreases a lot...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
 			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 			// we will fall into the >100% bracket
@@ -1009,8 +1009,8 @@ contract('Rewards Integration Tests', accounts => {
 			const period = await feePool.recentFeePeriods(1);
 			period.index = 1;
 
-			// Simulate rounding on sUSD leaving fraction less for the last claimer.
-			// No need to simulate for SNX as the 1.44M SNX has a 1 wei rounding already
+			// Simulate rounding on mimicUSD leaving fraction less for the last claimer.
+			// No need to simulate for MIME as the 1.44M MIME has a 1 wei rounding already
 			period.feesClaimed = period.feesClaimed.add(toUnit('0.000000000000000001'));
 			await feePool.importFeePeriod(
 				period.index,

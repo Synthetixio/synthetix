@@ -8,7 +8,7 @@
 
 Synthetix is a crypto-backed synthetic asset platform.
 
-It is a multi-token system, powered by SNX, the Synthetix Network Token. SNX holders can stake SNX to issue Synths, on-chain synthetic assets via the [Staking dApp](https://staking.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/synths/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://docs.synthetix.io/addresses/)
+It is a multi-token system, powered by MIME, the Synthetix Network Token. MIME holders can stake MIME to issue Synths, on-chain synthetic assets via the [Staking dApp](https://staking.synthetix.io) The network currently supports an ever growing [list of synthetic assets](https://www.synthetix.io/synths/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://docs.synthetix.io/addresses/)
 Synths can be traded using [Kwenta](https://kwenta.io)
 
 Synthetix uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Synthetix Improvement Proposal (SIP)](https://sips.synthetix.io/all-sip) system similar to the [EIPs](https://eips.ethereum.org/all)
@@ -125,7 +125,7 @@ contract MyContract {
 #### Via code
 
 ```javascript
-const snx = require('synthetix');
+const mime = require('synthetix');
 
 snx.getAST();
 /*
@@ -199,7 +199,7 @@ snx.getSuspensionReasons();
 
 // retrieve the array of synths used
 snx.getSynths({ network: 'rinkeby' }).map(({ name }) => name);
-// ['sUSD', 'sEUR', ...]
+// ['mimicUSD', 'sEUR', ...]
 
 // retrieve an object detailing the contract deployed to the given network.
 snx.getTarget({ network: 'rinkeby', contract: 'ProxySynthetix' });
@@ -249,7 +249,7 @@ snx.getVersions();
 snx.networks;
 // [ 'local', 'kovan', 'rinkeby', 'ropsten', 'mainnet' ]
 
-snx.toBytes32('sUSD');
+snx.toBytes32('mimicUSD');
 // '0x7355534400000000000000000000000000000000000000000000000000000000'
 ```
 
@@ -291,7 +291,7 @@ $ npx synthetix suspension-reason --code 2
 Market Closure
 
 $ npx synthetix synths --network rinkeby --key name
-["sUSD", "sEUR", ... ]
+["mimicUSD", "sEUR", ... ]
 
 $ npx synthetix target --network rinkeby --contract ProxySynthetix
 {

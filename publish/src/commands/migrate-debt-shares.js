@@ -92,7 +92,7 @@ const migrateDebtShares = async ({
 
 	const addressCollateralAmounts = [];
 
-	const sUSD = ethers.utils.formatBytes32String('sUSD');
+	const mimicUSD = ethers.utils.formatBytes32String('mimicUSD');
 
 	let totalDebtAccounted = ethers.BigNumber.from(0);
 	let totalDebtForgiven = ethers.BigNumber.from(0);

@@ -20,8 +20,8 @@ function itCanStake({ ctx }) {
 			user = ctx.users.someUser;
 		});
 
-		before('ensure the user has enough SNX', async () => {
-			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
+		before('ensure the user has enough MIME', async () => {
+			await ensureBalance({ ctx, symbol: 'MIME', user, balance: SNXAmount });
 		});
 
 		describe('when the user issues sUSD', () => {
@@ -74,7 +74,7 @@ function itCanStake({ ctx }) {
 							console.log(`claimFees() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 						});
 
-						it('shows a slight increase in the users sUSD balance', async () => {
+						it('shows a slight increase in the users mimicUSD balance', async () => {
 							assert.bnGt(await SynthsUSD.balanceOf(user.address), balancesUSD);
 						});
 					});
@@ -88,7 +88,7 @@ function itCanStake({ ctx }) {
 			});
 
 			before('record debt', async () => {
-				debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+				debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('mimicUSD'));
 			});
 
 			before('burn sUSD', async () => {
@@ -100,7 +100,7 @@ function itCanStake({ ctx }) {
 			});
 
 			it('reduced the expected amount of debt', async () => {
-				const newDebtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+				const newDebtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('mimicUSD'));
 				const debtReduction = debtsUSD.sub(newDebtsUSD);
 
 				const tolerance = ethers.utils.parseUnits('0.01', 'ether');

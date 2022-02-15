@@ -104,7 +104,7 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
 
         // Liquidation closed if collateral ratio less than or equal target issuance Ratio
-        // Account with no snx collateral will also not be open for liquidation (ratio is 0)
+        // Account with no mime collateral will also not be open for liquidation (ratio is 0)
         if (accountCollateralisationRatio <= getIssuanceRatio()) {
             return false;
         }
@@ -162,8 +162,8 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // totalIssuedSynths checks synths for staleness
-    // check snx rate is not stale
-    function flagAccountForLiquidation(address account) external rateNotInvalid("SNX") {
+    // check mime rate is not stale
+    function flagAccountForLiquidation(address account) external rateNotInvalid("MIME") {
         systemStatus().requireSystemActive();
 
         require(getLiquidationRatio() > 0, "Liquidation ratio not set");
@@ -198,8 +198,8 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
 
     // Public function to allow an account to remove from liquidations
     // Checks collateral ratio is fixed - below target issuance ratio
-    // Check SNX rate is not stale
-    function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("SNX") {
+    // Check MIME rate is not stale
+    function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("MIME") {
         systemStatus().requireSystemActive();
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);

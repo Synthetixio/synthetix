@@ -1,6 +1,6 @@
 [
 	{
-		"name": "sUSD",
+		"name": "mimicUSD",
 		"asset": "USD"
 	},
 	{
@@ -37,7 +37,7 @@
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETH",
+		"name": "mimicETH",
 		"asset": "ETH",
 		"subclass": "MultiCollateralSynth"
 	},
@@ -144,7 +144,7 @@
 				"units": 502.718
 			},
 			{
-				"asset": "SNX",
+				"asset": "MIME",
 				"units": 107.686
 			},
 			{

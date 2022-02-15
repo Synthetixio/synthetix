@@ -18,7 +18,7 @@ contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings
 
     /* ========== CONSTANTS ========== */
 
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 private constant mimicUSD = "mimicUSD";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

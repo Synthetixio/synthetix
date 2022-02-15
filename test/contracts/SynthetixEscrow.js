@@ -33,7 +33,7 @@ contract('SynthetixEscrow', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock SNX
-		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
+		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'MIME' }));
 
 		escrow = await setupContract({
 			accounts,
@@ -66,7 +66,7 @@ contract('SynthetixEscrow', async accounts => {
 
 	describe('Only During Setup', async () => {
 		it('should allow owner to purgeAccount', async () => {
-			// Transfer of SNX to the escrow must occur before creating an entry
+			// Transfer of MIME to the escrow must occur before creating an entry
 			await synthetix.transfer(escrow.address, toUnit('1000'), {
 				from: owner,
 			});
@@ -83,7 +83,7 @@ contract('SynthetixEscrow', async accounts => {
 			assert.bnEqual(toUnit('0'), await escrow.totalVestedAccountBalance(account1));
 		});
 		it('should allow owner to call addVestingSchedule', async () => {
-			// Transfer of SNX to the escrow must occur before creating an entry
+			// Transfer of MIME to the escrow must occur before creating an entry
 			await synthetix.transfer(escrow.address, toUnit('200'), {
 				from: owner,
 			});
@@ -118,7 +118,7 @@ contract('SynthetixEscrow', async accounts => {
 	describe('Functions', async () => {
 		describe('Vesting Schedule Writes', async () => {
 			it('should not create a vesting entry with a zero amount', async () => {
-				// Transfer of SNX to the escrow must occur before creating an entry
+				// Transfer of MIME to the escrow must occur before creating an entry
 				await synthetix.transfer(escrow.address, toUnit('1'), {
 					from: owner,
 				});
@@ -128,8 +128,8 @@ contract('SynthetixEscrow', async accounts => {
 				);
 			});
 
-			it('should not create a vesting entry if there is not enough SNX in the contracts balance', async () => {
-				// Transfer of SNX to the escrow must occur before creating an entry
+			it('should not create a vesting entry if there is not enough MIME in the contracts balance', async () => {
+				// Transfer of MIME to the escrow must occur before creating an entry
 				await synthetix.transfer(escrow.address, toUnit('1'), {
 					from: owner,
 				});
@@ -141,7 +141,7 @@ contract('SynthetixEscrow', async accounts => {
 
 		describe('Vesting Schedule Reads ', async () => {
 			beforeEach(async () => {
-				// Transfer of SNX to the escrow must occur before creating a vestinng entry
+				// Transfer of MIME to the escrow must occur before creating a vestinng entry
 				await synthetix.transfer(escrow.address, toUnit('6000'), {
 					from: owner,
 				});
@@ -203,7 +203,7 @@ contract('SynthetixEscrow', async accounts => {
 
 		describe('Partial Vesting', async () => {
 			beforeEach(async () => {
-				// Transfer of SNX to the escrow must occur before creating a vestinng entry
+				// Transfer of MIME to the escrow must occur before creating a vestinng entry
 				await synthetix.transfer(escrow.address, toUnit('6000'), {
 					from: owner,
 				});
@@ -250,7 +250,7 @@ contract('SynthetixEscrow', async accounts => {
 
 		describe('Vesting', async () => {
 			beforeEach(async () => {
-				// Transfer of SNX to the escrow must occur before creating a vestinng entry
+				// Transfer of MIME to the escrow must occur before creating a vestinng entry
 				await synthetix.transfer(escrow.address, toUnit('6000'), {
 					from: owner,
 				});
@@ -272,7 +272,7 @@ contract('SynthetixEscrow', async accounts => {
 				await fastForward(YEAR + WEEK * 3);
 			});
 
-			it('should vest and transfer snx from contract to the user', async () => {
+			it('should vest and transfer mime from contract to the user', async () => {
 				await escrow.vest({ from: account1 });
 
 				// Check user has all their vested SNX

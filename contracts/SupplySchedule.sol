@@ -25,7 +25,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // Counter for number of weeks since the start of supply inflation
     uint public weekCounter;
 
-    // The number of SNX rewarded to the caller of Synthetix.mint()
+    // The number of MIME rewarded to the caller of Synthetix.mint()
     uint public minterReward = 200 * SafeDecimalMath.unit();
 
     // The initial weekly inflationary supply is 75m / 52 until the start of the decay rate.
@@ -35,7 +35,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // Address of the SynthetixProxy for the onlySynthetix modifier
     address payable public synthetixProxy;
 
-    // Max SNX rewards for minter
+    // Max MIME rewards for minter
     uint public constant MAX_MINTER_REWARD = 200 * 1e18;
 
     // How long each inflation period is before mint can be called
@@ -64,7 +64,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // ========== VIEWS ==========
 
     /**
-     * @return The amount of SNX mintable for the inflationary supply
+     * @return The amount of MIME mintable for the inflationary supply
      */
     function mintableSupply() external view returns (uint) {
         uint totalAmount;
@@ -160,7 +160,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * @notice Record the mint event from Synthetix by incrementing the inflation
      * week counter for the number of weeks minted (probabaly always 1)
      * and store the time of the event.
-     * @param supplyMinted the amount of SNX the total supply was inflated by.
+     * @param supplyMinted the amount of MIME the total supply was inflated by.
      * */
     function recordMintEvent(uint supplyMinted) external onlySynthetix returns (bool) {
         uint numberOfWeeksIssued = weeksSinceLastIssuance();
@@ -177,11 +177,11 @@ contract SupplySchedule is Owned, ISupplySchedule {
     }
 
     /**
-     * @notice Sets the reward amount of SNX for the caller of the public
+     * @notice Sets the reward amount of MIME for the caller of the public
      * function Synthetix.mint().
      * This incentivises anyone to mint the inflationary supply and the mintr
      * Reward will be deducted from the inflationary supply and sent to the caller.
-     * @param amount the amount of SNX to reward the minter.
+     * @param amount the amount of MIME to reward the minter.
      * */
     function setMinterReward(uint amount) external onlyOwner {
         require(amount <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
@@ -222,7 +222,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint lastMintEvent, uint timestamp);
 
     /**
-     * @notice Emitted when the SNX minter reward amount is updated
+     * @notice Emitted when the MIME minter reward amount is updated
      * */
     event MinterRewardUpdated(uint newRewardAmount);
 

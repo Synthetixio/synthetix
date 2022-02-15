@@ -1,11 +1,11 @@
 [
 	{
-		"name": "sUSD",
+		"name": "mimicUSD",
 		"asset": "USD",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETH",
+		"name": "mimicETH",
 		"asset": "ETH",
 		"subclass": "MultiCollateralSynth"
 	},

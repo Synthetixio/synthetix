@@ -142,7 +142,7 @@ contract Synthetix is BaseSynthetix {
         // record minting event before mutation to token supply
         _supplySchedule.recordMintEvent(supplyToMint);
 
-        // Set minted SNX balance to RewardEscrow's balance
+        // Set minted MIME balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
         uint minterReward = _supplySchedule.minterReward();
         // Get the remainder
@@ -167,7 +167,7 @@ contract Synthetix is BaseSynthetix {
         return true;
     }
 
-    /* Once off function for SIP-60 to migrate SNX balances in the RewardEscrow contract
+    /* Once off function for SIP-60 to migrate MIME balances in the RewardEscrow contract
      * To the new RewardEscrowV2 contract
      */
     function migrateEscrowBalanceToRewardEscrowV2() external onlyOwner {

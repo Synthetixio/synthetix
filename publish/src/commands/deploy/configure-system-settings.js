@@ -234,7 +234,7 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(minimumStakeTime),
 		write: 'setMinimumStakeTime',
 		writeArg: minimumStakeTime,
-		comment: 'Set the minimum amount of time SNX can be issued before any is burned (SIP-40)',
+		comment: 'Set the minimum amount of time MIME can be issued before any is burned (SIP-40)',
 	});
 
 	const debtSnapshotStaleTime = await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME');
@@ -272,7 +272,7 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(crossDomainEscrowGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
 		writeArg: [1, crossDomainEscrowGasLimit],
-		comment: 'Set the gas limit for migrating escrowed SNX to L2',
+		comment: 'Set the gas limit for migrating escrowed MIME to L2',
 	});
 
 	const crossDomainRewardGasLimit = await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT');
@@ -352,7 +352,7 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(etherWrapperMintFeeRate),
 		write: 'setEtherWrapperMintFeeRate',
 		writeArg: etherWrapperMintFeeRate,
-		comment: 'Set the fee rate for minting sETH from ETH in the EtherWrapper (SIP-112)',
+		comment: 'Set the fee rate for minting mimicETH from ETH in the EtherWrapper (SIP-112)',
 	});
 
 	// Disable checking this as now the current value is set to 0
@@ -365,7 +365,7 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(etherWrapperBurnFeeRate),
 		write: 'setEtherWrapperBurnFeeRate',
 		writeArg: etherWrapperBurnFeeRate,
-		comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
+		comment: 'Set the fee rate for burning mimicETH for ETH in the EtherWrapper (SIP-112)',
 	});
 
 	// SIP-184 Exchange Dynamic Fee Rate

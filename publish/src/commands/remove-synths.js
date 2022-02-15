@@ -70,7 +70,7 @@ const removeSynths = async ({
 			console.error(red(`Synth ${synth} not found!`));
 			process.exitCode = 1;
 			return;
-		} else if (['sUSD'].indexOf(synth) >= 0) {
+		} else if (['mimicUSD'].indexOf(synth) >= 0) {
 			console.error(red(`Synth ${synth} cannot be removed`));
 			process.exitCode = 1;
 			return;
@@ -184,7 +184,7 @@ const removeSynths = async ({
 				await ExchangeRates.effectiveValue(
 					toBytes32(currencyKey),
 					ethers.utils.parseEther(totalSupply),
-					toBytes32('sUSD')
+					toBytes32('mimicUSD')
 				)
 			);
 			try {

@@ -67,7 +67,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         require(totalBalancePendingMigration[addressToMigrate] > 0, "No escrow migration pending");
         require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
 
-        /* Add a vestable entry for addresses with totalBalancePendingMigration <= migrateEntriesThreshold amount of SNX */
+        /* Add a vestable entry for addresses with totalBalancePendingMigration <= migrateEntriesThreshold amount of MIME */
         if (totalBalancePendingMigration[addressToMigrate] <= migrateEntriesThresholdAmount) {
             _importVestingEntry(
                 addressToMigrate,
@@ -212,7 +212,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
         /**
          *  update account total escrow balances for migration
-         *  transfer the escrowed SNX being migrated to the L2 deposit contract
+         *  transfer the escrowed MIME being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
             _reduceAccountEscrowBalances(account, escrowedAccountBalance);

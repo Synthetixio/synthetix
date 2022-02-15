@@ -50,7 +50,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     }
 
     function hasZeroDebt() internal view {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
+        require(issuer().debtBalanceOf(msg.sender, "mimicUSD") == 0, "Cannot deposit or migrate with debt");
     }
 
     /* ========== VIEWS ========== */
@@ -88,7 +88,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // invoked by a generous user on L1
     function depositReward(uint amount) external requireInitiationActive {
-        // move the SNX into the deposit escrow
+        // move the MIME into the deposit escrow
         synthetixERC20().transferFrom(msg.sender, synthetixBridgeEscrow(), amount);
 
         _depositReward(msg.sender, amount);
@@ -119,10 +119,10 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     function notifyRewardAmount(uint256 amount) external {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
-        // NOTE: transfer SNX to synthetixBridgeEscrow because RewardsDistribution transfers them initially to this contract.
+        // NOTE: transfer MIME to synthetixBridgeEscrow because RewardsDistribution transfers them initially to this contract.
         synthetixERC20().transfer(synthetixBridgeEscrow(), amount);
 
-        // to be here means I've been given an amount of SNX to distribute onto L2
+        // to be here means I've been given an amount of MIME to distribute onto L2
         _depositReward(msg.sender, amount);
     }
 
@@ -158,8 +158,8 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     }
 
     function _initiateDeposit(address _to, uint256 _depositAmount) private {
-        // Transfer SNX to L2
-        // First, move the SNX into the deposit escrow
+        // Transfer MIME to L2
+        // First, move the MIME into the deposit escrow
         synthetixERC20().transferFrom(msg.sender, synthetixBridgeEscrow(), _depositAmount);
         // create message payload for L2
         iOVM_L2DepositedToken bridgeToBase;
@@ -188,7 +188,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
             // if there is an escrow amount to be migrated
             if (escrowedAccountBalance > 0) {
-                // NOTE: transfer SNX to synthetixBridgeEscrow because burnForMigration() transfers them to this contract.
+                // NOTE: transfer MIME to synthetixBridgeEscrow because burnForMigration() transfers them to this contract.
                 synthetixERC20().transfer(synthetixBridgeEscrow(), escrowedAccountBalance);
                 // create message payload for L2
                 ISynthetixBridgeToBase bridgeToBase;

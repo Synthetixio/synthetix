@@ -42,15 +42,15 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 		describe('when opening is enabled', () => {
 			before('ensure user should have sUSD', async () => {
-				await ensureBalance({ ctx, symbol: 'sUSD', user, balance: amountOfsUSDRequired });
+				await ensureBalance({ ctx, symbol: 'mimicUSD', user, balance: amountOfsUSDRequired });
 			});
 
-			before('ensure sETH supply exists', async () => {
-				// CollateralManager.getShortRate requires existing sETH else div by zero
+			before('ensure mimicETH supply exists', async () => {
+				// CollateralManager.getShortRate requires existing mimicETH else div by zero
 				await exchangeSynths({
 					ctx,
-					src: 'sUSD',
-					dest: 'sETH',
+					src: 'mimicUSD',
+					dest: 'mimicETH',
 					amount: parseEther('1'),
 					user: ctx.users.otherUser,
 				});
@@ -73,7 +73,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					before('skip if max borrowing power reached', async function() {
 						const maxBorrowingPower = await CollateralShort.maxLoan(
 							amountToDeposit,
-							toBytes32('sETH')
+							toBytes32('mimicETH')
 						);
 						const maxBorrowingPowerReached = maxBorrowingPower <= amountToBorrow;
 
@@ -97,7 +97,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					});
 
 					before('open the loan', async () => {
-						tx = await CollateralShort.open(amountToDeposit, amountToBorrow, toBytes32('sETH'));
+						tx = await CollateralShort.open(amountToDeposit, amountToBorrow, toBytes32('mimicETH'));
 
 						const { events } = await tx.wait();
 
@@ -156,20 +156,20 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 							await exchangeSynths({
 								ctx,
-								src: 'sUSD',
-								dest: 'sETH',
+								src: 'mimicUSD',
+								dest: 'mimicETH',
 								amount: amountToExchange,
 								user,
 							});
 						});
 
 						before('skip waiting period', async () => {
-							// Ignore settlement period for sUSD --> sETH closing the loan
+							// Ignore settlement period for mimicUSD --> mimicETH closing the loan
 							await skipWaitingPeriod({ ctx });
 						});
 
 						before('settle', async () => {
-							const tx = await Synthetix.settle(toBytes32('sETH'));
+							const tx = await Synthetix.settle(toBytes32('mimicETH'));
 							await tx.wait();
 						});
 

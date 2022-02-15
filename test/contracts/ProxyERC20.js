@@ -49,7 +49,7 @@ contract('ProxyERC20', async accounts => {
 			proxy: proxyERC20,
 			target: token,
 			fncName: 'somethingToBeProxied',
-			args: ['666', toBytes32('SNX')],
+			args: ['666', toBytes32('MIME')],
 			from: account3,
 		});
 
@@ -60,7 +60,7 @@ contract('ProxyERC20', async accounts => {
 		// as the following two (all indexed so they become topics), so assert they are correct
 		assert.equal(topics[1], web3.eth.abi.encodeParameter('address', account3));
 		assert.equal(topics[2], web3.eth.abi.encodeParameter('uint256', '666'));
-		assert.equal(topics[3], web3.eth.abi.encodeParameter('bytes32', toBytes32('SNX')));
+		assert.equal(topics[3], web3.eth.abi.encodeParameter('bytes32', toBytes32('MIME')));
 	});
 
 	describe('ProxyERC20 should adhere to ERC20 standard', async () => {
@@ -177,7 +177,7 @@ contract('ProxyERC20', async accounts => {
 		});
 
 		it('should be able to query ERC20 balanceOf', async () => {
-			// Get account1 SNX balance direct
+			// Get account1 MIME balance direct
 			const balance = await token.balanceOf(account1);
 			// Get account1 balance via ERC20 Proxy
 			const thirdPartybalance = await thirdPartyExchanger.checkBalance(account1);

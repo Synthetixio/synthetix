@@ -80,7 +80,7 @@ interface IRewardEscrowV2 {
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external;
 
-    // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract
+    // Return amount of MIME transfered to SynthetixBridgeToOptimism deposit contract
     function burnForMigration(address account, uint256[] calldata entryIDs)
         external
         returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries);

@@ -113,7 +113,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
-			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
+			comment: 'Ensure the MIME proxy has the correct Synthetix target set',
 			// Skip solidity for this as on mainnet, as ProxySynthetix is the same and it will manage it
 			skipSolidity: network === 'mainnet',
 		});
@@ -136,7 +136,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
-			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
+			comment: 'Ensure the MIME proxy has the correct Synthetix target set',
 		});
 	}
 
@@ -227,7 +227,7 @@ module.exports = async ({
 			expected: input => input === addressOf(ProxyERC20),
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(ProxyERC20),
-			comment: 'Ensure the SupplySchedule is connected to the SNX proxy for reading',
+			comment: 'Ensure the SupplySchedule is connected to the MIME proxy for reading',
 		});
 	}
 

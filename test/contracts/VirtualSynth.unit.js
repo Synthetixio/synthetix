@@ -63,7 +63,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 							this.resolver.address,
 							owner,
 							amount,
-							toBytes32('sUSD')
+							toBytes32('mimicUSD')
 						),
 						'vSynth already initialized'
 					);

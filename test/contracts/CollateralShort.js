@@ -20,8 +20,8 @@ const { toBytes32 } = require('../..');
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
 
-	const sUSD = toBytes32('sUSD');
-	const sETH = toBytes32('sETH');
+	const mimicUSD = toBytes32('mimicUSD');
+	const mimicETH = toBytes32('mimicETH');
 	const sBTC = toBytes32('sBTC');
 
 	const [, owner, , , account1, account2] = accounts;
@@ -65,7 +65,7 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const setupShort = async () => {
-		synths = ['sUSD', 'sBTC', 'sETH'];
+		synths = ['mimicUSD', 'sBTC', 'mimicETH'];
 		({
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -123,13 +123,13 @@ contract('CollateralShort', async accounts => {
 
 		await short.addSynths(
 			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+			['sBTC', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addSynths(
 			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
-			[toBytes32('sUSD'), toBytes32('sBTC'), toBytes32('sETH')],
+			[toBytes32('mimicUSD'), toBytes32('sBTC'), toBytes32('mimicETH')],
 			{
 				from: owner,
 			}
@@ -137,7 +137,7 @@ contract('CollateralShort', async accounts => {
 
 		await manager.addShortableSynths(
 			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+			['sBTC', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 
@@ -145,14 +145,14 @@ contract('CollateralShort', async accounts => {
 		assert.isTrue(
 			await manager.areSynthsAndCurrenciesSet(
 				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
-				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+				['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32)
 			)
 		);
 
 		assert.isTrue(
 			await short.areSynthsAndCurrenciesSet(
 				['SynthsBTC', 'SynthsETH'].map(toBytes32),
-				['sBTC', 'sETH'].map(toBytes32)
+				['sBTC', 'mimicETH'].map(toBytes32)
 			)
 		);
 
@@ -267,7 +267,7 @@ contract('CollateralShort', async accounts => {
 					assert.bnEqual(await manager.short(sBTC), oneBTC);
 				});
 
-				it('should transfer the sUSD to the contract', async () => {
+				it('should transfer the mimicUSD to the contract', async () => {
 					assert.bnEqual(await sUSDSynth.balanceOf(short.address), susdCollateral);
 				});
 			});
@@ -507,14 +507,14 @@ contract('CollateralShort', async accounts => {
 
 				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
 
-				// simulate buying sETH for 50 susd.
+				// simulate buying mimicETH for 50 susd.
 				await sUSDSynth.transfer(owner, toUnit(50), { from: account1 });
 				await issue(sETHSynth, oneETH, account1);
 
 				// now close the short
 				await short.close(id, { from: account1 });
 
-				// shorter has made 50 sUSD profit
+				// shorter has made 50 mimicUSD profit
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(1050));
 			});
 
@@ -529,14 +529,14 @@ contract('CollateralShort', async accounts => {
 
 				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
 
-				// simulate buying sETH for 150 susd.
+				// simulate buying mimicETH for 150 susd.
 				await sUSDSynth.transfer(owner, toUnit(150), { from: account1 });
 				await issue(sETHSynth, oneETH, account1);
 
 				// now close the short
 				await short.close(id, { from: account1 });
 
-				// shorter has made 50 sUSD loss
+				// shorter has made 50 mimicUSD loss
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(950));
 			});
 		});
@@ -615,7 +615,7 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
 
-				// simulate buying sETH for 150 susd.
+				// simulate buying mimicETH for 150 susd.
 				await sUSDSynth.burn(account1, toUnit(150));
 				await issue(sETHSynth, oneETH, account1);
 
@@ -630,7 +630,7 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
 
-				// shorter has made 50 sUSD loss
+				// shorter has made 50 mimicUSD loss
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(950));
 			});
 
@@ -659,7 +659,7 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111050));
 
-				// simulate buying 2 sETH for 300 susd.
+				// simulate buying 2 mimicETH for 300 susd.
 				await sUSDSynth.burn(account1, toUnit(300));
 				await issue(sETHSynth, twoETH, account1);
 
@@ -674,7 +674,7 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111050));
 
-				// shorter has made 50 sUSD loss
+				// shorter has made 50 mimicUSD loss
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(900));
 			});
 
@@ -703,7 +703,7 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111150));
 
-				// simulate buying 2 sETH for 100 susd.
+				// simulate buying 2 mimicETH for 100 susd.
 				await sUSDSynth.burn(account1, toUnit(100));
 				await issue(sETHSynth, twoETH, account1);
 
@@ -718,7 +718,7 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111150));
 
-				// shorter has made 100 sUSD profit
+				// shorter has made 100 mimicUSD profit
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(1100));
 			});
 		});

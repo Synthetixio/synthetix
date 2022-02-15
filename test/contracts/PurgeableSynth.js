@@ -27,7 +27,7 @@ const {
 const { setupAllContracts } = require('./setup');
 
 contract('PurgeableSynth', accounts => {
-	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
+	const [sUSD, MIME, sAUD, iETH] = ['mimicUSD', 'MIME', 'sAUD', 'iETH'].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, iETH];
 	const [deployerAccount, owner, , , account1, account2] = accounts;
 
@@ -57,7 +57,7 @@ contract('PurgeableSynth', accounts => {
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sAUD'],
+			synths: ['mimicUSD', 'sAUD'],
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
@@ -158,7 +158,7 @@ contract('PurgeableSynth', accounts => {
 			beforeEach(async () => {
 				await updateAggregatorRates(
 					exchangeRates,
-					[sAUD, SNX, iETH],
+					[sAUD, MIME, iETH],
 					['0.5', '1', '170'].map(toUnit)
 				);
 				await debtCache.takeDebtSnapshot();
@@ -227,7 +227,7 @@ contract('PurgeableSynth', accounts => {
 							'The user must no longer have a balance after the purge'
 						);
 					});
-					it('and they have the value added back to sUSD (with fees taken out)', async () => {
+					it('and they have the value added back to mimicUSD (with fees taken out)', async () => {
 						const userBalance = await sUSDContract.balanceOf(account1);
 
 						const {
@@ -239,7 +239,7 @@ contract('PurgeableSynth', accounts => {
 						assert.bnEqual(
 							userBalance,
 							amountReceived.add(usersUSDBalance),
-							'User must be credited back in sUSD from the purge'
+							'User must be credited back in mimicUSD from the purge'
 						);
 					});
 					it('then the synth has totalSupply back at 0', async () => {
@@ -405,7 +405,7 @@ contract('PurgeableSynth', accounts => {
 											assert.bnEqual(
 												balance,
 												amountReceived.add(usersUSDBalance),
-												'The sUSD balance after purge must return to the initial amount, less fees'
+												'The mimicUSD balance after purge must return to the initial amount, less fees'
 											);
 										});
 										it('and the purge event is issued', async () => {
@@ -432,7 +432,7 @@ contract('PurgeableSynth', accounts => {
 												assert.bnEqual(
 													balance,
 													amountReceived.add(usersUSDBalance),
-													'The sUSD balance after purge must return to the initial amount, less fees'
+													'The mimicUSD balance after purge must return to the initial amount, less fees'
 												);
 											});
 										});

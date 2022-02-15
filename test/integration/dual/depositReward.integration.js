@@ -21,7 +21,7 @@ describe('depositReward() integration tests (L1, L2)', () => {
 	let depositReceipt, escrowBalance;
 	let currentFeePeriodRewards, rewardEscrowBalanceL2;
 
-	describe('when the owner deposits SNX for rewards', () => {
+	describe('when the owner deposits MIME for rewards', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeEscrow, SynthetixBridgeToOptimism } = ctx.l1.contracts);
 			({

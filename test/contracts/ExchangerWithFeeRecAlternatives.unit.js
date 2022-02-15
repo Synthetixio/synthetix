@@ -21,7 +21,7 @@ let ExchangerWithFeeRecAlternatives;
 
 contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 	const [, owner] = accounts;
-	const [sUSD, sETH, sBTC, iETH] = ['sUSD', 'sETH', 'sBTC', 'iETH'].map(toBytes32);
+	const [sUSD, sETH, sBTC, iETH] = ['mimicUSD', 'mimicETH', 'sBTC', 'iETH'].map(toBytes32);
 	const maxAtomicValuePerBlock = toUnit('1000000');
 	const baseFeeRate = toUnit('0.003'); // 30bps
 	const overrideFeeRate = toUnit('0.01'); // 100bps
@@ -461,7 +461,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											});
 										});
 
-										describe('when sUSD is not in src/dest pair', () => {
+										describe('when mimicUSD is not in src/dest pair', () => {
 											it('reverts requiring src/dest to be sUSD', async () => {
 												const args = getExchangeArgs({
 													sourceCurrencyKey: sBTC,
@@ -630,7 +630,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											{
 												sourceCurrency,
 
-												// we are always trading sUSD -> sETH
+												// we are always trading mimicUSD -> sETH
 												atomicRate: lastEthRate,
 												systemSourceRate: unit,
 												systemDestinationRate: lastEthRate,

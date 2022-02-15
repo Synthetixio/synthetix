@@ -75,14 +75,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     bytes32 public constant CONTRACT_NAME = "Exchanger";
 
-    bytes32 internal constant sUSD = "sUSD";
+    bytes32 internal constant mimicUSD = "mimicUSD";
 
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
     /// @notice Return the last exchange rate
     /// @param currencyKey is the currency key of the synth to be exchanged
-    /// @return the last exchange rate of the synth to sUSD
+    /// @return the last exchange rate of the synth to mimicUSD
     mapping(bytes32 => uint) public lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -383,8 +383,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function _updateSNXIssuedDebtOnExchange(bytes32[2] memory currencyKeys, uint[2] memory currencyRates) internal {
-        bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
-        uint numKeys = includesSUSD ? 2 : 3;
+        bool includesMimicUSD = currencyKeys[0] == mimicUSD || currencyKeys[1] == mimicUSD;
+        uint numKeys = includesMimicUSD ? 2 : 3;
 
         bytes32[] memory keys = new bytes32[](numKeys);
         keys[0] = currencyKeys[0];
@@ -394,8 +394,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         rates[0] = currencyRates[0];
         rates[1] = currencyRates[1];
 
-        if (!includesSUSD) {
-            keys[2] = sUSD; // And we'll also update sUSD to account for any fees if it wasn't one of the exchanged currencies
+        if (!includesMimicUSD) {
+            keys[2] = mimicUSD; // And we'll also update mimicUSD to account for any fees if it wasn't one of the exchanged currencies
             rates[2] = SafeDecimalMath.unit();
         }
 
@@ -511,18 +511,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            // Normalize fee to sUSD
+            // Normalize fee to mimicUSD
             // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, mimicUSD);
 
-            // Remit the fee in sUSDs
-            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+            // Remit the fee in mimicUSDs
+            issuer().synths(mimicUSD).issue(feePool().FEE_ADDRESS(), fee);
 
             // Tell the fee pool about this
             feePool().recordFeePaid(fee);
         }
 
-        // Note: As of this point, `fee` is denominated in sUSD.
+        // Note: As of this point, `fee` is denominated in mimicUSD.
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
@@ -885,8 +885,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint dynamicFee, bool tooVolatile)
     {
-        // no dynamic dynamicFee for sUSD or too few rounds
-        if (currencyKey == sUSD || config.rounds <= 1) {
+        // no dynamic dynamicFee for mimicUSD or too few rounds
+        if (currencyKey == mimicUSD || config.rounds <= 1) {
             return (0, false);
         }
         uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
@@ -903,8 +903,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint roundId,
         DynamicFeeConfig memory config
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
-        // no dynamic dynamicFee for sUSD or too few rounds
-        if (currencyKey == sUSD || config.rounds <= 1) {
+        // no dynamic dynamicFee for mimicUSD or too few rounds
+        if (currencyKey == mimicUSD || config.rounds <= 1) {
             return (0, false);
         }
         uint[] memory prices;

@@ -26,10 +26,10 @@ function itCanLiquidate({ ctx }) {
 			await SystemSettings.setLiquidationRatio(ethers.utils.parseEther('0.5'));
 		});
 
-		before('ensure someUser has SNX', async () => {
+		before('ensure someUser has MIME', async () => {
 			await ensureBalance({
 				ctx,
-				symbol: 'SNX',
+				symbol: 'MIME',
 				user: someUser,
 				balance: ethers.utils.parseEther('100'),
 			});
@@ -38,22 +38,22 @@ function itCanLiquidate({ ctx }) {
 		before('ensure otherUser has sUSD', async () => {
 			await ensureBalance({
 				ctx,
-				symbol: 'sUSD',
+				symbol: 'mimicUSD',
 				user: otherUser,
 				balance: ethers.utils.parseEther('100'),
 			});
 		});
 
 		before('exchange rate is set', async () => {
-			exchangeRate = await getRate({ ctx, symbol: 'SNX' });
+			exchangeRate = await getRate({ ctx, symbol: 'MIME' });
 			await addAggregatorAndSetRate({
 				ctx,
-				currencyKey: toBytes32('SNX'),
+				currencyKey: toBytes32('MIME'),
 				rate: '1000000000000000000',
 			});
 		});
 
-		before('someUser stakes their SNX', async () => {
+		before('someUser stakes their MIME', async () => {
 			await Synthetix.connect(someUser).issueMaxSynths();
 		});
 
@@ -65,7 +65,7 @@ function itCanLiquidate({ ctx }) {
 			before('exchange rate changes to allow liquidation', async () => {
 				await addAggregatorAndSetRate({
 					ctx,
-					currencyKey: toBytes32('SNX'),
+					currencyKey: toBytes32('MIME'),
 					rate: '200000000000000000',
 				});
 			});
@@ -77,7 +77,7 @@ function itCanLiquidate({ ctx }) {
 			after('restore exchange rate', async () => {
 				await addAggregatorAndSetRate({
 					ctx,
-					currencyKey: toBytes32('SNX'),
+					currencyKey: toBytes32('MIME'),
 					rate: exchangeRate.toString(),
 				});
 			});
@@ -101,7 +101,7 @@ function itCanLiquidate({ ctx }) {
 
 					before('otherUser calls liquidateDelinquentAccount', async () => {
 						beforeDebt = (
-							await Synthetix.debtBalanceOf(someUser.address, toBytes32('sUSD'))
+							await Synthetix.debtBalanceOf(someUser.address, toBytes32('mimicUSD'))
 						).toString();
 						beforeDebttedSnx = await Synthetix.balanceOf(someUser.address);
 						beforeCredittedSnx = await Synthetix.balanceOf(otherUser.address);
@@ -113,18 +113,18 @@ function itCanLiquidate({ ctx }) {
 						);
 					});
 
-					it('deducts sUSD debt from the liquidated', async () => {
+					it('deducts mimicUSD debt from the liquidated', async () => {
 						assert.bnLt(
-							await Synthetix.debtBalanceOf(someUser.address, toBytes32('sUSD')),
+							await Synthetix.debtBalanceOf(someUser.address, toBytes32('mimicUSD')),
 							beforeDebt
 						);
 					});
 
-					it('burns sUSD from otherUser', async () => {
+					it('burns mimicUSD from otherUser', async () => {
 						assert.bnLt(await SynthsUSD.balanceOf(otherUser.address), beforeBalance);
 					});
 
-					it('transfers SNX from otherUser', async () => {
+					it('transfers MIME from otherUser', async () => {
 						const amountSent = beforeDebttedSnx.sub(await Synthetix.balanceOf(someUser.address));
 
 						assert.bnNotEqual(amountSent, '0');

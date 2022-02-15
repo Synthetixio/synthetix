@@ -33,8 +33,8 @@ contract('CollateralErc20', async accounts => {
 	const YEAR = 31536000;
 	const INTERACTION_DELAY = 300;
 
-	const sUSD = toBytes32('sUSD');
-	const sETH = toBytes32('sETH');
+	const mimicUSD = toBytes32('mimicUSD');
+	const mimicETH = toBytes32('mimicETH');
 	const sBTC = toBytes32('sBTC');
 
 	const oneRenBTC = web3.utils.toBN('100000000');
@@ -116,7 +116,7 @@ contract('CollateralErc20', async accounts => {
 	};
 
 	const setupMultiCollateral = async () => {
-		synths = ['sUSD', 'sBTC'];
+		synths = ['mimicUSD', 'sBTC'];
 		({
 			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
@@ -217,13 +217,13 @@ contract('CollateralErc20', async accounts => {
 
 		await cerc20.addSynths(
 			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
-			['sUSD', 'sBTC'].map(toBytes32),
+			['mimicUSD', 'sBTC'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addSynths(
 			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
-			['sUSD', 'sBTC'].map(toBytes32),
+			['mimicUSD', 'sBTC'].map(toBytes32),
 			{ from: owner }
 		);
 		// rebuild the cache to add the synths we need.
@@ -344,12 +344,12 @@ contract('CollateralErc20', async accounts => {
 
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
-			// $150 worth of btc should allow 100 sUSD to be issued.
+			// $150 worth of btc should allow 100 mimicUSD to be issued.
 			const sUSDAmount = await cerc20.maxLoan(toUnit(0.015), sUSD);
 
 			assert.bnClose(sUSDAmount, toUnit(100), 100);
 
-			// $150 worth of btc should allow $100 (1) of sETH to be issued.
+			// $150 worth of btc should allow $100 (1) of mimicETH to be issued.
 			const sETHAmount = await cerc20.maxLoan(toUnit(0.015), sETH);
 
 			assert.bnEqual(sETHAmount, toUnit(1));
@@ -763,7 +763,7 @@ contract('CollateralErc20', async accounts => {
 			});
 		});
 
-		describe('should allow repayments on an sUSD loan', async () => {
+		describe('should allow repayments on an mimicUSD loan', async () => {
 			// I'm not testing interest here, just that payment reduces the amounts.
 			const expectedString = '90000';
 
@@ -889,7 +889,7 @@ contract('CollateralErc20', async accounts => {
 			});
 		});
 
-		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
+		describe('should allow liquidations on an undercollateralised mimicUSD loan', async () => {
 			const renAmount = new BN('19642857');
 			const internalAmount = new BN('196428571428571428');
 			let liquidationAmount;
@@ -1019,7 +1019,7 @@ contract('CollateralErc20', async accounts => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling close() succeeds', async () => {
-							// Give them some more sUSD to make up for the fees.
+							// Give them some more mimicUSD to make up for the fees.
 							await issuesUSDToAccount(tensUSD, account1);
 							await cerc20.close(id, { from: account1 });
 						});
@@ -1040,7 +1040,7 @@ contract('CollateralErc20', async accounts => {
 
 		describe('when it works', async () => {
 			beforeEach(async () => {
-				// Give them some more sUSD to make up for the fees.
+				// Give them some more mimicUSD to make up for the fees.
 				await issuesUSDToAccount(tensUSD, account1);
 
 				tx = await cerc20.close(id, { from: account1 });

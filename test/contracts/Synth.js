@@ -25,7 +25,7 @@ const {
 } = require('../..');
 
 contract('Synth', async accounts => {
-	const [sUSD, SNX, sEUR] = ['sUSD', 'SNX', 'sEUR'].map(toBytes32);
+	const [sUSD, MIME, sEUR] = ['mimicUSD', 'MIME', 'sEUR'].map(toBytes32);
 
 	const [deployerAccount, owner, , , account1, account2] = accounts;
 
@@ -65,7 +65,7 @@ contract('Synth', async accounts => {
 				'AddressResolver',
 				'DebtCache',
 				'Issuer', // required to issue via Synthetix
-				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
+				'Exchanger', // required to exchange into mimicUSD when transferring to the FeePool
 				'SystemSettings',
 				'FlexibleStorage',
 				'CollateralManager',
@@ -164,7 +164,7 @@ contract('Synth', async accounts => {
 
 		['System', 'Synth'].forEach(section => {
 			describe(`when ${section} is suspended`, () => {
-				const synth = toBytes32('sUSD');
+				const synth = toBytes32('mimicUSD');
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section, suspend: true, synth });
 				});
@@ -201,8 +201,8 @@ contract('Synth', async accounts => {
 				});
 			});
 		});
-		describe('when sETH is suspended', () => {
-			const synth = toBytes32('sETH');
+		describe('when mimicETH is suspended', () => {
+			const synth = toBytes32('mimicETH');
 			beforeEach(async () => {
 				await setStatus({ owner, systemStatus, section: 'Synth', synth, suspend: true });
 			});
@@ -216,8 +216,8 @@ contract('Synth', async accounts => {
 					from: account1,
 				});
 			});
-			describe('when sUSD is suspended for exchanging', () => {
-				const synth = toBytes32('sUSD');
+			describe('when mimicUSD is suspended for exchanging', () => {
+				const synth = toBytes32('mimicUSD');
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section: 'SynthExchange', synth, suspend: true });
 				});
@@ -429,7 +429,7 @@ contract('Synth', async accounts => {
 
 			['System', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
-					const synth = toBytes32('sUSD');
+					const synth = toBytes32('mimicUSD');
 					beforeEach(async () => {
 						await setStatus({ owner, systemStatus, section, suspend: true, synth });
 					});
@@ -466,8 +466,8 @@ contract('Synth', async accounts => {
 					});
 				});
 			});
-			describe('when sETH is suspended', () => {
-				const synth = toBytes32('sETH');
+			describe('when mimicETH is suspended', () => {
+				const synth = toBytes32('mimicETH');
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section: 'Synth', synth, suspend: true });
 				});
@@ -531,7 +531,7 @@ contract('Synth', async accounts => {
 				it('then transferableSynths should be the total amount minus the reclaim', async () => {
 					assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('990'));
 				});
-				it('should transfer all and settle 1000 sUSD less reclaim amount', async () => {
+				it('should transfer all and settle 1000 mimicUSD less reclaim amount', async () => {
 					// Do a single transfer of all our sUSD.
 					await sUSDContract.transferAndSettle(account1, amount, {
 						from: owner,
@@ -545,7 +545,7 @@ contract('Synth', async accounts => {
 					// The recipient should have the correct amount minus reclaimed
 					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
 				});
-				it('should transferFrom all and settle 1000 sUSD less reclaim amount', async () => {
+				it('should transferFrom all and settle 1000 mimicUSD less reclaim amount', async () => {
 					// Give account1 permission to act on our behalf
 					await sUSDContract.approve(account1, amount, { from: owner });
 
@@ -563,7 +563,7 @@ contract('Synth', async accounts => {
 					assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
 				});
 				describe('when account has more balance than transfer amount + reclaim', async () => {
-					it('should transfer 50 sUSD and burn 10 sUSD', async () => {
+					it('should transfer 50 mimicUSD and burn 10 sUSD', async () => {
 						const transferAmount = toUnit('50');
 						// Do a single transfer of all our sUSD.
 						await sUSDContract.transferAndSettle(account1, transferAmount, {
@@ -581,7 +581,7 @@ contract('Synth', async accounts => {
 						// The recipient should have the correct amount
 						assert.bnEqual(await sUSDContract.balanceOf(account1), expectedAmountTransferred);
 					});
-					it('should transferFrom 50 sUSD and settle reclaim amount', async () => {
+					it('should transferFrom 50 mimicUSD and settle reclaim amount', async () => {
 						const transferAmount = toUnit('50');
 
 						// Give account1 permission to act on our behalf
@@ -613,7 +613,7 @@ contract('Synth', async accounts => {
 					await exchanger.setNumEntries('1');
 					balanceBefore = await sUSDContract.balanceOf(owner);
 				});
-				describe('when reclaim 600 sUSD and attempting to transfer 500 sUSD synths', async () => {
+				describe('when reclaim 600 mimicUSD and attempting to transfer 500 mimicUSD synths', async () => {
 					// original balance is 1000, reclaim 600 and should send 400
 					const transferAmount = toUnit('500');
 
@@ -704,7 +704,7 @@ contract('Synth', async accounts => {
 			);
 
 			const firstFeePeriod = await feePool.recentFeePeriods(0);
-			// FEE_ADDRESS balance of sUSD increased
+			// FEE_ADDRESS balance of mimicUSD increased
 			assert.bnEqual(await sUSDContract.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amount));
 
 			// fees equal to amount are recorded in feesToDistribute
@@ -738,7 +738,7 @@ contract('Synth', async accounts => {
 				await debtCache.takeDebtSnapshot();
 			});
 
-			it('when transferring it to FEE_ADDRESS it should exchange into sUSD first before sending', async () => {
+			it('when transferring it to FEE_ADDRESS it should exchange into mimicUSD first before sending', async () => {
 				// allocate the user some sEUR
 				await issueSynthsToUser({
 					owner,
@@ -765,7 +765,7 @@ contract('Synth', async accounts => {
 
 				const firstFeePeriod = await feePool.recentFeePeriods(0);
 
-				// FEE_ADDRESS balance of sUSD increased by USD amount given from exchange
+				// FEE_ADDRESS balance of mimicUSD increased by USD amount given from exchange
 				assert.bnEqual(
 					await sUSDContract.balanceOf(FEE_ADDRESS),
 					feeBalanceBefore.add(amountInUSD)
@@ -789,7 +789,7 @@ contract('Synth', async accounts => {
 			const balanceBefore = await sUSDContract.balanceOf(owner);
 			const totalSupplyBefore = await sUSDContract.totalSupply();
 
-			// Do a single transfer of all our sUSD to ZERO_ADDRESS.
+			// Do a single transfer of all our mimicUSD to ZERO_ADDRESS.
 			const transaction = await sUSDContract.transfer(ZERO_ADDRESS, amount, {
 				from: owner,
 			});

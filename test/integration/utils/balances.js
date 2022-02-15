@@ -23,17 +23,17 @@ async function _readBalance({ ctx, symbol, user }) {
 }
 
 async function _getAmount({ ctx, symbol, user, amount }) {
-	if (symbol === 'SNX') {
+	if (symbol === 'MIME') {
 		await _getSNX({ ctx, user, amount });
 	} else if (symbol === 'WETH') {
 		await _getWETH({ ctx, user, amount });
-	} else if (symbol === 'sUSD') {
+	} else if (symbol === 'mimicUSD') {
 		await _getsUSD({ ctx, user, amount });
 	} else if (symbol === 'ETH') {
 		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
 		throw new Error(
-			`Symbol ${symbol} not yet supported. TODO: Support via exchanging sUSD to other Synths.`
+			`Symbol ${symbol} not yet supported. TODO: Support via exchanging mimicUSD to other Synths.`
 		);
 	}
 
@@ -145,7 +145,7 @@ async function _getsUSD({ ctx, user, amount }) {
 	let tx;
 
 	const requiredSNX = await _getSNXAmountRequiredForsUSDAmount({ ctx, amount });
-	await ensureBalance({ ctx, symbol: 'SNX', user, balance: requiredSNX });
+	await ensureBalance({ ctx, symbol: 'MIME', user, balance: requiredSNX });
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
 
@@ -180,15 +180,15 @@ async function _getSNXAmountRequiredForsUSDAmount({ ctx, amount }) {
 
 	const [expectedAmount, ,] = await Exchanger.getAmountsForExchange(
 		collateral,
-		toBytes32('sUSD'),
-		toBytes32('SNX')
+		toBytes32('mimicUSD'),
+		toBytes32('MIME')
 	);
 
 	return expectedAmount;
 }
 
 function _getTokenFromSymbol({ ctx, symbol }) {
-	if (symbol === 'SNX') {
+	if (symbol === 'MIME') {
 		return ctx.contracts.Synthetix;
 	} else if (symbol === 'WETH') {
 		return ctx.contracts.WETH;

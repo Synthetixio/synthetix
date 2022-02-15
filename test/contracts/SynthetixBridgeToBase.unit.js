@@ -150,9 +150,9 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			describe('withdraw', () => {
 				describe('failure modes', () => {
-					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
+					it('does not work when the user has less trasferable mime than the withdrawal amount', async () => {
 						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
-						await assert.revert(instance.withdraw('1'), 'Not enough transferable SNX');
+						await assert.revert(instance.withdraw('1'), 'Not enough transferable MIME');
 					});
 					it('does not work when initiation has been suspended', async () => {
 						await instance.suspendInitiation({ from: owner });
@@ -169,7 +169,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						withdrawalTx = await instance.withdraw(amount, { from: user1 });
 					});
 
-					it('then SNX is burned via mintableSyntetix.burnSecondary', async () => {
+					it('then MIME is burned via mintableSyntetix.burnSecondary', async () => {
 						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
 						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
 						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
@@ -199,11 +199,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			describe('withdrawTo', () => {
 				describe('failure modes', () => {
-					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
+					it('does not work when the user has less trasferable mime than the withdrawal amount', async () => {
 						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
 						await assert.revert(
 							instance.withdrawTo(randomAddress, '1'),
-							'Not enough transferable SNX'
+							'Not enough transferable MIME'
 						);
 					});
 					it('does not work when initiation has been suspended', async () => {
@@ -221,7 +221,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						withdrawalTx = await instance.withdrawTo(randomAddress, amount, { from: user1 });
 					});
 
-					it('then SNX is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
+					it('then MIME is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
 						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
 						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
 						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
@@ -289,7 +289,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('then SNX is minted via MintableSynthetix.mintSecondary', async () => {
+					it('then MIME is minted via MintableSynthetix.mintSecondary', async () => {
 						assert.equal(mintableSynthetix.smocked.mintSecondary.calls.length, 1);
 						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
 						assert.equal(
@@ -343,7 +343,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('then SNX is minted via MintbaleSynthetix.mintSecondary', async () => {
+					it('then MIME is minted via MintbaleSynthetix.mintSecondary', async () => {
 						assert.equal(mintableSynthetix.smocked.mintSecondaryRewards.calls.length, 1);
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondaryRewards.calls[0][0].toString(),

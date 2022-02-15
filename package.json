@@ -35,8 +35,8 @@
 	},
 	"keywords": [
 		"Synthetix",
-		"SNX",
-		"sUSD",
+		"MIME",
+		"mimicUSD",
 		"Solidity",
 		"Ethereum",
 		"DeFi"
@@ -60,7 +60,7 @@
 		"publish/deployed/goerli-ovm/*"
 	],
 	"bin": {
-		"snx": "bin.js"
+		"mime": "bin.js"
 	},
 	"main": "index.js",
 	"browser": "browser.js",

@@ -69,9 +69,9 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					synth.smocked.totalSupply.will.return.with(parseEther('999'));
 				});
 
-				describe('when there is sufficient sUSD for the synth to be deprecated', () => {
+				describe('when there is sufficient mimicUSD for the synth to be deprecated', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('10000'));
 					});
 
@@ -113,7 +113,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					synth.smocked.totalSupply.will.return.with(parseEther('1000'));
 				});
 
-				it('deprecation fails when insufficient sUSD supply', async () => {
+				it('deprecation fails when insufficient mimicUSD supply', async () => {
 					await assert.revert(
 						instance.deprecate(synth.address, parseEther('1000'), {
 							from: this.mocks['Issuer'].address,
@@ -122,9 +122,9 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					);
 				});
 
-				describe('when there is sufficient sUSD for the synth to be deprecated', () => {
+				describe('when there is sufficient mimicUSD for the synth to be deprecated', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 					});
 					it('then deprecation succeeds', async () => {
@@ -176,7 +176,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 				});
 				describe('when a synth is deprecated', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
@@ -213,7 +213,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 				});
 				describe('when a synth is deprecated', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
@@ -238,7 +238,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 				describe('when synth marked for redemption', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
@@ -275,7 +275,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 									userBalance
 								);
 							});
-							it('transfers the correct amount of sUSD to the user', async () => {
+							it('transfers the correct amount of mimicUSD to the user', async () => {
 								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls.length, 1);
 								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls[0][0], account1);
 								assert.bnEqual(
@@ -307,7 +307,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 				describe('when a synth marked for redemption', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 					});
 					beforeEach(async () => {
@@ -365,7 +365,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 													userBalance
 												);
 											});
-											it('transfers the correct amount of sUSD to the user', async () => {
+											it('transfers the correct amount of mimicUSD to the user', async () => {
 												assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls.length, 2);
 												assert.equal(
 													this.mocks['SynthsUSD'].smocked.transfer.calls[i][0],
@@ -401,7 +401,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 				describe('when synth marked for redemption', () => {
 					beforeEach(async () => {
-						// smock sUSD balance to prevent the deprecation failing
+						// smock mimicUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
@@ -440,7 +440,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 									parseEther('1')
 								);
 							});
-							it('transfers the correct amount of sUSD to the user', async () => {
+							it('transfers the correct amount of mimicUSD to the user', async () => {
 								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls.length, 1);
 								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls[0][0], account1);
 								assert.bnEqual(

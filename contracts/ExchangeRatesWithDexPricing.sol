@@ -119,8 +119,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     }
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool) {
-        // sUSD is a special case and is never volatile
-        if (currencyKey == "sUSD") return false;
+        // mimicUSD is a special case and is never volatile
+        if (currencyKey == "mimicUSD") return false;
 
         uint considerationWindow = getAtomicVolatilityConsiderationWindow(currencyKey);
         uint updateThreshold = getAtomicVolatilityUpdateThreshold(currencyKey);

@@ -187,7 +187,7 @@ contract('AddressResolver', accounts => {
 			});
 
 			it('when getSynth() is invoked', async () => {
-				const synth = await resolver.getSynth(toBytes32('sUSD'));
+				const synth = await resolver.getSynth(toBytes32('mimicUSD'));
 				assert.equal(synth, account4);
 			});
 		});
@@ -200,13 +200,13 @@ contract('AddressResolver', accounts => {
 					existing: {
 						AddressResolver: resolver,
 					},
-					synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
+					synths: ['mimicUSD', 'mimicETH', 'sEUR', 'sAUD'],
 					contracts: ['Synthetix'],
 				}));
 			});
 			it('when getSynth() is invoked with these synth keys, they are returned correctly', async () => {
-				assert.equal(await resolver.getSynth(toBytes32('sUSD')), sUSDContract.address);
-				assert.equal(await resolver.getSynth(toBytes32('sETH')), sETHContract.address);
+				assert.equal(await resolver.getSynth(toBytes32('mimicUSD')), sUSDContract.address);
+				assert.equal(await resolver.getSynth(toBytes32('mimicETH')), sETHContract.address);
 			});
 		});
 	});

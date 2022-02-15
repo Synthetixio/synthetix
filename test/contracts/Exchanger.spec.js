@@ -49,14 +49,14 @@ const MockDexPriceAggregator = artifacts.require('MockDexPriceAggregator');
 const MockToken = artifacts.require('MockToken');
 
 contract('Exchanger (spec tests)', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
-		'sUSD',
+	const [sUSD, sAUD, sEUR, MIME, sBTC, iBTC, sETH, iETH] = [
+		'mimicUSD',
 		'sAUD',
 		'sEUR',
-		'SNX',
+		'MIME',
 		'sBTC',
 		'iBTC',
-		'sETH',
+		'mimicETH',
 		'iETH',
 	].map(toBytes32);
 
@@ -245,7 +245,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								await systemSettings.setWaitingPeriodSecs('0', { from: owner });
 							});
 
-							it('there should be only one sETH entry', async () => {
+							it('there should be only one mimicETH entry', async () => {
 								let numEntries = await exchangeState.getLengthOfEntries(owner, sETH);
 								assert.bnEqual(numEntries, '1');
 								numEntries = await exchangeState.getLengthOfEntries(owner, sEUR);
@@ -287,10 +287,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					PRICE_DEVIATION_THRESHOLD_FACTOR
 				);
 			});
-			describe('when a user exchanges into sETH over the default threshold factor', () => {
+			describe('when a user exchanges into mimicETH over the default threshold factor', () => {
 				beforeEach(async () => {
 					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
+					// base rate of mimicETH is 100 from shared setup above
 					await updateRates([sETH], [toUnit('300')]);
 					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 				});
@@ -300,10 +300,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					assert.equal(reason, '65');
 				});
 			});
-			describe('when a user exchanges into sETH under the default threshold factor', () => {
+			describe('when a user exchanges into mimicETH under the default threshold factor', () => {
 				beforeEach(async () => {
 					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
+					// base rate of mimicETH is 100 from shared setup above
 					await updateRates([sETH], [toUnit('33')]);
 					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 				});
@@ -318,10 +318,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						await systemSettings.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
 					});
-					describe('when a user exchanges into sETH over the default threshold factor, but under the new one', () => {
+					describe('when a user exchanges into mimicETH over the default threshold factor, but under the new one', () => {
 						beforeEach(async () => {
 							await fastForward(10);
-							// base rate of sETH is 100 from shared setup above
+							// base rate of mimicETH is 100 from shared setup above
 							await updateRates([sETH], [toUnit('300')]);
 							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 						});
@@ -331,10 +331,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.equal(reason, '0');
 						});
 					});
-					describe('when a user exchanges into sETH under the default threshold factor, but under the new one', () => {
+					describe('when a user exchanges into mimicETH under the default threshold factor, but under the new one', () => {
 						beforeEach(async () => {
 							await fastForward(10);
-							// base rate of sETH is 100 from shared setup above
+							// base rate of mimicETH is 100 from shared setup above
 							await updateRates([sETH], [toUnit('33')]);
 							await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 						});
@@ -363,7 +363,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.equal(maxSecs, '0', 'No seconds remaining for exchange');
 					});
 				});
-				describe('when a user with sUSD has performed an exchange into sEUR', () => {
+				describe('when a user with mimicUSD has performed an exchange into sEUR', () => {
 					beforeEach(async () => {
 						await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
 					});
@@ -935,7 +935,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 				});
 			});
-			describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
+			describe('given the sEUR rate is 2, and mimicETH is 100, sBTC is 9000', () => {
 				beforeEach(async () => {
 					// set sUSD:sEUR as 2:1, sUSD:sETH at 100:1, sUSD:sBTC at 9000:1
 					await updateRates([sEUR, sETH, sBTC], ['2', '100', '9000'].map(toUnit));
@@ -975,7 +975,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											from: owner,
 										});
 									});
-									describe('when the first user exchanges 100 sUSD into sUSD:sEUR at 2:1', () => {
+									describe('when the first user exchanges 100 mimicUSD into sUSD:sEUR at 2:1', () => {
 										let amountOfSrcExchanged;
 										let exchangeTime;
 										let exchangeTransaction;
@@ -1363,7 +1363,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												assert.bnEqual(rebateAmount, expected.rebateAmount);
 												assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 											});
-											describe('when the user makes a 2nd exchange of 100 sUSD into sUSD:sEUR at 1:1', () => {
+											describe('when the user makes a 2nd exchange of 100 mimicUSD into sUSD:sEUR at 1:1', () => {
 												beforeEach(async () => {
 													// fast forward 60 seconds so 1st exchange is using first rate
 													await fastForward(60);
@@ -1595,7 +1595,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													);
 													assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 												});
-												describe('when another minute elapses and the sETH price changes', () => {
+												describe('when another minute elapses and the mimicETH price changes', () => {
 													beforeEach(async () => {
 														await fastForward(60);
 														await updateRates([sEUR], ['3'].map(toUnit));
@@ -1698,7 +1698,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														assert.bnEqual(rebateAmount, expected.rebateAmount);
 														assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
 													});
-													describe('when the same user exchanges some sUSD into sBTC - the same destination', () => {
+													describe('when the same user exchanges some mimicUSD into sBTC - the same destination', () => {
 														let amountOfSrcExchangedSecondary;
 														beforeEach(async () => {
 															amountOfSrcExchangedSecondary = toUnit('10');
@@ -2005,7 +2005,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					// already issued in the top-level beforeEach
 
 					it('should allow a user to exchange the synths they hold in one flavour for another', async () => {
-						// Exchange sUSD to sAUD
+						// Exchange mimicUSD to sAUD
 						await synthetix.exchange(sUSD, amountIssued, sAUD, { from: account1 });
 
 						// Get the exchange amounts
@@ -2028,7 +2028,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					it('should emit a SynthExchange event @gasprofile', async () => {
-						// Exchange sUSD to sAUD
+						// Exchange mimicUSD to sAUD
 						const txn = await synthetix.exchange(sUSD, amountIssued, sAUD, {
 							from: account1,
 						});
@@ -2038,7 +2038,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
 						assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
 							account: account1,
-							fromCurrencyKey: toBytes32('sUSD'),
+							fromCurrencyKey: toBytes32('mimicUSD'),
 							fromAmount: amountIssued,
 							toCurrencyKey: toBytes32('sAUD'),
 							toAmount: sAUDBalance,
@@ -2047,7 +2047,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					it('should emit an ExchangeTracking event @gasprofile', async () => {
-						// Exchange sUSD to sAUD
+						// Exchange mimicUSD to sAUD
 						const txn = await synthetix.exchangeWithTracking(
 							sUSD,
 							amountIssued,
@@ -2067,7 +2067,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
 						assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
 							account: account1,
-							fromCurrencyKey: toBytes32('sUSD'),
+							fromCurrencyKey: toBytes32('mimicUSD'),
 							fromAmount: amountIssued,
 							toCurrencyKey: toBytes32('sAUD'),
 							toAmount: sAUDBalance,
@@ -2138,7 +2138,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
 									);
 								});
-								it(`attempting to ${type} from sUSD into sAUD reverts with dest stale`, async () => {
+								it(`attempting to ${type} from mimicUSD into sAUD reverts with dest stale`, async () => {
 									await assert.revert(
 										exchange({ from: sUSD, amount: amountIssued, to: sAUD }),
 										'src/dest rate stale or flagged'
@@ -2166,9 +2166,9 @@ contract('Exchanger (spec tests)', async accounts => {
 													(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
 												);
 											});
-											it(`${type} back to sUSD fails as the source has no rate`, async () => {
+											it(`${type} back to mimicUSD fails as the source has no rate`, async () => {
 												await assert.revert(
-													exchange({ from: sAUD, amount: amountIssued, to: sUSD }),
+													exchange({ from: sAUD, amount: amountIssued, to: mimicUSD }),
 													'src/dest rate stale or flagged'
 												);
 											});
@@ -2254,7 +2254,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 							});
 							it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
-								// Exchange sUSD to sAUD
+								// Exchange mimicUSD to sAUD
 								await synthetix.exchangeOnBehalf(authoriser, sUSD, amountIssued, sAUD, {
 									from: delegate,
 								});
@@ -2383,7 +2383,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 							});
 							it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
-								// Exchange sUSD to sAUD
+								// Exchange mimicUSD to sAUD
 								const txn = await synthetix.exchangeOnBehalfWithTracking(
 									authoriser,
 									sUSD,
@@ -2828,7 +2828,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 					});
 
-					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {
+					describe('when the user exchanges into mimicETH using an atomic exchange with a tracking code', () => {
 						const amountIn = toUnit('100');
 						const atomicTrackingCode = toBytes32('ATOMIC_AGGREGATOR');
 
@@ -3029,7 +3029,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			});
 
-			describe(`when the price of sETH is ${baseRate}`, () => {
+			describe(`when the price of mimicETH is ${baseRate}`, () => {
 				updateRate({ target: sETH, rate: baseRate });
 
 				describe('when price spike deviation is set to a factor of 2', () => {
@@ -3047,7 +3047,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.equal(await exchanger.lastExchangeRate(sETH), '0');
 							assert.equal(await exchanger.lastExchangeRate(sEUR), '0');
 						});
-						describe('when a user exchanges into sETH from sUSD', () => {
+						describe('when a user exchanges into mimicETH from sUSD', () => {
 							beforeEach(async () => {
 								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 							});
@@ -3058,7 +3058,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate.toString()));
 							});
 						});
-						describe('when a user exchanges from sETH into another synth', () => {
+						describe('when a user exchanges from mimicETH into another synth', () => {
 							beforeEach(async () => {
 								await sETHContract.issue(account1, toUnit('1'));
 								await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account1 });
@@ -3070,9 +3070,9 @@ contract('Exchanger (spec tests)', async accounts => {
 								// Rate of 2 from shared setup code above
 								assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
 							});
-							describe('when the price of sETH changes slightly', () => {
+							describe('when the price of mimicETH changes slightly', () => {
 								updateRate({ target: sETH, rate: baseRate * 1.1 });
-								describe('and another user exchanges sETH to sUSD', () => {
+								describe('and another user exchanges mimicETH to sUSD', () => {
 									beforeEach(async () => {
 										await sETHContract.issue(account2, toUnit('1'));
 										await synthetix.exchange(sETH, toUnit('1'), sUSD, { from: account2 });
@@ -3088,9 +3088,9 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 								});
 							});
-							describe('when the price of sETH is over a deviation', () => {
+							describe('when the price of mimicETH is over a deviation', () => {
 								beforeEach(async () => {
-									// sETH over deviation and sEUR slight change
+									// mimicETH over deviation and sEUR slight change
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
@@ -3098,7 +3098,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										[toUnit(baseRate * 3).toString(), toUnit('1.9')]
 									);
 								});
-								describe('and another user exchanges sETH to sEUR', () => {
+								describe('and another user exchanges mimicETH to sEUR', () => {
 									beforeEach(async () => {
 										await sETHContract.issue(account2, toUnit('1'));
 										await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account2 });
@@ -3116,7 +3116,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 							describe('when the price of sEUR is over a deviation', () => {
 								beforeEach(async () => {
-									// sEUR over deviation and sETH slight change
+									// sEUR over deviation and mimicETH slight change
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
@@ -3148,7 +3148,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
 										});
 
-										it('and the sETH rate has not changed', async () => {
+										it('and the mimicETH rate has not changed', async () => {
 											assert.bnEqual(
 												await exchanger.lastExchangeRate(sETH),
 												toUnit((baseRate * 1.1).toString())
@@ -3182,7 +3182,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 							});
 						});
-						describe('when there is a last rate into sETH via an exchange', () => {
+						describe('when there is a last rate into mimicETH via an exchange', () => {
 							beforeEach(async () => {
 								await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account2 });
 							});
@@ -3197,7 +3197,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 						});
 
-						describe('when there is a last price out of sETH via an exchange', () => {
+						describe('when there is a last price out of mimicETH via an exchange', () => {
 							beforeEach(async () => {
 								await sETHContract.issue(account2, toUnit('1'));
 								await synthetix.exchange(sETH, toUnit('0.001'), sUSD, { from: account2 });
@@ -3299,11 +3299,11 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							const assertBothSidesOfTheExchange = () => {
 								describe('on the dest side', () => {
-									assertRange({ from: sUSD, to: sETH, target: sETH });
+									assertRange({ from: sUSD, to: sETH, target: mimicETH });
 								});
 
 								describe('on the src side', () => {
-									assertRange({ from: sETH, to: sAUD, target: sETH });
+									assertRange({ from: sETH, to: sAUD, target: mimicETH });
 								});
 							};
 
@@ -3402,13 +3402,13 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					describe('settlement ignores deviations', () => {
-						describe('when a user exchange 100 sUSD into sETH', () => {
+						describe('when a user exchange 100 mimicUSD into sETH', () => {
 							beforeEach(async () => {
 								// Disable Dynamic Fee in settlement by setting rounds to 0
 								await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 							});
-							describe('and the sETH rate moves up by a factor of 2 to 200', () => {
+							describe('and the mimicETH rate moves up by a factor of 2 to 200', () => {
 								updateRate({ target: sETH, rate: baseRate * 2 });
 
 								it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
@@ -3424,7 +3424,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 
 							describe('multiple entries to settle', () => {
-								describe('when the sETH rate moves down by 20%', () => {
+								describe('when the mimicETH rate moves down by 20%', () => {
 									updateRate({ target: sETH, rate: baseRate * 0.8 });
 
 									describe('and the waiting period expires', () => {
@@ -3449,7 +3449,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											beforeEach(async () => {
 												await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 											});
-											describe('and the sETH rate moves up by a factor of 2 to 200, causing the second entry to be skipped', () => {
+											describe('and the mimicETH rate moves up by a factor of 2 to 200, causing the second entry to be skipped', () => {
 												updateRate({ target: sETH, rate: baseRate * 2 });
 
 												it('then settlementOwing is existing rebate with 0 reclaim, with 2 entries', async () => {
@@ -3464,7 +3464,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												});
 											});
 
-											describe('and the sETH rate goes back up 25% (from 80 to 100)', () => {
+											describe('and the mimicETH rate goes back up 25% (from 80 to 100)', () => {
 												updateRate({ target: sETH, rate: baseRate });
 												describe('and the waiting period expires', () => {
 													beforeEach(async () => {
@@ -3487,7 +3487,7 @@ contract('Exchanger (spec tests)', async accounts => {
 																from: account1,
 															});
 														});
-														describe('and the sETH rate moves down by a factor of 2 to 50, causing the third entry to be skipped', () => {
+														describe('and the mimicETH rate moves down by a factor of 2 to 50, causing the third entry to be skipped', () => {
 															updateRate({ target: sETH, rate: baseRate * 0.5 });
 
 															it('then settlementOwing is existing rebate and reclaim, with 3 entries', async () => {
@@ -3743,7 +3743,7 @@ contract('Exchanger (spec tests)', async accounts => {
 	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
-			const synths = ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
+			const synths = ['mimicUSD', 'mimicETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
 
 			({
 				Exchanger: exchanger,
@@ -3793,7 +3793,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 			amountIssued = toUnit('1000');
 
-			// give the first two accounts 1000 sUSD each
+			// give the first two accounts 1000 mimicUSD each
 			await sUSDContract.issue(account1, amountIssued);
 			await sUSDContract.issue(account2, amountIssued);
 		});
@@ -3801,7 +3801,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
+			const keys = [sAUD, sEUR, MIME, sETH, sBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
 			await updateRates(keys, rates);
@@ -3844,7 +3844,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	describe('With L2 configuration (MintableSynthetix, Exchanger, ExchangeRates)', () => {
 		before(async () => {
-			const synths = ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
+			const synths = ['mimicUSD', 'mimicETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
 			({
 				Exchanger: exchanger,
 				Synthetix: synthetix,
@@ -3889,7 +3889,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 			amountIssued = toUnit('1000');
 
-			// give the first two accounts 1000 sUSD each
+			// give the first two accounts 1000 mimicUSD each
 			await sUSDContract.issue(account1, amountIssued);
 			await sUSDContract.issue(account2, amountIssued);
 		});
@@ -3897,7 +3897,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			const keys = [sAUD, sEUR, SNX, sETH, sBTC, iBTC];
+			const keys = [sAUD, sEUR, MIME, sETH, sBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
 			await updateRates(keys, rates);

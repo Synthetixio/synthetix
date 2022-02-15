@@ -23,7 +23,7 @@ const { setupAllContracts } = require('./setup');
 contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, , , account1] = accounts;
 
-	const sETH = toBytes32('sETH');
+	const mimicETH = toBytes32('mimicETH');
 	const sBTC = toBytes32('sBTC');
 
 	let issuer,
@@ -54,7 +54,7 @@ contract('MultiCollateralSynth', accounts => {
 	});
 
 	before(async () => {
-		synths = ['sUSD'];
+		synths = ['mimicUSD'];
 		({
 			AddressResolver: resolver,
 			Issuer: issuer,

@@ -11,7 +11,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
+const [sUSD, sETH] = ['mimicUSD', 'mimicETH'].map(toBytes32);
 
 let ExchangerWithFeeRecAlternatives;
 
@@ -304,7 +304,7 @@ module.exports = function({ accounts }) {
 			});
 		},
 		whenMockedSusdAndSethSeparatelyToIssueAndBurn: cb => {
-			describe(`when mocked sUSD and sETH`, () => {
+			describe(`when mocked mimicUSD and sETH`, () => {
 				async function mockSynth(currencyKey) {
 					const synth = await smockit(artifacts.require('Synth').abi);
 					synth.smocked.currencyKey.will.return.with(currencyKey);

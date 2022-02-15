@@ -22,7 +22,7 @@ interface IDepot {
 
     function withdrawMyDepositedSynths() external;
 
-    // Note: On mainnet no SNX has been deposited. The following functions are kept alive for testnet SNX faucets.
+    // Note: On mainnet no MIME has been deposited. The following functions are kept alive for testnet MIME faucets.
     function exchangeEtherForSNX() external payable returns (uint);
 
     function exchangeEtherForSNXAtRate(uint guaranteedRate, uint guaranteedSynthetixRate) external payable returns (uint);

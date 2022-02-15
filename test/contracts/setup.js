@@ -223,9 +223,9 @@ const setupContract = async ({
 			tryGetAddressOf('ProxyERC20Synth'),
 			tryGetAddressOf('TokenStateSynth'),
 			tryGetProperty({ property: 'name', otherwise: 'Synthetic sUSD' }),
-			tryGetProperty({ property: 'symbol', otherwise: 'sUSD' }),
+			tryGetProperty({ property: 'symbol', otherwise: 'mimicUSD' }),
 			owner,
-			tryGetProperty({ property: 'currencyKey', otherwise: toBytes32('sUSD') }),
+			tryGetProperty({ property: 'currencyKey', otherwise: toBytes32('mimicUSD') }),
 			tryGetProperty({ property: 'totalSupply', otherwise: '0' }),
 			tryGetAddressOf('AddressResolver'),
 		],
@@ -248,7 +248,7 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sUSD'),
+			toBytes32('mimicUSD'),
 			toUnit(1.2),
 			toUnit(100),
 		],
@@ -256,7 +256,7 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sETH'),
+			toBytes32('mimicETH'),
 			toUnit(1.3),
 			toUnit(2),
 		],
@@ -264,7 +264,7 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sUSD'),
+			toBytes32('mimicUSD'),
 			toUnit(1.2),
 			toUnit(100),
 		],
@@ -295,7 +295,7 @@ const setupContract = async ({
 
 	const postDeployTasks = {
 		async Synthetix() {
-			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// first give all MIME supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
 			await cache['TokenStateSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
 				from: deployerAccount,
@@ -353,7 +353,7 @@ const setupContract = async ({
 			);
 		},
 		async BaseSynthetix() {
-			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// first give all MIME supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
 			await cache['TokenStateBaseSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
 				from: deployerAccount,
@@ -389,7 +389,7 @@ const setupContract = async ({
 			);
 		},
 		async MintableSynthetix() {
-			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// first give all MIME supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
 			await cache['TokenStateMintableSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
 				from: deployerAccount,
@@ -1127,8 +1127,8 @@ const setupAllContracts = async ({
 	);
 
 	if (returnObj['ExchangeRates']) {
-		// setup SNX price feed
-		const SNX = toBytes32('SNX');
+		// setup MIME price feed
+		const MIME = toBytes32('MIME');
 		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
 		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
 	}

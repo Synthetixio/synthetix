@@ -31,7 +31,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ========== CONSTANTS ========== */
 
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 private constant mimicUSD = "mimicUSD";
 
     // ========== STATE VARIABLES ==========
 
@@ -257,7 +257,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 3. Collateral >= minimum collateral size.
         require(collateral >= minCollateral, "Not enough collateral");
 
-        // 4. Check we haven't hit the debt cap for non snx collateral.
+        // 4. Check we haven't hit the debt cap for non mime collateral.
         (bool canIssue, bool anyRateIsInvalid) = manager.exceedsDebtLimit(amount, currency);
 
         // 5. Check if we've hit the debt cap or any rate is invalid.
@@ -642,7 +642,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
     }
 
-    // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
+    // Take an amount of fees in a certain synth and convert it to mimicUSD before paying the fee pool.
     function _payFees(uint amount, bytes32 synth) internal {
         if (amount > 0) {
             if (synth != sUSD) {

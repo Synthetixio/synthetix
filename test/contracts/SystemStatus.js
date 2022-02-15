@@ -68,11 +68,11 @@ contract('SystemStatus', async accounts => {
 			'Restricted to access control list'
 		);
 		await assert.revert(
-			systemStatus.suspendSynthExchange(toBytes32('sETH'), '1', { from: owner }),
+			systemStatus.suspendSynthExchange(toBytes32('mimicETH'), '1', { from: owner }),
 			'Restricted to access control list'
 		);
 		await assert.revert(
-			systemStatus.suspendSynth(toBytes32('sETH'), '1', { from: owner }),
+			systemStatus.suspendSynth(toBytes32('mimicETH'), '1', { from: owner }),
 			'Restricted to access control list'
 		);
 	});
@@ -99,8 +99,8 @@ contract('SystemStatus', async accounts => {
 			it('and all the require checks succeed', async () => {
 				await systemStatus.requireSystemActive();
 				await systemStatus.requireIssuanceActive();
-				await systemStatus.requireSynthActive(toBytes32('sETH'));
-				await systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH'));
+				await systemStatus.requireSynthActive(toBytes32('mimicETH'));
+				await systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('mimicETH'));
 			});
 
 			it('can only be invoked by the owner initially', async () => {
@@ -139,9 +139,9 @@ contract('SystemStatus', async accounts => {
 					const reason = 'Synthetix is suspended. Operation prohibited';
 					await assert.revert(systemStatus.requireSystemActive(), reason);
 					await assert.revert(systemStatus.requireIssuanceActive(), reason);
-					await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
+					await assert.revert(systemStatus.requireSynthActive(toBytes32('mimicETH')), reason);
 					await assert.revert(
-						systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
+						systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('mimicETH')),
 						reason
 					);
 				});
@@ -179,9 +179,9 @@ contract('SystemStatus', async accounts => {
 						const reason = 'Synthetix is suspended, upgrade in progress... please stand by';
 						await assert.revert(systemStatus.requireSystemActive(), reason);
 						await assert.revert(systemStatus.requireIssuanceActive(), reason);
-						await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
+						await assert.revert(systemStatus.requireSynthActive(toBytes32('mimicETH')), reason);
 						await assert.revert(
-							systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
+							systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('mimicETH')),
 							reason
 						);
 					});
@@ -198,9 +198,9 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(systemStatus.suspendIssuance('0', { from: account1 }));
 						await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
 						await assert.revert(
-							systemStatus.suspendSynth(toBytes32('sETH'), '0', { from: account1 })
+							systemStatus.suspendSynth(toBytes32('mimicETH'), '0', { from: account1 })
 						);
-						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
+						await assert.revert(systemStatus.resumeSynth(toBytes32('mimicETH'), { from: account1 }));
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeSystem({ from: owner });
@@ -260,7 +260,7 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
-							await systemStatus.requireSynthActive(toBytes32('sETH'));
+							await systemStatus.requireSynthActive(toBytes32('mimicETH'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -279,9 +279,9 @@ contract('SystemStatus', async accounts => {
 							);
 							await assert.revert(systemStatus.resumeIssuance({ from: account1 }));
 							await assert.revert(
-								systemStatus.suspendSynth(toBytes32('sETH'), '66', { from: account1 })
+								systemStatus.suspendSynth(toBytes32('mimicETH'), '66', { from: account1 })
 							);
-							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
+							await assert.revert(systemStatus.resumeSynth(toBytes32('mimicETH'), { from: account1 }));
 						});
 					});
 				});
@@ -355,7 +355,7 @@ contract('SystemStatus', async accounts => {
 					});
 					it('but not the others', async () => {
 						await systemStatus.requireSystemActive();
-						await systemStatus.requireSynthActive(toBytes32('sETH'));
+						await systemStatus.requireSynthActive(toBytes32('mimicETH'));
 					});
 					it('yet that address cannot resume', async () => {
 						await assert.revert(
@@ -372,9 +372,9 @@ contract('SystemStatus', async accounts => {
 						);
 						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
 						await assert.revert(
-							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
+							systemStatus.suspendSynth(toBytes32('mimicETH'), '55', { from: account2 })
 						);
-						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+						await assert.revert(systemStatus.resumeSynth(toBytes32('mimicETH'), { from: account2 }));
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeIssuance({ from: owner });
@@ -431,7 +431,7 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
-							await systemStatus.requireSynthActive(toBytes32('sETH'));
+							await systemStatus.requireSynthActive(toBytes32('mimicETH'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -448,9 +448,9 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
 							await assert.revert(systemStatus.resumeSystem({ from: account2 }));
 							await assert.revert(
-								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
+								systemStatus.suspendSynth(toBytes32('mimicETH'), '5', { from: account2 })
 							);
-							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+							await assert.revert(systemStatus.resumeSynth(toBytes32('mimicETH'), { from: account2 }));
 						});
 					});
 				});
@@ -525,7 +525,7 @@ contract('SystemStatus', async accounts => {
 					it('and requireExchangeBetweenSynthsAllowed reverts as expected', async () => {
 						await assert.revert(
 							systemStatus.requireExchangeBetweenSynthsAllowed(
-								toBytes32('sETH'),
+								toBytes32('mimicETH'),
 								toBytes32('sBTC')
 							),
 							'Exchange is suspended. Operation prohibited'
@@ -533,7 +533,7 @@ contract('SystemStatus', async accounts => {
 					});
 					it('but not the others', async () => {
 						await systemStatus.requireSystemActive();
-						await systemStatus.requireSynthActive(toBytes32('sETH'));
+						await systemStatus.requireSynthActive(toBytes32('mimicETH'));
 					});
 
 					it('yet that address cannot resume', async () => {
@@ -551,9 +551,9 @@ contract('SystemStatus', async accounts => {
 						);
 						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
 						await assert.revert(
-							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
+							systemStatus.suspendSynth(toBytes32('mimicETH'), '55', { from: account2 })
 						);
-						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+						await assert.revert(systemStatus.resumeSynth(toBytes32('mimicETH'), { from: account2 }));
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeExchange({ from: owner });
@@ -611,10 +611,10 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireExchangeActive();
 							await systemStatus.requireExchangeBetweenSynthsAllowed(
-								toBytes32('sETH'),
+								toBytes32('mimicETH'),
 								toBytes32('sBTC')
 							);
-							await systemStatus.requireSynthActive(toBytes32('sETH'));
+							await systemStatus.requireSynthActive(toBytes32('mimicETH'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -631,9 +631,9 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
 							await assert.revert(systemStatus.resumeSystem({ from: account2 }));
 							await assert.revert(
-								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
+								systemStatus.suspendSynth(toBytes32('mimicETH'), '5', { from: account2 })
 							);
-							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+							await assert.revert(systemStatus.resumeSynth(toBytes32('mimicETH'), { from: account2 }));
 						});
 					});
 				});
@@ -662,7 +662,7 @@ contract('SystemStatus', async accounts => {
 
 			it('getSynthExchangeSuspensions(sETH, sBTC, iBTC) is empty', async () => {
 				const { exchangeSuspensions, reasons } = await systemStatus.getSynthExchangeSuspensions(
-					['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+					['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 				);
 				assert.deepEqual(exchangeSuspensions, [false, false, false]);
 				assert.deepEqual(reasons, ['0', '0', '0']);
@@ -681,7 +681,7 @@ contract('SystemStatus', async accounts => {
 				});
 				it('getSynthExchangeSuspensions(sETH, sBTC, iBTC) returns values for sBTC', async () => {
 					const { exchangeSuspensions, reasons } = await systemStatus.getSynthExchangeSuspensions(
-						['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+						['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 					);
 					assert.deepEqual(exchangeSuspensions, [false, true, false]);
 					assert.deepEqual(reasons, ['0', givenReason, '0']);
@@ -728,12 +728,12 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireIssuanceActive();
 						await systemStatus.requireSynthActive(sBTC);
-						await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
+						await systemStatus.requireSynthsActive(toBytes32('mimicETH'), sBTC);
 					});
 					it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
 						const reason = 'Synth exchange suspended. Operation prohibited';
 						await assert.revert(
-							systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC),
+							systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('mimicETH'), sBTC),
 							reason
 						);
 						await assert.revert(
@@ -741,8 +741,8 @@ contract('SystemStatus', async accounts => {
 							reason
 						);
 						await systemStatus.requireExchangeBetweenSynthsAllowed(
-							toBytes32('sETH'),
-							toBytes32('sUSD')
+							toBytes32('mimicETH'),
+							toBytes32('mimicUSD')
 						); // no issues
 						await systemStatus.requireExchangeBetweenSynthsAllowed(
 							toBytes32('iTRX'),
@@ -813,10 +813,10 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
-							await systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC);
+							await systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('mimicETH'), sBTC);
 							await systemStatus.requireSynthActive(sBTC);
-							await systemStatus.requireSynthsActive(sBTC, toBytes32('sETH'));
-							await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
+							await systemStatus.requireSynthsActive(sBTC, toBytes32('mimicETH'));
+							await systemStatus.requireSynthsActive(toBytes32('mimicETH'), sBTC);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -831,7 +831,7 @@ contract('SystemStatus', async accounts => {
 								exchangeSuspensions,
 								reasons,
 							} = await systemStatus.getSynthExchangeSuspensions(
-								['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+								['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 							);
 							assert.deepEqual(exchangeSuspensions, [false, false, false]);
 							assert.deepEqual(reasons, ['0', '0', '0']);
@@ -843,7 +843,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('suspendSynthsExchange()', () => {
 			let txn;
-			const [sBTC, sETH] = ['sBTC', 'sETH'].map(toBytes32);
+			const [sBTC, sETH] = ['sBTC', 'mimicETH'].map(toBytes32);
 
 			it('can only be invoked by the owner initially', async () => {
 				await onlyGivenAddressCanInvoke({
@@ -874,9 +874,9 @@ contract('SystemStatus', async accounts => {
 					assert.equal(reason, givenReason);
 					assert.eventEqual(txn.logs[1], 'SynthExchangeSuspended', [sETH, reason]);
 				});
-				it('getSynthExchangeSuspensions(sETH, sBTC, iBTC) returns values for sETH and sBTC', async () => {
+				it('getSynthExchangeSuspensions(sETH, sBTC, iBTC) returns values for mimicETH and sBTC', async () => {
 					const { exchangeSuspensions, reasons } = await systemStatus.getSynthExchangeSuspensions(
-						['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+						['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 					);
 					assert.deepEqual(exchangeSuspensions, [true, true, false]);
 					assert.deepEqual(reasons, [givenReason, givenReason, '0']);
@@ -886,7 +886,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('resumeSynthsExchange()', () => {
 			let txn;
-			const [sBTC, sETH] = ['sBTC', 'sETH'].map(toBytes32);
+			const [sBTC, sETH] = ['sBTC', 'mimicETH'].map(toBytes32);
 
 			it('can only be invoked by the owner initially', async () => {
 				await onlyGivenAddressCanInvoke({
@@ -963,7 +963,7 @@ contract('SystemStatus', async accounts => {
 
 			it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
 				const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-					['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+					['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 				);
 				assert.deepEqual(suspensions, [false, false, false]);
 				assert.deepEqual(reasons, ['0', '0', '0']);
@@ -982,7 +982,7 @@ contract('SystemStatus', async accounts => {
 				});
 				it('getSynthSuspensions(sETH, sBTC, iBTC) returns values for sBTC', async () => {
 					const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-						['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+						['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 					);
 					assert.deepEqual(suspensions, [false, true, false]);
 					assert.deepEqual(reasons, ['0', givenReason, '0']);
@@ -1029,15 +1029,15 @@ contract('SystemStatus', async accounts => {
 					});
 					it('and requireSynthsActive() reverts if one is the given synth', async () => {
 						const reason = 'Synth is suspended. Operation prohibited';
-						await assert.revert(systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC), reason);
+						await assert.revert(systemStatus.requireSynthsActive(toBytes32('mimicETH'), sBTC), reason);
 						await assert.revert(systemStatus.requireSynthsActive(sBTC, toBytes32('sTRX')), reason);
-						await systemStatus.requireSynthsActive(toBytes32('sETH'), toBytes32('sUSD')); // no issues
+						await systemStatus.requireSynthsActive(toBytes32('mimicETH'), toBytes32('mimicUSD')); // no issues
 						await systemStatus.requireSynthsActive(toBytes32('iTRX'), toBytes32('iBTC')); // no issues
 					});
 					it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
 						const reason = 'Synth is suspended. Operation prohibited';
 						await assert.revert(
-							systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC),
+							systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('mimicETH'), sBTC),
 							reason
 						);
 						await assert.revert(
@@ -1045,8 +1045,8 @@ contract('SystemStatus', async accounts => {
 							reason
 						);
 						await systemStatus.requireExchangeBetweenSynthsAllowed(
-							toBytes32('sETH'),
-							toBytes32('sUSD')
+							toBytes32('mimicETH'),
+							toBytes32('mimicUSD')
 						); // no issues
 						await systemStatus.requireExchangeBetweenSynthsAllowed(
 							toBytes32('iTRX'),
@@ -1077,7 +1077,7 @@ contract('SystemStatus', async accounts => {
 
 		describe('suspendSynths()', () => {
 			let txn;
-			const [sBTC, sETH] = ['sBTC', 'sETH'].map(toBytes32);
+			const [sBTC, sETH] = ['sBTC', 'mimicETH'].map(toBytes32);
 
 			it('can only be invoked by the owner initially', async () => {
 				await onlyGivenAddressCanInvoke({
@@ -1108,7 +1108,7 @@ contract('SystemStatus', async accounts => {
 				});
 				it('getSynthSuspensions(sETH, sBTC, iBTC) returns values for both', async () => {
 					const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-						['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+						['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 					);
 					assert.deepEqual(suspensions, [true, true, false]);
 					assert.deepEqual(reasons, [givenReason, givenReason, '0']);
@@ -1165,8 +1165,8 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
 							await systemStatus.requireSynthActive(sBTC);
-							await systemStatus.requireSynthsActive(sBTC, toBytes32('sETH'));
-							await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
+							await systemStatus.requireSynthsActive(sBTC, toBytes32('mimicETH'));
+							await systemStatus.requireSynthsActive(toBytes32('mimicETH'), sBTC);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -1188,7 +1188,7 @@ contract('SystemStatus', async accounts => {
 
 						it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
 							const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-								['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+								['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 							);
 							assert.deepEqual(suspensions, [false, false, false]);
 							assert.deepEqual(reasons, ['0', '0', '0']);
@@ -1199,7 +1199,7 @@ contract('SystemStatus', async accounts => {
 		});
 
 		describe('resumeSynths()', () => {
-			const [sBTC, sETH] = ['sBTC', 'sETH'].map(toBytes32);
+			const [sBTC, sETH] = ['sBTC', 'mimicETH'].map(toBytes32);
 
 			let txn;
 			it('can only be invoked by the owner initially', async () => {
@@ -1249,7 +1249,7 @@ contract('SystemStatus', async accounts => {
 
 						it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
 							const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-								['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+								['mimicETH', 'sBTC', 'iBTC'].map(toBytes32)
 							);
 							assert.deepEqual(suspensions, [false, false, false]);
 							assert.deepEqual(reasons, ['0', '0', '0']);
@@ -1260,7 +1260,7 @@ contract('SystemStatus', async accounts => {
 		});
 
 		describe('updateAccessControl()', () => {
-			const synth = toBytes32('sETH');
+			const synth = toBytes32('mimicETH');
 
 			it('can only be invoked by the owner', async () => {
 				await onlyGivenAddressCanInvoke({
@@ -1362,7 +1362,7 @@ contract('SystemStatus', async accounts => {
 
 			describe('when invoked by the owner', () => {
 				let txn;
-				const synth = toBytes32('sETH');
+				const synth = toBytes32('mimicETH');
 				beforeEach(async () => {
 					txn = await systemStatus.updateAccessControls(
 						[SYSTEM, SYNTH_EXCHANGE, SYNTH],

@@ -8,11 +8,11 @@ async function exchangeSomething({ ctx }) {
 	Synthetix = Synthetix.connect(ctx.users.owner);
 
 	const sUSDAmount = ethers.utils.parseEther('10');
-	await ensureBalance({ ctx, symbol: 'sUSD', user: ctx.users.owner, balance: sUSDAmount });
+	await ensureBalance({ ctx, symbol: 'mimicUSD', user: ctx.users.owner, balance: sUSDAmount });
 
 	await updateCache({ ctx });
 
-	const tx = await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'));
+	const tx = await Synthetix.exchange(toBytes32('mimicUSD'), sUSDAmount, toBytes32('mimicETH'));
 	await tx.wait();
 }
 

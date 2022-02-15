@@ -57,7 +57,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         // Now call mint.
         etherWrapper().mint(amount);
 
-        // Transfer the sETH to msg.sender.
+        // Transfer the mimicETH to msg.sender.
         synthsETH().transfer(msg.sender, synthsETH().balanceOf(address(this)));
 
         emit Minted(msg.sender, amount);
@@ -67,7 +67,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         require(amount > 0, "amount must be greater than 0");
         IWETH weth = weth();
 
-        // Transfer sETH from the msg.sender.
+        // Transfer mimicETH from the msg.sender.
         synthsETH().transferFrom(msg.sender, address(this), amount);
 
         // Approve for the EtherWrapper.

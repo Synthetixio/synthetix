@@ -22,7 +22,7 @@ contract('RewardEscrowV2', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock SNX
-		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
+		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'MIME' }));
 
 		feePool = { address: feePoolAccount }; // mock contract with address
 
@@ -140,7 +140,7 @@ contract('RewardEscrowV2', async accounts => {
 	});
 
 	describe('migrateVestingSchedule', () => {
-		describe('when totalBalancePendingMigration is 1000 SNX or less', () => {
+		describe('when totalBalancePendingMigration is 1000 MIME or less', () => {
 			it('should migrate the pending migration balance of 800 as vestable entry', async () => {
 				const escrowAmount = toUnit('800');
 
@@ -230,7 +230,7 @@ contract('RewardEscrowV2', async accounts => {
 				assert.bnEqual(await rewardEscrowV2.numVestingEntries(account1), new BN(52));
 
 				// totalBalancePendingMigration for account1 should be less 520 (1040 - 520 = 520)
-				// There would be another 520 SNX to migrate as a single vestable entry
+				// There would be another 520 MIME to migrate as a single vestable entry
 				assert.bnEqual(await rewardEscrowV2.totalBalancePendingMigration(account1), toUnit('520'));
 
 				// check 52 entries are setup

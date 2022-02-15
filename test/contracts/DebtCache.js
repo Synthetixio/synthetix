@@ -26,12 +26,12 @@ const {
 } = require('../..');
 
 contract('DebtCache', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sETH, ETH, iETH] = [
-		'sUSD',
+	const [sUSD, sAUD, sEUR, MIME, sETH, ETH, iETH] = [
+		'mimicUSD',
 		'sAUD',
 		'sEUR',
-		'SNX',
-		'sETH',
+		'MIME',
+		'mimicETH',
 		'ETH',
 		'iETH',
 	].map(toBytes32);
@@ -75,7 +75,7 @@ contract('DebtCache', async accounts => {
 		const CollateralManager = artifacts.require(`CollateralManager`);
 		const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-		synths = ['sUSD', 'sETH', 'sAUD'];
+		synths = ['mimicUSD', 'mimicETH', 'sAUD'];
 
 		// Deploy CollateralManagerState.
 		const managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
@@ -129,13 +129,13 @@ contract('DebtCache', async accounts => {
 
 		await ceth.addSynths(
 			['SynthsUSD', 'SynthsETH'].map(toBytes32),
-			['sUSD', 'sETH'].map(toBytes32),
+			['mimicUSD', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addSynths(
 			['SynthsUSD', 'SynthsETH'].map(toBytes32),
-			['sUSD', 'sETH'].map(toBytes32),
+			['mimicUSD', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 		// rebuild the cache to add the synths we need.
@@ -208,7 +208,7 @@ contract('DebtCache', async accounts => {
 
 		await manager.addCollaterals([short.address], { from: owner });
 
-		await short.addSynths(['SynthsETH'].map(toBytes32), ['sETH'].map(toBytes32), { from: owner });
+		await short.addSynths(['SynthsETH'].map(toBytes32), ['mimicETH'].map(toBytes32), { from: owner });
 
 		await manager.addShortableSynths(['SynthsETH'].map(toBytes32), [sETH], {
 			from: owner,
@@ -239,7 +239,7 @@ contract('DebtCache', async accounts => {
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
 	before(async () => {
-		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH', 'iETH'];
+		synths = ['mimicUSD', 'sAUD', 'sEUR', 'mimicETH', 'iETH'];
 		({
 			Synthetix: synthetix,
 			SystemStatus: systemStatus,
@@ -289,7 +289,7 @@ contract('DebtCache', async accounts => {
 	beforeEach(async () => {
 		await updateAggregatorRates(
 			exchangeRates,
-			[sAUD, sEUR, SNX, sETH, ETH, iETH],
+			[sAUD, sEUR, MIME, sETH, ETH, iETH],
 			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
 		);
 
@@ -401,7 +401,7 @@ contract('DebtCache', async accounts => {
 			);
 			await debtCache.takeDebtSnapshot();
 
-			// Issue 1000 sUSD worth of tokens to a user
+			// Issue 1000 mimicUSD worth of tokens to a user
 			await sUSDContract.issue(account1, toUnit(100));
 			await sAUDContract.issue(account1, toUnit(100));
 			await sEURContract.issue(account1, toUnit(100));
@@ -504,7 +504,7 @@ contract('DebtCache', async accounts => {
 				// Revalidate the cache once rates are no longer stale
 				await updateAggregatorRates(
 					exchangeRates,
-					[sAUD, sEUR, SNX, sETH, ETH, iETH],
+					[sAUD, sEUR, MIME, sETH, ETH, iETH],
 					['0.5', '2', '100', '200', '200', '200'].map(toUnit)
 				);
 				const tx2 = await debtCache.takeDebtSnapshot();
@@ -596,20 +596,20 @@ contract('DebtCache', async accounts => {
 				);
 				await assert.revert(
 					synthetix.issueSynths(toUnit('10'), { from: account1 }),
-					'A synth or SNX rate is invalid'
+					'A synth or MIME rate is invalid'
 				);
 
 				await assert.revert(
 					synthetix.burnSynths(toUnit('1'), { from: account1 }),
-					'A synth or SNX rate is invalid'
+					'A synth or MIME rate is invalid'
 				);
 
-				await assert.revert(feePool.claimFees(), 'A synth or SNX rate is invalid');
+				await assert.revert(feePool.claimFees(), 'A synth or MIME rate is invalid');
 
-				// Can't transfer SNX if issued debt
+				// Can't transfer MIME if issued debt
 				await assert.revert(
 					synthetix.transfer(owner, toUnit('1'), { from: account1 }),
-					'A synth or SNX rate is invalid'
+					'A synth or MIME rate is invalid'
 				);
 
 				// But can transfer if not
@@ -651,7 +651,7 @@ contract('DebtCache', async accounts => {
 				});
 
 				it('current debt is correct', async () => {
-					// debt shouldn't have changed since SNX holders have not issued any more debt
+					// debt shouldn't have changed since MIME holders have not issued any more debt
 					assert.bnEqual(await debtCache.currentDebt(), beforeExcludedDebts);
 				});
 			});
@@ -722,7 +722,7 @@ contract('DebtCache', async accounts => {
 				assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(600)]);
 			});
 
-			it('reverts when attempting to synchronise non-existent synths or SNX', async () => {
+			it('reverts when attempting to synchronise non-existent synths or MIME', async () => {
 				await assert.revert(debtCache.updateCachedSynthDebts([SNX]));
 				const fakeSynth = toBytes32('FAKE');
 				await assert.revert(debtCache.updateCachedSynthDebts([fakeSynth]));
@@ -763,7 +763,7 @@ contract('DebtCache', async accounts => {
 				});
 				await debtCache.rebuildCache();
 			});
-			it('when sUSD is increased by minting', async () => {
+			it('when mimicUSD is increased by minting', async () => {
 				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
 				const amount = toUnit('1000');
 				const tx = await debtCache.updateCachedsUSDDebt(amount, { from: owner });
@@ -783,7 +783,7 @@ contract('DebtCache', async accounts => {
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 			});
-			it('when sUSD cache is decreased by minting', async () => {
+			it('when mimicUSD cache is decreased by minting', async () => {
 				const amount = toUnit('1000');
 				await debtCache.updateCachedsUSDDebt(amount, { from: owner });
 
@@ -792,7 +792,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual((await debtCache.cacheInfo())[0], amount);
 				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), amount);
 
-				// decrease the cached sUSD amount
+				// decrease the cached mimicUSD amount
 				const amountToReduce = toUnit('500');
 				const tx = await debtCache.updateCachedsUSDDebt(amountToReduce.neg(), { from: owner });
 
@@ -816,7 +816,7 @@ contract('DebtCache', async accounts => {
 		});
 
 		describe('Issuance, burning, exchange, settlement', () => {
-			it('issuing sUSD updates the debt total', async () => {
+			it('issuing mimicUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
 				const issued = (await debtCache.cacheInfo())[0];
 
@@ -838,7 +838,7 @@ contract('DebtCache', async accounts => {
 				});
 			});
 
-			it('burning sUSD updates the debt total', async () => {
+			it('burning mimicUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
 				const synthsToIssue = toUnit('10');
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -863,7 +863,7 @@ contract('DebtCache', async accounts => {
 				});
 			});
 
-			it('issuing sUSD updates the total debt cached and sUSD cache', async () => {
+			it('issuing mimicUSD updates the total debt cached and mimicUSD cache', async () => {
 				await debtCache.takeDebtSnapshot();
 				const issued = (await debtCache.cacheInfo())[0];
 
@@ -886,12 +886,12 @@ contract('DebtCache', async accounts => {
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 
-				// cached sUSD increased by synth issued
+				// cached mimicUSD increased by synth issued
 				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.add(synthsToIssue));
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(synthsToIssue));
 			});
 
-			it('burning sUSD reduces the total debt and sUSD cache', async () => {
+			it('burning mimicUSD reduces the total debt and mimicUSD cache', async () => {
 				await debtCache.takeDebtSnapshot();
 
 				const synthsToIssue = toUnit('1000');
@@ -916,7 +916,7 @@ contract('DebtCache', async accounts => {
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 
-				// cached sUSD decreased by synth burned
+				// cached mimicUSD decreased by synth burned
 				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.sub(synthsToBurn));
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued.sub(synthsToBurn));
 			});
@@ -947,7 +947,7 @@ contract('DebtCache', async accounts => {
 				assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheUpdated'));
 			});
 
-			it('exchanging between synths updates sUSD debt total due to fees', async () => {
+			it('exchanging between synths updates mimicUSD debt total due to fees', async () => {
 				// Disable Dynamic fee so that we can neglect it.
 				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
@@ -1014,7 +1014,7 @@ contract('DebtCache', async accounts => {
 				const cachedDebt = await debtCache.cachedDebt();
 
 				await synthetix.exchange(sAUD, toUnit(50), sEUR, { from: account1 });
-				// so there's now 100 - 25 sUSD left (25 of it was exchanged)
+				// so there's now 100 - 25 mimicUSD left (25 of it was exchanged)
 				// and now there's 100 + (25 / 2 ) of sEUR = 112.5
 
 				await systemSettings.setWaitingPeriodSecs(60, { from: owner });
@@ -1366,7 +1366,7 @@ contract('DebtCache', async accounts => {
 			describe('after the synths are exchanged into other synths', async () => {
 				let tx;
 				beforeEach(async () => {
-					// Swap some sETH into synthetic dollarydoos.
+					// Swap some mimicETH into synthetic dollarydoos.
 					tx = await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
 				});
 
@@ -1423,7 +1423,7 @@ contract('DebtCache', async accounts => {
 				({ rate } = await exchangeRates.rateAndInvalid(sETH));
 
 				// Take out a short position on sETH.
-				// sUSD collateral = 1.5 * rate_eth
+				// mimicUSD collateral = 1.5 * rate_eth
 				amount = multiplyDecimalRound(rate, toUnit('1.5'));
 				await sUSDContract.issue(account1, amount, { from: owner });
 				// Again, avoid a divide-by-zero in computing the short rate,

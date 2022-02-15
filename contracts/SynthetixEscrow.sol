@@ -20,7 +20,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     ISynthetix public synthetix;
 
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
-     * These are the times at which each given quantity of SNX vests. */
+     * These are the times at which each given quantity of MIME vests. */
     mapping(address => uint[2][]) public vestingSchedules;
 
     /* An account's total vested synthetix balance to save recomputing this for fee extraction purposes. */
@@ -80,7 +80,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     }
 
     /**
-     * @notice Get the quantity of SNX associated with a given schedule entry.
+     * @notice Get the quantity of MIME associated with a given schedule entry.
      */
     function getVestingQuantity(address account, uint index) public view returns (uint) {
         return getVestingScheduleEntry(account, index)[QUANTITY_INDEX];
@@ -146,7 +146,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
      * arrays, it's only in the foundation's command to add to these lists.
      * @param account The account to append a new vesting entry to.
      * @param time The absolute unix timestamp after which the vested quantity may be withdrawn.
-     * @param quantity The quantity of SNX that will vest.
+     * @param quantity The quantity of MIME that will vest.
      */
     function appendVestingEntry(
         address account,
@@ -171,7 +171,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
         if (scheduleLength == 0) {
             totalVestedAccountBalance[account] = quantity;
         } else {
-            /* Disallow adding new vested SNX earlier than the last one.
+            /* Disallow adding new vested MIME earlier than the last one.
              * Since entries are only appended, this means that no vesting date can be repeated. */
             require(
                 getVestingTime(account, numVestingEntries(account) - 1) < time,
@@ -201,7 +201,7 @@ contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     }
 
     /**
-     * @notice Allow a user to withdraw any SNX in their schedule that have vested.
+     * @notice Allow a user to withdraw any MIME in their schedule that have vested.
      */
     function vest() external {
         uint numEntries = numVestingEntries(msg.sender);

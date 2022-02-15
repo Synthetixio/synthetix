@@ -21,8 +21,8 @@ const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('WrapperFactory', async accounts => {
-	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
-	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
+	const synths = ['mimicUSD', 'mimicETH', 'ETH', 'MIME'];
+	const [sETH, ETH] = ['mimicETH', 'ETH'].map(toBytes32);
 
 	const [, owner, , , account1] = accounts;
 
@@ -187,7 +187,7 @@ contract('WrapperFactory', async accounts => {
 			tx = await wrapperFactory.distributeFees();
 		});
 
-		it('issues sUSD to the feepool', async () => {
+		it('issues mimicUSD to the feepool', async () => {
 			const logs = await getDecodedLogs({
 				hash: tx.tx,
 				contracts: [sUSDSynth],

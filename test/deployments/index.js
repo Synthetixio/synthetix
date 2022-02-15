@@ -85,11 +85,11 @@ describe('deployments', () => {
 									const methodMappings = {
 										StakingRewardssETHUniswapV1: {
 											stakingTokenMethod: 'uni',
-											rewardsTokenMethod: 'snx',
+											rewardsTokenMethod: 'mime',
 										},
 										StakingRewardssUSDCurve: {
 											stakingTokenMethod: 'uni',
-											rewardsTokenMethod: 'snx',
+											rewardsTokenMethod: 'mime',
 										},
 									};
 

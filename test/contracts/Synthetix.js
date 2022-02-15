@@ -25,7 +25,7 @@ const {
 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sAUD, sEUR, sUSD, sETH] = ['sAUD', 'sEUR', 'sUSD', 'sETH'].map(toBytes32);
+	const [sAUD, sEUR, sUSD, sETH] = ['sAUD', 'sEUR', 'mimicUSD', 'mimicETH'].map(toBytes32);
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -54,7 +54,7 @@ contract('Synthetix', async accounts => {
 			SynthsETH: sETHContract,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
+			synths: ['mimicUSD', 'mimicETH', 'sEUR', 'sAUD'],
 			contracts: [
 				'Synthetix',
 				'SupplySchedule',
@@ -406,7 +406,7 @@ contract('Synthetix', async accounts => {
 	describe('migration - transfer escrow balances to reward escrow v2', () => {
 		let rewardEscrowBalanceBefore;
 		beforeEach(async () => {
-			// transfer SNX to rewardEscrow
+			// transfer MIME to rewardEscrow
 			await synthetix.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
 
 			rewardEscrowBalanceBefore = await synthetix.balanceOf(rewardEscrow.address);
@@ -444,17 +444,17 @@ contract('Synthetix', async accounts => {
 				// ensure rates are set
 				await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
 
-				// issue sUSD from the owner
+				// issue mimicUSD from the owner
 				await synthetix.issueSynths(amountOfsUSD, { from: owner });
 
-				// transfer the sUSD to the contract
+				// transfer the mimicUSD to the contract
 				await sUSDContract.transfer(contractExample.address, toUnit('100'), { from: owner });
 			});
 
 			describe('when Barrie invokes the exchange function on the contract', () => {
 				let txn;
 				beforeEach(async () => {
-					// Barrie has no sETH to start
+					// Barrie has no mimicETH to start
 					assert.equal(await sETHContract.balanceOf(account3), '0');
 
 					txn = await contractExample.exchange(sUSD, amountOfsUSD, sETH, { from: account3 });

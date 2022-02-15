@@ -162,7 +162,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
                 // Transfer the SNX
                 IERC20(synthetixProxy).transfer(distributions[i].destination, distributions[i].amount);
 
-                // If the contract implements RewardsDistributionRecipient.sol, inform it how many SNX its received.
+                // If the contract implements RewardsDistributionRecipient.sol, inform it how many MIME its received.
                 bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
 
                 // solhint-disable avoid-low-level-calls

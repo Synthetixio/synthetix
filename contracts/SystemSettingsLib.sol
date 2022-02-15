@@ -16,7 +16,7 @@ library SystemSettingsLib {
 
     bytes32 public constant SETTINGS_CONTRACT_NAME = "SystemSettings";
 
-    // No more synths may be issued than the value of SNX backing them.
+    // No more synths may be issued than the value of MIME backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
     // The fee period must be between 1 day and 60 days.

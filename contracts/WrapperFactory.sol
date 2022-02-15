@@ -90,7 +90,7 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
         uint amountSUSD = feesEscrowed();
 
         if (amountSUSD > 0) {
-            // Transfer sUSD to the fee pool
+            // Transfer mimicUSD to the fee pool
             bool success = synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
             require(success, "Transfer did not succeed");
         }

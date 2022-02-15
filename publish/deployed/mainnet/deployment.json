@@ -3954,7 +3954,7 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "snx",
+					"name": "mime",
 					"outputs": [
 						{
 							"internalType": "contract IERC20",
@@ -4856,7 +4856,7 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "snx",
+					"name": "mime",
 					"outputs": [
 						{
 							"name": "",
@@ -9916,7 +9916,7 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "sUSD",
+					"name": "mimicUSD",
 					"outputs": [
 						{
 							"internalType": "bytes32",

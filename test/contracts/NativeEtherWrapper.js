@@ -21,8 +21,8 @@ const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('NativeEtherWrapper', async accounts => {
-	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
-	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
+	const synths = ['mimicUSD', 'mimicETH', 'ETH', 'MIME'];
+	const [sETH, ETH] = ['mimicETH', 'ETH'].map(toBytes32);
 
 	const [, owner, , , account1] = accounts;
 
@@ -152,7 +152,7 @@ contract('NativeEtherWrapper', async accounts => {
 						.find(({ name }) => name === 'Minted'),
 				});
 			});
-			it('transfers sETH to msg.sender', async () => {
+			it('transfers mimicETH to msg.sender', async () => {
 				assert.bnEqual(await sETHSynth.balanceOf(account1), amount);
 			});
 		});
@@ -171,7 +171,7 @@ contract('NativeEtherWrapper', async accounts => {
 				);
 			});
 		});
-		describe('when called with 0 sETH balance', async () => {
+		describe('when called with 0 mimicETH balance', async () => {
 			it('reverts', async () => {
 				await assert.revert(
 					nativeEtherWrapper.burn('1', { from: account1 }),
@@ -179,7 +179,7 @@ contract('NativeEtherWrapper', async accounts => {
 				);
 			});
 		});
-		describe('when called with sETH balance', async () => {
+		describe('when called with mimicETH balance', async () => {
 			let sethBalanceBefore;
 			let ethBalanceBefore, ethBalanceAfter;
 			let tx;
@@ -200,7 +200,7 @@ contract('NativeEtherWrapper', async accounts => {
 				ethBalanceAfter = await web3.eth.getBalance(account1);
 			});
 
-			it('transfers sETH from msg.sender to contract', async () => {
+			it('transfers mimicETH from msg.sender to contract', async () => {
 				assert.bnEqual(await sETHSynth.balanceOf(account1), sethBalanceBefore.sub(amount));
 			});
 			it('calls EtherWrapper.burn(amount)', async () => {

@@ -164,27 +164,27 @@ const defaults = {
 	CROSS_DOMAIN_RELAY_GAS_LIMIT: `${8e6}`,
 
 	COLLATERAL_MANAGER: {
-		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
-		SHORTS: ['sBTC', 'sETH'],
+		SYNTHS: ['mimicUSD', 'sBTC', 'mimicETH'],
+		SHORTS: ['sBTC', 'mimicETH'],
 		MAX_DEBT: w3utils.toWei('75000000'), // 75 million sUSD
 		MAX_SKEW_RATE: w3utils.toWei('0.2'),
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
 	COLLATERAL_ETH: {
-		SYNTHS: ['sUSD', 'sETH'],
+		SYNTHS: ['mimicUSD', 'mimicETH'],
 		MIN_CRATIO: w3utils.toWei('1.3'),
 		MIN_COLLATERAL: w3utils.toWei('2'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_RENBTC: {
-		SYNTHS: ['sUSD', 'sBTC'],
+		SYNTHS: ['mimicUSD', 'sBTC'],
 		MIN_CRATIO: w3utils.toWei('1.3'),
 		MIN_COLLATERAL: w3utils.toWei('0.05'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_SHORT: {
-		SYNTHS: ['sBTC', 'sETH'],
+		SYNTHS: ['sBTC', 'mimicETH'],
 		MIN_CRATIO: w3utils.toWei('1.2'),
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
@@ -342,7 +342,7 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 	return Object.entries(feeds).reduce((memo, [asset, entry]) => {
 		memo[asset] = Object.assign(
 			// standalone feeds are those without a synth using them
-			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
+			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses mimicETH rate or is
 			// removed from the system
 			{ standalone: !synths.find(synth => synth.asset === asset) || asset === 'ETH' },
 			assets[asset],
@@ -581,13 +581,13 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 	return [
 		Object.assign(
 			{
-				symbol: 'SNX',
-				asset: 'SNX',
+				symbol: 'MIME',
+				asset: 'MIME',
 				name: 'Synthetix',
 				address: targets.ProxyERC20.address,
 				decimals: 18,
 			},
-			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
+			feeds['MIME'].feed ? { feed: feeds['MIME'].feed } : {}
 		),
 	].concat(
 		synths
@@ -596,7 +596,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: synth.name,
 				asset: synth.asset,
 				name: synth.description,
-				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
+				address: (targets[`Proxy${synth.name === 'mimicUSD' ? 'ERC20sUSD' : synth.name}`] || {})
 					.address,
 				index: synth.index,
 				decimals: 18,

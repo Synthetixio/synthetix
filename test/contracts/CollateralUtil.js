@@ -17,8 +17,8 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('CollateralUtil', async accounts => {
-	const sUSD = toBytes32('sUSD');
-	const sETH = toBytes32('sETH');
+	const mimicUSD = toBytes32('mimicUSD');
+	const mimicETH = toBytes32('mimicETH');
 	const sBTC = toBytes32('sBTC');
 
 	const oneRenBTC = web3.utils.toBN('100000000');
@@ -85,7 +85,7 @@ contract('CollateralUtil', async accounts => {
 	};
 
 	const setupMultiCollateral = async () => {
-		synths = ['sUSD', 'sBTC'];
+		synths = ['mimicUSD', 'sBTC'];
 		({
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -154,13 +154,13 @@ contract('CollateralUtil', async accounts => {
 
 		await cerc20.addSynths(
 			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
-			['sUSD', 'sBTC'].map(toBytes32),
+			['mimicUSD', 'sBTC'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addSynths(
 			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
-			['sUSD', 'sBTC'].map(toBytes32),
+			['mimicUSD', 'sBTC'].map(toBytes32),
 			{ from: owner }
 		);
 		// rebuild the cache to add the synths we need.
@@ -202,7 +202,7 @@ contract('CollateralUtil', async accounts => {
 		 * D = debt balance in sUSD
 		 * V = Collateral VALUE in sUSD
 		 * P = liquidation penalty
-		 * Calculates amount of sUSD = (D - V * r) / (1 - (1 + P) * r)
+		 * Calculates amount of mimicUSD = (D - V * r) / (1 - (1 + P) * r)
 		 *
 		 * To go back to another synth, remember to do effective value
 		 */

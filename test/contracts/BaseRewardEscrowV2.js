@@ -97,7 +97,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		describe('When appending vesting entry via feePool', async () => {
 			let duration = YEAR;
 			it('should revert appending a vesting entry from account1', async () => {
-				// Transfer of SNX to the escrow must occur before creating an entry
+				// Transfer of MIME to the escrow must occur before creating an entry
 				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
 
 				await assert.revert(
@@ -108,7 +108,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 			});
 			it('should revert appending a vesting entry with a zero amount', async () => {
-				// Transfer of SNX to the escrow must occur before creating an entry
+				// Transfer of MIME to the escrow must occur before creating an entry
 				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1'));
 
 				await assert.revert(
@@ -118,8 +118,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 					'Quantity cannot be zero'
 				);
 			});
-			it('should revert appending a vesting entry if there is not enough SNX in the contracts balance', async () => {
-				// Transfer of SNX to the escrow must occur before creating an entry
+			it('should revert appending a vesting entry if there is not enough MIME in the contracts balance', async () => {
+				// Transfer of MIME to the escrow must occur before creating an entry
 				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1'));
 
 				await assert.revert(
@@ -132,7 +132,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			it('should revert appending a vesting entry if the duration is 0', async () => {
 				duration = 0;
 
-				// Transfer of SNX to the escrow must occur before creating an entry
+				// Transfer of MIME to the escrow must occur before creating an entry
 				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
 
 				await assert.revert(
@@ -145,7 +145,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			it('should revert appending a vesting entry if the duration is > max_duration', async () => {
 				duration = (await baseRewardEscrowV2.max_duration()).add(toUnit(1));
 
-				// Transfer of SNX to the escrow must occur before creating an entry
+				// Transfer of MIME to the escrow must occur before creating an entry
 				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
 
 				await assert.revert(
@@ -155,7 +155,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					'Cannot escrow with 0 duration OR above max_duration'
 				);
 			});
-			describe('When successfully appending new escrow entry for account 1 with 10 SNX', () => {
+			describe('When successfully appending new escrow entry for account 1 with 10 MIME', () => {
 				let entryID, nextEntryIdAfter, now, escrowAmount;
 				beforeEach(async () => {
 					duration = 1 * YEAR;
@@ -166,7 +166,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 					escrowAmount = toUnit('10');
 
-					// Transfer of SNX to the escrow must occur before creating an entry
+					// Transfer of MIME to the escrow must occur before creating an entry
 					mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
 
 					// Append vesting entry
@@ -188,10 +188,10 @@ contract('BaseRewardEscrowV2', async accounts => {
 				it('Should increment the nextEntryID', async () => {
 					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
 				});
-				it('Account 1 should have balance of 10 SNX', async () => {
+				it('Account 1 should have balance of 10 MIME', async () => {
 					assert.bnEqual(await baseRewardEscrowV2.balanceOf(account1), escrowAmount);
 				});
-				it('totalEscrowedBalance of the contract should be 10 SNX', async () => {
+				it('totalEscrowedBalance of the contract should be 10 MIME', async () => {
 					assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount);
 				});
 				it('Account1 should have totalVested Account Balance of 0', async () => {
@@ -206,7 +206,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 						timeElapsed = YEAR / 2;
 						await fastForward(timeElapsed);
 					});
-					it('then the vesting entry has 0 snx claimable', async () => {
+					it('then the vesting entry has 0 mime claimable', async () => {
 						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
 						assert.bnEqual(claimable, 0);
 					});
@@ -301,10 +301,10 @@ contract('BaseRewardEscrowV2', async accounts => {
 			it('Should increment the nextEntryID', async () => {
 				assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
 			});
-			it('totalEscrowedBalance of the contract should be 10 SNX', async () => {
+			it('totalEscrowedBalance of the contract should be 10 MIME', async () => {
 				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount);
 			});
-			it('Account1 should have balance of 10 SNX', async () => {
+			it('Account1 should have balance of 10 MIME', async () => {
 				assert.bnEqual(await baseRewardEscrowV2.balanceOf(account1), escrowAmount);
 			});
 			it('Account1 should have totalVested Account Balance of 0', async () => {
@@ -320,11 +320,11 @@ contract('BaseRewardEscrowV2', async accounts => {
 		let mockedSynthetix;
 
 		beforeEach(async () => {
-			// Mock SNX ERC20
+			// Mock MIME ERC20
 			({ token: mockedSynthetix } = await mockToken({
 				accounts,
 				name: 'Synthetix',
-				symbol: 'SNX',
+				symbol: 'MIME',
 			}));
 
 			// replace synthetix on resolver
@@ -344,7 +344,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// rebuild cache
 			await baseRewardEscrowV2.rebuildCache({ from: owner });
 
-			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			// Transfer of MIME to the escrow must occur before creating a vestinng entry
 			await mockedSynthetix.transfer(baseRewardEscrowV2.address, toUnit('1000'), {
 				from: owner,
 			});
@@ -399,7 +399,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 			});
 
-			it('should vest and transfer 0 SNX from contract to the user', async () => {
+			it('should vest and transfer 0 MIME from contract to the user', async () => {
 				claimableSNX = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
 
 				const escrowBalanceBefore = await mockedSynthetix.balanceOf(baseRewardEscrowV2.address);
@@ -426,7 +426,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				const vestingEntryAfter = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 
 				// claimableSNX is 0
-				assert.bnEqual(claimableSNX, 0);
+				assert.bnEqual(claimableMIME, 0);
 
 				// same total escrowed balance
 				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), totalEscrowedBalanceBefore);
@@ -464,7 +464,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				// fast forward to after escrow.endTime
 				fastForward(duration + 10);
 			});
-			it('should vest and transfer all the snx to the user', async () => {
+			it('should vest and transfer all the mime to the user', async () => {
 				await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
@@ -577,15 +577,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			describe('When another user (account 1) vests all their entries', () => {
-				it('should vest all entries and transfer snx to the user', async () => {
+				it('should vest all entries and transfer mime to the user', async () => {
 					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 						from: account2,
 					});
 
-					// Check account1 has no SNX in their balance
+					// Check account1 has no MIME in their balance
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
 
-					// Check account2 has no SNX in their balance
+					// Check account2 has no MIME in their balance
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
 					// Check rewardEscrow has all the SNX
@@ -596,7 +596,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 
-			it('should vest all entries and transfer snx from contract to the user', async () => {
+			it('should vest all entries and transfer mime from contract to the user', async () => {
 				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
@@ -722,15 +722,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			describe('When another user (account 1) vests all their entries', () => {
-				it('should vest all entries and transfer snx to the user', async () => {
+				it('should vest all entries and transfer mime to the user', async () => {
 					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 						from: account2,
 					});
 
-					// Check account1 has no SNX in their balance
+					// Check account1 has no MIME in their balance
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
 
-					// Check account2 has no SNX in their balance
+					// Check account2 has no MIME in their balance
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
 					// Check rewardEscrow has all the SNX
@@ -747,7 +747,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					await fastForward(duration + WEEK * 2);
 				});
 
-				it('should vest only first 2 entries and transfer snx from contract to the user', async () => {
+				it('should vest only first 2 entries and transfer mime from contract to the user', async () => {
 					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 						from: account1,
 					});
@@ -790,7 +790,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 						from: account1,
 					});
 
-					// This account should have any 500 SNX escrowed
+					// This account should have any 500 MIME escrowed
 					escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
 					assert.bnEqual(escrowedAccountBalance, escrowAmount3);
 				});
@@ -864,7 +864,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		const escrowAmounts = [toUnit('200'), toUnit('300'), toUnit('500')];
 		let entryID1, entryID2, entryID3;
 		beforeEach(async () => {
-			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			// Transfer of MIME to the escrow must occur before creating a vestinng entry
 			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
 
 			// Add a few vesting entries as the feepool address
@@ -914,7 +914,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		const escrowAmount = toUnit(1);
 		const numberOfEntries = 260; // 5 years of entries
 		beforeEach(async () => {
-			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			// Transfer of MIME to the escrow must occur before creating a vestinng entry
 			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
 
 			// add a 260 escrow entries
@@ -959,7 +959,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		let escrowAmount1, escrowAmount2, escrowAmount3, entryID1, entryID2, entryID3;
 
 		beforeEach(async () => {
-			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			// Transfer of MIME to the escrow must occur before creating a vestinng entry
 			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
 
 			escrowAmount1 = toUnit('200');

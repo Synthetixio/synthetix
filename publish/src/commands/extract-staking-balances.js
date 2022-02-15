@@ -48,7 +48,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 
 	// The address of the inverse synth that is about to be purged.
 	// Note that this must be the PROXY address, where Transfer events are emitted from.
-	const iSynthContract = getTarget({ contract: `Proxy${synth === 'sUSD' ? 'ERC20sUSD' : synth}` });
+	const iSynthContract = getTarget({ contract: `Proxy${synth === 'mimicUSD' ? 'ERC20sUSD' : synth}` });
 
 	if (!iSynthContract) {
 		throw new Error(`Cannot find synth contract for synth: "${synth}"`);
@@ -111,9 +111,9 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	);
 
 	// The exchange fee incurred when users are purged into sUSD
-	const exchangeFee = await SystemSettings.exchangeFeeRate(toBytes32('sUSD'));
+	const exchangeFee = await SystemSettings.exchangeFeeRate(toBytes32('mimicUSD'));
 
-	console.log(gray(`Exchange fee of sUSD is`), yellow(ethers.utils.formatEther(exchangeFee)));
+	console.log(gray(`Exchange fee of mimicUSD is`), yellow(ethers.utils.formatEther(exchangeFee)));
 
 	/** *********** --------------------- *********** **/
 
@@ -204,7 +204,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 
 	// Computes the balances owed to each account
 	function computeOwedBalances(balances) {
-		console.log(`\nComputing owed sUSD balances for accounts using parameters:`);
+		console.log(`\nComputing owed mimicUSD balances for accounts using parameters:`);
 		console.log(`    Price: ${ethers.utils.formatEther(frozenPrice)}`);
 		console.log(
 			`    Exchange Fee: ${ethers.utils.formatEther(
@@ -232,7 +232,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 		const totalOwed = result.reduce((total, curr) => total.add(curr.owed), ethers.constants.Zero);
 
 		console.log(`\n${ethers.utils.formatEther(totalStaked, 'ether')} staked in total.`);
-		console.log(`${ethers.utils.formatEther(totalOwed, 'ether')} total sUSD owed.\n`);
+		console.log(`${ethers.utils.formatEther(totalOwed, 'ether')} total mimicUSD owed.\n`);
 		return result;
 	}
 

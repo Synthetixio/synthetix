@@ -30,8 +30,8 @@ contract('ShortingRewards', accounts => {
 		account2,
 	] = accounts;
 
-	const sUSD = toBytes32('sUSD');
-	const sETH = toBytes32('sETH');
+	const mimicUSD = toBytes32('mimicUSD');
+	const mimicETH = toBytes32('mimicETH');
 	const iETH = toBytes32('iETH');
 	const sBTC = toBytes32('sBTC');
 	const iBTC = toBytes32('iBTC');
@@ -103,7 +103,7 @@ contract('ShortingRewards', accounts => {
 	});
 
 	before(async () => {
-		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
+		synths = ['mimicUSD', 'sBTC', 'mimicETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -182,13 +182,13 @@ contract('ShortingRewards', accounts => {
 
 		await short.addSynths(
 			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+			['sBTC', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 
 		await manager.addShortableSynths(
 			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+			['sBTC', 'mimicETH'].map(toBytes32),
 			{ from: owner }
 		);
 

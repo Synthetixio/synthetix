@@ -35,13 +35,13 @@ const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, dexPriceAggregator, accountOne, accountTwo] = accounts;
-	const [SNX, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, GOLD, fastGasPrice] = [
-		'SNX',
+	const [MIME, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, GOLD, fastGasPrice] = [
+		'MIME',
 		'sJPY',
-		'sETH',
+		'mimicETH',
 		'sXTZ',
 		'sBNB',
-		'sUSD',
+		'mimicUSD',
 		'sEUR',
 		'sAUD',
 		'GOLD',
@@ -74,7 +74,7 @@ contract('Exchange Rates', async accounts => {
 				assert.equal(await instance.owner(), owner);
 			});
 
-			it('returns correct values for sUSD after deployment ', async () => {
+			it('returns correct values for mimicUSD after deployment ', async () => {
 				assert.bnEqual(await instance.rateForCurrency(sUSD), toUnit('1'));
 				assert.equal(await instance.lastRateUpdateTimes(sUSD), 0);
 			});
@@ -98,7 +98,7 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('rateIsStale()', () => {
-			it('should never allow sUSD to go stale via rateIsStale', async () => {
+			it('should never allow mimicUSD to go stale via rateIsStale', async () => {
 				await fastForward(await instance.rateStalePeriod());
 				const rateIsStale = await instance.rateIsStale(sUSD);
 				assert.equal(rateIsStale, false);
@@ -124,17 +124,17 @@ contract('Exchange Rates', async accounts => {
 		describe('anyRateIsInvalid()', () => {
 			describe('stale scenarios', () => {
 				it('anyRateIsInvalid conforms to rateStalePeriod', async () => {
-					await setupAggregators([SNX, GOLD]);
+					await setupAggregators([MIME, GOLD]);
 
-					await updateRates([SNX, GOLD], [toUnit(0.1), toUnit(0.2)]);
+					await updateRates([MIME, GOLD], [toUnit(0.1), toUnit(0.2)]);
 
-					assert.equal(await instance.anyRateIsInvalid([SNX, GOLD]), false);
+					assert.equal(await instance.anyRateIsInvalid([MIME, GOLD]), false);
 
 					await fastForward(await instance.rateStalePeriod());
-					assert.equal(await instance.anyRateIsInvalid([SNX, GOLD]), true);
+					assert.equal(await instance.anyRateIsInvalid([MIME, GOLD]), true);
 
-					await updateRates([SNX, GOLD], [toUnit(0.1), toUnit(0.2)]);
-					assert.equal(await instance.anyRateIsInvalid([SNX, GOLD]), false);
+					await updateRates([MIME, GOLD], [toUnit(0.1), toUnit(0.2)]);
+					assert.equal(await instance.anyRateIsInvalid([MIME, GOLD]), false);
 				});
 
 				it('should be able to confirm no rates are stale from a subset', async () => {
@@ -390,11 +390,11 @@ contract('Exchange Rates', async accounts => {
 				});
 
 				it('should correctly calculate an exchange rate in effectiveValue()', async () => {
-					// 1 sUSD should be worth 2 sAUD.
+					// 1 mimicUSD should be worth 2 sAUD.
 					assert.bnEqual(await instance.effectiveValue(sUSD, toUnit('1'), sAUD), toUnit('2'));
 
-					// 10 SNX should be worth 1 sUSD.
-					assert.bnEqual(await instance.effectiveValue(SNX, toUnit('10'), sUSD), toUnit('1'));
+					// 10 MIME should be worth 1 sUSD.
+					assert.bnEqual(await instance.effectiveValue(MIME, toUnit('10'), sUSD), toUnit('1'));
 
 					// 2 sEUR should be worth 2.50 sUSD
 					assert.bnEqual(await instance.effectiveValue(sEUR, toUnit('2'), sUSD), toUnit('2.5'));
@@ -410,19 +410,19 @@ contract('Exchange Rates', async accounts => {
 					const amountOfSynthetixs = toUnit('10');
 					const amountOfEur = toUnit('0.8');
 
-					// Should now be able to convert from SNX to sEUR since they are both not stale.
-					assert.bnEqual(await instance.effectiveValue(SNX, amountOfSynthetixs, sEUR), amountOfEur);
+					// Should now be able to convert from MIME to sEUR since they are both not stale.
+					assert.bnEqual(await instance.effectiveValue(MIME, amountOfSynthetixs, sEUR), amountOfEur);
 				});
 
 				it('should return 0 when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
-					assert.equal(await instance.effectiveValue(SNX, toUnit('10'), toBytes32('XYZ')), 0);
+					assert.equal(await instance.effectiveValue(MIME, toUnit('10'), toBytes32('XYZ')), 0);
 				});
 
 				it('should revert when relying on a non-existing src rate in effectiveValue', async () => {
 					assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), SNX), 0);
 				});
 
-				it('effectiveValueAndRates() should return rates as well with sUSD on one side', async () => {
+				it('effectiveValueAndRates() should return rates as well with mimicUSD on one side', async () => {
 					const { value, sourceRate, destinationRate } = await instance.effectiveValueAndRates(
 						sUSD,
 						toUnit('1'),
@@ -434,7 +434,7 @@ contract('Exchange Rates', async accounts => {
 					assert.bnEqual(destinationRate, toUnit('0.5'));
 				});
 
-				it('effectiveValueAndRates() should return rates as well with sUSD on the other side', async () => {
+				it('effectiveValueAndRates() should return rates as well with mimicUSD on the other side', async () => {
 					const { value, sourceRate, destinationRate } = await instance.effectiveValueAndRates(
 						sAUD,
 						toUnit('1'),
@@ -1241,9 +1241,9 @@ contract('Exchange Rates', async accounts => {
 
 		describe('atomicEquivalentForDexPricing', () => {
 			const snxEquivalentAddr = accountOne;
-			describe('when equivalent for SNX is changed in the system settings', () => {
+			describe('when equivalent for MIME is changed in the system settings', () => {
 				beforeEach(async () => {
-					await systemSettings.setAtomicEquivalentForDexPricing(SNX, snxEquivalentAddr, {
+					await systemSettings.setAtomicEquivalentForDexPricing(MIME, snxEquivalentAddr, {
 						from: owner,
 					});
 				});
@@ -1254,10 +1254,10 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('atomicPriceBuffer', () => {
-			describe('when price buffer for SNX is changed in the system settings', () => {
+			describe('when price buffer for MIME is changed in the system settings', () => {
 				const priceBuffer = toUnit('0.003');
 				beforeEach(async () => {
-					await systemSettings.setAtomicPriceBuffer(SNX, priceBuffer, { from: owner });
+					await systemSettings.setAtomicPriceBuffer(MIME, priceBuffer, { from: owner });
 				});
 				it('then rateStalePeriod is correctly updated', async () => {
 					assert.bnEqual(await instance.atomicPriceBuffer(SNX), priceBuffer);
@@ -1269,7 +1269,7 @@ contract('Exchange Rates', async accounts => {
 			beforeEach(async () => {
 				const MockToken = artifacts.require('MockToken');
 				const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
-				// set sETH equivalent but don't set sUSD equivalent
+				// set mimicETH equivalent but don't set mimicUSD equivalent
 				await systemSettings.setAtomicEquivalentForDexPricing(
 					sETH,
 					sethDexEquivalentToken.address,
@@ -1323,7 +1323,7 @@ contract('Exchange Rates', async accounts => {
 					// For simplicity and to align it with pDex, the given pCl rate is priced on the dest token.
 					// Internally, however, the CL aggregators are expected to be priced in USD and with 8 decimals.
 					// So if the source token is USD, we need to inverse the given CL rate for the CL aggregator.
-					const pClInUsdIn8 = srcToken === sUSD ? divideDecimal(unitIn8, pClIn8, unitIn8) : pClIn8;
+					const pClInUsdIn8 = srcToken === mimicUSD ? divideDecimal(unitIn8, pClIn8, unitIn8) : pClIn8;
 					const pClInUsdIn18 = divideDecimal(pClInUsdIn8, unitIn8); // divides with decimal base of 18
 
 					// Get potential outputs based on given rates
@@ -1365,7 +1365,7 @@ contract('Exchange Rates', async accounts => {
 
 					it('provides the correct system source rate', () => {
 						if (srcToken === sUSD) {
-							assert.bnEqual(rates.systemSourceRate, one); // sUSD is always one
+							assert.bnEqual(rates.systemSourceRate, one); // mimicUSD is always one
 						} else {
 							assert.bnEqual(rates.systemSourceRate, pClInUsdIn18); // system reports prices in 18 decimals
 						}
@@ -1373,7 +1373,7 @@ contract('Exchange Rates', async accounts => {
 
 					it('provides the correct system destination rate', () => {
 						if (destToken === sUSD) {
-							assert.bnEqual(rates.systemDestinationRate, one); // sUSD is always one
+							assert.bnEqual(rates.systemDestinationRate, one); // mimicUSD is always one
 						} else {
 							assert.bnEqual(rates.systemDestinationRate, pClInUsdIn18); // system reports prices in 18 decimals
 						}
@@ -1440,7 +1440,7 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
-			describe('trades sUSD -> sETH', () => {
+			describe('trades mimicUSD -> sETH', () => {
 				const amountIn = toUnit('1000');
 				const srcToken = sUSD;
 				const destToken = sETH;
@@ -1542,7 +1542,7 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
-			describe('trades sETH -> sUSD', () => {
+			describe('trades mimicETH -> sUSD', () => {
 				const amountIn = toUnit('10');
 				const srcToken = sETH;
 				const destToken = sUSD;
@@ -1780,7 +1780,7 @@ contract('Exchange Rates', async accounts => {
 			describe('when consideration window is changed in the system settings', () => {
 				const considerationWindow = toBN(600);
 				beforeEach(async () => {
-					await systemSettings.setAtomicVolatilityConsiderationWindow(SNX, considerationWindow, {
+					await systemSettings.setAtomicVolatilityConsiderationWindow(MIME, considerationWindow, {
 						from: owner,
 					});
 				});
@@ -1794,10 +1794,10 @@ contract('Exchange Rates', async accounts => {
 		});
 
 		describe('atomicVolatilityUpdateThreshold', () => {
-			describe('when threshold for SNX is changed in the system settings', () => {
+			describe('when threshold for MIME is changed in the system settings', () => {
 				const updateThreshold = toBN(3);
 				beforeEach(async () => {
-					await systemSettings.setAtomicVolatilityUpdateThreshold(SNX, updateThreshold, {
+					await systemSettings.setAtomicVolatilityUpdateThreshold(MIME, updateThreshold, {
 						from: owner,
 					});
 				});
@@ -2018,7 +2018,7 @@ contract('Exchange Rates', async accounts => {
 			}));
 
 			// remove the pre-configured aggregator
-			await instance.removeAggregator(toBytes32('SNX'), { from: owner });
+			await instance.removeAggregator(toBytes32('MIME'), { from: owner });
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });
@@ -2063,7 +2063,7 @@ contract('Exchange Rates', async accounts => {
 			}));
 
 			// remove the pre-configured aggregator
-			await instance.removeAggregator(toBytes32('SNX'), { from: owner });
+			await instance.removeAggregator(toBytes32('MIME'), { from: owner });
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });

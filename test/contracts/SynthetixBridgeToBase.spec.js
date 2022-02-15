@@ -32,14 +32,14 @@ contract('SynthetixBridgeToBase (spec tests) @ovm-skip', accounts => {
 			it('withdraw() should fail', async () => {
 				await assert.revert(
 					synthetixBridgeToBase.withdraw('1', { from: user }),
-					'Not enough transferable SNX'
+					'Not enough transferable MIME'
 				);
 			});
 
 			it('withdrawTo() should fail', async () => {
 				await assert.revert(
 					synthetixBridgeToBase.withdrawTo(randomAddress, '1', { from: user }),
-					'Not enough transferable SNX'
+					'Not enough transferable MIME'
 				);
 			});
 		});

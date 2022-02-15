@@ -6157,7 +6157,7 @@
 				{
 					"constant": true,
 					"inputs": [],
-					"name": "sUSD",
+					"name": "mimicUSD",
 					"outputs": [
 						{
 							"internalType": "bytes32",

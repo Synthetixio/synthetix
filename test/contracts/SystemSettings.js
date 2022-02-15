@@ -24,7 +24,7 @@ contract('SystemSettings', async accounts => {
 	let short, synths, systemSettings;
 
 	const setupSettings = async () => {
-		synths = ['sUSD', 'sBTC', 'sETH'];
+		synths = ['mimicUSD', 'sBTC', 'mimicETH'];
 		({ SystemSettings: systemSettings, CollateralShort: short } = await setupAllContracts({
 			accounts,
 			synths,
@@ -695,7 +695,7 @@ contract('SystemSettings', async accounts => {
 
 	describe('setExchangeFeeRateForSynths()', () => {
 		describe('Given synth exchange fee rates to set', async () => {
-			const [sUSD, sETH, sAUD, sBTC] = ['sUSD', 'sETH', 'sAUD', 'sBTC'].map(toBytes32);
+			const [sUSD, sETH, sAUD, sBTC] = ['mimicUSD', 'mimicETH', 'sAUD', 'sBTC'].map(toBytes32);
 			const fxBIPS = toUnit('0.01');
 			const cryptoBIPS = toUnit('0.03');
 
@@ -1070,7 +1070,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicEquivalentForDexPricing', () => {
-		const sETH = toBytes32('sETH');
+		const mimicETH = toBytes32('mimicETH');
 		const [equivalentAsset, secondEquivalentAsset] = accounts.slice(accounts.length - 2);
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -1124,7 +1124,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicExchangeFeeRate', () => {
-		const sETH = toBytes32('sETH');
+		const mimicETH = toBytes32('mimicETH');
 		const feeBips = toUnit('0.03');
 		const secondFeeBips = toUnit('0.05');
 		it('can only be invoked by owner', async () => {
@@ -1178,7 +1178,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicPriceBuffer', () => {
-		const sETH = toBytes32('sETH');
+		const mimicETH = toBytes32('mimicETH');
 		const buffer = toUnit('0.5');
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -1218,7 +1218,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicVolatilityConsiderationWindow', () => {
-		const sETH = toBytes32('sETH');
+		const mimicETH = toBytes32('mimicETH');
 		const considerationWindow = toBN('600'); // 10 min
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -1299,7 +1299,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicVolatilityUpdateThreshold', () => {
-		const sETH = toBytes32('sETH');
+		const mimicETH = toBytes32('mimicETH');
 		const threshold = toBN('3');
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({

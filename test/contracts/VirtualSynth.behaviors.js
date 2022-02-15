@@ -20,7 +20,7 @@ module.exports = function({ accounts }) {
 
 	return {
 		// note: use fat-arrow to persist context rather
-		whenInstantiated: ({ amount, user, synth = 'sETH' }, cb) => {
+		whenInstantiated: ({ amount, user, synth = 'mimicETH' }, cb) => {
 			describe(`when instantiated for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
 					this.instance = await VirtualSynth.new();

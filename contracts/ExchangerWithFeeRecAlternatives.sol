@@ -135,10 +135,10 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        // One of src/dest synth must be sUSD (checked below for gas optimization reasons)
+        // One of src/dest synth must be mimicUSD (checked below for gas optimization reasons)
         require(
             !exchangeRates().synthTooVolatileForAtomicExchange(
-                sourceCurrencyKey == sUSD ? destinationCurrencyKey : sourceCurrencyKey
+                sourceCurrencyKey == mimicUSD ? destinationCurrencyKey : sourceCurrencyKey
             ),
             "Src/dest synth too volatile"
         );
@@ -180,20 +180,20 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             "Atomic rate deviates too much"
         );
 
-        // Ensure src/dest synth is sUSD and determine sUSD value of exchange
-        uint sourceSusdValue;
-        if (sourceCurrencyKey == sUSD) {
+        // Ensure src/dest synth is mimicUSD and determine mimicUSD value of exchange
+        uint sourceMimicUSDValue;
+        if (sourceCurrencyKey == mimicUSD) {
             // Use after-settled amount as this is amount converted (not sourceAmount)
-            sourceSusdValue = sourceAmountAfterSettlement;
-        } else if (destinationCurrencyKey == sUSD) {
-            // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
-            sourceSusdValue = systemConvertedAmount;
+            sourceMimicUSDValue = sourceAmountAfterSettlement;
+        } else if (destinationCurrencyKey == mimicUSD) {
+            // In this case the systemConvertedAmount would be the fee-free mimicUSD value of the source synth
+            sourceMimicUSDValue = systemConvertedAmount;
         } else {
-            revert("Src/dest synth must be sUSD");
+            revert("Src/dest synth must be mimicUSD");
         }
 
         // Check and update atomic volume limit
-        _checkAndUpdateAtomicVolume(sourceSusdValue);
+        _checkAndUpdateAtomicVolume(sourceMimicUSDValue);
 
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -210,18 +210,18 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            // Normalize fee to sUSD
+            // Normalize fee to mimicUSD
             // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, mimicUSD);
 
-            // Remit the fee in sUSDs
-            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+            // Remit the fee in mimicUSDs
+            issuer().synths(mimicUSD).issue(feePool().FEE_ADDRESS(), fee);
 
             // Tell the fee pool about this
             feePool().recordFeePaid(fee);
         }
 
-        // Note: As of this point, `fee` is denominated in sUSD.
+        // Note: As of this point, `fee` is denominated in mimicUSD.
 
         // Note: this update of the debt snapshot will not be accurate because the atomic exchange
         // was executed with a different rate than the system rate. To be perfect, issuance data,
@@ -257,11 +257,11 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // No need to persist any exchange information, as no settlement is required for atomic exchanges
     }
 
-    function _checkAndUpdateAtomicVolume(uint sourceSusdValue) internal {
+    function _checkAndUpdateAtomicVolume(uint sourceMimicUSDValue) internal {
         uint currentVolume =
             uint(lastAtomicVolume.time) == block.timestamp
-                ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
-                : sourceSusdValue;
+                ? uint(lastAtomicVolume.volume).add(sourceMimicUSDValue)
+                : sourceMimicUSDValue;
         require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed volume limit");
         lastAtomicVolume.time = uint64(block.timestamp);
         lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above

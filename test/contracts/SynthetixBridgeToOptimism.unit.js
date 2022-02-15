@@ -420,7 +420,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						txn = await instance.depositReward(amount, { from: user1 });
 					});
 
-					it('then SNX is transferred from the account to the bridge escrow', async () => {
+					it('then MIME is transferred from the account to the bridge escrow', async () => {
 						assert.equal(synthetix.smocked.transferFrom.calls[0][0], user1);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][1], SynthetixBridgeEscrow);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][2].toString(), amount);
@@ -533,7 +533,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						});
 					});
 
-					it('then SNX is minted via MintableSynthetix.finalizeWithdrawal', async () => {
+					it('then MIME is minted via MintableSynthetix.finalizeWithdrawal', async () => {
 						assert.equal(synthetix.smocked.transferFrom.calls.length, 1);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][0], SynthetixBridgeEscrow);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][1], user1);

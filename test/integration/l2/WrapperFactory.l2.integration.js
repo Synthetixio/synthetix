@@ -42,7 +42,7 @@ describe('WrapperFactory integration tests (L2)', () => {
 
 		await WrapperFactory.createWrapper(
 			ctx.contracts.WETH.address,
-			toBytes32('sETH'),
+			toBytes32('mimicETH'),
 			toBytes32('SynthsETH')
 		);
 

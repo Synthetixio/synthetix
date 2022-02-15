@@ -21,7 +21,7 @@ contract('ExchangeState', accounts => {
 		account1,
 		account2,
 	] = accounts;
-	const [sUSD, sBTC, sAUD] = ['sUSD', 'sBTC', 'sAUD'].map(toBytes32);
+	const [sUSD, sBTC, sAUD] = ['mimicUSD', 'sBTC', 'sAUD'].map(toBytes32);
 
 	let exchangeState;
 	beforeEach(async () => {

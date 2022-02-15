@@ -20,9 +20,9 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Available Synths which can be used with the system
     string public constant TOKEN_NAME = "Synthetix Network Token";
-    string public constant TOKEN_SYMBOL = "SNX";
+    string public constant TOKEN_SYMBOL = "MIME";
     uint8 public constant DECIMALS = 18;
-    bytes32 public constant sUSD = "sUSD";
+    bytes32 public constant mimicUSD = "mimicUSD";
 
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -143,8 +143,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         if (issuer().debtBalanceOf(account, sUSD) > 0) {
             (uint transferable, bool anyRateIsInvalid) =
                 issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
-            require(value <= transferable, "Cannot transfer staked or escrowed SNX");
-            require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
+            require(value <= transferable, "Cannot transfer staked or escrowed MIME");
+            require(!anyRateIsInvalid, "A synth or MIME rate is invalid");
         }
         
         return true;
@@ -308,7 +308,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
-        // Transfer SNX redeemed to messageSender
+        // Transfer MIME redeemed to messageSender
         // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
         return _transferByProxy(account, messageSender, totalRedeemed);
     }

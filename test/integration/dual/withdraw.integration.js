@@ -18,7 +18,7 @@ describe('withdraw() integration tests (L1, L2)', () => {
 
 	let withdrawalReceipt;
 
-	describe('when the owner withdraws SNX', () => {
+	describe('when the owner withdraws MIME', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToBase } = ctx.l2.contracts);
 			({ Synthetix: SynthetixL1 } = ctx.l1.contracts);

@@ -16,7 +16,7 @@ contract('SynthUtil', accounts => {
 	const [, ownerAccount, , account2] = accounts;
 	let synthUtil, sUSDContract, synthetix, exchangeRates, systemSettings, debtCache;
 
-	const [sUSD, sBTC, iBTC, SNX] = ['sUSD', 'sBTC', 'iBTC', 'SNX'].map(toBytes32);
+	const [sUSD, sBTC, iBTC, SNX] = ['mimicUSD', 'sBTC', 'iBTC', 'MIME'].map(toBytes32);
 	const synthKeys = [sUSD, sBTC, iBTC];
 	const synthPrices = [toUnit('1'), toUnit('5000'), toUnit('5000')];
 
@@ -30,7 +30,7 @@ contract('SynthUtil', accounts => {
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['sUSD', 'sBTC', 'iBTC'],
+			synths: ['mimicUSD', 'sBTC', 'iBTC'],
 			contracts: [
 				'SynthUtil',
 				'Synthetix',
@@ -86,7 +86,7 @@ contract('SynthUtil', accounts => {
 			});
 		});
 		describe('synthsBalances', () => {
-			it('should return the balance and its value in sUSD for every synth in the wallet', async () => {
+			it('should return the balance and its value in mimicUSD for every synth in the wallet', async () => {
 				const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountToExchange, sBTC);
 				assert.deepEqual(await synthUtil.synthsBalances(account2), [
 					[sUSD, sBTC, iBTC],

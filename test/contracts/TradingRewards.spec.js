@@ -21,7 +21,7 @@ const { toBytes32 } = require('../..');
 contract('TradingRewards', accounts => {
 	const [, owner, account1] = accounts;
 
-	const synths = ['sUSD', 'sETH', 'sBTC', 'SNX'];
+	const synths = ['mimicUSD', 'mimicETH', 'sBTC', 'MIME'];
 	const synthKeys = synths.map(toBytes32);
 	const [sUSD, sETH, sBTC, SNX] = synthKeys;
 
