@@ -160,14 +160,34 @@ const deployMigration = async ({
 	for (const addr of requiringOwnership) {
 		console.log('Nominating ownership: ', addr);
 
-		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
+		let nominateFuncName = 'nominateNewOwner';
+
+		let contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
+
+		try {
+			// test run
+			await contract.estimateGas.nominateNewOwner(deployedContract.address, {
+				from: await contract.owner(),
+			});
+		} catch (err) {
+			contract = new ethers.Contract(addr, compiled['LegacyOwned'].abi, signer);
+
+			// test run
+			// if it reverts here then failure here is appropriate for investigation
+			await contract.estimateGas.nominateOwner(deployedContract.address, {
+				from: await contract.owner(),
+			});
+
+			nominateFuncName = 'nominateOwner';
+		}
+
 		await performTransactionalStep({
 			account: signer.address,
 			contract: contract.address,
 			target: contract,
 			read: 'nominatedOwner',
 			expected: input => input === deployedContract.address,
-			write: 'nominateNewOwner',
+			write: nominateFuncName,
 			writeArg: [deployedContract.address],
 
 			signer,
@@ -246,7 +266,7 @@ async function verifyMigrationContract({ deployedContract, releaseName, buildPat
 			compilerversion: solcVersion,
 			optimizationUsed: 1,
 			runs,
-			apikey: process.env.ETHERSCAN_KEY,
+			apikey: useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY,
 		}),
 		{
 			headers: {
