@@ -135,6 +135,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         (sourceRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) {
+            destinationRate = sourceRate;
             value = sourceAmount;
         } else {
             (destinationRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
@@ -312,6 +313,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return false;
     }
 
+    /// this method checks whether any rate is:
+    /// 1. flagged
+    /// 2. stale with respect to current time (now)
     function anyRateIsInvalidAtRound(bytes32[] calldata currencyKeys, uint[] calldata roundIds)
         external
         view

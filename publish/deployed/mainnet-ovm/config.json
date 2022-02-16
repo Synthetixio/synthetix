@@ -163,5 +163,26 @@
 	},
 	"CollateralEth": {
 		"deploy": false
+	},
+	"StakingRewardssUSDDAIUniswapV3": {
+		"deploy": false
+	},
+	"StakingRewardsSNXWETHUniswapV3": {
+		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
+	},
+	"SynthetixDebtShare": {
+		"deploy": false
+	},
+	"TokenStatesSOL": {
+		"deploy": false
+	},
+	"ProxysSOL": {
+		"deploy": false
+	},
+	"SynthsSOL": {
+		"deploy": false
 	}
 }

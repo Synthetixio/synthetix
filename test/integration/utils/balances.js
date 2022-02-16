@@ -36,6 +36,12 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 			`Symbol ${symbol} not yet supported. TODO: Support via exchanging sUSD to other Synths.`
 		);
 	}
+
+	// sanity check
+	const newBalance = await _readBalance({ ctx, symbol, user });
+	if (newBalance.lt(amount)) {
+		throw new Error(`Failed to get required ${amount} ${symbol} for ${user.address}`);
+	}
 }
 
 async function _getETHFromOtherUsers({ ctx, user, amount }) {
@@ -143,10 +149,24 @@ async function _getsUSD({ ctx, user, amount }) {
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
 
+	const tmpWallet = await ethers.Wallet.createRandom().connect(ctx.provider);
+
+	await _getETHFromOtherUsers({
+		ctx,
+		symbol: 'ETH',
+		user: tmpWallet,
+		amount: ethers.utils.parseEther('1'),
+	});
+
+	tx = await Synthetix.transfer(tmpWallet.address, requiredSNX.mul(2));
+	await tx.wait();
+
+	Synthetix = Synthetix.connect(tmpWallet);
+
 	tx = await Synthetix.issueSynths(amount);
 	await tx.wait();
 
-	SynthsUSD = SynthsUSD.connect(ctx.users.owner);
+	SynthsUSD = SynthsUSD.connect(tmpWallet);
 
 	tx = await SynthsUSD.transfer(user.address, amount);
 	await tx.wait();

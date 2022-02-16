@@ -1556,7 +1556,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setExchangeMaxDynamicFee()', () => {
-		const maxDynamicFee = toUnit('1');
+		const maxDynamicFee = toUnit('0.05');
 		it('only owner can invoke', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setExchangeMaxDynamicFee,
@@ -1571,6 +1571,12 @@ contract('SystemSettings', async accounts => {
 			const actual = await systemSettings.exchangeMaxDynamicFee();
 			assert.bnEqual(actual, maxDynamicFee, 'Configured exchange max dynamic fee is set correctly');
 			assert.eventEqual(txn, 'ExchangeMaxDynamicFeeUpdated', [maxDynamicFee]);
+		});
+		it('when owner sets a value higher than MAX_EXCHANGE_FEE_RATE then revert', async () => {
+			await assert.revert(
+				systemSettings.setExchangeMaxDynamicFee(toUnit('11'), { from: owner }),
+				'MAX_EXCHANGE_FEE_RATE exceeded'
+			);
 		});
 	});
 });
