@@ -156,11 +156,19 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
-    function _debtSharesToIssuedSynth(uint debtAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
+    function _debtSharesToIssuedSynth(
+        uint debtAmount,
+        uint totalSystemValue,
+        uint totalDebtShares
+    ) internal pure returns (uint) {
         return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
     }
 
-    function _issuedSynthToDebtShares(uint sharesAmount, uint totalSystemValue, uint totalDebtShares) internal pure returns (uint) {
+    function _issuedSynthToDebtShares(
+        uint sharesAmount,
+        uint totalSystemValue,
+        uint totalDebtShares
+    ) internal pure returns (uint) {
         return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
     }
 
@@ -214,7 +222,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             bool anyRateIsInvalid
         )
     {
-
         // What's the total value of the system excluding ETH backed synths in their requested currency?
         (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynths(currencyKey, true);
 
@@ -245,7 +252,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             bool anyRateIsInvalid
         )
     {
-        (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), sUSD);
+        (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(
+            synthetixDebtShare().balanceOf(_issuer),
+            sUSD
+        );
         (uint issuable, bool isInvalid) = _maxIssuableSynths(_issuer);
         maxIssuable = issuable;
         anyRateIsInvalid = anyRateIsInvalid || isInvalid;
@@ -277,7 +287,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
         uint totalOwnedSynthetix = _collateral(_issuer);
 
-        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), SNX);
+        (uint debtBalance, , bool anyRateIsInvalid) =
+            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(_issuer), SNX);
 
         // it's more gas intensive to put this check here if they have 0 SNX, but it complies with the interface
         if (totalOwnedSynthetix == 0) return (0, anyRateIsInvalid);
@@ -578,7 +589,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint liquidationPenalty = liquidations().liquidationPenalty();
 
         // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
+            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
@@ -647,7 +659,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         bool issueMax
     ) internal {
-        (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
+        (uint maxIssuable, , uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
 
         if (!issueMax) {
@@ -710,7 +722,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             }
         }
 
-        (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(from), sUSD);
+        (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) =
+            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(from), sUSD);
         (uint maxIssuableSynthsForAccount, bool snxRateInvalid) = _maxIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
         require(existingDebt > 0, "No debt to forgive");
@@ -748,8 +761,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // in which case, the first account to mint gets the debt. yw.
         if (sds.totalSupply() == 0) {
             sds.mintShare(from, amount);
-        }
-        else {
+        } else {
             sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
     }
@@ -766,8 +778,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         if (debtToRemove == existingDebt) {
             sds.burnShare(from, currentDebtShare);
-        }
-        else {
+        } else {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
             sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
