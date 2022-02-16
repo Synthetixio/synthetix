@@ -16,8 +16,8 @@ contract('SynthUtil', accounts => {
 	const [, ownerAccount, , account2] = accounts;
 	let synthUtil, sUSDContract, synthetix, exchangeRates, systemSettings, debtCache;
 
-	const [sUSD, sBTC, iBTC, SNX] = ['mimicUSD', 'sBTC', 'iBTC', 'MIME'].map(toBytes32);
-	const synthKeys = [sUSD, sBTC, iBTC];
+	const [mimicUSD, sBTC, iBTC, SNX] = ['mimicUSD', 'sBTC', 'iBTC', 'MIME'].map(toBytes32);
+	const synthKeys = [mimicUSD, sBTC, iBTC];
 	const synthPrices = [toUnit('1'), toUnit('5000'), toUnit('5000')];
 
 	before(async () => {
@@ -78,18 +78,18 @@ contract('SynthUtil', accounts => {
 				from: ownerAccount,
 			});
 			await sUSDContract.transfer(account2, sUSDAmount, { from: ownerAccount });
-			await synthetix.exchange(sUSD, amountToExchange, sBTC, { from: account2 });
+			await synthetix.exchange(mimicUSD, amountToExchange, sBTC, { from: account2 });
 		});
 		describe('totalSynthsInKey', () => {
 			it('should return the total balance of synths into the specified currency key', async () => {
-				assert.bnEqual(await synthUtil.totalSynthsInKey(account2, sUSD), sUSDAmount);
+				assert.bnEqual(await synthUtil.totalSynthsInKey(account2, mimicUSD), sUSDAmount);
 			});
 		});
 		describe('synthsBalances', () => {
 			it('should return the balance and its value in mimicUSD for every synth in the wallet', async () => {
-				const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountToExchange, sBTC);
+				const effectiveValue = await exchangeRates.effectiveValue(mimicUSD, amountToExchange, sBTC);
 				assert.deepEqual(await synthUtil.synthsBalances(account2), [
-					[sUSD, sBTC, iBTC],
+					[mimicUSD, sBTC, iBTC],
 					[toUnit('50'), effectiveValue, 0],
 					[toUnit('50'), toUnit('50'), 0],
 				]);
@@ -102,7 +102,7 @@ contract('SynthUtil', accounts => {
 		});
 		describe('synthsTotalSupplies', () => {
 			it('should return the correct synth total supplies', async () => {
-				const effectiveValue = await exchangeRates.effectiveValue(sUSD, amountToExchange, sBTC);
+				const effectiveValue = await exchangeRates.effectiveValue(mimicUSD, amountToExchange, sBTC);
 				assert.deepEqual(await synthUtil.synthsTotalSupplies(), [
 					synthKeys,
 					[sUSDMinted.sub(amountToExchange), effectiveValue, 0],

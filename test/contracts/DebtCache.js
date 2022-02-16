@@ -26,7 +26,7 @@ const {
 } = require('../..');
 
 contract('DebtCache', async accounts => {
-	const [sUSD, sAUD, sEUR, MIME, sETH, ETH, iETH] = [
+	const [mimicUSD, sAUD, sEUR, MIME, sETH, ETH, iETH] = [
 		'mimicUSD',
 		'sAUD',
 		'sEUR',
@@ -35,7 +35,7 @@ contract('DebtCache', async accounts => {
 		'ETH',
 		'iETH',
 	].map(toBytes32);
-	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
+	const synthKeys = [mimicUSD, sAUD, sEUR, sETH, SNX];
 
 	const [deployerAccount, owner, , account1, account2] = accounts;
 
@@ -188,7 +188,7 @@ contract('DebtCache', async accounts => {
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
-			collatKey: sUSD,
+			collatKey: mimicUSD,
 			minColat: toUnit(1.2),
 			minSize: toUnit(0.1),
 		});
@@ -210,7 +210,7 @@ contract('DebtCache', async accounts => {
 
 		await short.addSynths(['SynthsETH'].map(toBytes32), ['mimicETH'].map(toBytes32), { from: owner });
 
-		await manager.addShortableSynths(['SynthsETH'].map(toBytes32), [sETH], {
+		await manager.addShortableSynths(['SynthsETH'].map(toBytes32), [mimicETH], {
 			from: owner,
 		});
 
@@ -396,7 +396,7 @@ contract('DebtCache', async accounts => {
 			// set up initial prices
 			await updateAggregatorRates(
 				exchangeRates,
-				[sAUD, sEUR, sETH],
+				[sAUD, sEUR, mimicETH],
 				['0.5', '2', '100'].map(toUnit)
 			);
 			await debtCache.takeDebtSnapshot();
@@ -419,7 +419,7 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('Live debt is reported accurately for individual currencies', async () => {
-				const result = await debtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
+				const result = await debtCache.currentSynthDebts([mimicUSD, sEUR, sAUD, mimicETH]);
 				const debts = result[0];
 
 				assert.bnEqual(debts[0], toUnit(100));
@@ -473,17 +473,17 @@ contract('DebtCache', async accounts => {
 			it('updates the cached values for all individual synths', async () => {
 				await updateAggregatorRates(
 					exchangeRates,
-					[sAUD, sEUR, sETH],
+					[sAUD, sEUR, mimicETH],
 					['1', '3', '200'].map(toUnit)
 				);
 				await debtCache.takeDebtSnapshot();
-				let debts = await debtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
+				let debts = await debtCache.currentSynthDebts([mimicUSD, sEUR, sAUD, mimicETH]);
 				assert.bnEqual(debts[0][0], toUnit(100));
 				assert.bnEqual(debts[0][1], toUnit(300));
 				assert.bnEqual(debts[0][2], toUnit(100));
 				assert.bnEqual(debts[0][3], toUnit(400));
 
-				debts = await debtCache.cachedSynthDebts([sUSD, sEUR, sAUD, sETH]);
+				debts = await debtCache.cachedSynthDebts([mimicUSD, sEUR, sAUD, mimicETH]);
 				assert.bnEqual(debts[0], toUnit(100));
 				assert.bnEqual(debts[1], toUnit(300));
 				assert.bnEqual(debts[2], toUnit(100));
@@ -564,7 +564,7 @@ contract('DebtCache', async accounts => {
 				await newDebtCache.rebuildCache();
 
 				assert.bnEqual(await newDebtCache.cachedDebt(), toUnit('0'));
-				assert.bnEqual(await newDebtCache.cachedSynthDebt(sUSD), toUnit('0'));
+				assert.bnEqual(await newDebtCache.cachedSynthDebt(mimicUSD), toUnit('0'));
 				assert.bnEqual(await newDebtCache.cacheTimestamp(), toUnit('0'));
 				assert.isTrue(await newDebtCache.cacheInvalid());
 
@@ -663,25 +663,25 @@ contract('DebtCache', async accounts => {
 
 				await updateAggregatorRates(
 					exchangeRates,
-					[sAUD, sEUR, sETH],
+					[sAUD, sEUR, mimicETH],
 					['1', '3', '200'].map(toUnit)
 				);
 
 				// First try a single currency, ensuring that the others have not been altered.
-				const expectedDebts = (await debtCache.currentSynthDebts([sAUD, sEUR, sETH]))[0];
+				const expectedDebts = (await debtCache.currentSynthDebts([sAUD, sEUR, mimicETH]))[0];
 
 				await debtCache.updateCachedSynthDebts([sAUD]);
-				assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(600));
-				let debts = await debtCache.cachedSynthDebts([sAUD, sEUR, sETH]);
+				assert.bnEqual(await issuer.totalIssuedSynths(mimicUSD, true), toUnit(600));
+				let debts = await debtCache.cachedSynthDebts([sAUD, sEUR, mimicETH]);
 
 				assert.bnEqual(debts[0], expectedDebts[0]);
 				assert.bnEqual(debts[1], toUnit(200));
 				assert.bnEqual(debts[2], toUnit(200));
 
 				// Then a subset
-				await debtCache.updateCachedSynthDebts([sEUR, sETH]);
-				assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(900));
-				debts = await debtCache.cachedSynthDebts([sEUR, sETH]);
+				await debtCache.updateCachedSynthDebts([sEUR, mimicETH]);
+				assert.bnEqual(await issuer.totalIssuedSynths(mimicUSD, true), toUnit(900));
+				debts = await debtCache.cachedSynthDebts([sEUR, mimicETH]);
 				assert.bnEqual(debts[0], expectedDebts[1]);
 				assert.bnEqual(debts[1], expectedDebts[2]);
 			});
@@ -700,10 +700,10 @@ contract('DebtCache', async accounts => {
 				// But even if we update all rates, we can't revalidate the cache using the partial update function
 				await updateAggregatorRates(
 					exchangeRates,
-					[sAUD, sEUR, sETH],
+					[sAUD, sEUR, mimicETH],
 					['0.5', '2', '100'].map(toUnit)
 				);
-				const tx2 = await debtCache.updateCachedSynthDebts([sAUD, sEUR, sETH]);
+				const tx2 = await debtCache.updateCachedSynthDebts([sAUD, sEUR, mimicETH]);
 				assert.isTrue((await debtCache.cacheInfo()).isInvalid);
 				assert.eventEqual(tx1.logs[1], 'DebtCacheValidityChanged', [true]);
 				assert.isTrue(tx2.logs.find(log => log.event === 'DebtCacheValidityChanged') === undefined);
@@ -714,7 +714,7 @@ contract('DebtCache', async accounts => {
 
 				await updateAggregatorRates(
 					exchangeRates,
-					[sAUD, sEUR, sETH],
+					[sAUD, sEUR, mimicETH],
 					['1', '3', '200'].map(toUnit)
 				);
 
@@ -726,7 +726,7 @@ contract('DebtCache', async accounts => {
 				await assert.revert(debtCache.updateCachedSynthDebts([SNX]));
 				const fakeSynth = toBytes32('FAKE');
 				await assert.revert(debtCache.updateCachedSynthDebts([fakeSynth]));
-				await assert.revert(debtCache.updateCachedSynthDebts([sUSD, fakeSynth]));
+				await assert.revert(debtCache.updateCachedSynthDebts([mimicUSD, fakeSynth]));
 			});
 
 			it('will not operate if the system is paused except for the owner', async () => {
@@ -742,17 +742,17 @@ contract('DebtCache', async accounts => {
 		describe('recordExcludedDebtChange()', () => {
 			it('does not work if delta causes excludedDebt goes negative', async () => {
 				await assert.revert(
-					debtCache.recordExcludedDebtChange(sETH, toUnit('-1'), { from: owner }),
+					debtCache.recordExcludedDebtChange(mimicETH, toUnit('-1'), { from: owner }),
 					'Excluded debt cannot become negative'
 				);
 			});
 
 			it('executed successfully', async () => {
-				await debtCache.recordExcludedDebtChange(sETH, toUnit('1'), { from: owner });
-				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('1'));
+				await debtCache.recordExcludedDebtChange(mimicETH, toUnit('1'), { from: owner });
+				assert.bnEqual(await debtCache.excludedIssuedDebts([mimicETH]), toUnit('1'));
 
-				await debtCache.recordExcludedDebtChange(sETH, toUnit('-0.2'), { from: owner });
-				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('0.8'));
+				await debtCache.recordExcludedDebtChange(mimicETH, toUnit('-0.2'), { from: owner });
+				assert.bnEqual(await debtCache.excludedIssuedDebts([mimicETH]), toUnit('0.8'));
 			});
 		});
 
@@ -764,12 +764,12 @@ contract('DebtCache', async accounts => {
 				await debtCache.rebuildCache();
 			});
 			it('when mimicUSD is increased by minting', async () => {
-				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const cachedSynthDebt = (await debtCache.cachedSynthDebts([mimicUSD]))[0];
 				const amount = toUnit('1000');
 				const tx = await debtCache.updateCachedsUSDDebt(amount, { from: owner });
 
 				assert.bnEqual((await debtCache.cacheInfo())[0], cachedSynthDebt.add(amount));
-				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynthDebt.add(amount));
+				assert.bnEqual(await debtCache.cachedSynthDebts([mimicUSD]), cachedSynthDebt.add(amount));
 
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
@@ -788,16 +788,16 @@ contract('DebtCache', async accounts => {
 				await debtCache.updateCachedsUSDDebt(amount, { from: owner });
 
 				// cached Synth after increase
-				const cachedSynthDebt = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const cachedSynthDebt = (await debtCache.cachedSynthDebts([mimicUSD]))[0];
 				assert.bnEqual((await debtCache.cacheInfo())[0], amount);
-				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), amount);
+				assert.bnEqual(await debtCache.cachedSynthDebts([mimicUSD]), amount);
 
 				// decrease the cached mimicUSD amount
 				const amountToReduce = toUnit('500');
 				const tx = await debtCache.updateCachedsUSDDebt(amountToReduce.neg(), { from: owner });
 
 				assert.bnEqual(
-					await debtCache.cachedSynthDebts([sUSD]),
+					await debtCache.cachedSynthDebts([mimicUSD]),
 					cachedSynthDebt.sub(amountToReduce)
 				);
 
@@ -868,7 +868,7 @@ contract('DebtCache', async accounts => {
 				const issued = (await debtCache.cacheInfo())[0];
 
 				const synthsToIssue = toUnit('1000');
-				const cachedSynths = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const cachedSynths = (await debtCache.cachedSynthDebts([mimicUSD]))[0];
 
 				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
 
@@ -887,7 +887,7 @@ contract('DebtCache', async accounts => {
 				});
 
 				// cached mimicUSD increased by synth issued
-				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.add(synthsToIssue));
+				assert.bnEqual(await debtCache.cachedSynthDebts([mimicUSD]), cachedSynths.add(synthsToIssue));
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(synthsToIssue));
 			});
 
@@ -898,7 +898,7 @@ contract('DebtCache', async accounts => {
 				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
 				await synthetix.issueSynths(synthsToIssue, { from: account1 });
 
-				const cachedSynths = (await debtCache.cachedSynthDebts([sUSD]))[0];
+				const cachedSynths = (await debtCache.cachedSynthDebts([mimicUSD]))[0];
 				const issued = (await debtCache.cacheInfo())[0];
 				const synthsToBurn = toUnit('500');
 
@@ -917,7 +917,7 @@ contract('DebtCache', async accounts => {
 				});
 
 				// cached mimicUSD decreased by synth burned
-				assert.bnEqual(await debtCache.cachedSynthDebts([sUSD]), cachedSynths.sub(synthsToBurn));
+				assert.bnEqual(await debtCache.cachedSynthDebts([mimicUSD]), cachedSynths.sub(synthsToBurn));
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued.sub(synthsToBurn));
 			});
 
@@ -931,9 +931,9 @@ contract('DebtCache', async accounts => {
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 				await synthetix.issueSynths(toUnit('10'), { from: account1 });
 				const issued = (await debtCache.cacheInfo())[0];
-				const debts = await debtCache.cachedSynthDebts([sUSD, sAUD]);
-				const tx = await synthetix.exchange(sUSD, toUnit('5'), sAUD, { from: account1 });
-				const postDebts = await debtCache.cachedSynthDebts([sUSD, sAUD]);
+				const debts = await debtCache.cachedSynthDebts([mimicUSD, sAUD]);
+				const tx = await synthetix.exchange(mimicUSD, toUnit('5'), sAUD, { from: account1 });
+				const postDebts = await debtCache.cachedSynthDebts([mimicUSD, sAUD]);
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued);
 				assert.bnEqual(postDebts[0], debts[0].sub(toUnit(5)));
 				assert.bnEqual(postDebts[1], debts[1].add(toUnit(5)));
@@ -952,7 +952,7 @@ contract('DebtCache', async accounts => {
 				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 				await systemSettings.setExchangeFeeRateForSynths(
-					[sAUD, sUSD, sEUR],
+					[sAUD, mimicUSD, sEUR],
 					[toUnit(0.1), toUnit(0.1), toUnit(0.1)],
 					{ from: owner }
 				);
@@ -961,10 +961,10 @@ contract('DebtCache', async accounts => {
 				await debtCache.takeDebtSnapshot();
 				const issued = (await debtCache.cacheInfo())[0];
 
-				const debts = await debtCache.cachedSynthDebts([sUSD, sAUD, sEUR]);
+				const debts = await debtCache.cachedSynthDebts([mimicUSD, sAUD, sEUR]);
 
 				await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
-				const postDebts = await debtCache.cachedSynthDebts([sUSD, sAUD, sEUR]);
+				const postDebts = await debtCache.cachedSynthDebts([mimicUSD, sAUD, sEUR]);
 
 				assert.bnEqual((await debtCache.cacheInfo())[0], issued);
 				assert.bnEqual(postDebts[0], debts[0].add(toUnit(2)));
@@ -1345,7 +1345,7 @@ contract('DebtCache', async accounts => {
 			beforeEach(async () => {
 				await setupMultiCollateral();
 
-				({ rate } = await exchangeRates.rateAndInvalid(sETH));
+				({ rate } = await exchangeRates.rateAndInvalid(mimicETH));
 
 				await ceth.open(oneETH, sETH, {
 					value: twoETH,
@@ -1367,7 +1367,7 @@ contract('DebtCache', async accounts => {
 				let tx;
 				beforeEach(async () => {
 					// Swap some mimicETH into synthetic dollarydoos.
-					tx = await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
+					tx = await synthetix.exchange(mimicETH, '5', sAUD, { from: account1 });
 				});
 
 				it('non-SNX debt is unchanged', async () => {
@@ -1420,7 +1420,7 @@ contract('DebtCache', async accounts => {
 			let amount;
 
 			beforeEach(async () => {
-				({ rate } = await exchangeRates.rateAndInvalid(sETH));
+				({ rate } = await exchangeRates.rateAndInvalid(mimicETH));
 
 				// Take out a short position on sETH.
 				// mimicUSD collateral = 1.5 * rate_eth

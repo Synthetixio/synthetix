@@ -237,7 +237,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	}
 
 	function saveOwedBalances(owedSUSDBalances) {
-		let csvString = 'Address,Staked Balance,Owed sUSD,Readable Staked Balance,Readable Owed sUSD\n';
+		let csvString = 'Address,Staked Balance,Owed mimicUSD,Readable Staked Balance,Readable Owed sUSD\n';
 
 		for (const balance of owedSUSDBalances) {
 			const line = `${balance.address},${balance.balance},${balance.owed},${balance.readableBalance},${balance.readableOwed}\n`;

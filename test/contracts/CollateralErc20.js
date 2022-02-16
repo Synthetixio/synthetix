@@ -90,7 +90,7 @@ contract('CollateralErc20', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -142,7 +142,7 @@ contract('CollateralErc20', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, mimicETH]);
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -287,7 +287,7 @@ contract('CollateralErc20', async accounts => {
 	describe('cratio test', async () => {
 		describe('sUSD loans', async () => {
 			beforeEach(async () => {
-				tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, sUSD, {
+				tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, mimicUSD, {
 					from: account1,
 				});
 
@@ -345,7 +345,7 @@ contract('CollateralErc20', async accounts => {
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
 			// $150 worth of btc should allow 100 mimicUSD to be issued.
-			const sUSDAmount = await cerc20.maxLoan(toUnit(0.015), sUSD);
+			const sUSDAmount = await cerc20.maxLoan(toUnit(0.015), mimicUSD);
 
 			assert.bnClose(sUSDAmount, toUnit(100), 100);
 
@@ -405,7 +405,7 @@ contract('CollateralErc20', async accounts => {
 					});
 					it('then calling openLoan() reverts', async () => {
 						await assert.revert(
-							cerc20.open(oneRenBTC, onesUSD, sUSD, { from: account1 }),
+							cerc20.open(oneRenBTC, onesUSD, mimicUSD, { from: account1 }),
 							'Operation prohibited'
 						);
 					});
@@ -414,7 +414,7 @@ contract('CollateralErc20', async accounts => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling openLoan() succeeds', async () => {
-							await cerc20.open(oneRenBTC, onesUSD, sUSD, {
+							await cerc20.open(oneRenBTC, onesUSD, mimicUSD, {
 								from: account1,
 							});
 						});
@@ -427,7 +427,7 @@ contract('CollateralErc20', async accounts => {
 				});
 				it('then calling openLoan() reverts', async () => {
 					await assert.revert(
-						cerc20.open(oneRenBTC, onesUSD, sUSD, { from: account1 }),
+						cerc20.open(oneRenBTC, onesUSD, mimicUSD, { from: account1 }),
 						'Invalid rate'
 					);
 				});
@@ -436,7 +436,7 @@ contract('CollateralErc20', async accounts => {
 						await updateRatesWithDefaults();
 					});
 					it('then calling openLoan() succeeds', async () => {
-						await cerc20.open(oneRenBTC, onesUSD, sUSD, { from: account1 });
+						await cerc20.open(oneRenBTC, onesUSD, mimicUSD, { from: account1 });
 					});
 				});
 			});
@@ -452,14 +452,14 @@ contract('CollateralErc20', async accounts => {
 
 			it('should revert if they send 0 collateral', async () => {
 				await assert.revert(
-					cerc20.open(toUnit(0), onesUSD, sUSD, { from: account1 }),
+					cerc20.open(toUnit(0), onesUSD, mimicUSD, { from: account1 }),
 					'Not enough collateral'
 				);
 			});
 
 			it('should revert if the requested loan exceeds borrowing power', async () => {
 				await assert.revert(
-					cerc20.open(oneRenBTC, toUnit(10000), sUSD, {
+					cerc20.open(oneRenBTC, toUnit(10000), mimicUSD, {
 						from: account1,
 					}),
 					'Exceed max borrow power'
@@ -473,7 +473,7 @@ contract('CollateralErc20', async accounts => {
 			let issueFee;
 
 			beforeEach(async () => {
-				tx = await cerc20.open(oneRenBTC, fiveHundredSUSD, sUSD, {
+				tx = await cerc20.open(oneRenBTC, fiveHundredSUSD, mimicUSD, {
 					from: account1,
 				});
 
@@ -488,7 +488,7 @@ contract('CollateralErc20', async accounts => {
 			it('should set the loan correctly', async () => {
 				assert.equal(loan.account, account1);
 				assert.equal(loan.collateral, toUnit(1).toString());
-				assert.equal(loan.currency, sUSD);
+				assert.equal(loan.currency, mimicUSD);
 				assert.equal(loan.amount, fiveHundredSUSD.toString());
 				assert.bnEqual(loan.accruedInterest, toUnit(0));
 			});
@@ -511,7 +511,7 @@ contract('CollateralErc20', async accounts => {
 					id: id,
 					amount: fiveHundredSUSD,
 					collateral: toUnit(1),
-					currency: sUSD,
+					currency: mimicUSD,
 				});
 			});
 		});
@@ -567,7 +567,7 @@ contract('CollateralErc20', async accounts => {
 
 	describe('deposits', async () => {
 		beforeEach(async () => {
-			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, sUSD, {
+			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, mimicUSD, {
 				from: account1,
 			});
 
@@ -626,7 +626,7 @@ contract('CollateralErc20', async accounts => {
 		let accountRenBalBefore;
 
 		beforeEach(async () => {
-			loan = await cerc20.open(twoRenBTC, oneHundredsUSD, sUSD, {
+			loan = await cerc20.open(twoRenBTC, oneHundredsUSD, mimicUSD, {
 				from: account1,
 			});
 
@@ -704,7 +704,7 @@ contract('CollateralErc20', async accounts => {
 	describe('repayments', async () => {
 		beforeEach(async () => {
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
-			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, sUSD, {
+			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, mimicUSD, {
 				from: account1,
 			});
 
@@ -836,7 +836,7 @@ contract('CollateralErc20', async accounts => {
 	describe('liquidations', async () => {
 		beforeEach(async () => {
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
-			tx = await cerc20.open(oneRenBTC, toUnit(5000), sUSD, {
+			tx = await cerc20.open(oneRenBTC, toUnit(5000), mimicUSD, {
 				from: account1,
 			});
 
@@ -996,7 +996,7 @@ contract('CollateralErc20', async accounts => {
 			accountRenBalBefore = await renBTC.balanceOf(account1);
 
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
-			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, sUSD, {
+			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, mimicUSD, {
 				from: account1,
 			});
 
@@ -1078,7 +1078,7 @@ contract('CollateralErc20', async accounts => {
 	describe('drawing', async () => {
 		beforeEach(async () => {
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
-			tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, sUSD, {
+			tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, mimicUSD, {
 				from: account1,
 			});
 

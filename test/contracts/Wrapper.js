@@ -21,7 +21,7 @@ const { toBN } = require('web3-utils');
 
 contract('Wrapper', async accounts => {
 	const synths = ['mimicUSD', 'mimicETH', 'ETH', 'MIME'];
-	const [sETH, sUSD, ETH] = ['mimicETH', 'mimicUSD', 'ETH'].map(toBytes32);
+	const [mimicETH, mimicUSD, ETH] = ['mimicETH', 'mimicUSD', 'ETH'].map(toBytes32);
 
 	const ONE = toBN('1');
 
@@ -113,8 +113,8 @@ contract('Wrapper', async accounts => {
 			from: owner,
 		});
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
-		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await setupPriceAggregators(exchangeRates, owner, [mimicETH, ETH]);
+		await updateAggregatorRates(exchangeRates, [mimicETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -203,7 +203,7 @@ contract('Wrapper', async accounts => {
 		let feeAmount;
 
 		before(async () => {
-			feeAmount = await exchangeRates.effectiveValue(sETH, toUnit('0.005'), sUSD);
+			feeAmount = await exchangeRates.effectiveValue(mimicETH, toUnit('0.005'), mimicUSD);
 		});
 
 		describe('when mint(1 sETH) is called', async () => {

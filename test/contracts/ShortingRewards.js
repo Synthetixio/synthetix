@@ -160,7 +160,7 @@ contract('ShortingRewards', accounts => {
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
-			collatKey: sUSD,
+			collatKey: mimicUSD,
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 		});
@@ -219,7 +219,7 @@ contract('ShortingRewards', accounts => {
 	});
 
 	beforeEach(async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, sBTC], [100, 10000].map(toUnit));
 
 		await issuesUSDToAccount(toUnit(100000), owner);
 		await issuesBTCtoAccount(toUnit(10), owner);

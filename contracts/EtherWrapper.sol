@@ -114,7 +114,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         //
         // The mimicETH is always backed 1:1 with WETH.
         // The mimicUSD fees are backed by mimicETH that is withheld during minting and burning.
-        return exchangeRates().effectiveValue(sETH, sETHIssued, sUSD).add(sUSDIssued);
+        return exchangeRates().effectiveValue(mimicETH, sETHIssued, mimicUSD).add(sUSDIssued);
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -177,8 +177,8 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     function distributeFees() external {
         // Normalize fee to sUSD
-        require(!exchangeRates().rateIsInvalid(sETH), "Currency rate is invalid");
-        uint amountSUSD = exchangeRates().effectiveValue(sETH, feesEscrowed, sUSD);
+        require(!exchangeRates().rateIsInvalid(mimicETH), "Currency rate is invalid");
+        uint amountSUSD = exchangeRates().effectiveValue(mimicETH, feesEscrowed, mimicUSD);
 
         // Burn sETH.
         synthsETH().burn(address(this), feesEscrowed);
@@ -186,7 +186,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         sETHIssued = sETHIssued < feesEscrowed ? 0 : sETHIssued.sub(feesEscrowed);
 
         // Issue mimicUSD to the fee pool
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), amountSUSD);
+        issuer().synths(mimicUSD).issue(feePool().FEE_ADDRESS(), amountSUSD);
         sUSDIssued = sUSDIssued.add(amountSUSD);
 
         // Tell the fee pool about this

@@ -25,7 +25,7 @@ const {
 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sAUD, sEUR, sUSD, sETH] = ['sAUD', 'sEUR', 'mimicUSD', 'mimicETH'].map(toBytes32);
+	const [sAUD, sEUR, mimicUSD, mimicETH] = ['sAUD', 'sEUR', 'mimicUSD', 'mimicETH'].map(toBytes32);
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -71,7 +71,7 @@ contract('Synthetix', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, mimicETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -457,7 +457,7 @@ contract('Synthetix', async accounts => {
 					// Barrie has no mimicETH to start
 					assert.equal(await sETHContract.balanceOf(account3), '0');
 
-					txn = await contractExample.exchange(sUSD, amountOfsUSD, sETH, { from: account3 });
+					txn = await contractExample.exchange(mimicUSD, amountOfsUSD, sETH, { from: account3 });
 				});
 				it('then Barrie has the synths in her account', async () => {
 					assert.bnGt(await sETHContract.balanceOf(account3), toUnit('0.01'));
@@ -472,7 +472,7 @@ contract('Synthetix', async accounts => {
 						'SynthExchange',
 						{
 							account: contractExample.address,
-							fromCurrencyKey: sUSD,
+							fromCurrencyKey: mimicUSD,
 							fromAmount: amountOfsUSD,
 							toCurrencyKey: sETH,
 							toAddress: account3,

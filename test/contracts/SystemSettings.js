@@ -695,14 +695,14 @@ contract('SystemSettings', async accounts => {
 
 	describe('setExchangeFeeRateForSynths()', () => {
 		describe('Given synth exchange fee rates to set', async () => {
-			const [sUSD, sETH, sAUD, sBTC] = ['mimicUSD', 'mimicETH', 'sAUD', 'sBTC'].map(toBytes32);
+			const [mimicUSD, sETH, sAUD, sBTC] = ['mimicUSD', 'mimicETH', 'sAUD', 'sBTC'].map(toBytes32);
 			const fxBIPS = toUnit('0.01');
 			const cryptoBIPS = toUnit('0.03');
 
 			it('when a non owner calls then revert', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: systemSettings.setExchangeFeeRateForSynths,
-					args: [[sUSD], [toUnit('0.1')]],
+					args: [[mimicUSD], [toUnit('0.1')]],
 					accounts,
 					address: owner,
 					reason: 'Only the contract owner may perform this action',
@@ -710,7 +710,7 @@ contract('SystemSettings', async accounts => {
 			});
 			it('when input array lengths dont match then revert ', async () => {
 				await assert.revert(
-					systemSettings.setExchangeFeeRateForSynths([sUSD, sAUD], [toUnit('0.1')], {
+					systemSettings.setExchangeFeeRateForSynths([mimicUSD, sAUD], [toUnit('0.1')], {
 						from: owner,
 					}),
 					'Array lengths dont match'
@@ -718,7 +718,7 @@ contract('SystemSettings', async accounts => {
 			});
 			it('when owner sets an exchange fee rate larger than MAX_EXCHANGE_FEE_RATE then revert', async () => {
 				await assert.revert(
-					systemSettings.setExchangeFeeRateForSynths([sUSD], [toUnit('11')], {
+					systemSettings.setExchangeFeeRateForSynths([mimicUSD], [toUnit('11')], {
 						from: owner,
 					}),
 					'MAX_EXCHANGE_FEE_RATE exceeded'
@@ -727,28 +727,28 @@ contract('SystemSettings', async accounts => {
 
 			describe('Given new synth exchange fee rates to store', async () => {
 				it('when 1 exchange rate then store it to be readable', async () => {
-					await systemSettings.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
+					await systemSettings.setExchangeFeeRateForSynths([mimicUSD], [fxBIPS], {
 						from: owner,
 					});
-					let sUSDRate = await systemSettings.exchangeFeeRate(sUSD);
+					let sUSDRate = await systemSettings.exchangeFeeRate(mimicUSD);
 					assert.bnEqual(sUSDRate, fxBIPS);
 
-					sUSDRate = await systemSettings.exchangeFeeRate(sUSD);
+					sUSDRate = await systemSettings.exchangeFeeRate(mimicUSD);
 					assert.bnEqual(sUSDRate, fxBIPS);
 				});
 				it('when 1 exchange rate then emits update event', async () => {
-					const transaction = await systemSettings.setExchangeFeeRateForSynths([sUSD], [fxBIPS], {
+					const transaction = await systemSettings.setExchangeFeeRateForSynths([mimicUSD], [fxBIPS], {
 						from: owner,
 					});
 					assert.eventEqual(transaction, 'ExchangeFeeUpdated', {
-						synthKey: sUSD,
+						synthKey: mimicUSD,
 						newExchangeFeeRate: fxBIPS,
 					});
 				});
 				it('when multiple exchange rates then store them to be readable', async () => {
 					// Store multiple rates
 					await systemSettings.setExchangeFeeRateForSynths(
-						[sUSD, sAUD, sBTC, sETH],
+						[mimicUSD, sAUD, sBTC, mimicETH],
 						[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
 						{
 							from: owner,
@@ -757,17 +757,17 @@ contract('SystemSettings', async accounts => {
 					// Read all rates
 					const sAUDRate = await systemSettings.exchangeFeeRate(sAUD);
 					assert.bnEqual(sAUDRate, fxBIPS);
-					const sUSDRate = await systemSettings.exchangeFeeRate(sUSD);
+					const sUSDRate = await systemSettings.exchangeFeeRate(mimicUSD);
 					assert.bnEqual(sUSDRate, fxBIPS);
 					const sBTCRate = await systemSettings.exchangeFeeRate(sBTC);
 					assert.bnEqual(sBTCRate, cryptoBIPS);
-					const sETHRate = await systemSettings.exchangeFeeRate(sETH);
+					const sETHRate = await systemSettings.exchangeFeeRate(mimicETH);
 					assert.bnEqual(sETHRate, cryptoBIPS);
 				});
 				it('when multiple exchange rates then each update event is emitted', async () => {
 					// Update multiple rates
 					const transaction = await systemSettings.setExchangeFeeRateForSynths(
-						[sUSD, sAUD, sBTC, sETH],
+						[mimicUSD, sAUD, sBTC, mimicETH],
 						[fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
 						{
 							from: owner,
@@ -778,7 +778,7 @@ contract('SystemSettings', async accounts => {
 						transaction,
 						'ExchangeFeeUpdated',
 						{
-							synthKey: sUSD,
+							synthKey: mimicUSD,
 							newExchangeFeeRate: fxBIPS,
 						},
 						'ExchangeFeeUpdated',
@@ -1075,7 +1075,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicEquivalentForDexPricing,
-				args: [sETH, equivalentAsset],
+				args: [mimicETH, equivalentAsset],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -1085,40 +1085,40 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicEquivalentForDexPricing(sETH, equivalentAsset, {
+				txn = await systemSettings.setAtomicEquivalentForDexPricing(mimicETH, equivalentAsset, {
 					from: owner,
 				});
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), equivalentAsset);
+				assert.equal(await systemSettings.atomicEquivalentForDexPricing(mimicETH), equivalentAsset);
 			});
 
 			it('and emits an AtomicEquivalentForDexPricingUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicEquivalentForDexPricingUpdated', [sETH, equivalentAsset]);
+				assert.eventEqual(txn, 'AtomicEquivalentForDexPricingUpdated', [mimicETH, equivalentAsset]);
 			});
 
 			it('allows equivalent to be changed', async () => {
-				await systemSettings.setAtomicEquivalentForDexPricing(sETH, secondEquivalentAsset, {
+				await systemSettings.setAtomicEquivalentForDexPricing(mimicETH, secondEquivalentAsset, {
 					from: owner,
 				});
 				assert.equal(
-					await systemSettings.atomicEquivalentForDexPricing(sETH),
+					await systemSettings.atomicEquivalentForDexPricing(mimicETH),
 					secondEquivalentAsset
 				);
 			});
 
 			it('cannot be set to 0 address', async () => {
 				await assert.revert(
-					systemSettings.setAtomicEquivalentForDexPricing(sETH, ZERO_ADDRESS, { from: owner }),
+					systemSettings.setAtomicEquivalentForDexPricing(mimicETH, ZERO_ADDRESS, { from: owner }),
 					'Atomic equivalent is 0 address'
 				);
 			});
 
 			it('allows to be reset', async () => {
 				// using account1 (although it's EOA) for simplicity
-				await systemSettings.setAtomicEquivalentForDexPricing(sETH, account1, { from: owner });
-				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), account1);
+				await systemSettings.setAtomicEquivalentForDexPricing(mimicETH, account1, { from: owner });
+				assert.equal(await systemSettings.atomicEquivalentForDexPricing(mimicETH), account1);
 			});
 		});
 	});
@@ -1130,7 +1130,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicExchangeFeeRate,
-				args: [sETH, feeBips],
+				args: [mimicETH, feeBips],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -1142,7 +1142,7 @@ contract('SystemSettings', async accounts => {
 			// https://ethereum.stackexchange.com/a/102633/33908
 			const maximum = toUnit('0.1');
 			await assert.revert(
-				systemSettings.setAtomicExchangeFeeRate(sETH, maximum.add(toBN('1')), { from: owner }),
+				systemSettings.setAtomicExchangeFeeRate(mimicETH, maximum.add(toBN('1')), { from: owner }),
 				'MAX_EXCHANGE_FEE_RATE exceeded'
 			);
 		});
@@ -1150,29 +1150,29 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicExchangeFeeRate(sETH, feeBips, {
+				txn = await systemSettings.setAtomicExchangeFeeRate(mimicETH, feeBips, {
 					from: owner,
 				});
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), feeBips);
+				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(mimicETH), feeBips);
 			});
 
 			it('and emits an AtomicExchangeFeeUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicExchangeFeeUpdated', [sETH, feeBips]);
+				assert.eventEqual(txn, 'AtomicExchangeFeeUpdated', [mimicETH, feeBips]);
 			});
 
 			it('allows fee to be changed', async () => {
-				await systemSettings.setAtomicExchangeFeeRate(sETH, secondFeeBips, {
+				await systemSettings.setAtomicExchangeFeeRate(mimicETH, secondFeeBips, {
 					from: owner,
 				});
-				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), secondFeeBips);
+				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(mimicETH), secondFeeBips);
 			});
 
 			it('allows to be reset', async () => {
-				await systemSettings.setAtomicExchangeFeeRate(sETH, 0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), 0);
+				await systemSettings.setAtomicExchangeFeeRate(mimicETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(mimicETH), 0);
 			});
 		});
 	});
@@ -1183,7 +1183,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicPriceBuffer,
-				args: [sETH, buffer],
+				args: [mimicETH, buffer],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -1193,26 +1193,26 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicPriceBuffer(sETH, buffer, { from: owner });
+				txn = await systemSettings.setAtomicPriceBuffer(mimicETH, buffer, { from: owner });
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), buffer);
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(mimicETH), buffer);
 			});
 
 			it('and emits an AtomicPriceBufferUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [sETH, buffer]);
+				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [mimicETH, buffer]);
 			});
 
 			it('allows to be changed', async () => {
 				const newBuffer = buffer.div(toBN('2'));
-				await systemSettings.setAtomicPriceBuffer(sETH, newBuffer, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), newBuffer);
+				await systemSettings.setAtomicPriceBuffer(mimicETH, newBuffer, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(mimicETH), newBuffer);
 			});
 
 			it('allows to be reset to zero', async () => {
-				await systemSettings.setAtomicPriceBuffer(sETH, 0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), 0);
+				await systemSettings.setAtomicPriceBuffer(mimicETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(mimicETH), 0);
 			});
 		});
 	});
@@ -1223,7 +1223,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicVolatilityConsiderationWindow,
-				args: [sETH, considerationWindow],
+				args: [mimicETH, considerationWindow],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -1235,7 +1235,7 @@ contract('SystemSettings', async accounts => {
 			// https://ethereum.stackexchange.com/a/102633/33908
 			const minimum = toBN('60');
 			await assert.revert(
-				systemSettings.setAtomicVolatilityConsiderationWindow(sETH, minimum.sub(toBN('1')), {
+				systemSettings.setAtomicVolatilityConsiderationWindow(mimicETH, minimum.sub(toBN('1')), {
 					from: owner,
 				}),
 				'Atomic volatility consideration window under minimum 1 min'
@@ -1247,7 +1247,7 @@ contract('SystemSettings', async accounts => {
 			// https://ethereum.stackexchange.com/a/102633/33908
 			const maximum = toBN('86400');
 			await assert.revert(
-				systemSettings.setAtomicVolatilityConsiderationWindow(sETH, maximum.add(toBN('1')), {
+				systemSettings.setAtomicVolatilityConsiderationWindow(mimicETH, maximum.add(toBN('1')), {
 					from: owner,
 				}),
 				'Atomic volatility consideration window exceed maximum 1 day'
@@ -1268,7 +1268,7 @@ contract('SystemSettings', async accounts => {
 
 			it('then it changes the value as expected', async () => {
 				assert.bnEqual(
-					await systemSettings.atomicVolatilityConsiderationWindow(sETH),
+					await systemSettings.atomicVolatilityConsiderationWindow(mimicETH),
 					considerationWindow
 				);
 			});
@@ -1282,18 +1282,18 @@ contract('SystemSettings', async accounts => {
 
 			it('allows to be changed', async () => {
 				const newConsiderationWindow = considerationWindow.add(toBN('1'));
-				await systemSettings.setAtomicVolatilityConsiderationWindow(sETH, newConsiderationWindow, {
+				await systemSettings.setAtomicVolatilityConsiderationWindow(mimicETH, newConsiderationWindow, {
 					from: owner,
 				});
 				assert.bnEqual(
-					await systemSettings.atomicVolatilityConsiderationWindow(sETH),
+					await systemSettings.atomicVolatilityConsiderationWindow(mimicETH),
 					newConsiderationWindow
 				);
 			});
 
 			it('allows to be reset to zero', async () => {
-				await systemSettings.setAtomicVolatilityConsiderationWindow(sETH, 0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicVolatilityConsiderationWindow(sETH), 0);
+				await systemSettings.setAtomicVolatilityConsiderationWindow(mimicETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicVolatilityConsiderationWindow(mimicETH), 0);
 			});
 		});
 	});
@@ -1304,7 +1304,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicVolatilityUpdateThreshold,
-				args: [sETH, threshold],
+				args: [mimicETH, threshold],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -1314,30 +1314,30 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, threshold, {
+				txn = await systemSettings.setAtomicVolatilityUpdateThreshold(mimicETH, threshold, {
 					from: owner,
 				});
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), threshold);
+				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(mimicETH), threshold);
 			});
 
 			it('and emits an AtomicVolatilityUpdateThresholdUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicVolatilityUpdateThresholdUpdated', [sETH, threshold]);
+				assert.eventEqual(txn, 'AtomicVolatilityUpdateThresholdUpdated', [mimicETH, threshold]);
 			});
 
 			it('allows to be changed', async () => {
 				const newThreshold = threshold.add(ONE);
-				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, newThreshold, {
+				await systemSettings.setAtomicVolatilityUpdateThreshold(mimicETH, newThreshold, {
 					from: owner,
 				});
-				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), newThreshold);
+				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(mimicETH), newThreshold);
 			});
 
 			it('allows to be reset to zero', async () => {
-				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), 0);
+				await systemSettings.setAtomicVolatilityUpdateThreshold(mimicETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(mimicETH), 0);
 			});
 		});
 	});

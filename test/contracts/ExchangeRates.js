@@ -35,7 +35,7 @@ const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, dexPriceAggregator, accountOne, accountTwo] = accounts;
-	const [MIME, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, GOLD, fastGasPrice] = [
+	const [MIME, sJPY, sETH, sXTZ, sBNB, mimicUSD, sEUR, sAUD, GOLD, fastGasPrice] = [
 		'MIME',
 		'sJPY',
 		'mimicETH',
@@ -75,8 +75,8 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			it('returns correct values for mimicUSD after deployment ', async () => {
-				assert.bnEqual(await instance.rateForCurrency(sUSD), toUnit('1'));
-				assert.equal(await instance.lastRateUpdateTimes(sUSD), 0);
+				assert.bnEqual(await instance.rateForCurrency(mimicUSD), toUnit('1'));
+				assert.equal(await instance.lastRateUpdateTimes(mimicUSD), 0);
 			});
 		});
 	};
@@ -100,7 +100,7 @@ contract('Exchange Rates', async accounts => {
 		describe('rateIsStale()', () => {
 			it('should never allow mimicUSD to go stale via rateIsStale', async () => {
 				await fastForward(await instance.rateStalePeriod());
-				const rateIsStale = await instance.rateIsStale(sUSD);
+				const rateIsStale = await instance.rateIsStale(mimicUSD);
 				assert.equal(rateIsStale, false);
 			});
 
@@ -111,11 +111,11 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			it('make sure anyone can check if rate is stale', async () => {
-				await instance.rateIsStale(sUSD, { from: oracle });
-				await instance.rateIsStale(sUSD, { from: owner });
-				await instance.rateIsStale(sUSD, { from: deployerAccount });
-				await instance.rateIsStale(sUSD, { from: accountOne });
-				await instance.rateIsStale(sUSD, { from: accountTwo });
+				await instance.rateIsStale(mimicUSD, { from: oracle });
+				await instance.rateIsStale(mimicUSD, { from: owner });
+				await instance.rateIsStale(mimicUSD, { from: deployerAccount });
+				await instance.rateIsStale(mimicUSD, { from: accountOne });
+				await instance.rateIsStale(mimicUSD, { from: accountTwo });
 			});
 		});
 	};
@@ -391,13 +391,13 @@ contract('Exchange Rates', async accounts => {
 
 				it('should correctly calculate an exchange rate in effectiveValue()', async () => {
 					// 1 mimicUSD should be worth 2 sAUD.
-					assert.bnEqual(await instance.effectiveValue(sUSD, toUnit('1'), sAUD), toUnit('2'));
+					assert.bnEqual(await instance.effectiveValue(mimicUSD, toUnit('1'), sAUD), toUnit('2'));
 
 					// 10 MIME should be worth 1 sUSD.
-					assert.bnEqual(await instance.effectiveValue(MIME, toUnit('10'), sUSD), toUnit('1'));
+					assert.bnEqual(await instance.effectiveValue(MIME, toUnit('10'), mimicUSD), toUnit('1'));
 
 					// 2 sEUR should be worth 2.50 sUSD
-					assert.bnEqual(await instance.effectiveValue(sEUR, toUnit('2'), sUSD), toUnit('2.5'));
+					assert.bnEqual(await instance.effectiveValue(sEUR, toUnit('2'), mimicUSD), toUnit('2.5'));
 				});
 
 				it('should calculate updated rates in effectiveValue()', async () => {
@@ -419,12 +419,12 @@ contract('Exchange Rates', async accounts => {
 				});
 
 				it('should revert when relying on a non-existing src rate in effectiveValue', async () => {
-					assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), SNX), 0);
+					assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), MIME), 0);
 				});
 
 				it('effectiveValueAndRates() should return rates as well with mimicUSD on one side', async () => {
 					const { value, sourceRate, destinationRate } = await instance.effectiveValueAndRates(
-						sUSD,
+						mimicUSD,
 						toUnit('1'),
 						sAUD
 					);
@@ -729,7 +729,7 @@ contract('Exchange Rates', async accounts => {
 									beforeEach(async () => {
 										responseJPY = await instance.rateAndInvalid(sJPY);
 										responseXTZ = await instance.rateAndInvalid(sXTZ);
-										responseUSD = await instance.rateAndInvalid(sUSD);
+										responseUSD = await instance.rateAndInvalid(mimicUSD);
 									});
 
 									it('then both rates are valid', () => {
@@ -802,7 +802,7 @@ contract('Exchange Rates', async accounts => {
 
 										it('other rates are fine', async () => {
 											const responseXTZ = await instance.rateAndInvalid(sXTZ);
-											const responseUSD = await instance.rateAndInvalid(sUSD);
+											const responseUSD = await instance.rateAndInvalid(mimicUSD);
 
 											assert.equal(responseXTZ[1], false);
 											assert.equal(responseUSD[1], false);
@@ -874,8 +874,8 @@ contract('Exchange Rates', async accounts => {
 
 				describe('warning flags and invalid rates', () => {
 					it('sUSD is never flagged / invalid.', async () => {
-						assert.isFalse(await instance.rateIsFlagged(sUSD));
-						assert.isFalse(await instance.rateIsInvalid(sUSD));
+						assert.isFalse(await instance.rateIsFlagged(mimicUSD));
+						assert.isFalse(await instance.rateIsInvalid(mimicUSD));
 					});
 					describe('when JPY is aggregated', () => {
 						beforeEach(async () => {
@@ -945,11 +945,11 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			it('getCurrentRoundId() is 0 for sUSD', async () => {
-				assert.equal(await instance.getCurrentRoundId(sUSD), 0);
+				assert.equal(await instance.getCurrentRoundId(mimicUSD), 0);
 			});
 
 			it('ratesAndUpdatedTimeForCurrencyLastNRounds() shows first entry for sUSD', async () => {
-				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(sUSD, '3', '0'), [
+				assert.deepEqual(await instance.ratesAndUpdatedTimeForCurrencyLastNRounds(mimicUSD, '3', '0'), [
 					[toUnit('1'), '0', '0'],
 					[0, 0, 0],
 				]);
@@ -1248,7 +1248,7 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 				it('then atomicEquivalentForDexPricing is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicEquivalentForDexPricing(SNX), snxEquivalentAddr);
+					assert.bnEqual(await instance.atomicEquivalentForDexPricing(MIME), snxEquivalentAddr);
 				});
 			});
 		});
@@ -1260,7 +1260,7 @@ contract('Exchange Rates', async accounts => {
 					await systemSettings.setAtomicPriceBuffer(MIME, priceBuffer, { from: owner });
 				});
 				it('then rateStalePeriod is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicPriceBuffer(SNX), priceBuffer);
+					assert.bnEqual(await instance.atomicPriceBuffer(MIME), priceBuffer);
 				});
 			});
 		});
@@ -1279,13 +1279,13 @@ contract('Exchange Rates', async accounts => {
 
 			it('reverts on src not having equivalent', async () => {
 				await assert.revert(
-					instance.effectiveAtomicValueAndRates(sUSD, toUnit('1'), sETH),
+					instance.effectiveAtomicValueAndRates(mimicUSD, toUnit('1'), sETH),
 					'No atomic equivalent for src'
 				);
 			});
 			it('reverts on dest not having equivalent', async () => {
 				await assert.revert(
-					instance.effectiveAtomicValueAndRates(sETH, toUnit('1'), sUSD),
+					instance.effectiveAtomicValueAndRates(mimicETH, toUnit('1'), mimicUSD),
 					'No atomic equivalent for dest'
 				);
 			});
@@ -1364,7 +1364,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('provides the correct system source rate', () => {
-						if (srcToken === sUSD) {
+						if (srcToken === mimicUSD) {
 							assert.bnEqual(rates.systemSourceRate, one); // mimicUSD is always one
 						} else {
 							assert.bnEqual(rates.systemSourceRate, pClInUsdIn18); // system reports prices in 18 decimals
@@ -1372,7 +1372,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('provides the correct system destination rate', () => {
-						if (destToken === sUSD) {
+						if (destToken === mimicUSD) {
 							assert.bnEqual(rates.systemDestinationRate, one); // mimicUSD is always one
 						} else {
 							assert.bnEqual(rates.systemDestinationRate, pClInUsdIn18); // system reports prices in 18 decimals
@@ -1394,14 +1394,14 @@ contract('Exchange Rates', async accounts => {
 			beforeEach('set initial configuration', async () => {
 				await ethAggregator.setDecimals('8');
 				await ethAggregator.setLatestAnswer(convertToDecimals(1, 8), await currentTime()); // this will be overwritten by the appropriate rate as needed
-				await instance.addAggregator(sETH, ethAggregator.address, {
+				await instance.addAggregator(mimicETH, ethAggregator.address, {
 					from: owner,
 				});
 				await instance.setDexPriceAggregator(dexPriceAggregator.address, {
 					from: owner,
 				});
 				await systemSettings.setAtomicEquivalentForDexPricing(
-					sUSD,
+					mimicUSD,
 					susdDexEquivalentToken.address,
 					{
 						from: owner,
@@ -1422,7 +1422,7 @@ contract('Exchange Rates', async accounts => {
 				});
 				it('reverts due to zero rates', async () => {
 					await assert.revert(
-						instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
+						instance.effectiveAtomicValueAndRates(mimicUSD, one, sETH),
 						'dex price returned 0'
 					);
 				});
@@ -1434,7 +1434,7 @@ contract('Exchange Rates', async accounts => {
 				});
 				it('reverts', async () => {
 					await assert.revert(
-						instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
+						instance.effectiveAtomicValueAndRates(mimicUSD, one, sETH),
 						'mock assetToAsset() reverted'
 					);
 				});
@@ -1657,12 +1657,12 @@ contract('Exchange Rates', async accounts => {
 					await dexPriceAggregator.setAssetToAssetRate(pDex);
 					await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
 
-					await systemSettings.setAtomicPriceBuffer(sUSD, susdBuffer, { from: owner });
-					await systemSettings.setAtomicPriceBuffer(sETH, sethBuffer, { from: owner });
+					await systemSettings.setAtomicPriceBuffer(mimicUSD, susdBuffer, { from: owner });
+					await systemSettings.setAtomicPriceBuffer(mimicETH, sethBuffer, { from: owner });
 				});
 
 				it('prices pClBuf with the highest buffer', async () => {
-					const rates = await instance.effectiveAtomicValueAndRates(sETH, amountIn, sUSD);
+					const rates = await instance.effectiveAtomicValueAndRates(mimicETH, amountIn, mimicUSD);
 					const higherBuffer = susdBuffer.gt(sethBuffer) ? susdBuffer : sethBuffer;
 					const expectedValue = multiplyDecimal(
 						multiplyDecimal(amountIn, pCl),
@@ -1675,9 +1675,9 @@ contract('Exchange Rates', async accounts => {
 			describe('when tokens use non-18 decimals', () => {
 				beforeEach('set up non-18 decimal tokens', async () => {
 					susdDexEquivalentToken = await MockToken.new('sUSD equivalent', 'esUSD', '6'); // mimic USDC and USDT
-					sethDexEquivalentToken = await MockToken.new('sETH equivalent', 'esETH', '8'); // mimic WBTC
+					sethDexEquivalentToken = await MockToken.new('mimicETH equivalent', 'esETH', '8'); // mimic WBTC
 					await systemSettings.setAtomicEquivalentForDexPricing(
-						sUSD,
+						mimicUSD,
 						susdDexEquivalentToken.address,
 						{
 							from: owner,
@@ -1704,7 +1704,7 @@ contract('Exchange Rates', async accounts => {
 						await dexPriceAggregator.setAssetToAssetRate(rateIn8); // mock requires rate to be in output's decimals
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
-						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
+						await systemSettings.setAtomicPriceBuffer(mimicETH, '0', { from: owner });
 					});
 
 					it('dex aggregator mock provides expected results', async () => {
@@ -1719,13 +1719,13 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('still provides results in 18 decimals', async () => {
-						const rates = await instance.effectiveAtomicValueAndRates(sUSD, amountIn, sETH);
+						const rates = await instance.effectiveAtomicValueAndRates(mimicUSD, amountIn, sETH);
 						const expectedOutput = multiplyDecimal(amountIn, rateIn8, unitIn8); // use 8 as decimal base to get 18 decimals
 						assert.bnEqual(rates.value, expectedOutput);
 					});
 				});
 
-				describe('sETH -> sUSD', () => {
+				describe('mimicETH -> sUSD', () => {
 					const rate = '100';
 					// esUSD has 6 decimals
 					const rateIn6 = convertToDecimals(rate, 6);
@@ -1740,7 +1740,7 @@ contract('Exchange Rates', async accounts => {
 						await dexPriceAggregator.setAssetToAssetRate(rateIn6); // mock requires rate to be in output's decimals
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
-						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
+						await systemSettings.setAtomicPriceBuffer(mimicETH, '0', { from: owner });
 					});
 
 					it('dex aggregator mock provides expected results', async () => {
@@ -1755,7 +1755,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('still provides results in 18 decimals', async () => {
-						const rates = await instance.effectiveAtomicValueAndRates(sETH, amountIn, sUSD);
+						const rates = await instance.effectiveAtomicValueAndRates(mimicETH, amountIn, mimicUSD);
 						const expectedOutput = multiplyDecimal(amountIn, rateIn6, unitIn6); // use 6 as decimal base to get 18 decimals
 						assert.bnEqual(rates.value, expectedOutput);
 					});
@@ -1768,7 +1768,7 @@ contract('Exchange Rates', async accounts => {
 		describe('Atomic exchange pricing', () => {
 			it('errors with not implemented when attempting to fetch atomic rate', async () => {
 				await assert.revert(
-					instance.effectiveAtomicValueAndRates(sETH, toUnit('10'), sUSD),
+					instance.effectiveAtomicValueAndRates(mimicETH, toUnit('10'), mimicUSD),
 					'Cannot be run on this layer'
 				);
 			});
@@ -1786,7 +1786,7 @@ contract('Exchange Rates', async accounts => {
 				});
 				it('then atomicVolatilityConsiderationWindow is correctly updated', async () => {
 					assert.bnEqual(
-						await instance.atomicVolatilityConsiderationWindow(SNX),
+						await instance.atomicVolatilityConsiderationWindow(MIME),
 						considerationWindow
 					);
 				});
@@ -1802,7 +1802,7 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 				it('then atomicVolatilityUpdateThreshold is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicVolatilityUpdateThreshold(SNX), updateThreshold);
+					assert.bnEqual(await instance.atomicVolatilityUpdateThreshold(MIME), updateThreshold);
 				});
 			});
 		});
@@ -1991,7 +1991,7 @@ contract('Exchange Rates', async accounts => {
 		describe('Atomic exchange volatility control', () => {
 			it('errors with not implemented when attempting to assess volatility for atomic exchanges', async () => {
 				await assert.revert(
-					instance.synthTooVolatileForAtomicExchange(sETH),
+					instance.synthTooVolatileForAtomicExchange(mimicETH),
 					'Cannot be run on this layer'
 				);
 			});

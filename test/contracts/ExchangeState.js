@@ -21,7 +21,7 @@ contract('ExchangeState', accounts => {
 		account1,
 		account2,
 	] = accounts;
-	const [sUSD, sBTC, sAUD] = ['mimicUSD', 'sBTC', 'sAUD'].map(toBytes32);
+	const [mimicUSD, sBTC, sAUD] = ['mimicUSD', 'sBTC', 'sAUD'].map(toBytes32);
 
 	let exchangeState;
 	beforeEach(async () => {
@@ -33,7 +33,7 @@ contract('ExchangeState', accounts => {
 
 	const addExchangeEntry = ({
 		user = account1,
-		src = sUSD,
+		src = mimicUSD,
 		amount = toUnit('100'),
 		dest = sBTC,
 		amountReceived = toUnit('99'),
@@ -94,7 +94,7 @@ contract('ExchangeState', accounts => {
 		it('only the associated contract can invoke appendExchangeEntry()', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: exchangeState.appendExchangeEntry,
-				args: [account1, sUSD, toUnit('1'), sBTC, toUnit('1'), toUnit('0.01'), '0', '0', '0'],
+				args: [account1, mimicUSD, toUnit('1'), sBTC, toUnit('1'), toUnit('0.01'), '0', '0', '0'],
 				address: simulatedAssociatedContract,
 				accounts,
 			});
@@ -126,7 +126,7 @@ contract('ExchangeState', accounts => {
 				assert.equal((await exchangeState.getLengthOfEntries(account1, sBTC)).toString(), '1');
 			});
 			it('and the length is 0 for other conditions', async () => {
-				assert.equal((await exchangeState.getLengthOfEntries(account1, sUSD)).toString(), '0');
+				assert.equal((await exchangeState.getLengthOfEntries(account1, mimicUSD)).toString(), '0');
 				assert.equal((await exchangeState.getLengthOfEntries(account2, sBTC)).toString(), '0');
 			});
 			describe('when the entry is fetch by index 0', () => {
@@ -147,7 +147,7 @@ contract('ExchangeState', accounts => {
 				beforeEach(async () => {
 					expectedSecondEntryAdded = {
 						user: account1,
-						src: sUSD,
+						src: mimicUSD,
 						amount: toUnit('5'),
 						dest: sBTC,
 						amountReceived: toUnit('4'),

@@ -22,7 +22,7 @@ const { toBN } = require('web3-utils');
 
 contract('NativeEtherWrapper', async accounts => {
 	const synths = ['mimicUSD', 'mimicETH', 'ETH', 'MIME'];
-	const [sETH, ETH] = ['mimicETH', 'ETH'].map(toBytes32);
+	const [mimicETH, ETH] = ['mimicETH', 'ETH'].map(toBytes32);
 
 	const [, owner, , , account1] = accounts;
 
@@ -64,10 +64,10 @@ contract('NativeEtherWrapper', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [mimicETH, ETH]);
 
 		// Depot requires ETH rates
-		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

@@ -294,9 +294,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 12. Pay the minting fees to the fee pool.
         _payFees(issueFee, currency);
 
-        // 13. If its short, convert back to sUSD, otherwise issue the loan.
+        // 13. If its short, convert back to mimicUSD, otherwise issue the loan.
         if (short) {
-            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, sUSD));
+            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, mimicUSD));
             manager.incrementShorts(currency, amount);
 
             if (shortingRewards[currency] != address(0)) {
@@ -383,7 +383,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 2. Pay the service fee for collapsing the loan.
         uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-        _payFees(serviceFee, sUSD);
+        _payFees(serviceFee, mimicUSD);
         collateral = collateral.sub(serviceFee);
 
         // 3. Record loan as closed.
@@ -538,14 +538,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
 
         // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
-        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
+        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, mimicUSD);
 
         // 5. Reduce the collateral by the amount repaid (minus the exchange fees).
         loan.collateral = loan.collateral.sub(expectedAmount);
 
         // 6. Process the payment and pay the exchange fees if needed.
         _processPayment(loan, payment);
-        _payFees(fee, sUSD);
+        _payFees(fee, mimicUSD);
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
@@ -579,7 +579,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 6. If its short, issue the synths.
         if (loan.short) {
             manager.incrementShorts(loan.currency, amount);
-            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
+            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, mimicUSD));
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
@@ -645,8 +645,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // Take an amount of fees in a certain synth and convert it to mimicUSD before paying the fee pool.
     function _payFees(uint amount, bytes32 synth) internal {
         if (amount > 0) {
-            if (synth != sUSD) {
-                amount = _exchangeRates().effectiveValue(synth, amount, sUSD);
+            if (synth != mimicUSD) {
+                amount = _exchangeRates().effectiveValue(synth, amount, mimicUSD);
             }
             _synthsUSD().issue(_feePool().FEE_ADDRESS(), amount);
             _feePool().recordFeePaid(amount);

@@ -61,7 +61,7 @@ contract('CollateralShort', async accounts => {
 	const updateRatesWithDefaults = async () => {
 		const sBTC = toBytes32('sBTC');
 
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const setupShort = async () => {
@@ -100,7 +100,7 @@ contract('CollateralShort', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, mimicETH]);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -156,8 +156,8 @@ contract('CollateralShort', async accounts => {
 			)
 		);
 
-		assert.isTrue(await manager.isSynthManaged(sUSD));
-		assert.isTrue(await manager.isSynthManaged(sETH));
+		assert.isTrue(await manager.isSynthManaged(mimicUSD));
+		assert.isTrue(await manager.isSynthManaged(mimicETH));
 		assert.isTrue(await manager.isSynthManaged(sBTC));
 
 		assert.isTrue(await manager.hasAllCollaterals([short.address]));
@@ -171,7 +171,7 @@ contract('CollateralShort', async accounts => {
 
 		// set a 0.3% default exchange fee rate
 		const exchangeFeeRate = toUnit('0.003');
-		const synthKeys = [sETH, sUSD];
+		const synthKeys = [mimicETH, sUSD];
 		await setExchangeFeeRateForSynths({
 			owner,
 			systemSettings,
@@ -209,7 +209,7 @@ contract('CollateralShort', async accounts => {
 		it('should set constructor params on deployment', async () => {
 			assert.equal(await short.owner(), owner);
 			assert.equal(await short.resolver(), addressResolver.address);
-			assert.equal(await short.collateralKey(), sUSD);
+			assert.equal(await short.collateralKey(), mimicUSD);
 			assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
 			assert.equal(await short.synths(1), toBytes32('SynthsETH'));
 			assert.bnEqual(await short.minCratio(), toUnit(1.2));
@@ -312,7 +312,7 @@ contract('CollateralShort', async accounts => {
 				});
 
 				it('should tell the manager about the short', async () => {
-					assert.bnEqual(await manager.short(sETH), oneETH);
+					assert.bnEqual(await manager.short(mimicETH), oneETH);
 				});
 			});
 		});
@@ -361,7 +361,7 @@ contract('CollateralShort', async accounts => {
 					amountAfter: loan.amount,
 				});
 
-				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
+				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, mimicUSD);
 
 				assert.bnClose(
 					await sUSDSynth.balanceOf(FEE_ADDRESS),
@@ -505,7 +505,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, [mimicETH], [toUnit(50)]);
 
 				// simulate buying mimicETH for 50 susd.
 				await sUSDSynth.transfer(owner, toUnit(50), { from: account1 });
@@ -527,7 +527,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, [mimicETH], [toUnit(150)]);
 
 				// simulate buying mimicETH for 150 susd.
 				await sUSDSynth.transfer(owner, toUnit(150), { from: account1 });
@@ -559,7 +559,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			it('liquidation should be capped to only fix the c ratio', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(110)]);
+				await updateAggregatorRates(exchangeRates, [mimicETH], [toUnit(110)]);
 
 				// When the ETH price increases 10% to $110, the short
 				// which started at 130% should allow 0.18 ETH
@@ -610,7 +610,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, [mimicETH], [toUnit(150)]);
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
@@ -651,7 +651,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, [mimicETH], [toUnit(150)]);
 
 				// 111100 + 50 - (2 * 50) = 111,050
 
@@ -695,7 +695,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, [mimicETH], [toUnit(50)]);
 
 				// 111100 - 50 + (2 * 50) = 111,150
 

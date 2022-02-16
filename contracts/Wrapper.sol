@@ -113,7 +113,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     function totalIssuedSynths() public view returns (uint) {
         // synths issued by this contract is always exactly equal to the balance of reserves
-        return exchangeRates().effectiveValue(currencyKey, targetSynthIssued, sUSD);
+        return exchangeRates().effectiveValue(currencyKey, targetSynthIssued, mimicUSD);
     }
 
     function getReserves() public view returns (uint) {
@@ -232,7 +232,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         uint reserves = getReserves();
 
         uint excessAmount = reserves > targetSynthIssued.add(amount) ? reserves.sub(targetSynthIssued.add(amount)) : 0;
-        uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
+        uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, mimicUSD);
 
         // Mint `amount` to user.
         synth().issue(msg.sender, amount);
@@ -252,7 +252,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // this is logically equivalent to getReserves() - (targetSynthIssued - amount), without going negative
         uint excessAmount = reserves.add(amount) > targetSynthIssued ? reserves.add(amount).sub(targetSynthIssued) : 0;
 
-        uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
+        uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, mimicUSD);
 
         // Burn `amount` of currencyKey from user.
         synth().burn(msg.sender, amount);

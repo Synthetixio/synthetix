@@ -21,7 +21,7 @@ let ExchangerWithFeeRecAlternatives;
 
 contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 	const [, owner] = accounts;
-	const [sUSD, sETH, sBTC, iETH] = ['mimicUSD', 'mimicETH', 'sBTC', 'iETH'].map(toBytes32);
+	const [mimicUSD, sETH, sBTC, iETH] = ['mimicUSD', 'mimicETH', 'sBTC', 'iETH'].map(toBytes32);
 	const maxAtomicValuePerBlock = toUnit('1000000');
 	const baseFeeRate = toUnit('0.003'); // 30bps
 	const overrideFeeRate = toUnit('0.01'); // 100bps
@@ -85,7 +85,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							{ setting: 'exchangeFeeRate', synth: sETH, value: '0' },
 							() => {
 								it('is set to 0', async () => {
-									assert.bnEqual(await this.instance.feeRateForAtomicExchange(sUSD, sETH), '0');
+									assert.bnEqual(await this.instance.feeRateForAtomicExchange(mimicUSD, sETH), '0');
 								});
 							}
 						);
@@ -96,7 +96,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							() => {
 								it('is set to the configured atomic override value', async () => {
 									assert.bnEqual(
-										await this.instance.feeRateForAtomicExchange(sUSD, sETH),
+										await this.instance.feeRateForAtomicExchange(mimicUSD, sETH),
 										overrideFeeRate
 									);
 								});
@@ -109,7 +109,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							() => {
 								it('is set to the configured base value', async () => {
 									assert.bnEqual(
-										await this.instance.feeRateForAtomicExchange(sUSD, sETH),
+										await this.instance.feeRateForAtomicExchange(mimicUSD, sETH),
 										baseFeeRate
 									);
 								});
@@ -119,7 +119,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 									() => {
 										it('is set to the configured atomic override value', async () => {
 											assert.bnEqual(
-												await this.instance.feeRateForAtomicExchange(sUSD, sETH),
+												await this.instance.feeRateForAtomicExchange(mimicUSD, sETH),
 												overrideFeeRate
 											);
 										});
@@ -139,7 +139,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 						amountReceived,
 						fee,
 						exchangeFeeRate,
-					} = await instance.getAmountsForAtomicExchange(amountIn, sUSD, sETH);
+					} = await instance.getAmountsForAtomicExchange(amountIn, mimicUSD, sETH);
 					const expectedAmountReceivedWithoutFees = multiplyDecimal(amountIn, atomicRate);
 
 					assert.bnEqual(amountReceived, expectedAmountReceivedWithoutFees.sub(fee));
@@ -150,7 +150,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 				behaviors.whenMockedEffectiveAtomicRateWithValue(
 					{
 						atomicRate,
-						sourceCurrency: sUSD,
+						sourceCurrency: mimicUSD,
 						// These system rates need to be supplied but are ignored in calculating the amount recieved
 						systemSourceRate: toUnit('1'),
 						systemDestinationRate: toUnit('1'),
@@ -275,7 +275,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 															await assert.revert(
 																this.instance.exchange(
 																	...getExchangeArgs({
-																		sourceCurrencyKey: sUSD,
+																		sourceCurrencyKey: mimicUSD,
 																		destinationCurrencyKey: iETH,
 																	})
 																),
@@ -407,8 +407,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 					describe('when not exchangeable', () => {
 						it('reverts when src and dest are the same', async () => {
 							const args = getExchangeArgs({
-								sourceCurrencyKey: sUSD,
-								destinationCurrencyKey: sUSD,
+								sourceCurrencyKey: mimicUSD,
+								destinationCurrencyKey: mimicUSD,
 							});
 							await assert.revert(this.instance.exchangeAtomically(...args), "Can't be same synth");
 						});
@@ -439,8 +439,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 										systemDestinationRate: lastRate,
 										deviationFactor: toUnit('10'), // 10x
 										lastExchangeRates: [
-											[sUSD, lastRate],
-											[sETH, lastRate],
+											[mimicUSD, lastRate],
+											[mimicETH, lastRate],
 											[sBTC, lastRate],
 										],
 										owner,
@@ -450,7 +450,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											describe('when synth pricing is deemed volatile', () => {
 												it('reverts due to volatility', async () => {
 													const args = getExchangeArgs({
-														sourceCurrencyKey: sUSD,
+														sourceCurrencyKey: mimicUSD,
 														destinationCurrencyKey: sETH,
 													});
 													await assert.revert(
@@ -525,8 +525,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													systemDestinationRate: lastRate,
 													deviationFactor: deviationFactor,
 													lastExchangeRates: [
-														[sUSD, lastRate],
-														[sETH, lastRate],
+														[mimicUSD, lastRate],
+														[mimicETH, lastRate],
 													],
 													owner,
 												},
@@ -560,8 +560,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													systemDestinationRate: badRate,
 													deviationFactor: deviationFactor,
 													lastExchangeRates: [
-														[sUSD, lastRate],
-														[sETH, lastRate],
+														[mimicUSD, lastRate],
+														[mimicETH, lastRate],
 													],
 													owner,
 												},
@@ -595,8 +595,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													systemDestinationRate: lastRate,
 													deviationFactor: deviationFactor,
 													lastExchangeRates: [
-														[sUSD, lastRate],
-														[sETH, lastRate],
+														[mimicUSD, lastRate],
+														[mimicETH, lastRate],
 													],
 													owner,
 												},
@@ -637,8 +637,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 
 												deviationFactor: deviationFactor,
 												lastExchangeRates: [
-													[sUSD, unit],
-													[sETH, lastEthRate],
+													[mimicUSD, unit],
+													[mimicETH, lastEthRate],
 												],
 												owner,
 											},
@@ -718,7 +718,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																						const debtCacheUpdateCall = this.mocks.DebtCache.smocked
 																							.updateCachedSynthDebtsWithRates;
 																						assert.deepEqual(debtCacheUpdateCall.calls[0][0], [
-																							sUSD,
+																							mimicUSD,
 																							sETH,
 																						]);
 																						assert.deepEqual(debtCacheUpdateCall.calls[0][1], [

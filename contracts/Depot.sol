@@ -116,7 +116,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice Fallback function (exchanges ETH to sUSD)
+     * @notice Fallback function (exchanges ETH to mimicUSD)
      */
     function() external payable nonReentrant rateNotInvalid(ETH) notPaused {
         _exchangeEtherForSynths();
@@ -133,7 +133,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         rateNotInvalid(ETH)
         notPaused
         returns (
-            uint // Returns the number of Synths (sUSD) received
+            uint // Returns the number of Synths (mimicUSD) received
         )
     {
         return _exchangeEtherForSynths();
@@ -263,7 +263,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         rateNotInvalid(ETH)
         notPaused
         returns (
-            uint // Returns the number of Synths (sUSD) received
+            uint // Returns the number of Synths (mimicUSD) received
         )
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(ETH), "Guaranteed rate would not be received");
@@ -292,7 +292,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     function exchangeEtherForSNX()
         external
         payable
-        rateNotInvalid(SNX)
+        rateNotInvalid(MIME)
         rateNotInvalid(ETH)
         notPaused
         returns (
@@ -311,7 +311,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     function exchangeEtherForSNXAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
         external
         payable
-        rateNotInvalid(SNX)
+        rateNotInvalid(MIME)
         rateNotInvalid(ETH)
         notPaused
         returns (
@@ -320,7 +320,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     {
         require(guaranteedEtherRate == exchangeRates().rateForCurrency(ETH), "Guaranteed ether rate would not be received");
         require(
-            guaranteedSynthetixRate == exchangeRates().rateForCurrency(SNX),
+            guaranteedSynthetixRate == exchangeRates().rateForCurrency(MIME),
             "Guaranteed synthetix rate would not be received"
         );
 
@@ -350,7 +350,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
      */
     function exchangeSynthsForSNX(uint synthAmount)
         external
-        rateNotInvalid(SNX)
+        rateNotInvalid(MIME)
         notPaused
         returns (
             uint // Returns the number of MIME received
@@ -367,13 +367,13 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
      */
     function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate)
         external
-        rateNotInvalid(SNX)
+        rateNotInvalid(MIME)
         notPaused
         returns (
             uint // Returns the number of MIME received
         )
     {
-        require(guaranteedRate == exchangeRates().rateForCurrency(SNX), "Guaranteed rate would not be received");
+        require(guaranteedRate == exchangeRates().rateForCurrency(MIME), "Guaranteed rate would not be received");
 
         return _exchangeSynthsForSNX(synthAmount);
     }
@@ -476,7 +476,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
      */
     function synthetixReceivedForSynths(uint amount) public view returns (uint) {
         // And what would that be worth in MIME based on the current price?
-        return amount.divideDecimal(exchangeRates().rateForCurrency(SNX));
+        return amount.divideDecimal(exchangeRates().rateForCurrency(MIME));
     }
 
     /**

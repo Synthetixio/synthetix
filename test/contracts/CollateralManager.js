@@ -63,7 +63,7 @@ contract('CollateralManager', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -122,7 +122,7 @@ contract('CollateralManager', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, mimicETH]);
 
 		maxDebt = toUnit(50000000);
 
@@ -198,7 +198,7 @@ contract('CollateralManager', async accounts => {
 
 		await manager.addShortableSynths(
 			[toBytes32('SynthsETH'), toBytes32('SynthsBTC')],
-			[sETH, sBTC],
+			[mimicETH, sBTC],
 			{
 				from: owner,
 			}
@@ -292,9 +292,9 @@ contract('CollateralManager', async accounts => {
 
 	describe('adding synths', async () => {
 		it('should add the synths during construction', async () => {
-			assert.isTrue(await manager.isSynthManaged(sUSD));
+			assert.isTrue(await manager.isSynthManaged(mimicUSD));
 			assert.isTrue(await manager.isSynthManaged(sBTC));
-			assert.isTrue(await manager.isSynthManaged(sETH));
+			assert.isTrue(await manager.isSynthManaged(mimicETH));
 		});
 		it('should not allow duplicate synths to be added', async () => {
 			await manager.addSynths([toBytes32('SynthsUSD')], [toBytes32('mimicUSD')], {
@@ -381,9 +381,9 @@ contract('CollateralManager', async accounts => {
 
 	describe('tracking synth balances across collaterals', async () => {
 		beforeEach(async () => {
-			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+			tx = await ceth.open(toUnit(100), mimicUSD, { value: toUnit(2), from: account1 });
 			await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-			await cerc20.open(oneRenBTC, toUnit(100), sUSD, { from: account1 });
+			await cerc20.open(oneRenBTC, toUnit(100), mimicUSD, { from: account1 });
 			await cerc20.open(oneRenBTC, toUnit(0.01), sBTC, { from: account1 });
 			await short.open(toUnit(200), toUnit(1), sETH, { from: account1 });
 
@@ -391,11 +391,11 @@ contract('CollateralManager', async accounts => {
 		});
 
 		it('should correctly get the total mimicUSD balance', async () => {
-			assert.bnEqual(await manager.long(sUSD), toUnit(200));
+			assert.bnEqual(await manager.long(mimicUSD), toUnit(200));
 		});
 
 		it('should correctly get the total mimicETH balance', async () => {
-			assert.bnEqual(await manager.long(sETH), toUnit(1));
+			assert.bnEqual(await manager.long(mimicETH), toUnit(1));
 		});
 
 		it('should correctly get the total sBTC balance', async () => {
@@ -403,7 +403,7 @@ contract('CollateralManager', async accounts => {
 		});
 
 		it('should correctly get the total short ETTH balance', async () => {
-			assert.bnEqual(await manager.short(sETH), toUnit(1));
+			assert.bnEqual(await manager.short(mimicETH), toUnit(1));
 		});
 
 		it('should get the total long balance in mimicUSD correctly', async () => {
@@ -449,7 +449,7 @@ contract('CollateralManager', async accounts => {
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });
 
-			assert.bnEqual(await manager.long(sUSD), toUnit(100));
+			assert.bnEqual(await manager.long(mimicUSD), toUnit(100));
 		});
 
 		it('should reduce the total balance in mimicUSD when a loan is closed', async () => {
@@ -470,7 +470,7 @@ contract('CollateralManager', async accounts => {
 		beforeEach(async () => {
 			systemDebtBefore = (await debtCache.currentDebt()).debt;
 
-			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+			tx = await ceth.open(toUnit(100), mimicUSD, { value: toUnit(2), from: account1 });
 
 			id = getid(tx);
 		});
@@ -602,7 +602,7 @@ contract('CollateralManager', async accounts => {
 			describe('revert condtions', async () => {
 				it('should fail if not called by the collateral contract', async () => {
 					await assert.revert(
-						manager.updateShortRatesCollateral(sETH, toUnit(1), { from: owner }),
+						manager.updateShortRatesCollateral(mimicETH, toUnit(1), { from: owner }),
 						'Only collateral contracts'
 					);
 				});
@@ -612,7 +612,7 @@ contract('CollateralManager', async accounts => {
 					await onlyGivenAddressCanInvoke({
 						fnc: manager.updateShortRatesCollateral,
 						accounts,
-						args: [sETH, toUnit(1)],
+						args: [mimicETH, toUnit(1)],
 						address: short.address,
 						skipPassCheck: true,
 						reason: 'Only collateral contracts',

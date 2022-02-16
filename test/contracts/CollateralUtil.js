@@ -115,7 +115,7 @@ contract('CollateralUtil', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, mimicETH]);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -178,7 +178,7 @@ contract('CollateralUtil', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, sBTC], [100, 10000].map(toUnit));
 
 		await issuesUSDToAccount(toUnit(1000), owner);
 		await issuesBTCtoAccount(toUnit(10), owner);
@@ -208,7 +208,7 @@ contract('CollateralUtil', async accounts => {
 		 */
 
 		beforeEach(async () => {
-			tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, sUSD, {
+			tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, mimicUSD, {
 				from: account1,
 			});
 
@@ -255,24 +255,24 @@ contract('CollateralUtil', async accounts => {
 			collateralKey = await cerc20.collateralKey();
 		});
 
-		it('when BTC is @ $10000 and we are liquidating 1000 sUSD, then redeem 0.11 BTC', async () => {
-			collateralRedeemed = await util.collateralRedeemed(sUSD, oneThousandsUSD, collateralKey);
+		it('when BTC is @ $10000 and we are liquidating 1000 mimicUSD, then redeem 0.11 BTC', async () => {
+			collateralRedeemed = await util.collateralRedeemed(mimicUSD, oneThousandsUSD, collateralKey);
 
 			assert.bnEqual(collateralRedeemed, toUnit(0.11));
 		});
 
-		it('when BTC is @ $20000 and we are liquidating 1000 sUSD, then redeem 0.055 BTC', async () => {
+		it('when BTC is @ $20000 and we are liquidating 1000 mimicUSD, then redeem 0.055 BTC', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(20000)]);
 
-			collateralRedeemed = await util.collateralRedeemed(sUSD, oneThousandsUSD, collateralKey);
+			collateralRedeemed = await util.collateralRedeemed(mimicUSD, oneThousandsUSD, collateralKey);
 
 			assert.bnEqual(collateralRedeemed, toUnit(0.055));
 		});
 
-		it('when BTC is @ $7000 and we are liquidating 2500 sUSD, then redeem 0.36666 ETH', async () => {
+		it('when BTC is @ $7000 and we are liquidating 2500 mimicUSD, then redeem 0.36666 ETH', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
 
-			collateralRedeemed = await util.collateralRedeemed(sUSD, toUnit(2500), collateralKey);
+			collateralRedeemed = await util.collateralRedeemed(mimicUSD, toUnit(2500), collateralKey);
 
 			assert.bnClose(collateralRedeemed, toUnit(0.392857142857142857), '100');
 		});

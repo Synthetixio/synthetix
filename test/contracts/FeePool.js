@@ -57,7 +57,7 @@ contract('FeePool', async accounts => {
 	};
 
 	// CURRENCIES
-	const [sUSD, sAUD, SNX] = ['mimicUSD', 'sAUD', 'MIME'].map(toBytes32);
+	const [mimicUSD, sAUD, SNX] = ['mimicUSD', 'sAUD', 'MIME'].map(toBytes32);
 
 	let feePool,
 		debtCache,
@@ -231,7 +231,7 @@ contract('FeePool', async accounts => {
 
 			// Generate a fee.
 			const exchange = toUnit('10000');
-			await synthetix.exchange(sUSD, exchange, sAUD, { from: owner });
+			await synthetix.exchange(mimicUSD, exchange, sAUD, { from: owner });
 
 			await closeFeePeriod();
 
@@ -294,7 +294,7 @@ contract('FeePool', async accounts => {
 			await synthetix.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 			// Generate a fee.
-			await synthetix.exchange(sUSD, amount, sAUD, { from: owner });
+			await synthetix.exchange(mimicUSD, amount, sAUD, { from: owner });
 
 			// Should be no fees available yet because the period is still pending.
 			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
@@ -320,7 +320,7 @@ contract('FeePool', async accounts => {
 			await synthetix.issueSynths(amount2, { from: account1 });
 
 			// Generate a fee.
-			await synthetix.exchange(sUSD, amount1, sAUD, { from: owner });
+			await synthetix.exchange(mimicUSD, amount1, sAUD, { from: owner });
 
 			// Should be no fees available yet because the period is still pending.
 			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
@@ -335,7 +335,7 @@ contract('FeePool', async accounts => {
 			const fee2 = amount2.sub(amountReceivedFromExchange(amount2));
 
 			// Generate a fee.
-			await synthetix.exchange(sUSD, amount2, sAUD, { from: account1 });
+			await synthetix.exchange(mimicUSD, amount2, sAUD, { from: account1 });
 
 			// Should be only the previous fees available because the period is still pending.
 			assert.bnEqual(await feePool.totalFeesAvailable(), fee1);
@@ -363,7 +363,7 @@ contract('FeePool', async accounts => {
 			await closeFeePeriod();
 
 			// Generate a fee.
-			await synthetix.exchange(sUSD, amount, sAUD, { from: owner });
+			await synthetix.exchange(mimicUSD, amount, sAUD, { from: owner });
 
 			// Should be no fees available yet because the period is still pending.
 			let feesAvailable;
@@ -415,7 +415,7 @@ contract('FeePool', async accounts => {
 			await closeFeePeriod();
 
 			// Generate a fee.
-			await synthetix.exchange(sUSD, amount, sAUD, { from: owner });
+			await synthetix.exchange(mimicUSD, amount, sAUD, { from: owner });
 
 			let feesAvailable;
 			// Should be no fees available yet because the period is still pending.
@@ -766,7 +766,7 @@ contract('FeePool', async accounts => {
 				beforeEach(async () => {
 					// ensure claimFees() can succeed by default (generate fees and close period)
 					await synthetix.issueSynths(toUnit('10000'), { from: owner });
-					await synthetix.exchange(sUSD, toUnit('10'), sAUD, { from: owner });
+					await synthetix.exchange(mimicUSD, toUnit('10'), sAUD, { from: owner });
 					await closeFeePeriod();
 				});
 				['System', 'Issuance'].forEach(section => {
@@ -839,8 +839,8 @@ contract('FeePool', async accounts => {
 					const exchange1 = toUnit(((i + 1) * 10).toString());
 					const exchange2 = toUnit(((i + 1) * 15).toString());
 
-					await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
-					await synthetix.exchange(sUSD, exchange2, sAUD, { from: account1 });
+					await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: owner });
+					await synthetix.exchange(mimicUSD, exchange2, sAUD, { from: account1 });
 
 					await closeFeePeriod();
 				}
@@ -871,7 +871,7 @@ contract('FeePool', async accounts => {
 				await synthetix.issueSynths(toUnit('10000'), { from: owner });
 				await synthetix.issueSynths(toUnit('10000'), { from: account1 });
 
-				await synthetix.exchange(sUSD, toUnit(100), sAUD, { from: account1 });
+				await synthetix.exchange(mimicUSD, toUnit(100), sAUD, { from: account1 });
 
 				await closeFeePeriod();
 
@@ -914,7 +914,7 @@ contract('FeePool', async accounts => {
 
 				const exchange1 = toUnit((10).toString());
 
-				await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
+				await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: owner });
 
 				totalFees = totalFees.add(exchange1.sub(amountReceivedFromExchange(exchange1)));
 
@@ -938,7 +938,7 @@ contract('FeePool', async accounts => {
 				await synthetix.issueSynths(toUnit('10000'), { from: account1 });
 
 				// Generate fees
-				await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
+				await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: owner });
 				totalFees = totalFees.add(exchange1.sub(amountReceivedFromExchange(exchange1)));
 
 				await closeFeePeriod();
@@ -970,8 +970,8 @@ contract('FeePool', async accounts => {
 					const exchange1 = toUnit(((i + 1) * 10).toString());
 					const exchange2 = toUnit(((i + 1) * 15).toString());
 
-					await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
-					await synthetix.exchange(sUSD, exchange2, sAUD, { from: account1 });
+					await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: owner });
+					await synthetix.exchange(mimicUSD, exchange2, sAUD, { from: account1 });
 
 					totalFees = totalFees.add(exchange1.sub(amountReceivedFromExchange(exchange1)));
 					totalFees = totalFees.add(exchange2.sub(amountReceivedFromExchange(exchange2)));
@@ -1013,7 +1013,7 @@ contract('FeePool', async accounts => {
 
 				// Do a single exchange of all our synths to generate a fee.
 				const exchange1 = toUnit(100);
-				await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
+				await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: owner });
 
 				// Assert that the correct fee is in the fee pool.
 				const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
@@ -1093,7 +1093,7 @@ contract('FeePool', async accounts => {
 				await synthetix.issueMaxSynths({ from: owner });
 
 				// Increase the price so we start well and truly within our 20% ratio.
-				const newRate = (await exchangeRates.rateForCurrency(SNX)).add(web3.utils.toBN('1'));
+				const newRate = (await exchangeRates.rateForCurrency(MIME)).add(web3.utils.toBN('1'));
 				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
@@ -1105,7 +1105,7 @@ contract('FeePool', async accounts => {
 				await synthetix.issueMaxSynths({ from: owner });
 
 				// Increase the price so we start well and truly within our 20% ratio.
-				const newRate = (await exchangeRates.rateForCurrency(SNX)).add(
+				const newRate = (await exchangeRates.rateForCurrency(MIME)).add(
 					step.mul(web3.utils.toBN('1'))
 				);
 				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
@@ -1117,7 +1117,7 @@ contract('FeePool', async accounts => {
 				const threshold = Number(issuanceRatio) * (1 + Number(penaltyThreshold));
 				// Start from the current price of synthetix and slowly decrease the price until
 				// we hit almost zero. Assert the correct penalty at each point.
-				while ((await exchangeRates.rateForCurrency(SNX)).gt(step.mul(web3.utils.toBN('2')))) {
+				while ((await exchangeRates.rateForCurrency(MIME)).gt(step.mul(web3.utils.toBN('2')))) {
 					const ratio = await synthetix.collateralisationRatio(owner);
 
 					if (ratio.lte(toUnit(threshold))) {
@@ -1129,7 +1129,7 @@ contract('FeePool', async accounts => {
 					}
 
 					// Bump the rate down.
-					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(step);
+					const newRate = (await exchangeRates.rateForCurrency(MIME)).sub(step);
 					await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 					await debtCache.takeDebtSnapshot();
 				}
@@ -1147,7 +1147,7 @@ contract('FeePool', async accounts => {
 				await closeFeePeriod();
 
 				// Do a transfer to generate fees
-				await synthetix.exchange(sUSD, amount, sAUD, { from: owner });
+				await synthetix.exchange(mimicUSD, amount, sAUD, { from: owner });
 				const fee = amount.sub(amountReceivedFromExchange(amount));
 
 				// We should have zero fees available because the period is still open.
@@ -1159,7 +1159,7 @@ contract('FeePool', async accounts => {
 				assert.bnClose(await getFeesAvailable(account1), fee.div(web3.utils.toBN('2')));
 
 				// But if the price of MIME decreases by 15%, we will lose all the fees.
-				const currentRate = await exchangeRates.rateForCurrency(SNX);
+				const currentRate = await exchangeRates.rateForCurrency(MIME);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
 				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
@@ -1187,7 +1187,7 @@ contract('FeePool', async accounts => {
 				await closeFeePeriod();
 
 				// Do a transfer to generate fees
-				await synthetix.exchange(sUSD, amount, sAUD, { from: owner });
+				await synthetix.exchange(mimicUSD, amount, sAUD, { from: owner });
 				const fee = amount.sub(amountReceivedFromExchange(amount));
 
 				// We should have zero fees available because the period is still open.
@@ -1199,7 +1199,7 @@ contract('FeePool', async accounts => {
 				assert.bnClose(await getFeesAvailable(account1), fee.div(web3.utils.toBN('2')));
 
 				// But if the price of MIME decreases by 15%, we will lose all the fees.
-				const currentRate = await exchangeRates.rateForCurrency(SNX);
+				const currentRate = await exchangeRates.rateForCurrency(MIME);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
 				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
@@ -1250,7 +1250,7 @@ contract('FeePool', async accounts => {
 				const exchange1 = toUnit((10).toString());
 
 				// generate fee
-				await synthetix.exchange(sUSD, exchange1, sAUD, { from: account1 });
+				await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: account1 });
 
 				await closeFeePeriod();
 			}
@@ -1390,7 +1390,7 @@ contract('FeePool', async accounts => {
 					await synthetix.issueSynths(toUnit('1000'), { from: owner });
 					await synthetix.issueSynths(toUnit('1000'), { from: account1 });
 
-					await synthetix.exchange(sUSD, exchange1, sAUD, { from: owner });
+					await synthetix.exchange(mimicUSD, exchange1, sAUD, { from: owner });
 
 					totalFees = totalFees.add(exchange1.sub(amountReceivedFromExchange(exchange1)));
 

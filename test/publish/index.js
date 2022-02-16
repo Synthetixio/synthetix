@@ -155,7 +155,7 @@ describe('publish scripts', () => {
 
 		MockAggregatorFactory = await createMockAggregatorFactory(accounts.deployer);
 
-		[sUSD, sBTC, sETH] = ['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32);
+		[mimicUSD, sBTC, mimicETH] = ['mimicUSD', 'sBTC', 'mimicETH'].map(toBytes32);
 
 		gasLimit = 8000000;
 		gasPrice = ethers.utils.parseUnits('5', 'gwei');
@@ -799,7 +799,7 @@ describe('publish scripts', () => {
 						describe('when user1 exchange 1000 mimicUSD for mimicETH (the MultiCollateralSynth)', () => {
 							let sETHBalanceAfterExchange;
 							beforeEach(async () => {
-								await Synthetix.exchange(sUSD, ethers.utils.parseEther('1000'), sETH, overrides);
+								await Synthetix.exchange(mimicUSD, ethers.utils.parseEther('1000'), sETH, overrides);
 								sETHBalanceAfterExchange = await callMethodWithRetry(
 									sETHContract.balanceOf(accounts.first.address)
 								);
@@ -816,7 +816,7 @@ describe('publish scripts', () => {
 							});
 							it('and their mimicETH balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
-									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), sUSD, sETH)
+									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), mimicUSD, sETH)
 								);
 								assert.strictEqual(
 									ethers.utils.formatEther(sETHBalanceAfterExchange.toString()),
@@ -829,7 +829,7 @@ describe('publish scripts', () => {
 							let sBTCBalanceAfterExchange;
 							beforeEach(async () => {
 								const tx = await Synthetix.exchange(
-									sUSD,
+									mimicUSD,
 									ethers.utils.parseEther('1000'),
 									sBTC,
 									overrides
@@ -851,7 +851,7 @@ describe('publish scripts', () => {
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
-									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), sUSD, sBTC)
+									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), mimicUSD, sBTC)
 								);
 								assert.strictEqual(
 									ethers.utils.formatEther(sBTCBalanceAfterExchange.toString()),
@@ -911,7 +911,7 @@ describe('publish scripts', () => {
 												sUSDContract.balanceOf(accounts.first.address)
 											);
 											const [amountReceived] = await callMethodWithRetry(
-												Exchanger.getAmountsForExchange(sBTCBalanceAfterExchange, sBTC, sUSD)
+												Exchanger.getAmountsForExchange(sBTCBalanceAfterExchange, sBTC, mimicUSD)
 											);
 											assert.strictEqual(
 												ethers.utils.formatEther(balance.toString()),
@@ -942,14 +942,14 @@ describe('publish scripts', () => {
 								});
 								it('when exchange occurs into that synth, the synth is suspended', async () => {
 									const tx = await Synthetix.exchange(
-										sUSD,
+										mimicUSD,
 										ethers.utils.parseEther('1'),
 										sETH,
 										overrides
 									);
 									await tx.wait();
 
-									const { suspended, reason } = await SystemStatus.synthSuspension(sETH);
+									const { suspended, reason } = await SystemStatus.synthSuspension(mimicETH);
 									assert.strictEqual(suspended, true);
 									assert.strictEqual(reason.toString(), '65');
 								});

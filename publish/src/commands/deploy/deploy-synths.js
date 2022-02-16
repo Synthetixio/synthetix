@@ -56,7 +56,7 @@ module.exports = async ({
 			force: addNewSynths,
 		});
 
-		// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD)
+		// additionally deploy an ERC20 proxy for the synth if it's legacy (mimicUSD)
 		let proxyERC20ForSynth;
 		if (currencyKey === 'mimicUSD') {
 			proxyERC20ForSynth = await deployer.deployContract({

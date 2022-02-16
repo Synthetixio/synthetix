@@ -177,7 +177,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         if (synths.length > 0) {
             for (uint i = 0; i < synths.length; i++) {
                 bytes32 synth = synths[i];
-                if (synth == sUSD) {
+                if (synth == mimicUSD) {
                     susdValue = susdValue.add(state.long(synth));
                 } else {
                     (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
@@ -225,7 +225,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     function getBorrowRate() public view returns (uint borrowRate, bool anyRateIsInvalid) {
         // get the mime backed debt.
-        uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
+        uint snxDebt = _issuer().totalIssuedSynths(mimicUSD, true);
 
         // now get the non mime backed debt.
         (uint nonSnxDebt, bool ratesInvalid) = totalLong();
@@ -297,7 +297,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid) {
-        uint usdAmount = _exchangeRates().effectiveValue(currency, amount, sUSD);
+        uint usdAmount = _exchangeRates().effectiveValue(currency, amount, mimicUSD);
 
         (uint longAndShortValue, bool invalid) = totalLongAndShort();
 

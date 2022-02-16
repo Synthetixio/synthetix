@@ -52,7 +52,7 @@ contract('Rewards Integration Tests', accounts => {
 	// };
 
 	// CURRENCIES
-	const [sUSD, sAUD, sEUR, sBTC, MIME, iBTC, sETH, ETH] = [
+	const [mimicUSD, sAUD, sEUR, sBTC, MIME, iBTC, sETH, ETH] = [
 		'mimicUSD',
 		'sAUD',
 		'sEUR',
@@ -63,7 +63,7 @@ contract('Rewards Integration Tests', accounts => {
 		'ETH',
 	].map(toBytes32);
 
-	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
+	const synthKeys = [mimicUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
 
 	const fastForwardAndCloseFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
@@ -477,7 +477,7 @@ contract('Rewards Integration Tests', accounts => {
 			// await logFeePeriods();
 
 			// Account 1 leaves the system in week 2
-			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
+			const burnableTotal = await synthetix.debtBalanceOf(account1, mimicUSD);
 			await synthetix.burnSynths(burnableTotal, { from: account1 });
 			// await logFeesByPeriod(account1);
 
@@ -529,7 +529,7 @@ contract('Rewards Integration Tests', accounts => {
 			);
 
 			// Account 1 leaves the system
-			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
+			const burnableTotal = await synthetix.debtBalanceOf(account1, mimicUSD);
 			await synthetix.burnSynths(burnableTotal, { from: account1 });
 
 			// FastForward into the second mintable week
@@ -591,8 +591,8 @@ contract('Rewards Integration Tests', accounts => {
 			await synthetix.issueSynths(tenK, { from: account1 });
 			await synthetix.issueSynths(tenK, { from: account2 });
 
-			await synthetix.exchange(sUSD, tenK, sBTC, { from: account1 });
-			await synthetix.exchange(sUSD, tenK, sBTC, { from: account2 });
+			await synthetix.exchange(mimicUSD, tenK, sBTC, { from: account1 });
+			await synthetix.exchange(mimicUSD, tenK, sBTC, { from: account2 });
 
 			await fastForwardAndCloseFeePeriod();
 			// //////////////////////////////////////////////
@@ -650,9 +650,9 @@ contract('Rewards Integration Tests', accounts => {
 			// disable dynamic fee here otherwise it will flag rates as too volatile
 			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
-			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, sUSD, sBTC);
-			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account1 });
-			await synthetix.exchange(sBTC, amountReceived, sUSD, { from: account2 });
+			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, mimicUSD, sBTC);
+			await synthetix.exchange(sBTC, amountReceived, mimicUSD, { from: account1 });
+			await synthetix.exchange(sBTC, amountReceived, mimicUSD, { from: account2 });
 
 			// Close so we can claim
 			await fastForwardAndCloseFeePeriod();
@@ -728,7 +728,7 @@ contract('Rewards Integration Tests', accounts => {
 			// // now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
 			// // Account 1 exchanges all sBTC back to sUSD
 			// const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
-			// await synthetix.exchange(sBTC, acc1sBTCBalance, sUSD, { from: account1 });
+			// await synthetix.exchange(sBTC, acc1sBTCBalance, mimicUSD, { from: account1 });
 			// const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
 			// const amountAfterExchangeInUSD = await exchangeRates.effectiveValue(
 			// 	sBTC,
@@ -944,7 +944,7 @@ contract('Rewards Integration Tests', accounts => {
 
 		it('should apply no penalty when users claim rewards above the penalty threshold ratio of 1%', async () => {
 			// Decrease MIME collateral price by .9%
-			const currentRate = await exchangeRates.rateForCurrency(SNX);
+			const currentRate = await exchangeRates.rateForCurrency(MIME);
 			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.009')));
 
 			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
@@ -968,7 +968,7 @@ contract('Rewards Integration Tests', accounts => {
 		});
 		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
 			// But if the price of MIME decreases a lot...
-			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
+			const newRate = (await exchangeRates.rateForCurrency(MIME)).sub(toUnit('0.09'));
 			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
 			// we will fall into the >100% bracket
 			assert.equal(await feePool.isFeesClaimable(account1), false);
@@ -984,8 +984,8 @@ contract('Rewards Integration Tests', accounts => {
 			await synthetix.issueSynths(oneThousand, { from: account2 });
 			await synthetix.issueSynths(oneThousand, { from: account1 });
 
-			await synthetix.exchange(sUSD, oneThousand, sAUD, { from: account2 });
-			await synthetix.exchange(sUSD, oneThousand, sAUD, { from: account1 });
+			await synthetix.exchange(mimicUSD, oneThousand, sAUD, { from: account2 });
+			await synthetix.exchange(mimicUSD, oneThousand, sAUD, { from: account1 });
 
 			await fastForwardAndCloseFeePeriod();
 		});

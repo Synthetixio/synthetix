@@ -25,7 +25,7 @@ const {
 } = require('../..');
 
 contract('Synth', async accounts => {
-	const [sUSD, MIME, sEUR] = ['mimicUSD', 'MIME', 'sEUR'].map(toBytes32);
+	const [mimicUSD, MIME, sEUR] = ['mimicUSD', 'MIME', 'sEUR'].map(toBytes32);
 
 	const [deployerAccount, owner, , , account1, account2] = accounts;
 
@@ -206,12 +206,12 @@ contract('Synth', async accounts => {
 			beforeEach(async () => {
 				await setStatus({ owner, systemStatus, section: 'Synth', synth, suspend: true });
 			});
-			it('when transfer() is invoked for sUSD, it works as expected', async () => {
+			it('when transfer() is invoked for mimicUSD, it works as expected', async () => {
 				await sUSDContract.transfer(account1, amount, {
 					from: owner,
 				});
 			});
-			it('when transferFrom() is invoked for sUSD, it works as expected', async () => {
+			it('when transferFrom() is invoked for mimicUSD, it works as expected', async () => {
 				await sUSDContract.transferFrom(owner, account1, amount, {
 					from: account1,
 				});
@@ -221,7 +221,7 @@ contract('Synth', async accounts => {
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section: 'SynthExchange', synth, suspend: true });
 				});
-				it('when transfer() is invoked for sUSD, it works as expected', async () => {
+				it('when transfer() is invoked for mimicUSD, it works as expected', async () => {
 					await sUSDContract.transfer(account1, amount, {
 						from: owner,
 					});
@@ -471,12 +471,12 @@ contract('Synth', async accounts => {
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section: 'Synth', synth, suspend: true });
 				});
-				it('when transferAndSettle() is invoked for sUSD, it works as expected', async () => {
+				it('when transferAndSettle() is invoked for mimicUSD, it works as expected', async () => {
 					await sUSDContract.transferAndSettle(account1, amount, {
 						from: owner,
 					});
 				});
-				it('when transferFromAndSettle() is invoked for sUSD, it works as expected', async () => {
+				it('when transferFromAndSettle() is invoked for mimicUSD, it works as expected', async () => {
 					await sUSDContract.transferFromAndSettle(owner, account1, amount, {
 						from: account1,
 					});
@@ -756,7 +756,7 @@ contract('Synth', async accounts => {
 				// balance of sEUR after exchange fees
 				const balanceOf = await sEURContract.balanceOf(owner);
 
-				const amountInUSD = await exchangeRates.effectiveValue(sEUR, balanceOf, sUSD);
+				const amountInUSD = await exchangeRates.effectiveValue(sEUR, balanceOf, mimicUSD);
 
 				// Do a single transfer of all sEUR to FEE_ADDRESS
 				await sEURContract.transfer(FEE_ADDRESS, balanceOf, {

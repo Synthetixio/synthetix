@@ -27,8 +27,8 @@ const {
 const { setupAllContracts } = require('./setup');
 
 contract('PurgeableSynth', accounts => {
-	const [sUSD, MIME, sAUD, iETH] = ['mimicUSD', 'MIME', 'sAUD', 'iETH'].map(toBytes32);
-	const synthKeys = [sUSD, sAUD, iETH];
+	const [mimicUSD, MIME, sAUD, iETH] = ['mimicUSD', 'MIME', 'sAUD', 'iETH'].map(toBytes32);
+	const synthKeys = [mimicUSD, sAUD, iETH];
 	const [deployerAccount, owner, , , account1, account2] = accounts;
 
 	let exchangeRates,
@@ -171,7 +171,7 @@ contract('PurgeableSynth', accounts => {
 				beforeEach(async () => {
 					// issue the user 100K USD worth of iETH
 					amountToExchange = toUnit(1e5);
-					const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
+					const iETHAmount = await exchangeRates.effectiveValue(mimicUSD, amountToExchange, iETH);
 					await issueSynthsToUser({
 						owner,
 						issuer,
@@ -234,7 +234,7 @@ contract('PurgeableSynth', accounts => {
 							amountReceived,
 							// exchangeFee,
 							// exchangeFeeRate,
-						} = await exchanger.getAmountsForExchange(balanceBeforePurge, iETH, sUSD);
+						} = await exchanger.getAmountsForExchange(balanceBeforePurge, iETH, mimicUSD);
 
 						assert.bnEqual(
 							userBalance,
@@ -290,7 +290,7 @@ contract('PurgeableSynth', accounts => {
 						// Note: 5000 is chosen to be large enough to accommodate exchange fees which
 						// ultimately limit the total supply of that synth
 						const amountToExchange = toUnit(5000);
-						const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
+						const iETHAmount = await exchangeRates.effectiveValue(mimicUSD, amountToExchange, iETH);
 						await issueSynthsToUser({
 							owner,
 							issuer,

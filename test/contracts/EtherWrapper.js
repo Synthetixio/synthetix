@@ -21,7 +21,7 @@ const { toBN } = require('web3-utils');
 
 contract('EtherWrapper', async accounts => {
 	const synths = ['mimicUSD', 'mimicETH', 'ETH', 'MIME'];
-	const [sETH, ETH] = ['mimicETH', 'ETH'].map(toBytes32);
+	const [mimicETH, ETH] = ['mimicETH', 'ETH'].map(toBytes32);
 
 	const ONE = toBN('1');
 
@@ -95,9 +95,9 @@ contract('EtherWrapper', async accounts => {
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [mimicETH, ETH]);
 		// Depot requires ETH rates
-		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, [mimicETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -149,7 +149,7 @@ contract('EtherWrapper', async accounts => {
 				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
 			});
 			describe('totalIssuedSynths', async () => {
-				it('sETH = 0', async () => {
+				it('mimicETH = 0', async () => {
 					assert.bnEqual(await etherWrapper.sETHIssued(), toBN('0'));
 				});
 				it('sUSD = 0', async () => {
@@ -553,7 +553,7 @@ contract('EtherWrapper', async accounts => {
 				hash: tx.tx,
 				contracts: [sUSDSynth],
 			});
-			const rate = await exchangeRates.rateForCurrency(sETH);
+			const rate = await exchangeRates.rateForCurrency(mimicETH);
 
 			decodedEventEqual({
 				event: 'Issued',

@@ -11,7 +11,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const [sUSD, sETH] = ['mimicUSD', 'mimicETH'].map(toBytes32);
+const [mimicUSD, mimicETH] = ['mimicUSD', 'mimicETH'].map(toBytes32);
 
 let ExchangerWithFeeRecAlternatives;
 
@@ -313,10 +313,10 @@ module.exports = function({ accounts }) {
 				}
 
 				beforeEach(async () => {
-					this.mocks.sUSD = await mockSynth(sUSD);
-					this.mocks.sETH = await mockSynth(sETH);
+					this.mocks.sUSD = await mockSynth(mimicUSD);
+					this.mocks.sETH = await mockSynth(mimicETH);
 					this.mocks.Issuer.smocked.synths.will.return.with(currencyKey => {
-						if (currencyKey === sUSD) {
+						if (currencyKey === mimicUSD) {
 							return this.mocks.sUSD.address;
 						} else if (currencyKey === sETH) {
 							return this.mocks.sETH.address;

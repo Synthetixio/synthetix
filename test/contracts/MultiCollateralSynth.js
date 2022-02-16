@@ -83,8 +83,8 @@ contract('MultiCollateralSynth', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await setupPriceAggregators(exchangeRates, owner, [mimicETH, sBTC]);
+		await updateAggregatorRates(exchangeRates, [mimicETH, sBTC], [100, 10000].map(toUnit));
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 

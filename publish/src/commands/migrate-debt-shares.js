@@ -107,7 +107,7 @@ const migrateDebtShares = async ({
 		}
 
 		try {
-			const debtBalanceOf = await Synthetix.debtBalanceOf(address, sUSD);
+			const debtBalanceOf = await Synthetix.debtBalanceOf(address, mimicUSD);
 
 			if (debtBalanceOf.gt(ethers.utils.parseEther(threshold))) {
 				addressCollateralAmounts.push({ address, debtBalanceOf });

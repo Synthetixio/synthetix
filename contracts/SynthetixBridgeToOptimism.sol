@@ -115,7 +115,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         emit iOVM_L1TokenGateway.WithdrawalFinalized(to, amount);
     }
 
-    // invoked by RewardsDistribution on L1 (takes SNX)
+    // invoked by RewardsDistribution on L1 (takes MIME)
     function notifyRewardAmount(uint256 amount) external {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
