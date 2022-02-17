@@ -35,7 +35,6 @@ module.exports = async ({
 		SupplySchedule,
 		Synthetix,
 		SynthetixEscrow,
-		SynthetixState,
 		SystemStatus,
 		TokenStateSynthetix,
 	} = deployer.deployedContracts;
@@ -105,19 +104,6 @@ module.exports = async ({
 			write: 'setAssociatedContract',
 			writeArg: addressOf(FeePool),
 			comment: 'Ensure the FeePool contract can write to its EternalStorage',
-		});
-	}
-
-	if (FeePool && FeePoolState) {
-		// Rewire FeePoolState if there is a FeePool upgrade
-		await runStep({
-			contract: 'FeePoolState',
-			target: FeePoolState,
-			read: 'feePool',
-			expected: input => input === addressOf(FeePool),
-			write: 'setFeePool',
-			writeArg: addressOf(FeePool),
-			comment: 'Ensure the FeePool contract can write to its State',
 		});
 	}
 
@@ -208,20 +194,6 @@ module.exports = async ({
 			write: 'setAssociatedContract',
 			writeArg: addressOf(Synthetix),
 			comment: 'Ensure the Synthetix contract can write to its TokenState contract',
-		});
-	}
-
-	if (SynthetixState && Issuer) {
-		const IssuerAddress = addressOf(Issuer);
-		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
-		await runStep({
-			contract: 'SynthetixState',
-			target: SynthetixState,
-			read: 'associatedContract',
-			expected: input => input === IssuerAddress,
-			write: 'setAssociatedContract',
-			writeArg: IssuerAddress,
-			comment: 'Ensure that Synthetix can write to its State contract',
 		});
 	}
 
