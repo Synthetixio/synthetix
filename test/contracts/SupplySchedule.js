@@ -340,11 +340,10 @@ contract('SupplySchedule', async accounts => {
 					assert.bnEqual(expectedIssuance, mintableSupply);
 				});
 				it('should mint 2 weeks of inflation from INFLATION_START_DATE', async () => {
-					const INFLATION_START_DATE = 1644364800; // 2022-02-09T00:00:00+00:00
 					const expectedIssuance = initialWeeklySupply.mul(new BN(2));
 
 					// fast forward EVM by 2 WEEK
-					const inWeek2 = INFLATION_START_DATE + 2 * WEEK + 5000;
+					const inWeek2 = inflationStartDate + 2 * WEEK + 5000;
 					await fastForwardTo(new Date(inWeek2 * 1000));
 
 					// Mint the first week of supply
