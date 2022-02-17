@@ -101,7 +101,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * and store the time of the event.
      * @param supplyMinted the amount of SNX the total supply was inflated by.
      * */
-    function recordMintEvent(uint supplyMinted) external onlySynthetix returns (bool) {
+    function recordMintEvent(uint supplyMinted) external onlySynthetix returns (uint) {
         uint numberOfWeeksIssued = weeksSinceLastIssuance();
 
         // add number of weeks minted to weekCounter
@@ -112,7 +112,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
         lastMintEvent = INFLATION_START_DATE.add(weekCounter.mul(MINT_PERIOD_DURATION)).add(MINT_BUFFER);
 
         emit SupplyMinted(supplyMinted, numberOfWeeksIssued, lastMintEvent, now);
-        return true;
+        return minterReward;
     }
 
     // ========== SETTERS ========== */
