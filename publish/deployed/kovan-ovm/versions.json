@@ -948,8 +948,9 @@
 			},
 			"Issuer": {
 				"address": "0x42d9ac3ebebb9479f24360847350b4F7EADECE50",
-				"status": "current",
-				"keccak256": "0x54c8fdc1678d3567f6b2da2833660116e47afb838a91a68c6a625f83a449af8e"
+				"status": "replaced",
+				"keccak256": "0x54c8fdc1678d3567f6b2da2833660116e47afb838a91a68c6a625f83a449af8e",
+				"replaced_in": "v2.60.0-alpha"
 			},
 			"OwnerRelayOnOptimism": {
 				"address": "0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94",
@@ -999,8 +1000,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x099B3881d63d3Eef0ec32783Aa64B726672213E2",
-				"status": "current",
-				"keccak256": "0x87c92d55af4f4b01932ec25770439770836ed60b9652a3f4ab1ec6e0d82d302a"
+				"status": "replaced",
+				"keccak256": "0x87c92d55af4f4b01932ec25770439770836ed60b9652a3f4ab1ec6e0d82d302a",
+				"replaced_in": "v2.60.0-alpha"
 			},
 			"CollateralEth": {
 				"address": "0xc7960401a5Ca5A201d41Cf6532C7d2803f8D5Ce4",
@@ -1019,8 +1021,9 @@
 		"contracts": {
 			"FeePool": {
 				"address": "0x129fd2f3a799bD156e8c00599760AfC2f0f953dA",
-				"status": "current",
-				"keccak256": "0xdb500335962961757d10ccbded7e9de457824b4c2d428c8c9aa63f18a5ca3914"
+				"status": "replaced",
+				"keccak256": "0xdb500335962961757d10ccbded7e9de457824b4c2d428c8c9aa63f18a5ca3914",
+				"replaced_in": "v2.60.0-alpha"
 			}
 		}
 	},
@@ -1046,7 +1049,7 @@
 				"address": "0x65a200D47Ef8BABb624E4571b43981f56d6f7a64",
 				"status": "replaced",
 				"keccak256": "0x671c429c6d065512f998d82e5a3051ddc3f2f124126b21dc768b4d49a0e58aba",
-				"replaced_in": "v2.59.0"
+				"replaced_in": "v2.60.0-alpha"
 			},
 			"SystemSettingsLib": {
 				"address": "0x415bE5d790F51fabF4321Be402917DB518a09Ef3",
@@ -1055,18 +1058,38 @@
 			}
 		}
 	},
-	"v2.59.0": {
-		"tag": "v2.59.0",
-		"fulltag": "v2.59.0",
-		"release": "Mirzam",
+	"v2.60.0-alpha": {
+		"tag": "v2.60.0-alpha",
+		"fulltag": "v2.60.0-alpha",
+		"release": "Alphard",
 		"network": "kovan",
-		"date": "2022-02-07T15:02:06-05:00",
-		"commit": "515481b3502b3b3cab6eb7cb525a01f45090eb98",
+		"date": "2022-02-04T21:07:04-05:00",
+		"commit": "2f87808393160040c0e959ffb8443f4647488f93",
 		"contracts": {
+			"FeePool": {
+				"address": "0xAe35A8BC0e190D4544579a331229e809B2f7ca7b",
+				"status": "current",
+				"keccak256": "0xc6f47b8837de6142ea3dfa32df0e8606d901fb8f81caa6e49f9a66b21356270e"
+			},
+			"Synthetix": {
+				"address": "0xc7d4AF2B7c32ea13ea64911c672C89254251c652",
+				"status": "current",
+				"keccak256": "0x556b1e187596601c7a676e0174fb7b324997f452cb4ea6e21cb706f91878bbe8"
+			},
 			"Exchanger": {
 				"address": "0x7B49bAfad6d255880F7844a022DbdB1De5440Fe5",
 				"status": "current",
-				"keccak256": "0x671c429c6d065512f998d82e5a3051ddc3f2f124126b21dc768b4d49a0e58aba"
+				"keccak256": "0x09bcfe2d038c92bc8b74839bd4f3f7d00a938f74ea18c7279d098727757a66b4"
+			},
+			"Issuer": {
+				"address": "0x1Fdd3949B995950C2D247F688aAD6a78471d7C77",
+				"status": "current",
+				"keccak256": "0x05cbff63e33f617d131784688052bf6e13108c067b564d4757cfa0e326d95581"
+			},
+			"SynthetixDebtShare": {
+				"address": "0xEEc90126956e4de2394Ec6Bd1ce8dCc1097D32C9",
+				"status": "current",
+				"keccak256": "0x403192bc309d6eee98ddbfaeed166b50c2665df94167c6970e785a65b71dd0e3"
 			}
 		}
 	}

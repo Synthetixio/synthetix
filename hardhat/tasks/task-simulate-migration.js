@@ -6,6 +6,7 @@ const { gray, yellow } = require('chalk');
 const ethers = require('ethers');
 const {
 	getUsers,
+	getNextRelease,
 	getTarget,
 	constants: { CONTRACTS_FOLDER, MIGRATIONS_FOLDER },
 } = require('../..');
@@ -29,20 +30,19 @@ task(
 		'Generate the migration by compiling, preparing and deploying with generateSolidity enabled'
 	)
 	.addFlag('test', 'Run the integration tests after the migration is executed')
-	.addParam('release', 'Name of the release')
 	.setAction(async (taskArguments, hre) => {
 		const network = 'mainnet';
 
-		console.log(
-			gray(`Starting migration forked simulation for release ${yellow(taskArguments.release)}`)
-		);
+		const { releaseName } = getNextRelease({ useOvm: false });
+
+		console.log(gray(`Starting migration forked simulation for release ${yellow(releaseName)}`));
 
 		// create the migration contract by compiling and deploying on a fork
 		if (taskArguments.generate) {
 			console.log(
 				gray(
 					`Generate enabled. Compiling, preparing and deploying to generate the migration for ${yellow(
-						taskArguments.release
+						releaseName
 					)}`
 				)
 			);
@@ -71,7 +71,7 @@ task(
 					'..',
 					CONTRACTS_FOLDER,
 					MIGRATIONS_FOLDER,
-					`Migration_${taskArguments.release}.sol`
+					`Migration_${releaseName}.sol`
 				)
 			);
 
@@ -84,7 +84,7 @@ task(
 		await hre.run('compile', { optimizer: true });
 
 		// get artifacts via hardhat/ethers
-		const Migration = await hre.ethers.getContractFactory(`Migration_${taskArguments.release}`);
+		const Migration = await hre.ethers.getContractFactory(`Migration_${releaseName}`);
 
 		const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
 
@@ -99,7 +99,7 @@ task(
 
 		await migration.deployTransaction.wait();
 
-		console.log(gray(`Deployed ${taskArguments.release} release to ${yellow(migration.address)}`));
+		console.log(gray(`Deployed ${releaseName} release to ${yellow(migration.address)}`));
 
 		const contractsRequiringOwnership = await migration.contractsRequiringOwnership();
 

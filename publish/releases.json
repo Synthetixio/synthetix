@@ -411,7 +411,8 @@
 		{
 			"sip": 185,
 			"layer": "both",
-			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"]
+			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"],
+			"released": "both"
 		},
 		{
 			"sip": 187,
@@ -454,6 +455,12 @@
 			"layer": "both",
 			"sources": ["ExchangeRates"],
 			"released": "both"
+		},
+		{
+			"sip": 199,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 200,
@@ -855,20 +862,125 @@
 		},
 		{
 			"name": "Alphard",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 60
 			},
-			"sips": []
+			"sips": [185]
 		},
 		{
 			"name": "Alphard (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 60
+			},
+			"sips": [185]
+		},
+		{
+			"name": "Polaris (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 61
+			},
+			"sips": [199]
+		},
+		{
+			"name": "Hamal",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 62
+			},
+			"sips": []
+		},
+		{
+			"name": "Hamal (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 62
+			},
+			"sips": []
+		},
+		{
+			"name": "Algieba",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 63
+			},
+			"sips": []
+		},
+		{
+			"name": "Algieba (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 63
+			},
+			"sips": []
+		},
+		{
+			"name": "Diphda",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": []
+		},
+		{
+			"name": "Diphda (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": []
+		},
+		{
+			"name": "Mizar",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": []
+		},
+		{
+			"name": "Mizar (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": []
+		},
+		{
+			"name": "Nunki",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 66
+			},
+			"sips": []
+		},
+		{
+			"name": "Nunki (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 66
 			},
 			"sips": []
 		}
