@@ -162,7 +162,9 @@ contract Synthetix is BaseSynthetix {
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         emitTransfer(address(this), msg.sender, minterReward);
 
+        // Increase total supply by minted amount
         totalSupply = totalSupply.add(supplyToMint);
+        emitTransfer(address(0), address(this), supplyToMint);
 
         return true;
     }
