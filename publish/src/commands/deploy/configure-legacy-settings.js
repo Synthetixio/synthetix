@@ -23,8 +23,6 @@ module.exports = async ({
 		ExchangeState,
 		FeePool,
 		FeePoolEternalStorage,
-		FeePoolState,
-		Issuer,
 		Liquidator,
 		ProxyERC20,
 		ProxyFeePool,
