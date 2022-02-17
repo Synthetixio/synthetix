@@ -13,6 +13,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 
@@ -31,6 +32,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
+    bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
 
     // ========== CONSTRUCTOR ==========
 
@@ -50,12 +52,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](5);
+        addresses = new bytes32[](6);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
         addresses[4] = CONTRACT_LIQUIDATORREWARDS;
+        addresses[5] = CONTRACT_LIQUIDATOR;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -76,6 +79,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function liquidatorRewards() internal view returns (ILiquidatorRewards) {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
+    }
+
+    function liquidator() internal view returns (ILiquidator) {
+        return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
 
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
@@ -315,14 +322,27 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
-        // Transfer SNX redeemed to the LiquidatorRewards contract
-        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
-        bool success = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
-        require(success, "Transfer did not succeed");
+        // Distribute the redeemed SNX rewards.
+        // These transfers will revert if the amount to redeem is more than balanceOf account (e.g. due to escrowed balance)
 
-        // Inform the LiquidatorRewards contract about the freshly redeemed SNX rewards.
-        // TODO: notify about flagger and liquidator rewards too
-        liquidatorRewards().notifyRewardAmount(totalRedeemed);
+        // Transfer the flag reward to the account who flagged this account for liquidation.
+        address flagger = liquidator().getLiquidationCallerForAccount(account);
+        uint flagReward = liquidator().flagReward();
+        bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
+        require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
+
+        // Transfer the liquidate reward to message sender.
+        uint liquidateReward = liquidator().liquidateReward();
+        bool liquidateRewardTransferSucceeded = _transferByProxy(account, messageSender, liquidateReward);
+        require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
+
+        // Transfer the remaining redeemed SNX to the LiquidatorRewards contract
+        uint remaining = totalRedeemed.sub(liquidateReward.add(flagReward));
+        bool success = _transferByProxy(account, address(liquidatorRewards()), remaining);
+        require(success, "Remaining rewards transfer did not succeed");
+
+        // TODO: Inform the LiquidatorRewards contract about the remaining redeemed SNX rewards.
+        // liquidatorRewards().notifyRewardAmount(remaining);
 
         return success;
     }

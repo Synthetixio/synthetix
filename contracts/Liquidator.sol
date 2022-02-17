@@ -116,6 +116,11 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return liquidation.deadline;
     }
 
+    function getLiquidationCallerForAccount(address account) external view returns (address) {
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        return liquidation.caller;
+    }
+
     /// @notice Determines if an account is eligible for forced liquidation
     /// @dev An account with no SNX collateral will not be open for liquidation since the ratio is 0
     function isForcedLiquidationOpen(address account) external view returns (bool) {
@@ -155,7 +160,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     function _hasEnoughCollateral(address account) internal view returns (bool) {
         uint balance = IERC20(address(synthetix())).balanceOf(account);
-        return balance >= getLiquidateReward();
+        return balance > (getLiquidateReward().add(getFlagReward()));
     }
 
     /**
@@ -181,8 +186,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
         _liquidation.deadline = eternalStorageLiquidator().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
 
-        // liquidation caller not used
-        _liquidation.caller = address(0);
+        // This is used to reward the caller for flagging an account for liquidation.
+        _liquidation.caller = eternalStorageLiquidator().getAddressValue(_getKey(LIQUIDATION_CALLER, account));
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -251,7 +256,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         uint _deadline,
         address _caller
     ) internal {
-        // record liquidation deadline
+        // record liquidation deadline and caller
         eternalStorageLiquidator().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
         eternalStorageLiquidator().setAddressValue(_getKey(LIQUIDATION_CALLER, _account), _caller);
     }
