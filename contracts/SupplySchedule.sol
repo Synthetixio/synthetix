@@ -143,6 +143,8 @@ contract SupplySchedule is Owned, ISupplySchedule {
 
     /**
      * @notice Set the weekly inflationAmount.
+     * Protocol DAO sets the amount based on the target staking ratio
+     * Will be replaced with on-chain calculation of the staking ratio for inflation
      * */
     function setInflationAmount(uint amount) external onlyOwner {
         inflationAmount = amount;
