@@ -10,7 +10,7 @@ const {
 	constants: { inflationStartTimestampInSecs, ZERO_ADDRESS },
 } = require('../..');
 
-const { toUnit, fastForwardTo, multiplyDecimal } = require('../utils')();
+const { toUnit, fastForwardTo } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -22,7 +22,7 @@ contract('SupplySchedule', async accounts => {
 
 	const [, owner, synthetix, account1, account2] = accounts;
 
-	let supplySchedule, synthetixProxy, decayRate;
+	let supplySchedule, synthetixProxy;
 
 	addSnapshotBeforeRestoreAfterEach(); // ensure EVM timestamp resets to inflationStartDate
 
@@ -112,7 +112,7 @@ contract('SupplySchedule', async accounts => {
 		});
 
 		describe('Given inflation amount of 800,000 - mintable supply', async () => {
-			before(async () => {
+			beforeEach(async () => {
 				await supplySchedule.setInflationAmount(initialWeeklySupply, { from: owner });
 			});
 
@@ -165,7 +165,6 @@ contract('SupplySchedule', async accounts => {
 
 				assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
 			});
-
 			it('should calculate the mintable supply for 2 weeks in in week 3', async () => {
 				const expectedIssuance = initialWeeklySupply.mul(new BN(2));
 
@@ -223,6 +222,32 @@ contract('SupplySchedule', async accounts => {
 
 				// fake minting 2 weeks again
 				await checkMintedValues(expectedIssuance, 2);
+			});
+
+			describe('Setting new inflation amount', () => {
+				const newWeeklySupply = toUnit('2000050');
+				beforeEach(async () => {
+					await supplySchedule.setInflationAmount(newWeeklySupply, { from: owner });
+				});
+
+				it('should calculate the new amount of inflation for one week', async () => {
+					const expectedIssuance = newWeeklySupply;
+					const inWeekTwo = weekOne + WEEK;
+					// fast forward EVM to Week 2 in schedule starting at UNIX 1644364800+
+					await fastForwardTo(new Date(inWeekTwo * 1000));
+
+					assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				});
+
+				it('should calculate the mintable supply for 2 weeks in in week 3', async () => {
+					const expectedIssuance = newWeeklySupply.mul(new BN(2));
+
+					const inWeekThree = weekOne + 2 * WEEK;
+					// fast forward EVM to within Week 3 in schedule starting at UNIX 1644364800+
+					await fastForwardTo(new Date(inWeekThree * 1000));
+
+					assert.bnEqual(await supplySchedule.mintableSupply(), expectedIssuance);
+				});
 			});
 
 			describe('rounding down lastMintEvent to number of weeks issued since inflation start date', async () => {
@@ -289,12 +314,12 @@ contract('SupplySchedule', async accounts => {
 				});
 			});
 
-			describe('setting weekCounter and lastMintEvent on supplySchedule to week 39', async () => {
+			describe('setting weekCounter and lastMintEvent on supplySchedule', async () => {
 				let instance, lastMintEvent;
 				beforeEach(async () => {
 					// constructor(address _owner, uint _lastMintEvent, uint _currentWeek) //
-					lastMintEvent = 1575552876; // Thursday, 5 December 2019 13:34:36
-					const weekCounter = 39; // latest week
+					lastMintEvent = 0; // No last mint event
+					const weekCounter = 40; // latest week
 					instance = await setupContract({
 						accounts,
 						contract: 'SupplySchedule',
@@ -304,24 +329,31 @@ contract('SupplySchedule', async accounts => {
 					// setup new instance
 					await instance.setSynthetixProxy(synthetixProxy.address, { from: owner });
 					await synthetixProxy.setTarget(synthetix, { from: owner });
+					await instance.setInflationAmount(initialWeeklySupply, { from: owner });
 				});
 
-				it('should calculate week 40 as week 1 of decay ', async () => {
-					const decay = multiplyDecimal(decayRate, initialWeeklySupply);
+				it('should calculate 0 weeks of inflation from INFLATION_START_DATE', async () => {
+					const expectedIssuance = new BN(0);
 
-					const expectedIssuance = initialWeeklySupply.sub(decay);
+					const mintableSupply = await instance.mintableSupply();
 
-					// fast forward EVM by 1 WEEK to inside Week 41
-					const inWeek41 = lastMintEvent + 1 * WEEK + 500;
-					await fastForwardTo(new Date(inWeek41 * 1000));
+					assert.bnEqual(expectedIssuance, mintableSupply);
+				});
+				it('should mint 2 weeks of inflation from INFLATION_START_DATE', async () => {
+					const INFLATION_START_DATE = 1644364800; // 2022-02-09T00:00:00+00:00
+					const expectedIssuance = initialWeeklySupply.mul(new BN(2));
+
+					// fast forward EVM by 2 WEEK
+					const inWeek2 = INFLATION_START_DATE + 2 * WEEK + 5000;
+					await fastForwardTo(new Date(inWeek2 * 1000));
 
 					// Mint the first week of supply
 					const mintableSupply = await instance.mintableSupply();
 
-					assert.bnClose(expectedIssuance, mintableSupply);
+					assert.bnEqual(expectedIssuance, mintableSupply);
 
 					// call recordMintEvent
-					await checkMintedValues(mintableSupply, 1, instance);
+					await checkMintedValues(mintableSupply, 2, instance);
 				});
 			});
 		});

@@ -66,7 +66,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
         }
 
         // Get total amount to mint * by number of weeks to mint
-        totalAmount = inflationAmount.multiplyDecimal(weeksSinceLastIssuance());
+        totalAmount = inflationAmount.mul(weeksSinceLastIssuance());
 
         return totalAmount;
     }
