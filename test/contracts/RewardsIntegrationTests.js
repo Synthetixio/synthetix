@@ -65,6 +65,8 @@ contract('Rewards Integration Tests', accounts => {
 
 	const synthKeys = [sUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
 
+	const initialInflationAmount = toUnit(800000);
+
 	const fastForwardAndCloseFeePeriod = async () => {
 		const feePeriodDuration = await feePool.feePeriodDuration();
 		// Note: add on a small addition of 10 seconds - this seems to have
@@ -186,7 +188,8 @@ contract('Rewards Integration Tests', accounts => {
 	beforeEach(async () => {
 		// Fastforward a year into the staking rewards supply
 		// await fastForwardAndUpdateRates(YEAR + MINUTE);
-		await fastForwardAndUpdateRates(WEEK + MINUTE);
+		await supplySchedule.setInflationAmount(initialInflationAmount, { from: owner });
+		await fastForwardAndUpdateRates(WEEK + DAY);
 
 		// Assign 1/3 of total SNX to 3 accounts
 		const snxTotalSupply = await synthetix.totalSupply();
