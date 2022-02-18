@@ -43,8 +43,8 @@ module.exports = async ({
 }) => {
 	let currentSynthetixSupply;
 	let oldExrates;
-	let currentLastMintEvent;
-	let currentWeekOfInflation;
+	let currentLastMintEvent = 0;
+	let currentWeekOfInflation = 0;
 	let inflationSupplyToDate;
 	let systemSuspended = false;
 	let systemSuspendedReason;
@@ -53,9 +53,11 @@ module.exports = async ({
 		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
-		const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
-		currentWeekOfInflation = await oldSupplySchedule.weekCounter();
-		currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
+		if (config['SupplySchedule']) {
+			const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
+			currentWeekOfInflation = await oldSupplySchedule.weekCounter();
+			currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
+		}
 
 		// inflationSupplyToDate = total supply - 100m
 		inflationSupplyToDate = parseUnits(currentSynthetixSupply.toString(), 'wei').sub(
@@ -64,8 +66,6 @@ module.exports = async ({
 	} catch (err) {
 		if (freshDeploy) {
 			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
-			currentLastMintEvent = 0;
-			currentWeekOfInflation = 0;
 		} else {
 			console.error(
 				red(
