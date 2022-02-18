@@ -901,17 +901,7 @@
 				"major": 2,
 				"minor": 62
 			},
-			"sips": []
-		},
-		{
-			"name": "Hamal (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 62
-			},
-			"sips": []
+			"sips": [202]
 		},
 		{
 			"name": "Algieba",
