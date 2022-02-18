@@ -6,7 +6,6 @@ const { gray, green, yellow, red } = require('chalk');
 
 const {
 	utils: { parseUnits, formatUnits, isAddress },
-	constants,
 } = require('ethers');
 
 const checkAggregatorPrices = require('./check-aggregator-prices');
@@ -16,7 +15,7 @@ const { confirmAction, parameterNotice } = require('../../util');
 const { getLatestSolTimestamp } = require('../../solidity');
 
 const {
-	constants: { CONTRACTS_FOLDER, inflationStartTimestampInSecs },
+	constants: { CONTRACTS_FOLDER },
 } = require('../../../..');
 
 module.exports = async ({
@@ -54,27 +53,19 @@ module.exports = async ({
 		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
+		const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
+		currentWeekOfInflation = await oldSupplySchedule.weekCounter();
+		currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
+
 		// inflationSupplyToDate = total supply - 100m
 		inflationSupplyToDate = parseUnits(currentSynthetixSupply.toString(), 'wei').sub(
 			parseUnits((100e6).toString(), 'wei')
 		);
-
-		// Check result is > 0 else set to 0 for currentWeek
-		currentWeekOfInflation = currentWeekOfInflation.gt(constants.Zero)
-			? currentWeekOfInflation.toNumber()
-			: 0;
-
-		// Calculate lastMintEvent as Inflation start date + number of weeks issued * secs in weeks
-		const mintingBuffer = 86400;
-		const secondsInWeek = 604800;
-		const inflationStartDate = inflationStartTimestampInSecs;
-		currentLastMintEvent =
-			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
 		if (freshDeploy) {
 			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
-			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
+			currentWeekOfInflation = 0;
 		} else {
 			console.error(
 				red(
