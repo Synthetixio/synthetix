@@ -94,7 +94,7 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 			describe('when mint is invoked', () => {
 				before('mint', async () => {
 					Synthetix = Synthetix.connect(ownerL1);
-					SupplySchedule = SupplySchedule.connet(ownerL1);
+					SupplySchedule = SupplySchedule.connect(ownerL1);
 					await SupplySchedule.setInflationAmount(inflationAmount);
 					const tx = await Synthetix.mint();
 					depositReceipt = await tx.wait();
