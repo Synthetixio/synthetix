@@ -33,7 +33,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // The number of SNX minted per week
     uint public inflationAmount;
 
-    uint public maxInflationAmount = 3e6; // max inflation amount 3e6
+    uint public maxInflationAmount = 3e6 * 1e18; // max inflation amount 3,000,000
 
     // Address of the SynthetixProxy for the onlySynthetix modifier
     address payable public synthetixProxy;

@@ -39,7 +39,13 @@ contract('SupplySchedule', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: supplySchedule.abi,
 			ignoreParents: ['Owned'],
-			expected: ['recordMintEvent', 'setMinterReward', 'setSynthetixProxy', 'setInflationAmount'],
+			expected: [
+				'recordMintEvent',
+				'setMinterReward',
+				'setSynthetixProxy',
+				'setInflationAmount',
+				'setMaxInflationAmount',
+			],
 		});
 	});
 
@@ -110,7 +116,47 @@ contract('SupplySchedule', async accounts => {
 				accounts,
 			});
 		});
+		it('should disallow a non-owner from setting the inflation amount', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: supplySchedule.setInflationAmount,
+				args: ['0'],
+				address: owner,
+				accounts,
+			});
+		});
+		it('should disallow a non-owner from setting the max inflation amount', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: supplySchedule.setMaxInflationAmount,
+				args: ['0'],
+				address: owner,
+				accounts,
+			});
+		});
+		it('should allow setting inflaton amount <= max inflation amount', async () => {
+			const inflationAmount = toUnit(10000);
+			await supplySchedule.setInflationAmount(inflationAmount, { from: owner });
+		});
+		it('should revert when setting inflaton amount > max inflation amount', async () => {
+			// get the max inflation amount
+			const maxInflationAmount = await supplySchedule.maxInflationAmount();
+			await assert.revert(
+				supplySchedule.setInflationAmount(maxInflationAmount.add(new BN(10)), { from: owner }),
+				'Amount above maximum inflation'
+			);
 
+			// update the max inflation amount lower and test failure
+			const newMaxInflationAmount = toUnit(2e6);
+			await supplySchedule.setMaxInflationAmount(newMaxInflationAmount, { from: owner });
+			await assert.revert(
+				supplySchedule.setInflationAmount(newMaxInflationAmount.add(new BN(10)), { from: owner }),
+				'Amount above maximum inflation'
+			);
+
+			// update the max inflation amount higher and should pass with original maxInflationAmount
+			const higherInflation = toUnit(4e6);
+			await supplySchedule.setMaxInflationAmount(higherInflation, { from: owner });
+			await supplySchedule.setInflationAmount(maxInflationAmount, { from: owner });
+		});
 		describe('Given inflation amount of 800,000 - mintable supply', async () => {
 			beforeEach(async () => {
 				await supplySchedule.setInflationAmount(initialWeeklySupply, { from: owner });
