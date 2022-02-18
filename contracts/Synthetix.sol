@@ -139,6 +139,8 @@ contract Synthetix is BaseSynthetix {
         uint supplyToMint = _supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
 
+        emitTransfer(address(0), address(this), supplyToMint);
+
         // record minting event before mutation to token supply
         uint minterReward = _supplySchedule.recordMintEvent(supplyToMint);
 
@@ -162,7 +164,6 @@ contract Synthetix is BaseSynthetix {
 
         // Increase total supply by minted amount
         totalSupply = totalSupply.add(supplyToMint);
-        emitTransfer(address(0), address(this), supplyToMint);
 
         return true;
     }

@@ -33,6 +33,8 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // The number of SNX minted per week
     uint public inflationAmount;
 
+    uint public maxInflationAmount = 3e6; // max inflation amount 3e6
+
     // Address of the SynthetixProxy for the onlySynthetix modifier
     address payable public synthetixProxy;
 
@@ -100,6 +102,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * week counter for the number of weeks minted (probabaly always 1)
      * and store the time of the event.
      * @param supplyMinted the amount of SNX the total supply was inflated by.
+     * @return minterReward the amount of SNX reward for caller
      * */
     function recordMintEvent(uint supplyMinted) external onlySynthetix returns (uint) {
         uint numberOfWeeksIssued = weeksSinceLastIssuance();
@@ -144,11 +147,17 @@ contract SupplySchedule is Owned, ISupplySchedule {
     /**
      * @notice Set the weekly inflationAmount.
      * Protocol DAO sets the amount based on the target staking ratio
-     * Will be replaced with on-chain calculation of the staking ratio for inflation
+     * Will be replaced with on-chain calculation of the staking ratio
      * */
     function setInflationAmount(uint amount) external onlyOwner {
+        require(amount <= maxInflationAmount, "Amount above maximum inflation");
         inflationAmount = amount;
         emit InflationAmountUpdated(inflationAmount);
+    }
+
+    function setMaxInflationAmount(uint amount) external onlyOwner {
+        maxInflationAmount = amount;
+        emit MaxInflationAmountUpdated(inflationAmount);
     }
 
     // ========== MODIFIERS ==========
@@ -179,6 +188,11 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * @notice Emitted when the Inflation amount is updated
      * */
     event InflationAmountUpdated(uint newInflationAmount);
+
+    /**
+     * @notice Emitted when the max Inflation amount is updated
+     * */
+    event MaxInflationAmountUpdated(uint newInflationAmount);
 
     /**
      * @notice Emitted when setSynthetixProxy is called changing the Synthetix Proxy address
