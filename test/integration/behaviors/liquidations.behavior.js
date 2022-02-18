@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
 const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
@@ -26,6 +27,13 @@ function itCanLiquidate({ ctx }) {
 			({ owner, user4, user5, user6 } = ctx.users);
 
 			SystemSettings = SystemSettings.connect(owner);
+		});
+
+		before(async function() {
+			if (!SystemSettings.flagReward) {
+				console.log(chalk.yellow('> Skipping since SIP-148 is not implemented'));
+				this.skip();
+			}
 		});
 
 		before('system settings are set', async () => {

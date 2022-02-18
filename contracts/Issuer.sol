@@ -800,6 +800,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
     }
 
+    // TODO: Inform the LiquidatorRewards that there has been a change in debt
+
     function _addToDebtRegister(
         address from,
         uint amount,
@@ -811,12 +813,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // in which case, the first account to mint gets the debt. yw.
         if (sds.totalSupply() == 0) {
             sds.mintShare(from, amount);
-            liquidatorRewards().notifyDebtChange(from, int(amount));
-        }
-        else {
-            uint amountToMint = _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply());
-            sds.mintShare(from, amountToMint);
-            liquidatorRewards().notifyDebtChange(from, int(amountToMint));
+        } else {
+            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
     }
 
@@ -832,13 +830,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         if (debtToRemove == existingDebt) {
             sds.burnShare(from, currentDebtShare);
-            liquidatorRewards().notifyDebtChange(from, -int(currentDebtShare));
-        }
-        else {
+        } else {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
-            uint amountToBurn = balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare;
-            sds.burnShare(from, amountToBurn);
-            liquidatorRewards().notifyDebtChange(from, -int(amountToBurn));
+            sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
     }
 
