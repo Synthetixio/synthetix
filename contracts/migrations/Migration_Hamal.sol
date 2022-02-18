@@ -62,10 +62,6 @@ contract Migration_Hamal is BaseMigration {
             ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
             "Invalid contract supplied for Synthetix"
         );
-        require(
-            ISynthetixNamedContract(new_SupplySchedule_contract).CONTRACT_NAME() == "SupplySchedule",
-            "Invalid contract supplied for SupplySchedule"
-        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();

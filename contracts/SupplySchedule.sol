@@ -19,6 +19,8 @@ contract SupplySchedule is Owned, ISupplySchedule {
     using SafeDecimalMath for uint;
     using Math for uint;
 
+    bytes32 public constant CONTRACT_NAME = "SupplySchedule";
+
     // Time of the last inflation supply mint event
     uint public lastMintEvent;
 
