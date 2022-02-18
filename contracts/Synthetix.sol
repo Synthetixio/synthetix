@@ -139,13 +139,13 @@ contract Synthetix is BaseSynthetix {
         uint supplyToMint = _supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
 
+        emitTransfer(address(0), address(this), supplyToMint);
+
         // record minting event before mutation to token supply
-        _supplySchedule.recordMintEvent(supplyToMint);
+        uint minterReward = _supplySchedule.recordMintEvent(supplyToMint);
 
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
-        uint minterReward = _supplySchedule.minterReward();
-        // Get the remainder
         uint amountToDistribute = supplyToMint.sub(minterReward);
 
         // Set the token balance to the RewardsDistribution contract
@@ -162,6 +162,7 @@ contract Synthetix is BaseSynthetix {
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         emitTransfer(address(this), msg.sender, minterReward);
 
+        // Increase total supply by minted amount
         totalSupply = totalSupply.add(supplyToMint);
 
         return true;

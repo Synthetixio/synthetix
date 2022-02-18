@@ -9,6 +9,7 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 
 	const rewardsToDeposit = ethers.utils.parseEther('25000');
 	const tradingRewards = ethers.utils.parseEther('1000');
+	const inflationAmount = ethers.utils.parseEther('800000');
 
 	let ownerL1, ownerL2;
 
@@ -17,6 +18,7 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 		RewardsDistributionL2,
 		RewardEscrowV2L2,
 		Synthetix,
+		SupplySchedule,
 		SynthetixL2,
 		SynthetixBridgeToOptimism,
 		SynthetixBridgeEscrow,
@@ -33,6 +35,7 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 			({
 				RewardsDistribution: RewardsDistributionL1,
 				Synthetix,
+				SupplySchedule,
 				SynthetixBridgeEscrow,
 				SynthetixBridgeToOptimism,
 			} = ctx.l1.contracts);
@@ -91,7 +94,8 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 			describe('when mint is invoked', () => {
 				before('mint', async () => {
 					Synthetix = Synthetix.connect(ownerL1);
-
+					SupplySchedule = SupplySchedule.connect(ownerL1);
+					await SupplySchedule.setInflationAmount(inflationAmount);
 					const tx = await Synthetix.mint();
 					depositReceipt = await tx.wait();
 				});
