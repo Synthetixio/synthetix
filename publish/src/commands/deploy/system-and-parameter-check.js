@@ -195,7 +195,9 @@ module.exports = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(formatUnits(currentSynthetixSupply) / 1e6)}m`,
-		'Inflation Supply to date': `${Math.round(formatUnits(inflationSupplyToDate) / 1e6)}m`,
+		'Inflation Supply to date': inflationSupplyToDate
+			? `${Math.round(formatUnits(inflationSupplyToDate) / 1e6)}m`
+			: 'N/A',
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
