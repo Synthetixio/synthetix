@@ -55,7 +55,7 @@ module.exports = async ({
 
 		const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
 		currentWeekOfInflation = await oldSupplySchedule.weekCounter();
-		currentLastMintEvent = await oldSupplySchedule.currentLastMintEvent();
+		currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
 
 		// inflationSupplyToDate = total supply - 100m
 		inflationSupplyToDate = parseUnits(currentSynthetixSupply.toString(), 'wei').sub(
