@@ -53,8 +53,8 @@ module.exports = async ({
 		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
-		const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
-		if (oldSupplySchedule) {
+		if (config['SupplySchedule']) {
+			const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
 			currentWeekOfInflation = await oldSupplySchedule.weekCounter();
 			currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
 		}
