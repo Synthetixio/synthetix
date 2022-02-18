@@ -187,5 +187,14 @@
 	},
 	"SynthetixDebtShare": {
 		"deploy": false
+	},
+	"TokenStatesSOL": {
+		"deploy": false
+	},
+	"ProxysSOL": {
+		"deploy": false
+	},
+	"SynthsSOL": {
+		"deploy": false
 	}
 }
