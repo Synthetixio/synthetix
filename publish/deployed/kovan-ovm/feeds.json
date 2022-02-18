@@ -22,5 +22,9 @@
 	"AAVE": {
 		"asset": "AAVE",
 		"feed": "0xc051eCEaFd546e0Eb915a97F4D0643BEd7F98a11"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"feed": "0xF549af21578Cfe2385FFD3488B3039fd9e52f006"
 	}
 }

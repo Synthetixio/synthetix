@@ -28,5 +28,10 @@
 		"name": "sAAVE",
 		"asset": "AAVE",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sSOL",
+		"asset": "SOL",
+		"subclass": "MultiCollateralSynth"
 	}
 ]
