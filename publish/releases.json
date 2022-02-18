@@ -469,6 +469,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 202,
+			"layer": "base",
+			"sources": ["SupplySchedule", "Synthetix"]
+		},
+		{
 			"sip": 209,
 			"layer": "both",
 			"sources": ["Exchanger"],
