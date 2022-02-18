@@ -33,13 +33,13 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // The number of SNX minted per week
     uint public inflationAmount;
 
-    uint public maxInflationAmount = 3e6 * 1e18; // max inflation amount 3,000,000
+    uint public maxInflationAmount = 3e6 * SafeDecimalMath.unit(); // max inflation amount 3,000,000
 
     // Address of the SynthetixProxy for the onlySynthetix modifier
     address payable public synthetixProxy;
 
     // Max SNX rewards for minter
-    uint public constant MAX_MINTER_REWARD = 200 * 1e18;
+    uint public constant MAX_MINTER_REWARD = 200 * SafeDecimalMath.unit();
 
     // How long each inflation period is before mint can be called
     uint public constant MINT_PERIOD_DURATION = 1 weeks;
