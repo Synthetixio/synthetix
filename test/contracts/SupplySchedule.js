@@ -29,7 +29,7 @@ contract('SupplySchedule', async accounts => {
 	beforeEach(async () => {
 		supplySchedule = await setupContract({ accounts, contract: 'SupplySchedule' });
 
-		synthetixProxy = await setupContract({ accounts, contract: 'ProxyERC20' });
+		synthetixProxy = await setupContract({ accounts, contract: 'ProxySynthetix' });
 
 		await supplySchedule.setSynthetixProxy(synthetixProxy.address, { from: owner });
 		await synthetixProxy.setTarget(synthetix, { from: owner });

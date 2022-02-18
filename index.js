@@ -584,7 +584,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: 'SNX',
 				asset: 'SNX',
 				name: 'Synthetix',
-				address: targets.ProxyERC20.address,
+				address: targets.ProxySynthetix.address,
 				decimals: 18,
 			},
 			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
