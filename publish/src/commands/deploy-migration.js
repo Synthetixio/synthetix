@@ -169,11 +169,11 @@ const deployMigration = async ({
 	for (const addr of requiringOwnership) {
 		const foundContract = findContractByAddress({ addr });
 		console.log(gray('Nominating ownership on'), yellow(foundContract.name), yellow(addr));
-
 		const contract = new ethers.Contract(addr, compiled[foundContract.source].abi, signer);
+
 		await performTransactionalStep({
 			account: signer.address,
-			contract: contract.address,
+			contract: foundContract.name,
 			target: contract,
 			read: 'nominatedOwner',
 			expected: input => input === deployedContract.address,
@@ -201,19 +201,18 @@ const deployMigration = async ({
 	for (const addr of requiringOwnership) {
 		const foundContract = findContractByAddress({ addr });
 		console.log(gray('Accepting ownership on'), yellow(foundContract.name), yellow(addr));
+		const contract = new ethers.Contract(addr, compiled[foundContract.source].abi, signer);
 
-		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
-		const txnData = await contract.interface.encodeFunctionData('acceptOwnership', []);
-
-		const actionName = `${contract.address}.acceptOwnership()`;
-		const ownerAction = {
-			key: actionName,
-			target: contract.address,
-			action: actionName,
-			data: txnData,
-		};
-
-		appendOwnerAction(ownerAction);
+		await performTransactionalStep({
+			account: signer.address,
+			contract: foundContract.name,
+			target: contract,
+			write: 'acceptOwnership',
+			// DO NOT provide signer so that if we are the owner of a new contract, it doesn't try to accept directly
+			explorerLinkPrefix,
+			ownerActions,
+			ownerActionsFile,
+		});
 	}
 
 	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl });
