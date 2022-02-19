@@ -2,8 +2,8 @@ pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
 import "../AddressResolver.sol";
-import "../ProxyERC20.sol";
-import "../TokenState.sol";
+import "../Proxy.sol";
+import "../legacy/LegacyTokenState.sol";
 import "../RewardEscrow.sol";
 import "../SupplySchedule.sol";
 import "../RewardsDistribution.sol";
@@ -15,35 +15,35 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_Hamal is BaseMigration {
-    // https://kovan.etherscan.io/address/0x73570075092502472E4b61A7058Df1A4a1DB12f2;
-    address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
+    // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
+    address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://kovan.etherscan.io/address/0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6
-    AddressResolver public constant addressresolver_i = AddressResolver(0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6);
-    // https://kovan.etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F
-    ProxyERC20 public constant proxysynthetix_i = ProxyERC20(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
-    // https://kovan.etherscan.io/address/0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7
-    TokenState public constant tokenstatesynthetix_i = TokenState(0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7);
-    // https://kovan.etherscan.io/address/0x8c6680412e914932A9abC02B6c7cbf690e583aFA
-    RewardEscrow public constant rewardescrow_i = RewardEscrow(0x8c6680412e914932A9abC02B6c7cbf690e583aFA);
-    // https://kovan.etherscan.io/address/0xd30F2EB31348DD03FC7a77130BbF66318a195c1E
-    SupplySchedule public constant supplyschedule_i = SupplySchedule(0xd30F2EB31348DD03FC7a77130BbF66318a195c1E);
-    // https://kovan.etherscan.io/address/0xD29160e4f5D2e5818041f9Cd9192853BA349c47E
+    // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
+    AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
+    // https://etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F
+    Proxy public constant proxysynthetix_i = Proxy(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
+    // https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD
+    LegacyTokenState public constant tokenstatesynthetix_i = LegacyTokenState(0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD);
+    // https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F
+    RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
+    // https://etherscan.io/address/0x8d203C458d536Fe0F97e9f741bC231EaC8cd91cf
+    SupplySchedule public constant supplyschedule_i = SupplySchedule(0x8d203C458d536Fe0F97e9f741bC231EaC8cd91cf);
+    // https://etherscan.io/address/0x29C295B046a73Cde593f21f63091B072d407e3F2
     RewardsDistribution public constant rewardsdistribution_i =
-        RewardsDistribution(0xD29160e4f5D2e5818041f9Cd9192853BA349c47E);
+        RewardsDistribution(0x29C295B046a73Cde593f21f63091B072d407e3F2);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://kovan.etherscan.io/address/0xAa1Cc6433be4EB877a4b5C087c95f5004e640F19
-    address public constant new_Synthetix_contract = 0xAa1Cc6433be4EB877a4b5C087c95f5004e640F19;
-    // https://kovan.etherscan.io/address/0xd30F2EB31348DD03FC7a77130BbF66318a195c1E
-    address public constant new_SupplySchedule_contract = 0xd30F2EB31348DD03FC7a77130BbF66318a195c1E;
+    // https://etherscan.io/address/0xE95A536cF5C7384FF1ef54819Dc54E03d0FF1979
+    address public constant new_Synthetix_contract = 0xE95A536cF5C7384FF1ef54819Dc54E03d0FF1979;
+    // https://etherscan.io/address/0x8d203C458d536Fe0F97e9f741bC231EaC8cd91cf
+    address public constant new_SupplySchedule_contract = 0x8d203C458d536Fe0F97e9f741bC231EaC8cd91cf;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -61,6 +61,10 @@ contract Migration_Hamal is BaseMigration {
         require(
             ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
             "Invalid contract supplied for Synthetix"
+        );
+        require(
+            ISynthetixNamedContract(new_SupplySchedule_contract).CONTRACT_NAME() == "SupplySchedule",
+            "Invalid contract supplied for SupplySchedule"
         );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
@@ -115,12 +119,12 @@ contract Migration_Hamal is BaseMigration {
 
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](7);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x64ac15AB583fFfA6a7401B83E3aA5cf4Ad1aA92A);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x9880cfA7B81E8841e216ebB32687A2c9551ae333);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x3cc158e3D4412311166D74e8BeE1411Cda58c8A3);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0xD0B60E2FAb47e703ffa0da7364Efb9536C430912);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0xBBfAd9112203b943f26320B330B75BABF6e2aF2a);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xD134Db47DDF5A6feB245452af17cCAf92ee53D3c);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0xAD95C918af576c82Df740878C3E983CBD175daB6);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x426Be4cC70066b2C42Edb1aE838c741069b1972c);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x16e5ACe2B8a9DE5c42fCFd85d6EC5992a43C0837);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x62922670313bf6b41C580143d1f6C173C5C20019);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xCd9D4988C0AE61887B075bA77f08cbFAd2b65068);
         addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(new_Synthetix_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
