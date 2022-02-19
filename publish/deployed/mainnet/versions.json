@@ -1213,7 +1213,8 @@
 			},
 			"SupplySchedule": {
 				"address": "0xA05e45396703BabAa9C276B5E5A9B6e2c175b521",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.62.0"
 			},
 			"Math": {
 				"address": "0x385e1Eb2FF28F4A637DA2C9971F8CAF5F5b1E77c",
@@ -3999,8 +4000,9 @@
 			},
 			"Synthetix": {
 				"address": "0x97607b048aEa97A821C3EdC881aF7743f8868950",
-				"status": "current",
-				"keccak256": "0xf2acabbae9e72a59b3d52690314006594f84913de0dc2e428e28b0ea06b071f0"
+				"status": "replaced",
+				"keccak256": "0xf2acabbae9e72a59b3d52690314006594f84913de0dc2e428e28b0ea06b071f0",
+				"replaced_in": "v2.62.0"
 			},
 			"Issuer": {
 				"address": "0x16e5ACe2B8a9DE5c42fCFd85d6EC5992a43C0837",
@@ -4011,6 +4013,26 @@
 				"address": "0x89FCb32F29e509cc42d0C8b6f058C993013A843F",
 				"status": "current",
 				"keccak256": "0x403192bc309d6eee98ddbfaeed166b50c2665df94167c6970e785a65b71dd0e3"
+			}
+		}
+	},
+	"v2.62.0": {
+		"tag": "v2.62.0",
+		"fulltag": "v2.62.0",
+		"release": "Hamal",
+		"network": "mainnet",
+		"date": "2022-02-18T17:45:17-07:00",
+		"commit": "30e5fe0bad0cad0726f814d598f46a927426e6ad",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xE95A536cF5C7384FF1ef54819Dc54E03d0FF1979",
+				"status": "current",
+				"keccak256": "0x191ed90cf9fd3169888293ff855c4fb45723e2abd2136d730b4afb1e18c11818"
+			},
+			"SupplySchedule": {
+				"address": "0x8d203C458d536Fe0F97e9f741bC231EaC8cd91cf",
+				"status": "current",
+				"keccak256": "0x584bf43fc9aff83822ca4bce779cc1497960f183c841ea7c4ff2195ff2916c27"
 			}
 		}
 	}
