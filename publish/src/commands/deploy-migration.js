@@ -69,6 +69,13 @@ const deployMigration = async ({
 		useOvm,
 	});
 
+	const { getPathToNetwork, getTarget, getUsers } = wrap({
+		network,
+		useOvm,
+		fs,
+		path,
+	});
+
 	// allow local deployments to use the private key passed as a CLI option
 	if (network !== 'local' || !privateKey) {
 		privateKey = envPrivateKey;
@@ -76,7 +83,7 @@ const deployMigration = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
+	const ownerAddress = getUsers({ user: 'owner' }).address;
 
 	let signer = null;
 	if (network === 'local' && !privateKey) {
@@ -134,13 +141,6 @@ const deployMigration = async ({
 	// 	"0xbla", compiled['Migration_' + releaseName].abi, signer
 	// );
 
-	const { getPathToNetwork } = wrap({
-		network,
-		useOvm,
-		fs,
-		path,
-	});
-
 	// always appending to mainnet owner actions now
 	const { ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
 		deploymentPath: getPathToNetwork({ network, useOvm }),
@@ -157,19 +157,28 @@ const deployMigration = async ({
 	// run nominations
 	const requiringOwnership = await deployedContract.contractsRequiringOwnership();
 
-	for (const addr of requiringOwnership) {
-		console.log('Nominating ownership: ', addr);
+	const targets = getTarget();
 
-		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
+	const findContractByAddress = ({ addr }) => {
+		const [, entry] = Object.entries(targets).find(
+			([, { address }]) => address.toLowerCase() === addr.toLowerCase()
+		);
+		return entry;
+	};
+
+	for (const addr of requiringOwnership) {
+		const foundContract = findContractByAddress({ addr });
+		console.log(gray('Nominating ownership on'), yellow(foundContract.name), yellow(addr));
+		const contract = new ethers.Contract(addr, compiled[foundContract.source].abi, signer);
+
 		await performTransactionalStep({
 			account: signer.address,
-			contract: contract.address,
+			contract: foundContract.name,
 			target: contract,
 			read: 'nominatedOwner',
 			expected: input => input === deployedContract.address,
-			write: 'nominateNewOwner',
+			write: 'nominateOwner' in contract ? 'nominateOwner' : 'nominateNewOwner',
 			writeArg: [deployedContract.address],
-
 			signer,
 			explorerLinkPrefix,
 			ownerActions,
@@ -190,20 +199,20 @@ const deployMigration = async ({
 	appendOwnerAction(ownerAction);
 
 	for (const addr of requiringOwnership) {
-		console.log('post accept ownership: ', addr);
+		const foundContract = findContractByAddress({ addr });
+		console.log(gray('Accepting ownership on'), yellow(foundContract.name), yellow(addr));
+		const contract = new ethers.Contract(addr, compiled[foundContract.source].abi, signer);
 
-		const contract = new ethers.Contract(addr, compiled['Owned'].abi, signer);
-		const txnData = await contract.interface.encodeFunctionData('acceptOwnership', []);
-
-		const actionName = `${contract.address}.acceptOwnership()`;
-		const ownerAction = {
-			key: actionName,
-			target: contract.address,
-			action: actionName,
-			data: txnData,
-		};
-
-		appendOwnerAction(ownerAction);
+		await performTransactionalStep({
+			account: signer.address,
+			contract: foundContract.name,
+			target: contract,
+			write: 'acceptOwnership',
+			// DO NOT provide signer so that if we are the owner of a new contract, it doesn't try to accept directly
+			explorerLinkPrefix,
+			ownerActions,
+			ownerActionsFile,
+		});
 	}
 
 	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl });
