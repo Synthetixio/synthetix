@@ -471,7 +471,8 @@
 		{
 			"sip": 202,
 			"layer": "base",
-			"sources": ["SupplySchedule", "Synthetix"]
+			"sources": ["SupplySchedule", "Synthetix"],
+			"released": "base"
 		},
 		{
 			"sip": 209,
@@ -896,7 +897,7 @@
 		},
 		{
 			"name": "Hamal",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 62
