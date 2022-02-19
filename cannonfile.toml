@@ -1,0 +1,7 @@
+name = "synthetix"
+version = "2.60.0"
+description = "Infinite liquidity is here."
+
+[run.synthetix]
+exec = "./publish/cannon.js"
+func = "deploy"

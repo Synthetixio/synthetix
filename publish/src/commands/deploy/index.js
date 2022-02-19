@@ -63,7 +63,6 @@ const deploy = async ({
 	manageNonces,
 	network = DEFAULTS.network,
 	privateKey,
-	providerUrl,
 	skipFeedChecks = false,
 	specifyContracts,
 	useFork,
@@ -149,23 +148,11 @@ const deploy = async ({
 	console.log(gray('Loading the compiled contracts locally...'));
 	const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
 
-	const {
-		providerUrl: envProviderUrl,
-		privateKey: envPrivateKey,
-		explorerLinkPrefix,
-	} = loadConnections({
+	const { privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 		useFork,
 		useOvm,
 	});
-
-	if (!providerUrl) {
-		if (!envProviderUrl) {
-			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
-		}
-
-		providerUrl = envProviderUrl;
-	}
 
 	// Here we set a default private key for local-ovm deployment, as the
 	// OVM geth node has no notion of local/unlocked accounts.
@@ -195,7 +182,6 @@ const deploy = async ({
 		maxPriorityFeePerGas,
 		network,
 		privateKey,
-		providerUrl,
 		dryRun,
 		useOvm,
 		useFork,
@@ -227,7 +213,6 @@ const deploy = async ({
 		maxPriorityFeePerGas,
 		getDeployParameter,
 		network,
-		providerUrl,
 		skipFeedChecks,
 		standaloneFeeds,
 		synths,

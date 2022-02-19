@@ -33,7 +33,6 @@ module.exports = async ({
 	maxPriorityFeePerGas,
 	getDeployParameter,
 	network,
-	providerUrl,
 	skipFeedChecks,
 	standaloneFeeds,
 	synths,
@@ -138,7 +137,6 @@ module.exports = async ({
 		const aggResults = await checkAggregatorPrices({
 			network,
 			useOvm,
-			providerUrl,
 			synths,
 			oldExrates,
 			standaloneFeeds,
@@ -184,7 +182,7 @@ module.exports = async ({
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
-		Provider: providerUrl,
+		Provider: require('hardhat').network.config.url,
 		'Local build last modified': `${new Date(earliestCompiledTimestamp)} ${yellow(
 			((new Date().getTime() - earliestCompiledTimestamp) / 60000).toFixed(2) + ' mins ago'
 		)}`,

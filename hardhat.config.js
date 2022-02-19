@@ -13,6 +13,8 @@ require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('hardhat-gas-reporter');
 
+require('hardhat-cannon');
+
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
 } = require('.');
