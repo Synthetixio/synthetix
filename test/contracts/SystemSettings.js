@@ -613,11 +613,89 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setSelfLiquidationPenalty()', () => {});
+	describe('setSelfLiquidationPenalty()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setSelfLiquidationPenalty,
+				args: [toUnit('0.1')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
 
-	describe('setFlagReward()', () => {});
+		it('when setSelfLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
+			const newLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
+			await assert.revert(
+				systemSettings.setSelfLiquidationPenalty(newLiquidationPenalty, {
+					from: owner,
+				}),
+				'penalty > MAX_LIQUIDATION_PENALTY'
+			);
+		});
 
-	describe('setLiquidateReward()', () => {});
+		it('owner can set selfLiquidationPenalty to 20%', async () => {
+			await systemSettings.setSelfLiquidationPenalty(toUnit('0.2'), { from: owner });
+			assert.bnEqual(await systemSettings.selfLiquidationPenalty(), toUnit('0.2'));
+		});
+		it('owner can set selfLiquidationPenalty to 1%', async () => {
+			await systemSettings.setSelfLiquidationPenalty(toUnit('0.01'), { from: owner });
+			assert.bnEqual(await systemSettings.selfLiquidationPenalty(), toUnit('0.01'));
+		});
+		it('owner can set selfLiquidationPenalty to 0%', async () => {
+			await systemSettings.setSelfLiquidationPenalty(toUnit('0'), { from: owner });
+			assert.bnEqual(await systemSettings.selfLiquidationPenalty(), toUnit('0'));
+		});
+	});
+
+	describe('setFlagReward()', () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setFlagReward(toUnit('10'), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setFlagReward(toUnit('10'), { from: owner });
+			});
+			it('should update the flag reward', async () => {
+				assert.bnEqual(await systemSettings.flagReward(), toUnit('10'));
+			});
+			it('should allow the flag reward to be 0', async () => {
+				await systemSettings.setFlagReward(toUnit('0'), { from: owner });
+				assert.bnEqual(await systemSettings.flagReward(), toUnit('0'));
+			});
+		});
+	});
+
+	describe('setLiquidateReward()', () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setLiquidateReward(toUnit('20'), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setLiquidateReward(toUnit('20'), { from: owner });
+			});
+			it('should update the liquidate reward', async () => {
+				assert.bnEqual(await systemSettings.liquidateReward(), toUnit('20'));
+			});
+			it('should allow the liquidate reward to be 0', async () => {
+				await systemSettings.setLiquidateReward(toUnit('0'), { from: owner });
+				assert.bnEqual(await systemSettings.liquidateReward(), toUnit('0'));
+			});
+		});
+	});
 
 	describe('liquidations constants', () => {
 		it('MAX_LIQUIDATION_RATIO is 100%', async () => {
