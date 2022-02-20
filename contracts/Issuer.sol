@@ -671,7 +671,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
             // whats the equivalent sUSD to burn for all collateral less penalty
             amountToLiquidate = _snxToUSD(
-                collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(selfLiquidationPenalty)),
+                collateralForAccount,
                 snxRate
             );
         }
