@@ -819,7 +819,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         } else {
             sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
-        // Inform the LiquidatorRewards that there has been a change in debt
         _notifyDebtChange(from);
     }
 
@@ -839,7 +838,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
             sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
-        // Inform the LiquidatorRewards that there has been a change in debt
         _notifyDebtChange(from);
     }
 
