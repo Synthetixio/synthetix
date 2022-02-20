@@ -144,7 +144,13 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     /// @dev An account is eligible to self liquidate if its c-ratio is below the target c-ratio
     function isSelfLiquidationOpen(address account) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
-        return (accountCollateralisationRatio <= getIssuanceRatio());
+
+        // Not open for liquidation if collateral ratio is less than or equal to target issuance ratio
+        if (accountCollateralisationRatio <= getIssuanceRatio()) {
+            return false;
+        }
+
+        return true;
     }
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool) {
