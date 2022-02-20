@@ -1,135 +1,247 @@
 [
 	{
-		"name": "sUSD",
 		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sUSD",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sEUR",
-		"asset": "EUR"
+		"feed": "0x0",
+		"asset": "EUR",
+		"category": "forex",
+		"sign": "€",
+		"description": "Euros",
+		"name": "sEUR"
 	},
 	{
-		"name": "sJPY",
-		"asset": "JPY"
+		"feed": "0x0",
+		"asset": "JPY",
+		"category": "forex",
+		"sign": "¥",
+		"description": "Japanese Yen",
+		"name": "sJPY"
 	},
 	{
-		"name": "sAUD",
-		"asset": "AUD"
+		"feed": "0x0",
+		"asset": "AUD",
+		"category": "forex",
+		"sign": "$",
+		"description": "Australian Dollars",
+		"name": "sAUD"
 	},
 	{
-		"name": "sGBP",
+		"feed": "0x0",
 		"asset": "GBP",
+		"category": "forex",
+		"sign": "£",
+		"description": "Pound Sterling",
+		"name": "sGBP",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sCHF",
+		"feed": "0x0",
 		"asset": "CHF",
+		"category": "forex",
+		"sign": "Fr",
+		"description": "Swiss Franc",
+		"name": "sCHF",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sXAU",
+		"feed": "0x0",
 		"asset": "XAU",
+		"category": "commodity",
+		"sign": "oz",
+		"description": "Gold Ounce",
+		"name": "sXAU",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sXAG",
-		"asset": "XAG"
+		"feed": "0x0",
+		"asset": "XAG",
+		"category": "commodity",
+		"sign": "oz",
+		"description": "Silver Ounce",
+		"name": "sXAG"
 	},
 	{
-		"name": "sBTC",
+		"feed": "0x0",
 		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"description": "Bitcoin",
+		"name": "sBTC",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETH",
+		"feed": "0x0",
 		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"description": "Ether",
+		"name": "sETH",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sBNB",
-		"asset": "BNB"
+		"feed": "0x0",
+		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Binance Coin",
+		"name": "sBNB"
 	},
 	{
-		"name": "sTRX",
-		"asset": "TRX"
+		"feed": "0x0",
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"description": "TRON",
+		"name": "sTRX"
 	},
 	{
-		"name": "sXTZ",
-		"asset": "XTZ"
+		"feed": "0x0",
+		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Tezos",
+		"name": "sXTZ"
 	},
 	{
-		"name": "sXRP",
-		"asset": "XRP"
+		"feed": "0x0",
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ripple",
+		"name": "sXRP"
 	},
 	{
-		"name": "sLTC",
+		"feed": "0x0",
 		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Litecoin",
+		"name": "sLTC",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sLINK",
-		"asset": "LINK"
+		"feed": "0x0",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Chainlink",
+		"name": "sLINK"
 	},
 	{
-		"name": "sEOS",
-		"asset": "EOS"
+		"feed": "0x0",
+		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"description": "EOS",
+		"name": "sEOS"
 	},
 	{
-		"name": "sBCH",
-		"asset": "BCH"
+		"feed": "0x0",
+		"asset": "BCH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Bitcoin Cash",
+		"name": "sBCH"
 	},
 	{
-		"name": "sETC",
-		"asset": "ETC"
+		"feed": "0x0",
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ethereum Classic",
+		"name": "sETC"
 	},
 	{
-		"name": "sDASH",
-		"asset": "DASH"
+		"feed": "0x0",
+		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Dash",
+		"name": "sDASH"
 	},
 	{
-		"name": "sXMR",
-		"asset": "XMR"
+		"feed": "0x0",
+		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Monero",
+		"name": "sXMR"
 	},
 	{
-		"name": "sADA",
-		"asset": "ADA"
+		"feed": "0x0",
+		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Cardano",
+		"name": "sADA"
 	},
 	{
-		"name": "sCEX",
+		"feed": "0x0",
 		"asset": "CEX",
+		"category": "index",
+		"sign": "",
+		"description": "Centralised Exchange Index",
+		"name": "sCEX",
 		"index": [
 			{
 				"asset": "BNB",
+				"category": "crypto",
+				"sign": "",
+				"description": "Binance Coin",
 				"units": 12.88,
 				"weight": 29.15
 			},
 			{
 				"asset": "CRO",
+				"category": "crypto",
+				"sign": "",
+				"description": "Crypto com",
 				"units": 1303.31,
 				"weight": 24.3
 			},
 			{
 				"asset": "LEO",
+				"category": "crypto",
+				"sign": "",
+				"description": "UNUS SED LEO",
 				"units": 94.54,
 				"weight": 13.42
 			},
 			{
 				"asset": "HT",
+				"category": "crypto",
+				"sign": "",
+				"description": "Huobi Token",
 				"units": 23.06,
 				"weight": 11.73
 			},
 			{
 				"asset": "FTT",
+				"category": "crypto",
+				"sign": "",
+				"description": "FTX",
 				"units": 9.36,
 				"weight": 3.56
 			},
 			{
 				"asset": "OKB",
+				"category": "crypto",
+				"sign": "",
+				"description": "OKB",
 				"units": 25.72,
 				"weight": 16.97
 			},
 			{
 				"asset": "KCS",
+				"category": "crypto",
+				"sign": "",
+				"description": "KuCoin Shares",
 				"units": 9.18,
 				"weight": 0.87
 			}
@@ -137,26 +249,42 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sDEFI",
+		"feed": "0x0",
 		"asset": "DEFI",
+		"category": "index",
+		"sign": "",
+		"description": "DeFi Index",
+		"name": "sDEFI",
 		"index": [
 			{
 				"asset": "COMP",
+				"category": "crypto",
+				"sign": "",
+				"description": "Compound",
 				"units": 4.14,
 				"weight": 20.5
 			},
 			{
 				"asset": "MKR",
+				"category": "crypto",
+				"sign": "",
+				"description": "Maker",
 				"units": 0.74,
-				"weight": 15.0
+				"weight": 15
 			},
 			{
 				"asset": "ZRX",
+				"category": "crypto",
+				"sign": "",
+				"description": "0x",
 				"units": 668.16,
 				"weight": 9.7
 			},
 			{
 				"asset": "REP",
+				"category": "crypto",
+				"sign": "",
+				"description": "Augur",
 				"units": 9.52,
 				"weight": 7.2
 			},
@@ -167,36 +295,57 @@
 			},
 			{
 				"asset": "UMA",
+				"category": "crypto",
+				"sign": "",
+				"description": "UMA",
 				"units": 28.54,
 				"weight": 4.2
 			},
 			{
 				"asset": "SNX",
+				"category": "crypto",
+				"sign": "",
+				"description": "Synthetix Network Token",
 				"units": 82.84,
 				"weight": 10.2
 			},
 			{
 				"asset": "REN",
+				"category": "crypto",
+				"sign": "",
+				"description": "Ren",
 				"units": 822.92,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "LRC",
+				"category": "crypto",
+				"sign": "",
+				"description": "Loopring",
 				"units": 948.31,
 				"weight": 3.8
 			},
 			{
 				"asset": "KNC",
+				"category": "crypto",
+				"sign": "",
+				"description": "Kyber Network",
 				"units": 224.53,
 				"weight": 11.8
 			},
 			{
 				"asset": "BNT",
+				"category": "crypto",
+				"sign": "",
+				"description": "Bancor",
 				"units": 61.2,
 				"weight": 3.4
 			},
 			{
 				"asset": "BAL",
+				"category": "crypto",
+				"sign": "",
+				"description": "Balancer",
 				"units": 7.09,
 				"weight": 2.5
 			}
@@ -204,11 +353,25 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sFTSE",
-		"asset": "FTSE100"
+		"feed": "0x0",
+		"asset": "FTSE100",
+		"category": "equities",
+		"sign": "",
+		"exchange": "LSE",
+		"description": "FTSE 100 Index",
+		"name": "sFTSE"
 	},
 	{
-		"name": "sNIKKEI",
-		"asset": "NIKKEI225"
+		"feed": "0x0",
+		"asset": "NIKKEI225",
+		"category": "equities",
+		"sign": "",
+		"exchange": "TSE",
+		"description": "Nikkei 225 Index",
+		"name": "sNIKKEI"
+	},
+	{
+		"name": "sREDEEMER",
+		"asset": "USD"
 	}
 ]

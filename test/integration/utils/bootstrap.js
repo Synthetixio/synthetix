@@ -14,7 +14,9 @@ function bootstrapL1({ ctx }) {
 
 		ctx.addedSynths = hre.config.addedSynths || [];
 
-		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
+		//ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
+
+		ctx.provider = hre.ethers.provider;
 
 		await loadUsers({ ctx });
 
@@ -56,9 +58,11 @@ function bootstrapL2({ ctx }) {
 			await loadUsers({ ctx: ctx.l1mock });
 		}
 
-		ctx.provider = _setupProvider({
+		/*ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
-		});
+		});*/
+
+		ctx.provider = hre.ethers.provider;
 
 		await loadUsers({ ctx });
 
