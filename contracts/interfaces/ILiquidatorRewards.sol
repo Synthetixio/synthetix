@@ -7,7 +7,7 @@ interface ILiquidatorRewards {
 
     function rewardPerToken() external view returns (uint256);
 
-    function rewardsToken() external view returns (address);
+    function snx() external view returns (address);
 
     // Mutative
 
