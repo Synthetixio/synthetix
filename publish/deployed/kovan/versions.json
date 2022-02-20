@@ -3387,7 +3387,8 @@
 			},
 			"SupplySchedule": {
 				"address": "0x3728543A1e0ca98FFC0A979cF817C95b6F8d9E7b",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.62.0-alpha"
 			}
 		}
 	},
@@ -6923,8 +6924,9 @@
 			},
 			"Synthetix": {
 				"address": "0x50FbF15D6ADA7106d2ced71D76d46CEea11dc28c",
-				"status": "current",
-				"keccak256": "0x71885cb80feb924b155e8891d54e5ea379500856d1c528ceb827b3d3f06d1b4d"
+				"status": "replaced",
+				"keccak256": "0x71885cb80feb924b155e8891d54e5ea379500856d1c528ceb827b3d3f06d1b4d",
+				"replaced_in": "v2.62.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0x3cc158e3D4412311166D74e8BeE1411Cda58c8A3",
@@ -6940,6 +6942,26 @@
 				"address": "0x0f46148D93b52e2B503fE84897609913Cba42B7A",
 				"status": "current",
 				"keccak256": "0x403192bc309d6eee98ddbfaeed166b50c2665df94167c6970e785a65b71dd0e3"
+			}
+		}
+	},
+	"v2.62.0-alpha": {
+		"tag": "v2.62.0-alpha",
+		"fulltag": "v2.62.0-alpha",
+		"release": "Hamal",
+		"network": "kovan",
+		"date": "2022-02-19T09:11:30+11:00",
+		"commit": "e7e55b8cef2a7d4e87676f0c0b283f84245f8e45",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xAa1Cc6433be4EB877a4b5C087c95f5004e640F19",
+				"status": "current",
+				"keccak256": "0x191ed90cf9fd3169888293ff855c4fb45723e2abd2136d730b4afb1e18c11818"
+			},
+			"SupplySchedule": {
+				"address": "0xd30F2EB31348DD03FC7a77130BbF66318a195c1E",
+				"status": "current",
+				"keccak256": "0x069c7bc5fa4b92defa922603de4d2c390aff3ce81b09119b46850a6c1feee251"
 			}
 		}
 	}

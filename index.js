@@ -89,7 +89,7 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
+	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00+00:00
 };
 
 const knownAccounts = {

@@ -93,7 +93,7 @@ const performTransactionalStep = async ({
 
 	// otherwise check the owner
 	const owner = await target.owner();
-	if (owner === signer.address || publiclyCallable) {
+	if (signer && (owner === signer.address || publiclyCallable)) {
 		// perform action
 		let hash;
 		let gasUsed = 0;
@@ -137,7 +137,7 @@ const performTransactionalStep = async ({
 
 		return { mined: true, hash };
 	} else {
-		console.log(gray(`  > Account ${signer.address} is not owner ${owner}`));
+		console.log(gray(`  > Account ${signer ? signer.address : ''} is not owner ${owner}`));
 	}
 
 	let data;
