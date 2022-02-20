@@ -620,7 +620,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
             // whats the equivalent sUSD to burn for all collateral less penalty
             amountToLiquidate = _snxToUSD(
-                collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(liquidationPenalty)),
+                collateralForAccount.divideDecimal(SafeDecimalMath.unit().sub(liquidationPenalty)),
                 snxRate
             );
         }
@@ -629,7 +629,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _removeFromDebtRegister(delinquentAccount, amountToLiquidate, debtBalance, totalDebtIssued);
 
         // Remove liquidation flag if amount liquidated fixes ratio
-        if (amountToLiquidate == amountToFixRatio) {
+        if (amountToLiquidate >= amountToFixRatio) {
             // Remove liquidation
             liquidator().removeAccountInLiquidation(delinquentAccount);
         }
@@ -671,7 +671,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
             // whats the equivalent sUSD to burn for all collateral less penalty
             amountToLiquidate = _snxToUSD(
-                collateralForAccount.divideDecimal(SafeDecimalMath.unit().add(selfLiquidationPenalty)),
+                collateralForAccount,
                 snxRate
             );
         }

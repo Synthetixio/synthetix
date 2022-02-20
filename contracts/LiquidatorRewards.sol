@@ -27,8 +27,8 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public rewardsToken; // SNX
-    IERC20 public stakingToken; // SDS
+    IERC20 public snx; // Synthetix Token
+    IERC20 public sds; // SynthetixDebtShare
 
     uint public constant escrowDuration = 52 weeks;
     uint256 public accumulatedRewards = 0;
@@ -52,11 +52,11 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     constructor(
         address _owner,
         address _resolver,
-        address _rewardsToken,
-        address _stakingToken
+        address _snx,
+        address _sds
     ) public Owned(_owner) MixinSystemSettings(_resolver) {
-        rewardsToken = IERC20(_rewardsToken);
-        stakingToken = IERC20(_stakingToken);
+        snx = IERC20(_snx);
+        sds = IERC20(_sds);
     }
 
     /* ========== VIEWS ========== */
@@ -114,7 +114,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardsToken.approve(address(rewardEscrowV2()), reward);
+            snx.approve(address(rewardEscrowV2()), reward);
             rewardEscrowV2().createEscrowEntry(msg.sender, reward, escrowDuration);
             emit RewardPaid(msg.sender, reward);
         }
@@ -142,7 +142,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
     function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        require(tokenAddress != address(stakingToken), "Cannot withdraw the staking token");
+        require(tokenAddress != address(sds), "Cannot withdraw the staking token");
         IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
