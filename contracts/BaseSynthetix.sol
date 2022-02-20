@@ -311,6 +311,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    /// @notice Liquidate an account and distribute the redeemed SNX rewards.
+    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (e.g. due to escrowed balance)
     function liquidateDelinquentAccount(address account, uint susdAmount)
         external
         systemActive
@@ -321,9 +323,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
-
-        // Distribute the redeemed SNX rewards.
-        // These transfers will revert if the amount to redeem is more than balanceOf account (e.g. due to escrowed balance)
 
         // Transfer the flag reward to the account who flagged this account for liquidation.
         address flagger = liquidator().getLiquidationCallerForAccount(account);
@@ -336,15 +335,15 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bool liquidateRewardTransferSucceeded = _transferByProxy(account, messageSender, liquidateReward);
         require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
-        // Transfer the remaining redeemed SNX to the LiquidatorRewards contract
-        uint remaining = totalRedeemed.sub(liquidateReward.add(flagReward));
-        bool success = _transferByProxy(account, address(liquidatorRewards()), remaining);
-        require(success, "Remaining rewards transfer did not succeed");
+        // Transfer the remaining SNX to the LiquidatorRewards contract.
+        uint remainingReward = totalRedeemed.sub(liquidateReward.add(flagReward));
+        bool remainingRewardTransferSucceedeed = _transferByProxy(account, address(liquidatorRewards()), remainingReward);
+        require(remainingRewardTransferSucceedeed, "Remaining rewards transfer did not succeed");
 
-        // TODO: Inform the LiquidatorRewards contract about the remaining redeemed SNX rewards.
-        // liquidatorRewards().notifyRewardAmount(remaining);
+        // Inform the LiquidatorRewards contract about the redeemed SNX rewards.
+        liquidatorRewards().notifyRewardAmount(remainingReward);
 
-        return success;
+        return remainingRewardTransferSucceedeed;
     }
 
     function selfLiquidateAccount(address account)

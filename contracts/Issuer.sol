@@ -800,7 +800,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
     }
 
-    // TODO: Inform the LiquidatorRewards that there has been a change in debt
+    /// @notice Inform the LiquidatorRewards that there has been a change in debt
+    function _notifyDebtChange(address account) internal {
+        liquidatorRewards().notifyDebtChange(account);
+    }
 
     function _addToDebtRegister(
         address from,
@@ -816,6 +819,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         } else {
             sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
         }
+        // Inform the LiquidatorRewards that there has been a change in debt
+        _notifyDebtChange(from);
     }
 
     function _removeFromDebtRegister(
@@ -834,6 +839,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
             sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
+        // Inform the LiquidatorRewards that there has been a change in debt
+        _notifyDebtChange(from);
     }
 
     /* ========== MODIFIERS ========== */
