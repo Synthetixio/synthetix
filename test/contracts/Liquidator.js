@@ -17,7 +17,15 @@ const {
 
 const {
 	toBytes32,
-	defaults: { ISSUANCE_RATIO, LIQUIDATION_DELAY, LIQUIDATION_RATIO, LIQUIDATION_PENALTY },
+	defaults: {
+		ISSUANCE_RATIO,
+		LIQUIDATION_DELAY,
+		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
+		SELF_LIQUIDATION_PENALTY,
+		FLAG_REWARD,
+		LIQUIDATE_REWARD,
+	},
 } = require('../..');
 
 const MockExchanger = artifacts.require('MockExchanger');
@@ -39,10 +47,6 @@ contract('Liquidator', accounts => {
 		systemStatus,
 		debtCache,
 		issuer;
-
-	// TODO:
-	// selfLiquidate
-	// new settings
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -120,7 +124,6 @@ contract('Liquidator', accounts => {
 	});
 
 	describe('Default settings', () => {
-		// TODO: add new settings
 		it('liquidation (issuance) ratio', async () => {
 			const liquidationRatio = await liquidator.liquidationRatio();
 			assert.bnEqual(liquidationRatio, LIQUIDATION_RATIO);
@@ -133,12 +136,24 @@ contract('Liquidator', accounts => {
 			const liquidationPenalty = await liquidator.liquidationPenalty();
 			assert.bnEqual(liquidationPenalty, LIQUIDATION_PENALTY);
 		});
+		it('self liquidation penalty ', async () => {
+			const selfLiquidationPenalty = await liquidator.selfLiquidationPenalty();
+			assert.bnEqual(selfLiquidationPenalty, SELF_LIQUIDATION_PENALTY);
+		});
 		it('liquidation delay', async () => {
 			const liquidationDelay = await liquidator.liquidationDelay();
 			assert.bnEqual(liquidationDelay, LIQUIDATION_DELAY);
 		});
 		it('issuance ratio is correctly configured as a default', async () => {
 			assert.bnEqual(await liquidator.issuanceRatio(), ISSUANCE_RATIO);
+		});
+		it('flag reward ', async () => {
+			const flagReward = await liquidator.flagReward();
+			assert.bnEqual(flagReward, FLAG_REWARD);
+		});
+		it('liquidate reward ', async () => {
+			const liquidateReward = await liquidator.liquidateReward();
+			assert.bnEqual(liquidateReward, LIQUIDATE_REWARD);
 		});
 	});
 
@@ -181,7 +196,12 @@ contract('Liquidator', accounts => {
 						'Operation prohibited'
 					);
 				});
-				// TODO: self liquidate
+				it('when selfLiquidateAccount() is invoked, it reverts with operation prohibited', async () => {
+					await assert.revert(
+						synthetix.selfLiquidateAccount(alice, { from: owner }),
+						'Operation prohibited'
+					);
+				});
 				it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
 						liquidator.checkAndRemoveAccountInLiquidation(alice, { from: owner }),
@@ -319,6 +339,150 @@ contract('Liquidator', accounts => {
 				});
 			});
 		});
+		describe('when Alice calls selfLiquidateAccount', () => {
+			let exchanger;
+			describe('then do self liquidation checks', () => {
+				beforeEach(async () => {
+					exchanger = await MockExchanger.new(synthetix.address);
+					await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
+						from: owner,
+					});
+					await Promise.all([synthetix.rebuildCache(), issuer.rebuildCache()]);
+				});
+
+				it('when Alice has SettlementOwing from hasWaitingPeriodOrSettlementOwing then revert', async () => {
+					// Setup Alice with a settlement oweing
+					await exchanger.setReclaim(sUSD100);
+					await exchanger.setNumEntries(1);
+					await assert.revert(
+						synthetix.selfLiquidateAccount(alice, { from: alice }),
+						'sUSD needs to be settled'
+					);
+				});
+				it('when Alice has hasWaitingPeriod from hasWaitingPeriodOrSettlementOwing then revert', async () => {
+					// Setup Alice with a waiting period
+					await exchanger.setMaxSecsLeft(180);
+					await exchanger.setNumEntries(1);
+					await assert.revert(
+						synthetix.selfLiquidateAccount(alice, { from: alice }),
+						'sUSD needs to be settled'
+					);
+				});
+				it('when Alice is not is not open for self liquidation then revert', async () => {
+					await assert.revert(
+						synthetix.selfLiquidateAccount(alice, { from: alice }),
+						'Account not open for self liquidation'
+					);
+				});
+			});
+			describe('when Alice is undercollateralized', () => {
+				beforeEach(async () => {
+					// wen SNX 6 dolla
+					await updateSNXPrice('6');
+
+					// Alice issues sUSD $600
+					await synthetix.transfer(alice, toUnit('800'), { from: owner });
+					await synthetix.issueMaxSynths({ from: alice });
+
+					// Drop SNX value to $1 (Collateral worth $800 after)
+					await updateSNXPrice('1');
+				});
+				it('and liquidation Collateral Ratio is 200%', async () => {
+					assert.bnEqual(await liquidator.liquidationCollateralRatio(), toUnit('2'));
+				});
+				it('and self liquidation penalty is 20%', async () => {
+					assert.bnEqual(await liquidator.selfLiquidationPenalty(), SELF_LIQUIDATION_PENALTY);
+				});
+				describe('when Alice issuance ratio is fixed as SNX price increases', () => {
+					beforeEach(async () => {
+						await updateSNXPrice(toUnit('6'));
+
+						const liquidationRatio = await liquidator.liquidationRatio();
+
+						const ratio = await synthetix.collateralisationRatio(alice);
+						const targetIssuanceRatio = await liquidator.issuanceRatio();
+
+						// check Alice ratio is below liquidation ratio
+						assert.isTrue(ratio.lt(liquidationRatio));
+
+						// check Alice ratio is below or equal to target issuance ratio
+						assert.isTrue(ratio.lte(targetIssuanceRatio));
+					});
+					it('then isSelfLiquidationOpen returns false as ratio equal to target issuance ratio', async () => {
+						assert.isFalse(await liquidator.isSelfLiquidationOpen(alice));
+					});
+				});
+				describe('given Alice issuance ratio is higher than the liquidation ratio', () => {
+					let liquidationRatio;
+					beforeEach(async () => {
+						liquidationRatio = await liquidator.liquidationRatio();
+
+						const ratio = await synthetix.collateralisationRatio(alice);
+						const targetIssuanceRatio = await liquidator.issuanceRatio();
+
+						// check Alice ratio is above or equal liquidation ratio
+						assert.isTrue(ratio.gte(liquidationRatio));
+
+						// check Alice ratio is above target issuance ratio
+						assert.isTrue(ratio.gt(targetIssuanceRatio));
+					});
+					it('then isSelfLiquidationOpen returns true', async () => {
+						assert.isTrue(await liquidator.isSelfLiquidationOpen(alice));
+					});
+				});
+				describe('when Alice c-ratio is above the liquidation ratio and attempts to self liquidate', () => {
+					beforeEach(async () => {
+						await updateSNXPrice('10');
+
+						await assert.revert(
+							synthetix.selfLiquidateAccount(alice, {
+								from: alice,
+							}),
+							'Account not open for self liquidation'
+						);
+					});
+					it('then Alices account is not open for self liquidation', async () => {
+						const isSelfLiquidationOpen = await liquidator.isSelfLiquidationOpen(alice);
+						assert.bnEqual(isSelfLiquidationOpen, false);
+					});
+					it('then Alice still has 800 SNX', async () => {
+						assert.bnEqual(await synthetix.collateral(alice), toUnit('800'));
+					});
+				});
+				describe('given Alice has $600 Debt, $800 worth of SNX Collateral and c-ratio at 133.33%', () => {
+					describe('when Alice calls self liquidate', () => {
+						let aliceDebtBefore;
+						let aliceCollateralBefore;
+						// let amountToFixRatio;
+						beforeEach(async () => {
+							// Record Alices state
+							aliceDebtBefore = await synthetixDebtShare.balanceOf(alice);
+							aliceCollateralBefore = await synthetix.collateral(alice);
+
+							await synthetix.selfLiquidateAccount(alice, {
+								from: alice,
+							});
+						});
+						it('it succeeds and the ratio is fixed', async () => {
+							const liquidationRatio = await liquidator.liquidationRatio();
+							const targetIssuanceRatio = await liquidator.issuanceRatio();
+							const cratio = await synthetix.collateralisationRatio(alice);
+
+							// check Alice ratio is above or equal liquidation ratio
+							assert.isTrue(cratio.gte(liquidationRatio));
+
+							// check Alice ratio is above target issuance ratio
+							assert.isTrue(cratio.gt(targetIssuanceRatio));
+
+							// check Alice has reduced their debt share and collateral
+							assert.isTrue((await synthetixDebtShare.balanceOf(alice)).lt(aliceDebtBefore));
+							assert.isTrue((await synthetix.collateral(alice)).lt(aliceCollateralBefore));
+						});
+					});
+				});
+			});
+		});
+
 		describe('when anyone calls liquidateDelinquentAccount on alice', () => {
 			let exchanger;
 			describe('then do liquidation checks', () => {
@@ -758,6 +922,12 @@ contract('Liquidator', accounts => {
 				await assert.revert(
 					synthetix.liquidateDelinquentAccount(alice, sUSD100),
 					'Account not open for liquidation'
+				);
+			});
+			it('then selfLiquidateAccount fails', async () => {
+				await assert.revert(
+					synthetix.selfLiquidateAccount(alice, { from: alice }),
+					'Account not open for self liquidation'
 				);
 			});
 		});

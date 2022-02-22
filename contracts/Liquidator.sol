@@ -225,9 +225,6 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
         _storeLiquidationEntry(account, deadline, msg.sender);
 
-        // TODO: notify of flag reward somehow
-        
-
         emit AccountFlaggedForLiquidation(account, deadline);
     }
 
