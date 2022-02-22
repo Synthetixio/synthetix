@@ -80,6 +80,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
 
+    /// @notice Get the escrow duration for liquidation rewards
+    /// @return The escrow duration for liquidation rewards
+    function liquidationEscrowDuration() external view returns (uint) {
+        return getLiquidationEscrowDuration();
+    }
+
     /// @notice Get the penalty for self liquidation
     /// @return The self liquidation penalty
     function selfLiquidationPenalty() external view returns (uint) {
@@ -305,6 +311,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
+    function setLiquidationEscrowDuration(uint duration) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_ESCROW_DURATION, duration);
+        emit LiquidationEscrowDurationUpdated(duration);
+    }
+
     function setLiquidationPenalty(uint penalty) external onlyOwner {
         flexibleStorage().setLiquidationPenalty(SETTING_LIQUIDATION_PENALTY, penalty);
         emit LiquidationPenaltyUpdated(penalty);
@@ -502,6 +513,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event TargetThresholdUpdated(uint newTargetThreshold);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationEscrowDurationUpdated(uint newDuration);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event SelfLiquidationPenaltyUpdated(uint newPenalty);
     event FlagRewardUpdated(uint newReward);

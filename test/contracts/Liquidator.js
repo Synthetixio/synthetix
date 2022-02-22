@@ -21,6 +21,7 @@ const {
 		ISSUANCE_RATIO,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
+		LIQUIDATION_ESCROW_DURATION,
 		LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
@@ -131,6 +132,10 @@ contract('Liquidator', accounts => {
 		it('liquidation collateral ratio is inverted ratio', async () => {
 			const liquidationCollateralRatio = await liquidator.liquidationCollateralRatio();
 			assert.bnEqual(liquidationCollateralRatio, divideDecimal(toUnit('1'), LIQUIDATION_RATIO));
+		});
+		it('liquidation escrow duration', async () => {
+			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
+			assert.bnEqual(liquidationEscrowDuration, LIQUIDATION_ESCROW_DURATION);
 		});
 		it('liquidation penalty ', async () => {
 			const liquidationPenalty = await liquidator.liquidationPenalty();

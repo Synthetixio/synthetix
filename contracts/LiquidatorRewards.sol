@@ -12,6 +12,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 
 // Internal references
+import "./interfaces/ILiquidator.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardEscrowV2.sol";
@@ -30,7 +31,6 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     IERC20 public snx; // Synthetix Token
     IERC20 public sds; // SynthetixDebtShare
 
-    uint public constant escrowDuration = 52 weeks;
     uint256 public accumulatedRewards = 0;
     uint256 public rewardPerTokenStored;
     uint256 public lastUpdateTime;
@@ -42,6 +42,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
@@ -63,12 +64,17 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_SYNTHETIXDEBTSHARE;
-        newAddresses[1] = CONTRACT_ISSUER;
-        newAddresses[2] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[3] = CONTRACT_SYNTHETIX;
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_LIQUIDATOR;
+        newAddresses[1] = CONTRACT_SYNTHETIXDEBTSHARE;
+        newAddresses[2] = CONTRACT_ISSUER;
+        newAddresses[3] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[4] = CONTRACT_SYNTHETIX;
         return combineArrays(existingAddresses, newAddresses);
+    }
+
+    function liquidator() internal view returns (ILiquidator) {
+        return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
 
     function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
@@ -115,14 +121,12 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         if (reward > 0) {
             rewards[msg.sender] = 0;
             snx.approve(address(rewardEscrowV2()), reward);
-            rewardEscrowV2().createEscrowEntry(msg.sender, reward, escrowDuration);
+            rewardEscrowV2().createEscrowEntry(msg.sender, reward, liquidator().liquidationEscrowDuration());
             emit RewardPaid(msg.sender, reward);
         }
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
-    // TODO: May need two functions for mint and burn.
 
     /// @notice This is called only by the Issuer to update when a given account's debt balance changes.
     function notifyDebtChange(address account) external onlyIssuer updateReward(account) { }
@@ -138,13 +142,6 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
         emit RewardAdded(reward);
-    }
-
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
-    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        require(tokenAddress != address(sds), "Cannot withdraw the staking token");
-        IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
-        emit Recovered(tokenAddress, tokenAmount);
     }
 
     /* ========== MODIFIERS ========== */
@@ -175,5 +172,4 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     event RewardAdded(uint256 reward);
     event RewardPaid(address indexed user, uint256 reward);
-    event Recovered(address token, uint256 amount);
 }

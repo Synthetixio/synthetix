@@ -161,6 +161,14 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _liquidationRatio);
     }
 
+    function setLiquidationEscrowDuration(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint duration
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, duration);
+    }
+
     function setLiquidationPenalty(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,

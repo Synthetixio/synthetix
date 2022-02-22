@@ -17,6 +17,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_TARGET_THRESHOLD = "targetThreshold";
     bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
+    bytes32 internal constant SETTING_LIQUIDATION_ESCROW_DURATION = "liquidationEscrowDuration";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
     bytes32 internal constant SETTING_SELF_LIQUIDATION_PENALTY = "selfLiquidationPenalty";
     bytes32 internal constant SETTING_FLAG_REWARD = "flagReward";
@@ -129,6 +130,10 @@ contract MixinSystemSettings is MixinResolver {
 
     function getLiquidationRatio() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
+    }
+
+    function getLiquidationEscrowDuration() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_ESCROW_DURATION);
     }
 
     function getLiquidationPenalty() internal view returns (uint) {

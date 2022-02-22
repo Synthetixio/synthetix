@@ -91,6 +91,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return getLiquidationRatio();
     }
 
+    function liquidationEscrowDuration() external view returns (uint) {
+        return getLiquidationEscrowDuration();
+    }
+
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
     }

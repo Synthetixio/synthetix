@@ -8,6 +8,8 @@ interface ILiquidator {
 
     function liquidationRatio() external view returns (uint);
 
+    function liquidationEscrowDuration() external view returns (uint);
+
     function liquidationPenalty() external view returns (uint);
 
     function selfLiquidationPenalty() external view returns (uint);

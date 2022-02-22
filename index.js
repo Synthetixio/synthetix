@@ -125,6 +125,7 @@ const defaults = {
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
 	LIQUIDATION_DELAY: (3600 * 12).toString(), // 12 hours
 	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
+	LIQUIDATION_ESCROW_DURATION: (3600 * 24 * 365).toString(), // 1 year
 	LIQUIDATION_PENALTY: w3utils.toWei('0.3'), // 30% penalty
 	SELF_LIQUIDATION_PENALTY: w3utils.toWei('0.2'), // 20% penalty
 	FLAG_REWARD: w3utils.toWei('10'), // 10 SNX

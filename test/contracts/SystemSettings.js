@@ -19,6 +19,7 @@ const { toBN } = require('web3-utils');
 contract('SystemSettings', async accounts => {
 	const [, owner, account1] = accounts;
 	const oneWeek = toBN(7 * 24 * 60 * 60);
+	const oneYear = toBN(3600 * 24 * 365);
 	const ONE = toBN('1');
 
 	let short, synths, systemSettings;
@@ -76,6 +77,7 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationDelay',
 				'setLiquidationPenalty',
 				'setLiquidationRatio',
+				'setLiquidationEscrowDuration',
 				'setSelfLiquidationPenalty',
 				'setLiquidateReward',
 				'setFlagReward',
@@ -572,6 +574,31 @@ contract('SystemSettings', async accounts => {
 					assert.bnEqual(await systemSettings.liquidationRatio(), expectedLiquidationRatio);
 				});
 			});
+		});
+	});
+
+	describe('setLiquidationEscrowDuration()', () => {
+		const week = 3600 * 24 * 7;
+		const month = 3600 * 24 * 30;
+
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setLiquidationEscrowDuration,
+				args: [oneYear],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('owner can set liquidationEscrowDuration to 1 week', async () => {
+			await systemSettings.setLiquidationEscrowDuration(week, { from: owner });
+			const liquidationEscrowDuration = await systemSettings.liquidationEscrowDuration();
+			assert.bnEqual(liquidationEscrowDuration, week);
+		});
+		it('owner can set liquidationEscrowDuration to 1 month', async () => {
+			await systemSettings.setLiquidationEscrowDuration(month, { from: owner });
+			const liquidationEscrowDuration = await systemSettings.liquidationEscrowDuration();
+			assert.bnEqual(liquidationEscrowDuration, month);
 		});
 	});
 

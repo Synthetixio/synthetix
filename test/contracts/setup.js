@@ -18,6 +18,7 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
+		LIQUIDATION_ESCROW_DURATION,
 		LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
@@ -1096,6 +1097,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationEscrowDuration(LIQUIDATION_ESCROW_DURATION, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
 				from: owner,
