@@ -611,6 +611,60 @@
 			"timestamp": "2022-02-18T18:36:38.000Z",
 			"txn": "https://kovan-explorer.optimism.io/tx/0x076f93ad483a39e55ae9457e369bc9b1226f9a523be4463d8f4b5e786d88a883",
 			"network": "kovan"
+		},
+		"TokenStatesAVAX": {
+			"name": "TokenStatesAVAX",
+			"address": "0x8338011e46Db45f5cA0f06C4174a85280772dC85",
+			"source": "TokenState",
+			"link": "https://kovan-explorer.optimism.io/address/0x8338011e46Db45f5cA0f06C4174a85280772dC85",
+			"timestamp": "2022-02-23T02:17:31.862Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysAVAX": {
+			"name": "ProxysAVAX",
+			"address": "0x61760432A363399de4dDDFfD5925A4046c112594",
+			"source": "ProxyERC20",
+			"link": "https://kovan-explorer.optimism.io/address/0x61760432A363399de4dDDFfD5925A4046c112594",
+			"timestamp": "2022-02-23T02:17:51.098Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthsAVAX": {
+			"name": "SynthsAVAX",
+			"address": "0xBc9F23b1AEf25e9a456F1973E9a9ef63830B8f49",
+			"source": "MultiCollateralSynth",
+			"link": "https://kovan-explorer.optimism.io/address/0xBc9F23b1AEf25e9a456F1973E9a9ef63830B8f49",
+			"timestamp": "2022-02-23T02:18:02.406Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"TokenStatesMATIC": {
+			"name": "TokenStatesMATIC",
+			"address": "0x2cD1C77fA8cB3C4a76445DC7C8861e374c67A0F6",
+			"source": "TokenState",
+			"link": "https://kovan-explorer.optimism.io/address/0x2cD1C77fA8cB3C4a76445DC7C8861e374c67A0F6",
+			"timestamp": "2022-02-23T02:18:05.611Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysMATIC": {
+			"name": "ProxysMATIC",
+			"address": "0x8d651Be85f9f4c7322b789EA73DFfBbE501338B6",
+			"source": "ProxyERC20",
+			"link": "https://kovan-explorer.optimism.io/address/0x8d651Be85f9f4c7322b789EA73DFfBbE501338B6",
+			"timestamp": "2022-02-23T02:18:12.758Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthsMATIC": {
+			"name": "SynthsMATIC",
+			"address": "0x5BC3b2B2dC40dC88ea227F7501F28D9D8167BB60",
+			"source": "MultiCollateralSynth",
+			"link": "https://kovan-explorer.optimism.io/address/0x5BC3b2B2dC40dC88ea227F7501F28D9D8167BB60",
+			"timestamp": "2022-02-23T02:18:15.999Z",
+			"txn": "",
+			"network": "kovan"
 		}
 	},
 	"sources": {

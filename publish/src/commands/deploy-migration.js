@@ -7,7 +7,6 @@ const path = require('path');
 const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const {
-	getUsers,
 	constants: { FLATTENED_FOLDER },
 } = require('../../..');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
