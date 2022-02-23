@@ -18,8 +18,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetix.sol";
 
-// import "hardhat/console.sol";
-
 /// @title Upgrade Liquidation Mechanism V2 (SIP-148)
 /// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15.
 contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, ReentrancyGuard {
@@ -95,14 +93,9 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     function rewardPerToken() public view returns (uint256) {
         uint supply = synthetixDebtShare().totalSupply();
-        // console.log("total debt share supply: %s", supply);
-        // console.log("rewardPerTokenStored: %s", rewardPerTokenStored);
         if (supply == 0) {
-            // console.log("supply is zero: %s", supply);
             return rewardPerTokenStored;
         }
-        // console.log("lastUpdateTime: %s", lastUpdateTime);
-        // console.log("accumulatedRewards: %s", accumulatedRewards);
 
         return
             rewardPerTokenStored.add(
@@ -134,11 +127,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     /// @notice This is called only by Synthetix after an account is liquidated and the SNX rewards are sent to this contract.
     function notifyRewardAmount(uint256 reward) external onlySynthetix {        
         // Ensure the provided reward amount is not more than the balance in the contract.
-        // console.log("reward: %s", reward);
-        // console.log("accumulatedRewards: %s", accumulatedRewards);
         accumulatedRewards.add(reward);
-        // console.log("accumulatedRewards: %s", accumulatedRewards);
-        // console.log("about to call reward per token");
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
         emit RewardAdded(reward);

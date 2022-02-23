@@ -31,7 +31,7 @@ library SystemSettingsLib {
     uint public constant MAX_LIQUIDATION_PENALTY = 3e18 / 10; // Max 30% liquidation penalty / bonus
 
     uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 43200; // 12 hours
+    uint public constant MIN_LIQUIDATION_DELAY = 12 hours;
 
     // Exchange fee may not exceed 10%.
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;

@@ -629,7 +629,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _removeFromDebtRegister(delinquentAccount, amountToLiquidate, debtBalance, totalDebtIssued);
 
         // Remove liquidation flag if amount liquidated fixes ratio
-        if (amountToLiquidate >= amountToFixRatio) {
+        if (amountToLiquidate == amountToFixRatio) {
             // Remove liquidation
             liquidator().removeAccountInLiquidation(delinquentAccount);
         }
@@ -643,9 +643,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Check if account is eligible for self liquidation
         require(liquidator().isSelfLiquidationOpen(account), "Account not open for self liquidation");
-
-        // Get the penalty for self liquidation
-        uint selfLiquidationPenalty = liquidator().selfLiquidationPenalty();
 
         // Get the debt share balance for the account
         (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
@@ -661,7 +658,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
 
         // Add penalty
-        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(selfLiquidationPenalty));
+        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(getSelfLiquidationPenalty()));
 
         // if total SNX to redeem is greater than account's collateral
         // account is under collateralised, liquidate all collateral and reduce sUSD to burn
