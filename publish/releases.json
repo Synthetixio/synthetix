@@ -457,10 +457,22 @@
 			"released": "both"
 		},
 		{
+			"sip": 199,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
 			"sip": 200,
 			"layer": "both",
 			"sources": ["FeePool"],
 			"released": "both"
+		},
+		{
+			"sip": 202,
+			"layer": "base",
+			"sources": ["SupplySchedule", "Synthetix"],
+			"released": "base"
 		},
 		{
 			"sip": 209,
@@ -874,42 +886,23 @@
 			"sips": [185]
 		},
 		{
-			"name": "Polaris",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 61
-			},
-			"sips": []
-		},
-		{
 			"name": "Polaris (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 61
 			},
-			"sips": []
+			"sips": [199]
 		},
 		{
 			"name": "Hamal",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 62
 			},
-			"sips": []
-		},
-		{
-			"name": "Hamal (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 62
-			},
-			"sips": []
+			"sips": [202]
 		},
 		{
 			"name": "Algieba",
