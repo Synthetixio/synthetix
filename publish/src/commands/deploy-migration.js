@@ -214,12 +214,18 @@ const deployMigration = async ({
 		});
 	}
 
-	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl });
+	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl, useOvm });
 
 	console.log(gray(`Done.`));
 };
 
-async function verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl }) {
+async function verifyMigrationContract({
+	deployedContract,
+	releaseName,
+	buildPath,
+	etherscanUrl,
+	useOvm,
+}) {
 	const readFlattened = () => {
 		const flattenedFilename = path.join(
 			buildPath,

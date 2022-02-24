@@ -21,7 +21,12 @@ const DEFAULTS = {
 	network: 'kovan',
 };
 
-async function extractStakingBalances({ network = DEFAULTS.network, deploymentPath, useOvm, synth }) {
+async function extractStakingBalances({
+	network = DEFAULTS.network,
+	deploymentPath,
+	useOvm,
+	synth,
+}) {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);

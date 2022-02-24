@@ -27,12 +27,23 @@ program
 	.action(
 		async (
 			_,
-			{ network, contract, source, blockNumber, method, infuraProjectId, etherscanKey, args }
+			{
+				network,
+				contract,
+				source,
+				blockNumber,
+				method,
+				infuraProjectId,
+				etherscanKey,
+				args,
+				useOvm,
+			}
 		) => {
 			if (!infuraProjectId || !etherscanKey) {
 				require('dotenv').config();
 				infuraProjectId = infuraProjectId || process.env.INFURA_PROJECT_ID;
-				etherscanKey = etherscanKey || (useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY);
+				etherscanKey =
+					etherscanKey || (useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY);
 				if (!infuraProjectId) {
 					throw Error('Missing infura project ID');
 				}
