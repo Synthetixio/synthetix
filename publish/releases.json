@@ -477,7 +477,8 @@
 		{
 			"sip": 205,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 209,
@@ -912,7 +913,7 @@
 		{
 			"name": "Algieba (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 63
