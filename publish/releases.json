@@ -475,6 +475,12 @@
 			"released": "base"
 		},
 		{
+			"sip": 205,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
 			"sip": 209,
 			"layer": "both",
 			"sources": ["Exchanger"],
@@ -905,23 +911,14 @@
 			"sips": [202]
 		},
 		{
-			"name": "Algieba",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 63
-			},
-			"sips": []
-		},
-		{
 			"name": "Algieba (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 63
 			},
-			"sips": []
+			"sips": [205]
 		},
 		{
 			"name": "Diphda",
