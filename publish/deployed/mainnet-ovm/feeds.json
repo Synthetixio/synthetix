@@ -18,5 +18,17 @@
 	"SOL": {
 		"asset": "SOL",
 		"feed": "0xC663315f7aF904fbbB0F785c32046dFA03e85270"
+	},
+	"AVAX": {
+		"asset": "AVAX",
+		"feed": "0x5087Dc69Fd3907a016BD42B38022F7f024140727"
+	},
+	"MATIC": {
+		"asset": "MATIC",
+		"feed": "0x0ded608AFc23724f614B76955bbd9dFe7dDdc828"
+	},
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20"
 	}
 }
