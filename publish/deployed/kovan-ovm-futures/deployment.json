@@ -50,8 +50,8 @@
 			"address": "0x88B95A9899cb358D01dde64193F8A050E8Fdb0f3",
 			"source": "SystemSettings",
 			"link": "https://kovan-explorer.optimism.io/address/0x88B95A9899cb358D01dde64193F8A050E8Fdb0f3",
-			"timestamp": "2022-02-25T16:06:58.613Z",
-			"txn": "",
+			"timestamp": "2022-02-25T16:06:50.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0x2e2529849db641040833a06688ce9cb63898f9a6f25e27ec95fab3d4c002f62b",
 			"network": "kovan"
 		},
 		"SystemStatus": {
@@ -239,8 +239,8 @@
 			"address": "0xE7c6ddD1f6E465ce3C48E5c43Ed42D63375059EC",
 			"source": "Exchanger",
 			"link": "https://kovan-explorer.optimism.io/address/0xE7c6ddD1f6E465ce3C48E5c43Ed42D63375059EC",
-			"timestamp": "2022-02-25T16:07:05.687Z",
-			"txn": "",
+			"timestamp": "2022-02-25T16:06:50.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0x5bece4a37e1680a55b1abc8f130905e36233945bca69dada80974e64b4950064",
 			"network": "kovan"
 		},
 		"ExchangeCircuitBreaker": {
@@ -581,8 +581,8 @@
 			"address": "0x64Ce6c52138808fa87D3A2540c30a80fDBe5288b",
 			"source": "SystemSettingsLib",
 			"link": "https://kovan-explorer.optimism.io/address/0x64Ce6c52138808fa87D3A2540c30a80fDBe5288b",
-			"timestamp": "2022-02-25T16:06:51.716Z",
-			"txn": "",
+			"timestamp": "2022-02-25T16:06:50.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0xeae46e24c6ef3adbaba5a2575f6d6ee8aa368a3bdca6f1c3472acd4c26ac8dd9",
 			"network": "kovan"
 		}
 	},
