@@ -575,6 +575,87 @@
 			"timestamp": "2022-02-14T20:28:32.000Z",
 			"txn": "https://explorer.optimism.io/tx/0xd902cfdc8df82a0a42859f1df01aebaa9c614c581bac013fa2d38d91fe7e437a",
 			"network": "mainnet"
+		},
+		"TokenStatesAVAX": {
+			"name": "TokenStatesAVAX",
+			"address": "0x2114d1C571CB541f3416a65f8BccFf9BB9E55Dc5",
+			"source": "TokenState",
+			"link": "https://explorer.optimism.io/address/0x2114d1C571CB541f3416a65f8BccFf9BB9E55Dc5",
+			"timestamp": "2022-02-23T23:35:27.473Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysAVAX": {
+			"name": "ProxysAVAX",
+			"address": "0xB2b42B231C68cbb0b4bF2FFEbf57782Fd97D3dA4",
+			"source": "ProxyERC20",
+			"link": "https://explorer.optimism.io/address/0xB2b42B231C68cbb0b4bF2FFEbf57782Fd97D3dA4",
+			"timestamp": "2022-02-23T23:35:31.230Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsAVAX": {
+			"name": "SynthsAVAX",
+			"address": "0x5C2B0fdB3C828f087FDdA19Cf7F6fF7c51022aFb",
+			"source": "MultiCollateralSynth",
+			"link": "https://explorer.optimism.io/address/0x5C2B0fdB3C828f087FDdA19Cf7F6fF7c51022aFb",
+			"timestamp": "2022-02-23T23:35:36.017Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesMATIC": {
+			"name": "TokenStatesMATIC",
+			"address": "0x937C9E1d18bEB4F8E1BCB0Dd7a612ca6012517a3",
+			"source": "TokenState",
+			"link": "https://explorer.optimism.io/address/0x937C9E1d18bEB4F8E1BCB0Dd7a612ca6012517a3",
+			"timestamp": "2022-02-23T23:35:44.354Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysMATIC": {
+			"name": "ProxysMATIC",
+			"address": "0x81DDfAc111913d3d5218DEA999216323B7CD6356",
+			"source": "ProxyERC20",
+			"link": "https://explorer.optimism.io/address/0x81DDfAc111913d3d5218DEA999216323B7CD6356",
+			"timestamp": "2022-02-23T23:35:48.038Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsMATIC": {
+			"name": "SynthsMATIC",
+			"address": "0x6E3FfC4161931793B7FD084E761C0D12126FD376",
+			"source": "MultiCollateralSynth",
+			"link": "https://explorer.optimism.io/address/0x6E3FfC4161931793B7FD084E761C0D12126FD376",
+			"timestamp": "2022-02-23T23:35:51.982Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesEUR": {
+			"name": "TokenStatesEUR",
+			"address": "0x7afF10fc89B162c7aBf77974d190E7959cb456f5",
+			"source": "TokenState",
+			"link": "https://explorer.optimism.io/address/0x7afF10fc89B162c7aBf77974d190E7959cb456f5",
+			"timestamp": "2022-02-23T23:36:01.499Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysEUR": {
+			"name": "ProxysEUR",
+			"address": "0xFBc4198702E81aE77c06D58f81b629BDf36f0a71",
+			"source": "ProxyERC20",
+			"link": "https://explorer.optimism.io/address/0xFBc4198702E81aE77c06D58f81b629BDf36f0a71",
+			"timestamp": "2022-02-23T23:36:05.775Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsEUR": {
+			"name": "SynthsEUR",
+			"address": "0x824dA469B59eC0E6E6BB5D611888aBF440970414",
+			"source": "MultiCollateralSynth",
+			"link": "https://explorer.optimism.io/address/0x824dA469B59eC0E6E6BB5D611888aBF440970414",
+			"timestamp": "2022-02-23T23:36:14.430Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
