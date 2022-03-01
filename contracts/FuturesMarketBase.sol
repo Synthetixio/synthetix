@@ -32,7 +32,7 @@ import "./interfaces/IERC20.sol";
  * debt load in the system.
  *
  * As the debt pool underwrites all positions, the debt-inflation risk to the system is proportional to the
- * long-short skew in the market. It is therefore in the interest of the system to reduce the this skew.
+ * long-short skew in the market. It is therefore in the interest of the system to reduce the skew.
  * To encourage the minimisation of the skew, each position is charged a funding rate, which increases with
  * the size of the skew. The funding rate is charged continuously, and positions on the heavier side of the
  * market are charged the current funding rate times the notional value of their position, while positions
@@ -379,38 +379,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         return remaining.sub(inaccessible);
     }
 
-    function _liquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
-        int positionSize = int(position.size);
-
-        // short circuit
-        if (positionSize == 0) {
-            return 0;
-        }
-
-        // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
-        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, currentPrice);
-
-        // minimum margin beyond which position can be liqudiated
-        uint liqMargin = _liquidationMargin(positionSize, currentPrice);
-
-        // A position can be liquidated whenever:
-        //     remainingMargin <= liquidationMargin
-        // Hence, expanding the definition of remainingMargin the exact price
-        // at which a position can first be liquidated is:
-        //     margin + profitLoss + funding =  liquidationMargin
-        //     substitute with: profitLoss = (price - last-price) * positionSize
-        //     and also with: funding = netFundingPerUnit * positionSize
-        //     we get: margin + (price - last-price) * positionSize + netFundingPerUnit * positionSize =  liquidationMargin
-        //     moving around: price  = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
-        int result =
-            int(position.lastPrice).add(int(liqMargin).sub(int(position.margin)).divideDecimal(positionSize)).sub(
-                fundingPerUnit
-            );
-
-        // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
-        return uint(_max(0, result));
-    }
-
     /**
      * The fee charged from the margin during liquidation. Fee is proportional to position size
      * but is at least the _minKeeperFee() of sUSD to prevent underincentivising
@@ -468,7 +436,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // usd value of the difference in position
         int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
 
-        // If the order is submitted on the same side as the skew, increasing it. The taker fee is charged.
+        // If the order is submitted on the same side as the skew (increasing it) - the taker fee is charged.
         // Otherwise if the order is opposite to the skew, the maker fee is charged.
         // the case where the order flips the skew is ignored for simplicity due to being negligible
         // in both size of effect and frequency of occurrence
@@ -534,8 +502,8 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
                 size: int128(int(oldPos.size).add(params.sizeDelta))
             });
 
-        // always allow to decrease a position, otherwise a margin of minInitialMargin cen never
-        // decrease a position as as the price goes against them.
+        // always allow to decrease a position, otherwise a margin of minInitialMargin can never
+        // decrease a position as the price goes against them.
         // we also add the paid out fee for the minInitialMargin because otherwise minInitialMargin
         // is never the actual minMargin, because the first trade will always deduct
         // a fee (so the margin that otherwise would need to be transferred would have to include the future
@@ -716,7 +684,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
         /**
         This method only returns the correction term for the debt calculation of the position, and not it's 
-        debt. This is needed for keeping track of the _markedDebt() in an efficient manner to allow O(1) marketDebt
+        debt. This is needed for keeping track of the _marketDebt() in an efficient manner to allow O(1) marketDebt
         calculation in _marketDebt().
 
         Explanation of the full market debt calculation from the SIP https://sips.synthetix.io/sips/sip-80/:
@@ -725,16 +693,16 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         the debt of a single position is the value withdrawn upon closing that position.
 
         single position remaining margin = initial-margin + profit-loss + accrued-funding =
-            = initial-margin + q * (price - last-prise) + q * funding-accrued-per-unit
+            = initial-margin + q * (price - last-price) + q * funding-accrued-per-unit
             = initial-margin + q * price - q * last-price + q * (funding - initial-funding)
 
         Total debt = sum ( position remaining margins )
             = sum ( initial-margin + q * price - q * last-price + q * (funding - initial-funding) )
-            = sum( q * price ) + sum( q * funding ) + sum( initial-margin + q * last-price + q * initial-funding )
-            = skew * price + skew * funding + sum( initial-margin + q * last-price + q * initial-funding )
-            = skew (price + funding) + sum( initial-margin + q * last-price + q * initial-funding )
+            = sum( q * price ) + sum( q * funding ) + sum( initial-margin - q * last-price - q * initial-funding )
+            = skew * price + skew * funding + sum( initial-margin - q * ( last-price + initial-funding ) )
+            = skew (price + funding) + sum( initial-margin - q * ( last-price + initial-funding ) )
 
-        The last term: sum( initial-margin + q * last-price + q * initial-funding ) being the position debt correction
+        The last term: sum( initial-margin - q * ( last-price + initial-funding ) ) being the position debt correction
             that is tracked with each position change using this method. 
         
         The first term and the full debt calculation using current skew, price, and funding is calculated globally in _marketDebt().
@@ -773,7 +741,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     ) internal {
         // Transfer no tokens if marginDelta is 0
         uint absDelta = _abs(marginDelta);
-        if (0 < marginDelta) {
+        if (marginDelta > 0) {
             // A positive margin delta corresponds to a deposit, which will be burnt from their
             // sUSD balance and credited to their margin account.
 
@@ -795,14 +763,12 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         Position storage position = positions[sender];
         _updatePositionMargin(position, price, marginDelta);
 
-        // Emit relevant events
-        if (marginDelta != 0) {
-            emit MarginTransferred(sender, marginDelta);
-        }
+        emit MarginTransferred(sender, marginDelta);
+
         emit PositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
     }
 
-    // udpates the stored position margin in place (on the stored position)
+    // updates the stored position margin in place (on the stored position)
     function _updatePositionMargin(
         Position storage position,
         uint price,
