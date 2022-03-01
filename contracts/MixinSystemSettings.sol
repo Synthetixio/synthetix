@@ -172,24 +172,20 @@ contract MixinSystemSettings is MixinResolver {
     /// @notice Get atomic exchange related keys for a given synth
     /// @return maxVolumePerBlock, twapWindow, equivalentForDexPricing, exchangeFeeRate, priceBuffer, volConsiderationWindow, volUpdateThreshold, and pureChainlinkEnabled
     function getAtomicExchangeConfig(bytes32 currencyKey) internal view returns (AtomicExchangeConfig memory) {
-        bytes32[] memory keys = new bytes32[](6);
-        keys[0] = SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK;
-        keys[1] = SETTING_ATOMIC_TWAP_WINDOW;
-        keys[2] = keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, currencyKey));
-        keys[3] = keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, currencyKey));
-        keys[4] = keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, currencyKey));
-        keys[5] = keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, currencyKey));
+        bytes32[] memory keys = new bytes32[](4);
+        keys[0] = keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, currencyKey));
+        keys[1] = keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, currencyKey));
+        keys[2] = keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, currencyKey));
+        keys[3] = keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, currencyKey));
         uint[] memory intValues = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
 
         return
             AtomicExchangeConfig({
-                maxVolumePerBlock: intValues[0],
-                twapWindow: intValues[1],
                 equivalentForDexPricing: getAtomicEquivalentForDexPricing(currencyKey),
-                exchangeFeeRate: intValues[2],
-                priceBuffer: intValues[3],
-                volConsiderationWindow: intValues[4],
-                volUpdateThreshold: intValues[5],
+                exchangeFeeRate: intValues[0],
+                priceBuffer: intValues[1],
+                volConsiderationWindow: intValues[2],
+                volUpdateThreshold: intValues[3],
                 pureChainlinkEnabled: getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey)
             });
     }

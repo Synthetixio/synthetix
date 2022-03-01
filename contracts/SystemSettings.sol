@@ -223,6 +223,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getAtomicExchangeConfig(currencyKey).volUpdateThreshold;
     }
 
+    // SIP-198: Atomic Exchange At Pure Chainlink Price
+    // Whether to use the pure Chainlink price for a given currency key
+    function pureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) external view returns (bool) {
+        return getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
