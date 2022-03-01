@@ -33,8 +33,6 @@ module.exports = async ({
 		});
 	}
 
-	console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
-
 	if (CollateralManager) {
 		const CollateralsArg = [CollateralShort, CollateralEth, CollateralErc20]
 			.filter(contract => !!contract)

@@ -175,5 +175,41 @@
 	},
 	"SynthetixDebtShare": {
 		"deploy": false
+	},
+	"TokenStatesSOL": {
+		"deploy": false
+	},
+	"ProxysSOL": {
+		"deploy": false
+	},
+	"SynthsSOL": {
+		"deploy": false
+	},
+	"TokenStatesAVAX": {
+		"deploy": false
+	},
+	"ProxysAVAX": {
+		"deploy": false
+	},
+	"SynthsAVAX": {
+		"deploy": false
+	},
+	"TokenStatesMATIC": {
+		"deploy": false
+	},
+	"ProxysMATIC": {
+		"deploy": false
+	},
+	"SynthsMATIC": {
+		"deploy": false
+	},
+	"TokenStatesEUR": {
+		"deploy": false
+	},
+	"ProxysEUR": {
+		"deploy": false
+	},
+	"SynthsEUR": {
+		"deploy": false
 	}
 }

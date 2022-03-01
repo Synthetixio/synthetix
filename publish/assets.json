@@ -410,5 +410,23 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Alpha Finance"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Solana"
+	},
+	"AVAX": {
+		"asset": "AVAX",
+		"category": "crypto",
+		"sign": "",
+		"description": "Avalanche"
+	},
+	"MATIC": {
+		"asset": "MATIC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Matic"
 	}
 }
