@@ -112,7 +112,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     }
 
     /// @notice Retrieve the TWAP (time-weighted average price) of an asset from its Uniswap V3-equivalent pool
-    /// @dev By default, the TWAP oracle 'hops' through the wETH pool. This can be overriden. See DexPriceAggregator for more information.
+    /// @dev By default, the TWAP oracle 'hops' through the wETH pool. This can be overridden. See DexPriceAggregator for more information.
     /// @dev The TWAP oracle doesn't take into account variable slippage due to trade amounts, as Uniswap's OracleLibary doesn't cross ticks based on their liquidity. See: https://docs.uniswap.org/protocol/concepts/V3-overview/oracle#deriving-price-from-a-tick
     /// @param currencyKey The currency key of the synth we're retrieving the price for
     /// @param amount The amount of the asset we're interested in, which can effect the price by increasing the slippage
