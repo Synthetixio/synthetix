@@ -56,6 +56,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 
 	const tableData = [];
 
+	const etherscanKey = useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY;
+
 	for (const name of Object.keys(config)) {
 		const { address } = deployment.targets[name];
 		// Check if this contract already has been verified.
@@ -65,7 +67,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				module: 'contract',
 				action: 'getabi',
 				address,
-				apikey: process.env.ETHERSCAN_KEY,
+				apikey: etherscanKey,
 			},
 		});
 
@@ -82,7 +84,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					action: 'txlist',
 					address,
 					sort: 'asc',
-					apikey: process.env.ETHERSCAN_KEY,
+					apikey: etherscanKey,
 				},
 			});
 
@@ -189,7 +191,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					libraryname2: 'SystemSettingsLib',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 					libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
-					apikey: process.env.ETHERSCAN_KEY,
+					apikey: etherscanKey,
 				}),
 				{
 					headers: {
