@@ -75,34 +75,34 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             destinationCurrencyKey
         );
 
-        bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
-        bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
+        AtomicExchangeConfig memory sourceConfig = getAtomicExchangeConfig(sourceCurrencyKey);
+        AtomicExchangeConfig memory destinationConfig = getAtomicExchangeConfig(destinationCurrencyKey);
         uint dexPrice;
 
-        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
+        if (sourceConfig.pureChainlinkForAtomicsEnabled || destinationConfig.pureChainlinkForAtomicsEnabled) {
             // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
             uint sourceRate =
-                usePureChainlinkPriceForSource
+                sourceConfig.pureChainlinkForAtomicsEnabled
                     ? systemSourceRate
                     : _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount);
             uint destRate =
-                usePureChainlinkPriceForDest
+                destinationConfig.pureChainlinkForAtomicsEnabled
                     ? systemDestinationRate
                     : _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount);
 
             value = sourceAmount.mul(sourceRate).div(destRate);
         } else {
             // Otherwise, we get the price from Uniswap
-            IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
+            IERC20 sourceEquivalent = IERC20(sourceConfig.atomicEquivalentForDexPricing);
             require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
-            IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
+            IERC20 destEquivalent = IERC20(destinationConfig.atomicEquivalentForDexPricing);
             require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
             dexPrice = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
 
             // Derive chainlinkPriceWithBuffer from highest configured buffer between source and destination synth
-            uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
-            uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
+            uint sourceBuffer = sourceConfig.atomicPriceBuffer;
+            uint destBuffer = destinationConfig.atomicPriceBuffer;
             uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
             uint chainlinkPriceWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 

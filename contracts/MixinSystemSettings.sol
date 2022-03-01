@@ -63,6 +63,17 @@ contract MixinSystemSettings is MixinResolver {
         uint maxFee;
     }
 
+    struct AtomicExchangeConfig {
+        uint atomicMaxVolumePerBlock;
+        uint atomicTwapWindow;
+        address atomicEquivalentForDexPricing;
+        uint atomicExchangeFeeRate;
+        uint atomicPriceBuffer;
+        uint atomicVolConsiderationWindow;
+        uint atomicVolUpdateThreshold;
+        bool pureChainlinkForAtomicsEnabled;
+    }
+
     constructor(address _resolver) internal MixinResolver(_resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -156,6 +167,27 @@ contract MixinSystemSettings is MixinResolver {
         keys[3] = SETTING_EXCHANGE_MAX_DYNAMIC_FEE;
         uint[] memory values = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
         return DynamicFeeConfig({threshold: values[0], weightDecay: values[1], rounds: values[2], maxFee: values[3]});
+    }
+
+    /// @notice Get atomic exchange related keys for a given synth
+    /// @return atomicMaxVolumePerBlock, atomicTwapWindow, atomicEquivalentForDexPricing, atomicExchangeFeeRate, atomicPriceBuffer, atomicVolConsiderationWindow, atomicVolUpdateThreshold, and pureChainlinkForAtomicsEnabled
+    function getAtomicExchangeConfig(bytes32 currencyKey) internal view returns (AtomicExchangeConfig memory) {
+        bytes32[] memory keys = new bytes32[](2);
+        keys[0] = SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK;
+        keys[1] = SETTING_ATOMIC_TWAP_WINDOW;
+        uint[] memory staticValues = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
+
+        return
+            AtomicExchangeConfig({
+                atomicMaxVolumePerBlock: staticValues[0],
+                atomicTwapWindow: staticValues[1],
+                atomicEquivalentForDexPricing: getAtomicEquivalentForDexPricing(currencyKey),
+                atomicExchangeFeeRate: getAtomicExchangeFeeRate(currencyKey),
+                atomicPriceBuffer: getAtomicPriceBuffer(currencyKey),
+                atomicVolConsiderationWindow: getAtomicVolatilityConsiderationWindow(currencyKey),
+                atomicVolUpdateThreshold: getAtomicVolatilityUpdateThreshold(currencyKey),
+                pureChainlinkForAtomicsEnabled: getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey)
+            });
     }
 
     /* ========== End Exchange Related Fees ========== */
