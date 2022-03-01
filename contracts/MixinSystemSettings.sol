@@ -184,10 +184,7 @@ contract MixinSystemSettings is MixinResolver {
                 priceBuffer: intValues[1],
                 volConsiderationWindow: intValues[2],
                 volUpdateThreshold: intValues[3],
-                pureChainlinkEnabled: flexibleStorage().getBoolValue(
-                    SETTING_CONTRACT_NAME,
-                    keccak256(abi.encodePacked(SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED, currencyKey))
-                )
+                pureChainlinkEnabled: getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey)
             });
     }
 
@@ -270,6 +267,14 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getAddressValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, currencyKey))
+            );
+    }
+
+    function getPureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) internal view returns (bool) {
+        return
+            flexibleStorage().getBoolValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED, currencyKey))
             );
     }
 }
