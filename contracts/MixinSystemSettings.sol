@@ -64,8 +64,6 @@ contract MixinSystemSettings is MixinResolver {
     }
 
     struct AtomicExchangeConfig {
-        uint maxVolumePerBlock;
-        uint twapWindow;
         address equivalentForDexPricing;
         uint exchangeFeeRate;
         uint priceBuffer;
