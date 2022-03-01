@@ -1233,7 +1233,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-													'but less than the total initially',
+														'but less than the total initially',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1270,7 +1270,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-													'and more than the total initially and the exchangefee rate changed',
+														'and more than the total initially and the exchangefee rate changed',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1840,7 +1840,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														);
 													}
 												});
-												it('then all succeed', () => { });
+												it('then all succeed', () => {});
 												it('when one more is tried, then if fails', async () => {
 													await assert.revert(
 														synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
@@ -2825,7 +2825,10 @@ contract('Exchanger (spec tests)', async accounts => {
 						// DexPriceAggregator
 						const dexPriceAggregator = await MockDexPriceAggregator.new();
 						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, ethOnDex);
-						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit('1'));
+						await dexPriceAggregator.setAssetToAssetRate(
+							susdDexEquivalentToken.address,
+							toUnit('1')
+						);
 						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
 					});
 
@@ -2986,7 +2989,6 @@ contract('Exchanger (spec tests)', async accounts => {
 				let amountFee;
 
 				beforeEach(async () => {
-
 					// Set up Chainlink Prices
 					const seurChainlinkPrice = toUnit('1.2');
 					const seurAggregator = await MockAggregator.new({ from: owner });
@@ -3040,9 +3042,18 @@ contract('Exchanger (spec tests)', async accounts => {
 					// Set up Uniswap Price Aggregator with different prices
 					const dexPriceAggregator = await MockDexPriceAggregator.new();
 					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit('1'));
-					await dexPriceAggregator.setAssetToAssetRate(seurDexEquivalentToken.address, toUnit('1.1'));
-					await dexPriceAggregator.setAssetToAssetRate(saudDexEquivalentToken.address, toUnit('0.8'));
-					await dexPriceAggregator.setAssetToAssetRate(sbtcDexEquivalentToken.address, toUnit('50000'));
+					await dexPriceAggregator.setAssetToAssetRate(
+						seurDexEquivalentToken.address,
+						toUnit('1.1')
+					);
+					await dexPriceAggregator.setAssetToAssetRate(
+						saudDexEquivalentToken.address,
+						toUnit('0.8')
+					);
+					await dexPriceAggregator.setAssetToAssetRate(
+						sbtcDexEquivalentToken.address,
+						toUnit('50000')
+					);
 					await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
 
 					// Set Forex to use the pure Chainlink price
@@ -3055,7 +3066,6 @@ contract('Exchanger (spec tests)', async accounts => {
 							}
 						);
 					}
-
 				});
 
 				describe('for the source currency', () => {
@@ -3089,7 +3099,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
 						const lastAtomicVolume = await exchanger.lastAtomicVolume();
 						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
-					})
+					});
 				});
 
 				describe('for the destination currency', () => {
@@ -3115,7 +3125,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 					it('used the correct atomic exchange rate', async () => {
 						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex
-						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure			
+						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure
 						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInEur);
 					});
 
@@ -3123,7 +3133,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex
 						const lastAtomicVolume = await exchanger.lastAtomicVolume();
 						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
-					})
+					});
 				});
 
 				describe('for both the source and destination currency', () => {
@@ -3157,11 +3167,9 @@ contract('Exchanger (spec tests)', async accounts => {
 						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
 						const lastAtomicVolume = await exchanger.lastAtomicVolume();
 						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
-					})
+					});
 				});
-
-			})
-
+			});
 		});
 	};
 
