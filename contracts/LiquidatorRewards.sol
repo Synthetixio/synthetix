@@ -26,10 +26,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public snx; // Synthetix Token
-    IERC20 public sds; // SynthetixDebtShare
-
-    uint256 public accumulatedRewards = 0;
+    uint256 public accumulatedRewards;
     uint256 public rewardPerTokenStored;
     uint256 public lastUpdateTime;
 
@@ -48,15 +45,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address _owner,
-        address _resolver,
-        address _snx,
-        address _sds
-    ) public Owned(_owner) MixinSystemSettings(_resolver) {
-        snx = IERC20(_snx);
-        sds = IERC20(_sds);
-    }
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
@@ -99,7 +88,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
         return
             rewardPerTokenStored.add(
-                (lastUpdateTime).mul(accumulatedRewards).mul(1e18).div(supply)
+                lastUpdateTime.mul(accumulatedRewards).div(supply)
             );
     }
 
@@ -113,31 +102,30 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            snx.approve(address(rewardEscrowV2()), reward);
-            rewardEscrowV2().createEscrowEntry(msg.sender, reward, liquidator().liquidationEscrowDuration());
+            IERC20(address(synthetix())).approve(address(rewardEscrowV2()), reward);
+            rewardEscrowV2().createEscrowEntry(msg.sender, reward, getLiquidationEscrowDuration());
             emit RewardPaid(msg.sender, reward);
         }
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    /// @notice This is called only by the Issuer to update when a given account's debt balance changes.
+    /// @notice This is called only to update when a given account's debt share balance changes.
     function notifyDebtChange(address account) external onlyIssuer updateReward(account) { }
 
-    /// @notice This is called only by Synthetix after an account is liquidated and the SNX rewards are sent to this contract.
-    function notifyRewardAmount(uint256 reward) external onlySynthetix {        
-        // Ensure the provided reward amount is not more than the balance in the contract.
-        accumulatedRewards.add(reward);
-        rewardPerTokenStored = rewardPerToken();
+    /// @notice This is called only after an account is liquidated and the SNX rewards are sent to this contract.
+    function notifyRewardAmount(uint256 reward) external onlySynthetix {  
         lastUpdateTime = block.timestamp;
+        accumulatedRewards = accumulatedRewards.add(reward);
+        rewardPerTokenStored = rewardPerToken();
         emit RewardAdded(reward);
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
-        rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
+        rewardPerTokenStored = rewardPerToken();
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;

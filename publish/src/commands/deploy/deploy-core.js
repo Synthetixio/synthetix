@@ -126,7 +126,7 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'LiquidatorRewards',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver), ZERO_ADDRESS, ZERO_ADDRESS],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({

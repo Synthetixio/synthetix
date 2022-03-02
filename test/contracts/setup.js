@@ -237,12 +237,7 @@ const setupContract = async ({
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidator: [owner, tryGetAddressOf('AddressResolver')],
-		LiquidatorRewards: [
-			owner,
-			tryGetAddressOf('AddressResolver'),
-			tryGetAddressOf('Synthetix'),
-			tryGetAddressOf('SynthetixDebtShare'),
-		],
+		LiquidatorRewards: [owner, tryGetAddressOf('AddressResolver')],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
