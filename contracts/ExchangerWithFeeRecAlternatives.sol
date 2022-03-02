@@ -135,11 +135,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        require(
-            !exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey) &&
-                !exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey),
-            "Synths too volatile"
-        );
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
@@ -277,7 +274,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         sourceCurrencyKey;
 
         // Get the exchange fee rate as per destination currencyKey
-        uint baseRate = getAtomicExchangeConfig(destinationCurrencyKey).exchangeFeeRate;
+        uint baseRate = getAtomicExchangeFeeRate(destinationCurrencyKey);
         if (baseRate == 0) {
             // If no atomic rate was set, fallback to the regular exchange rate
             baseRate = getExchangeFeeRate(destinationCurrencyKey);

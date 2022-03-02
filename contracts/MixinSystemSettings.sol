@@ -63,15 +63,6 @@ contract MixinSystemSettings is MixinResolver {
         uint maxFee;
     }
 
-    struct AtomicExchangeConfig {
-        address equivalentForDexPricing;
-        uint exchangeFeeRate;
-        uint priceBuffer;
-        uint volConsiderationWindow;
-        uint volUpdateThreshold;
-        bool pureChainlinkEnabled;
-    }
-
     constructor(address _resolver) internal MixinResolver(_resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -167,27 +158,6 @@ contract MixinSystemSettings is MixinResolver {
         return DynamicFeeConfig({threshold: values[0], weightDecay: values[1], rounds: values[2], maxFee: values[3]});
     }
 
-    /// @notice Get atomic exchange related keys for a given synth
-    /// @return equivalentForDexPricing, exchangeFeeRate, priceBuffer, volConsiderationWindow, volUpdateThreshold, and pureChainlinkEnabled
-    function getAtomicExchangeConfig(bytes32 currencyKey) internal view returns (AtomicExchangeConfig memory) {
-        bytes32[] memory keys = new bytes32[](4);
-        keys[0] = keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, currencyKey));
-        keys[1] = keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, currencyKey));
-        keys[2] = keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, currencyKey));
-        keys[3] = keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, currencyKey));
-        uint[] memory intValues = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
-
-        return
-            AtomicExchangeConfig({
-                equivalentForDexPricing: getAtomicEquivalentForDexPricing(currencyKey),
-                exchangeFeeRate: intValues[0],
-                priceBuffer: intValues[1],
-                volConsiderationWindow: intValues[2],
-                volUpdateThreshold: intValues[3],
-                pureChainlinkEnabled: getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey)
-            });
-    }
-
     /* ========== End Exchange Related Fees ========== */
 
     function getMinimumStakeTime() internal view returns (uint) {
@@ -267,6 +237,38 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getAddressValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, currencyKey))
+            );
+    }
+
+    function getAtomicExchangeFeeRate(bytes32 currencyKey) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, currencyKey))
+            );
+    }
+
+    function getAtomicPriceBuffer(bytes32 currencyKey) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, currencyKey))
+            );
+    }
+
+    function getAtomicVolatilityConsiderationWindow(bytes32 currencyKey) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, currencyKey))
+            );
+    }
+
+    function getAtomicVolatilityUpdateThreshold(bytes32 currencyKey) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, currencyKey))
             );
     }
 

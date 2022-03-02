@@ -40,6 +40,18 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         return getAtomicEquivalentForDexPricing(currencyKey);
     }
 
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicPriceBuffer(currencyKey);
+    }
+
+    function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityConsiderationWindow(currencyKey);
+    }
+
+    function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityUpdateThreshold(currencyKey);
+    }
+
     // SIP-120 Atomic exchanges
     // Note that the returned systemValue, systemSourceRate, and systemDestinationRate are based on
     // the current system rate, which may not be the atomic rate derived from value / sourceAmount
@@ -63,34 +75,34 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             destinationCurrencyKey
         );
 
-        AtomicExchangeConfig memory sourceConfig = getAtomicExchangeConfig(sourceCurrencyKey);
-        AtomicExchangeConfig memory destinationConfig = getAtomicExchangeConfig(destinationCurrencyKey);
+        bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
+        bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
         uint dexPrice;
 
-        if (sourceConfig.pureChainlinkEnabled || destinationConfig.pureChainlinkEnabled) {
+        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
             // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
             uint sourceRate =
-                sourceConfig.pureChainlinkEnabled
+                usePureChainlinkPriceForSource
                     ? systemSourceRate
                     : _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount);
             uint destRate =
-                destinationConfig.pureChainlinkEnabled
+                usePureChainlinkPriceForDest
                     ? systemDestinationRate
                     : _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount);
 
             value = sourceAmount.mul(sourceRate).div(destRate);
         } else {
             // Otherwise, we get the price from Uniswap
-            IERC20 sourceEquivalent = IERC20(sourceConfig.equivalentForDexPricing);
+            IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
             require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
-            IERC20 destEquivalent = IERC20(destinationConfig.equivalentForDexPricing);
+            IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
             require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
             dexPrice = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
 
             // Derive chainlinkPriceWithBuffer from highest configured buffer between source and destination synth
-            uint sourceBuffer = sourceConfig.priceBuffer;
-            uint destBuffer = destinationConfig.priceBuffer;
+            uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
+            uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
             uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
             uint chainlinkPriceWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
@@ -152,10 +164,10 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         // sUSD is a special case and is never volatile
         if (currencyKey == "sUSD") return false;
 
-        AtomicExchangeConfig memory atomicConfig = getAtomicExchangeConfig(currencyKey);
-        uint updateThreshold = atomicConfig.volUpdateThreshold;
+        uint considerationWindow = getAtomicVolatilityConsiderationWindow(currencyKey);
+        uint updateThreshold = getAtomicVolatilityUpdateThreshold(currencyKey);
 
-        if (atomicConfig.volConsiderationWindow == 0 || updateThreshold == 0) {
+        if (considerationWindow == 0 || updateThreshold == 0) {
             // If either volatility setting is not set, never judge an asset to be volatile
             return false;
         }
@@ -164,7 +176,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         // updates in the consideration window than the allowed threshold.
         // If there have, consider the asset volatile--by assumption that many close-by oracle
         // updates is a good proxy for price volatility.
-        uint considerationWindowStart = block.timestamp.sub(atomicConfig.volConsiderationWindow);
+        uint considerationWindowStart = block.timestamp.sub(considerationWindow);
         uint roundId = _getCurrentRoundId(currencyKey);
         for (updateThreshold; updateThreshold > 0; updateThreshold--) {
             (uint rate, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);

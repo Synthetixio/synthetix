@@ -202,25 +202,25 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // SIP-120 Atomic exchanges
     // fee rate override for atomic exchanges into a synth
     function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicExchangeConfig(currencyKey).exchangeFeeRate;
+        return getAtomicExchangeFeeRate(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
     // price dampener for chainlink prices when considered for atomic exchanges
     function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicExchangeConfig(currencyKey).priceBuffer;
+        return getAtomicPriceBuffer(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
     // consideration window for determining synth volatility
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicExchangeConfig(currencyKey).volConsiderationWindow;
+        return getAtomicVolatilityConsiderationWindow(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
     // update threshold for determining synth volatility
     function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicExchangeConfig(currencyKey).volUpdateThreshold;
+        return getAtomicVolatilityUpdateThreshold(currencyKey);
     }
 
     // SIP-198: Atomic Exchange At Pure Chainlink Price
