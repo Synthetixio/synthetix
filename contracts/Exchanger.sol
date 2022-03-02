@@ -951,7 +951,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (, bool srcInvalid) = exchangeCircuitBreaker().rateWithInvalid(sourceCurrencyKey);
         (, bool dstInvalid) = exchangeCircuitBreaker().rateWithInvalid(destinationCurrencyKey);
         require(!srcInvalid, "source synth rate invalid");
-        require(!dstInvalid, "destinatino synth rate invalid");
+        require(!dstInvalid, "destinatio synth rate invalid");
 
         // check rates not stale or flagged
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);

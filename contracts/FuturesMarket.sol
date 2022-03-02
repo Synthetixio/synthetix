@@ -21,7 +21,7 @@ import "./interfaces/IFuturesMarket.sol";
  * debt load in the system.
  *
  * As the debt pool underwrites all positions, the debt-inflation risk to the system is proportional to the
- * long-short skew in the market. It is therefore in the interest of the system to reduce the this skew.
+ * long-short skew in the market. It is therefore in the interest of the system to reduce the skew.
  * To encourage the minimisation of the skew, each position is charged a funding rate, which increases with
  * the size of the skew. The funding rate is charged continuously, and positions on the heavier side of the
  * market are charged the current funding rate times the notional value of their position, while positions

@@ -123,7 +123,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             require(!_markets.contains(market), "Market already exists");
 
             bytes32 key = IFuturesMarket(market).baseAsset();
-            require(marketForAsset[key] == address(0), "Market already exists for this asset");
+            require(marketForAsset[key] == address(0), "Market already exists for asset");
             marketForAsset[key] = market;
             _markets.add(market);
             emit MarketAdded(market, key);

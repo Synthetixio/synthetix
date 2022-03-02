@@ -53,7 +53,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         uint commitDeposit = _nextPriceCommitDeposit(params);
         uint keeperDeposit = _minKeeperFee();
         _updatePositionMargin(position, price, -int(commitDeposit + keeperDeposit));
-        // emit event for modidying the position (subtracting the fees from margin)
+        // emit event for modifying the position (subtracting the fees from margin)
         emit PositionModified(position.id, msg.sender, position.margin, position.size, 0, price, fundingIndex, 0);
 
         // create order
@@ -105,7 +105,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             uint fundingIndex = _recomputeFunding(price);
             _updatePositionMargin(position, price, int(order.keeperDeposit));
 
-            // emit event for modidying the position (add the fee to margin)
+            // emit event for modifying the position (add the fee to margin)
             emit PositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
         } else {
             // this is someone else (like a keeper)
@@ -180,7 +180,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
         _updatePositionMargin(position, currentPrice, int(toRefund));
-        // emit event for modidying the position (refunding fee/s)
+        // emit event for modifying the position (refunding fee/s)
         emit PositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
         // the correct price for the past round
