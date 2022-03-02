@@ -461,19 +461,6 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											});
 										});
 
-										describe('when sUSD is not in src/dest pair', () => {
-											it('reverts requiring src/dest to be sUSD', async () => {
-												const args = getExchangeArgs({
-													sourceCurrencyKey: sBTC,
-													destinationCurrencyKey: sETH,
-												});
-												await assert.revert(
-													this.instance.exchangeAtomically(...args),
-													'Src/dest synth must be sUSD'
-												);
-											});
-										});
-
 										describe('when max volume limit (0) is surpassed', () => {
 											it('reverts due to surpassed volume limit', async () => {
 												const args = getExchangeArgs({ sourceAmount: toUnit('1') });
