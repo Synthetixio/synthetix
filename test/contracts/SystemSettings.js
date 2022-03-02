@@ -440,7 +440,7 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setLiquidationDelay(0, {
 					from: owner,
 				}),
-				'Must be greater than 12 hours'
+				'Must be greater than 24 hours'
 			);
 		});
 		it('when setLiquidationDelay is set above 30 days then revert', async () => {

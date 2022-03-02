@@ -12,6 +12,14 @@
 		"value": "4200"
 	},
 	{
+		"name": "FLAG_REWARD",
+		"value": "1000000000000000000"
+	},
+	{
+		"name": "LIQUIDATE_REWARD",
+		"value": "2000000000000000000"
+	},
+	{
 		"name": "COLLATERAL_MANAGER",
 		"value": {
 			"SYNTHS": ["sUSD", "sBTC", "sETH", "sLINK", "sSOL", "sAVAX", "sMATIC", "sEUR"],
