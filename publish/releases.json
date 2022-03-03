@@ -471,7 +471,14 @@
 		{
 			"sip": 202,
 			"layer": "base",
-			"sources": ["SupplySchedule", "Synthetix"]
+			"sources": ["SupplySchedule", "Synthetix"],
+			"released": "base"
+		},
+		{
+			"sip": 205,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 209,
@@ -896,41 +903,22 @@
 		},
 		{
 			"name": "Hamal",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 62
 			},
-			"sips": []
-		},
-		{
-			"name": "Hamal (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 62
-			},
-			"sips": []
-		},
-		{
-			"name": "Algieba",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 63
-			},
-			"sips": []
+			"sips": [202]
 		},
 		{
 			"name": "Algieba (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 63
 			},
-			"sips": []
+			"sips": [205]
 		},
 		{
 			"name": "Diphda",
