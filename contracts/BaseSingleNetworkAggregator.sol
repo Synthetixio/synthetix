@@ -24,6 +24,8 @@ contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
 
     function setOverrideTimestamp(uint timestamp) public onlyOwner {
         overrideTimestamp = timestamp;
+
+        emit SetOverrideTimestamp(timestamp);
     }
 
     function latestRoundData()
@@ -66,4 +68,6 @@ contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
             uint256,
             uint80
         );
+    
+    event SetOverrideTimestamp(uint timestamp);
 }
