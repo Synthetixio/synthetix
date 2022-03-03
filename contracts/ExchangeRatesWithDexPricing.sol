@@ -124,7 +124,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
 
         IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
-        require(address(inputEquivalent) != address(0), "No atomic equivalent for sUSD");
+        require(address(susdEquivalent) != address(0), "No atomic equivalent for sUSD");
 
         uint result =
             _dexPriceDestinationValue(inputEquivalent, susdEquivalent, amount).mul(10**uint(inputEquivalent.decimals())).div(
