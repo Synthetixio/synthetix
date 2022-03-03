@@ -3006,10 +3006,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					await sbtcAggregator.setLatestAnswer(sbtcChainlinkPrice, await currentTime());
 
 					// Add Synth Equivalents to System Settings
-					const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
-					const sbtcDexEquivalentToken = await MockToken.new('esBTC equivalent', 'esBTC', '18');
-					const seurDexEquivalentToken = await MockToken.new('esEUR equivalent', 'esEUR', '18');
-					const saudDexEquivalentToken = await MockToken.new('esAUD equivalent', 'esAUD', '18');
+					const susdDexEquivalentToken = await MockToken.new('sUSD equivalent', 'esUSD', '6');
+					const sbtcDexEquivalentToken = await MockToken.new('sBTC equivalent', 'esBTC', '9');
+					const seurDexEquivalentToken = await MockToken.new('sEUR equivalent', 'esEUR', '18');
+					const saudDexEquivalentToken = await MockToken.new('sAUD equivalent', 'esAUD', '18');
 					await systemSettings.setAtomicEquivalentForDexPricing(
 						sUSD,
 						susdDexEquivalentToken.address,

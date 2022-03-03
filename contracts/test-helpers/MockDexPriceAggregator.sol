@@ -19,8 +19,11 @@ contract MockDexPriceAggregator is IDexPriceAggregator {
         if (assetToAssetShouldRevert) {
             revert("mock assetToAsset() reverted");
         }
-        // Assumes equivalent decimals on in and out tokens
-        return (rates[tokenIn] * (amountIn)) / (rates[tokenOut]);
+
+        uint inDecimals = IERC20(tokenIn).decimals();
+        uint outDecimals = IERC20(tokenOut).decimals();
+
+        return ((rates[tokenIn] * (amountIn)) / (rates[tokenOut]) / 10**inDecimals) * 10**outDecimals;
     }
 
     // Rate should be specified with output token's decimals

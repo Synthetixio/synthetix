@@ -115,7 +115,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     /// @dev By default, the TWAP oracle 'hops' through the wETH pool. This can be overridden. See DexPriceAggregator for more information.
     /// @dev The TWAP oracle doesn't take into account variable slippage due to trade amounts, as Uniswap's OracleLibary doesn't cross ticks based on their liquidity. See: https://docs.uniswap.org/protocol/concepts/V3-overview/oracle#deriving-price-from-a-tick
     /// @param currencyKey The currency key of the synth we're retrieving the price for
-    /// @param amount The amount of the asset we're interested in, which can effect the price by increasing the slippage
+    /// @param amount The amount of the asset we're interested in
     /// @return The price of the asset
     function _getPriceFromDexAggregator(bytes32 currencyKey, uint amount) internal view returns (uint) {
         require(amount != 0, "Amount must be greater than 0");
@@ -127,9 +127,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         require(address(susdEquivalent) != address(0), "No atomic equivalent for sUSD");
 
         uint result =
-            _dexPriceDestinationValue(inputEquivalent, susdEquivalent, amount).mul(10**uint(inputEquivalent.decimals())).div(
-                amount
-            );
+            _dexPriceDestinationValue(inputEquivalent, susdEquivalent, amount).mul(SafeDecimalMath.unit()).div(amount);
         require(result != 0, "Result must be greater than 0");
 
         return result;
