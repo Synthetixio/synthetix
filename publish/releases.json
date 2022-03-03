@@ -376,12 +376,22 @@
 		{
 			"sip": 165,
 			"layer": "both",
-			"sources": [
-				"FeePool",
-				"Issuer",
-				"ext:AggregatorIssuedSynths",
-				"ext:AggregatorDebtRatio"
-			]
+			"sources": {
+				"base": [
+					"FeePool",
+					"Issuer",
+					"ext:AggregatorIssuedSynths",
+					"ext:AggregatorDebtRatio",
+					"SynthetixBridgeToOptimism"
+				],
+				"ovm": [
+					"FeePool",
+					"Issuer",
+					"ext:AggregatorIssuedSynths",
+					"ext:AggregatorDebtRatio",
+					"SynthetixBridgeToBase"
+				]
+			}
 		},
 		{
 			"sip": 169,
