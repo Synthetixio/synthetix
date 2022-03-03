@@ -63,8 +63,6 @@ describe('closeCurrentFeePeriod() integration tests (L1, L2)', () => {
 				const newFeePeriod = await FeePool.recentFeePeriods(0);
 				assert.bnNotEqual(newFeePeriod.feePeriodId, prevFeePeriod.feePeriodId);
 			});
-
-			it('has correct params', async () => {});
 		});
 	});
 });
