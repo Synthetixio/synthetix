@@ -14,6 +14,9 @@ defaultValue = "5000000000000000000"
 [setting.rate_eth]
 defaultValue = "5000000000000000000000"
 
+[setting.rate_btc]
+defaultValue = "50000000000000000000000"
+
 [run.synthetix]
 exec = "./publish/cannon.js"
 func = "deploy"
@@ -51,6 +54,7 @@ addresses = [
     "<%= outputs.self.runs.synthetix.ProxySynthetixAddress %>",
     "<%= outputs.self.runs.synthetix.ProxysUSDAddress %>",
     "<%= outputs.self.runs.synthetix.ProxysETHAddress %>",
+    "<%= outputs.self.runs.synthetix.ProxysBTCAddress %>",
     "<%= outputs.self.runs.synthetix.RewardEscrowAddress %>",
     "<%= outputs.self.runs.synthetix.RewardsDistributionAddress %>",
     "<%= outputs.self.runs.synthetix.SynthetixAddress %>",
@@ -60,8 +64,10 @@ addresses = [
     "<%= outputs.self.runs.synthetix.SynthetixEscrowAddress %>",
     "<%= outputs.self.runs.synthetix.SynthsUSDAddress %>",
     "<%= outputs.self.runs.synthetix.SynthsETHAddress %>",
+    "<%= outputs.self.runs.synthetix.SynthsBTCAddress %>",
     "<%= outputs.self.runs.synthetix.TokenStatesUSDAddress %>",
     "<%= outputs.self.runs.synthetix.TokenStatesETHAddress %>",
+    "<%= outputs.self.runs.synthetix.TokenStatesBTCAddress %>",
     "<%= outputs.self.runs.synthetix.TradingRewardsAddress %>",
     "<%= outputs.self.runs.synthetix.WrapperFactoryAddress %>",
 ]
@@ -109,6 +115,7 @@ addresses = [
     "<%= outputs.self.runs.synthetix.ProxySynthetixAddress %>",
     "<%= outputs.self.runs.synthetix.ProxysUSDAddress %>",
     "<%= outputs.self.runs.synthetix.ProxysETHAddress %>",
+    "<%= outputs.self.runs.synthetix.ProxysBTCAddress %>",
     "<%= outputs.self.runs.synthetix.RewardEscrowAddress %>",
     "<%= outputs.self.runs.synthetix.RewardsDistributionAddress %>",
     "<%= outputs.self.runs.synthetix.SynthetixAddress %>",
@@ -118,8 +125,10 @@ addresses = [
     "<%= outputs.self.runs.synthetix.SynthetixEscrowAddress %>",
     "<%= outputs.self.runs.synthetix.SynthsUSDAddress %>",
     "<%= outputs.self.runs.synthetix.SynthsETHAddress %>",
+    "<%= outputs.self.runs.synthetix.SynthsBTCAddress %>",
     "<%= outputs.self.runs.synthetix.TokenStatesUSDAddress %>",
     "<%= outputs.self.runs.synthetix.TokenStatesETHAddress %>",
+    "<%= outputs.self.runs.synthetix.TokenStatesBTCAddress %>",
     "<%= outputs.self.runs.synthetix.TradingRewardsAddress %>",
     "<%= outputs.self.runs.synthetix.WrapperFactoryAddress %>",
 ]
@@ -142,6 +151,11 @@ source = "chainlink:0.8-mock"
 options.rate = "<%= settings.rate_eth %>"
 step = 1
 
+[import.aggregator_btc]
+source = "chainlink:0.8-mock"
+options.rate = "<%= settings.rate_btc %>"
+step = 1
+
 [invoke.set_aggregator_snx]
 addresses = ["<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>"]
 abi = "<%= outputs.self.runs.synthetix.ExchangeRatesABI %>"
@@ -158,7 +172,25 @@ abi = "<%= outputs.self.runs.synthetix.ExchangeRatesABI %>"
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x7355534400000000000000000000000000000000000000000000000000000000", "<%= outputs.aggregator_eth.contracts.aggregator.address %>"]
+args = ["0x7345544800000000000000000000000000000000000000000000000000000000", "<%= outputs.aggregator_eth.contracts.aggregator.address %>"]
+
+step = 2
+
+[invoke.set_aggregator_btc]
+addresses = ["<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>"]
+abi = "<%= outputs.self.runs.synthetix.ExchangeRatesABI %>"
+
+from = "<%= settings.owner %>"
+func = "addAggregator"
+args = ["0x7342544300000000000000000000000000000000000000000000000000000000", "<%= outputs.aggregator_eth.contracts.aggregator.address %>"]
+
+step = 2
+
+[invoke.snapshot]
+addresses = ["<%= outputs.self.runs.synthetix.DebtCacheAddress %>"]
+abi = "<%= outputs.self.runs.synthetix.DebtCacheABI %>"
+
+func = "takeDebtSnapshot"
 
 step = 2
 
@@ -172,11 +204,11 @@ args = ["<%= settings.test_user %>", "10000000000000000000000000"]
 
 step = 3
 
-[invoke.test_user_mint]
-addresses = ["<%= outputs.self.runs.synthetix.SynthetixAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.SynthetixABI %>"
+#[invoke.test_user_mint]
+#addresses = ["<%= outputs.self.runs.synthetix.SynthetixAddress %>"]
+#abi = "<%= outputs.self.runs.synthetix.SynthetixABI %>"
 
-func = "issueSynths"
-args = ["100000000000000000000"]
+#func = "issueSynths"
+#args = ["100000000000000000000"]
 
-step = 3
+#step = 3
