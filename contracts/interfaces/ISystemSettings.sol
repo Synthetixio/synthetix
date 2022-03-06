@@ -21,6 +21,8 @@ interface ISystemSettings {
 
     function rateStalePeriod() external view returns (uint);
 
+    function teleportFeeRate() external view returns (uint);
+
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 
     function minimumStakeTime() external view returns (uint);

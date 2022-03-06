@@ -9,6 +9,7 @@ import "./interfaces/ISynthetix.sol";
 // Internal references
 import "./interfaces/ISynth.sol";
 import "./TokenState.sol";
+import "./interfaces/ISystemMessenger.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
@@ -25,6 +26,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 public constant sUSD = "sUSD";
 
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
+    bytes32 private constant CONTRACT_SYSTEMMESSENGER = "SystemMessenger";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
@@ -48,11 +50,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
+        addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[4] = CONTRACT_SYSTEMMESSENGER;
+    }
+
+    function systemMessenger() internal view returns (ISystemMessenger) {
+        return ISystemMessenger(requireAndGetAddress(CONTRACT_SYSTEMMESSENGER));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -295,6 +302,15 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function burnSynthsToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
+    }
+
+    function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external issuanceActive optionalProxy returns (bool) {
+        return issuer().teleportSynth(targetChainId, currencyKey, from, amount);
+    }
+
+    function receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external issuanceActive optionalProxy returns (bool) {
+        require(messageSender == address(systemMessenger()), "Only SystemMessenger can invoke this");
+        return issuer().receiveTeleportedSynth(targetChainId, currencyKey, from, amount);
     }
 
     function liquidateDelinquentAccount(address account, uint susdAmount)

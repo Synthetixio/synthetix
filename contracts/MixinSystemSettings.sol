@@ -19,6 +19,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
+    bytes32 internal constant SETTING_TELEPORT_FEE_RATE = "teleportFeeRate";
     /* ========== Exchange Fees Related ========== */
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
     bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD = "exchangeDynamicFeeThreshold";
@@ -137,6 +138,10 @@ contract MixinSystemSettings is MixinResolver {
 
     function getRateStalePeriod() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD);
+    }
+
+    function getTeleportFeeRate() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_TELEPORT_FEE_RATE);
     }
 
     /* ========== Exchange Related Fees ========== */

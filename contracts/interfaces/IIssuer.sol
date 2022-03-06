@@ -87,6 +87,10 @@ interface IIssuer {
         uint balance
     ) external;
 
+    function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external returns (bool);
+
+    function receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external returns (bool);
+
     function liquidateDelinquentAccount(
         address account,
         uint susdAmount,

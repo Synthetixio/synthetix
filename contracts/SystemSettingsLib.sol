@@ -179,6 +179,14 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, period);
     }
 
+    function setTeleportFeeRate(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint rate
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, rate);
+    }
+
     function setExchangeFeeRateForSynths(
         IFlexibleStorage flexibleStorage,
         bytes32 settingExchangeFeeRate,

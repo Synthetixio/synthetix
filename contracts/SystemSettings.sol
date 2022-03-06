@@ -83,6 +83,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getRateStalePeriod();
     }
 
+    // SIP-204 Synth Teleporters
+    function teleportFeeRate() external view returns (uint) {
+        return getTeleportFeeRate();
+    }
+
     /* ========== Exchange Related Fees ========== */
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getExchangeFeeRate(currencyKey);
@@ -293,6 +298,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit RateStalePeriodUpdated(period);
     }
 
+    function setTeleportFeeRate(uint rate) external onlyOwner {
+        flexibleStorage().setTeleportFeeRate(SETTING_TELEPORT_FEE_RATE, rate);
+        emit TeleportFeeRateUpdated(rate);
+    }
+
     /* ========== Exchange Fees Related ========== */
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
         external
@@ -467,6 +477,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationPenaltyUpdated(uint newPenalty);
     event RateStalePeriodUpdated(uint rateStalePeriod);
+    event TeleportFeeRateUpdated(uint newRate);
     /* ========== Exchange Fees Related ========== */
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event ExchangeDynamicFeeThresholdUpdated(uint dynamicFeeThreshold);

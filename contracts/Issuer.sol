@@ -13,6 +13,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/ISynth.sol";
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/ISystemMessenger.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IExchanger.sol";
@@ -88,6 +89,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
+    bytes32 private constant CONTRACT_SYSTEMMESSENGER = "SystemMessenger";
 
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
@@ -97,7 +99,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -111,6 +113,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
         newAddresses[11] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
         newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[13] = CONTRACT_SYSTEMMESSENGER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -156,6 +159,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function synthRedeemer() internal view returns (ISynthRedeemer) {
         return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
+    }
+
+    function systemMessenger() internal view returns (ISystemMessenger) {
+        return ISystemMessenger(requireAndGetAddress(CONTRACT_SYSTEMMESSENGER));
     }
 
     function allNetworksDebtInfo() public view returns (uint256 debt, uint256 sharesSupply, bool isStale) {
@@ -597,6 +604,28 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
     }
 
+    function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external onlySynthetix returns (bool) {
+        require(amount > 0, "Issuer: cannot teleport 0 synths");
+
+        bool successfullyTeleported = _teleportSynth(targetChainId, currencyKey, from, amount);
+        require(successfullyTeleported, "Issuer: Teleport failed");
+
+        emit SynthTeleported(currencyKey, from, amount);
+
+        return successfullyTeleported;
+    }
+
+    function receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external onlySynthetix returns (bool) {
+        require(amount > 0, "Issuer: cannot receive 0 teleported synths");
+
+        bool successfullyReceived = _receiveTeleportedSynth(targetChainId, currencyKey, from, amount);
+        require(successfullyReceived, "Issuer: Receiving teleport failed");
+
+        emit SynthReceived(currencyKey, from, amount);
+
+        return successfullyReceived;
+    }
+
     function liquidateDelinquentAccount(
         address account,
         uint susdAmount,
@@ -766,6 +795,64 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
+    function _teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) internal returns (bool) {
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(from, sUSD), "Issuer: sUSD needs to be settled");
+
+        // What is their debt in sUSD?
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
+            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(from), sUSD);
+        _requireRatesNotInvalid(anyRateIsInvalid);
+
+        // Calculate the teleportation fee
+        uint teleportFee = amount.multiplyDecimal(getTeleportFeeRate());
+
+        // Make sure they have enough synths available to teleport (plus fees)
+        require(IERC20(address(synths[currencyKey])).balanceOf(from) >= amount.add(teleportFee), "Issuer: not enough synths to teleport");
+
+        // Burn the synths first before teleporting
+        _burnSynths(from, from, amount.add(teleportFee), debtBalance, totalDebtIssued);
+
+        // Pay the fee pool
+        if (teleportFee > 0) {
+            if (currencyKey != sUSD) {
+                teleportFee = exchangeRates().effectiveValue(currencyKey, teleportFee, sUSD);
+            }
+            synths[sUSD].issue(feePool().FEE_ADDRESS(), teleportFee);
+            feePool().recordFeePaid(teleportFee);
+        }
+
+        // Send a message to the target chain to validate the teleported synths
+        bytes memory encodedMessage = abi.encode("receiveTeleportedSynth", targetChainId, currencyKey, from, amount);
+        systemMessenger().post(targetChainId, CONTRACT_NAME, encodedMessage, 0);
+
+        return true;
+    }
+
+    function _receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) internal returns (bool) {
+        // TODO: Verify message integrity?
+        require(targetChainId > 0, "Issuer: received invalid target chain id");
+
+        // Make sure we can issue these synths
+        (uint maxIssuable, , uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
+        _requireRatesNotInvalid(anyRateIsInvalid);
+        require(amount <= maxIssuable, "Issuer: amount too large to issue");
+
+        // Keep track of the debt they're about to create
+        _addToDebtRegister(from, amount, totalSystemDebt);
+
+        // Record issue timestamp
+        _setLastIssueEvent(from);
+
+        // Create their synths
+        synths[currencyKey].issue(from, amount);
+
+        // Account for the issued debt in the cache
+        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
+        
+        return true;
+    }
+
     function _setLastIssueEvent(address account) internal {
         // Set the timestamp of the last issueSynths
         flexibleStorage().setUIntValue(
@@ -833,4 +920,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);
+    event SynthTeleported(bytes32 currencyKey, address from, uint amount);
+    event SynthReceived(bytes32 currencyKey, address from, uint amount);
 }
