@@ -56,6 +56,7 @@ async function deploy() {
 
 	// prepare the synths but skip preparing releases (as this isn't a fork)
 	const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
+	//const synthsToAdd = [];
 	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 	await deployInstance({
 		addNewSynths: true,

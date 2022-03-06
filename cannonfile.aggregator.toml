@@ -6,10 +6,14 @@ description = "Deploys a testing aggregator with a given rate dated into the fut
 
 [setting.timestamp]
 # by default, its dated into the future
-defaultValue = "2000000000"
+defaultValue = "<%= timestamp %>"
+
+[setting.salt]
+defaultValue = "default"
 
 [contract.aggregator]
 artifact = "MockAggregatorV2V3"
+salt = "<%= settings.salt %>"
 
 [invoke.set_answer]
 addresses = ["<%= outputs.self.contracts.aggregator.address %>"]

@@ -28,7 +28,7 @@ function bootstrapL1({ ctx }) {
 
 		connectContracts({ ctx });
 
-		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
+		//await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 	});
 }
 
