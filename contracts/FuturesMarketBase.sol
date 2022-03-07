@@ -627,8 +627,8 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * This is mutative because the circuit breaker stores the last price on every invocation.
      */
     function _assetPriceRequireSystemChecks() internal returns (uint) {
-        // check that futures markets aren't suspended, revert with appropriate message
-        _systemStatus().requireFuturesActive();
+        // check that futures market isn't suspended, revert with appropriate message
+        _systemStatus().requireFuturesMarketActive(baseAsset); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
