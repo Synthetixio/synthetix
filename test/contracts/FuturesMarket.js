@@ -2532,6 +2532,54 @@ contract('FuturesMarket', accounts => {
 			});
 		}
 
+		it('Funding can be paused when market is paused', async () => {
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+
+			const price = toUnit('250');
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: price,
+				marginDelta: toUnit('1000'),
+				sizeDelta: toUnit('12'),
+			});
+
+			const fundingRate = toUnit('-0.003'); // 12 * 250 / 100_000 skew * 0.1 max funding rate
+			assert.bnEqual(await futuresMarket.currentFundingRate(), fundingRate);
+
+			// 1 day
+			await fastForward(24 * 60 * 60);
+			await setPrice(baseAsset, price);
+
+			// pause the market
+			await systemStatus.suspendFuturesMarket(baseAsset, '0', { from: owner });
+			// set funding rate to 0
+			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0'), { from: owner });
+
+			// check accrued
+			const accrued = (await futuresMarket.accruedFunding(trader))[0];
+			assert.bnClose(accrued, fundingRate.mul(toBN(250 * 12)), toUnit('0.01'));
+
+			// 2 days of pause
+			await fastForward(2 * 24 * 60 * 60);
+			await setPrice(baseAsset, price);
+
+			// check no funding accrued
+			assert.bnEqual((await futuresMarket.accruedFunding(trader))[0], accrued);
+
+			// set funding rate to 0.1 again
+			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.1'), { from: owner });
+			// resume
+			await systemStatus.resumeFuturesMarket(baseAsset, { from: owner });
+
+			// 1 day
+			await fastForward(24 * 60 * 60);
+			await setPrice(baseAsset, price);
+
+			// check more funding accrued
+			assert.bnGt((await futuresMarket.accruedFunding(trader))[0].abs(), accrued.abs());
+		});
+
 		describe('Funding sequence', () => {
 			const price = toUnit('100');
 			beforeEach(async () => {
