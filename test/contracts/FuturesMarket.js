@@ -170,10 +170,13 @@ contract('FuturesMarket', accounts => {
 					'transferMargin',
 					'withdrawAllMargin',
 					'modifyPosition',
+					'modifyPositionWithTracking',
 					'closePosition',
+					'closePositionWithTracking',
 					'liquidatePosition',
 					'recomputeFunding',
 					'submitNextPriceOrder',
+					'submitNextPriceOrderWithTracking',
 					'cancelNextPriceOrder',
 					'executeNextPriceOrder',
 				],
@@ -917,6 +920,29 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 
+		it('modifyPositionWithTracking emits expected event', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.transferMargin(margin, { from: trader });
+			const size = toUnit('50');
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+			const fee = (await futuresMarket.orderFee(size))[0];
+			const trackingCode = toBytes32('code');
+			const tx = await futuresMarket.modifyPositionWithTracking(size, trackingCode, {
+				from: trader,
+			});
+
+			// The relevant events are properly emitted
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.equal(decodedLogs.length, 4); // funding, issued, tracking, pos-modified
+			decodedEventEqual({
+				event: 'FuturesTracking',
+				emittedFrom: futuresMarket.address,
+				args: [trackingCode, baseAsset, marketKey, size, fee],
+				log: decodedLogs[2],
+			});
+		});
+
 		it('Cannot modify a position if the price is invalid', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.transferMargin(margin, { from: trader });
@@ -1339,7 +1365,7 @@ contract('FuturesMarket', accounts => {
 				await assert.revert(futuresMarket.closePosition({ from: trader }), 'No position open');
 			});
 
-			it('confirming a position closure emits the appropriate event', async () => {
+			it('position closure emits the appropriate event', async () => {
 				await transferMarginAndModifyPosition({
 					market: futuresMarket,
 					account: trader,
@@ -1374,6 +1400,36 @@ contract('FuturesMarket', accounts => {
 						await futuresMarket.fundingSequenceLength(),
 						multiplyDecimal(toUnit(2000), makerFee),
 					],
+					log: decodedLogs[2],
+					bnCloseVariance: toUnit('0.1'),
+				});
+			});
+
+			it('closePositionWithTracking emits expected event', async () => {
+				const size = toUnit('10');
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('200'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: size,
+				});
+
+				const trackingCode = toBytes32('code');
+				const tx = await futuresMarket.closePositionWithTracking(trackingCode, { from: trader });
+
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarketManager, sUSD, futuresMarket],
+				});
+
+				assert.equal(decodedLogs.length, 4);
+				const fee = multiplyDecimal(toUnit(2000), makerFee);
+
+				decodedEventEqual({
+					event: 'FuturesTracking',
+					emittedFrom: futuresMarket.address,
+					args: [trackingCode, baseAsset, marketKey, size.neg(), fee],
 					log: decodedLogs[2],
 					bnCloseVariance: toUnit('0.1'),
 				});

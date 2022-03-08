@@ -29,6 +29,16 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      */
     function submitNextPriceOrder(int sizeDelta) external {
+        _submitNextPriceOrder(sizeDelta, bytes32(""));
+    }
+
+    /// same as submitNextPriceOrder but emits an event with the tracking code
+    /// to allow volume source fee sharing for integrations
+    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
+        _submitNextPriceOrder(sizeDelta, trackingCode);
+    }
+
+    function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
         // check that a previous order doesn't exist
         require(nextPriceOrders[msg.sender].sizeDelta == 0, "previous order exists");
 
@@ -44,7 +54,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
                 sizeDelta: sizeDelta,
                 price: price,
                 takerFee: _takerFeeNextPrice(marketKey),
-                makerFee: _makerFeeNextPrice(marketKey)
+                makerFee: _makerFeeNextPrice(marketKey),
+                trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
         _revertIfError(status);
@@ -63,7 +74,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
                 sizeDelta: int128(sizeDelta),
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
-                keeperDeposit: uint128(keeperDeposit)
+                keeperDeposit: uint128(keeperDeposit),
+                trackingCode: trackingCode
             });
         // emit event
         emit NextPriceOrderSubmitted(
@@ -71,7 +83,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
-            order.keeperDeposit
+            order.keeperDeposit,
+            order.trackingCode
         );
         // store order
         nextPriceOrders[msg.sender] = order;
@@ -130,7 +143,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
-            order.keeperDeposit
+            order.keeperDeposit,
+            order.trackingCode
         );
     }
 
@@ -186,13 +200,14 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         // the correct price for the past round
         (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.targetRoundId);
         // execute or revert
-        _modifyPosition(
+        _trade(
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
                 takerFee: _takerFeeNextPrice(marketKey),
-                makerFee: _makerFeeNextPrice(marketKey)
+                makerFee: _makerFeeNextPrice(marketKey),
+                trackingCode: order.trackingCode
             })
         );
 
@@ -205,7 +220,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
-            order.keeperDeposit
+            order.keeperDeposit,
+            order.trackingCode
         );
     }
 
@@ -242,7 +258,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         int sizeDelta,
         uint targetRoundId,
         uint commitDeposit,
-        uint keeperDeposit
+        uint keeperDeposit,
+        bytes32 trackingCode
     );
 
     event NextPriceOrderRemoved(
@@ -251,6 +268,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         int sizeDelta,
         uint targetRoundId,
         uint commitDeposit,
-        uint keeperDeposit
+        uint keeperDeposit,
+        bytes32 trackingCode
     );
 }

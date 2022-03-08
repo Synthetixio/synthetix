@@ -184,6 +184,60 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 		});
 	});
 
+	describe('submitNextPriceOrderWithTracking()', () => {
+		const trackingCode = toBytes32('code');
+
+		it('submitting an order results in correct views and events', async () => {
+			// setup
+			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
+			const spotFee = (await futuresMarket.orderFee(size))[0];
+			const keeperFee = await futuresMarketSettings.minKeeperFee();
+			const tx = await futuresMarket.submitNextPriceOrderWithTracking(size, trackingCode, {
+				from: trader,
+			});
+
+			// check order
+			const order = await futuresMarket.nextPriceOrders(trader);
+			assert.bnEqual(order.sizeDelta, size);
+			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
+			assert.bnEqual(order.commitDeposit, spotFee);
+			assert.bnEqual(order.keeperDeposit, keeperFee);
+			assert.bnEqual(order.trackingCode, trackingCode);
+
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+
+			// NextPriceOrderSubmitted
+			decodedEventEqual({
+				event: 'NextPriceOrderSubmitted',
+				emittedFrom: futuresMarket.address,
+				args: [trader, size, roundId.add(toBN(1)), spotFee, keeperFee, trackingCode],
+				log: decodedLogs[2],
+			});
+		});
+
+		it('executing an order emits the tracking event', async () => {
+			// setup
+			await futuresMarket.submitNextPriceOrderWithTracking(size, trackingCode, { from: trader });
+
+			// go to next round
+			await setPrice(baseAsset, price);
+
+			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, takerFeeNextPrice));
+
+			// excute the order
+			const tx = await futuresMarket.executeNextPriceOrder(trader, { from: trader });
+
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+
+			decodedEventEqual({
+				event: 'FuturesTracking',
+				emittedFrom: futuresMarket.address,
+				args: [trackingCode, baseAsset, marketKey, size, expectedFee],
+				log: decodedLogs[3],
+			});
+		});
+	});
+
 	describe('cancelNextPriceOrder()', () => {
 		it('cannot cancel when there is no order', async () => {
 			// account owner
