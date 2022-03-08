@@ -56,28 +56,28 @@ contract('FuturesMarketSettings', accounts => {
 
 		mockFuturesMarketBTC = await artifacts.require('GenericMock').new();
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'recomputeFunding',
 			returns: ['0'],
 		});
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'marketSize',
 			returns: ['1'],
 		});
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'marketKey',
@@ -85,7 +85,7 @@ contract('FuturesMarketSettings', accounts => {
 		});
 
 		// add the market
-		futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -388,6 +388,58 @@ contract('FuturesMarketSettings', accounts => {
 			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
 				bps: newValue,
 			});
+		});
+	});
+
+	describe('migration scenario: different parameters for two markets for same asset', () => {
+		const firstMarketKey = toBytes32('sBTC');
+		const secondMarketKey = toBytes32('SomethingElse');
+
+		let secondBTCMarket;
+
+		before(async () => {
+			// add a second BTC market
+			secondBTCMarket = await artifacts.require('GenericMock').new();
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'recomputeFunding',
+				returns: ['0'],
+			});
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'marketSize',
+				returns: ['1'],
+			});
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'baseAsset',
+				returns: [toBytes32('sBTC')],
+			});
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'marketKey',
+				returns: [secondMarketKey],
+			});
+
+			// add the market
+			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+		});
+
+		it('should be able to change parameters for both markets independently', async () => {
+			const val1 = toUnit(0.1);
+			const val2 = toUnit(0.5);
+			await futuresMarketSettings.setMaxFundingRate(firstMarketKey, val1, { from: owner });
+			await futuresMarketSettings.setMaxFundingRate(secondMarketKey, val2, { from: owner });
+			assert.bnEqual(await futuresMarketSettings.maxFundingRate(firstMarketKey), val1);
+			assert.bnEqual(await futuresMarketSettings.maxFundingRate(secondMarketKey), val2);
 		});
 	});
 });

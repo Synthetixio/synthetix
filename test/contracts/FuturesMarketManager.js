@@ -168,6 +168,30 @@ contract('FuturesMarketManager', accounts => {
 			);
 		});
 
+		it('Can add more than one market for the same asset', async () => {
+			const firstKey = currencyKeys[1];
+			const market1 = markets[1];
+
+			const secondKey = toBytes32('sETH-2'); // different market key
+			const market2 = await setupContract({
+				accounts,
+				contract: 'MockFuturesMarket',
+				args: [
+					futuresMarketManager.address,
+					await market1.baseAsset(),
+					secondKey,
+					toUnit('1000'),
+					false,
+				],
+				skipPostDeploy: true,
+			});
+			await futuresMarketManager.addMarkets([market2.address], { from: owner });
+
+			// check correcr addresses returned
+			assert.equal(await futuresMarketManager.marketForKey(secondKey), market2.address);
+			assert.equal(await futuresMarketManager.marketForKey(firstKey), market1.address);
+		});
+
 		it('Removing a single market', async () => {
 			await futuresMarketManager.removeMarkets([addresses[0]], { from: owner });
 
