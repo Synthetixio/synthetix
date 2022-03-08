@@ -299,20 +299,6 @@ describe('publish scripts', () => {
 						DEBT_SNAPSHOT_STALE_TIME
 					);
 					assert.strictEqual((await Issuer.minimumStakeTime()).toString(), MINIMUM_STAKE_TIME);
-					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
-						// take the first synth we can find from that category, ignoring ETH and BTC as
-						// they deviate from the rest of the synth fee category defaults
-						const synth = synths.find(
-							({ category: c, name }) => c === category && !/^.(BTC|ETH)$/.test(name)
-						);
-
-						assert.strictEqual(
-							(
-								await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
-							).toString(),
-							rate
-						);
-					}
 				});
 
 				describe('when defaults are changed', () => {
@@ -975,7 +961,7 @@ describe('publish scripts', () => {
 						const currentFeeds = JSON.parse(fs.readFileSync(feedsJSONPath));
 
 						// mutate parameters of EUR - instructing it to use the mock aggregator as a feed
-						currentFeeds['EUR'].feed = mockAggregator.address;
+						currentFeeds['BTC'].feed = mockAggregator.address;
 
 						fs.writeFileSync(feedsJSONPath, JSON.stringify(currentFeeds));
 					});
@@ -1000,18 +986,18 @@ describe('publish scripts', () => {
 
 							ExchangeRates = getContract({ target: 'ExchangeRates' });
 						});
-						it('then the aggregator must be set for the sEUR price', async () => {
-							const sEURAggregator = await callMethodWithRetry(
-								ExchangeRates.aggregators(toBytes32('sEUR'))
+						it('then the aggregator must be set for the sBTC price', async () => {
+							const aggregator = await callMethodWithRetry(
+								ExchangeRates.aggregators(toBytes32('sBTC'))
 							);
-							assert.strictEqual(sEURAggregator, mockAggregator.address);
+							assert.strictEqual(aggregator, mockAggregator.address);
 						});
 
-						describe('when ExchangeRates has rates for all synths except the aggregated synth sEUR', () => {
+						describe('when ExchangeRates has rates for all synths except the aggregated synth sBTC', () => {
 							beforeEach(async () => {
 								// update rates
 								const synthsToUpdate = synths
-									.filter(({ name }) => name !== 'sEUR')
+									.filter(({ name }) => name !== 'sBTC')
 									.concat({ asset: 'SNX', rate: 1 });
 
 								for (const { asset } of synthsToUpdate) {
@@ -1019,7 +1005,7 @@ describe('publish scripts', () => {
 								}
 							});
 							describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
-								it('then it returns true as sEUR still is', async () => {
+								it('then it returns true as sBTC still is', async () => {
 									const response = await Synthetix.anySynthOrSNXRateIsInvalid();
 									assert.strictEqual(response, true, 'anySynthOrSNXRateIsInvalid must be true');
 								});
@@ -1040,7 +1026,7 @@ describe('publish scripts', () => {
 								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
 									it('correctly returns the rate', async () => {
 										const response = await callMethodWithRetry(
-											ExchangeRates.rateForCurrency(toBytes32('sEUR'))
+											ExchangeRates.rateForCurrency(toBytes32('sBTC'))
 										);
 										assert.strictEqual(ethers.utils.formatEther(response.toString()), rate);
 									});
