@@ -149,7 +149,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 		});
 
-		it('Cannot add more than one market for the same asset.', async () => {
+		it('Cannot add more than one market for the same key.', async () => {
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
@@ -204,7 +204,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 		});
 
-		it('Removing markets by asset', async () => {
+		it('Removing markets by key', async () => {
 			await futuresMarketManager.removeMarketsByKey([toBytes32('sETH')], { from: owner });
 
 			let markets = await futuresMarketManager.allMarkets();
