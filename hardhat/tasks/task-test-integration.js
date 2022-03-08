@@ -42,6 +42,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		}
 
 		if (taskArguments.deploy) {
+			console.log(hre.network.name, await hre.ethers.provider.getBlockNumber());
 			if (taskArguments.useFork) {
 				await prepareDeploy({
 					network: 'mainnet',
