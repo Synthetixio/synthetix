@@ -118,7 +118,16 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				await hre.run('cannon:build');
+				const network = 'local';
+				await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
+				await deployInstance({
+					addNewSynths: true,
+					buildPath,
+					network,
+					providerPort: providerPortL2,
+					providerUrl,
+					useOvm,
+				});
 			}
 			hre.config.addedSynths = synthsToAdd;
 		}
