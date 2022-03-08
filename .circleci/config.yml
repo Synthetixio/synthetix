@@ -49,6 +49,7 @@ jobs:
           root: .
           paths:
             - build
+            - publish/deployed
   job-fork-tests-ovm:
     working_directory: ~/repo
     docker:
