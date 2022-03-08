@@ -805,7 +805,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Burn the synths first before teleporting
         synths[currencyKey].burn(from, amount);
-        
+
         // Pay the fee pool
         if (teleportFee > 0) {
             if (currencyKey != sUSD) {
@@ -824,12 +824,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function _receiveTeleportedSynth(bytes32 currencyKey, address from, uint amount) internal returns (bool) {
         // Make sure we can issue these synths
-        (uint maxIssuable, , uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
+        (uint maxIssuable, , , bool anyRateIsInvalid) = _remainingIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
         require(amount <= maxIssuable, "Issuer: amount too large to issue");
-
-        // Keep track of the debt they're about to create
-        _addToDebtRegister(from, amount, totalSystemDebt);
 
         // Record issue timestamp
         _setLastIssueEvent(from);
