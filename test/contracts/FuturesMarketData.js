@@ -71,6 +71,7 @@ contract('FuturesMarketData', accounts => {
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
 			const assetKey = toBytes32(symbol);
+			const marketKey = toBytes32(symbol);
 
 			const market = await setupContract({
 				accounts,
@@ -79,6 +80,7 @@ contract('FuturesMarketData', accounts => {
 				args: [
 					addressResolver.address,
 					assetKey, // base asset
+					marketKey,
 				],
 			});
 
@@ -128,7 +130,7 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
 		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
 
-		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
+		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForKey(newAsset));
 
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
 		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });
@@ -192,7 +194,7 @@ contract('FuturesMarketData', accounts => {
 
 		it('By asset', async () => {
 			const details = await futuresMarketData.marketDetails(futuresMarket.address);
-			const assetDetails = await futuresMarketData.marketDetailsForAsset(baseAsset);
+			const assetDetails = await futuresMarketData.marketDetailsForKey(baseAsset);
 			assert.equal(JSON.stringify(assetDetails), JSON.stringify(details));
 		});
 	});
@@ -226,8 +228,14 @@ contract('FuturesMarketData', accounts => {
 		it('By asset', async () => {
 			const details = await futuresMarketData.positionDetails(futuresMarket.address, trader3);
 			const details2 = await futuresMarketData.positionDetails(sethMarket.address, trader3);
-			const detailsByAsset = await futuresMarketData.positionDetailsForAsset(baseAsset, trader3);
-			const detailsByAsset2 = await futuresMarketData.positionDetailsForAsset(newAsset, trader3);
+			const detailsByAsset = await futuresMarketData.positionDetailsForMarketKey(
+				baseAsset,
+				trader3
+			);
+			const detailsByAsset2 = await futuresMarketData.positionDetailsForMarketKey(
+				newAsset,
+				trader3
+			);
 
 			assert.equal(JSON.stringify(detailsByAsset), JSON.stringify(details));
 			assert.equal(JSON.stringify(detailsByAsset2), JSON.stringify(details2));
@@ -236,9 +244,7 @@ contract('FuturesMarketData', accounts => {
 
 	describe('Market summaries', () => {
 		it('For markets', async () => {
-			const sETHSummary = (
-				await futuresMarketData.marketSummariesForAssets([toBytes32('sETH')])
-			)[0];
+			const sETHSummary = (await futuresMarketData.marketSummariesForKeys([toBytes32('sETH')]))[0];
 
 			const params = await futuresMarketData.parameters(newAsset); // sETH
 
@@ -261,7 +267,7 @@ contract('FuturesMarketData', accounts => {
 				futuresMarket.address,
 				sethMarket.address,
 			]);
-			const summariesForAsset = await futuresMarketData.marketSummariesForAssets(
+			const summariesForAsset = await futuresMarketData.marketSummariesForKeys(
 				['sBTC', 'sETH'].map(toBytes32)
 			);
 			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForAsset));
@@ -306,7 +312,7 @@ contract('FuturesMarketData', accounts => {
 
 			assert.equal(
 				sLINKSummary.market,
-				await futuresMarketManager.marketForAsset(toBytes32('sLINK'))
+				await futuresMarketManager.marketForKey(toBytes32('sLINK'))
 			);
 			assert.equal(sLINKSummary.asset, toBytes32('sLINK'));
 			assert.equal(sLINKSummary.maxLeverage, toUnit(5));

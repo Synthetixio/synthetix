@@ -22,13 +22,13 @@ contract EmptyFuturesMarketManager is IFuturesMarketManager {
         return _markets;
     }
 
-    function marketForAsset(bytes32 asset) external view returns (address) {
-        asset;
+    function marketForKey(bytes32 marketKey) external view returns (address) {
+        marketKey;
         return address(0);
     }
 
-    function marketsForAssets(bytes32[] calldata assets) external view returns (address[] memory) {
-        assets;
+    function marketsForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory) {
+        marketKeys;
         address[] memory _markets;
         return _markets;
     }

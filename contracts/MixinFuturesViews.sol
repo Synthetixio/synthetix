@@ -147,8 +147,8 @@ contract MixinFuturesViews is FuturesMarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
+                takerFee: _takerFee(marketKey),
+                makerFee: _makerFee(marketKey)
             });
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
     }
@@ -178,8 +178,8 @@ contract MixinFuturesViews is FuturesMarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(baseAsset),
-                makerFee: _makerFee(baseAsset)
+                takerFee: _takerFee(marketKey),
+                makerFee: _makerFee(marketKey)
             });
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(positions[sender], params);
 

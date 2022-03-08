@@ -650,7 +650,13 @@ contract('DebtCache', async accounts => {
 					const market = await setupContract({
 						accounts,
 						contract: 'MockFuturesMarket',
-						args: [futuresMarketManager.address, toBytes32('sLINK'), toUnit('1000'), false],
+						args: [
+							futuresMarketManager.address,
+							toBytes32('sLINK'),
+							toBytes32('sLINK'),
+							toUnit('1000'),
+							false,
+						],
 						skipPostDeploy: true,
 					});
 					await futuresMarketManager.addMarkets([market.address], { from: owner });

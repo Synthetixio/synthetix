@@ -281,10 +281,12 @@ const setupContract = async ({
 		FuturesMarketBTC: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC'), // market key
 		],
 		FuturesMarketETH: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'), // base asset
+			toBytes32('sETH'), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};

@@ -54,44 +54,44 @@ contract MixinFuturesMarketSettings is MixinResolver {
 
     /* ---------- Internals ---------- */
 
-    function _parameter(bytes32 _baseAsset, bytes32 key) internal view returns (uint value) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)));
+    function _parameter(bytes32 _marketKey, bytes32 key) internal view returns (uint value) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_marketKey, key)));
     }
 
-    function _takerFee(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_TAKER_FEE);
+    function _takerFee(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_TAKER_FEE);
     }
 
-    function _makerFee(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAKER_FEE);
+    function _makerFee(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAKER_FEE);
     }
 
-    function _takerFeeNextPrice(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_TAKER_FEE_NEXT_PRICE);
+    function _takerFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE);
     }
 
-    function _makerFeeNextPrice(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE);
+    function _makerFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE);
     }
 
-    function _nextPriceConfirmWindow(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW);
+    function _nextPriceConfirmWindow(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW);
     }
 
-    function _maxLeverage(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAX_LEVERAGE);
+    function _maxLeverage(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_LEVERAGE);
     }
 
-    function _maxMarketValueUSD(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE);
+    function _maxMarketValueUSD(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_MARKET_VALUE);
     }
 
-    function _skewScaleUSD(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE);
+    function _skewScaleUSD(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MIN_SKEW_SCALE);
     }
 
-    function _maxFundingRate(bytes32 _baseAsset) internal view returns (uint) {
-        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
+    function _maxFundingRate(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_FUNDING_RATE);
     }
 
     function _minKeeperFee() internal view returns (uint) {

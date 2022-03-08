@@ -77,6 +77,13 @@ contract('FuturesMarketSettings', accounts => {
 			returns: [toBytes32('sBTC')],
 		});
 
+		mockGenericContractFnc({
+			instance: mockFuturesMarketBTC,
+			mock: 'FuturesMarket',
+			fncName: 'marketKey',
+			returns: [toBytes32('sBTC')],
+		});
+
 		// add the market
 		futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});

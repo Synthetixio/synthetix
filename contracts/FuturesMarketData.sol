@@ -23,6 +23,7 @@ contract FuturesMarketData {
     struct MarketSummary {
         address market;
         bytes32 asset;
+        bytes32 key;
         uint maxLeverage;
         uint price;
         uint marketSize;
@@ -75,6 +76,7 @@ contract FuturesMarketData {
     struct MarketData {
         address market;
         bytes32 baseAsset;
+        bytes32 marketKey;
         FuturesMarketData.FeeRates feeRates;
         FuturesMarketData.MarketLimits limits;
         FuturesMarketData.FundingParameters fundingParameters;
@@ -130,11 +132,11 @@ contract FuturesMarketData {
             });
     }
 
-    function parameters(bytes32 baseAsset) external view returns (IFuturesMarketSettings.Parameters memory) {
-        return _parameters(baseAsset);
+    function parameters(bytes32 marketKey) external view returns (IFuturesMarketSettings.Parameters memory) {
+        return _parameters(marketKey);
     }
 
-    function _parameters(bytes32 baseAsset) internal view returns (IFuturesMarketSettings.Parameters memory) {
+    function _parameters(bytes32 marketKey) internal view returns (IFuturesMarketSettings.Parameters memory) {
         (
             uint takerFee,
             uint makerFee,
@@ -145,7 +147,7 @@ contract FuturesMarketData {
             uint maxMarketValueUSD,
             uint maxFundingRate,
             uint skewScaleUSD
-        ) = _futuresMarketSettings().parameters(baseAsset);
+        ) = _futuresMarketSettings().parameters(marketKey);
         return
             IFuturesMarketSettings.Parameters(
                 takerFee,
@@ -165,8 +167,9 @@ contract FuturesMarketData {
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
             IFuturesMarket market = IFuturesMarket(markets[i]);
+            bytes32 marketKey = market.marketKey();
             bytes32 baseAsset = market.baseAsset();
-            IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
+            IFuturesMarketSettings.Parameters memory params = _parameters(marketKey);
 
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
@@ -174,6 +177,7 @@ contract FuturesMarketData {
             summaries[i] = MarketSummary(
                 address(market),
                 baseAsset,
+                marketKey,
                 params.maxLeverage,
                 price,
                 market.marketSize(),
@@ -191,8 +195,8 @@ contract FuturesMarketData {
         return _marketSummaries(markets);
     }
 
-    function marketSummariesForAssets(bytes32[] calldata assets) external view returns (MarketSummary[] memory) {
-        return _marketSummaries(_futuresMarketManager().marketsForAssets(assets));
+    function marketSummariesForKeys(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
+        return _marketSummaries(_futuresMarketManager().marketsForKeys(marketKeys));
     }
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
@@ -216,13 +220,15 @@ contract FuturesMarketData {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
         bytes32 baseAsset = market.baseAsset();
+        bytes32 marketKey = market.marketKey();
 
-        IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
+        IFuturesMarketSettings.Parameters memory params = _parameters(marketKey);
 
         return
             MarketData(
                 address(market),
                 baseAsset,
+                marketKey,
                 FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice),
                 MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
@@ -235,8 +241,8 @@ contract FuturesMarketData {
         return _marketDetails(market);
     }
 
-    function marketDetailsForAsset(bytes32 asset) external view returns (MarketData memory) {
-        return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)));
+    function marketDetailsForKey(bytes32 marketKey) external view returns (MarketData memory) {
+        return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForKey(marketKey)));
     }
 
     function _position(IFuturesMarket market, address account)
@@ -309,7 +315,7 @@ contract FuturesMarketData {
         return _positionDetails(market, account);
     }
 
-    function positionDetailsForAsset(bytes32 asset, address account) external view returns (PositionData memory) {
-        return _positionDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)), account);
+    function positionDetailsForMarketKey(bytes32 marketKey, address account) external view returns (PositionData memory) {
+        return _positionDetails(IFuturesMarket(_futuresMarketManager().marketForKey(marketKey)), account);
     }
 }

@@ -43,8 +43,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFeeNextPrice(baseAsset),
-                makerFee: _makerFeeNextPrice(baseAsset)
+                takerFee: _takerFeeNextPrice(marketKey),
+                makerFee: _makerFeeNextPrice(marketKey)
             });
         (, , Status status) = _postTradeDetails(position, params);
         _revertIfError(status);
@@ -191,8 +191,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeNextPrice(baseAsset),
-                makerFee: _makerFeeNextPrice(baseAsset)
+                takerFee: _takerFeeNextPrice(marketKey),
+                makerFee: _makerFeeNextPrice(marketKey)
             })
         );
 
@@ -214,7 +214,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
     // rounds after target roundId
     function _confirmationWindowOver(uint currentRoundId, uint targetRoundId) internal view returns (bool) {
-        return (currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(baseAsset)); // don't underflow
+        return (currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey)); // don't underflow
     }
 
     // convenience view to access exchangeRates contract for methods that are not exposed
@@ -226,8 +226,8 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
     function _nextPriceCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
-        params.takerFee = _takerFee(baseAsset);
-        params.makerFee = _makerFee(baseAsset);
+        params.takerFee = _takerFee(marketKey);
+        params.makerFee = _makerFee(marketKey);
         // Commit fee is equal to the spot fee that would be paid.
         // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
