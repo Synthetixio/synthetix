@@ -27,14 +27,14 @@ steps:
       command: |
         docker --version
         npx hardhat ops --start
+  - run:
+      name: Run isolated layer 1 integration tests
+      command: |
+        npx hardhat test:integration:l1 --deploy
   - cmd-wait-for-port:
       port: 8545
   - cmd-wait-for-port:
       port: 9545
-  - run:
-      name: Run isolated layer 1 integration tests
-      command: |
-        npx hardhat test:integration:l1 --deploy --provider-port 9545
   - run:
       name: Run isolated layer 2 integration tests
       command: |
