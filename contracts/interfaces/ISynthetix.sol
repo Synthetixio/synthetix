@@ -114,8 +114,6 @@ interface ISynthetix {
 
     function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external returns (bool);
 
-    function receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external returns (bool);
-
     function mint() external returns (bool);
 
     function settle(bytes32 currencyKey)

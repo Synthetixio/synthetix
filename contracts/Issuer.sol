@@ -610,15 +610,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool successfullyTeleported = _teleportSynth(targetChainId, currencyKey, from, amount);
         require(successfullyTeleported, "Issuer: Teleport failed");
 
-        emit SynthTeleported(currencyKey, from, amount);
+        emit SynthTeleported(targetChainId, currencyKey, from, amount);
 
         return successfullyTeleported;
     }
 
-    function receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external onlySynthetix returns (bool) {
+    function receiveTeleportedSynth(bytes32 currencyKey, address from, uint amount) external returns (bool) {
+        require(msg.sender == address(systemMessenger()), "Issuer: only SystemMessenger can invoke this");
         require(amount > 0, "Issuer: cannot receive 0 teleported synths");
 
-        bool successfullyReceived = _receiveTeleportedSynth(targetChainId, currencyKey, from, amount);
+        bool successfullyReceived = _receiveTeleportedSynth(currencyKey, from, amount);
         require(successfullyReceived, "Issuer: Receiving teleport failed");
 
         emit SynthReceived(currencyKey, from, amount);
@@ -796,23 +797,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) internal returns (bool) {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(from, sUSD), "Issuer: sUSD needs to be settled");
-
-        // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
-            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(from), sUSD);
-        _requireRatesNotInvalid(anyRateIsInvalid);
-
         // Calculate the teleportation fee
         uint teleportFee = amount.multiplyDecimal(getTeleportFeeRate());
 
-        // Make sure they have enough synths available to teleport (plus fees)
-        require(IERC20(address(synths[currencyKey])).balanceOf(from) >= amount.add(teleportFee), "Issuer: not enough synths to teleport");
+        // Make sure they have enough synths available to teleport
+        require(IERC20(address(synths[currencyKey])).balanceOf(from) >= amount, "Issuer: not enough synths to teleport");
 
         // Burn the synths first before teleporting
-        _burnSynths(from, from, amount.add(teleportFee), debtBalance, totalDebtIssued);
-
+        synths[currencyKey].burn(from, amount);
+        
         // Pay the fee pool
         if (teleportFee > 0) {
             if (currencyKey != sUSD) {
@@ -823,16 +816,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // Send a message to the target chain to validate the teleported synths
-        bytes memory encodedMessage = abi.encode("receiveTeleportedSynth", targetChainId, currencyKey, from, amount);
+        bytes memory encodedMessage = abi.encode("receiveTeleportedSynth", targetChainId, currencyKey, from, amount.sub(teleportFee));
         systemMessenger().post(targetChainId, CONTRACT_NAME, encodedMessage, 0);
 
         return true;
     }
 
-    function _receiveTeleportedSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) internal returns (bool) {
-        // TODO: Verify message integrity?
-        require(targetChainId > 0, "Issuer: received invalid target chain id");
-
+    function _receiveTeleportedSynth(bytes32 currencyKey, address from, uint amount) internal returns (bool) {
         // Make sure we can issue these synths
         (uint maxIssuable, , uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
@@ -920,6 +910,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     event SynthAdded(bytes32 currencyKey, address synth);
     event SynthRemoved(bytes32 currencyKey, address synth);
-    event SynthTeleported(bytes32 currencyKey, address from, uint amount);
+    event SynthTeleported(uint targetChainId, bytes32 currencyKey, address from, uint amount);
     event SynthReceived(bytes32 currencyKey, address from, uint amount);
 }
