@@ -81,9 +81,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     }
 
     function _marketsForKeys(bytes32[] memory marketKeys) internal view returns (address[] memory) {
-        uint numMarkets = marketKeys.length;
-        address[] memory results = new address[](numMarkets);
-        for (uint i; i < numMarkets; i++) {
+        uint mMarkets = marketKeys.length;
+        address[] memory results = new address[](mMarkets);
+        for (uint i; i < mMarkets; i++) {
             results[i] = marketForKey[marketKeys[i]];
         }
         return results;
