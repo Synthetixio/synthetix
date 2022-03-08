@@ -42,6 +42,8 @@ contract('SystemStatus', async accounts => {
 				'resumeSynths',
 				'resumeSynthExchange',
 				'resumeSynthsExchange',
+				'resumeFuturesMarket',
+				'resumeFuturesMarkets',
 				'resumeSystem',
 				'suspendExchange',
 				'suspendFutures',
@@ -50,6 +52,8 @@ contract('SystemStatus', async accounts => {
 				'suspendSynths',
 				'suspendSynthExchange',
 				'suspendSynthsExchange',
+				'suspendFuturesMarket',
+				'suspendFuturesMarkets',
 				'suspendSystem',
 				'updateAccessControl',
 				'updateAccessControls',
@@ -82,6 +86,14 @@ contract('SystemStatus', async accounts => {
 			systemStatus.suspendSynth(toBytes32('sETH'), '1', { from: owner }),
 			'Restricted to access control list'
 		);
+		await assert.revert(
+			systemStatus.suspendFuturesMarket(toBytes32('sETH'), '1', { from: owner }),
+			'Restricted to access control list'
+		);
+		await assert.revert(
+			systemStatus.suspendFuturesMarkets([toBytes32('sETH')], '1', { from: owner }),
+			'Restricted to access control list'
+		);
 	});
 
 	describe('when the owner is given access to suspend and resume everything', () => {
@@ -110,6 +122,7 @@ contract('SystemStatus', async accounts => {
 				await systemStatus.requireFuturesActive();
 				await systemStatus.requireSynthActive(toBytes32('sETH'));
 				await systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH'));
+				await systemStatus.requireFuturesMarketActive(toBytes32('sBTC'));
 			});
 
 			it('and all the bool views are correct', async () => {
@@ -156,6 +169,7 @@ contract('SystemStatus', async accounts => {
 					await assert.revert(systemStatus.requireIssuanceActive(), reason);
 					await assert.revert(systemStatus.requireFuturesActive(), reason);
 					await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
+					await assert.revert(systemStatus.requireFuturesMarketActive(toBytes32('sETH')), reason);
 					await assert.revert(
 						systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
 						reason
@@ -203,6 +217,7 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(systemStatus.requireIssuanceActive(), reason);
 						await assert.revert(systemStatus.requireFuturesActive(), reason);
 						await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
+						await assert.revert(systemStatus.requireFuturesMarketActive(toBytes32('sETH')), reason);
 						await assert.revert(
 							systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
 							reason
@@ -223,7 +238,19 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendSynth(toBytes32('sETH'), '0', { from: account1 })
 						);
+						await assert.revert(
+							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '0', { from: account1 })
+						);
+						await assert.revert(
+							systemStatus.suspendFuturesMarkets([toBytes32('sETH')], '0', { from: account1 })
+						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
+						await assert.revert(
+							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account1 })
+						);
+						await assert.revert(
+							systemStatus.resumeFuturesMarkets([toBytes32('sETH')], { from: account1 })
+						);
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeSystem({ from: owner });
@@ -284,6 +311,7 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
 							await systemStatus.requireSynthActive(toBytes32('sETH'));
+							await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -304,7 +332,19 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendSynth(toBytes32('sETH'), '66', { from: account1 })
 							);
+							await assert.revert(
+								systemStatus.suspendFuturesMarket(toBytes32('sETH'), '66', { from: account1 })
+							);
+							await assert.revert(
+								systemStatus.suspendFuturesMarkets([toBytes32('sETH')], '66', { from: account1 })
+							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
+							await assert.revert(
+								systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account1 })
+							);
+							await assert.revert(
+								systemStatus.resumeFuturesMarkets([toBytes32('sETH')], { from: account1 })
+							);
 						});
 					});
 				});
@@ -379,6 +419,7 @@ contract('SystemStatus', async accounts => {
 					it('but not the others', async () => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
+						await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
 					});
 					it('yet that address cannot resume', async () => {
 						await assert.revert(
@@ -397,7 +438,13 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
 						);
+						await assert.revert(
+							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '55', { from: account2 })
+						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+						await assert.revert(
+							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
+						);
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeIssuance({ from: owner });
@@ -455,6 +502,7 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
 							await systemStatus.requireSynthActive(toBytes32('sETH'));
+							await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -473,7 +521,13 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
 							);
+							await assert.revert(
+								systemStatus.suspendFuturesMarket(toBytes32('sETH'), '5', { from: account2 })
+							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+							await assert.revert(
+								systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
+							);
 						});
 					});
 				});
@@ -545,6 +599,16 @@ contract('SystemStatus', async accounts => {
 							'Exchange is suspended. Operation prohibited'
 						);
 					});
+					it('and the futures require checks reverts as expected', async () => {
+						await assert.revert(
+							systemStatus.requireFuturesActive(),
+							'Exchange is suspended. Operation prohibited'
+						);
+						await assert.revert(
+							systemStatus.requireFuturesMarketActive(toBytes32('sETH')),
+							'Exchange is suspended. Operation prohibited'
+						);
+					});
 					it('and requireExchangeBetweenSynthsAllowed reverts as expected', async () => {
 						await assert.revert(
 							systemStatus.requireExchangeBetweenSynthsAllowed(
@@ -576,7 +640,13 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
 						);
+						await assert.revert(
+							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '55', { from: account2 })
+						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+						await assert.revert(
+							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
+						);
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeExchange({ from: owner });
@@ -633,11 +703,13 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireExchangeActive();
+							await systemStatus.requireFuturesActive();
 							await systemStatus.requireExchangeBetweenSynthsAllowed(
 								toBytes32('sETH'),
 								toBytes32('sBTC')
 							);
 							await systemStatus.requireSynthActive(toBytes32('sETH'));
+							await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -656,7 +728,13 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
 							);
+							await assert.revert(
+								systemStatus.suspendFuturesMarket(toBytes32('sETH'), '5', { from: account2 })
+							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+							await assert.revert(
+								systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
+							);
 						});
 					});
 				});
@@ -750,7 +828,9 @@ contract('SystemStatus', async accounts => {
 					it('but not the others', async () => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireIssuanceActive();
+						await systemStatus.requireFuturesActive();
 						await systemStatus.requireSynthActive(sBTC);
+						await systemStatus.requireFuturesMarketActive(sBTC);
 						await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
 					});
 					it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
@@ -836,8 +916,10 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
+							await systemStatus.requireFuturesActive();
 							await systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC);
 							await systemStatus.requireSynthActive(sBTC);
+							await systemStatus.requireFuturesMarketActive(sBTC);
 							await systemStatus.requireSynthsActive(sBTC, toBytes32('sETH'));
 							await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
 						});
@@ -956,6 +1038,8 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireIssuanceActive();
+							await systemStatus.requireFuturesActive();
+							await systemStatus.requireFuturesMarketActive(sBTC);
 							await systemStatus.requireExchangeBetweenSynthsAllowed(sETH, sBTC);
 							await systemStatus.requireSynthsActive(sBTC, sETH);
 						});
@@ -1023,9 +1107,15 @@ contract('SystemStatus', async accounts => {
 					it('and emits the expected event', async () => {
 						assert.eventEqual(txn, 'FuturesSuspended', ['33']);
 					});
-					it('and the exchange require check reverts as expected', async () => {
+					it('and the require check reverts as expected', async () => {
 						await assert.revert(
 							systemStatus.requireFuturesActive(),
+							'Futures markets are suspended. Operation prohibited'
+						);
+					});
+					it('and the specific market require check reverts as expected', async () => {
+						await assert.revert(
+							systemStatus.requireFuturesMarketActive(toBytes32('sBTC')),
 							'Futures markets are suspended. Operation prohibited'
 						);
 					});
@@ -1109,6 +1199,7 @@ contract('SystemStatus', async accounts => {
 						it('and all the require checks succeed', async () => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireFuturesActive();
+							await systemStatus.requireFuturesMarketActive(toBytes32('sBTC'));
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -1128,6 +1219,315 @@ contract('SystemStatus', async accounts => {
 								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
 							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+						});
+					});
+				});
+			});
+		});
+
+		describe('suspendFuturesMarket(s)', () => {
+			let txn;
+			const sBTC = toBytes32('sBTC');
+			const sETH = toBytes32('sETH');
+
+			it('is not suspended initially', async () => {
+				const { suspended, reason } = await systemStatus.futuresMarketSuspension(sBTC);
+				assert.equal(suspended, false);
+				assert.equal(reason, '0');
+			});
+
+			it('can only be invoked by the owner initially', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: systemStatus.suspendFuturesMarket,
+					accounts,
+					address: owner,
+					args: [sBTC, '0'],
+					reason: 'Restricted to access control list',
+				});
+				await onlyGivenAddressCanInvoke({
+					fnc: systemStatus.suspendFuturesMarkets,
+					accounts,
+					address: owner,
+					args: [[sBTC, sETH], '0'],
+					reason: 'Restricted to access control list',
+				});
+			});
+
+			it('getFuturesMarketSuspensions(sETH, sBTC) is empty', async () => {
+				const { suspensions, reasons } = await systemStatus.getFuturesMarketSuspensions(
+					['sETH', 'sBTC'].map(toBytes32)
+				);
+				assert.deepEqual(suspensions, [false, false]);
+				assert.deepEqual(reasons, ['0', '0']);
+			});
+
+			describe('when the owner suspends single market', () => {
+				beforeEach(async () => {
+					txn = await systemStatus.suspendFuturesMarket(sBTC, '5', { from: owner });
+				});
+				it('it succeeds', async () => {
+					const { suspended, reason } = await systemStatus.futuresMarketSuspension(sBTC);
+					assert.equal(suspended, true);
+					assert.equal(reason, '5');
+					assert.eventEqual(txn, 'FuturesMarketSuspended', [sBTC, '5']);
+				});
+				it('getFuturesMarketSuspensions(sETH, sBTC) returns values for sBTC', async () => {
+					const { suspensions, reasons } = await systemStatus.getFuturesMarketSuspensions(
+						['sETH', 'sBTC'].map(toBytes32)
+					);
+					assert.deepEqual(suspensions, [false, true]);
+					assert.deepEqual(reasons, ['0', '5']);
+				});
+			});
+
+			describe('when the owner suspends multiple markets', () => {
+				beforeEach(async () => {
+					txn = await systemStatus.suspendFuturesMarkets([sBTC, sETH], '5', { from: owner });
+				});
+				it('it succeeds', async () => {
+					assert.equal((await systemStatus.futuresMarketSuspension(sBTC)).suspended, true);
+					assert.equal((await systemStatus.futuresMarketSuspension(sETH)).suspended, true);
+				});
+				it('getFuturesMarketSuspensions(sETH, sBTC) returns values for both', async () => {
+					const { suspensions, reasons } = await systemStatus.getFuturesMarketSuspensions(
+						['sETH', 'sBTC'].map(toBytes32)
+					);
+					assert.deepEqual(suspensions, [true, true]);
+					assert.deepEqual(reasons, ['5', '5']);
+				});
+			});
+
+			describe('when the owner adds an address to suspend only', () => {
+				beforeEach(async () => {
+					await systemStatus.updateAccessControl(FUTURES, account2, true, false, { from: owner });
+				});
+
+				it('other addresses still cannot suspend', async () => {
+					await assert.revert(
+						systemStatus.suspendFuturesMarket(sBTC, '1', { from: account1 }),
+						'Restricted to access control list'
+					);
+					await assert.revert(
+						systemStatus.suspendFuturesMarket(sBTC, '10', { from: account3 }),
+						'Restricted to access control list'
+					);
+					await assert.revert(
+						systemStatus.suspendFuturesMarkets([sBTC], '10', { from: account3 }),
+						'Restricted to access control list'
+					);
+				});
+
+				describe('and that address invokes suspend for single market', () => {
+					beforeEach(async () => {
+						txn = await systemStatus.suspendFuturesMarket(sBTC, '33', { from: account2 });
+					});
+					it('it succeeds', async () => {
+						const { suspended, reason } = await systemStatus.futuresMarketSuspension(sBTC);
+						assert.equal(suspended, true);
+						assert.equal(reason, '33');
+					});
+					it('and emits the expected event', async () => {
+						assert.eventEqual(txn, 'FuturesMarketSuspended', [sBTC, '33']);
+					});
+					it('and the require check reverts as expected', async () => {
+						await assert.revert(systemStatus.requireFuturesMarketActive(sBTC), 'Market suspended');
+					});
+					it('but not the other checks', async () => {
+						await systemStatus.requireSystemActive();
+						await systemStatus.requireExchangeActive();
+						await systemStatus.requireFuturesActive();
+						await systemStatus.requireSynthActive(toBytes32('sETH'));
+					});
+					it('and not other markets', async () => {
+						await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
+					});
+
+					it('yet that address cannot resume', async () => {
+						await assert.revert(
+							systemStatus.resumeFuturesMarket(sBTC, { from: account2 }),
+							'Restricted to access control list'
+						);
+					});
+					it('nor can it do any other restricted action', async () => {
+						await assert.revert(
+							systemStatus.updateAccessControl(SYSTEM, account3, true, true, { from: account3 })
+						);
+						await assert.revert(
+							systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
+						);
+						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+						await assert.revert(
+							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
+						);
+						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+					});
+					it('yet the owner can still resume', async () => {
+						await systemStatus.resumeFutures({ from: owner });
+					});
+				});
+
+				describe('and that address invokes suspend for multiple market', () => {
+					beforeEach(async () => {
+						txn = await systemStatus.suspendFuturesMarkets([sBTC, sETH], '33', { from: account2 });
+					});
+					it('it succeeds', async () => {
+						assert.equal((await systemStatus.futuresMarketSuspension(sBTC)).suspended, true);
+						assert.equal((await systemStatus.futuresMarketSuspension(sETH)).suspended, true);
+					});
+					it('and the require checks reverts as expected', async () => {
+						await assert.revert(systemStatus.requireFuturesMarketActive(sBTC), 'Market suspended');
+						await assert.revert(systemStatus.requireFuturesMarketActive(sETH), 'Market suspended');
+					});
+					it('but not the other checks', async () => {
+						await systemStatus.requireSystemActive();
+						await systemStatus.requireExchangeActive();
+						await systemStatus.requireFuturesActive();
+						await systemStatus.requireSynthActive(toBytes32('sETH'));
+					});
+					it('and not other markets', async () => {
+						await systemStatus.requireFuturesMarketActive(toBytes32('sOTHER'));
+					});
+
+					it('yet that address cannot resume', async () => {
+						await assert.revert(
+							systemStatus.resumeFuturesMarket(sBTC, { from: account2 }),
+							'Restricted to access control list'
+						);
+					});
+					it('nor can it do any other restricted action', async () => {
+						await assert.revert(
+							systemStatus.updateAccessControl(SYSTEM, account3, true, true, { from: account3 })
+						);
+						await assert.revert(
+							systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
+						);
+						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+						await assert.revert(
+							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
+						);
+						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+					});
+					it('yet the owner can still resume', async () => {
+						await systemStatus.resumeFutures({ from: owner });
+					});
+				});
+			});
+		});
+
+		describe('resumeFuturesMarket(s)', () => {
+			let txn;
+			const sBTC = toBytes32('sBTC');
+			const sETH = toBytes32('sETH');
+			const sLINK = toBytes32('sLINK');
+
+			it('can only be invoked by the owner initially', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: systemStatus.resumeFuturesMarket,
+					accounts,
+					address: owner,
+					args: [sBTC],
+					reason: 'Restricted to access control list',
+				});
+				await onlyGivenAddressCanInvoke({
+					fnc: systemStatus.resumeFuturesMarkets,
+					accounts,
+					address: owner,
+					args: [[sBTC, sETH]],
+					reason: 'Restricted to access control list',
+				});
+			});
+
+			describe('when the owner suspends multiple markets', () => {
+				const givenReason = '5';
+				beforeEach(async () => {
+					await systemStatus.suspendFuturesMarkets([sBTC, sETH, sLINK], givenReason, {
+						from: owner,
+					});
+				});
+
+				describe('when the owner adds an address to resume only', () => {
+					beforeEach(async () => {
+						await systemStatus.updateAccessControl(FUTURES, account2, false, true, {
+							from: owner,
+						});
+					});
+
+					it('other addresses still cannot resume', async () => {
+						await assert.revert(systemStatus.resumeFuturesMarket(sBTC, { from: account1 }));
+						await assert.revert(systemStatus.resumeFuturesMarket(sBTC, { from: account3 }));
+						await assert.revert(systemStatus.resumeFuturesMarkets([sBTC], { from: account3 }));
+					});
+
+					describe('and that address invokes resume for first market', () => {
+						beforeEach(async () => {
+							txn = await systemStatus.resumeFuturesMarket(sBTC, { from: account2 });
+						});
+
+						it('it succeeds', async () => {
+							const { suspended, reason } = await systemStatus.futuresMarketSuspension(sBTC);
+							assert.equal(suspended, false);
+							assert.equal(reason, '0');
+						});
+
+						it('and emits the expected event', async () => {
+							assert.eventEqual(txn, 'FuturesMarketResumed', [sBTC, givenReason]);
+						});
+
+						it('and all the require checks succeed', async () => {
+							await systemStatus.requireSystemActive();
+							await systemStatus.requireFuturesActive();
+							await systemStatus.requireFuturesMarketActive(sBTC);
+						});
+
+						it('but not for second market', async () => {
+							await assert.revert(
+								systemStatus.requireFuturesMarketActive(sETH),
+								'Market suspended'
+							);
+						});
+
+						it('yet that address cannot suspend', async () => {
+							await assert.revert(
+								systemStatus.suspendFutures('1', { from: account2 }),
+								'Restricted to access control list'
+							);
+						});
+
+						it('nor can it do any other restricted action', async () => {
+							await assert.revert(
+								systemStatus.updateAccessControl(SYSTEM, account3, false, true, { from: account2 })
+							);
+							await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
+							await assert.revert(systemStatus.resumeSystem({ from: account2 }));
+							await assert.revert(
+								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
+							);
+							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
+						});
+					});
+
+					describe('and that address invokes resume for two markets', () => {
+						beforeEach(async () => {
+							txn = await systemStatus.resumeFuturesMarkets([sBTC, sETH], { from: account2 });
+						});
+
+						it('it succeeds', async () => {
+							assert.equal((await systemStatus.futuresMarketSuspension(sBTC)).suspended, false);
+							assert.equal((await systemStatus.futuresMarketSuspension(sETH)).suspended, false);
+						});
+
+						it('and all the require checks succeed', async () => {
+							await systemStatus.requireSystemActive();
+							await systemStatus.requireFuturesActive();
+							await systemStatus.requireFuturesMarketActive(sBTC);
+							await systemStatus.requireFuturesMarketActive(sETH);
+						});
+
+						it('but not for third market', async () => {
+							await assert.revert(
+								systemStatus.requireFuturesMarketActive(sLINK),
+								'Market suspended'
+							);
 						});
 					});
 				});

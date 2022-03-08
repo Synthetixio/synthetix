@@ -2394,7 +2394,7 @@ contract('FuturesMarket', accounts => {
 				sizeDelta: toUnit('-4'),
 			});
 
-			const expectedFunding = toUnit('-0.002'); // 8 * 250 / 1000_000 skew * 0.1 max funding rate
+			const expectedFunding = toUnit('-0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding rate
 			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
 
 			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
@@ -2531,6 +2531,54 @@ contract('FuturesMarket', accounts => {
 				});
 			});
 		}
+
+		it('Funding can be paused when market is paused', async () => {
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+
+			const price = toUnit('250');
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: price,
+				marginDelta: toUnit('1000'),
+				sizeDelta: toUnit('12'),
+			});
+
+			const fundingRate = toUnit('-0.003'); // 12 * 250 / 100_000 skew * 0.1 max funding rate
+			assert.bnEqual(await futuresMarket.currentFundingRate(), fundingRate);
+
+			// 1 day
+			await fastForward(24 * 60 * 60);
+			await setPrice(baseAsset, price);
+
+			// pause the market
+			await systemStatus.suspendFuturesMarket(baseAsset, '0', { from: owner });
+			// set funding rate to 0
+			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0'), { from: owner });
+
+			// check accrued
+			const accrued = (await futuresMarket.accruedFunding(trader))[0];
+			assert.bnClose(accrued, fundingRate.mul(toBN(250 * 12)), toUnit('0.01'));
+
+			// 2 days of pause
+			await fastForward(2 * 24 * 60 * 60);
+			await setPrice(baseAsset, price);
+
+			// check no funding accrued
+			assert.bnEqual((await futuresMarket.accruedFunding(trader))[0], accrued);
+
+			// set funding rate to 0.1 again
+			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.1'), { from: owner });
+			// resume
+			await systemStatus.resumeFuturesMarket(baseAsset, { from: owner });
+
+			// 1 day
+			await fastForward(24 * 60 * 60);
+			await setPrice(baseAsset, price);
+
+			// check more funding accrued
+			assert.bnGt((await futuresMarket.accruedFunding(trader))[0].abs(), accrued.abs());
+		});
 
 		describe('Funding sequence', () => {
 			const price = toUnit('100');
@@ -3577,17 +3625,7 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('Futures suspension scenarios', () => {
-		const revertMessage = 'Futures markets are suspended';
-
-		describe('when futures markets are suspended', () => {
-			beforeEach(async () => {
-				// prepare a position
-				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
-				// suspend
-				await systemStatus.suspendFutures(toUnit(0), { from: owner });
-			});
-
+		function revertChecks(revertMessage) {
 			it('then mutative market actions revert', async () => {
 				await assert.revert(
 					futuresMarket.transferMargin(toUnit('1000'), { from: trader }),
@@ -3622,6 +3660,19 @@ contract('FuturesMarket', accounts => {
 					'Invalid price'
 				);
 			});
+		}
+
+		describe('when futures markets are suspended', () => {
+			beforeEach(async () => {
+				// prepare a position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// suspend
+				await systemStatus.suspendFutures(toUnit(0), { from: owner });
+			});
+
+			// check reverts are as expecte
+			revertChecks('Futures markets are suspended');
 
 			describe('when futures markets are resumed', () => {
 				beforeEach(async () => {
@@ -3640,6 +3691,60 @@ contract('FuturesMarket', accounts => {
 					await setPrice(baseAsset, toUnit('1'));
 					await futuresMarket.liquidatePosition(trader, { from: trader2 });
 				});
+			});
+		});
+
+		describe('when specific market is suspended', () => {
+			beforeEach(async () => {
+				// prepare a position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// suspend
+				await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+			});
+
+			// check reverts are as expecte
+			revertChecks('Market suspended');
+
+			describe('when market is resumed', () => {
+				beforeEach(async () => {
+					// suspend
+					await systemStatus.resumeFuturesMarket(baseAsset, { from: owner });
+				});
+
+				it('then mutative market actions work', async () => {
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					await futuresMarket.transferMargin(toUnit('100'), { from: trader });
+					await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+					await futuresMarket.closePosition({ from: trader });
+
+					// set up for liquidation
+					await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+					await setPrice(baseAsset, toUnit('1'));
+					await futuresMarket.liquidatePosition(trader, { from: trader2 });
+				});
+			});
+		});
+
+		describe('when another market is suspended', () => {
+			beforeEach(async () => {
+				// prepare a position
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
+				// suspend
+				await systemStatus.suspendFuturesMarket(toBytes32('sOTHER'), toUnit(0), { from: owner });
+			});
+
+			it('then mutative market actions work', async () => {
+				await futuresMarket.withdrawAllMargin({ from: trader });
+				await futuresMarket.transferMargin(toUnit('100'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+				await futuresMarket.closePosition({ from: trader });
+
+				// set up for liquidation
+				await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+				await setPrice(baseAsset, toUnit('1'));
+				await futuresMarket.liquidatePosition(trader, { from: trader2 });
 			});
 		});
 	});

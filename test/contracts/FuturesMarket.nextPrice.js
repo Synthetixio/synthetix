@@ -172,6 +172,14 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 					'Futures markets are suspended'
 				);
 			});
+
+			it('if market is suspended', async () => {
+				await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+				await assert.revert(
+					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					'Market suspended'
+				);
+			});
 		});
 	});
 
@@ -265,6 +273,14 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				await assert.revert(
 					futuresMarket.cancelNextPriceOrder(trader, { from: trader }),
 					'Futures markets are suspended'
+				);
+			});
+
+			it('cannot cancel if market is suspended', async () => {
+				await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+				await assert.revert(
+					futuresMarket.cancelNextPriceOrder(trader, { from: trader }),
+					'Market suspended'
 				);
 			});
 
@@ -576,6 +592,15 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 						await assert.revert(
 							futuresMarket.executeNextPriceOrder(trader, { from: trader }),
 							'Futures markets are suspended'
+						);
+					});
+
+					it('reverts if market is suspended', async () => {
+						await setPrice(baseAsset, targetPrice);
+						await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+						await assert.revert(
+							futuresMarket.executeNextPriceOrder(trader, { from: trader }),
+							'Market suspended'
 						);
 					});
 				});

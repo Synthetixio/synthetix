@@ -29,6 +29,8 @@ contract SystemStatus is Owned, ISystemStatus {
 
     mapping(bytes32 => Suspension) public synthSuspension;
 
+    mapping(bytes32 => Suspension) public futuresMarketSuspension;
+
     constructor(address _owner) public Owned(_owner) {}
 
     /* ========== VIEWS ========== */
@@ -66,6 +68,14 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireSystemActive();
         _internalRequireExchangeActive();
         _internalRequireFuturesActive();
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function requireFuturesMarketActive(bytes32 marketKey) external view {
+        _internalRequireSystemActive();
+        _internalRequireExchangeActive(); // exchanging implicitely used
+        _internalRequireFuturesActive(); // futures global flag
+        _internalRequireFuturesMarketActive(marketKey); // specific futures market flag
     }
 
     function synthSuspended(bytes32 currencyKey) external view returns (bool) {
@@ -130,6 +140,21 @@ contract SystemStatus is Owned, ISystemStatus {
         for (uint i = 0; i < synths.length; i++) {
             suspensions[i] = synthSuspension[synths[i]].suspended;
             reasons[i] = synthSuspension[synths[i]].reason;
+        }
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function getFuturesMarketSuspensions(bytes32[] calldata marketKeys)
+        external
+        view
+        returns (bool[] memory suspensions, uint256[] memory reasons)
+    {
+        suspensions = new bool[](marketKeys.length);
+        reasons = new uint256[](marketKeys.length);
+
+        for (uint i = 0; i < marketKeys.length; i++) {
+            suspensions[i] = futuresMarketSuspension[marketKeys[i]].suspended;
+            reasons[i] = futuresMarketSuspension[marketKeys[i]].reason;
         }
     }
 
@@ -216,6 +241,30 @@ contract SystemStatus is Owned, ISystemStatus {
         futuresSuspension.reason = 0;
     }
 
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function suspendFuturesMarket(bytes32 marketKey, uint256 reason) external {
+        bytes32[] memory marketKeys = new bytes32[](1);
+        marketKeys[0] = marketKey;
+        _internalSuspendFuturesMarkets(marketKeys, reason);
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function suspendFuturesMarkets(bytes32[] calldata marketKeys, uint256 reason) external {
+        _internalSuspendFuturesMarkets(marketKeys, reason);
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function resumeFuturesMarket(bytes32 marketKey) external {
+        bytes32[] memory marketKeys = new bytes32[](1);
+        marketKeys[0] = marketKey;
+        _internalResumeFuturesMarkets(marketKeys);
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function resumeFuturesMarkets(bytes32[] calldata marketKeys) external {
+        _internalResumeFuturesMarkets(marketKeys);
+    }
+
     function suspendSynthExchange(bytes32 currencyKey, uint256 reason) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
@@ -295,6 +344,10 @@ contract SystemStatus is Owned, ISystemStatus {
         require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
     }
 
+    function _internalRequireFuturesMarketActive(bytes32 marketKey) internal view {
+        require(!futuresMarketSuspension[marketKey].suspended, "Market suspended");
+    }
+
     function _internalSuspendSynths(bytes32[] memory currencyKeys, uint256 reason) internal {
         _requireAccessToSuspend(SECTION_SYNTH);
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -330,6 +383,25 @@ contract SystemStatus is Owned, ISystemStatus {
             bytes32 currencyKey = currencyKeys[i];
             emit SynthExchangeResumed(currencyKey, uint256(synthExchangeSuspension[currencyKey].reason));
             delete synthExchangeSuspension[currencyKey];
+        }
+    }
+
+    function _internalSuspendFuturesMarkets(bytes32[] memory marketKeys, uint256 reason) internal {
+        _requireAccessToSuspend(SECTION_FUTURES);
+        for (uint i = 0; i < marketKeys.length; i++) {
+            bytes32 marketKey = marketKeys[i];
+            futuresMarketSuspension[marketKey].suspended = true;
+            futuresMarketSuspension[marketKey].reason = uint248(reason);
+            emit FuturesMarketSuspended(marketKey, reason);
+        }
+    }
+
+    function _internalResumeFuturesMarkets(bytes32[] memory marketKeys) internal {
+        _requireAccessToResume(SECTION_FUTURES);
+        for (uint i = 0; i < marketKeys.length; i++) {
+            bytes32 marketKey = marketKeys[i];
+            emit FuturesMarketResumed(marketKey, uint256(futuresMarketSuspension[marketKey].reason));
+            delete futuresMarketSuspension[marketKey];
         }
     }
 
@@ -372,6 +444,9 @@ contract SystemStatus is Owned, ISystemStatus {
 
     event SynthSuspended(bytes32 currencyKey, uint256 reason);
     event SynthResumed(bytes32 currencyKey, uint256 reason);
+
+    event FuturesMarketSuspended(bytes32 marketKey, uint256 reason);
+    event FuturesMarketResumed(bytes32 marketKey, uint256 reason);
 
     event AccessControlUpdated(bytes32 indexed section, address indexed account, bool canSuspend, bool canResume);
 }
