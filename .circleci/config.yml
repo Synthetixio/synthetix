@@ -42,6 +42,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
+      - run: node publish build --test-helpers
       - run: npx hardhat cannon:build --file cannonfile.aggregator.toml rate=5
       - run: npx hardhat cannon:build
       - persist_to_workspace:
@@ -69,9 +70,9 @@ jobs:
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat --network localhost test:integration:l2 --compile --use-fork
+              npx hardhat --network localhost test:integration:l2 --use-fork
             else
-              npx hardhat --network localhost test:integration:l2 --compile --deploy --use-sips --use-fork
+              npx hardhat --network localhost test:integration:l2 --deploy --use-sips --use-fork
             fi;
       - store_test_results:
           path: /tmp/junit/
@@ -98,9 +99,9 @@ jobs:
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat --network localhost test:integration:l1 --compile --use-fork
+              npx hardhat --network localhost test:integration:l1 --use-fork
             else
-              npx hardhat --network localhost test:integration:l1 --compile --deploy --use-sips --use-fork
+              npx hardhat --network localhost test:integration:l1 --deploy --use-sips --use-fork
             fi;
       - store_test_results:
           path: /tmp/junit/
@@ -142,11 +143,11 @@ jobs:
       - run:
           name: Run isolated layer 1 integration tests
           command: |
-            npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
+            npx hardhat test:integration:l1 --deploy --provider-port 9545
       - run:
           name: Run isolated layer 2 integration tests
           command: |
-            npx hardhat test:integration:l2 --compile --deploy
+            npx hardhat test:integration:l2 --deploy
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |

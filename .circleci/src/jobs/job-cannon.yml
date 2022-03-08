@@ -5,6 +5,7 @@ steps:
   - attach_workspace:
       at: .
   - run: npx hardhat compile --optimizer --fail-oversize
+  - run: node publish build --test-helpers
   - run: npx hardhat cannon:build --file cannonfile.aggregator.toml rate=5
   - run: npx hardhat cannon:build
   - persist_to_workspace:
