@@ -31,6 +31,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
 
+    // flag to ensure importing excluded debt is invoked only once
+    bool public excludedDebtImported = false; // public to avoid needing an event
+
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant sUSD = "sUSD";
@@ -202,6 +205,34 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function excludedIssuedDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory excludedDebts) {
         return _excludedIssuedDebts(currencyKeys);
+    }
+
+    /// used when migrating to new DebtCache instance in order to import the excluded debt records
+    /// If this method is not run after upgrading the contract, the debt will be
+    /// incorrect w.r.t to wrapper factory assets until the values are imported from
+    /// previous instance of the contract
+    /// Also, in addition to this method it's possible to use recordExcludedDebtChange since
+    /// it's accessible to owner in case additional adjustments are required
+    function importExcludedIssuedDebts(IDebtCache prevDebtCache) external onlyOwner {
+        // this can only be run once so that recorded debt deltas aren't accidentally
+        // lost or double counted
+        require(excludedDebtImported == false, "import can only be run once");
+        excludedDebtImported = true;
+
+        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
+
+        // query for previous records
+        uint[] memory prevExcludedDebts = prevDebtCache.excludedIssuedDebts(currencyKeys);
+
+        // store the values
+        uint numKeys = currencyKeys.length;
+        for (uint i = 0; i < numKeys; i++) {
+            if (prevExcludedDebts[i] > 0) {
+                // adding the values instead of overwriting in case some deltas were recorded in this
+                // contract already (e.g. if the upgrade was not atomic)
+                _excludedIssuedDebt[currencyKeys[i]] = _excludedIssuedDebt[currencyKeys[i]].add(prevExcludedDebts[i]);
+            }
+        }
     }
 
     // Returns the total sUSD debt backed by non-SNX collateral.

@@ -320,6 +320,7 @@ contract('DebtCache', async accounts => {
 				'updateCachedSynthDebtsWithRates',
 				'updateDebtCacheValidity',
 				'updateCachedsUSDDebt',
+				'importExcludedIssuedDebts',
 			],
 		});
 	});
@@ -364,6 +365,17 @@ contract('DebtCache', async accounts => {
 				fnc: debtCache.purgeCachedSynthDebt,
 				accounts,
 				args: [sAUD],
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('importExcludedIssuedDebts() can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: debtCache.importExcludedIssuedDebts,
+				accounts,
+				args: [ZERO_ADDRESS],
 				address: owner,
 				skipPassCheck: true,
 				reason: 'Only the contract owner may perform this action',
@@ -799,6 +811,44 @@ contract('DebtCache', async accounts => {
 
 				await debtCache.recordExcludedDebtChange(sETH, toUnit('-0.2'), { from: owner });
 				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('0.8'));
+			});
+		});
+
+		describe('importExcludedIssuedDebts()', () => {
+			beforeEach(async () => {
+				await debtCache.recordExcludedDebtChange(sETH, toUnit('1'), { from: owner });
+			});
+
+			it('fails for non debt cache address', async () => {
+				await assert.revert(debtCache.importExcludedIssuedDebts(ZERO_ADDRESS, { from: owner }));
+			});
+
+			it('imports previous entries and can run only once', async () => {
+				const newDebtCache = await setupContract({
+					contract: 'DebtCache',
+					accounts,
+					skipPostDeploy: true,
+					args: [owner, addressResolver.address],
+				});
+				await newDebtCache.rebuildCache();
+
+				// check uninitialised
+				assert.equal(await newDebtCache.excludedDebtImported(), false);
+
+				// import entries
+				await newDebtCache.importExcludedIssuedDebts(debtCache.address, { from: owner });
+
+				// check initialised
+				assert.equal(await newDebtCache.excludedDebtImported(), true);
+
+				// check entry is updated
+				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('1'));
+
+				// check can't run twice
+				await assert.revert(
+					newDebtCache.importExcludedIssuedDebts(debtCache.address, { from: owner }),
+					'import can only be run once'
+				);
 			});
 		});
 
