@@ -711,12 +711,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _;
     }
 
-    modifier onlyIssuer {
-        bool isIssuer = msg.sender == address(issuer());
-        require(isIssuer, "Issuer only");
-        _;
-    }
-
     modifier onlyRelayer {
         require(
             msg.sender == address(this) ||
