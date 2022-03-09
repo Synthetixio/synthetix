@@ -311,13 +311,13 @@
 	"NativeEtherWrapper": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
-		"deploy": false
-	},
 	"WrapperFactory": {
 		"deploy": false
 	},
 	"OwnerRelayOnEthereum": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
 		"deploy": false
 	},
 	"TokenStatesETHBTC": {

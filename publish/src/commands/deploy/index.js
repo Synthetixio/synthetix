@@ -26,11 +26,13 @@ const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
+const configureFutures = require('./configure-futures');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
+const deployFutures = require('./deploy-futures');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -283,6 +285,7 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		deploymentPath,
 		generateSolidity,
 		network,
 		synths,
@@ -298,6 +301,18 @@ const deploy = async ({
 		getDeployParameter,
 		network,
 		useOvm,
+	});
+
+	await deployFutures({
+		account,
+		addressOf,
+		getDeployParameter,
+		deployer,
+		runStep,
+		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
 	});
 
 	await deployDappUtils({
@@ -366,10 +381,10 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
-		deployer,
 		explorerLinkPrefix,
-		feeds,
 		generateSolidity,
+		feeds,
+		deployer,
 		network,
 		runStep,
 		synths,
@@ -399,6 +414,18 @@ const deploy = async ({
 		deployer,
 		getDeployParameter,
 		runStep,
+	});
+
+	await configureFutures({
+		addressOf,
+		deployer,
+		loadAndCheckRequiredSources,
+		runStep,
+		getDeployParameter,
+		useOvm,
+		freshDeploy,
+		deploymentPath,
+		network,
 	});
 
 	await takeDebtSnapshotWhenRequired({

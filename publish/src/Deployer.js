@@ -244,6 +244,7 @@ class Deployer {
 				});
 				this.replacedContracts[name].source = existingSource;
 			}
+
 			// Deployment in OVM could result in empty bytecode if
 			// the contract's constructor parameters are unsafe.
 			// This check is probably redundant given the previous check, but just in case...

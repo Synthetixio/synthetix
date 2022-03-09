@@ -13,6 +13,7 @@ contract SystemStatus is Owned, ISystemStatus {
     bytes32 public constant SECTION_SYSTEM = "System";
     bytes32 public constant SECTION_ISSUANCE = "Issuance";
     bytes32 public constant SECTION_EXCHANGE = "Exchange";
+    bytes32 public constant SECTION_FUTURES = "Futures";
     bytes32 public constant SECTION_SYNTH_EXCHANGE = "SynthExchange";
     bytes32 public constant SECTION_SYNTH = "Synth";
 
@@ -22,15 +23,23 @@ contract SystemStatus is Owned, ISystemStatus {
 
     Suspension public exchangeSuspension;
 
+    Suspension public futuresSuspension;
+
     mapping(bytes32 => Suspension) public synthExchangeSuspension;
 
     mapping(bytes32 => Suspension) public synthSuspension;
+
+    mapping(bytes32 => Suspension) public futuresMarketSuspension;
 
     constructor(address _owner) public Owned(_owner) {}
 
     /* ========== VIEWS ========== */
     function requireSystemActive() external view {
         _internalRequireSystemActive();
+    }
+
+    function systemSuspended() external view returns (bool) {
+        return systemSuspension.suspended;
     }
 
     function requireIssuanceActive() external view {
@@ -53,6 +62,24 @@ contract SystemStatus is Owned, ISystemStatus {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
         _internalRequireSynthExchangeActive(currencyKey);
+    }
+
+    function requireFuturesActive() external view {
+        _internalRequireSystemActive();
+        _internalRequireExchangeActive();
+        _internalRequireFuturesActive();
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function requireFuturesMarketActive(bytes32 marketKey) external view {
+        _internalRequireSystemActive();
+        _internalRequireExchangeActive(); // exchanging implicitely used
+        _internalRequireFuturesActive(); // futures global flag
+        _internalRequireFuturesMarketActive(marketKey); // specific futures market flag
+    }
+
+    function synthSuspended(bytes32 currencyKey) external view returns (bool) {
+        return systemSuspension.suspended || synthSuspension[currencyKey].suspended;
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
@@ -113,6 +140,21 @@ contract SystemStatus is Owned, ISystemStatus {
         for (uint i = 0; i < synths.length; i++) {
             suspensions[i] = synthSuspension[synths[i]].suspended;
             reasons[i] = synthSuspension[synths[i]].reason;
+        }
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function getFuturesMarketSuspensions(bytes32[] calldata marketKeys)
+        external
+        view
+        returns (bool[] memory suspensions, uint256[] memory reasons)
+    {
+        suspensions = new bool[](marketKeys.length);
+        reasons = new uint256[](marketKeys.length);
+
+        for (uint i = 0; i < marketKeys.length; i++) {
+            suspensions[i] = futuresMarketSuspension[marketKeys[i]].suspended;
+            reasons[i] = futuresMarketSuspension[marketKeys[i]].reason;
         }
     }
 
@@ -185,6 +227,44 @@ contract SystemStatus is Owned, ISystemStatus {
         exchangeSuspension.reason = 0;
     }
 
+    function suspendFutures(uint256 reason) external {
+        _requireAccessToSuspend(SECTION_FUTURES);
+        futuresSuspension.suspended = true;
+        futuresSuspension.reason = uint248(reason);
+        emit FuturesSuspended(reason);
+    }
+
+    function resumeFutures() external {
+        _requireAccessToResume(SECTION_FUTURES);
+        futuresSuspension.suspended = false;
+        emit FuturesResumed(uint256(futuresSuspension.reason));
+        futuresSuspension.reason = 0;
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function suspendFuturesMarket(bytes32 marketKey, uint256 reason) external {
+        bytes32[] memory marketKeys = new bytes32[](1);
+        marketKeys[0] = marketKey;
+        _internalSuspendFuturesMarkets(marketKeys, reason);
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function suspendFuturesMarkets(bytes32[] calldata marketKeys, uint256 reason) external {
+        _internalSuspendFuturesMarkets(marketKeys, reason);
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function resumeFuturesMarket(bytes32 marketKey) external {
+        bytes32[] memory marketKeys = new bytes32[](1);
+        marketKeys[0] = marketKey;
+        _internalResumeFuturesMarkets(marketKeys);
+    }
+
+    /// @notice marketKey doesn't necessarily correspond to asset key
+    function resumeFuturesMarkets(bytes32[] calldata marketKeys) external {
+        _internalResumeFuturesMarkets(marketKeys);
+    }
+
     function suspendSynthExchange(bytes32 currencyKey, uint256 reason) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
@@ -252,12 +332,20 @@ contract SystemStatus is Owned, ISystemStatus {
         require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
     }
 
+    function _internalRequireFuturesActive() internal view {
+        require(!futuresSuspension.suspended, "Futures markets are suspended. Operation prohibited");
+    }
+
     function _internalRequireSynthExchangeActive(bytes32 currencyKey) internal view {
         require(!synthExchangeSuspension[currencyKey].suspended, "Synth exchange suspended. Operation prohibited");
     }
 
     function _internalRequireSynthActive(bytes32 currencyKey) internal view {
         require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+    }
+
+    function _internalRequireFuturesMarketActive(bytes32 marketKey) internal view {
+        require(!futuresMarketSuspension[marketKey].suspended, "Market suspended");
     }
 
     function _internalSuspendSynths(bytes32[] memory currencyKeys, uint256 reason) internal {
@@ -298,6 +386,25 @@ contract SystemStatus is Owned, ISystemStatus {
         }
     }
 
+    function _internalSuspendFuturesMarkets(bytes32[] memory marketKeys, uint256 reason) internal {
+        _requireAccessToSuspend(SECTION_FUTURES);
+        for (uint i = 0; i < marketKeys.length; i++) {
+            bytes32 marketKey = marketKeys[i];
+            futuresMarketSuspension[marketKey].suspended = true;
+            futuresMarketSuspension[marketKey].reason = uint248(reason);
+            emit FuturesMarketSuspended(marketKey, reason);
+        }
+    }
+
+    function _internalResumeFuturesMarkets(bytes32[] memory marketKeys) internal {
+        _requireAccessToResume(SECTION_FUTURES);
+        for (uint i = 0; i < marketKeys.length; i++) {
+            bytes32 marketKey = marketKeys[i];
+            emit FuturesMarketResumed(marketKey, uint256(futuresMarketSuspension[marketKey].reason));
+            delete futuresMarketSuspension[marketKey];
+        }
+    }
+
     function _internalUpdateAccessControl(
         bytes32 section,
         address account,
@@ -308,6 +415,7 @@ contract SystemStatus is Owned, ISystemStatus {
             section == SECTION_SYSTEM ||
                 section == SECTION_ISSUANCE ||
                 section == SECTION_EXCHANGE ||
+                section == SECTION_FUTURES ||
                 section == SECTION_SYNTH_EXCHANGE ||
                 section == SECTION_SYNTH,
             "Invalid section supplied"
@@ -328,11 +436,17 @@ contract SystemStatus is Owned, ISystemStatus {
     event ExchangeSuspended(uint256 reason);
     event ExchangeResumed(uint256 reason);
 
+    event FuturesSuspended(uint256 reason);
+    event FuturesResumed(uint256 reason);
+
     event SynthExchangeSuspended(bytes32 currencyKey, uint256 reason);
     event SynthExchangeResumed(bytes32 currencyKey, uint256 reason);
 
     event SynthSuspended(bytes32 currencyKey, uint256 reason);
     event SynthResumed(bytes32 currencyKey, uint256 reason);
+
+    event FuturesMarketSuspended(bytes32 marketKey, uint256 reason);
+    event FuturesMarketResumed(bytes32 marketKey, uint256 reason);
 
     event AccessControlUpdated(bytes32 indexed section, address indexed account, bool canSuspend, bool canResume);
 }

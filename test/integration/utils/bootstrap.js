@@ -84,8 +84,10 @@ function bootstrapL2({ ctx }) {
 
 function bootstrapDual({ ctx }) {
 	before('bootstrap layer 1 and layer 2 instances', async () => {
-		ctx.l1 = { useOvm: false };
-		ctx.l2 = { useOvm: true };
+		const addedSynths = hre.config.addedSynths || [];
+
+		ctx.l1 = { useOvm: false, addedSynths };
+		ctx.l2 = { useOvm: true, addedSynths };
 
 		ctx.l2.l1 = ctx.l1;
 

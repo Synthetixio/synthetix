@@ -18,19 +18,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IWrapperFactory.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
-//
-// The debt cache (SIP-91) caches the global debt and the debt of each synth in the system.
-// Debt is denominated by the synth supply multiplied by its current exchange rate.
-//
-// The cache can be invalidated when an exchange rate changes, and thereafter must be
-// updated by performing a debt snapshot, which recomputes the global debt sum using
-// current synth supplies and exchange rates. This is performed usually by a snapshot keeper.
-//
-// Some synths are backed by non-SNX collateral, such as sETH being backed by ETH
-// held in the EtherWrapper (SIP-112). This debt is called "excluded debt" and is
-// excluded from the global debt in `_cachedDebt`.
-//
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
@@ -55,6 +44,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
@@ -63,7 +53,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
+        bytes32[] memory newAddresses = new bytes32[](8);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -71,6 +61,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[4] = CONTRACT_COLLATERALMANAGER;
         newAddresses[5] = CONTRACT_WRAPPER_FACTORY;
         newAddresses[6] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[7] = CONTRACT_FUTURESMARKETMANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -96,6 +87,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -157,6 +152,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory snxIssuedDebts,
+            uint _futuresDebt,
             uint _excludedDebt,
             bool anyRateIsInvalid
         )
@@ -164,8 +160,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
+        (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
 
-        return (values, excludedDebt, isAnyNonSnxDebtRateInvalid);
+        return (values, futuresDebt, excludedDebt, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
@@ -173,6 +170,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory debtValues,
+            uint futuresDebt,
             uint excludedDebt,
             bool anyRateIsInvalid
         )
@@ -252,9 +250,15 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
+
+        // Add in the debt accounted for by futures
+        (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
+        total = total.add(futuresDebt);
+
+        // Ensure that if the excluded non-SNX debt exceeds SNX-backed debt, no overflow occurs
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isAnyNonSnxDebtRateInvalid);
+        return (total, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
@@ -293,6 +297,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     function takeDebtSnapshot() external {}
 
     function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external {}
+
+    function updateCachedsUSDDebt(int amount) external {}
 
     /* ========== MODIFIERS ========== */
 

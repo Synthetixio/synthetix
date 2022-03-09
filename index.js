@@ -9,8 +9,10 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
+	'kovan-ovm-futures': require('./publish/deployed/kovan-ovm-futures'),
 };
 
 const assets = require('./publish/assets.json');
@@ -83,6 +85,7 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -155,6 +158,7 @@ const defaults = {
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
+		'kovan-ovm-futures': '0x4200000000000000000000000000000000000006',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
@@ -196,6 +200,10 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 5 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: '0',
 
+	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
+	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
+	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
+	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
 	// SIP-120
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
 	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
@@ -220,7 +228,7 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', useOvm = false, path
 
 // Pass in fs and path to avoid webpack wrapping those
 const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false }) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].deployment;
 	}
 	const pathToDeployment = deploymentPath
@@ -319,7 +327,7 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
 	let feeds;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		feeds = data[getFolderNameForNetwork({ network, useOvm })].feeds;
 	} else {
 		const pathToFeeds = deploymentPath
@@ -366,7 +374,7 @@ const getSynths = ({
 } = {}) => {
 	let synths;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		synths = data[getFolderNameForNetwork({ network, useOvm })].synths;
 	} else {
 		const pathToSynthList = deploymentPath
@@ -416,6 +424,31 @@ const getSynths = ({
 	});
 };
 
+const getFuturesMarkets = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	if (!deploymentPath && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+	}
+
+	const pathToFuturesMarketsList = deploymentPath
+		? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				useOvm,
+				file: constants.FUTURES_MARKETS_FILENAME,
+		  });
+	if (!fs.existsSync(pathToFuturesMarketsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
+};
+
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
@@ -426,7 +459,7 @@ const getStakingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
 	}
 
@@ -454,7 +487,7 @@ const getShortingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
 	}
 
@@ -509,6 +542,12 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			// Deterministic account #0 when using `npx hardhat node`
 			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 		}),
+		'local-ovm': Object.assign({}, base, {
+			// Deterministic account #0 when using `npx hardhat node`
+			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		}),
 	};
 
 	const users = Object.entries(
@@ -528,7 +567,7 @@ const getVersions = ({
 } = {}) => {
 	let versions;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		versions = data[getFolderNameForNetwork({ network, useOvm })].versions;
 	} else {
 		const pathToVersions = deploymentPath
@@ -632,6 +671,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getFeeds',
 		'getSynths',
 		'getTarget',
+		'getFuturesMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -662,6 +702,7 @@ module.exports = {
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,
+	getFuturesMarkets,
 	getTarget,
 	getTokens,
 	getUsers,
