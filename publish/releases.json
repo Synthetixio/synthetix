@@ -68,18 +68,20 @@
 					"ExchangeRates",
 					"ExchangeCircuitBreaker",
 					"FeePool",
+					"Issuer",
 					"DebtCache",
 					"Synth(s|i).+",
 					"SignedSafeDecimalMath",
 					"SignedSafeMath",
 					"SystemStatus",
-					"EmptyFuturesMarketManager"
+					"FuturesMarketManager"
 				],
 				"ovm": [
 					"Exchanger",
 					"ExchangeRates",
 					"ExchangeCircuitBreaker",
 					"FeePool",
+					"Issuer",
 					"DebtCache",
 					"Synth(s|i).+",
 					"SignedSafeDecimalMath",
