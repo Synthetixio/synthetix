@@ -157,6 +157,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         uint price;
         uint takerFee;
         uint makerFee;
+        bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
     /* ========== CONSTRUCTOR ========== */
@@ -842,7 +843,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         _transferMargin(marginDelta, price, sender);
     }
 
-    function _modifyPosition(address sender, TradeParams memory params) internal {
+    function _trade(address sender, TradeParams memory params) internal {
         Position storage position = positions[sender];
         Position memory oldPosition = position;
 
@@ -857,6 +858,10 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // Send the fee to the fee pool
         if (0 < fee) {
             _manager().payFee(fee);
+            // emit tracking code event
+            if (params.trackingCode != bytes32("")) {
+                emit FuturesTracking(params.trackingCode, baseAsset, marketKey, params.sizeDelta, fee);
+            }
         }
 
         // Update the margin, and apply the resulting debt correction
@@ -901,11 +906,29 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
     function modifyPosition(int sizeDelta) external {
+        _modifyPosition(sizeDelta, bytes32(""));
+    }
+
+    /*
+     * Same as modifyPosition, but emits an event with the passed tracking code to
+     * allow offchain calculations for fee sharing with originating integrations
+     */
+    function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external {
+        _modifyPosition(sizeDelta, trackingCode);
+    }
+
+    function _modifyPosition(int sizeDelta, bytes32 trackingCode) internal {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
-        _modifyPosition(
+        _trade(
             msg.sender,
-            TradeParams({sizeDelta: sizeDelta, price: price, takerFee: _takerFee(marketKey), makerFee: _makerFee(marketKey)})
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: price,
+                takerFee: _takerFee(marketKey),
+                makerFee: _makerFee(marketKey),
+                trackingCode: trackingCode
+            })
         );
     }
 
@@ -913,13 +936,28 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Submit an order to close a position.
      */
     function closePosition() external {
+        _closePosition(bytes32(""));
+    }
+
+    /// Same as closePosition, but emits an even with the trackingCode for volume source fee sharing
+    function closePositionWithTracking(bytes32 trackingCode) external {
+        _closePosition(trackingCode);
+    }
+
+    function _closePosition(bytes32 trackingCode) internal {
         int size = positions[msg.sender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
-        _modifyPosition(
+        _trade(
             msg.sender,
-            TradeParams({sizeDelta: -size, price: price, takerFee: _takerFee(marketKey), makerFee: _makerFee(marketKey)})
+            TradeParams({
+                sizeDelta: -size,
+                price: price,
+                takerFee: _takerFee(marketKey),
+                makerFee: _makerFee(marketKey),
+                trackingCode: trackingCode
+            })
         );
     }
 
@@ -1000,4 +1038,6 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     );
 
     event FundingRecomputed(int funding);
+
+    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
 }
