@@ -875,7 +875,7 @@ contract('DebtCache', async accounts => {
 				await newIssuer.addSynth(sETHContract.address, { from: owner });
 
 				// check uninitialised
-				assert.equal(await newDebtCache.excludedDebtImported(), false);
+				assert.equal(await newDebtCache.isInitialized(), false);
 
 				// import entries
 				await newDebtCache.importExcludedIssuedDebts(debtCache.address, issuer.address, {
@@ -883,7 +883,7 @@ contract('DebtCache', async accounts => {
 				});
 
 				// check initialised
-				assert.equal(await newDebtCache.excludedDebtImported(), true);
+				assert.equal(await newDebtCache.isInitialized(), true);
 
 				// check both entries are updated
 				// sAUD is not in new Issuer, but should be imported
@@ -897,7 +897,7 @@ contract('DebtCache', async accounts => {
 					newDebtCache.importExcludedIssuedDebts(debtCache.address, issuer.address, {
 						from: owner,
 					}),
-					'import can only be run once'
+					'already initialized'
 				);
 			});
 		});

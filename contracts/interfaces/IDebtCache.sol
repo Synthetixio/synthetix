@@ -15,7 +15,7 @@ interface IDebtCache {
 
     function cacheStale() external view returns (bool);
 
-    function excludedDebtImported() external view returns (bool);
+    function isInitialized() external view returns (bool);
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
         external

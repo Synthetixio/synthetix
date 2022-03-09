@@ -32,7 +32,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bool internal _cacheInvalid = true;
 
     // flag to ensure importing excluded debt is invoked only once
-    bool public excludedDebtImported = false; // public to avoid needing an event
+    bool public isInitialized = false; // public to avoid needing an event
 
     /* ========== ENCODED NAMES ========== */
 
@@ -216,8 +216,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     function importExcludedIssuedDebts(IDebtCache prevDebtCache, IIssuer prevIssuer) external onlyOwner {
         // this can only be run once so that recorded debt deltas aren't accidentally
         // lost or double counted
-        require(!excludedDebtImported, "import can only be run once");
-        excludedDebtImported = true;
+        require(!isInitialized, "already initialized");
+        isInitialized = true;
 
         // get the currency keys from **previous** issuer, in case current issuer
         // doesn't have all the synths at this point
