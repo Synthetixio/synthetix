@@ -73,7 +73,7 @@
 					"SignedSafeDecimalMath",
 					"SignedSafeMath",
 					"SystemStatus",
-					"EmptyFuturesMarketManager"
+					"FuturesMarketManager"
 				],
 				"ovm": [
 					"Exchanger",
