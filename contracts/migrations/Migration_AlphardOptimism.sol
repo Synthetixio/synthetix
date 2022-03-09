@@ -1,3 +1,4 @@
+
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -30,8 +31,7 @@ contract Migration_AlphardOptimism is BaseMigration {
     // https://explorer.optimism.io/address/0x4a16A42407AA491564643E1dfc1fd50af29794eF
     Proxy public constant proxyfeepool_i = Proxy(0x4a16A42407AA491564643E1dfc1fd50af29794eF);
     // https://explorer.optimism.io/address/0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8
-    FeePoolEternalStorage public constant feepooleternalstorage_i =
-        FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
+    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
     // https://explorer.optimism.io/address/0x6e0d26cffc3a63d763F1546f749bf62ebC7d72D8
     FeePoolState public constant feepoolstate_i = FeePoolState(0x6e0d26cffc3a63d763F1546f749bf62ebC7d72D8);
     // https://explorer.optimism.io/address/0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4
@@ -39,8 +39,7 @@ contract Migration_AlphardOptimism is BaseMigration {
     // https://explorer.optimism.io/address/0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE
     TokenState public constant tokenstatesynthetix_i = TokenState(0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE);
     // https://explorer.optimism.io/address/0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e
-    RewardsDistribution public constant rewardsdistribution_i =
-        RewardsDistribution(0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e);
+    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e);
     // https://explorer.optimism.io/address/0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54
     FeePool public constant feepool_i = FeePool(0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54);
     // https://explorer.optimism.io/address/0xdf1F1f0059bA70C182471467d3017511B1a122E8
@@ -63,30 +62,21 @@ contract Migration_AlphardOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](9);
-        contracts[0] = address(addressresolver_i);
-        contracts[1] = address(proxyfeepool_i);
-        contracts[2] = address(feepooleternalstorage_i);
-        contracts[3] = address(feepoolstate_i);
-        contracts[4] = address(proxysynthetix_i);
-        contracts[5] = address(tokenstatesynthetix_i);
-        contracts[6] = address(rewardsdistribution_i);
-        contracts[7] = address(feepool_i);
-        contracts[8] = address(issuer_i);
+        contracts[0]= address(addressresolver_i);
+        contracts[1]= address(proxyfeepool_i);
+        contracts[2]= address(feepooleternalstorage_i);
+        contracts[3]= address(feepoolstate_i);
+        contracts[4]= address(proxysynthetix_i);
+        contracts[5]= address(tokenstatesynthetix_i);
+        contracts[6]= address(rewardsdistribution_i);
+        contracts[7]= address(feepool_i);
+        contracts[8]= address(issuer_i);
     }
 
     function migrate() external onlyOwner {
-        require(
-            ISynthetixNamedContract(new_SynthetixDebtShare_contract).CONTRACT_NAME() == "SynthetixDebtShare",
-            "Invalid contract supplied for SynthetixDebtShare"
-        );
-        require(
-            ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool",
-            "Invalid contract supplied for FeePool"
-        );
-        require(
-            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
-            "Invalid contract supplied for Issuer"
-        );
+        require(ISynthetixNamedContract(new_SynthetixDebtShare_contract).CONTRACT_NAME() == "SynthetixDebtShare", "Invalid contract supplied for SynthetixDebtShare");
+        require(ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool", "Invalid contract supplied for FeePool");
+        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -133,6 +123,7 @@ contract Migration_AlphardOptimism is BaseMigration {
         }
     }
 
+    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](4);
         addressresolver_importAddresses_names_0_0[0] = bytes32("SynthetixDebtShare");
@@ -144,12 +135,10 @@ contract Migration_AlphardOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[1] = address(new_FeePool_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_Synthetix_contract);
         addressresolver_importAddresses_destinations_0_1[3] = address(new_Issuer_contract);
-        addressresolver_i.importAddresses(
-            addressresolver_importAddresses_names_0_0,
-            addressresolver_importAddresses_destinations_0_1
-        );
+        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
     }
 
+    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](19);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_FeePool_contract);
@@ -174,56 +163,59 @@ contract Migration_AlphardOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
+    
     function importFeePeriod_0() internal {
         // https://explorer.optimism.io/address/0xFDf3Be612c65464AEB4859047350a6220F304F52;
         FeePool existingFeePool = FeePool(0xFDf3Be612c65464AEB4859047350a6220F304F52);
         // https://explorer.optimism.io/address/0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54;
         FeePool newFeePool = FeePool(0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54);
         (
-            uint64 feePeriodId_0,
-            uint64 unused_0,
-            uint64 startTime_0,
-            uint feesToDistribute_0,
-            uint feesClaimed_0,
-            uint rewardsToDistribute_0,
-            uint rewardsClaimed_0
-        ) = existingFeePool.recentFeePeriods(0);
+                        uint64 feePeriodId_0,
+                        uint64 unused_0,
+                        uint64 startTime_0,
+                        uint feesToDistribute_0,
+                        uint feesClaimed_0,
+                        uint rewardsToDistribute_0,
+                        uint rewardsClaimed_0
+                    ) = existingFeePool.recentFeePeriods(0);
         newFeePool.importFeePeriod(
-            0,
-            feePeriodId_0,
-            startTime_0,
-            feesToDistribute_0,
-            feesClaimed_0,
-            rewardsToDistribute_0,
-            rewardsClaimed_0
-        );
+                        0,
+                        feePeriodId_0,
+                        startTime_0,
+                        feesToDistribute_0,
+                        feesClaimed_0,
+                        rewardsToDistribute_0,
+                        rewardsClaimed_0
+                    );
     }
 
+    
     function importFeePeriod_1() internal {
         // https://explorer.optimism.io/address/0xFDf3Be612c65464AEB4859047350a6220F304F52;
         FeePool existingFeePool = FeePool(0xFDf3Be612c65464AEB4859047350a6220F304F52);
         // https://explorer.optimism.io/address/0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54;
         FeePool newFeePool = FeePool(0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54);
         (
-            uint64 feePeriodId_1,
-            uint64 unused_1,
-            uint64 startTime_1,
-            uint feesToDistribute_1,
-            uint feesClaimed_1,
-            uint rewardsToDistribute_1,
-            uint rewardsClaimed_1
-        ) = existingFeePool.recentFeePeriods(1);
+                        uint64 feePeriodId_1,
+                        uint64 unused_1,
+                        uint64 startTime_1,
+                        uint feesToDistribute_1,
+                        uint feesClaimed_1,
+                        uint rewardsToDistribute_1,
+                        uint rewardsClaimed_1
+                    ) = existingFeePool.recentFeePeriods(1);
         newFeePool.importFeePeriod(
-            1,
-            feePeriodId_1,
-            startTime_1,
-            feesToDistribute_1,
-            feesClaimed_1,
-            rewardsToDistribute_1,
-            rewardsClaimed_1
-        );
+                        1,
+                        feePeriodId_1,
+                        startTime_1,
+                        feesToDistribute_1,
+                        feesClaimed_1,
+                        rewardsToDistribute_1,
+                        rewardsClaimed_1
+                    );
     }
 
+    
     function issuer_addSynths_16() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_16_0 = new ISynth[](4);
         issuer_addSynths_synthsToAdd_16_0[0] = ISynth(0x78aAA3fb165deCAA729DFE3cf0E97Ab6FCF484da);

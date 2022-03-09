@@ -105,14 +105,4 @@ contract EmptyCollateralManager is ICollateralManager {
     function incrementShorts(bytes32, uint) external {}
 
     function decrementShorts(bytes32, uint) external {}
-
-    function accrueInterest(
-        uint interestIndex,
-        bytes32 currency,
-        bool isShort
-    ) external returns (uint difference, uint index) {}
-
-    function updateBorrowRatesCollateral(uint rate) external {}
-
-    function updateShortRatesCollateral(bytes32 currency, uint rate) external {}
 }

@@ -146,7 +146,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             require(value <= transferable, "Cannot transfer staked or escrowed SNX");
             require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
-
+        
         return true;
     }
 
