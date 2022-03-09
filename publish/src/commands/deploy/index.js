@@ -37,6 +37,7 @@ const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
 const importFeePeriods = require('./import-fee-periods');
+const importExcludedDebt = require('./import-excluded-debt');
 const performSafetyChecks = require('./perform-safety-checks');
 const rebuildResolverCaches = require('./rebuild-resolver-caches');
 const rebuildLegacyResolverCaches = require('./rebuild-legacy-resolver-caches');
@@ -370,6 +371,12 @@ const deploy = async ({
 		systemSuspended,
 		useFork,
 		yes,
+	});
+
+	await importExcludedDebt({
+		deployer,
+		freshDeploy,
+		runStep,
 	});
 
 	await configureStandalonePriceFeeds({
