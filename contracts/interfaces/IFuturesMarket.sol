@@ -7,6 +7,8 @@ interface IFuturesMarket {
 
     /* ---------- Market Details ---------- */
 
+    function marketKey() external view returns (bytes32 key);
+
     function baseAsset() external view returns (bytes32 key);
 
     function marketSize() external view returns (uint128 size);

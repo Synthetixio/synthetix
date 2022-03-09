@@ -25,7 +25,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     /* ========== STATE VARIABLES ========== */
 
     AddressSetLib.AddressSet internal _markets;
-    mapping(bytes32 => address) public marketForAsset;
+    mapping(bytes32 => address) public marketForKey;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -80,20 +80,20 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         return _markets.getPage(0, _markets.elements.length);
     }
 
-    function _marketsForAssets(bytes32[] memory assets) internal view returns (address[] memory) {
-        uint numAssets = assets.length;
-        address[] memory results = new address[](numAssets);
-        for (uint i; i < numAssets; i++) {
-            results[i] = marketForAsset[assets[i]];
+    function _marketsForKeys(bytes32[] memory marketKeys) internal view returns (address[] memory) {
+        uint mMarkets = marketKeys.length;
+        address[] memory results = new address[](mMarkets);
+        for (uint i; i < mMarkets; i++) {
+            results[i] = marketForKey[marketKeys[i]];
         }
         return results;
     }
 
     /*
-     * The market addresses for a given set of asset strings.
+     * The market addresses for a given set of market key strings.
      */
-    function marketsForAssets(bytes32[] calldata assets) external view returns (address[] memory) {
-        return _marketsForAssets(assets);
+    function marketsForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory) {
+        return _marketsForKeys(marketKeys);
     }
 
     /*
@@ -114,7 +114,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /*
-     * Add a set of new markets. Reverts if some market's asset already has a market.
+     * Add a set of new markets. Reverts if some market key already has a market.
      */
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
@@ -122,11 +122,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             address market = marketsToAdd[i];
             require(!_markets.contains(market), "Market already exists");
 
-            bytes32 key = IFuturesMarket(market).baseAsset();
-            require(marketForAsset[key] == address(0), "Market already exists for asset");
-            marketForAsset[key] = market;
+            bytes32 key = IFuturesMarket(market).marketKey();
+            bytes32 baseAsset = IFuturesMarket(market).baseAsset();
+
+            require(marketForKey[key] == address(0), "Market already exists for key");
+            marketForKey[key] = market;
             _markets.add(market);
-            emit MarketAdded(market, key);
+            emit MarketAdded(market, baseAsset, key);
         }
     }
 
@@ -136,11 +138,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             address market = marketsToRemove[i];
             require(market != address(0), "Unknown market");
 
-            bytes32 key = IFuturesMarket(market).baseAsset();
-            require(marketForAsset[key] != address(0), "Unknown market");
-            delete marketForAsset[key];
+            bytes32 key = IFuturesMarket(market).marketKey();
+            bytes32 baseAsset = IFuturesMarket(market).baseAsset();
+
+            require(marketForKey[key] != address(0), "Unknown market");
+            delete marketForKey[key];
             _markets.remove(market);
-            emit MarketRemoved(market, key);
+            emit MarketRemoved(market, baseAsset, key);
         }
     }
 
@@ -152,10 +156,10 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     }
 
     /*
-     * Remove the markets for a given set of assets. Reverts if any asset has no associated market.
+     * Remove the markets for a given set of market keys. Reverts if any key has no associated market.
      */
-    function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external onlyOwner {
-        _removeMarkets(_marketsForAssets(assetsToRemove));
+    function removeMarketsByKey(bytes32[] calldata marketKeysToRemove) external onlyOwner {
+        _removeMarkets(_marketsForKeys(marketKeysToRemove));
     }
 
     /*
@@ -219,7 +223,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== EVENTS ========== */
 
-    event MarketAdded(address market, bytes32 indexed asset);
+    event MarketAdded(address market, bytes32 indexed asset, bytes32 indexed marketKey);
 
-    event MarketRemoved(address market, bytes32 indexed asset);
+    event MarketRemoved(address market, bytes32 indexed asset, bytes32 indexed marketKey);
 }

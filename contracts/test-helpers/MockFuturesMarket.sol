@@ -8,6 +8,7 @@ interface IFuturesMarketManagerInternal {
 
 contract MockFuturesMarket {
     bytes32 public baseAsset;
+    bytes32 public marketKey;
     uint public debt;
     bool public invalid;
     IFuturesMarketManagerInternal public manager;
@@ -15,11 +16,13 @@ contract MockFuturesMarket {
     constructor(
         IFuturesMarketManagerInternal _manager,
         bytes32 _baseAsset,
+        bytes32 _marketKey,
         uint _debt,
         bool _invalid
     ) public {
         manager = _manager;
         baseAsset = _baseAsset;
+        marketKey = _marketKey;
         debt = _debt;
         invalid = _invalid;
     }
@@ -30,6 +33,10 @@ contract MockFuturesMarket {
 
     function setBaseAsset(bytes32 _baseAsset) external {
         baseAsset = _baseAsset;
+    }
+
+    function setMarketKey(bytes32 _marketKey) external {
+        marketKey = _marketKey;
     }
 
     function setMarketDebt(uint _debt) external {

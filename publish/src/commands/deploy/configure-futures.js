@@ -65,28 +65,6 @@ module.exports = async ({
 		comment: 'Set the minimum reward for liquidating a futures position (SIP-80)',
 	});
 
-	// const futuresAssets = futuresMarkets.map(x => x.asset);
-
-	// Some market parameters invoke a recomputation of the funding rate, and
-	// thus require exchange rates to be fresh. We assume production networks
-	// have fresh funding rates at the time of deployment.
-
-	// if (freshDeploy || network === 'local') {
-	// 	const { timestamp } = await deployer.provider.getBlock();
-	// 	const DUMMY_PRICE = parseEther('1').toString();
-
-	// 	console.log(gray(`Updating ExchangeRates for futures assets: ` + futuresAssets.join(', ')));
-
-	// 	for (const key of futuresAssets.map(toBytes32)) {
-	// 		await runStep({
-	// 			contract: 'ExchangeRates',
-	// 			target: exchangeRates,
-	// 			write: `updateRates`,
-	// 			writeArg: [[key], [DUMMY_PRICE], timestamp],
-	// 		});
-	// 	}
-	// }
-
 	//
 	// Configure parameters for each market.
 	//
@@ -94,6 +72,7 @@ module.exports = async ({
 	for (const market of Object.values(futuresMarkets)) {
 		const {
 			asset,
+			marketKey,
 			takerFee,
 			makerFee,
 			takerFeeNextPrice,
@@ -107,7 +86,7 @@ module.exports = async ({
 
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
 
-		const baseAsset = toBytes32(asset);
+		const marketKeyBytes = toBytes32(marketKey);
 
 		const settings = {
 			takerFee: w3utils.toWei(takerFee),
@@ -129,10 +108,10 @@ module.exports = async ({
 				contract: 'FuturesMarketSettings',
 				target: futuresMarketSettings,
 				read: setting,
-				readArg: [baseAsset],
+				readArg: [marketKeyBytes],
 				expected: input => input === value,
 				write: `set${capSetting}`,
-				writeArg: [baseAsset, value],
+				writeArg: [marketKeyBytes, value],
 			});
 		}
 	}

@@ -160,6 +160,8 @@ const setupContract = async ({
 		}
 	};
 
+	const perpSuffix = tryGetProperty({ property: 'perpSuffix', otherwise: '' });
+
 	const defaultArgs = {
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
@@ -281,10 +283,12 @@ const setupContract = async ({
 		FuturesMarketBTC: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC' + perpSuffix), // market key
 		],
 		FuturesMarketETH: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'), // base asset
+			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};
@@ -1227,13 +1231,14 @@ const setupAllContracts = async ({
 			];
 
 			// TODO: fetch settings per-market programmatically
-			const setupFuturesMarket = async asset => {
-				const assetKey = toBytes32(asset);
+			const setupFuturesMarket = async market => {
+				const assetKey = await market.baseAsset();
+				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
 				await Promise.all([
 					returnObj['FuturesMarketSettings'].setParameters(
-						assetKey,
+						marketKey,
 						toWei('0.003'), // 0.3% taker fee
 						toWei('0.001'), // 0.1% maker fee
 						toWei('0.0005'), // 0.05% taker fee next price
@@ -1249,10 +1254,10 @@ const setupAllContracts = async ({
 			};
 
 			if (returnObj['FuturesMarketBTC']) {
-				promises.push(setupFuturesMarket('sBTC'));
+				promises.push(setupFuturesMarket(returnObj['FuturesMarketBTC']));
 			}
 			if (returnObj['FuturesMarketETH']) {
-				promises.push(setupFuturesMarket('sETH'));
+				promises.push(setupFuturesMarket(returnObj['FuturesMarketETH']));
 			}
 
 			await Promise.all(promises);

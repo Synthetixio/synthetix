@@ -21,7 +21,7 @@ contract('FuturesMarketSettings', accounts => {
 
 	const owner = accounts[1];
 
-	const baseAsset = toBytes32('sBTC');
+	const marketKey = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const takerFeeNextPrice = toUnit('0.0005');
@@ -56,29 +56,36 @@ contract('FuturesMarketSettings', accounts => {
 
 		mockFuturesMarketBTC = await artifacts.require('GenericMock').new();
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'recomputeFunding',
 			returns: ['0'],
 		});
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'marketSize',
 			returns: ['1'],
 		});
 
-		mockGenericContractFnc({
+		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
 
+		await mockGenericContractFnc({
+			instance: mockFuturesMarketBTC,
+			mock: 'FuturesMarket',
+			fncName: 'marketKey',
+			returns: [toBytes32('sBTC')],
+		});
+
 		// add the market
-		futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -127,7 +134,7 @@ contract('FuturesMarketSettings', accounts => {
 		describe('bounds checking', async () => {
 			it('should revert if maker fee is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setMakerFee(baseAsset, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setMakerFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'maker fee greater than 1'
@@ -136,7 +143,7 @@ contract('FuturesMarketSettings', accounts => {
 
 			it('should revert if taker fee is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setTakerFee(baseAsset, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setTakerFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -145,7 +152,7 @@ contract('FuturesMarketSettings', accounts => {
 
 			it('should revert if maker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setMakerFeeNextPrice(baseAsset, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setMakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'maker fee greater than 1'
@@ -154,7 +161,7 @@ contract('FuturesMarketSettings', accounts => {
 
 			it('should revert if taker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setTakerFeeNextPrice(baseAsset, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setTakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -163,7 +170,7 @@ contract('FuturesMarketSettings', accounts => {
 
 			it('should revert if setSkewScaleUSD is 0', async () => {
 				await assert.revert(
-					futuresMarketSettings.setSkewScaleUSD(baseAsset, 0, {
+					futuresMarketSettings.setSkewScaleUSD(marketKey, 0, {
 						from: owner,
 					}),
 					'cannot set skew scale 0'
@@ -181,7 +188,7 @@ contract('FuturesMarketSettings', accounts => {
 						// Only settable by the owner
 						await onlyGivenAddressCanInvoke({
 							fnc: setter,
-							args: [baseAsset, value],
+							args: [marketKey, value],
 							address: owner,
 							accounts,
 						});
@@ -198,7 +205,7 @@ contract('FuturesMarketSettings', accounts => {
 							const setter = p[2];
 							const getter = p[3];
 
-							const tx = await setter(baseAsset, value, { from: owner });
+							const tx = await setter(marketKey, value, { from: owner });
 
 							const decodedLogs = await getDecodedLogs({
 								hash: tx.tx,
@@ -208,12 +215,12 @@ contract('FuturesMarketSettings', accounts => {
 							decodedEventEqual({
 								event: 'ParameterUpdated',
 								emittedFrom: futuresMarketSettings.address,
-								args: [baseAsset, param, value],
+								args: [marketKey, param, value],
 								log: decodedLogs[1],
 							});
 
 							// And the parameter was actually set properly
-							assert.bnEqual(await getter(baseAsset), value.toString());
+							assert.bnEqual(await getter(marketKey), value.toString());
 						}
 					});
 				});
@@ -381,6 +388,58 @@ contract('FuturesMarketSettings', accounts => {
 			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
 				bps: newValue,
 			});
+		});
+	});
+
+	describe('migration scenario: different parameters for two markets for same asset', () => {
+		const firstMarketKey = toBytes32('sBTC');
+		const secondMarketKey = toBytes32('SomethingElse');
+
+		let secondBTCMarket;
+
+		before(async () => {
+			// add a second BTC market
+			secondBTCMarket = await artifacts.require('GenericMock').new();
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'recomputeFunding',
+				returns: ['0'],
+			});
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'marketSize',
+				returns: ['1'],
+			});
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'baseAsset',
+				returns: [toBytes32('sBTC')],
+			});
+
+			await mockGenericContractFnc({
+				instance: secondBTCMarket,
+				mock: 'FuturesMarket',
+				fncName: 'marketKey',
+				returns: [secondMarketKey],
+			});
+
+			// add the market
+			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+		});
+
+		it('should be able to change parameters for both markets independently', async () => {
+			const val1 = toUnit(0.1);
+			const val2 = toUnit(0.5);
+			await futuresMarketSettings.setMaxFundingRate(firstMarketKey, val1, { from: owner });
+			await futuresMarketSettings.setMaxFundingRate(secondMarketKey, val2, { from: owner });
+			assert.bnEqual(await futuresMarketSettings.maxFundingRate(firstMarketKey), val1);
+			assert.bnEqual(await futuresMarketSettings.maxFundingRate(secondMarketKey), val2);
 		});
 	});
 });

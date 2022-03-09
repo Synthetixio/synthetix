@@ -52,14 +52,15 @@ module.exports = async ({
 
 	const deployedFuturesMarkets = [];
 
-	for (const asset of futuresMarkets.map(x => x.asset)) {
-		const marketName = 'FuturesMarket' + asset.slice('1'); // remove s prefix
-		const baseAsset = toBytes32(asset);
+	for (const marketConfig of futuresMarkets) {
+		const baseAsset = toBytes32(marketConfig.asset);
+		const marketKey = toBytes32(marketConfig.marketKey);
+		const marketName = 'FuturesMarket' + marketConfig.marketKey.slice('1'); // remove s prefix
 
 		const futuresMarket = await deployer.deployContract({
 			name: marketName,
 			source: 'FuturesMarket',
-			args: [addressOf(ReadProxyAddressResolver), baseAsset],
+			args: [addressOf(ReadProxyAddressResolver), baseAsset, marketKey],
 		});
 
 		if (futuresMarket) {

@@ -96,6 +96,10 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
     /* ========== STATE VARIABLES ========== */
 
+    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
+    // for the same asset in order to allow migrations.
+    bytes32 public marketKey;
+
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
     bytes32 public baseAsset;
 
@@ -157,8 +161,13 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver, bytes32 _baseAsset) public MixinFuturesMarketSettings(_resolver) {
+    constructor(
+        address _resolver,
+        bytes32 _baseAsset,
+        bytes32 _marketKey
+    ) public MixinFuturesMarketSettings(_resolver) {
         baseAsset = _baseAsset;
+        marketKey = _marketKey;
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
@@ -222,13 +231,13 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(baseAsset).divideDecimal(price);
+        uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
         return int(marketSkew).divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(baseAsset));
+        int maxFundingRate = int(_maxFundingRate(marketKey));
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
     }
@@ -359,7 +368,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(baseAsset).sub(milli));
+        int maxLeverage = int(_maxLeverage(marketKey).sub(milli));
         uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -532,7 +541,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         {
             // stack too deep
             int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
-            if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            if (_maxLeverage(marketKey).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
         }
@@ -541,7 +550,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValueUSD(baseAsset).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
+                uint(int(_maxMarketValueUSD(marketKey).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
                 oldPos.size,
                 newPos.size
             )
@@ -628,7 +637,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function _assetPriceRequireSystemChecks() internal returns (uint) {
         // check that futures market isn't suspended, revert with appropriate message
-        _systemStatus().requireFuturesMarketActive(baseAsset); // asset and market may be different
+        _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
@@ -802,7 +811,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
                 _revertIfError(
                     (margin < _minInitialMargin()) ||
                         (margin <= _liquidationMargin(position.size, price)) ||
-                        (_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin))),
+                        (_maxLeverage(marketKey) < _abs(_currentLeverage(position, price, margin))),
                     Status.InsufficientMargin
                 );
             }
@@ -896,7 +905,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         _recomputeFunding(price);
         _modifyPosition(
             msg.sender,
-            TradeParams({sizeDelta: sizeDelta, price: price, takerFee: _takerFee(baseAsset), makerFee: _makerFee(baseAsset)})
+            TradeParams({sizeDelta: sizeDelta, price: price, takerFee: _takerFee(marketKey), makerFee: _makerFee(marketKey)})
         );
     }
 
@@ -910,7 +919,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         _recomputeFunding(price);
         _modifyPosition(
             msg.sender,
-            TradeParams({sizeDelta: -size, price: price, takerFee: _takerFee(baseAsset), makerFee: _makerFee(baseAsset)})
+            TradeParams({sizeDelta: -size, price: price, takerFee: _takerFee(marketKey), makerFee: _makerFee(marketKey)})
         );
     }
 

@@ -19,8 +19,11 @@ contract('FuturesMarketData', accounts => {
 		exchangeCircuitBreaker,
 		sUSD,
 		systemSettings,
+		marketKey,
 		baseAsset;
-	const newAsset = toBytes32('sETH');
+	const keySuffix = '-perp';
+	const newMarketKey = toBytes32('sETH' + keySuffix);
+	const newAssetKey = toBytes32('sETH');
 
 	const owner = accounts[1];
 	const trader1 = accounts[2];
@@ -71,6 +74,7 @@ contract('FuturesMarketData', accounts => {
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
 			const assetKey = toBytes32(symbol);
+			const marketKey = toBytes32(symbol + keySuffix);
 
 			const market = await setupContract({
 				accounts,
@@ -79,6 +83,7 @@ contract('FuturesMarketData', accounts => {
 				args: [
 					addressResolver.address,
 					assetKey, // base asset
+					marketKey,
 				],
 			});
 
@@ -90,7 +95,7 @@ contract('FuturesMarketData', accounts => {
 
 			// Now that the market exists we can set the all its parameters
 			await futuresMarketSettings.setParameters(
-				assetKey,
+				marketKey,
 				toWei('0.005'), // 0.5% taker fee
 				toWei('0.001'), // 0.1% maker fee
 				toWei('0.0005'), // 0.05% taker fee next price
@@ -105,6 +110,7 @@ contract('FuturesMarketData', accounts => {
 		}
 
 		baseAsset = await futuresMarket.baseAsset();
+		marketKey = await futuresMarket.marketKey();
 
 		// Update the rates to ensure they aren't stale
 		await setPrice(baseAsset, toUnit(100));
@@ -128,11 +134,11 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
 		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
 
-		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
+		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForKey(newMarketKey));
 
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
 		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });
-		await setPrice(newAsset, toUnit('999'));
+		await setPrice(newAssetKey, toUnit('999'));
 	});
 
 	it('Resolver is properly set', async () => {
@@ -190,9 +196,9 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(details.priceDetails.invalid, assetPrice.invalid);
 		});
 
-		it('By asset', async () => {
+		it('By market key', async () => {
 			const details = await futuresMarketData.marketDetails(futuresMarket.address);
-			const assetDetails = await futuresMarketData.marketDetailsForAsset(baseAsset);
+			const assetDetails = await futuresMarketData.marketDetailsForKey(marketKey);
 			assert.equal(JSON.stringify(assetDetails), JSON.stringify(details));
 		});
 	});
@@ -223,11 +229,17 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(details.canLiquidatePosition, await futuresMarket.canLiquidate(trader1));
 		});
 
-		it('By asset', async () => {
+		it('By market key', async () => {
 			const details = await futuresMarketData.positionDetails(futuresMarket.address, trader3);
 			const details2 = await futuresMarketData.positionDetails(sethMarket.address, trader3);
-			const detailsByAsset = await futuresMarketData.positionDetailsForAsset(baseAsset, trader3);
-			const detailsByAsset2 = await futuresMarketData.positionDetailsForAsset(newAsset, trader3);
+			const detailsByAsset = await futuresMarketData.positionDetailsForMarketKey(
+				marketKey,
+				trader3
+			);
+			const detailsByAsset2 = await futuresMarketData.positionDetailsForMarketKey(
+				newMarketKey,
+				trader3
+			);
 
 			assert.equal(JSON.stringify(detailsByAsset), JSON.stringify(details));
 			assert.equal(JSON.stringify(detailsByAsset2), JSON.stringify(details2));
@@ -236,14 +248,12 @@ contract('FuturesMarketData', accounts => {
 
 	describe('Market summaries', () => {
 		it('For markets', async () => {
-			const sETHSummary = (
-				await futuresMarketData.marketSummariesForAssets([toBytes32('sETH')])
-			)[0];
+			const sETHSummary = (await futuresMarketData.marketSummariesForKeys([newMarketKey]))[0];
 
-			const params = await futuresMarketData.parameters(newAsset); // sETH
+			const params = await futuresMarketData.parameters(newMarketKey); // sETH
 
 			assert.equal(sETHSummary.market, sethMarket.address);
-			assert.equal(sETHSummary.asset, newAsset);
+			assert.equal(sETHSummary.asset, newAssetKey);
 			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
 			const price = await sethMarket.assetPrice();
 			assert.equal(sETHSummary.price, price.price);
@@ -256,13 +266,13 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
 		});
 
-		it('For assets', async () => {
+		it('For market keys', async () => {
 			const summaries = await futuresMarketData.marketSummaries([
 				futuresMarket.address,
 				sethMarket.address,
 			]);
-			const summariesForAsset = await futuresMarketData.marketSummariesForAssets(
-				['sBTC', 'sETH'].map(toBytes32)
+			const summariesForAsset = await futuresMarketData.marketSummariesForKeys(
+				['sBTC', 'sETH' + keySuffix].map(toBytes32)
 			);
 			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForAsset));
 		});
@@ -274,7 +284,7 @@ contract('FuturesMarketData', accounts => {
 			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
 			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
 
-			const fmParams = await futuresMarketData.parameters(baseAsset);
+			const fmParams = await futuresMarketData.parameters(marketKey);
 
 			assert.equal(sBTCSummary.market, futuresMarket.address);
 			assert.equal(sBTCSummary.asset, baseAsset);
@@ -289,10 +299,10 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sBTCSummary.feeRates.takerFeeNextPrice, fmParams.takerFeeNextPrice);
 			assert.equal(sBTCSummary.feeRates.makerFeeNextPrice, fmParams.makerFeeNextPrice);
 
-			const sETHParams = await futuresMarketData.parameters(newAsset); // sETH
+			const sETHParams = await futuresMarketData.parameters(newMarketKey); // sETH
 
 			assert.equal(sETHSummary.market, sethMarket.address);
-			assert.equal(sETHSummary.asset, newAsset);
+			assert.equal(sETHSummary.asset, newAssetKey);
 			assert.equal(sETHSummary.maxLeverage, sETHParams.maxLeverage);
 			price = await sethMarket.assetPrice();
 			assert.equal(sETHSummary.price, price.price);
@@ -306,7 +316,7 @@ contract('FuturesMarketData', accounts => {
 
 			assert.equal(
 				sLINKSummary.market,
-				await futuresMarketManager.marketForAsset(toBytes32('sLINK'))
+				await futuresMarketManager.marketForKey(toBytes32('sLINK' + keySuffix))
 			);
 			assert.equal(sLINKSummary.asset, toBytes32('sLINK'));
 			assert.equal(sLINKSummary.maxLeverage, toUnit(5));

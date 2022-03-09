@@ -39,67 +39,67 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /*
      * The fee charged when opening a position on the heavy side of a futures market.
      */
-    function takerFee(bytes32 _baseAsset) external view returns (uint) {
-        return _takerFee(_baseAsset);
+    function takerFee(bytes32 _marketKey) external view returns (uint) {
+        return _takerFee(_marketKey);
     }
 
     /*
      * The fee charged when opening a position on the light side of a futures market.
      */
-    function makerFee(bytes32 _baseAsset) public view returns (uint) {
-        return _makerFee(_baseAsset);
+    function makerFee(bytes32 _marketKey) public view returns (uint) {
+        return _makerFee(_marketKey);
     }
 
     /*
      * The fee charged when opening a position on the heavy side of a futures market using next price mechanism.
      */
-    function takerFeeNextPrice(bytes32 _baseAsset) external view returns (uint) {
-        return _takerFeeNextPrice(_baseAsset);
+    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint) {
+        return _takerFeeNextPrice(_marketKey);
     }
 
     /*
      * The fee charged when opening a position on the light side of a futures market using next price mechanism.
      */
-    function makerFeeNextPrice(bytes32 _baseAsset) public view returns (uint) {
-        return _makerFeeNextPrice(_baseAsset);
+    function makerFeeNextPrice(bytes32 _marketKey) public view returns (uint) {
+        return _makerFeeNextPrice(_marketKey);
     }
 
     /*
      * The number of price update rounds during which confirming next-price is allowed
      */
-    function nextPriceConfirmWindow(bytes32 _baseAsset) public view returns (uint) {
-        return _nextPriceConfirmWindow(_baseAsset);
+    function nextPriceConfirmWindow(bytes32 _marketKey) public view returns (uint) {
+        return _nextPriceConfirmWindow(_marketKey);
     }
 
     /*
      * The maximum allowable leverage in a market.
      */
-    function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
-        return _maxLeverage(_baseAsset);
+    function maxLeverage(bytes32 _marketKey) public view returns (uint) {
+        return _maxLeverage(_marketKey);
     }
 
     /*
      * The maximum allowable notional value on each side of a market.
      */
-    function maxMarketValueUSD(bytes32 _baseAsset) public view returns (uint) {
-        return _maxMarketValueUSD(_baseAsset);
+    function maxMarketValueUSD(bytes32 _marketKey) public view returns (uint) {
+        return _maxMarketValueUSD(_marketKey);
     }
 
     /*
      * The maximum theoretical funding rate per day charged by a market.
      */
-    function maxFundingRate(bytes32 _baseAsset) public view returns (uint) {
-        return _maxFundingRate(_baseAsset);
+    function maxFundingRate(bytes32 _marketKey) public view returns (uint) {
+        return _maxFundingRate(_marketKey);
     }
 
     /*
      * The skew level at which the max funding rate will be charged.
      */
-    function skewScaleUSD(bytes32 _baseAsset) public view returns (uint) {
-        return _skewScaleUSD(_baseAsset);
+    function skewScaleUSD(bytes32 _marketKey) public view returns (uint) {
+        return _skewScaleUSD(_marketKey);
     }
 
-    function parameters(bytes32 _baseAsset)
+    function parameters(bytes32 _marketKey)
         external
         view
         returns (
@@ -114,15 +114,15 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint skewScaleUSD
         )
     {
-        takerFee = _takerFee(_baseAsset);
-        makerFee = _makerFee(_baseAsset);
-        takerFeeNextPrice = _takerFeeNextPrice(_baseAsset);
-        makerFeeNextPrice = _makerFeeNextPrice(_baseAsset);
-        nextPriceConfirmWindow = _nextPriceConfirmWindow(_baseAsset);
-        maxLeverage = _maxLeverage(_baseAsset);
-        maxMarketValueUSD = _maxMarketValueUSD(_baseAsset);
-        maxFundingRate = _maxFundingRate(_baseAsset);
-        skewScaleUSD = _skewScaleUSD(_baseAsset);
+        takerFee = _takerFee(_marketKey);
+        makerFee = _makerFee(_marketKey);
+        takerFeeNextPrice = _takerFeeNextPrice(_marketKey);
+        makerFeeNextPrice = _makerFeeNextPrice(_marketKey);
+        nextPriceConfirmWindow = _nextPriceConfirmWindow(_marketKey);
+        maxLeverage = _maxLeverage(_marketKey);
+        maxMarketValueUSD = _maxMarketValueUSD(_marketKey);
+        maxFundingRate = _maxFundingRate(_marketKey);
+        skewScaleUSD = _skewScaleUSD(_marketKey);
     }
 
     /*
@@ -161,70 +161,70 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     /* ---------- Setters --------- */
 
     function _setParameter(
-        bytes32 _baseAsset,
+        bytes32 _marketKey,
         bytes32 key,
         uint value
     ) internal {
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)), value);
-        emit ParameterUpdated(_baseAsset, key, value);
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_marketKey, key)), value);
+        emit ParameterUpdated(_marketKey, key, value);
     }
 
-    function setTakerFee(bytes32 _baseAsset, uint _takerFee) public onlyOwner {
+    function setTakerFee(bytes32 _marketKey, uint _takerFee) public onlyOwner {
         require(_takerFee <= 1e18, "taker fee greater than 1");
-        _setParameter(_baseAsset, PARAMETER_TAKER_FEE, _takerFee);
+        _setParameter(_marketKey, PARAMETER_TAKER_FEE, _takerFee);
     }
 
-    function setMakerFee(bytes32 _baseAsset, uint _makerFee) public onlyOwner {
+    function setMakerFee(bytes32 _marketKey, uint _makerFee) public onlyOwner {
         require(_makerFee <= 1e18, "maker fee greater than 1");
-        _setParameter(_baseAsset, PARAMETER_MAKER_FEE, _makerFee);
+        _setParameter(_marketKey, PARAMETER_MAKER_FEE, _makerFee);
     }
 
-    function setTakerFeeNextPrice(bytes32 _baseAsset, uint _takerFeeNextPrice) public onlyOwner {
+    function setTakerFeeNextPrice(bytes32 _marketKey, uint _takerFeeNextPrice) public onlyOwner {
         require(_takerFeeNextPrice <= 1e18, "taker fee greater than 1");
-        _setParameter(_baseAsset, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
+        _setParameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
     }
 
-    function setMakerFeeNextPrice(bytes32 _baseAsset, uint _makerFeeNextPrice) public onlyOwner {
+    function setMakerFeeNextPrice(bytes32 _marketKey, uint _makerFeeNextPrice) public onlyOwner {
         require(_makerFeeNextPrice <= 1e18, "maker fee greater than 1");
-        _setParameter(_baseAsset, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
+        _setParameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
     }
 
-    function setNextPriceConfirmWindow(bytes32 _baseAsset, uint _nextPriceConfirmWindow) public onlyOwner {
-        _setParameter(_baseAsset, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
+    function setNextPriceConfirmWindow(bytes32 _marketKey, uint _nextPriceConfirmWindow) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
     }
 
-    function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) public onlyOwner {
-        _setParameter(_baseAsset, PARAMETER_MAX_LEVERAGE, _maxLeverage);
+    function setMaxLeverage(bytes32 _marketKey, uint _maxLeverage) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValueUSD(bytes32 _baseAsset, uint _maxMarketValueUSD) public onlyOwner {
-        _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
+    function setMaxMarketValueUSD(bytes32 _marketKey, uint _maxMarketValueUSD) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
     // must be recomputed, otherwise already-accrued but unrealised funding in the market can change.
 
-    function _recomputeFunding(bytes32 _baseAsset) internal {
-        IFuturesMarket market = IFuturesMarket(_futuresMarketManager().marketForAsset(_baseAsset));
+    function _recomputeFunding(bytes32 _marketKey) internal {
+        IFuturesMarket market = IFuturesMarket(_futuresMarketManager().marketForKey(_marketKey));
         if (market.marketSize() > 0) {
             // only recompute funding when market has positions, this check is important for initial setup
             market.recomputeFunding();
         }
     }
 
-    function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) public onlyOwner {
-        _recomputeFunding(_baseAsset);
-        _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
+    function setMaxFundingRate(bytes32 _marketKey, uint _maxFundingRate) public onlyOwner {
+        _recomputeFunding(_marketKey);
+        _setParameter(_marketKey, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
     }
 
-    function setSkewScaleUSD(bytes32 _baseAsset, uint _skewScaleUSD) public onlyOwner {
+    function setSkewScaleUSD(bytes32 _marketKey, uint _skewScaleUSD) public onlyOwner {
         require(_skewScaleUSD > 0, "cannot set skew scale 0");
-        _recomputeFunding(_baseAsset);
-        _setParameter(_baseAsset, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
+        _recomputeFunding(_marketKey);
+        _setParameter(_marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
     function setParameters(
-        bytes32 _baseAsset,
+        bytes32 _marketKey,
         uint _takerFee,
         uint _makerFee,
         uint _takerFeeNextPrice,
@@ -235,16 +235,16 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _maxFundingRate,
         uint _skewScaleUSD
     ) external onlyOwner {
-        _recomputeFunding(_baseAsset);
-        setTakerFee(_baseAsset, _takerFee);
-        setMakerFee(_baseAsset, _makerFee);
-        setTakerFeeNextPrice(_baseAsset, _takerFeeNextPrice);
-        setMakerFeeNextPrice(_baseAsset, _makerFeeNextPrice);
-        setNextPriceConfirmWindow(_baseAsset, _nextPriceConfirmWindow);
-        setMaxLeverage(_baseAsset, _maxLeverage);
-        setMaxMarketValueUSD(_baseAsset, _maxMarketValueUSD);
-        setMaxFundingRate(_baseAsset, _maxFundingRate);
-        setSkewScaleUSD(_baseAsset, _skewScaleUSD);
+        _recomputeFunding(_marketKey);
+        setTakerFee(_marketKey, _takerFee);
+        setMakerFee(_marketKey, _makerFee);
+        setTakerFeeNextPrice(_marketKey, _takerFeeNextPrice);
+        setMakerFeeNextPrice(_marketKey, _makerFeeNextPrice);
+        setNextPriceConfirmWindow(_marketKey, _nextPriceConfirmWindow);
+        setMaxLeverage(_marketKey, _maxLeverage);
+        setMaxMarketValueUSD(_marketKey, _maxMarketValueUSD);
+        setMaxFundingRate(_marketKey, _maxFundingRate);
+        setSkewScaleUSD(_marketKey, _skewScaleUSD);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {
@@ -271,7 +271,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     /* ========== EVENTS ========== */
 
-    event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
+    event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
     event MinKeeperFeeUpdated(uint sUSD);
     event LiquidationFeeRatioUpdated(uint bps);
     event LiquidationBufferRatioUpdated(uint bps);

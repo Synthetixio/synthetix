@@ -9,7 +9,6 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 
 contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 	let futuresMarketSettings,
-		// futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
 		exchangeCircuitBreaker,
@@ -24,6 +23,9 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
 
+	const marketKeySuffix = '-perp';
+
+	const marketKey = toBytes32('sBTC' + marketKeySuffix);
 	const baseAsset = toBytes32('sBTC');
 	const takerFeeNextPrice = toUnit('0.0005');
 	const makerFeeNextPrice = toUnit('0.0001');
@@ -42,7 +44,6 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 	before(async () => {
 		({
 			FuturesMarketSettings: futuresMarketSettings,
-			// FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
@@ -56,7 +57,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
-				'FuturesMarketBTC',
+				{ contract: 'FuturesMarketBTC', properties: { perpSuffix: marketKeySuffix } },
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -174,7 +175,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			});
 
 			it('if market is suspended', async () => {
-				await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
 					futuresMarket.submitNextPriceOrder(size, { from: trader }),
 					'Market suspended'
@@ -277,7 +278,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			});
 
 			it('cannot cancel if market is suspended', async () => {
-				await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
 					futuresMarket.cancelNextPriceOrder(trader, { from: trader }),
 					'Market suspended'
@@ -597,7 +598,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 					it('reverts if market is suspended', async () => {
 						await setPrice(baseAsset, targetPrice);
-						await systemStatus.suspendFuturesMarket(baseAsset, toUnit(0), { from: owner });
+						await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 						await assert.revert(
 							futuresMarket.executeNextPriceOrder(trader, { from: trader }),
 							'Market suspended'

@@ -3,7 +3,11 @@ pragma solidity ^0.5.16;
 import "../FuturesMarket.sol";
 
 contract TestableFuturesMarket is FuturesMarket {
-    constructor(address _resolver, bytes32 _baseAsset) public FuturesMarket(_resolver, _baseAsset) {}
+    constructor(
+        address _resolver,
+        bytes32 _baseAsset,
+        bytes32 _marketKey
+    ) public FuturesMarket(_resolver, _baseAsset, _marketKey) {}
 
     function entryDebtCorrection() external view returns (int) {
         return _entryDebtCorrection;
@@ -15,7 +19,7 @@ contract TestableFuturesMarket is FuturesMarket {
     }
 
     function maxFundingRate() external view returns (uint) {
-        return _maxFundingRate(baseAsset);
+        return _maxFundingRate(marketKey);
     }
 
     /*
@@ -32,7 +36,7 @@ contract TestableFuturesMarket is FuturesMarket {
     {
         uint price;
         (price, invalid) = assetPrice();
-        int sizeLimit = int(_maxMarketValueUSD(baseAsset)).divideDecimal(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(marketKey)).divideDecimal(int(price));
         (uint longSize, uint shortSize) = marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));
