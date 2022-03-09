@@ -184,7 +184,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return getTargetThreshold();
     }
 
-    function allNetworksSnxBackedDebt() internal view returns (uint256 debt, uint256 updatedAt) {
+    function allNetworksSnxBackedDebt() public view returns (uint256 debt, uint256 updatedAt) {
         (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
             .latestRoundData();
         
@@ -192,7 +192,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         updatedAt = timestamp;
     }
 
-    function allNetworksDebtSharesSupply() internal view returns (uint256 sharesSupply, uint256 updatedAt) {
+    function allNetworksDebtSharesSupply() public view returns (uint256 sharesSupply, uint256 updatedAt) {
         (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
             .latestRoundData();
 

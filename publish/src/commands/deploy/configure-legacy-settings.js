@@ -24,6 +24,7 @@ module.exports = async ({
 		ExchangeCircuitBreaker,
 		FeePool,
 		FeePoolEternalStorage,
+		Issuer,
 		Liquidations,
 		ProxyERC20,
 		ProxyFeePool,
@@ -165,6 +166,20 @@ module.exports = async ({
 			write: 'updateAccessControl',
 			writeArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker), true, false],
 			comment: 'Ensure the ExchangeCircuitBreaker contract can suspend synths - see SIP-65',
+		});
+	}
+
+	if (ExchangeCircuitBreaker && Issuer) {
+		// SIP-165: ensure Issuer can suspend issuance if unusual volitility occurs
+		await runStep({
+			contract: 'SystemStatus',
+			target: SystemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('Issuance'), addressOf(ExchangeCircuitBreaker)],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControl',
+			writeArg: [toBytes32('Issuance'), addressOf(Issuer), true, false],
+			comment: 'Ensure Issuer contract can suspend issuance - see SIP-165',
 		});
 	}
 

@@ -37,7 +37,7 @@ contract('DebtCache', async accounts => {
 	].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [deployerAccount, owner, , account1, account2] = accounts;
+	const [deployerAccount, owner, , account1] = accounts;
 
 	const oneETH = toUnit('1.0');
 	const twoETH = toUnit('2.0');
@@ -597,6 +597,40 @@ contract('DebtCache', async accounts => {
 				it('current debt is correct', async () => {
 					// debt shouldn't have changed since SNX holders have not issued any more debt
 					assert.bnEqual(await debtCache.currentDebt(), beforeExcludedDebts);
+				});
+			});
+		});
+
+		describe('cache functions', () => {
+			let originalTimestamp;
+
+			it('values are correct', async () => {
+				originalTimestamp = await debtCache.cacheTimestamp();
+				assert.bnNotEqual(originalTimestamp, 0);
+				assert.equal(await debtCache.cacheInvalid(), false);
+				assert.equal(await debtCache.cacheStale(), false);
+			});
+
+			describe('after going forward in time', () => {
+				beforeEach(async () => {
+					await fastForward(1000000);
+				});
+
+				it('is now stale', async () => {
+					assert.equal(await debtCache.cacheInvalid(), false);
+					assert.equal(await debtCache.cacheStale(), true);
+				});
+
+				describe('debt snapshot is taken', () => {
+					beforeEach(async () => {
+						await debtCache.takeDebtSnapshot();
+					});
+
+					it('is now invalid (upstream rates are ood)', async () => {
+						assert.bnNotEqual(await debtCache.cacheTimestamp(), originalTimestamp);
+						assert.equal(await debtCache.cacheInvalid(), true);
+						assert.equal(await debtCache.cacheStale(), false);
+					});
 				});
 			});
 		});
