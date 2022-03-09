@@ -23,6 +23,9 @@
 	"ExchangeRates": {
 		"deploy": true
 	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
 	"Exchanger": {
 		"deploy": true
 	},
@@ -110,13 +113,7 @@
 	"TokenStatesUSD": {
 		"deploy": true
 	},
-	"TokenStatesETH": {
-		"deploy": true
-	},
 	"TokenStatesBTC": {
-		"deploy": true
-	},
-	"ProxysETH": {
 		"deploy": true
 	},
 	"ProxysBTC": {
@@ -125,7 +122,22 @@
 	"SynthsBTC": {
 		"deploy": true
 	},
+	"TokenStatesETH": {
+		"deploy": true
+	},
+	"ProxysETH": {
+		"deploy": true
+	},
 	"SynthsETH": {
+		"deploy": true
+	},
+	"TokenStatesLINK": {
+		"deploy": true
+	},
+	"ProxysLINK": {
+		"deploy": true
+	},
+	"SynthsLINK": {
 		"deploy": true
 	},
 	"SynthetixBridgeToBase": {
@@ -144,6 +156,24 @@
 		"deploy": true
 	},
 	"EtherWrapper": {
+		"deploy": true
+	},
+	"FuturesMarketBTC": {
+		"deploy": true
+	},
+	"FuturesMarketETH": {
+		"deploy": true
+	},
+	"FuturesMarketLINK": {
+		"deploy": true
+	},
+	"FuturesMarketManager": {
+		"deploy": true
+	},
+	"FuturesMarketSettings": {
+		"deploy": true
+	},
+	"FuturesMarketData": {
 		"deploy": true
 	},
 	"WrapperFactory": {

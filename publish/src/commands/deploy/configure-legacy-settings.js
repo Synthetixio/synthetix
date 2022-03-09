@@ -21,6 +21,7 @@ module.exports = async ({
 		EternalStorageLiquidations,
 		Exchanger,
 		ExchangeState,
+		ExchangeCircuitBreaker,
 		FeePool,
 		FeePoolEternalStorage,
 		Liquidations,
@@ -49,10 +50,10 @@ module.exports = async ({
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControls',
 			writeArg: [
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
-				[true, true, true, true, true],
-				[true, true, true, true, true],
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth', 'Futures'].map(toBytes32),
+				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
+				[true, true, true, true, true, true],
+				[true, true, true, true, true, true],
 			],
 			comment: 'Ensure the owner can suspend and resume the protocol',
 		});
@@ -153,17 +154,17 @@ module.exports = async ({
 		});
 	}
 
-	if (Exchanger && SystemStatus) {
+	if (ExchangeCircuitBreaker && SystemStatus) {
 		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			read: 'accessControl',
-			readArg: [toBytes32('Synth'), addressOf(Exchanger)],
+			readArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker)],
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
-			writeArg: [toBytes32('Synth'), addressOf(Exchanger), true, false],
-			comment: 'Ensure the Exchanger contract can suspend synths - see SIP-65',
+			writeArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker), true, false],
+			comment: 'Ensure the ExchangeCircuitBreaker contract can suspend synths - see SIP-65',
 		});
 	}
 

@@ -71,6 +71,33 @@
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
+	"ProxyFuturesMarketBTC": {
+		"deploy": false
+	},
+	"FuturesMarketBTC": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketETH": {
+		"deploy": false
+	},
+	"FuturesMarketETH": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketLINK": {
+		"deploy": false
+	},
+	"FuturesMarketLINK": {
+		"deploy": false
+	},
+	"ProxyFuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
 	"Liquidations": {
 		"deploy": false
 	},
