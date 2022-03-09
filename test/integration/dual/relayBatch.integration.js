@@ -2,10 +2,6 @@ const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
 
-const {
-	defaults: { TEMP_OWNER_DEFAULT_DURATION },
-} = require('../../..');
-
 describe('relayBatch integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
@@ -45,12 +41,6 @@ describe('relayBatch integration tests (L1, L2)', () => {
 	it('shows that the L2 relay was deployed with the correct parameters', async () => {
 		assert.equal(await OwnerRelayOnOptimism.resolver(), AddressResolverL2.address);
 		assert.equal(await OwnerRelayOnOptimism.temporaryOwner(), ownerL2.address);
-
-		// Accept results within an hour
-		const expectedExpiry =
-			(await ctx.l1.provider.getBlock()).timestamp + TEMP_OWNER_DEFAULT_DURATION;
-		const expiryTime = (await OwnerRelayOnOptimism.expiryTime()).toString();
-		assert.bnClose(expectedExpiry, expiryTime, '3600');
 	});
 
 	describe('when L2 contracts are owned by an EOA', () => {
@@ -85,7 +75,7 @@ describe('relayBatch integration tests (L1, L2)', () => {
 					const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelayBatch(
 						contractsToBeOwnedAdresses,
 						calldataBatch,
-						0
+						10000000
 					);
 
 					relayReceipt = await tx.wait();
@@ -121,7 +111,7 @@ describe('relayBatch integration tests (L1, L2)', () => {
 				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelayBatch(
 					contractsToBeOwnedAdresses,
 					calldataBatch,
-					0
+					10000000
 				);
 
 				relayReceipt = await tx.wait();

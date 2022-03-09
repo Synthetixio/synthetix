@@ -21,10 +21,11 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
-import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
 import "./Proxyable.sol";
+
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
 interface IProxy {
     function target() external view returns (address);
@@ -88,12 +89,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](11);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -105,6 +109,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[8] = CONTRACT_LIQUIDATIONS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[11] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -150,6 +156,28 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function synthRedeemer() internal view returns (ISynthRedeemer) {
         return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
+    }
+
+    function allNetworksDebtInfo()
+        public
+        view
+        returns (
+            uint256 debt,
+            uint256 sharesSupply,
+            bool isStale
+        )
+    {
+        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
+
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+
+        debt = uint(rawIssuedSynths);
+        sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
+        isStale =
+            block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
+            block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -223,14 +251,21 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynths(currencyKey, true);
+        (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
 
-        // If it's zero, they haven't issued, and they have no debt.
-        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
-        // if they have 0 SNX, but it's a necessary trade-off
-        if (debtShareBalance == 0) return (0, totalSystemValue, anyRateIsInvalid);
+        if (debtShareBalance == 0) {
+            return (0, snxBackedAmount, debtInfoStale);
+        }
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, totalSystemValue, synthetixDebtShare().totalSupply());
+        // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
+        (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(
+            currencyRate
+        );
+        totalSystemValue = snxBackedAmount;
+
+        anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {

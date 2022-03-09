@@ -392,6 +392,12 @@
 	"SynthRedeemer": {
 		"deploy": true
 	},
+	"ext:AggregatorIssuedSynths": {
+		"deploy": true
+	},
+	"ext:AggregatorDebtRatio": {
+		"deploy": true
+	},
 	"SystemSettingsLib": {
 		"deploy": true
 	}

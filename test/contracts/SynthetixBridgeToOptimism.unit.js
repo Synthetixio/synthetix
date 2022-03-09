@@ -15,6 +15,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		rewardsDistribution,
 		snxBridgeToBase,
 		SynthetixBridgeEscrow,
+		FeePool,
 		randomAddress,
 	] = accounts;
 
@@ -23,6 +24,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			abi: SynthetixBridgeToOptimism.abi,
 			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
+				'closeFeePeriod',
 				'depositAndMigrateEscrow',
 				'deposit',
 				'depositTo',
@@ -72,6 +74,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'ext:Messenger',
 					'Synthetix',
 					'Issuer',
+					'FeePool',
 					'RewardsDistribution',
 					'ovm:SynthetixBridgeToBase',
 					'RewardEscrowV2',
@@ -82,6 +85,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					messenger.address,
 					synthetix.address,
 					issuer.address,
+					FeePool,
 					rewardsDistribution,
 					snxBridgeToBase,
 					rewardEscrow.address,
@@ -440,6 +444,49 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('and a RewardDepositInitiated event is emitted', async () => {
 						assert.eventEqual(txn, 'RewardDepositInitiated', [user1, amount]);
+					});
+				});
+			});
+
+			describe('closeFeePeriod()', () => {
+				describe('failure modes', () => {
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(
+							instance.closeFeePeriod('1', '2', { from: FeePool }),
+							'Initiation deactivated'
+						);
+					});
+
+					it('fails when invoked by a user directly', async () => {
+						await assert.revert(
+							instance.closeFeePeriod('1', '2'),
+							'Only the fee pool can call this'
+						);
+					});
+				});
+
+				describe('when invoked by fee pool', () => {
+					let txn;
+					beforeEach(async () => {
+						txn = await instance.closeFeePeriod('1', '2', { from: FeePool });
+					});
+
+					it('relays the message', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
+							fnc: 'finalizeFeePeriodClose',
+							args: ['1', '2'],
+						});
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+					});
+
+					it('emits FeePeriodClosed', async () => {
+						assert.eventEqual(txn, 'FeePeriodClosed', ['1', '2']);
 					});
 				});
 			});

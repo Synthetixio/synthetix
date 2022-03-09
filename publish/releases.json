@@ -374,6 +374,16 @@
 			"released": "base"
 		},
 		{
+			"sip": 165,
+			"layer": "both",
+			"sources": [
+				"FeePool",
+				"Issuer",
+				"ext:AggregatorIssuedSynths",
+				"ext:AggregatorDebtRatio"
+			]
+		},
+		{
 			"sip": 169,
 			"layer": "base",
 			"released": "base"
