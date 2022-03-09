@@ -14,19 +14,24 @@ module.exports = async ({ deployer, freshDeploy, runStep }) => {
 	}
 
 	const ExistingDebtCache = deployer.getExistingContract({ contract: 'DebtCache' });
+	const ExistingIssuer = deployer.getExistingContract({ contract: 'Issuer' });
 
 	if (ExistingDebtCache.address === DebtCache.address) {
 		console.log(gray(`No excluded debt required to import. Skipping.`));
 		return;
-	} else {
-		console.log(gray(`Existing DebtCache at: ${white(ExistingDebtCache.address)}`));
-		console.log(gray(`New DebtCache at: ${yellow(DebtCache.address)}`));
 	}
+
+	console.log(gray(`Existing DebtCache (source of debts) at: ${white(ExistingDebtCache.address)}`));
+	console.log(
+		gray(`Existing Issuer (source of currencyKeys) at: ${white(ExistingIssuer.address)}`)
+	);
+	console.log(gray(`New DebtCache at: ${yellow(DebtCache.address)}`));
+
 	await runStep({
 		contract: 'DebtCache',
 		target: DebtCache,
 		write: 'importExcludedIssuedDebts',
-		writeArg: [ExistingDebtCache.address],
+		writeArg: [ExistingDebtCache.address, ExistingIssuer.address],
 		comment: `Import excluded-debt records from existing DebtCache`,
 	});
 };

@@ -1,5 +1,7 @@
 pragma solidity >=0.4.24;
 
+import "./IIssuer.sol";
+
 interface IDebtCache {
     // Views
 
@@ -61,5 +63,5 @@ interface IDebtCache {
 
     function updateCachedsUSDDebt(int amount) external;
 
-    function importExcludedIssuedDebts(IDebtCache prevDebtCache) external;
+    function importExcludedIssuedDebts(IDebtCache prevDebtCache, IIssuer prevIssuer) external;
 }

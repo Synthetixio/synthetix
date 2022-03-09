@@ -213,24 +213,30 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     /// previous instance of the contract
     /// Also, in addition to this method it's possible to use recordExcludedDebtChange since
     /// it's accessible to owner in case additional adjustments are required
-    function importExcludedIssuedDebts(IDebtCache prevDebtCache) external onlyOwner {
+    function importExcludedIssuedDebts(IDebtCache prevDebtCache, IIssuer prevIssuer) external onlyOwner {
         // this can only be run once so that recorded debt deltas aren't accidentally
         // lost or double counted
-        require(excludedDebtImported == false, "import can only be run once");
+        require(!excludedDebtImported, "import can only be run once");
         excludedDebtImported = true;
 
-        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
+        // get the currency keys from **previous** issuer, in case current issuer
+        // doesn't have all the synths at this point
+        // warning: if a synth won't be added to the current issuer before the next upgrade of this contract,
+        // its entry will be lost (because it won't be in the prevIssuer for next time).
+        // if for some reason this is a problem, it should be possible to use recordExcludedDebtChange() to amend
+        bytes32[] memory keys = prevIssuer.availableCurrencyKeys();
 
-        // query for previous records
-        uint[] memory prevExcludedDebts = prevDebtCache.excludedIssuedDebts(currencyKeys);
+        require(keys.length > 0, "previous Issuer has no synths");
+
+        // query for previous debt records
+        uint[] memory debts = prevDebtCache.excludedIssuedDebts(keys);
 
         // store the values
-        uint numKeys = currencyKeys.length;
-        for (uint i = 0; i < numKeys; i++) {
-            if (prevExcludedDebts[i] > 0) {
+        for (uint i = 0; i < keys.length; i++) {
+            if (debts[i] > 0) {
                 // adding the values instead of overwriting in case some deltas were recorded in this
                 // contract already (e.g. if the upgrade was not atomic)
-                _excludedIssuedDebt[currencyKeys[i]] = _excludedIssuedDebt[currencyKeys[i]].add(prevExcludedDebts[i]);
+                _excludedIssuedDebt[keys[i]] = _excludedIssuedDebt[keys[i]].add(debts[i]);
             }
         }
     }
