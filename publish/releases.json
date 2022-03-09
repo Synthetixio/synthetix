@@ -60,6 +60,39 @@
 			"sources": ["Exchanger", "ExchangeRates"]
 		},
 		{
+			"sip": 80,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SignedSafeMath",
+					"SystemStatus",
+					"EmptyFuturesMarketManager"
+				],
+				"ovm": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SignedSafeMath",
+					"SystemStatus",
+					"FuturesMarket",
+					"FuturesMarketManager",
+					"FuturesMarketSettings",
+					"FuturesMarketData"
+				]
+			}
+		},
+		{
 			"sip": 83,
 			"layer": "base",
 			"released": "base",
