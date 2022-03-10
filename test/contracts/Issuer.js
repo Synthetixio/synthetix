@@ -1275,6 +1275,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 						from: owner,
 					});
 
+					// debt must start at 0
+					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit(0));
+
 					// They should now be able to issue sUSD
 					await synthetix.issueSynths(toUnit('100'), { from: account1 });
 					await synthetix.issueSynths(toUnit('1'), { from: account1 });
@@ -1304,9 +1307,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 					await synthetix.issueSynths(toUnit('100'), { from: account1 });
 					await synthetix.burnSynths(toUnit('1'), { from: account1 });
 
-					await sUSDContract.burn(account1, toUnit('90'));
+					await sUSDContract.burn(account1, toUnit('99'));
 
 					await debtCache.takeDebtSnapshot();
+
+					// all debt should be burned here
+					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit(0));
 
 					// trigger circuit breaking
 					await synthetix.burnSynths('1', { from: account1 });

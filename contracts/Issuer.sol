@@ -61,7 +61,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     bytes32 public constant CONTRACT_NAME = "Issuer";
 
-    // SIP-65: Decentralized circuit breaker
+    // SIP-165: Circuit breaker for Debt Synthesis
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 165;
 
     // Available Synths which can be used with the system
