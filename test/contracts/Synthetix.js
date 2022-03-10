@@ -61,6 +61,7 @@ contract('Synthetix', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemMessenger',
 				'DebtCache',
 				'Issuer',
 				'Exchanger',

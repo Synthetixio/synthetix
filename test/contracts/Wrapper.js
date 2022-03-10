@@ -76,6 +76,7 @@ contract('Wrapper', async accounts => {
 				'Synthetix',
 				'AddressResolver',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'Depot',
 				'ExchangeRates',

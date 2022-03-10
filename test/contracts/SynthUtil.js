@@ -39,6 +39,7 @@ contract('SynthUtil', accounts => {
 				'ExchangeState',
 				'FeePoolEternalStorage',
 				'SystemSettings',
+				'SystemMessenger',
 				'DebtCache',
 				'Issuer',
 				'CollateralManager',

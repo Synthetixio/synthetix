@@ -68,6 +68,7 @@ contract('Depot', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemMessenger',
 				'Synthetix',
 				'Issuer',
 			],

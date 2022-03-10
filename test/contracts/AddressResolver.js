@@ -201,7 +201,7 @@ contract('AddressResolver', accounts => {
 						AddressResolver: resolver,
 					},
 					synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
-					contracts: ['Synthetix'],
+					contracts: ['Synthetix', 'SystemMessenger'],
 				}));
 			});
 			it('when getSynth() is invoked with these synth keys, they are returned correctly', async () => {

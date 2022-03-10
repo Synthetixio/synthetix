@@ -65,6 +65,7 @@ contract('Liquidations', accounts => {
 				'Liquidations',
 				'SystemStatus', // test system status controls
 				'SystemSettings',
+				'SystemMessenger',
 				'Synthetix',
 				'CollateralManager',
 				'RewardEscrowV2', // required for Issuer._collateral() to load balances

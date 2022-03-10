@@ -24,7 +24,12 @@ contract('SynthetixBridgeToBase (spec tests) @ovm-skip', accounts => {
 				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['MintableSynthetix', 'SynthetixBridgeToBase', 'SystemSettings'],
+				contracts: [
+					'MintableSynthetix',
+					'SynthetixBridgeToBase',
+					'SystemSettings',
+					'SystemMessenger',
+				],
 			}));
 		});
 

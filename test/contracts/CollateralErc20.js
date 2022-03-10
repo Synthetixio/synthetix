@@ -135,6 +135,7 @@ contract('CollateralErc20', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'DebtCache',
 				'Exchanger',

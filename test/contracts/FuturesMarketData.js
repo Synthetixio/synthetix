@@ -66,6 +66,7 @@ contract('FuturesMarketData', accounts => {
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
+				'SystemMessenger',
 				'Synthetix',
 				'CollateralManager',
 			],

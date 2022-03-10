@@ -33,6 +33,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				contracts: [
 					'Synthetix',
 					'SynthetixBridgeToOptimism',
+					'SystemMessenger',
 					'SystemSettings',
 					'RewardsDistribution',
 				],

@@ -64,6 +64,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
+				'SystemMessenger',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',

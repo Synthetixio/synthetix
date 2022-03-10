@@ -167,6 +167,7 @@ contract('Rewards Integration Tests', accounts => {
 				'SupplySchedule',
 				'Synthetix',
 				'SystemSettings',
+				'SystemMessenger',
 				'CollateralManager',
 			],
 		}));

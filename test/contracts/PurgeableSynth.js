@@ -68,6 +68,7 @@ contract('PurgeableSynth', accounts => {
 				'Synthetix',
 				'SystemStatus',
 				'SystemSettings',
+				'SystemMessenger',
 				'CollateralManager',
 				'FuturesMarketManager',
 			],

@@ -92,6 +92,7 @@ contract('CollateralShort', async accounts => {
 				'SystemStatus',
 				'Issuer',
 				'DebtCache',
+				'SystemMessenger',
 				'SystemSettings',
 				'CollateralUtil',
 				'CollateralShort',

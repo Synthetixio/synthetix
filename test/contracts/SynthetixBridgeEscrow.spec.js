@@ -15,7 +15,7 @@ contract('SynthetixBridgeEscrow (spec tests) @ovm-skip', accounts => {
 				SynthetixBridgeEscrow: synthetixBridgeEscrow,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'SynthetixBridgeEscrow'],
+				contracts: ['Synthetix', 'SystemMessenger', 'SynthetixBridgeEscrow'],
 			}));
 		});
 

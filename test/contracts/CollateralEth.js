@@ -98,6 +98,7 @@ contract('CollateralEth', async accounts => {
 				'ExchangeRates',
 				'Exchanger',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'CollateralEth',
 				'CollateralUtil',

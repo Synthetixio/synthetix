@@ -48,6 +48,7 @@ contract('FuturesMarketSettings', accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'SystemSettings',
+				'SystemMessenger',
 				'Synthetix',
 				'DebtCache',
 				'CollateralManager',

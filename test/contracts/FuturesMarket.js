@@ -131,6 +131,7 @@ contract('FuturesMarket', accounts => {
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
+				'SystemMessenger',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',

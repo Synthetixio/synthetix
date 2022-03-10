@@ -130,6 +130,7 @@ contract('ShortingRewards', accounts => {
 				'RewardsDistribution',
 				'Synthetix',
 				'SystemSettings',
+				'SystemMessenger',
 				'Exchanger',
 				'CollateralUtil',
 			],

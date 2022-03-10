@@ -37,7 +37,7 @@ contract('RewardsDistribution', async accounts => {
 			Synthetix: synthetix,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool', 'Issuer'],
+			contracts: ['RewardsDistribution', 'SystemMessenger', 'Synthetix', 'FeePool', 'Issuer'],
 		}));
 
 		mockRewardsRecipient = await MockRewardsRecipient.new(owner, { from: owner });

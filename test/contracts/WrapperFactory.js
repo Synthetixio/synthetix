@@ -53,6 +53,7 @@ contract('WrapperFactory', async accounts => {
 				'Synthetix',
 				'AddressResolver',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'Depot',
 				'ExchangeRates',

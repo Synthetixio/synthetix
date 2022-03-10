@@ -270,6 +270,7 @@ contract('DebtCache', async accounts => {
 				'AddressResolver',
 				'RewardEscrow',
 				'SynthetixEscrow',
+				'SystemMessenger',
 				'SystemSettings',
 				'Issuer',
 				'DebtCache',

@@ -76,6 +76,7 @@ contract('MultiCollateralSynth', accounts => {
 				'Issuer',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemMessenger',
 				'Exchanger',
 				'FeePool',
 				'CollateralUtil',

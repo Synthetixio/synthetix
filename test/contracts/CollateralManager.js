@@ -112,6 +112,7 @@ contract('CollateralManager', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'DebtCache',
 				'Exchanger',

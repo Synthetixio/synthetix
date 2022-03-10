@@ -106,6 +106,7 @@ contract('CollateralUtil', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'DebtCache',
 				'Exchanger',

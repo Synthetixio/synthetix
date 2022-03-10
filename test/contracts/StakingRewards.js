@@ -69,7 +69,13 @@ contract('StakingRewards', accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool', 'SystemSettings'],
+			contracts: [
+				'RewardsDistribution',
+				'Synthetix',
+				'FeePool',
+				'SystemSettings',
+				'SystemMessenger',
+			],
 		}));
 
 		stakingRewards = await setupContract({

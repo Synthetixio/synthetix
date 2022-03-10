@@ -38,6 +38,7 @@ contract('SystemSettings', async accounts => {
 				'Issuer',
 				'DebtCache',
 				'SystemSettings',
+				'SystemMessenger',
 				'CollateralUtil',
 				'CollateralShort',
 				'CollateralManager',
@@ -79,6 +80,7 @@ contract('SystemSettings', async accounts => {
 				'setMinimumStakeTime',
 				'setPriceDeviationThresholdFactor',
 				'setRateStalePeriod',
+				'setTeleportFeeRate',
 				'setTargetThreshold',
 				'setTradingRewardsEnabled',
 				'setWaitingPeriodSecs',
@@ -655,6 +657,40 @@ contract('SystemSettings', async accounts => {
 			const txn = await systemSettings.setRateStalePeriod(rateStalePeriod, { from: owner });
 			assert.eventEqual(txn, 'RateStalePeriodUpdated', {
 				rateStalePeriod,
+			});
+		});
+	});
+
+	describe('setTeleportFeeRate()', () => {
+		it('should be able to change the teleport fee rate', async () => {
+			const teleportFeeRate = toUnit('0.001');
+
+			const originalTeleportFeeRate = await systemSettings.teleportFeeRate.call();
+			await systemSettings.setTeleportFeeRate(teleportFeeRate, { from: owner });
+			const newTeleportFeeRate = await systemSettings.teleportFeeRate.call();
+			assert.bnEqual(newTeleportFeeRate, teleportFeeRate);
+			assert.bnNotEqual(newTeleportFeeRate, originalTeleportFeeRate);
+		});
+
+		it('only owner is permitted to change the teleport fee rate', async () => {
+			const teleportFeeRate = toUnit('0.001');
+
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setTeleportFeeRate,
+				args: [teleportFeeRate],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful teleport fee change', async () => {
+			const teleportFeeRate = toUnit('0.001');
+
+			// Ensure oracle is set to oracle address originally
+			const txn = await systemSettings.setTeleportFeeRate(teleportFeeRate, { from: owner });
+			assert.eventEqual(txn, 'TeleportFeeRateUpdated', {
+				newRate: teleportFeeRate,
 			});
 		});
 	});

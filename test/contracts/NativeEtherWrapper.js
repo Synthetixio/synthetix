@@ -50,6 +50,7 @@ contract('NativeEtherWrapper', async accounts => {
 				'Synthetix',
 				'AddressResolver',
 				'SystemStatus',
+				'SystemMessenger',
 				'Issuer',
 				'Depot',
 				'ExchangeRates',
