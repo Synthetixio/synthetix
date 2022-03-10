@@ -106,6 +106,14 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         emit RewardDepositFinalized(from, amount);
     }
 
+    // invoked by Messenger on L2
+    function finalizeFeePeriodClose(uint256 snxBackedAmount, uint256 totalDebtShares) external onlyOptimismBridge {
+        // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
+        feePool().closeSecondary(snxBackedAmount, totalDebtShares);
+
+        emit FeePeriodCloseFinalized(snxBackedAmount, totalDebtShares);
+    }
+
     // ========== EVENTS ==========
     event ImportedVestingEntries(
         address indexed account,
@@ -114,4 +122,5 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     );
 
     event RewardDepositFinalized(address from, uint256 amount);
+    event FeePeriodCloseFinalized(uint snxBackedAmount, uint totalDebtShares);
 }

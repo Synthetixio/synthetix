@@ -39,7 +39,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 			await resolver.importAddresses(
 				[
 					'SynthetixBridgeToBase',
-					'SynthetixState',
 					'SystemStatus',
 					'Exchanger',
 					'Issuer',
@@ -50,7 +49,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				].map(toBytes32),
 				[
 					synthetixBridgeToBase,
-					tokenState.address,
 					systemStatus.address,
 					mockAddress,
 					mockAddress,

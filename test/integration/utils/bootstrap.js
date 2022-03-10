@@ -118,10 +118,10 @@ function bootstrapDual({ ctx }) {
 			balance: ethers.utils.parseEther('1000000'),
 		});
 
-		startOpsHeartbeat({
+		/* await startOpsHeartbeat({
 			l1Wallet: ctx.l1.users.user9,
 			l2Wallet: ctx.l2.users.user9,
-		});
+		}); */
 	});
 }
 
