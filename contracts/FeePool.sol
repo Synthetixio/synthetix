@@ -11,6 +11,8 @@ import "./interfaces/IFeePool.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
+
 // Internal references
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
@@ -27,6 +29,7 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IWrapperFactory.sol";
+import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/feepool
 contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
@@ -45,6 +48,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     struct FeePeriod {
         uint64 feePeriodId;
         uint64 startTime;
+
+        uint allNetworksSnxBackedDebt;
+        uint allNetworksDebtSharesSupply;
+
         uint feesToDistribute;
         uint feesClaimed;
         uint rewardsToDistribute;
@@ -76,6 +83,12 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_BASE = "SynthetixBridgeToBase";
+
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
+
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
@@ -93,7 +106,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIXDEBTSHARE;
         newAddresses[2] = CONTRACT_FEEPOOLETERNALSTORAGE;
@@ -105,7 +118,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[8] = CONTRACT_COLLATERALMANAGER;
         newAddresses[9] = CONTRACT_WRAPPER_FACTORY;
         newAddresses[10] = CONTRACT_ETHER_WRAPPER;
-        newAddresses[11] = CONTRACT_FUTURES_MARKET_MANAGER;
+        newAddresses[11] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[13] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -169,6 +184,26 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return getTargetThreshold();
     }
 
+    function allNetworksSnxBackedDebt() public view returns (uint256 debt, uint256 updatedAt) {
+        (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
+            .latestRoundData();
+        
+        debt = uint(rawData);
+        updatedAt = timestamp;
+    }
+
+    function allNetworksDebtSharesSupply() public view returns (uint256 sharesSupply, uint256 updatedAt) {
+        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
+            .latestRoundData();
+
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
+            .latestRoundData();
+        
+        uint debt = uint(rawIssuedSynths);
+        sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
+        updatedAt = issuedSynthsUpdatedAt < ratioUpdatedAt ? issuedSynthsUpdatedAt : ratioUpdatedAt;
+    }
+
     function recentFeePeriods(uint index)
         external
         view
@@ -223,8 +258,31 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         require(getFeePeriodDuration() > 0, "Fee Period Duration not set");
         require(_recentFeePeriodsStorage(0).startTime <= (now - getFeePeriodDuration()), "Too early to close fee period");
 
+        // get current oracle values
+        (uint snxBackedDebt, ) = allNetworksSnxBackedDebt();
+        (uint debtSharesSupply, ) = allNetworksDebtSharesSupply();
+
+        // close on this chain
+        _closeSecondary(snxBackedDebt, debtSharesSupply);
+
+        // inform other chain of the chosen values
+        ISynthetixBridgeToOptimism(resolver.requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM, "Missing contract: SynthetixBridgeToOptimism")).closeFeePeriod(snxBackedDebt, debtSharesSupply);
+    }
+
+    function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) external onlyRelayer {
+        _closeSecondary(allNetworksSnxBackedDebt, allNetworksDebtSharesSupply);
+    }
+
+    /**
+     * @notice Close the current fee period and start a new one.
+     */
+    function _closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) internal {
         etherWrapper().distributeFees();
         wrapperFactory().distributeFees();
+
+        // before closing the current fee period, set the recorded snxBackedDebt and debtSharesSupply
+        _recentFeePeriodsStorage(0).allNetworksDebtSharesSupply = allNetworksDebtSharesSupply;
+        _recentFeePeriodsStorage(0).allNetworksSnxBackedDebt = allNetworksSnxBackedDebt;
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -347,7 +405,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             feesToDistribute: feesToDistribute,
             feesClaimed: feesClaimed,
             rewardsToDistribute: rewardsToDistribute,
-            rewardsClaimed: rewardsClaimed
+            rewardsClaimed: rewardsClaimed,
+            allNetworksSnxBackedDebt: 0,
+            allNetworksDebtSharesSupply: 0
         });
 
         // make sure recording is aware of the actual period id
@@ -648,6 +708,14 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     modifier onlyInternalContracts {
         require(_isInternalContract(msg.sender), "Only Internal Contracts");
+        _;
+    }
+
+    modifier onlyRelayer {
+        require(
+            msg.sender == address(this) ||
+            msg.sender == resolver.getAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_BASE)
+        , "Only valid relayer can call");
         _;
     }
 

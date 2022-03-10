@@ -67,6 +67,7 @@ interface ISystemStatus {
         returns (bool[] memory suspensions, uint256[] memory reasons);
 
     // Restricted functions
+    function suspendIssuance(uint256 reason) external;
     function suspendSynth(bytes32 currencyKey, uint256 reason) external;
 
     function suspendFuturesMarket(bytes32 marketKey, uint256 reason) external;

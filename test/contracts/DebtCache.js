@@ -37,7 +37,7 @@ contract('DebtCache', async accounts => {
 	].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [deployerAccount, owner, , account1, account2] = accounts;
+	const [deployerAccount, owner, , account1] = accounts;
 
 	const oneETH = toUnit('1.0');
 	const twoETH = toUnit('2.0');
@@ -530,108 +530,6 @@ contract('DebtCache', async accounts => {
 				assert.eventEqual(tx2.logs[2], 'DebtCacheValidityChanged', [false]);
 			});
 
-			it('Rates are reported as invalid when snapshot is stale.', async () => {
-				assert.isFalse((await debtCache.cacheInfo()).isStale);
-				assert.isFalse(await debtCache.cacheStale());
-				assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
-				const snapshotStaleTime = await systemSettings.debtSnapshotStaleTime();
-				await fastForward(snapshotStaleTime + 10);
-
-				// ensure no actual rates are stale.
-				await updateAggregatorRates(
-					exchangeRates,
-					[sAUD, sEUR, sETH, SNX],
-					['0.5', '2', '100', '1'].map(toUnit)
-				);
-
-				const info = await debtCache.cacheInfo();
-				assert.isFalse(info.isInvalid);
-				assert.isTrue(info.isStale);
-				assert.isTrue(await debtCache.cacheStale());
-				assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
-
-				await systemSettings.setDebtSnapshotStaleTime(snapshotStaleTime + 10000, {
-					from: owner,
-				});
-
-				assert.isFalse(await debtCache.cacheStale());
-				assert.isFalse((await debtCache.cacheInfo()).isStale);
-				assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
-			});
-
-			it('Rates are reported as invalid when the debt snapshot is uninitialised', async () => {
-				const debtCacheName = toBytes32('DebtCache');
-
-				// Set the stale time to a huge value so that the snapshot will not be stale.
-				await systemSettings.setDebtSnapshotStaleTime(toUnit('100'), {
-					from: owner,
-				});
-
-				const newDebtCache = await setupContract({
-					contract: 'DebtCache',
-					accounts,
-					skipPostDeploy: true,
-					args: [owner, addressResolver.address],
-				});
-
-				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
-					from: owner,
-				});
-				await newDebtCache.rebuildCache();
-
-				assert.bnEqual(await newDebtCache.cachedDebt(), toUnit('0'));
-				assert.bnEqual(await newDebtCache.cachedSynthDebt(sUSD), toUnit('0'));
-				assert.bnEqual(await newDebtCache.cacheTimestamp(), toUnit('0'));
-				assert.isTrue(await newDebtCache.cacheInvalid());
-
-				const info = await newDebtCache.cacheInfo();
-				assert.bnEqual(info.debt, toUnit('0'));
-				assert.bnEqual(info.timestamp, toUnit('0'));
-				assert.isTrue(info.isInvalid);
-				assert.isTrue(info.isStale);
-				assert.isTrue(await newDebtCache.cacheStale());
-
-				await issuer.rebuildCache();
-				assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
-			});
-
-			it('When the debt snapshot is invalid, cannot issue, burn, exchange, claim, or transfer when holding debt.', async () => {
-				// Ensure the account has some synths to attempt to burn later.
-				await synthetix.transfer(account1, toUnit('10000'), { from: owner });
-				await synthetix.transfer(account2, toUnit('10000'), { from: owner });
-				await synthetix.issueSynths(toUnit('10'), { from: account1 });
-
-				// Stale the debt snapshot
-				const snapshotStaleTime = await systemSettings.debtSnapshotStaleTime();
-				await fastForward(snapshotStaleTime + 10);
-				// ensure no actual rates are stale.
-				await updateAggregatorRates(
-					exchangeRates,
-					[sAUD, sEUR, sETH, SNX],
-					['0.5', '2', '100', '1'].map(toUnit)
-				);
-				await assert.revert(
-					synthetix.issueSynths(toUnit('10'), { from: account1 }),
-					'A synth or SNX rate is invalid'
-				);
-
-				await assert.revert(
-					synthetix.burnSynths(toUnit('1'), { from: account1 }),
-					'A synth or SNX rate is invalid'
-				);
-
-				await assert.revert(feePool.claimFees(), 'A synth or SNX rate is invalid');
-
-				// Can't transfer SNX if issued debt
-				await assert.revert(
-					synthetix.transfer(owner, toUnit('1'), { from: account1 }),
-					'A synth or SNX rate is invalid'
-				);
-
-				// But can transfer if not
-				await synthetix.transfer(owner, toUnit('1'), { from: account2 });
-			});
-
 			it('will not operate if the system is paused except by the owner', async () => {
 				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 				await assert.revert(
@@ -711,6 +609,40 @@ contract('DebtCache', async accounts => {
 				it('current debt is correct', async () => {
 					// debt shouldn't have changed since SNX holders have not issued any more debt
 					assert.bnEqual(await debtCache.currentDebt(), beforeExcludedDebts);
+				});
+			});
+		});
+
+		describe('cache functions', () => {
+			let originalTimestamp;
+
+			it('values are correct', async () => {
+				originalTimestamp = await debtCache.cacheTimestamp();
+				assert.bnNotEqual(originalTimestamp, 0);
+				assert.equal(await debtCache.cacheInvalid(), false);
+				assert.equal(await debtCache.cacheStale(), false);
+			});
+
+			describe('after going forward in time', () => {
+				beforeEach(async () => {
+					await fastForward(1000000);
+				});
+
+				it('is now stale', async () => {
+					assert.equal(await debtCache.cacheInvalid(), false);
+					assert.equal(await debtCache.cacheStale(), true);
+				});
+
+				describe('debt snapshot is taken', () => {
+					beforeEach(async () => {
+						await debtCache.takeDebtSnapshot();
+					});
+
+					it('is now invalid (upstream rates are ood)', async () => {
+						assert.bnNotEqual(await debtCache.cacheTimestamp(), originalTimestamp);
+						assert.equal(await debtCache.cacheInvalid(), true);
+						assert.equal(await debtCache.cacheStale(), false);
+					});
 				});
 			});
 		});

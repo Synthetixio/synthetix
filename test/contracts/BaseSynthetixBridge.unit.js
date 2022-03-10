@@ -22,6 +22,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 		let messenger;
 		let synthetix;
 		let resolver;
+		let feePool;
 		let rewardEscrow;
 
 		beforeEach(async () => {
@@ -36,12 +37,22 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 
+			feePool = await smockit(artifacts.require('FeePool').abi);
+
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 
 			await resolver.importAddresses(
-				['ext:Messenger', 'Synthetix', 'RewardEscrowV2', 'FlexibleStorage'].map(toBytes32),
-				[messenger.address, synthetix.address, rewardEscrow.address, flexibleStorage],
+				['ext:Messenger', 'Synthetix', 'RewardEscrowV2', 'FlexibleStorage', 'FeePool'].map(
+					toBytes32
+				),
+				[
+					messenger.address,
+					synthetix.address,
+					rewardEscrow.address,
+					flexibleStorage,
+					feePool.address,
+				],
 				{ from: owner }
 			);
 		});
