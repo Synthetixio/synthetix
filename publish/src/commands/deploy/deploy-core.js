@@ -77,6 +77,11 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'SystemMessenger',
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
 		name: 'ExchangeRates',
 		source: useOvm ? 'ExchangeRates' : 'ExchangeRatesWithDexPricing',
 		args: [account, addressOf(readProxyForResolver)],

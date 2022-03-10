@@ -400,5 +400,8 @@
 	},
 	"SystemSettingsLib": {
 		"deploy": true
+	},
+	"SystemMessenger": {
+		"deploy": true
 	}
 }
