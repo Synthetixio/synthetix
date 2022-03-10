@@ -71,9 +71,6 @@
 	"SystemStatus": {
 		"deploy": false
 	},
-	"SystemMessenger": {
-		"deploy": false
-	},
 	"SynthUtil": {
 		"deploy": false
 	},
