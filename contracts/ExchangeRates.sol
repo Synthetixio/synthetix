@@ -14,7 +14,7 @@ import "./SafeDecimalMath.sol";
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
-import "./interfaces/IExchanger.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {

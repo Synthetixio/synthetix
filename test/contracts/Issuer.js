@@ -1288,9 +1288,61 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// And trying to issue the smallest possible unit of one should fail.
 					await assert.revert(synthetix.issueSynths('1', { from: account1 }), 'Amount too large');
 				});
+
+				it('circuit breaks when debt changes dramatically', async () => {
+					await synthetix.transfer(account1, toUnit('10000'), {
+						from: owner,
+					});
+
+					// debt must start at 0
+					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit(0));
+
+					// They should now be able to issue sUSD
+					await synthetix.issueSynths(toUnit('100'), { from: account1 });
+					await synthetix.issueSynths(toUnit('1'), { from: account1 });
+
+					await sUSDContract.issue(account1, toUnit('10000000'));
+
+					await debtCache.takeDebtSnapshot();
+
+					// trigger circuit breaking
+					await synthetix.issueSynths('1', { from: account1 });
+
+					assert.bnEqual(
+						(await systemStatus.issuanceSuspension()).reason,
+						165,
+						"circuit breaker didn't trigger"
+					);
+				});
 			});
 
 			describe('burning', () => {
+				it('circuit breaks when debt changes dramatically', async () => {
+					await synthetix.transfer(account1, toUnit('10000'), {
+						from: owner,
+					});
+
+					// They should now be able to issue sUSD
+					await synthetix.issueSynths(toUnit('100'), { from: account1 });
+					await synthetix.burnSynths(toUnit('1'), { from: account1 });
+
+					await sUSDContract.burn(account1, toUnit('99'));
+
+					await debtCache.takeDebtSnapshot();
+
+					// all debt should be burned here
+					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit(0));
+
+					// trigger circuit breaking
+					await synthetix.burnSynths('1', { from: account1 });
+
+					assert.bnEqual(
+						(await systemStatus.issuanceSuspension()).reason,
+						165,
+						"circuit breaker didn't trigger"
+					);
+				});
+
 				describe('potential blocking conditions', () => {
 					beforeEach(async () => {
 						// ensure user has synths to burb

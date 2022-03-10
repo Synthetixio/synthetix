@@ -27,6 +27,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
@@ -79,6 +80,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
@@ -104,7 +106,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIXDEBTSHARE;
         newAddresses[2] = CONTRACT_FEEPOOLETERNALSTORAGE;
@@ -118,6 +120,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[10] = CONTRACT_ETHER_WRAPPER;
         newAddresses[11] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
         newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[13] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -161,6 +164,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
+    }
+
     function wrapperFactory() internal view returns (IWrapperFactory) {
         return IWrapperFactory(requireAndGetAddress(CONTRACT_WRAPPER_FACTORY));
     }
@@ -177,7 +184,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return getTargetThreshold();
     }
 
-    function allNetworksSnxBackedDebt() internal view returns (uint256 debt, uint256 updatedAt) {
+    function allNetworksSnxBackedDebt() public view returns (uint256 debt, uint256 updatedAt) {
         (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
             .latestRoundData();
         
@@ -185,7 +192,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         updatedAt = timestamp;
     }
 
-    function allNetworksDebtSharesSupply() internal view returns (uint256 sharesSupply, uint256 updatedAt) {
+    function allNetworksDebtSharesSupply() public view returns (uint256 sharesSupply, uint256 updatedAt) {
         (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
             .latestRoundData();
 
@@ -612,10 +619,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // Go through our fee periods from the oldest feePeriod[FEE_PERIOD_LENGTH - 1] and figure out what we owe them.
         // Condition checks for periods > 0
         for (uint i = FEE_PERIOD_LENGTH - 1; i > 0; i--) {
-
             uint64 periodId = _recentFeePeriodsStorage(i).feePeriodId;
             if (lastFeeWithdrawal < periodId) {
-
                 userOwnershipPercentage = sds.sharePercentOnPeriod(account, uint(periodId));
 
                 (feesFromPeriod, rewardsFromPeriod) = _feesAndRewardsFromPeriod(i, userOwnershipPercentage);
@@ -634,10 +639,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      * @dev The reported fees owing for the current period [0] are just a
      * running balance until the fee period closes
      */
-    function _feesAndRewardsFromPeriod(
-        uint period,
-        uint ownershipPercentage
-    ) internal view returns (uint, uint) {
+    function _feesAndRewardsFromPeriod(uint period, uint ownershipPercentage) internal view returns (uint, uint) {
         // If it's zero, they haven't issued, and they have no fees OR rewards.
         if (ownershipPercentage == 0) return (0, 0);
 
@@ -647,8 +649,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // This is a high precision integer.
         uint feesFromPeriod = fp.feesToDistribute.multiplyDecimal(ownershipPercentage);
 
-        uint rewardsFromPeriod =
-            fp.rewardsToDistribute.multiplyDecimal(ownershipPercentage);
+        uint rewardsFromPeriod = fp.rewardsToDistribute.multiplyDecimal(ownershipPercentage);
 
         return (feesFromPeriod, rewardsFromPeriod);
     }
@@ -694,21 +695,20 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /* ========== Modifiers ========== */
-    modifier onlyInternalContracts {
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
-        bool isCollateral = collateralManager().hasCollateral(msg.sender);
-        bool isEtherWrapper = msg.sender == address(etherWrapper());
-        bool isWrapper = msg.sender == address(wrapperFactory());
-        bool isIssuer = msg.sender == address(issuer());
 
-        require(isExchanger || isSynth || isCollateral || isEtherWrapper || isWrapper || isIssuer, "Only Internal Contracts");
-        _;
+    function _isInternalContract(address account) internal view returns (bool) {
+        return
+            account == address(exchanger()) ||
+            issuer().synthsByAddress(account) != bytes32(0) ||
+            collateralManager().hasCollateral(account) ||
+            account == address(futuresMarketManager()) ||
+            account == address(wrapperFactory()) ||
+            account == address(etherWrapper()) ||
+            account == address(issuer());
     }
 
-    modifier onlyIssuer {
-        bool isIssuer = msg.sender == address(issuer());
-        require(isIssuer, "Issuer only");
+    modifier onlyInternalContracts {
+        require(_isInternalContract(msg.sender), "Only Internal Contracts");
         _;
     }
 
