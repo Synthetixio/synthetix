@@ -234,6 +234,7 @@ describe('deployments', () => {
 									'SynthsETH',
 									'SystemSettings',
 									'SystemStatus',
+									'SystemMessenger',
 								].forEach(name => {
 									it(`has correct address for ${name}`, async () => {
 										if (!targets[name]) {

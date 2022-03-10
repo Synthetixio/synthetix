@@ -689,7 +689,7 @@ const setupAllContracts = async ({
 			resolverAlias: 'ext:AggregatorDebtRatio',
 		},
 		{ contract: 'SystemStatus' },
-		{ contract: 'SystemMessenger' },
+		{ contract: 'SystemMessenger', deps: ['AddressResolver'] },
 		{ contract: 'ExchangeState', deps: ['AddressResolver'] },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
 		{
@@ -788,6 +788,7 @@ const setupAllContracts = async ({
 				'SingleNetworkAggregatorDebtRatio',
 				'AddressResolver',
 				'SystemStatus',
+				'SystemMessenger',
 				'FlexibleStorage',
 				'DebtCache',
 				'SynthetixDebtShare',

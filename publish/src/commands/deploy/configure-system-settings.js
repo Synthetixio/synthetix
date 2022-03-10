@@ -225,6 +225,18 @@ module.exports = async ({
 		comment: 'Set the maximum amount of time (in secs) that a rate can be used for',
 	});
 
+	const teleportFeeRate = await getDeployParameter('TELEPORT_FEE_RATE');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'teleportFeeRate',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(teleportFeeRate),
+		write: 'setTeleportFeeRate',
+		writeArg: teleportFeeRate,
+		comment: 'Set the fee rate amount for teleporting synths',
+	});
+
 	const minimumStakeTime = await getDeployParameter('MINIMUM_STAKE_TIME');
 	await runStep({
 		contract: 'SystemSettings',

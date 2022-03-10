@@ -2,15 +2,13 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./interfaces/IAddressResolver.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ISystemMessenger.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/systemstatus
-contract SystemMessenger is Owned, ISystemMessenger {
+contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
 
     bytes32 public constant CONTRACT_NAME = "SystemMessenger";
-
-    IAddressResolver public resolver;
 
     uint[] public activeChains;
 
@@ -21,8 +19,7 @@ contract SystemMessenger is Owned, ISystemMessenger {
     mapping(address => bool) public signers;
     uint public requiredSignatures;
 
-    constructor(address _owner, IAddressResolver _resolver) public Owned(_owner) {
-        resolver = _resolver;
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
         requiredSignatures = 1;
     }
 
