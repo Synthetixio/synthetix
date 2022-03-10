@@ -677,6 +677,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
+    function setLastDebtRatio(uint256 ratio) external onlyOwner {
+        lastDebtRatio = ratio;
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireRatesNotInvalid(bool anyRateIsInvalid) internal pure {

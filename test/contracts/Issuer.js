@@ -155,6 +155,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',
+				'setLastDebtRatio',
 			],
 		});
 	});
@@ -238,6 +239,23 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [account1, account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.setCurrentPeriodId,
+				args: [1234],
+				accounts,
+				reason: 'Must be fee pool',
+			});
+		});
+		it('setLastDebtRatio() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.setLastDebtRatio,
+				args: [1234],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
 			});
 		});
 	});
