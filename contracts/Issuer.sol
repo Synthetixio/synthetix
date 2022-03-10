@@ -797,14 +797,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) internal returns (bool) {
-        // Calculate the teleportation fee
-        uint teleportFee = amount.multiplyDecimal(getTeleportFeeRate());
+        // Check for invalid rates
+        _requireRatesNotInvalid(synthetix().anySynthOrSNXRateIsInvalid());
 
         // Make sure they have enough synths available to teleport
         require(IERC20(address(synths[currencyKey])).balanceOf(from) >= amount, "Issuer: not enough synths to teleport");
 
         // Burn the synths first before teleporting
         synths[currencyKey].burn(from, amount);
+
+        // Calculate the teleportation fee
+        uint teleportFee = amount.multiplyDecimal(getTeleportFeeRate());
 
         // Pay the fee pool
         if (teleportFee > 0) {
@@ -823,14 +826,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _receiveTeleportedSynth(bytes32 currencyKey, address from, uint amount) internal returns (bool) {
-        // Make sure we can issue these synths
-        (uint maxIssuable, , , bool anyRateIsInvalid) = _remainingIssuableSynths(from);
-        _requireRatesNotInvalid(anyRateIsInvalid);
-        require(amount <= maxIssuable, "Issuer: amount too large to issue");
-
-        // Record issue timestamp
-        _setLastIssueEvent(from);
-
         // Create their synths
         synths[currencyKey].issue(from, amount);
 

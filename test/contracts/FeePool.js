@@ -107,6 +107,7 @@ contract('FeePool', async accounts => {
 				'Synthetix',
 				'SystemSettings',
 				'SystemStatus',
+				'SystemMessenger',
 				'RewardEscrowV2',
 				'RewardsDistribution',
 				'DelegateApprovals',

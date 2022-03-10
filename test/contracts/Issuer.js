@@ -43,7 +43,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [, owner, account1, account2, account3, account6] = accounts;
+	const [, owner, account1, account2, account3, account6, account7] = accounts;
 
 	let synthetix,
 		systemStatus,
@@ -100,6 +100,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'SystemSettings',
+				'SystemMessenger',
 				'Issuer',
 				'SingleNetworkAggregatorIssuedSynths',
 				'SingleNetworkAggregatorDebtRatio',
@@ -152,9 +153,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'issueSynths',
 				'issueSynthsOnBehalf',
 				'liquidateDelinquentAccount',
+				'receiveTeleportedSynth',
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',
+				'teleportSynth',
 			],
 		});
 	});
@@ -230,6 +233,22 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [account1, toUnit('1'), account2],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('teleportSynth() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.teleportSynth,
+				args: [0, sETH, account1, toUnit('1')],
+				accounts,
+				reason: 'Only the synthetix contract can perform this action',
+			});
+		});
+		it('receiveTeleportedSynth() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.receiveTeleportedSynth,
+				args: [sETH, account1, toUnit('1')],
+				accounts,
+				reason: 'Issuer: only SystemMessenger can invoke this',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -1895,6 +1914,147 @@ contract('Issuer (via Synthetix)', async accounts => {
 							});
 						});
 					});
+				});
+			});
+
+			describe('teleporting', () => {
+				beforeEach(async () => {
+					// ensure user has some synths
+					await sUSDContract.issue(account1, toUnit('1000'), { from: owner });
+				});
+
+				describe('potential blocking conditions', () => {
+					['System', 'Issuance'].forEach(section => {
+						describe(`when ${section} is suspended`, () => {
+							beforeEach(async () => {
+								await setStatus({ owner, systemStatus, section, suspend: true });
+							});
+							it('then calling teleportSynths() reverts', async () => {
+								await assert.revert(
+									synthetix.teleportSynth(1, sUSD, account1, toUnit('100'), { from: account1 }),
+									'Operation prohibited'
+								);
+							});
+							describe(`when ${section} is resumed`, () => {
+								beforeEach(async () => {
+									await setStatus({ owner, systemStatus, section, suspend: false });
+								});
+								it('then calling teleportSynths() succeeds', async () => {
+									await synthetix.teleportSynth(1, sUSD, account1, toUnit('100'), {
+										from: account1,
+									});
+								});
+							});
+						});
+					});
+					describe(`when SNX is stale`, () => {
+						beforeEach(async () => {
+							await fastForward(
+								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
+							);
+
+							await debtCache.takeDebtSnapshot();
+						});
+
+						it('reverts on teleportSynth()', async () => {
+							await assert.revert(
+								synthetix.teleportSynth(1, sUSD, account1, toUnit('100'), { from: account1 }),
+								'A synth or SNX rate is invalid'
+							);
+						});
+					});
+				});
+				it('should allow the teleportation of some synths', async () => {
+					const sUSDBalanceBefore = await sUSDContract.balanceOf(account1);
+					assert.bnEqual(sUSDBalanceBefore, toUnit('1000'));
+
+					const amountToTeleport = toUnit('100');
+					const txn = await synthetix.teleportSynth(1, sUSD, account1, amountToTeleport, {
+						from: account1,
+					});
+
+					// verify the final teleport confirmation event was emitted
+					let logs = artifacts.require('Issuer').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'SynthTeleported'),
+						'SynthTeleported',
+						{
+							targetChainId: 1,
+							currencyKey: sUSD,
+							from: account1,
+							amount: amountToTeleport,
+						}
+					);
+
+					// verify the synths were burned
+					const sUSDBalanceAfter = await sUSDContract.balanceOf(account1);
+					assert.bnLt(sUSDBalanceAfter, sUSDBalanceBefore);
+
+					logs = artifacts.require('Synth').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'Burned'),
+						'Burned',
+						{
+							account: account1,
+							value: amountToTeleport,
+						}
+					);
+
+					// verify the data in encoded message is correct
+					const expectedEncodedMessageData = web3.eth.abi.encodeParameters(
+						['string', 'uint256', 'bytes32', 'address', 'uint256'],
+						['receiveTeleportedSynth', 1, sUSD, account1, toUnit('99.5')] // teleported amount minus fee
+					);
+					logs = artifacts.require('SystemMessenger').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'MessagePosted'),
+						'MessagePosted',
+						{
+							targetChainId: 1,
+							nonce: 0,
+							targetContract: toBytes32('Issuer'),
+							data: expectedEncodedMessageData,
+							gasLimit: 0,
+						}
+					);
+				});
+				it('should receive the teleported synths and issue them', async () => {
+					// Import the mocked SystemMessenger address
+					await addressResolver.importAddresses([toBytes32('SystemMessenger')], [account7], {
+						from: owner,
+					});
+
+					// Update the cached addresses
+					await issuer.rebuildCache({ from: owner });
+
+					// Mock receive teleported synths
+					const amountReceived = toUnit('99.5');
+					const txn = await issuer.receiveTeleportedSynth(sUSD, account1, amountReceived, {
+						from: account7,
+					});
+
+					// Check that receive event occured
+					let logs = artifacts.require('Issuer').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'SynthReceived'),
+						'SynthReceived',
+						{
+							currencyKey: sUSD,
+							from: account1,
+							amount: amountReceived,
+						}
+					);
+
+					// Check that the synths were issued
+					logs = artifacts.require('Synth').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'Issued'),
+						'Issued',
+						{
+							account: account1,
+							value: amountReceived,
+						}
+					);
 				});
 			});
 

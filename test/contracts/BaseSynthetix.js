@@ -60,6 +60,7 @@ contract('BaseSynthetix', async accounts => {
 				'ExchangeRates',
 				'SystemSettings',
 				'SystemStatus',
+				'SystemMessenger',
 				'DebtCache',
 				'Issuer',
 				'SingleNetworkAggregatorDebtRatio',
@@ -100,13 +101,14 @@ contract('BaseSynthetix', async accounts => {
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
 				'issueSynthsOnBehalf',
+				'liquidateDelinquentAccount',
 				'mint',
 				'mintSecondary',
 				'mintSecondaryRewards',
 				'settle',
+				'teleportSynth',
 				'transfer',
 				'transferFrom',
-				'liquidateDelinquentAccount',
 			],
 		});
 	});

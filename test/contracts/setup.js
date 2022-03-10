@@ -20,6 +20,7 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
+		TELEPORT_FEE_RATE,
 		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
 		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
 		EXCHANGE_DYNAMIC_FEE_ROUNDS,
@@ -272,6 +273,7 @@ const setupContract = async ({
 		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
+		SystemMessenger: [owner, tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -625,7 +627,8 @@ const setupAllContracts = async ({
 			resolverAlias: 'ext:AggregatorDebtRatio',
 		},
 		{ contract: 'SystemStatus' },
-		{ contract: 'ExchangeState' },
+		{ contract: 'SystemMessenger' },
+		{ contract: 'ExchangeState', deps: ['AddressResolver'] },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
 		{
 			contract: 'SystemSettings',
@@ -1102,6 +1105,7 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
+			returnObj['SystemSettings'].setTeleportFeeRate(TELEPORT_FEE_RATE, { from: owner }),
 			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(EXCHANGE_DYNAMIC_FEE_THRESHOLD, {
 				from: owner,
 			}),

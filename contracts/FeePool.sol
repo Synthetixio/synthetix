@@ -700,8 +700,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         bool isCollateral = collateralManager().hasCollateral(msg.sender);
         bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isWrapper = msg.sender == address(wrapperFactory());
+        bool isIssuer = msg.sender == address(issuer());
 
-        require(isExchanger || isSynth || isCollateral || isEtherWrapper || isWrapper, "Only Internal Contracts");
+        require(isExchanger || isSynth || isCollateral || isEtherWrapper || isWrapper || isIssuer, "Only Internal Contracts");
         _;
     }
 
