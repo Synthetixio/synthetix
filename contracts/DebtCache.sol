@@ -15,6 +15,7 @@ contract DebtCache is BaseDebtCache {
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
+    bytes32 internal constant FUTURES_DEBT_KEY = "FUTURES_DEBT";
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -26,15 +27,19 @@ contract DebtCache is BaseDebtCache {
 
     function takeDebtSnapshot() external requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory values, uint excludedDebt, bool isInvalid) = _currentSynthDebts(currencyKeys);
+        (uint[] memory values, uint futuresDebt, uint excludedDebt, bool isInvalid) = _currentSynthDebts(currencyKeys);
 
+        // The total SNX-backed debt is the debt of futures markets plus the debt of circulating synths.
+        uint snxCollateralDebt = futuresDebt;
+        _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
         uint numValues = values.length;
-        uint snxCollateralDebt;
         for (uint i; i < numValues; i++) {
             uint value = values[i];
             snxCollateralDebt = snxCollateralDebt.add(value);
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
+
+        // Subtract out the excluded non-SNX backed debt from our total
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
         uint newDebt = snxCollateralDebt.floorsub(excludedDebt);
         _cachedDebt = newDebt;

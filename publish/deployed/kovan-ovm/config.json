@@ -50,13 +50,10 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidator": {
+	"EternalStorageLiquidations": {
 		"deploy": false
 	},
-	"Liquidator": {
-		"deploy": false
-	},
-	"LiquidatorRewards": {
+	"Liquidations": {
 		"deploy": false
 	},
 	"Synthetix": {

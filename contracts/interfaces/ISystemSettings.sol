@@ -47,10 +47,10 @@ interface ISystemSettings {
 
     function etherWrapperMaxETH() external view returns (uint);
 
-    function etherWrapperMintFeeRate() external view returns (uint);
-
     function etherWrapperBurnFeeRate() external view returns (uint);
 
+    function etherWrapperMintFeeRate() external view returns (uint);
+    
     function interactionDelay(address collateral) external view returns (uint);
 
     function atomicMaxVolumePerBlock() external view returns (uint);

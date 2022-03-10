@@ -50,6 +50,9 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
 	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
@@ -375,6 +378,9 @@
 		"deploy": true
 	},
 	"NativeEtherWrapper": {
+		"deploy": true
+	},
+	"FuturesMarketManager": {
 		"deploy": true
 	},
 	"WrapperFactory": {

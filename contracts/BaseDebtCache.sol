@@ -18,19 +18,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IWrapperFactory.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
-//
-// The debt cache (SIP-91) caches the global debt and the debt of each synth in the system.
-// Debt is denominated by the synth supply multiplied by its current exchange rate.
-//
-// The cache can be invalidated when an exchange rate changes, and thereafter must be
-// updated by performing a debt snapshot, which recomputes the global debt sum using
-// current synth supplies and exchange rates. This is performed usually by a snapshot keeper.
-//
-// Some synths are backed by non-SNX collateral, such as sETH being backed by ETH
-// held in the EtherWrapper (SIP-112). This debt is called "excluded debt" and is
-// excluded from the global debt in `_cachedDebt`.
-//
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
@@ -41,6 +30,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     mapping(bytes32 => uint) internal _excludedIssuedDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
+
+    // flag to ensure importing excluded debt is invoked only once
+    bool public isInitialized = false; // public to avoid needing an event
 
     /* ========== ENCODED NAMES ========== */
 
@@ -55,6 +47,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
@@ -63,7 +56,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
+        bytes32[] memory newAddresses = new bytes32[](8);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -71,6 +64,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[4] = CONTRACT_COLLATERALMANAGER;
         newAddresses[5] = CONTRACT_WRAPPER_FACTORY;
         newAddresses[6] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[7] = CONTRACT_FUTURESMARKETMANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -96,6 +90,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -157,6 +155,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory snxIssuedDebts,
+            uint _futuresDebt,
             uint _excludedDebt,
             bool anyRateIsInvalid
         )
@@ -164,8 +163,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
+        (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
 
-        return (values, excludedDebt, isAnyNonSnxDebtRateInvalid);
+        return (values, futuresDebt, excludedDebt, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
@@ -173,6 +173,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory debtValues,
+            uint futuresDebt,
             uint excludedDebt,
             bool anyRateIsInvalid
         )
@@ -204,6 +205,40 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function excludedIssuedDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory excludedDebts) {
         return _excludedIssuedDebts(currencyKeys);
+    }
+
+    /// used when migrating to new DebtCache instance in order to import the excluded debt records
+    /// If this method is not run after upgrading the contract, the debt will be
+    /// incorrect w.r.t to wrapper factory assets until the values are imported from
+    /// previous instance of the contract
+    /// Also, in addition to this method it's possible to use recordExcludedDebtChange since
+    /// it's accessible to owner in case additional adjustments are required
+    function importExcludedIssuedDebts(IDebtCache prevDebtCache, IIssuer prevIssuer) external onlyOwner {
+        // this can only be run once so that recorded debt deltas aren't accidentally
+        // lost or double counted
+        require(!isInitialized, "already initialized");
+        isInitialized = true;
+
+        // get the currency keys from **previous** issuer, in case current issuer
+        // doesn't have all the synths at this point
+        // warning: if a synth won't be added to the current issuer before the next upgrade of this contract,
+        // its entry will be lost (because it won't be in the prevIssuer for next time).
+        // if for some reason this is a problem, it should be possible to use recordExcludedDebtChange() to amend
+        bytes32[] memory keys = prevIssuer.availableCurrencyKeys();
+
+        require(keys.length > 0, "previous Issuer has no synths");
+
+        // query for previous debt records
+        uint[] memory debts = prevDebtCache.excludedIssuedDebts(keys);
+
+        // store the values
+        for (uint i = 0; i < keys.length; i++) {
+            if (debts[i] > 0) {
+                // adding the values instead of overwriting in case some deltas were recorded in this
+                // contract already (e.g. if the upgrade was not atomic)
+                _excludedIssuedDebt[keys[i]] = _excludedIssuedDebt[keys[i]].add(debts[i]);
+            }
+        }
     }
 
     // Returns the total sUSD debt backed by non-SNX collateral.
@@ -252,9 +287,15 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
+
+        // Add in the debt accounted for by futures
+        (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
+        total = total.add(futuresDebt);
+
+        // Ensure that if the excluded non-SNX debt exceeds SNX-backed debt, no overflow occurs
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isAnyNonSnxDebtRateInvalid);
+        return (total, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
@@ -293,6 +334,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     function takeDebtSnapshot() external {}
 
     function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external {}
+
+    function updateCachedsUSDDebt(int amount) external {}
 
     /* ========== MODIFIERS ========== */
 

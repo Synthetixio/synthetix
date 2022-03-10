@@ -56,6 +56,8 @@ contract('DebtCache', async accounts => {
 		synths,
 		addressResolver,
 		exchanger,
+		// Futures market
+		futuresMarketManager,
 		wrapperFactory,
 		weth,
 		// MultiCollateral tests.
@@ -254,6 +256,7 @@ contract('DebtCache', async accounts => {
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
+			FuturesMarketManager: futuresMarketManager,
 			WrapperFactory: wrapperFactory,
 			WETH: weth,
 		} = await setupAllContracts({
@@ -276,6 +279,7 @@ contract('DebtCache', async accounts => {
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
 				'CollateralUtil',
+				'FuturesMarketManager',
 				'WrapperFactory',
 				'WETH',
 			],
@@ -316,6 +320,7 @@ contract('DebtCache', async accounts => {
 				'updateCachedSynthDebtsWithRates',
 				'updateDebtCacheValidity',
 				'updateCachedsUSDDebt',
+				'importExcludedIssuedDebts',
 			],
 		});
 	});
@@ -360,6 +365,17 @@ contract('DebtCache', async accounts => {
 				fnc: debtCache.purgeCachedSynthDebt,
 				accounts,
 				args: [sAUD],
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('importExcludedIssuedDebts() can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: debtCache.importExcludedIssuedDebts,
+				accounts,
+				args: [ZERO_ADDRESS, ZERO_ADDRESS],
 				address: owner,
 				skipPassCheck: true,
 				reason: 'Only the contract owner may perform this action',
@@ -427,7 +443,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[2], toUnit(50));
 				assert.bnEqual(debts[3], toUnit(200));
 
-				assert.isFalse(result[2]);
+				assert.isFalse(result[3]);
 			});
 		});
 
@@ -543,7 +559,7 @@ contract('DebtCache', async accounts => {
 				assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 			});
 
-			it('Rates are reported as invalid when the debt snapshot is uninitisalised', async () => {
+			it('Rates are reported as invalid when the debt snapshot is uninitialised', async () => {
 				const debtCacheName = toBytes32('DebtCache');
 
 				// Set the stale time to a huge value so that the snapshot will not be stale.
@@ -623,6 +639,48 @@ contract('DebtCache', async accounts => {
 					'Synthetix is suspended'
 				);
 				await debtCache.takeDebtSnapshot({ from: owner });
+			});
+
+			describe('properly incorporates futures market debt', () => {
+				it('when no market exist', async () => {
+					await debtCache.takeDebtSnapshot();
+					const initialDebt = (await debtCache.cacheInfo()).debt;
+
+					// issue some debt to sanity check it's being updated
+					sUSDContract.issue(account1, toUnit(100), { from: owner });
+					await debtCache.takeDebtSnapshot();
+
+					// debt calc works
+					assert.bnEqual((await debtCache.currentDebt())[0], initialDebt.add(toUnit(100)));
+					assert.bnEqual((await debtCache.cacheInfo()).debt, initialDebt.add(toUnit(100)));
+
+					// no debt from futures
+					assert.bnEqual((await debtCache.currentSynthDebts([])).futuresDebt, toUnit(0));
+				});
+
+				it('when a market exists', async () => {
+					const market = await setupContract({
+						accounts,
+						contract: 'MockFuturesMarket',
+						args: [
+							futuresMarketManager.address,
+							toBytes32('sLINK'),
+							toBytes32('sLINK'),
+							toUnit('1000'),
+							false,
+						],
+						skipPostDeploy: true,
+					});
+					await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+					await debtCache.takeDebtSnapshot();
+					const initialDebt = (await debtCache.cacheInfo()).debt;
+					await market.setMarketDebt(toUnit('2000'));
+					await debtCache.takeDebtSnapshot();
+
+					assert.bnEqual((await debtCache.cacheInfo()).debt, initialDebt.add(toUnit('1000')));
+					assert.bnEqual((await debtCache.currentSynthDebts([])).futuresDebt, toUnit('2000'));
+				});
 			});
 
 			describe('when debts are excluded', async () => {
@@ -753,6 +811,94 @@ contract('DebtCache', async accounts => {
 
 				await debtCache.recordExcludedDebtChange(sETH, toUnit('-0.2'), { from: owner });
 				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH]), toUnit('0.8'));
+			});
+		});
+
+		describe('importExcludedIssuedDebts()', () => {
+			beforeEach(async () => {
+				await debtCache.recordExcludedDebtChange(sETH, toUnit('1'), { from: owner });
+				await debtCache.recordExcludedDebtChange(sAUD, toUnit('2'), { from: owner });
+			});
+
+			it('reverts for non debt cache address', async () => {
+				await assert.revert(
+					debtCache.importExcludedIssuedDebts(issuer.address, issuer.address, { from: owner })
+				);
+			});
+
+			it('reverts for non issuer address', async () => {
+				await assert.revert(
+					debtCache.importExcludedIssuedDebts(debtCache.address, debtCache.address, { from: owner })
+				);
+			});
+
+			it('reverts for empty issuer', async () => {
+				const newIssuer = await setupContract({
+					contract: 'Issuer',
+					accounts,
+					skipPostDeploy: true,
+					args: [owner, addressResolver.address],
+				});
+
+				await assert.revert(
+					debtCache.importExcludedIssuedDebts(debtCache.address, newIssuer.address, {
+						from: owner,
+					}),
+					'previous Issuer has no synths'
+				);
+			});
+
+			it('imports previous entries and can run only once', async () => {
+				const newIssuer = await setupContract({
+					contract: 'Issuer',
+					accounts,
+					skipPostDeploy: true,
+					args: [owner, addressResolver.address],
+				});
+				const newDebtCache = await setupContract({
+					contract: 'DebtCache',
+					accounts,
+					skipPostDeploy: true,
+					args: [owner, addressResolver.address],
+				});
+
+				// update the address resolver and the contract address caches
+				await addressResolver.importAddresses(
+					[toBytes32('Issuer'), toBytes32('DebtCache')],
+					[newIssuer.address, newDebtCache.address],
+					{ from: owner }
+				);
+				await newIssuer.rebuildCache();
+				await newDebtCache.rebuildCache();
+
+				// add only one of the synths
+				await newIssuer.addSynth(sETHContract.address, { from: owner });
+
+				// check uninitialised
+				assert.equal(await newDebtCache.isInitialized(), false);
+
+				// import entries
+				await newDebtCache.importExcludedIssuedDebts(debtCache.address, issuer.address, {
+					from: owner,
+				});
+
+				// check initialised
+				assert.equal(await newDebtCache.isInitialized(), true);
+
+				// check both entries are updated
+				// sAUD is not in new Issuer, but should be imported
+				assert.bnEqual(await debtCache.excludedIssuedDebts([sETH, sAUD]), [
+					toUnit('1'),
+					toUnit('2'),
+				]);
+
+				// check can't run twice
+				await assert.revert(
+					newDebtCache.importExcludedIssuedDebts(debtCache.address, issuer.address, {
+						from: owner,
+					}),
+					'already initialized'
+				);
 			});
 		});
 

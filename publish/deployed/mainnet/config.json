@@ -41,13 +41,10 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidator": {
+	"EternalStorageLiquidations": {
 		"deploy": false
 	},
-	"Liquidator": {
-		"deploy": false
-	},
-	"LiquidatorRewards": {
+	"Liquidations": {
 		"deploy": false
 	},
 	"RewardEscrow": {
@@ -314,13 +311,13 @@
 	"NativeEtherWrapper": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
-		"deploy": false
-	},
 	"WrapperFactory": {
 		"deploy": false
 	},
 	"OwnerRelayOnEthereum": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
 		"deploy": false
 	},
 	"TokenStatesETHBTC": {

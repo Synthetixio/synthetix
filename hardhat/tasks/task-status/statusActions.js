@@ -85,7 +85,7 @@ const actions = {
 
 		const DebtCache = getContract({
 			contract: 'DebtCache',
-			source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+			source: 'DebtCache',
 			network,
 			useOvm,
 			provider,
@@ -111,6 +111,7 @@ const actions = {
 
 		const SynthetixState = getContract({
 			contract: 'SynthetixState',
+			source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
 			network,
 			useOvm,
 			provider,

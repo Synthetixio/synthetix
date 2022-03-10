@@ -1,5 +1,7 @@
 pragma solidity >=0.4.24;
 
+import "./IIssuer.sol";
+
 interface IDebtCache {
     // Views
 
@@ -13,11 +15,14 @@ interface IDebtCache {
 
     function cacheStale() external view returns (bool);
 
+    function isInitialized() external view returns (bool);
+
     function currentSynthDebts(bytes32[] calldata currencyKeys)
         external
         view
         returns (
             uint[] memory debtValues,
+            uint futuresDebt,
             uint excludedDebt,
             bool anyRateIsInvalid
         );
@@ -38,6 +43,8 @@ interface IDebtCache {
             bool isStale
         );
 
+    function excludedIssuedDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory excludedDebts);
+
     // Mutative functions
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
@@ -55,4 +62,6 @@ interface IDebtCache {
     function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external;
 
     function updateCachedsUSDDebt(int amount) external;
+
+    function importExcludedIssuedDebts(IDebtCache prevDebtCache, IIssuer prevIssuer) external;
 }

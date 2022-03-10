@@ -452,6 +452,10 @@ const owner = async ({
 					yellow(nonce)
 				)
 			);
+
+			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+		} else {
+			console.log(gray('No transactions to stage'));
 		}
 	}
 
