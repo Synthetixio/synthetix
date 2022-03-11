@@ -530,6 +530,17 @@
 			"released": "base"
 		},
 		{
+			"sip": 204,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"FeePool",
+				"Synthetix",
+				"SystemSettings",
+				"SystemMessenger"
+			]
+		},
+		{
 			"sip": 205,
 			"layer": "ovm",
 			"sources": [],
@@ -1031,6 +1042,15 @@
 				"minor": 66
 			},
 			"sips": []
+		},
+		{
+			"name": "TeleporterAlpha",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 1337
+			},
+			"sips": [204]
 		}
 	]
 }
