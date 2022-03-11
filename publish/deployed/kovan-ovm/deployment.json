@@ -245,11 +245,11 @@
 		},
 		"Issuer": {
 			"name": "Issuer",
-			"address": "0x46bC784B852D738BFa5ce34765dd34702D9dEEFb",
+			"address": "0x9C1063A02195d2f0409CC9d3B2bab16fE0C75DEE",
 			"source": "Issuer",
-			"link": "https://kovan-explorer.optimism.io/address/0x46bC784B852D738BFa5ce34765dd34702D9dEEFb",
-			"timestamp": "2022-03-11T04:48:28.000Z",
-			"txn": "https://kovan-explorer.optimism.io/tx/0x94cac1a3ba81eafdc65fec8e7b6e777d97af2714560905a4848ddcbba2133cef",
+			"link": "https://kovan-explorer.optimism.io/address/0x9C1063A02195d2f0409CC9d3B2bab16fE0C75DEE",
+			"timestamp": "2022-03-11T07:11:39.839Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"TradingRewards": {
@@ -380,10 +380,10 @@
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
-			"address": "0x6E6e2e9b7769CbA76aFC1e6CAd795CD3Ce0772a1",
+			"address": "0x43465ddce92F81321a6e8aE7bf6E0EFb52A349C4",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0x6E6e2e9b7769CbA76aFC1e6CAd795CD3Ce0772a1",
-			"timestamp": "2021-10-27T22:53:12.161Z",
+			"link": "https://kovan-explorer.optimism.io/address/0x43465ddce92F81321a6e8aE7bf6E0EFb52A349C4",
+			"timestamp": "2022-03-11T07:11:45.866Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -407,10 +407,10 @@
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
-			"address": "0x66C203BcF339460698c48a2B589eBD91de4984E7",
+			"address": "0x62aE6f77610896d60729dcf7a1514dE188E2E838",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0x66C203BcF339460698c48a2B589eBD91de4984E7",
-			"timestamp": "2021-10-27T22:53:14.804Z",
+			"link": "https://kovan-explorer.optimism.io/address/0x62aE6f77610896d60729dcf7a1514dE188E2E838",
+			"timestamp": "2022-03-11T07:11:52.610Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -434,10 +434,10 @@
 		},
 		"SynthsLINK": {
 			"name": "SynthsLINK",
-			"address": "0xE73EB48B9E725E563775fF38cb67Ae09bF34c791",
+			"address": "0x98b857df9913D97B5822ad6e9d82e4F71073FD1D",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0xE73EB48B9E725E563775fF38cb67Ae09bF34c791",
-			"timestamp": "2021-10-27T22:53:17.392Z",
+			"link": "https://kovan-explorer.optimism.io/address/0x98b857df9913D97B5822ad6e9d82e4F71073FD1D",
+			"timestamp": "2022-03-11T07:11:57.758Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -461,10 +461,10 @@
 		},
 		"SynthsUNI": {
 			"name": "SynthsUNI",
-			"address": "0x319D190584248280e3084A4692C6472A8dA5CA26",
+			"address": "0xD9d31828c9fa04AEcfD41578b58dC44B82485326",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0x319D190584248280e3084A4692C6472A8dA5CA26",
-			"timestamp": "2021-10-27T22:53:20.206Z",
+			"link": "https://kovan-explorer.optimism.io/address/0xD9d31828c9fa04AEcfD41578b58dC44B82485326",
+			"timestamp": "2022-03-11T07:12:03.994Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -488,10 +488,10 @@
 		},
 		"SynthsAAVE": {
 			"name": "SynthsAAVE",
-			"address": "0x1f99f5CbFC3b5Fd804dCc7F7780148F06423AC70",
+			"address": "0x3eF3722dAF184A73f4c9345e827919c7E12Eb6DA",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0x1f99f5CbFC3b5Fd804dCc7F7780148F06423AC70",
-			"timestamp": "2021-10-27T22:53:22.851Z",
+			"link": "https://kovan-explorer.optimism.io/address/0x3eF3722dAF184A73f4c9345e827919c7E12Eb6DA",
+			"timestamp": "2022-03-11T07:12:14.097Z",
 			"txn": "",
 			"network": "kovan"
 		},
@@ -605,11 +605,11 @@
 		},
 		"SynthsSOL": {
 			"name": "SynthsSOL",
-			"address": "0x24f46A427E1cd91B4fEE1F47Fe7793eEFCb205b5",
+			"address": "0x07DD3cc86Af31085E3dA1924B9D47FF718F2afC1",
 			"source": "MultiCollateralSynth",
-			"link": "https://kovan-explorer.optimism.io/address/0x24f46A427E1cd91B4fEE1F47Fe7793eEFCb205b5",
-			"timestamp": "2022-02-18T18:36:38.000Z",
-			"txn": "https://kovan-explorer.optimism.io/tx/0x076f93ad483a39e55ae9457e369bc9b1226f9a523be4463d8f4b5e786d88a883",
+			"link": "https://kovan-explorer.optimism.io/address/0x07DD3cc86Af31085E3dA1924B9D47FF718F2afC1",
+			"timestamp": "2022-03-11T07:12:20.240Z",
+			"txn": "",
 			"network": "kovan"
 		},
 		"SignedSafeDecimalMath": {
