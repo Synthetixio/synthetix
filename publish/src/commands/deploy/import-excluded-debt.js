@@ -30,7 +30,7 @@ module.exports = async ({ deployer, freshDeploy, runStep }) => {
 	// the import step should be skipped for the second part of the release
 	if (initialized) {
 		console.log(
-			yellow(`⚠⚠⚠ WARNING import-excluded-debt: DebtCache already initialized`),
+			yellow(`⚠⚠⚠ WARNING import-excluded-debt: DebtCache already initialized\n`),
 			gray('-'.repeat(50)) + '\n'
 		);
 
@@ -38,7 +38,7 @@ module.exports = async ({ deployer, freshDeploy, runStep }) => {
 			await confirmAction(
 				gray(
 					'import-excluded-debt step has to be skipped, ' +
-						'otherwise it will fail. Confirm you know the reason this is ok!'
+						'otherwise it will fail. Confirm you know the reason, and this is ok! (y/n)'
 				)
 			);
 			console.log(gray('Skipping importing excluded debt.'));

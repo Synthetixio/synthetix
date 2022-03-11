@@ -85,7 +85,7 @@
 					"Synth(s|i).+",
 					"SignedSafeDecimalMath",
 					"SystemStatus",
-					"FuturesMarket",
+					"FuturesMarket.+",
 					"FuturesMarketManager",
 					"FuturesMarketSettings",
 					"FuturesMarketData"
