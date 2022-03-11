@@ -1117,5 +1117,45 @@
 				"keccak256": "0x2d4b290196733150f5b9834a29843e07cfbc79e0873af9a323c60c41f3e08272"
 			}
 		}
+	},
+	"v2.63.1-alpha": {
+		"tag": "v2.63.1-alpha",
+		"fulltag": "v2.63.1-alpha",
+		"release": "Algieba",
+		"network": "kovan",
+		"date": "2022-02-23T18:37:45-05:00",
+		"commit": "43d23fe16edb2bcff9181894ac80173c89c7dfc8",
+		"contracts": {
+			"TokenStatesAVAX": {
+				"address": "0x8338011e46Db45f5cA0f06C4174a85280772dC85",
+				"status": "current",
+				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
+			},
+			"ProxysAVAX": {
+				"address": "0x61760432A363399de4dDDFfD5925A4046c112594",
+				"status": "current",
+				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
+			},
+			"SynthsAVAX": {
+				"address": "0xBc9F23b1AEf25e9a456F1973E9a9ef63830B8f49",
+				"status": "current",
+				"keccak256": "0x2d4b290196733150f5b9834a29843e07cfbc79e0873af9a323c60c41f3e08272"
+			},
+			"TokenStatesMATIC": {
+				"address": "0x2cD1C77fA8cB3C4a76445DC7C8861e374c67A0F6",
+				"status": "current",
+				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
+			},
+			"ProxysMATIC": {
+				"address": "0x8d651Be85f9f4c7322b789EA73DFfBbE501338B6",
+				"status": "current",
+				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
+			},
+			"SynthsMATIC": {
+				"address": "0x5BC3b2B2dC40dC88ea227F7501F28D9D8167BB60",
+				"status": "current",
+				"keccak256": "0x2d4b290196733150f5b9834a29843e07cfbc79e0873af9a323c60c41f3e08272"
+			}
+		}
 	}
 }

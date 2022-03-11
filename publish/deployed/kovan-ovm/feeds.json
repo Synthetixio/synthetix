@@ -26,5 +26,13 @@
 	"SOL": {
 		"asset": "SOL",
 		"feed": "0xF549af21578Cfe2385FFD3488B3039fd9e52f006"
+	},
+	"AVAX": {
+		"asset": "AVAX",
+		"feed": "0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f"
+	},
+	"MATIC": {
+		"asset": "MATIC",
+		"feed": "0x62FD93Fc58D94eE253542ECD5C23467F65dCdB73"
 	}
 }
