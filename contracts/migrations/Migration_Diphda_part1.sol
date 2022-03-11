@@ -22,7 +22,7 @@ interface ISynthetixNamedContract {
 }
 
 // solhint-disable contract-name-camelcase
-contract Migration_Diphda is BaseMigration {
+contract Migration_Diphda_part1 is BaseMigration {
     // https://kovan.etherscan.io/address/0x73570075092502472E4b61A7058Df1A4a1DB12f2;
     address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
 
