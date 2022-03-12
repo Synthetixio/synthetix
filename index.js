@@ -8,6 +8,9 @@ const data = {
 	kovan: require('./publish/deployed/kovan'),
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
+	rinkeby: require('./publish/deployed/rinkeby'),
+	// 'arbitrum-rinkeby': require('./publish/deployed/arbitrum-rinkeby'),
+	// ropsten: require('./publish/deployed/ropsten'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
@@ -19,7 +22,7 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'mainnet', 'goerli'];
+const networks = ['local', 'kovan', 'mainnet', 'goerli', 'rinkeby', 'ropsten', 'arbitrum-rinkeby'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -152,11 +155,16 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		rinkeby: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		'arbitrum-rinkeby': '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		kovan: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+		rinkeby: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+		'arbitrum-rinkeby': '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm-futures': '0x4200000000000000000000000000000000000006',

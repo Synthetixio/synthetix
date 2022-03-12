@@ -404,8 +404,13 @@ class Deployer {
 				useOvm: this.useOvm,
 				byContract: true,
 			})[contract];
-			const lastEntry = contractVersion.slice(-1)[0];
-			address = lastEntry.address;
+
+			if (!contractVersion || !contractVersion.length) {
+				address = this.deployment.targets[contract].address;
+			} else {
+				const lastEntry = contractVersion.slice(-1)[0];
+				address = lastEntry.address;
+			}
 		}
 
 		const { source } = this.deployment.targets[contract];

@@ -18,13 +18,13 @@
 		"deploy": false
 	},
 	"CollateralStateErc20": {
-		"deploy": false
+		"deploy": true
 	},
 	"CollateralStateEth": {
-		"deploy": false
+		"deploy": true
 	},
 	"CollateralStateShort": {
-		"deploy": false
+		"deploy": true
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
@@ -71,33 +71,6 @@
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
-	"ProxyFuturesMarketBTC": {
-		"deploy": false
-	},
-	"FuturesMarketBTC": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketETH": {
-		"deploy": false
-	},
-	"FuturesMarketETH": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketLINK": {
-		"deploy": false
-	},
-	"FuturesMarketLINK": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketManager": {
-		"deploy": false
-	},
-	"FuturesMarketManager": {
-		"deploy": false
-	},
-	"FuturesMarketData": {
-		"deploy": false
-	},
 	"Liquidations": {
 		"deploy": false
 	},
@@ -134,21 +107,6 @@
 	"SynthsUSD": {
 		"deploy": false
 	},
-	"SynthsEUR": {
-		"deploy": false
-	},
-	"SynthsJPY": {
-		"deploy": false
-	},
-	"SynthsAUD": {
-		"deploy": false
-	},
-	"SynthsGBP": {
-		"deploy": false
-	},
-	"SynthsCHF": {
-		"deploy": false
-	},
 	"SynthsBTC": {
 		"deploy": false
 	},
@@ -162,21 +120,6 @@
 		"deploy": false
 	},
 	"ProxysUSD": {
-		"deploy": false
-	},
-	"ProxysEUR": {
-		"deploy": false
-	},
-	"ProxysJPY": {
-		"deploy": false
-	},
-	"ProxysAUD": {
-		"deploy": false
-	},
-	"ProxysGBP": {
-		"deploy": false
-	},
-	"ProxysCHF": {
 		"deploy": false
 	},
 	"ProxysBTC": {
@@ -194,21 +137,6 @@
 	"TokenStatesUSD": {
 		"deploy": false
 	},
-	"TokenStatesEUR": {
-		"deploy": false
-	},
-	"TokenStatesJPY": {
-		"deploy": false
-	},
-	"TokenStatesAUD": {
-		"deploy": false
-	},
-	"TokenStatesGBP": {
-		"deploy": false
-	},
-	"TokenStatesCHF": {
-		"deploy": false
-	},
 	"TokenStatesBTC": {
 		"deploy": false
 	},
@@ -224,24 +152,6 @@
 	"ProxyERC20sUSD": {
 		"deploy": false
 	},
-	"TokenStatesLINK": {
-		"deploy": false
-	},
-	"ProxysLINK": {
-		"deploy": false
-	},
-	"SynthsLINK": {
-		"deploy": false
-	},
-	"TokenStatesDEFI": {
-		"deploy": false
-	},
-	"ProxysDEFI": {
-		"deploy": false
-	},
-	"SynthsDEFI": {
-		"deploy": false
-	},
 	"TradingRewards": {
 		"deploy": false
 	},
@@ -249,21 +159,6 @@
 		"deploy": false
 	},
 	"SynthetixBridgeToOptimism": {
-		"deploy": false
-	},
-	"ShortingRewardssETH": {
-		"deploy": false
-	},
-	"ShortingRewardssBTC": {
-		"deploy": false
-	},
-	"TokenStatesKRW": {
-		"deploy": false
-	},
-	"ProxysKRW": {
-		"deploy": false
-	},
-	"SynthsKRW": {
 		"deploy": false
 	},
 	"VirtualSynthMastercopy": {
@@ -291,6 +186,21 @@
 		"deploy": false
 	},
 	"SynthetixDebtShare": {
+		"deploy": false
+	},
+	"SystemMessenger": {
+		"deploy": false
+	},
+	"ext:AggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"ext:AggregatorDebtRatio": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
 		"deploy": false
 	}
 }
