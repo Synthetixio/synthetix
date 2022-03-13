@@ -14,6 +14,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
@@ -77,14 +78,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     bytes32 internal constant sUSD = "sUSD";
 
-    // SIP-65: Decentralized circuit breaker
-    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
-
-    /// @notice Return the last exchange rate
-    /// @param currencyKey is the currency key of the synth to be exchanged
-    /// @return the last exchange rate of the synth to sUSD
-    mapping(bytes32 => uint) public lastExchangeRate;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -96,6 +89,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -103,7 +97,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](9);
+        bytes32[] memory newAddresses = new bytes32[](10);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -113,6 +107,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
+        newAddresses[9] = CONTRACT_CIRCUIT_BREAKER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -126,6 +121,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    }
+
+    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -166,6 +165,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function priceDeviationThresholdFactor() external view returns (uint) {
         return getPriceDeviationThresholdFactor();
+    }
+
+    function lastExchangeRate(bytes32 currencyKey) external view returns (uint) {
+        return exchangeCircuitBreaker().lastExchangeRate(currencyKey);
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -220,7 +223,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
-            if (!_isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived)) {
+            bool sip65condition =
+                exchangeCircuitBreaker().isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived);
+            if (!sip65condition) {
                 if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
                     // if they received more than they should have, add to the reclaim tally
                     reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
@@ -311,7 +316,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
-        return _isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey));
+        (, bool invalid) = exchangeCircuitBreaker().rateWithInvalid(currencyKey);
+        return invalid;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -370,15 +376,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _processTradingRewards(uint fee, address rewardAddress) internal {
         if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
             tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
-        }
-    }
-
-    function _suspendIfRateInvalid(bytes32 currencyKey, uint rate) internal returns (bool circuitBroken) {
-        if (_isSynthRateInvalid(currencyKey, rate)) {
-            systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            circuitBroken = true;
-        } else {
-            lastExchangeRate[currencyKey] = rate;
         }
     }
 
@@ -459,10 +456,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // SIP-65: Decentralized Circuit Breaker
         // mutative call to suspend system if the rate is invalid
-        if (
-            _suspendIfRateInvalid(sourceCurrencyKey, entry.sourceRate) ||
-            _suspendIfRateInvalid(destinationCurrencyKey, entry.destinationRate)
-        ) {
+        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
             return (0, 0, IVirtualSynth(0));
         }
 
@@ -556,6 +550,26 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
+    // SIP-65: Decentralized Circuit Breaker
+    function _exchangeRatesCircuitBroken(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        returns (bool circuitBroken)
+    {
+        // check both currencies unless they're sUSD, since its rate is never invalid (gas savings)
+        if (sourceCurrencyKey != sUSD) {
+            (, circuitBroken) = exchangeCircuitBreaker().rateWithBreakCircuit(sourceCurrencyKey);
+        }
+
+        if (destinationCurrencyKey != sUSD) {
+            // we're not skipping the suspension check if the circuit was broken already
+            // this is not terribly important, but is more consistent (so that results don't
+            // depend on which synth is source and which is destination)
+            bool destCircuitBroken;
+            (, destCircuitBroken) = exchangeCircuitBreaker().rateWithBreakCircuit(destinationCurrencyKey);
+            circuitBroken = circuitBroken || destCircuitBroken;
+        }
+    }
+
     function _convert(
         bytes32 sourceCurrencyKey,
         address from,
@@ -604,20 +618,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
         systemStatus().requireSystemActive();
-        require(issuer().synths(currencyKey) != ISynth(0), "No such synth");
-        require(_isSynthRateInvalid(currencyKey, exchangeRates().rateForCurrency(currencyKey)), "Synth price is valid");
-        systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-    }
-
-    // SIP-139
-    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
-        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-
-        require(!anyRateInvalid, "Rates for given synths not valid");
-
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            lastExchangeRate[currencyKeys[i]] = rates[i];
-        }
+        // SIP-65: Decentralized Circuit Breaker
+        (, bool circuitBroken) = exchangeCircuitBreaker().rateWithBreakCircuit(currencyKey);
+        require(circuitBroken, "Synth price is valid");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -654,46 +657,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         roundIds[0] = roundIdForSrc;
         roundIds[1] = roundIdForDest;
         require(!exchangeRates().anyRateIsInvalidAtRound(synthKeys, roundIds), "src/dest rate stale or flagged");
-    }
-
-    function _isSynthRateInvalid(bytes32 currencyKey, uint currentRate) internal view returns (bool) {
-        if (currentRate == 0) {
-            return true;
-        }
-
-        uint lastRateFromExchange = lastExchangeRate[currencyKey];
-
-        if (lastRateFromExchange > 0) {
-            return _isDeviationAboveThreshold(lastRateFromExchange, currentRate);
-        }
-
-        // if no last exchange for this synth, then we need to look up last 3 rates (+1 for current rate)
-        (uint[] memory rates, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, 4, 0);
-
-        // start at index 1 to ignore current rate
-        for (uint i = 1; i < rates.length; i++) {
-            // ignore any empty rates in the past (otherwise we will never be able to get validity)
-            if (rates[i] > 0 && _isDeviationAboveThreshold(rates[i], currentRate)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    function _isDeviationAboveThreshold(uint base, uint comparison) internal view returns (bool) {
-        if (base == 0 || comparison == 0) {
-            return true;
-        }
-
-        uint factor;
-        if (comparison > base) {
-            factor = comparison.divideDecimal(base);
-        } else {
-            factor = base.divideDecimal(comparison);
-        }
-
-        return factor >= getPriceDeviationThresholdFactor();
     }
 
     function _internalSettle(
@@ -985,14 +948,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         systemStatus().requireSynthActive(destinationCurrencyKey);
 
         // check rates don't deviate above ciruit breaker allowed deviation
-        require(
-            !_isSynthRateInvalid(sourceCurrencyKey, exchangeRates().rateForCurrency(sourceCurrencyKey)),
-            "synth rate invalid"
-        );
-        require(
-            !_isSynthRateInvalid(destinationCurrencyKey, exchangeRates().rateForCurrency(destinationCurrencyKey)),
-            "synth rate invalid"
-        );
+        (, bool srcInvalid) = exchangeCircuitBreaker().rateWithInvalid(sourceCurrencyKey);
+        (, bool dstInvalid) = exchangeCircuitBreaker().rateWithInvalid(destinationCurrencyKey);
+        require(!srcInvalid, "source synth rate invalid");
+        require(!dstInvalid, "destination synth rate invalid");
 
         // check rates not stale or flagged
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);

@@ -10,6 +10,7 @@ import "./interfaces/IBaseSynthetixBridge.sol";
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/IFeePool.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge {
@@ -17,6 +18,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bool public initiationActive;
 
@@ -40,6 +42,10 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
+    function feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
+    }
+
     function initiatingActive() internal view {
         require(initiationActive, "Initiation deactivated");
     }
@@ -48,10 +54,11 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](3);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_REWARDESCROW;
+        newAddresses[3] = CONTRACT_FEEPOOL;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

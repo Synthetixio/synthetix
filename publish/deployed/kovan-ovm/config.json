@@ -197,22 +197,34 @@
 	"SynthsSOL": {
 		"deploy": false
 	},
-	"TokenStatesAVAX": {
+	"ExchangeCircuitBreaker": {
 		"deploy": false
 	},
-	"ProxysAVAX": {
+	"SignedSafeDecimalMath": {
 		"deploy": false
 	},
-	"SynthsAVAX": {
+	"FuturesMarketBTC": {
 		"deploy": false
 	},
-	"TokenStatesMATIC": {
+	"FuturesMarketETH": {
 		"deploy": false
 	},
-	"ProxysMATIC": {
+	"FuturesMarketLINK": {
 		"deploy": false
 	},
-	"SynthsMATIC": {
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketSettings": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"ext:AggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"ext:AggregatorDebtRatio": {
 		"deploy": false
 	}
 }

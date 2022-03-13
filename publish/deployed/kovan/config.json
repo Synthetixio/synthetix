@@ -71,6 +71,9 @@
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
 	"Liquidations": {
 		"deploy": false
 	},
@@ -264,6 +267,18 @@
 		"deploy": false
 	},
 	"SynthetixDebtShare": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"ext:AggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"ext:AggregatorDebtRatio": {
 		"deploy": false
 	}
 }

@@ -42,13 +42,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ExchangerWithFeeRecAlternatives.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: [
-				'exchange',
-				'exchangeAtomically',
-				'resetLastExchangeRate',
-				'settle',
-				'suspendSynthWithInvalidRate',
-			],
+			expected: ['exchange', 'exchangeAtomically', 'settle', 'suspendSynthWithInvalidRate'],
 		});
 	});
 
@@ -437,13 +431,6 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 										atomicRate: lastRate,
 										systemSourceRate: lastRate,
 										systemDestinationRate: lastRate,
-										deviationFactor: toUnit('10'), // 10x
-										lastExchangeRates: [
-											[sUSD, lastRate],
-											[sETH, lastRate],
-											[sBTC, lastRate],
-										],
-										owner,
 									},
 									() => {
 										behaviors.whenMockedWithVolatileSynth({ synth: sETH, volatile: true }, () => {
@@ -512,40 +499,31 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 									behaviors.whenMockedWithSynthUintSystemSetting(
 										{ setting: 'exchangeFeeRate', synth: sETH, value: '0' },
 										() => {
-											const deviationFactor = toUnit('5'); // 5x deviation limit
 											const lastRate = toUnit('10');
 											const badRate = lastRate.mul(toBN(10)); // should hit deviation factor of 5x
 
 											// Source rate invalid
 											behaviors.whenMockedEntireExchangeRateConfiguration(
 												{
-													sourceCurrency,
+													sourceCurrency: sUSD,
 													atomicRate: lastRate,
 													systemSourceRate: badRate,
 													systemDestinationRate: lastRate,
-													deviationFactor: deviationFactor,
-													lastExchangeRates: [
-														[sUSD, lastRate],
-														[sETH, lastRate],
-													],
-													owner,
 												},
 												() => {
 													beforeEach('attempt exchange', async () => {
+														this.mocks.ExchangeCircuitBreaker.smocked.rateWithBreakCircuit.will.return.with(
+															currencyKey =>
+																currencyKey === sETH
+																	? [badRate.toString(), true]
+																	: [lastRate.toString(), false]
+														);
 														await this.instance.exchangeAtomically(...getExchangeArgs());
-													});
-													it('suspends src synth', async () => {
-														assert.equal(
-															this.mocks.SystemStatus.smocked.suspendSynth.calls[0][0],
-															sUSD
-														);
-														assert.equal(
-															this.mocks.SystemStatus.smocked.suspendSynth.calls[0][1],
-															'65' // circuit breaker reason
-														);
 													});
 													it('did not issue or burn synths', async () => {
 														assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
+														assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
+														assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
 														assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
 													});
 												}
@@ -554,33 +532,30 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 											// Dest rate invalid
 											behaviors.whenMockedEntireExchangeRateConfiguration(
 												{
-													sourceCurrency,
+													sourceCurrency: sETH,
 													atomicRate: lastRate,
 													systemSourceRate: lastRate,
 													systemDestinationRate: badRate,
-													deviationFactor: deviationFactor,
-													lastExchangeRates: [
-														[sUSD, lastRate],
-														[sETH, lastRate],
-													],
-													owner,
 												},
 												() => {
 													beforeEach('attempt exchange', async () => {
-														await this.instance.exchangeAtomically(...getExchangeArgs());
-													});
-													it('suspends dest synth', async () => {
-														assert.equal(
-															this.mocks.SystemStatus.smocked.suspendSynth.calls[0][0],
-															sETH
+														this.mocks.ExchangeCircuitBreaker.smocked.rateWithBreakCircuit.will.return.with(
+															currencyKey =>
+																currencyKey === sETH
+																	? [badRate.toString(), true]
+																	: [lastRate.toString(), false]
 														);
-														assert.equal(
-															this.mocks.SystemStatus.smocked.suspendSynth.calls[0][1],
-															'65' // circuit breaker reason
+														await this.instance.exchangeAtomically(
+															...getExchangeArgs({
+																sourceCurrency: sETH,
+																destinationCurrency: sUSD,
+															})
 														);
 													});
 													it('did not issue or burn synths', async () => {
 														assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
+														assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
+														assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
 														assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
 													});
 												}
@@ -593,15 +568,17 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													atomicRate: badRate,
 													systemSourceRate: lastRate,
 													systemDestinationRate: lastRate,
-													deviationFactor: deviationFactor,
-													lastExchangeRates: [
-														[sUSD, lastRate],
-														[sETH, lastRate],
-													],
-													owner,
 												},
 												() => {
 													it('reverts exchange', async () => {
+														this.flexibleStorageMock.mockSystemSetting({
+															setting: 'atomicMaxVolumePerBlock',
+															value: maxAtomicValuePerBlock,
+															type: 'uint',
+														});
+														this.mocks.ExchangeCircuitBreaker.smocked.isDeviationAboveThreshold.will.return.with(
+															true
+														);
 														await assert.revert(
 															this.instance.exchangeAtomically(...getExchangeArgs()),
 															'Atomic rate deviates too much'
@@ -620,7 +597,6 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 						const unit = toUnit('1');
 						const lastUsdRate = unit;
 						const lastEthRate = toUnit('100'); // 1 ETH -> 100 USD
-						const deviationFactor = unit.add(toBN('1')); // no deviation allowed, since we're using the same rates
 
 						behaviors.whenMockedSusdAndSethSeparatelyToIssueAndBurn(() => {
 							behaviors.whenMockedFeePool(() => {
@@ -634,13 +610,6 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 												atomicRate: lastEthRate,
 												systemSourceRate: unit,
 												systemDestinationRate: lastEthRate,
-
-												deviationFactor: deviationFactor,
-												lastExchangeRates: [
-													[sUSD, unit],
-													[sETH, lastEthRate],
-												],
-												owner,
 											},
 											() => {
 												behaviors.whenMockedWithUintSystemSetting(

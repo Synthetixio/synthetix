@@ -23,6 +23,8 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
+const { smockit } = require('@eth-optimism/smock');
+
 const {
 	toBytes32,
 	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
@@ -31,7 +33,7 @@ const {
 const CLAIM_AMOUNT_DELTA_TOLERATED = '50';
 
 contract('FeePool', async accounts => {
-	const [deployerAccount, owner, , account1, account2] = accounts;
+	const [deployerAccount, owner, relayer, account1, account2] = accounts;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -72,6 +74,8 @@ contract('FeePool', async accounts => {
 		sUSDContract,
 		addressResolver,
 		wrapperFactory,
+		aggregatorDebtRatio,
+		synthetixBridgeToOptimism,
 		synths;
 
 	before(async () => {
@@ -89,6 +93,7 @@ contract('FeePool', async accounts => {
 			SynthsUSD: sUSDContract,
 			SystemStatus: systemStatus,
 			WrapperFactory: wrapperFactory,
+			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -106,6 +111,8 @@ contract('FeePool', async accounts => {
 				'RewardsDistribution',
 				'DelegateApprovals',
 				'CollateralManager',
+				'SingleNetworkAggregatorIssuedSynths',
+				'SingleNetworkAggregatorDebtRatio',
 				'WrapperFactory',
 			],
 		}));
@@ -113,6 +120,19 @@ contract('FeePool', async accounts => {
 		await setupPriceAggregators(exchangeRates, owner, [sAUD]);
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
+
+		synthetixBridgeToOptimism = await smockit(artifacts.require('SynthetixBridgeToOptimism').abi);
+
+		// import special address for relayer so we can call as it
+		await addressResolver.importAddresses(
+			['SynthetixBridgeToOptimism', 'SynthetixBridgeToBase'].map(toBytes32),
+			[synthetixBridgeToOptimism.address, relayer],
+			{
+				from: owner,
+			}
+		);
+
+		await feePool.rebuildCache();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -140,6 +160,7 @@ contract('FeePool', async accounts => {
 				'recordFeePaid',
 				'setRewardsToDistribute',
 				'closeCurrentFeePeriod',
+				'closeSecondary',
 				'claimFees',
 				'claimOnBehalf',
 				'importFeePeriod',
@@ -458,51 +479,7 @@ contract('FeePool', async accounts => {
 			assert.bnEqual(feesAvailable[0], 0);
 		});
 
-		describe('closeCurrentFeePeriod()', () => {
-			describe('fee period duration not set', () => {
-				beforeEach(async () => {
-					const storage = await FlexibleStorage.new(addressResolver.address, {
-						from: deployerAccount,
-					});
-
-					// replace FlexibleStorage in resolver
-					await addressResolver.importAddresses(
-						['FlexibleStorage'].map(toBytes32),
-						[storage.address],
-						{
-							from: owner,
-						}
-					);
-
-					await feePool.rebuildCache();
-				});
-				it('when closeFeePeriod() is invoked, it reverts with Fee Period Duration not set', async () => {
-					await assert.revert(
-						feePool.closeCurrentFeePeriod({ from: owner }),
-						'Fee Period Duration not set'
-					);
-				});
-			});
-			describe('suspension conditions', () => {
-				['System', 'Issuance'].forEach(section => {
-					describe(`when ${section} is suspended`, () => {
-						beforeEach(async () => {
-							await setStatus({ owner, systemStatus, section, suspend: true });
-						});
-						it('then calling closeCurrentFeePeriod() reverts', async () => {
-							await assert.revert(closeFeePeriod(), 'Operation prohibited');
-						});
-						describe(`when ${section} is resumed`, () => {
-							beforeEach(async () => {
-								await setStatus({ owner, systemStatus, section, suspend: false });
-							});
-							it('then calling closeCurrentFeePeriod() succeeds', async () => {
-								await closeFeePeriod();
-							});
-						});
-					});
-				});
-			});
+		describe('when closing the fee period', () => {
 			it('should allow account1 to close the current fee period', async () => {
 				await fastForward(await feePool.feePeriodDuration());
 
@@ -727,6 +704,67 @@ contract('FeePool', async accounts => {
 				}
 			});
 
+			it('should receive fees from WrapperFactory', async () => {
+				// Close the current one so we know exactly what we're dealing with
+				await closeFeePeriod();
+
+				// Wrapper Factory collects 100 sUSD in fees
+				const collectedFees = toUnit(100);
+				await sUSDContract.issue(wrapperFactory.address, collectedFees);
+
+				await closeFeePeriod();
+
+				const period = await feePool.recentFeePeriods(1);
+				assert.bnEqual(period.feesToDistribute, collectedFees);
+			});
+		});
+
+		describe('closeCurrentFeePeriod()', () => {
+			describe('fee period duration not set', () => {
+				beforeEach(async () => {
+					const storage = await FlexibleStorage.new(addressResolver.address, {
+						from: deployerAccount,
+					});
+
+					// replace FlexibleStorage in resolver
+					await addressResolver.importAddresses(
+						['FlexibleStorage'].map(toBytes32),
+						[storage.address],
+						{
+							from: owner,
+						}
+					);
+
+					await feePool.rebuildCache();
+				});
+				it('when closeFeePeriod() is invoked, it reverts with Fee Period Duration not set', async () => {
+					await assert.revert(
+						feePool.closeCurrentFeePeriod({ from: owner }),
+						'Fee Period Duration not set'
+					);
+				});
+			});
+			describe('suspension conditions', () => {
+				['System', 'Issuance'].forEach(section => {
+					describe(`when ${section} is suspended`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: true });
+						});
+						it('then calling closeCurrentFeePeriod() reverts', async () => {
+							await assert.revert(closeFeePeriod(), 'Operation prohibited');
+						});
+						describe(`when ${section} is resumed`, () => {
+							beforeEach(async () => {
+								await setStatus({ owner, systemStatus, section, suspend: false });
+							});
+							it('then calling closeCurrentFeePeriod() succeeds', async () => {
+								await closeFeePeriod();
+							});
+						});
+					});
+				});
+			});
+
 			it('should disallow closing the current fee period too early', async () => {
 				// Close the current one so we know exactly what we're dealing with
 				await closeFeePeriod();
@@ -746,18 +784,174 @@ contract('FeePool', async accounts => {
 				await feePool.closeCurrentFeePeriod({ from: account1 });
 			});
 
-			it('should receive fees from WrapperFactory', async () => {
+			it('should trigger bridge to close period on other networks', async () => {
+				await synthetix.issueSynths(toUnit(500), { from: owner });
+
+				await fastForward(await feePool.feePeriodDuration());
+
+				await feePool.closeCurrentFeePeriod({ from: account1 });
+
+				assert.equal(synthetixBridgeToOptimism.smocked.closeFeePeriod.calls.length, 1);
+
+				assert.equal(
+					synthetixBridgeToOptimism.smocked.closeFeePeriod.calls[0][0].toString(),
+					'500000000000000000000'
+				);
+				assert.equal(
+					synthetixBridgeToOptimism.smocked.closeFeePeriod.calls[0][1].toString(),
+					'500000000000000000000'
+				);
+			});
+		});
+
+		describe('closeSecondary()', () => {
+			describe('failure modes', () => {
+				it('does not work when not invoked by the relayer address', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: feePool.closeSecondary,
+						args: ['1', '2'],
+						accounts,
+						reason: 'Only valid relayer can call',
+						address: relayer,
+					});
+				});
+			});
+
+			describe('fee period duration not set', () => {
+				beforeEach(async () => {
+					const storage = await FlexibleStorage.new(addressResolver.address, {
+						from: deployerAccount,
+					});
+
+					// replace FlexibleStorage in resolver
+					await addressResolver.importAddresses(
+						['FlexibleStorage'].map(toBytes32),
+						[storage.address],
+						{
+							from: owner,
+						}
+					);
+
+					await feePool.rebuildCache();
+				});
+				it('when closeSecondary() is invoked, it succeeds with Fee Period Duration not set', async () => {
+					await feePool.closeSecondary('1', '2', { from: relayer });
+				});
+			});
+			describe('suspension conditions', () => {
+				['System', 'Issuance'].forEach(section => {
+					describe(`when ${section} is suspended`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: true });
+						});
+						it('then calling closeSecondary() succeeds', async () => {
+							await feePool.closeSecondary('1', '2', { from: relayer });
+						});
+					});
+				});
+			});
+
+			it('should allow account1 to close the current fee period', async () => {
+				await fastForward(await feePool.feePeriodDuration());
+
+				const lastFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
+				const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
+				assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 1 });
+
+				// Assert that our first period is new.
+				assert.bnNotEqual((await feePool.recentFeePeriods(0)).feePeriodId, lastFeePeriodId);
+
+				// And that the second was the old one
+				assert.bnEqual((await feePool.recentFeePeriods(1)).feePeriodId, lastFeePeriodId);
+
+				// fast forward and close another fee Period
+				await fastForward(await feePool.feePeriodDuration());
+
+				const secondFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
+
+				const secondPeriodClose = await feePool.closeCurrentFeePeriod({ from: account1 });
+				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
+			});
+			it('should import feePeriods and close the current fee period correctly', async () => {
+				// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
+				const feePeriodsImport = [
+					{
+						// recentPeriod 0
+						index: 0,
+						feePeriodId: 22,
+						startTime: 1520859600,
+						feesToDistribute: '5800660797674490860',
+						feesClaimed: '0',
+						rewardsToDistribute: '0',
+						rewardsClaimed: '0',
+					},
+					{
+						// recentPeriod 1
+						index: 1,
+						feePeriodId: 21,
+						startTime: 1520254800,
+						feesToDistribute: '934419341128642893704',
+						feesClaimed: '0',
+						rewardsToDistribute: '1442107692307692307692307',
+						rewardsClaimed: '0',
+					},
+				];
+
+				// import fee period data
+				for (const period of feePeriodsImport) {
+					await feePool.importFeePeriod(
+						period.index,
+						period.feePeriodId,
+						period.startTime,
+						period.feesToDistribute,
+						period.feesClaimed,
+						period.rewardsToDistribute,
+						period.rewardsClaimed,
+						{ from: owner }
+					);
+				}
+
+				await fastForward(await feePool.feePeriodDuration());
+
+				const transaction = await feePool.closeCurrentFeePeriod({ from: account1 });
+				assert.eventEqual(transaction, 'FeePeriodClosed', { feePeriodId: 22 });
+
+				// Assert that our first period is new.
+				assert.deepInclude(await feePool.recentFeePeriods(0), {
+					feesToDistribute: toBN(0),
+					feesClaimed: toBN(0),
+				});
+
+				// And that the second was the old one and fees and rewards rolled over
+				const feesToDistribute1 = web3.utils.toBN(feePeriodsImport[0].feesToDistribute, 'wei'); // 5800660797674490860
+				const feesToDistribute2 = web3.utils.toBN(feePeriodsImport[1].feesToDistribute, 'wei'); // 934419341128642893704
+				const rolledOverFees = feesToDistribute1.add(feesToDistribute2); // 940220001926317384564
+				assert.deepEqual(await feePool.recentFeePeriods(1), {
+					feePeriodId: 22,
+					startTime: 1520859600,
+					feesToDistribute: rolledOverFees,
+					feesClaimed: '0',
+					rewardsToDistribute: '1442107692307692307692307',
+					rewardsClaimed: '0',
+				});
+			});
+
+			it('should allow closing fee period even if its too early', async () => {
 				// Close the current one so we know exactly what we're dealing with
 				await closeFeePeriod();
 
-				// Wrapper Factory collects 100 sUSD in fees
-				const collectedFees = toUnit(100);
-				await sUSDContract.issue(wrapperFactory.address, collectedFees);
+				// Try to close the new fee period immediately again
+				await feePool.closeSecondary('1', '2', { from: relayer });
+			});
 
-				await closeFeePeriod();
-
-				const period = await feePool.recentFeePeriods(1);
-				assert.bnEqual(period.feesToDistribute, collectedFees);
+			it('should allow closing the current fee period very late', async () => {
+				// Close it 500 times later than prescribed by feePeriodDuration
+				// which should still succeed.
+				const feePeriodDuration = await feePool.feePeriodDuration();
+				await fastForward(feePeriodDuration.mul(web3.utils.toBN('500')));
+				await updateRatesWithDefaults();
+				await feePool.closeSecondary('1', '2', { from: relayer });
 			});
 		});
 
@@ -787,38 +981,30 @@ contract('FeePool', async accounts => {
 						});
 					});
 				});
-				['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
-					describe(`when ${type} is stale`, () => {
-						beforeEach(async () => {
-							await fastForward(
-								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
-							);
+				describe(`when SNX is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+						await debtCache.takeDebtSnapshot();
+					});
 
-							// set all rates minus those to ignore
-							const ratesToUpdate = ['SNX']
-								.concat(synths)
-								.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+					it('reverts on claimFees', async () => {
+						await assert.revert(
+							feePool.claimFees({ from: owner }),
+							'A synth or SNX rate is invalid'
+						);
+					});
+				});
 
-							await updateAggregatorRates(
-								exchangeRates,
-								ratesToUpdate.map(toBytes32),
-								ratesToUpdate.map(() => toUnit('1'))
-							);
-							await debtCache.takeDebtSnapshot();
-						});
+				describe(`when debt aggregator is stale`, () => {
+					beforeEach(async () => {
+						await aggregatorDebtRatio.setOverrideTimestamp(500);
+					});
 
-						if (type === 'none') {
-							it('allows claimFees', async () => {
-								await feePool.claimFees({ from: owner });
-							});
-						} else {
-							it('reverts on claimFees', async () => {
-								await assert.revert(
-									feePool.claimFees({ from: owner }),
-									'A synth or SNX rate is invalid'
-								);
-							});
-						}
+					it('reverts on claimFees', async () => {
+						await assert.revert(
+							feePool.claimFees({ from: owner }),
+							'A synth or SNX rate is invalid'
+						);
 					});
 				});
 			});
@@ -1285,38 +1471,30 @@ contract('FeePool', async accounts => {
 						});
 					});
 				});
-				['SNX', 'sAUD', ['SNX', 'sAUD'], 'none'].forEach(type => {
-					describe(`when ${type} is stale`, () => {
-						beforeEach(async () => {
-							await fastForward(
-								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
-							);
+				describe(`when SNX is stale`, () => {
+					beforeEach(async () => {
+						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+						await debtCache.takeDebtSnapshot();
+					});
 
-							// set all rates minus those to ignore
-							const ratesToUpdate = ['SNX']
-								.concat(synths)
-								.filter(key => key !== 'sUSD' && ![].concat(type).includes(key));
+					it('reverts on claimOnBehalf', async () => {
+						await assert.revert(
+							feePool.claimOnBehalf(authoriser, { from: delegate }),
+							'A synth or SNX rate is invalid'
+						);
+					});
+				});
 
-							await updateAggregatorRates(
-								exchangeRates,
-								ratesToUpdate.map(toBytes32),
-								ratesToUpdate.map(() => toUnit('1'))
-							);
-							await debtCache.takeDebtSnapshot();
-						});
+				describe(`when debt aggregator is stale`, () => {
+					beforeEach(async () => {
+						await aggregatorDebtRatio.setOverrideTimestamp(500);
+					});
 
-						if (type === 'none') {
-							it('allows claimFees', async () => {
-								await feePool.claimOnBehalf(authoriser, { from: delegate });
-							});
-						} else {
-							it('reverts on claimFees', async () => {
-								await assert.revert(
-									feePool.claimOnBehalf(authoriser, { from: delegate }),
-									'A synth or SNX rate is invalid'
-								);
-							});
-						}
+					it('reverts on claimOnBehalf', async () => {
+						await assert.revert(
+							feePool.claimOnBehalf(authoriser, { from: delegate }),
+							'A synth or SNX rate is invalid'
+						);
 					});
 				});
 			});
