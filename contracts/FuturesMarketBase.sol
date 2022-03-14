@@ -661,7 +661,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         int funding = _nextFundingEntry(price);
         fundingSequence.push(int128(funding));
         fundingLastRecomputed = uint32(block.timestamp);
-        emit FundingRecomputed(funding);
+        emit FundingRecomputed(funding, sequenceLengthBefore, fundingLastRecomputed);
 
         return sequenceLengthBefore;
     }
@@ -1037,7 +1037,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         uint fee
     );
 
-    event FundingRecomputed(int funding);
+    event FundingRecomputed(int funding, uint index, uint timestamp);
 
     event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
 }
