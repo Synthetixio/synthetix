@@ -29,7 +29,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      */
     function submitNextPriceOrder(int sizeDelta) external {
-        _submitNextPriceOrder(sizeDelta, bytes32(""));
+        _submitNextPriceOrder(sizeDelta, bytes32(0));
     }
 
     /// same as submitNextPriceOrder but emits an event with the tracking code
