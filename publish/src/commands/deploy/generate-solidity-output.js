@@ -37,7 +37,8 @@ module.exports = async ({
 	const internalFunctions = [];
 
 	// function to derive a unique name for each new contract
-	const newContractVariableFunctor = name => `new_${name}_contract`;
+	// replace non alpha-numeric with underscore as some contract names contain those
+	const newContractVariableFunctor = name => `new_${name}_contract`.replace(/[\W_]+/g, '_');
 
 	for (const [
 		runIndex,
