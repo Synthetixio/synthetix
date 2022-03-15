@@ -11,7 +11,7 @@ import "./SafeDecimalMath.sol";
 
 // aggregator which reports the data from the system itself
 // useful for testing
-contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
+contract BaseOneNetAggregator is Owned, AggregatorV2V3Interface {
     using SafeDecimalMath for uint;
 
     AddressResolver public resolver;

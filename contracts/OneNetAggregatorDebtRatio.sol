@@ -1,9 +1,9 @@
 pragma solidity ^0.5.16;
 
-import "./BaseSingleNetworkAggregator.sol";
+import "./BaseOneNetAggregator.sol";
 
-contract SingleNetworkAggregatorDebtRatio is BaseSingleNetworkAggregator {
-    constructor(AddressResolver _resolver) public BaseSingleNetworkAggregator(_resolver) {}
+contract OneNetAggregatorDebtRatio is BaseOneNetAggregator {
+    constructor(AddressResolver _resolver) public BaseOneNetAggregator(_resolver) {}
 
     function getRoundData(uint80)
         public
