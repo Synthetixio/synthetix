@@ -24,6 +24,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		'The target port for the running local chain to test on',
 		'8545'
 	)
+	.addOptionalParam('grep', 'test pattern to match (mocha)', '')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l1/';
 
@@ -88,6 +89,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 		'The target port for the running local chain to test on',
 		'8545'
 	)
+	.addOptionalParam('grep', 'test pattern to match (mocha)', '')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l2/';
 		hre.config.debugOptimism = taskArguments.debugOptimism;
@@ -197,4 +199,8 @@ function _commonIntegrationTestSettings({ hre, taskArguments }) {
 
 	taskArguments.maxMemory = true;
 	taskArguments.noCompile = true;
+
+	if (taskArguments.grep) {
+		hre.config.mocha.grep = taskArguments.grep;
+	}
 }

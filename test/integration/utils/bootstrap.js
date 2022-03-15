@@ -5,7 +5,7 @@ const { connectContracts } = require('./contracts');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('./rates');
 const { ensureBalance } = require('./balances');
 const { setupOptimismWatchers, approveBridge } = require('./optimism');
-const { startOpsHeartbeat } = require('./optimism-temp');
+// const { startOpsHeartbeat } = require('./optimism-temp');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -73,12 +73,12 @@ function bootstrapL2({ ctx }) {
 			balance: ethers.utils.parseEther('1000000'),
 		});
 
-		if (!ctx.fork) {
-			startOpsHeartbeat({
-				l1Wallet: ctx.l1mock.users.user9,
-				l2Wallet: ctx.users.user9,
-			});
-		}
+		// if (!ctx.fork) {
+		// 	startOpsHeartbeat({
+		// 		l1Wallet: ctx.l1mock.users.user9,
+		// 		l2Wallet: ctx.users.user9,
+		// 	});
+		// }
 	});
 }
 
