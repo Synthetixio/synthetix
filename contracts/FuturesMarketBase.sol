@@ -661,7 +661,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         int funding = _nextFundingEntry(price);
         fundingSequence.push(int128(funding));
         fundingLastRecomputed = uint32(block.timestamp);
-        emit FundingRecomputed(funding);
+        emit FundingRecomputed(funding, sequenceLengthBefore, fundingLastRecomputed);
 
         return sequenceLengthBefore;
     }
@@ -859,7 +859,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         if (0 < fee) {
             _manager().payFee(fee);
             // emit tracking code event
-            if (params.trackingCode != bytes32("")) {
+            if (params.trackingCode != bytes32(0)) {
                 emit FuturesTracking(params.trackingCode, baseAsset, marketKey, params.sizeDelta, fee);
             }
         }
@@ -906,7 +906,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
     function modifyPosition(int sizeDelta) external {
-        _modifyPosition(sizeDelta, bytes32(""));
+        _modifyPosition(sizeDelta, bytes32(0));
     }
 
     /*
@@ -936,7 +936,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Submit an order to close a position.
      */
     function closePosition() external {
-        _closePosition(bytes32(""));
+        _closePosition(bytes32(0));
     }
 
     /// Same as closePosition, but emits an even with the trackingCode for volume source fee sharing
@@ -1037,7 +1037,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         uint fee
     );
 
-    event FundingRecomputed(int funding);
+    event FundingRecomputed(int funding, uint index, uint timestamp);
 
     event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
 }
