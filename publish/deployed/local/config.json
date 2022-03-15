@@ -392,10 +392,10 @@
 	"SynthRedeemer": {
 		"deploy": true
 	},
-	"SingleNetworkAggregatorIssuedSynths": {
+	"OneNetworkAggregatorIssuedSynths": {
 		"deploy": true
 	},
-	"SingleNetworkAggregatorDebtRatio": {
+	"OneNetworkAggregatorDebtRatio": {
 		"deploy": true
 	},
 	"SystemSettingsLib": {

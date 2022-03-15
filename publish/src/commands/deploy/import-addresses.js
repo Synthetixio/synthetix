@@ -63,28 +63,18 @@ module.exports = async ({
 
 							const { source, address } = contract;
 							newContractsBeingAdded[contract.address] = { name, source, address, contract };
-						}
 
-						// For debt pool synthesis, when adding these labels, use the single network version if they exist in deployments
-						for (const debtPoolContractName of ['AggregatorIssuedSynths', 'AggregatorDebtRatio']) {
-							if (
-								name === `ext:${debtPoolContractName}` &&
-								currentAddress === ethers.constants.AddressZero &&
-								allContracts[`SingleNetwork${debtPoolContractName}`]
-							) {
-								console.log(
-									green(
-										`${name} needs to be imported to the AddressResolver, using SingleNetwork version`
-									)
-								);
-								const singleNetworkVersion =
-									deployer.deployedContracts[`SingleNetwork${debtPoolContractName}`];
-								addressArgs[0].push(toBytes32(name));
-								addressArgs[1].push(singleNetworkVersion.address);
+							// SIP-165 For debt pool synthesis, also add the ext:addresses, use the single network version if they exist in deployments
+							for (const debtPoolContractName of [
+								'AggregatorIssuedSynths',
+								'AggregatorDebtRatio',
+							]) {
+								addressArgs[0].push(toBytes32(`ext:${debtPoolContractName}`));
+								addressArgs[1].push(contract.address);
 
-								const { source, address } = singleNetworkVersion;
-								newContractsBeingAdded[singleNetworkVersion.address] = {
-									name,
+								const { source, address } = contract;
+								newContractsBeingAdded[contract.address] = {
+									name: debtPoolContractName,
 									source,
 									address,
 									contract,

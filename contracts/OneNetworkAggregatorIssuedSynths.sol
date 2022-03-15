@@ -1,10 +1,9 @@
 pragma solidity ^0.5.16;
 
-import "./BaseSingleNetworkAggregator.sol";
+import "./BaseOneNetworkAggregator.sol";
 
-contract SingleNetworkAggregatorIssuedSynths is BaseSingleNetworkAggregator {
-
-    constructor(AddressResolver _resolver) public BaseSingleNetworkAggregator(_resolver) {}
+contract OneNetworkAggregatorIssuedSynths is BaseOneNetworkAggregator {
+    constructor(AddressResolver _resolver) public BaseOneNetworkAggregator(_resolver) {}
 
     function getRoundData(uint80)
         public
@@ -17,8 +16,8 @@ contract SingleNetworkAggregatorIssuedSynths is BaseSingleNetworkAggregator {
             uint80
         )
     {
-
-        uint totalIssuedSynths = IIssuer(resolver.requireAndGetAddress("Issuer", "aggregate debt info")).totalIssuedSynths("sUSD", true);
+        uint totalIssuedSynths =
+            IIssuer(resolver.requireAndGetAddress("Issuer", "aggregate debt info")).totalIssuedSynths("sUSD", true);
 
         uint dataTimestamp = now;
 
