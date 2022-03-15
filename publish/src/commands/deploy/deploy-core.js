@@ -47,12 +47,12 @@ module.exports = async ({
 	console.log(gray(`\n------ DEPLOY SELF ORACLES ------\n`));
 
 	await deployer.deployContract({
-		name: 'OneNetworkAggregatorIssuedSynths',
+		name: 'OneNetAggregatorIssuedSynths',
 		args: [addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
-		name: 'OneNetworkAggregatorDebtRatio',
+		name: 'OneNetAggregatorDebtRatio',
 		args: [addressOf(readProxyForResolver)],
 	});
 

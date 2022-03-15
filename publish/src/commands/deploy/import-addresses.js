@@ -72,7 +72,7 @@ module.exports = async ({
 
 			if (currentAddress === ethers.constants.AddressZero) {
 				console.log(yellow('Importing special aggregator', debtPoolContractName));
-				const contract = deployer.deployedContracts[`OneNetwork${debtPoolContractName}`];
+				const contract = deployer.deployedContracts[`OneNet${debtPoolContractName}`];
 				addressArgs[0].push(resolverName);
 				addressArgs[1].push(contract.address);
 

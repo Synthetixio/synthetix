@@ -415,15 +415,15 @@
 				"base": [
 					"FeePool",
 					"Issuer",
-					"OneNetworkAggregatorIssuedSynths",
-					"OneNetworkAggregatorDebtRatio",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
 					"SynthetixBridgeToOptimism"
 				],
 				"ovm": [
 					"FeePool",
 					"Issuer",
-					"OneNetworkAggregatorIssuedSynths",
-					"OneNetworkAggregatorDebtRatio",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
 					"SynthetixBridgeToBase"
 				]
 			}

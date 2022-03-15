@@ -16,7 +16,7 @@ const { toBytes32 } = require('../..');
 
 const ethers = require('ethers');
 
-contract('OneNetworkAggregators', async accounts => {
+contract('OneNetAggregators', async accounts => {
 	const [owner] = accounts;
 
 	let addressResolver, aggregatorDebtRatio, aggregatorIssuedSynths;
@@ -33,13 +33,13 @@ contract('OneNetworkAggregators', async accounts => {
 		aggregatorDebtRatio = await setupContract({
 			accounts,
 			args: [addressResolver.address],
-			contract: 'OneNetworkAggregatorDebtRatio',
+			contract: 'OneNetAggregatorDebtRatio',
 		});
 
 		aggregatorIssuedSynths = await setupContract({
 			accounts,
 			args: [addressResolver.address],
-			contract: 'OneNetworkAggregatorIssuedSynths',
+			contract: 'OneNetAggregatorIssuedSynths',
 		});
 
 		mockIssuer = await smockit(artifacts.require('Issuer').abi);
@@ -124,7 +124,7 @@ contract('OneNetworkAggregators', async accounts => {
 		});
 	});
 
-	describe('OneNetworkAggregatorIssuedSynths', () => {
+	describe('OneNetAggregatorIssuedSynths', () => {
 		describe('getRoundData(uint80)', () => {
 			it('gets current issued synths', async () => {
 				assert.bnEqual((await aggregatorIssuedSynths.getRoundData(0))[1], toUnit(500));
@@ -132,7 +132,7 @@ contract('OneNetworkAggregators', async accounts => {
 		});
 	});
 
-	describe('OneNetworkAggregatorDebtRatio', () => {
+	describe('OneNetAggregatorDebtRatio', () => {
 		describe('getRoundData(uint80)', async () => {
 			it('gets current issued synths', async () => {
 				assert.bnEqual((await aggregatorDebtRatio.getRoundData(0))[1], toPreciseUnit('0.5'));
