@@ -50,7 +50,7 @@ const prepareDeploy = async ({
 	ensureDeploymentPath(deploymentPath);
 
 	// Get config and synths
-	const { config, configFile, synths, synthsFile } = loadAndCheckRequiredSources({
+	const { config, configFile, synths, synthsFile, futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
@@ -89,6 +89,14 @@ const prepareDeploy = async ({
 
 		if (sources.length > 0) {
 			console.log(gray(`Preparing releases: ${unreleased.map(({ name }) => name).join(', ')}`));
+		}
+	}
+
+	// add futures markets if missing from config file
+	for (const marketConfig of futuresMarkets) {
+		const marketName = 'FuturesMarket' + marketConfig.marketKey.slice('1'); // remove s prefix
+		if (!config[marketName]) {
+			sources.push(marketName); // add to sources to be written into config
 		}
 	}
 

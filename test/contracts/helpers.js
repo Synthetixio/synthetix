@@ -47,6 +47,9 @@ async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = und
 	timestamp = timestamp || (await currentTime());
 	for (let i = 0; i < keys.length; i++) {
 		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
+		if (aggregatorAddress === ZERO_ADDRESS) {
+			throw new Error(`Aggregator set to zero address, use "setupPriceAggregators" to set it up`);
+		}
 		const aggregator = await MockAggregator.at(aggregatorAddress);
 		// set the rate
 		await aggregator.setLatestAnswer(rates[i], timestamp);
@@ -78,6 +81,9 @@ module.exports = {
 		assert.equal(log.address, emittedFrom, 'log emission address does not match');
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
+
+			// // for debugging
+			// console.log(i, arg.toString(), value.toString())
 
 			if (type === 'address') {
 				assert.equal(

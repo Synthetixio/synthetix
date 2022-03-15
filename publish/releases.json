@@ -60,6 +60,41 @@
 			"sources": ["Exchanger", "ExchangeRates"]
 		},
 		{
+			"sip": 80,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SignedSafeMath",
+					"SystemStatus",
+					"FuturesMarketManager"
+				],
+				"ovm": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SignedSafeMath",
+					"SystemStatus",
+					"FuturesMarket",
+					"FuturesMarketManager",
+					"FuturesMarketSettings",
+					"FuturesMarketData"
+				]
+			}
+		},
+		{
 			"sip": 83,
 			"layer": "base",
 			"released": "base",
@@ -372,6 +407,26 @@
 			"sip": 158,
 			"layer": "base",
 			"released": "base"
+		},
+		{
+			"sip": 165,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"FeePool",
+					"Issuer",
+					"ext:AggregatorIssuedSynths",
+					"ext:AggregatorDebtRatio",
+					"SynthetixBridgeToOptimism"
+				],
+				"ovm": [
+					"FeePool",
+					"Issuer",
+					"ext:AggregatorIssuedSynths",
+					"ext:AggregatorDebtRatio",
+					"SynthetixBridgeToBase"
+				]
+			}
 		},
 		{
 			"sip": 169,

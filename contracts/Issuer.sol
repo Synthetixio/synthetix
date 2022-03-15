@@ -21,10 +21,12 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
-import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
+import "./interfaces/ISystemStatus.sol";
 import "./Proxyable.sol";
+
+import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
 interface IProxy {
     function target() external view returns (address);
@@ -59,10 +61,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     bytes32 public constant CONTRACT_NAME = "Issuer";
 
+    // SIP-165: Circuit breaker for Debt Synthesis
+    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 165;
+
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
+
+    uint public lastDebtRatio;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -87,13 +94,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
+    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](11);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -105,6 +116,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[8] = CONTRACT_LIQUIDATIONS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[11] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -150,6 +164,24 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function synthRedeemer() internal view returns (ISynthRedeemer) {
         return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
+    }
+
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
+    }
+
+    function allNetworksDebtInfo() public view returns (uint256 debt, uint256 sharesSupply, bool isStale) {
+
+        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
+            .latestRoundData();
+
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
+            .latestRoundData();
+        
+        debt = uint(rawIssuedSynths);
+        sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
+        isStale = block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
+                block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -223,14 +255,19 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynths(currencyKey, true);
+        (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
 
-        // If it's zero, they haven't issued, and they have no debt.
-        // Note: it's more gas intensive to put this check here rather than before _totalIssuedSynths
-        // if they have 0 SNX, but it's a necessary trade-off
-        if (debtShareBalance == 0) return (0, totalSystemValue, anyRateIsInvalid);
+        if (debtShareBalance == 0) {
+            return (0, snxBackedAmount, debtInfoStale);
+        }
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, totalSystemValue, synthetixDebtShare().totalSupply());
+        // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
+        (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(currencyRate);
+        totalSystemValue = snxBackedAmount;
+
+        anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
     }
 
     function _canBurnSynths(address account) internal view returns (bool) {
@@ -640,6 +677,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
+    function setLastDebtRatio(uint256 ratio) external onlyOwner {
+        lastDebtRatio = ratio;
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireRatesNotInvalid(bool anyRateIsInvalid) internal pure {
@@ -659,6 +700,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         bool issueMax
     ) internal {
+        // check breaker
+        if (!_verifyCircuitBreaker()) {
+            return;
+        }
+
         (uint maxIssuable, , uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
 
@@ -688,6 +734,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint existingDebt,
         uint totalDebtIssued
     ) internal returns (uint amountBurnt) {
+        // check breaker
+        if (!_verifyCircuitBreaker()) {
+            return 0;
+        }
+
         // liquidation requires sUSD to be already settled / not in waiting period
 
         // If they're trying to burn more debt than they actually owe, rather than fail the transaction, let's just
@@ -712,6 +763,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         bool burnToTarget
     ) internal {
+        // check breaker
+        if (!_verifyCircuitBreaker()) {
+            return;
+        }
+
         if (!burnToTarget) {
             // If not burning to target, then burning requires that the minimum stake time has elapsed.
             require(_canBurnSynths(from), "Minimum stake time not reached");
@@ -781,6 +837,37 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         } else {
             uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
             sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
+        }
+    }
+
+    function _verifyCircuitBreaker() internal returns (bool) {
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
+            .latestRoundData();
+
+        uint deviation = _calculateDeviation(lastDebtRatio, uint(rawRatio));
+
+        if (deviation >= getPriceDeviationThresholdFactor()) {
+            systemStatus().suspendIssuance(CIRCUIT_BREAKER_SUSPENSION_REASON);
+            return false;
+        }
+        
+        lastDebtRatio = uint(rawRatio);
+
+        return true;
+    }
+
+    function _calculateDeviation(
+        uint last,
+        uint fresh
+    ) internal pure returns (uint deviation) {
+        if (last == 0) {
+            deviation = 1;
+        } else if (fresh == 0) {
+            deviation = uint(-1);
+        } else if (last > fresh) {
+            deviation = last.divideDecimal(fresh);
+        } else {
+            deviation = fresh.divideDecimal(last);
         }
     }
 
