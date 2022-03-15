@@ -104,9 +104,10 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     function closeFeePeriod(uint snxBackedAmount, uint totalDebtShares) external requireInitiationActive {
         require(msg.sender == address(feePool()), "Only the fee pool can call this");
-        
+
         ISynthetixBridgeToBase bridgeToBase;
-        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeFeePeriodClose.selector, snxBackedAmount, totalDebtShares);
+        bytes memory messageData =
+            abi.encodeWithSelector(bridgeToBase.finalizeFeePeriodClose.selector, snxBackedAmount, totalDebtShares);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(
