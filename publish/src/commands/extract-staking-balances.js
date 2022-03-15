@@ -21,7 +21,12 @@ const DEFAULTS = {
 	network: 'kovan',
 };
 
-async function extractStakingBalances({ network = DEFAULTS.network, deploymentPath, synth }) {
+async function extractStakingBalances({
+	network = DEFAULTS.network,
+	deploymentPath,
+	useOvm,
+	synth,
+}) {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
@@ -71,7 +76,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 			module: 'account',
 			action: 'txlist',
 			address: stakingAddress,
-			apikey: process.env.ETHERSCAN_KEY,
+			apikey: useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY,
 		},
 	});
 
@@ -272,6 +277,7 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option('-s, --synth <value>', 'The synth to extract from')
 			.description('Extracts staking reward balances')
 			.action(async (...args) => {

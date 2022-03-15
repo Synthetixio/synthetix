@@ -1,0 +1,15 @@
+# Builds a testing chain which is used for integration tests and downstream projects
+{{> job-header-node.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npx hardhat compile --optimizer --fail-oversize
+  - run: node publish build --test-helpers
+  - run: npx hardhat cannon:build --file cannonfile.aggregator.toml rate=5
+  - run: npx hardhat cannon:build
+  - persist_to_workspace:
+      root: .
+      paths:
+        - build
+        - publish/deployed

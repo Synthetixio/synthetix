@@ -23,8 +23,6 @@ async function deployInstance({
 	generateSolidity = false,
 	ignoreCustomParameters = false,
 	network = 'local',
-	providerPort,
-	providerUrl,
 	skipFeedChecks = true,
 	useFork = false,
 	useOvm,
@@ -40,7 +38,6 @@ async function deployInstance({
 		ignoreCustomParameters,
 		network,
 		privateKey,
-		providerUrl: `${providerUrl}:${providerPort}`,
 		skipFeedChecks,
 		useFork,
 		useOvm,
@@ -56,7 +53,7 @@ async function deploy() {
 
 	// prepare the synths but skip preparing releases (as this isn't a fork)
 	const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
-	//const synthsToAdd = [];
+	// const synthsToAdd = [];
 	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 	await deployInstance({
 		addNewSynths: true,

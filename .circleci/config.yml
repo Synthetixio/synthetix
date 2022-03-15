@@ -30,7 +30,7 @@ jobs:
           name: Lint lockfile
           command: |
             lockfile-lint -p package-lock.json --type npm --allowed-hosts npm --validate-https --empty-hostname false
-  job-compile:
+  job-cannon:
     working_directory: ~/repo
     docker:
       - image: synthetixio/docker-node:16.13-ubuntu
@@ -42,6 +42,14 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
+      - run: node publish build --test-helpers
+      - run: npx hardhat cannon:build --file cannonfile.aggregator.toml rate=5
+      - run: npx hardhat cannon:build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - publish/deployed
   job-fork-tests-ovm:
     working_directory: ~/repo
     docker:
@@ -63,9 +71,9 @@ jobs:
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat test:integration:l2 --compile --use-fork
+              npx hardhat --network localhost test:integration:l2 --use-fork
             else
-              npx hardhat test:integration:l2 --compile --deploy --use-sips --use-fork
+              npx hardhat --network localhost test:integration:l2 --deploy --use-sips --use-fork
             fi;
       - store_test_results:
           path: /tmp/junit/
@@ -92,9 +100,9 @@ jobs:
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
-              npx hardhat test:integration:l1 --compile --use-fork --provider-port 9545
+              npx hardhat --network localhost test:integration:l1 --use-fork
             else
-              npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork --provider-port 9545
+              npx hardhat --network localhost test:integration:l1 --deploy --use-sips --use-fork
             fi;
       - store_test_results:
           path: /tmp/junit/
@@ -129,22 +137,22 @@ jobs:
           command: |
             docker --version
             npx hardhat ops --start
+      - run:
+          name: Run isolated layer 1 integration tests
+          command: |
+            npx hardhat test:integration:l1 --deploy
       - cmd-wait-for-port:
           port: 8545
       - cmd-wait-for-port:
           port: 9545
       - run:
-          name: Run isolated layer 1 integration tests
-          command: |
-            npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
-      - run:
           name: Run isolated layer 2 integration tests
           command: |
-            npx hardhat test:integration:l2 --compile --deploy
+            npx hardhat --network localhost test:integration:l2 --deploy
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat test:integration:dual --deploy
+            npx hardhat --network localhost test:integration:dual --deploy
       - store_test_results:
           path: /tmp/junit/
       - store_artifacts:
@@ -425,7 +433,7 @@ workflows:
       - job-lint:
           requires:
             - job-prepare
-      - job-compile:
+      - job-cannon:
           requires:
             - job-prepare
       - job-static-analysis:
@@ -450,17 +458,17 @@ workflows:
             - job-prepare
       - job-fork-tests:
           requires:
-            - job-prepare
+            - job-cannon
       - job-fork-tests-ovm:
           requires:
-            - job-prepare
+            - job-cannon
       - job-simulate-release:
           requires:
             - job-prepare
       - job-integration-tests:
           name: job-integration-tests
           requires:
-            - job-prepare
+            - job-cannon
       - job-pack-browser:
           requires:
             - job-prepare

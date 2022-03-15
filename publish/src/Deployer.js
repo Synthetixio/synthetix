@@ -25,6 +25,7 @@ class Deployer {
 		maxFeePerGas,
 		maxPriorityFeePerGas,
 		network,
+		providerUrl,
 		privateKey,
 		useFork,
 		useOvm,
@@ -43,7 +44,11 @@ class Deployer {
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 
-		this.provider = require('hardhat').ethers.provider;
+		if (providerUrl) {
+			this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
+		} else {
+			this.provider = require('hardhat').ethers.provider;
+		}
 
 		// use the default owner when in a fork or in local mode and no private key supplied
 		if ((useFork || network === 'local') && !privateKey) {
