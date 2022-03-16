@@ -3,10 +3,9 @@ pragma solidity ^0.5.16;
 import "./BaseOneNetAggregator.sol";
 
 contract OneNetAggregatorIssuedSynths is BaseOneNetAggregator {
+    bytes32 public constant CONTRACT_NAME = "OneNetAggregatorIssuedSynths";
 
-bytes32 public constant CONTRACT_NAME = "OneNetAggregatorIssuedSynths";
-
-constructor(AddressResolver _resolver) public BaseOneNetAggregator(_resolver) {}
+    constructor(AddressResolver _resolver) public BaseOneNetAggregator(_resolver) {}
 
     function getRoundData(uint80)
         public
