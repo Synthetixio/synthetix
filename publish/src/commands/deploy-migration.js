@@ -10,6 +10,7 @@ const {
 	constants: { FLATTENED_FOLDER },
 } = require('../../..');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
+const linker = require('solc/linker');
 
 const { optimizerRuns } = require('./build').DEFAULTS;
 
@@ -45,6 +46,7 @@ const deployMigration = async ({
 	privateKey,
 	yes,
 	dryRun = false,
+	migrationLibrary = false,
 } = {}) => {
 	ensureNetwork(network);
 
@@ -107,6 +109,7 @@ const deployMigration = async ({
 				: green(' ✅')),
 		'Release Name': releaseName,
 		'Deployer account:': signer.address,
+		'Using migration library:': migrationLibrary,
 	});
 
 	if (!yes) {
@@ -126,9 +129,33 @@ const deployMigration = async ({
 
 	console.log(gray(`Starting deployment to ${network.toUpperCase()}...`));
 
+	const contractName = 'Migration_' + releaseName;
+	let contractBytecode = compiled[contractName].evm.bytecode.object;
+
+	if (migrationLibrary) {
+		const libName = 'Migration_lib_' + releaseName;
+		const helperLibrary = new ethers.ContractFactory(
+			compiled[libName].abi,
+			compiled[libName].evm.bytecode.object,
+			signer
+		);
+
+		const deployerLib = await helperLibrary.deploy();
+		console.log(
+			green(
+				`\nSuccessfully deployed helper library "${contractName}.sol": ${deployerLib.address}\n`
+			)
+		);
+
+		contractBytecode = linker.linkBytecode(contractBytecode, {
+			[contractName + '.sol']: { [libName]: deployerLib.address },
+		});
+		console.log(green(`\nSuccessfully linked helper library\n`));
+	}
+
 	const migrationContract = new ethers.ContractFactory(
-		compiled['Migration_' + releaseName].abi,
-		compiled['Migration_' + releaseName].evm.bytecode.object,
+		compiled[contractName].abi,
+		contractBytecode,
 		signer
 	);
 
@@ -300,5 +327,6 @@ module.exports = {
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+			.option('--migration-library', 'If using a library for a contract that is too big.')
 			.action(deployMigration),
 };
