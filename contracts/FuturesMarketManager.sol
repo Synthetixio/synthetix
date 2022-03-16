@@ -29,6 +29,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
+    bytes32 public constant CONTRACT_NAME = "FuturesMarketManager";
+
     bytes32 internal constant SUSD = "sUSD";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
