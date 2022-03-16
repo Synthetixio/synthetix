@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../AddressResolver.sol";
@@ -24,7 +23,7 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 library MigrationLib_DiphdaOptimism {
-        // https://kovan-explorer.optimism.io/address/0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94;
+    // https://kovan-explorer.optimism.io/address/0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94;
     address public constant OWNER = 0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94;
 
     // ----------------------------
@@ -32,7 +31,8 @@ library MigrationLib_DiphdaOptimism {
     // ----------------------------
 
     // https://kovan-explorer.optimism.io/address/0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9
-    FuturesMarketManager public constant futuresmarketmanager_i = FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
+    FuturesMarketManager public constant futuresmarketmanager_i =
+        FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
     // https://kovan-explorer.optimism.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6
     AddressResolver public constant addressresolver_i = AddressResolver(0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6);
     // https://kovan-explorer.optimism.io/address/0xE90F90DCe5010F615bEC29c5db2D9df798D48183
@@ -40,7 +40,8 @@ library MigrationLib_DiphdaOptimism {
     // https://kovan-explorer.optimism.io/address/0xd8c8887A629F98C56686Be6aEEDAae7f8f75D599
     Proxy public constant proxyfeepool_i = Proxy(0xd8c8887A629F98C56686Be6aEEDAae7f8f75D599);
     // https://kovan-explorer.optimism.io/address/0x0A1d3bde7751e92971891FB034AcDE4C271de408
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x0A1d3bde7751e92971891FB034AcDE4C271de408);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0x0A1d3bde7751e92971891FB034AcDE4C271de408);
     // https://kovan-explorer.optimism.io/address/0xEf8a2c1BC94e630463293F71bF5414d13e80F62D
     ExchangeState public constant exchangestate_i = ExchangeState(0xEf8a2c1BC94e630463293F71bF5414d13e80F62D);
     // https://kovan-explorer.optimism.io/address/0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456
@@ -106,7 +107,8 @@ library MigrationLib_DiphdaOptimism {
     // https://kovan-explorer.optimism.io/address/0x723DE2CC925B273FfE66E1B1c94DfAE6b804a83a
     Issuer public constant issuer_i = Issuer(0x723DE2CC925B273FfE66E1B1c94DfAE6b804a83a);
     // https://kovan-explorer.optimism.io/address/0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB
-    FuturesMarketSettings public constant futuresmarketsettings_i = FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
+    FuturesMarketSettings public constant futuresmarketsettings_i =
+        FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -230,12 +232,11 @@ library MigrationLib_DiphdaOptimism {
         tokenstatesmatic_i.setAssociatedContract(new_SynthsMATIC_contract);
         // Ensure the sMATIC synth Proxy is correctly connected to the Synth;
         proxysmatic_i.setTarget(Proxyable(new_SynthsMATIC_contract));
-        
+
         // Add synths to the Issuer contract - batch 1;
         issuer_addSynths_70();
     }
 
-    
     function copyTotalSupplyFrom_sUSD() internal {
         // https://kovan-explorer.optimism.io/address/0xD32c1443Dde2d248cE1bE42BacBb65Db0A4aAF10;
         Synth existingSynth = Synth(0xD32c1443Dde2d248cE1bE42BacBb65Db0A4aAF10);
@@ -244,7 +245,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sETH() internal {
         // https://kovan-explorer.optimism.io/address/0x6E6e2e9b7769CbA76aFC1e6CAd795CD3Ce0772a1;
         Synth existingSynth = Synth(0x6E6e2e9b7769CbA76aFC1e6CAd795CD3Ce0772a1);
@@ -253,7 +253,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sBTC() internal {
         // https://kovan-explorer.optimism.io/address/0x66C203BcF339460698c48a2B589eBD91de4984E7;
         Synth existingSynth = Synth(0x66C203BcF339460698c48a2B589eBD91de4984E7);
@@ -262,7 +261,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sLINK() internal {
         // https://kovan-explorer.optimism.io/address/0xe5671C038739F8D71b11A5F78888e520356BFCD5;
         Synth existingSynth = Synth(0xe5671C038739F8D71b11A5F78888e520356BFCD5);
@@ -271,7 +269,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sUNI() internal {
         // https://kovan-explorer.optimism.io/address/0x4d02d6540C789dF4464f4Bc6D8f0AA87a05a8F2b;
         Synth existingSynth = Synth(0x4d02d6540C789dF4464f4Bc6D8f0AA87a05a8F2b);
@@ -280,7 +277,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sAAVE() internal {
         // https://kovan-explorer.optimism.io/address/0x1f99f5CbFC3b5Fd804dCc7F7780148F06423AC70;
         Synth existingSynth = Synth(0x1f99f5CbFC3b5Fd804dCc7F7780148F06423AC70);
@@ -289,7 +285,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sSOL() internal {
         // https://kovan-explorer.optimism.io/address/0x24f46A427E1cd91B4fEE1F47Fe7793eEFCb205b5;
         Synth existingSynth = Synth(0x24f46A427E1cd91B4fEE1F47Fe7793eEFCb205b5);
@@ -298,7 +293,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sAVAX() internal {
         // https://kovan-explorer.optimism.io/address/0xBc9F23b1AEf25e9a456F1973E9a9ef63830B8f49;
         Synth existingSynth = Synth(0xBc9F23b1AEf25e9a456F1973E9a9ef63830B8f49);
@@ -307,7 +301,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sMATIC() internal {
         // https://kovan-explorer.optimism.io/address/0x5BC3b2B2dC40dC88ea227F7501F28D9D8167BB60;
         Synth existingSynth = Synth(0x5BC3b2B2dC40dC88ea227F7501F28D9D8167BB60);
@@ -315,7 +308,7 @@ library MigrationLib_DiphdaOptimism {
         Synth newSynth = Synth(0xDbcfd6F265528d08FB7faA0934e18cf49A03AD65);
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
-    
+
     function issuer_addSynths_70() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_70_0 = new ISynth[](9);
         issuer_addSynths_synthsToAdd_70_0[0] = ISynth(new_SynthsUSD_contract);
