@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../AddressResolver.sol";
@@ -23,7 +22,6 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 library MigrationLib_Diphda {
-
     // https://kovan.etherscan.io/address/0x73570075092502472E4b61A7058Df1A4a1DB12f2;
     address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
 
@@ -38,7 +36,8 @@ library MigrationLib_Diphda {
     // https://kovan.etherscan.io/address/0xc43b833F93C3896472dED3EfF73311f571e38742
     Proxy public constant proxyfeepool_i = Proxy(0xc43b833F93C3896472dED3EfF73311f571e38742);
     // https://kovan.etherscan.io/address/0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D);
     // https://kovan.etherscan.io/address/0xa3F59b8E28cABC4411198dDa2e65C380BD5d6Dfe
     ExchangeState public constant exchangestate_i = ExchangeState(0xa3F59b8E28cABC4411198dDa2e65C380BD5d6Dfe);
     // https://kovan.etherscan.io/address/0x8c6680412e914932A9abC02B6c7cbf690e583aFA
@@ -48,7 +47,8 @@ library MigrationLib_Diphda {
     // https://kovan.etherscan.io/address/0xF7440b98b0DC9B54BFae68288a11C48dabFE7D07
     DebtCache public constant debtcache_i = DebtCache(0xF7440b98b0DC9B54BFae68288a11C48dabFE7D07);
     // https://kovan.etherscan.io/address/0x8F630b584765E30fF08A55BF436D84041674196E
-    ExchangeRatesWithDexPricing public constant exchangerates_i = ExchangeRatesWithDexPricing(0x8F630b584765E30fF08A55BF436D84041674196E);
+    ExchangeRatesWithDexPricing public constant exchangerates_i =
+        ExchangeRatesWithDexPricing(0x8F630b584765E30fF08A55BF436D84041674196E);
     // https://kovan.etherscan.io/address/0x9a6e96A0D9cDd4213BAd9101AB7c4d7Bd1Ea5226
     MultiCollateralSynth public constant synthsusd_i = MultiCollateralSynth(0x9a6e96A0D9cDd4213BAd9101AB7c4d7Bd1Ea5226);
     // https://kovan.etherscan.io/address/0x9aF5763Dc180f388A5fd20Dd7BA4B2790566f2eF
@@ -255,7 +255,7 @@ library MigrationLib_Diphda {
         // Ensure the ExchangeRates contract has the feed for sDEFI;
         exchangerates_i.addAggregator("sDEFI", 0x70179FB2F3A0a5b7FfB36a235599De440B0922ea);
     }
-        
+
     function copyTotalSupplyFrom_sUSD() internal {
         // https://kovan.etherscan.io/address/0xB98c6031344EB6007e94A8eDbc0ee28C13c66290;
         Synth existingSynth = Synth(0xB98c6031344EB6007e94A8eDbc0ee28C13c66290);
@@ -264,7 +264,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sEUR() internal {
         // https://kovan.etherscan.io/address/0x26b814c9fA4C0512D84373f80d4B92408CD13960;
         Synth existingSynth = Synth(0x26b814c9fA4C0512D84373f80d4B92408CD13960);
@@ -273,7 +272,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sJPY() internal {
         // https://kovan.etherscan.io/address/0x880477aE972Ca606cC7D47496E077514e978231B;
         Synth existingSynth = Synth(0x880477aE972Ca606cC7D47496E077514e978231B);
@@ -282,7 +280,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sAUD() internal {
         // https://kovan.etherscan.io/address/0x0D9D97E38d19885441f8be74fE88C3294300C866;
         Synth existingSynth = Synth(0x0D9D97E38d19885441f8be74fE88C3294300C866);
@@ -291,7 +288,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sGBP() internal {
         // https://kovan.etherscan.io/address/0x16A5ED828fD7F03B0c3F4E261Ea519112c4fa2f4;
         Synth existingSynth = Synth(0x16A5ED828fD7F03B0c3F4E261Ea519112c4fa2f4);
@@ -300,7 +296,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sKRW() internal {
         // https://kovan.etherscan.io/address/0x376684744fb828D67B1659f6D3D754938dc1Ec4b;
         Synth existingSynth = Synth(0x376684744fb828D67B1659f6D3D754938dc1Ec4b);
@@ -309,7 +304,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sCHF() internal {
         // https://kovan.etherscan.io/address/0x67FbB70d887e8E493611D273E94aD12fE7a7Da4e;
         Synth existingSynth = Synth(0x67FbB70d887e8E493611D273E94aD12fE7a7Da4e);
@@ -318,7 +312,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sBTC() internal {
         // https://kovan.etherscan.io/address/0xe2d39AB610fEe4C7FC591003553c7557C880eD04;
         Synth existingSynth = Synth(0xe2d39AB610fEe4C7FC591003553c7557C880eD04);
@@ -327,7 +320,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sETH() internal {
         // https://kovan.etherscan.io/address/0x56a8953C03FC8b859140D5C6f7e7f24dD611d419;
         Synth existingSynth = Synth(0x56a8953C03FC8b859140D5C6f7e7f24dD611d419);
@@ -336,7 +328,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sLINK() internal {
         // https://kovan.etherscan.io/address/0xa2aFD3FaA2b69a334DD5493031fa59B7779a3CBf;
         Synth existingSynth = Synth(0xa2aFD3FaA2b69a334DD5493031fa59B7779a3CBf);
@@ -345,7 +336,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sDEFI() internal {
         // https://kovan.etherscan.io/address/0x7fA8b2D1F640Ac31f08046d0502147Ed430DdAb2;
         Synth existingSynth = Synth(0x7fA8b2D1F640Ac31f08046d0502147Ed430DdAb2);

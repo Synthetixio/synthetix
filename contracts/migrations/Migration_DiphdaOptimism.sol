@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "./MigrationLib_DiphdaOptimism.sol";
@@ -13,7 +12,8 @@ contract Migration_DiphdaOptimism is BaseMigration {
     // ----------------------------
 
     // https://kovan-explorer.optimism.io/address/0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9
-    FuturesMarketManager public constant futuresmarketmanager_i = FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
+    FuturesMarketManager public constant futuresmarketmanager_i =
+        FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
     // https://kovan-explorer.optimism.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6
     AddressResolver public constant addressresolver_i = AddressResolver(0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6);
     // https://kovan-explorer.optimism.io/address/0xE90F90DCe5010F615bEC29c5db2D9df798D48183
@@ -21,7 +21,8 @@ contract Migration_DiphdaOptimism is BaseMigration {
     // https://kovan-explorer.optimism.io/address/0xd8c8887A629F98C56686Be6aEEDAae7f8f75D599
     Proxy public constant proxyfeepool_i = Proxy(0xd8c8887A629F98C56686Be6aEEDAae7f8f75D599);
     // https://kovan-explorer.optimism.io/address/0x0A1d3bde7751e92971891FB034AcDE4C271de408
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x0A1d3bde7751e92971891FB034AcDE4C271de408);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0x0A1d3bde7751e92971891FB034AcDE4C271de408);
     // https://kovan-explorer.optimism.io/address/0xEf8a2c1BC94e630463293F71bF5414d13e80F62D
     ExchangeState public constant exchangestate_i = ExchangeState(0xEf8a2c1BC94e630463293F71bF5414d13e80F62D);
     // https://kovan-explorer.optimism.io/address/0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456
@@ -87,7 +88,8 @@ contract Migration_DiphdaOptimism is BaseMigration {
     // https://kovan-explorer.optimism.io/address/0x723DE2CC925B273FfE66E1B1c94DfAE6b804a83a
     Issuer public constant issuer_i = Issuer(0x723DE2CC925B273FfE66E1B1c94DfAE6b804a83a);
     // https://kovan-explorer.optimism.io/address/0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB
-    FuturesMarketSettings public constant futuresmarketsettings_i = FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
+    FuturesMarketSettings public constant futuresmarketsettings_i =
+        FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -148,48 +150,47 @@ contract Migration_DiphdaOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](38);
-        contracts[0]= address(futuresmarketmanager_i);
-        contracts[1]= address(addressresolver_i);
-        contracts[2]= address(systemstatus_i);
-        contracts[3]= address(proxyfeepool_i);
-        contracts[4]= address(feepooleternalstorage_i);
-        contracts[5]= address(exchangestate_i);
-        contracts[6]= address(feepool_i);
-        contracts[7]= address(debtcache_i);
-        contracts[8]= address(exchangerates_i);
-        contracts[9]= address(synthsusd_i);
-        contracts[10]= address(tokenstatesusd_i);
-        contracts[11]= address(proxysusd_i);
-        contracts[12]= address(synthseth_i);
-        contracts[13]= address(tokenstateseth_i);
-        contracts[14]= address(proxyseth_i);
-        contracts[15]= address(synthsbtc_i);
-        contracts[16]= address(tokenstatesbtc_i);
-        contracts[17]= address(proxysbtc_i);
-        contracts[18]= address(synthslink_i);
-        contracts[19]= address(tokenstateslink_i);
-        contracts[20]= address(proxyslink_i);
-        contracts[21]= address(synthsuni_i);
-        contracts[22]= address(tokenstatesuni_i);
-        contracts[23]= address(proxysuni_i);
-        contracts[24]= address(synthsaave_i);
-        contracts[25]= address(tokenstatesaave_i);
-        contracts[26]= address(proxysaave_i);
-        contracts[27]= address(synthssol_i);
-        contracts[28]= address(tokenstatessol_i);
-        contracts[29]= address(proxyssol_i);
-        contracts[30]= address(synthsavax_i);
-        contracts[31]= address(tokenstatesavax_i);
-        contracts[32]= address(proxysavax_i);
-        contracts[33]= address(synthsmatic_i);
-        contracts[34]= address(tokenstatesmatic_i);
-        contracts[35]= address(proxysmatic_i);
-        contracts[36]= address(issuer_i);
-        contracts[37]= address(futuresmarketsettings_i);
+        contracts[0] = address(futuresmarketmanager_i);
+        contracts[1] = address(addressresolver_i);
+        contracts[2] = address(systemstatus_i);
+        contracts[3] = address(proxyfeepool_i);
+        contracts[4] = address(feepooleternalstorage_i);
+        contracts[5] = address(exchangestate_i);
+        contracts[6] = address(feepool_i);
+        contracts[7] = address(debtcache_i);
+        contracts[8] = address(exchangerates_i);
+        contracts[9] = address(synthsusd_i);
+        contracts[10] = address(tokenstatesusd_i);
+        contracts[11] = address(proxysusd_i);
+        contracts[12] = address(synthseth_i);
+        contracts[13] = address(tokenstateseth_i);
+        contracts[14] = address(proxyseth_i);
+        contracts[15] = address(synthsbtc_i);
+        contracts[16] = address(tokenstatesbtc_i);
+        contracts[17] = address(proxysbtc_i);
+        contracts[18] = address(synthslink_i);
+        contracts[19] = address(tokenstateslink_i);
+        contracts[20] = address(proxyslink_i);
+        contracts[21] = address(synthsuni_i);
+        contracts[22] = address(tokenstatesuni_i);
+        contracts[23] = address(proxysuni_i);
+        contracts[24] = address(synthsaave_i);
+        contracts[25] = address(tokenstatesaave_i);
+        contracts[26] = address(proxysaave_i);
+        contracts[27] = address(synthssol_i);
+        contracts[28] = address(tokenstatessol_i);
+        contracts[29] = address(proxyssol_i);
+        contracts[30] = address(synthsavax_i);
+        contracts[31] = address(tokenstatesavax_i);
+        contracts[32] = address(proxysavax_i);
+        contracts[33] = address(synthsmatic_i);
+        contracts[34] = address(tokenstatesmatic_i);
+        contracts[35] = address(proxysmatic_i);
+        contracts[36] = address(issuer_i);
+        contracts[37] = address(futuresmarketsettings_i);
     }
 
     function migrate() external onlyOwner {
-
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
 
@@ -218,7 +219,10 @@ contract Migration_DiphdaOptimism is BaseMigration {
         // Import fee period from existing fee pool at index 1;
         importFeePeriod_1();
         // Import excluded-debt records from existing DebtCache;
-        debtcache_i.importExcludedIssuedDebts(IDebtCache(0xFC6D35EB364951953FD86bb8A1a5b0ba8Cbb6Eb2), IIssuer(0x1Fdd3949B995950C2D247F688aAD6a78471d7C77));
+        debtcache_i.importExcludedIssuedDebts(
+            IDebtCache(0xFC6D35EB364951953FD86bb8A1a5b0ba8Cbb6Eb2),
+            IIssuer(0x1Fdd3949B995950C2D247F688aAD6a78471d7C77)
+        );
         // Ensure the ExchangeRates contract has the standalone feed for SNX;
         exchangerates_i.addAggregator("SNX", 0x38D2f492B4Ef886E71D111c592c9338374e1bd8d);
         // Ensure the ExchangeRates contract has the standalone feed for ETH;
@@ -280,7 +284,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         }
     }
 
-    
     function futuresmarketmanager_addMarkets_0() internal {
         address[] memory futuresmarketmanager_addMarkets_marketsToAdd_0_0 = new address[](3);
         futuresmarketmanager_addMarkets_marketsToAdd_0_0[0] = address(new_FuturesMarketBTC_contract);
@@ -289,7 +292,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         futuresmarketmanager_i.addMarkets(futuresmarketmanager_addMarkets_marketsToAdd_0_0);
     }
 
-    
     function addressresolver_importAddresses_1() internal {
         bytes32[] memory addressresolver_importAddresses_names_1_0 = new bytes32[](25);
         addressresolver_importAddresses_names_1_0[0] = bytes32("OneNetAggregatorIssuedSynths");
@@ -343,10 +345,12 @@ contract Migration_DiphdaOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_1_1[22] = address(new_FuturesMarketETH_contract);
         addressresolver_importAddresses_destinations_1_1[23] = address(new_FuturesMarketLINK_contract);
         addressresolver_importAddresses_destinations_1_1[24] = address(new_FuturesMarketBTC_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_1_0, addressresolver_importAddresses_destinations_1_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_1_0,
+            addressresolver_importAddresses_destinations_1_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x20540E5EB1faff0DB6B1Dc5f0427C27f3852e2Ab);
@@ -372,7 +376,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function addressresolver_rebuildCaches_3() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](13);
         addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(new_FuturesMarketLINK_contract);
@@ -391,7 +394,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_3_0);
     }
 
-    
     function systemstatus_updateAccessControls_25() internal {
         bytes32[] memory systemstatus_updateAccessControls_sections_25_0 = new bytes32[](6);
         systemstatus_updateAccessControls_sections_25_0[0] = bytes32("System");
@@ -421,58 +423,61 @@ contract Migration_DiphdaOptimism is BaseMigration {
         systemstatus_updateAccessControls_canResumes_25_3[3] = bool(true);
         systemstatus_updateAccessControls_canResumes_25_3[4] = bool(true);
         systemstatus_updateAccessControls_canResumes_25_3[5] = bool(true);
-        systemstatus_i.updateAccessControls(systemstatus_updateAccessControls_sections_25_0, systemstatus_updateAccessControls_accounts_25_1, systemstatus_updateAccessControls_canSuspends_25_2, systemstatus_updateAccessControls_canResumes_25_3);
+        systemstatus_i.updateAccessControls(
+            systemstatus_updateAccessControls_sections_25_0,
+            systemstatus_updateAccessControls_accounts_25_1,
+            systemstatus_updateAccessControls_canSuspends_25_2,
+            systemstatus_updateAccessControls_canResumes_25_3
+        );
     }
 
-    
     function importFeePeriod_0() internal {
         // https://kovan-explorer.optimism.io/address/0xAe35A8BC0e190D4544579a331229e809B2f7ca7b;
         FeePool existingFeePool = FeePool(0xAe35A8BC0e190D4544579a331229e809B2f7ca7b);
         // https://kovan-explorer.optimism.io/address/0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456;
         FeePool newFeePool = FeePool(0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456);
         (
-                        uint64 feePeriodId_0,
-                        uint64 unused_0,
-                        uint64 startTime_0,
-                        uint feesToDistribute_0,
-                        uint feesClaimed_0,
-                        uint rewardsToDistribute_0,
-                        uint rewardsClaimed_0
-                    ) = existingFeePool.recentFeePeriods(0);
+            uint64 feePeriodId_0,
+            uint64 unused_0,
+            uint64 startTime_0,
+            uint feesToDistribute_0,
+            uint feesClaimed_0,
+            uint rewardsToDistribute_0,
+            uint rewardsClaimed_0
+        ) = existingFeePool.recentFeePeriods(0);
         newFeePool.importFeePeriod(
-                        0,
-                        feePeriodId_0,
-                        startTime_0,
-                        feesToDistribute_0,
-                        feesClaimed_0,
-                        rewardsToDistribute_0,
-                        rewardsClaimed_0
-                    );
+            0,
+            feePeriodId_0,
+            startTime_0,
+            feesToDistribute_0,
+            feesClaimed_0,
+            rewardsToDistribute_0,
+            rewardsClaimed_0
+        );
     }
 
-    
     function importFeePeriod_1() internal {
         // https://kovan-explorer.optimism.io/address/0xAe35A8BC0e190D4544579a331229e809B2f7ca7b;
         FeePool existingFeePool = FeePool(0xAe35A8BC0e190D4544579a331229e809B2f7ca7b);
         // https://kovan-explorer.optimism.io/address/0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456;
         FeePool newFeePool = FeePool(0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456);
         (
-                        uint64 feePeriodId_1,
-                        uint64 unused_1,
-                        uint64 startTime_1,
-                        uint feesToDistribute_1,
-                        uint feesClaimed_1,
-                        uint rewardsToDistribute_1,
-                        uint rewardsClaimed_1
-                    ) = existingFeePool.recentFeePeriods(1);
+            uint64 feePeriodId_1,
+            uint64 unused_1,
+            uint64 startTime_1,
+            uint feesToDistribute_1,
+            uint feesClaimed_1,
+            uint rewardsToDistribute_1,
+            uint rewardsClaimed_1
+        ) = existingFeePool.recentFeePeriods(1);
         newFeePool.importFeePeriod(
-                        1,
-                        feePeriodId_1,
-                        startTime_1,
-                        feesToDistribute_1,
-                        feesClaimed_1,
-                        rewardsToDistribute_1,
-                        rewardsClaimed_1
-                    );
+            1,
+            feePeriodId_1,
+            startTime_1,
+            feesToDistribute_1,
+            feesClaimed_1,
+            rewardsToDistribute_1,
+            rewardsClaimed_1
+        );
     }
 }
