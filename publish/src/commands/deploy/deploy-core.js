@@ -20,14 +20,21 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'SafeDecimalMath',
+		library: true,
 	});
 
 	await deployer.deployContract({
 		name: 'Math',
+		library: true,
 	});
 
 	await deployer.deployContract({
 		name: 'SystemSettingsLib',
+		library: true,
+	});
+
+	await deployer.deployContract({
+		name: 'SignedSafeDecimalMath',
 		library: true,
 	});
 

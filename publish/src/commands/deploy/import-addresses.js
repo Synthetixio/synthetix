@@ -69,20 +69,12 @@ module.exports = async ({
 		for (const debtPoolContractName of ['AggregatorIssuedSynths', 'AggregatorDebtRatio']) {
 			const resolverName = toBytes32(`ext:${debtPoolContractName}`);
 			const currentAddress = await AddressResolver.getAddress(resolverName);
+			const contract = deployer.deployedContracts[`OneNet${debtPoolContractName}`];
 
-			if (currentAddress === ethers.constants.AddressZero) {
+			if (currentAddress === ethers.constants.AddressZero && contract) {
 				console.log(yellow('Importing special aggregator', debtPoolContractName));
-				const contract = deployer.deployedContracts[`OneNet${debtPoolContractName}`];
 				addressArgs[0].push(resolverName);
 				addressArgs[1].push(contract.address);
-
-				const { source, address } = contract;
-				newContractsBeingAdded[contract.address] = {
-					name: debtPoolContractName,
-					source,
-					address,
-					contract,
-				};
 			}
 		}
 

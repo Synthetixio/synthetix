@@ -169,13 +169,13 @@ module.exports = async ({
 		});
 	}
 
-	if (ExchangeCircuitBreaker && Issuer) {
+	if (Issuer && SystemStatus) {
 		// SIP-165: ensure Issuer can suspend issuance if unusual volitility occurs
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			read: 'accessControl',
-			readArg: [toBytes32('Issuance'), addressOf(ExchangeCircuitBreaker)],
+			readArg: [toBytes32('Issuance'), addressOf(Issuer)],
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
 			writeArg: [toBytes32('Issuance'), addressOf(Issuer), true, false],
