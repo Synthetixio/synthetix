@@ -67,12 +67,25 @@ module.exports = {
 			chainId: 10,
 		},
 		kovan: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL.replace('network', 'kovan') || 'http://localhost:8545',
 			chainId: 42,
 		},
 		'kovan-ovm': {
 			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
 			chainId: 69,
+		},
+		rinkeby: {
+			url: process.env.PROVIDER_URL.replace('network', 'rinkeby') || 'http://localhost:8545',
+			chainId: 4,
+		},
+		goerli: {
+			url: process.env.PROVIDER_URL.replace('network', 'goerli') || 'http://localhost:8545',
+			chainId: 5,
+		},
+		'arbitrum-rinkeby': {
+			url:
+				process.env.PROVIDER_URL.replace('network', 'arbitrum-rinkeby') || 'http://localhost:8545',
+			chainId: 421611,
 		},
 		local: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
