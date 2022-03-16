@@ -174,9 +174,16 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
-		useOvm ? '-optimistic' : ''
-	}.etherscan.io/api`;
+	let etherscanUrl;
+	if (network === 'arbitrum') {
+		etherscanUrl = 'https://api.arbiscan.io/api';
+	} else if (network === 'arbitrum-rinkeby') {
+		etherscanUrl = 'https://api-testnet.arbiscan.io/api';
+	} else {
+		etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+			useOvm ? '-optimistic' : ''
+		}.etherscan.io/api`;
+	}
 
 	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 

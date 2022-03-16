@@ -1,0 +1,14 @@
+{
+	"SNX": {
+		"asset": "SNX",
+		"feed": "0x"
+	},
+	"ETH": {
+		"asset": "ETH",
+		"feed": "0x"
+	},
+	"BTC": {
+		"asset": "BTC",
+		"feed": "0x"
+	}
+}

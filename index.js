@@ -9,7 +9,7 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	rinkeby: require('./publish/deployed/rinkeby'),
-	// 'arbitrum-rinkeby': require('./publish/deployed/arbitrum-rinkeby'),
+	'arbitrum-rinkeby': require('./publish/deployed/arbitrum-rinkeby'),
 	// ropsten: require('./publish/deployed/ropsten'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
