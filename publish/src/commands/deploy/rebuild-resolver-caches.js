@@ -66,7 +66,10 @@ module.exports = async ({
 			]); // interface doesn't matter as long as it responds to MixinResolver
 		}
 	} catch (err) {
-		if (/limited to a 10,000 blocks range/.test(err.message)) {
+		if (
+			/limited to a 10,000 blocks range/.test(err.message) ||
+			/block range too large/.test(err.message)
+		) {
 			console.log(
 				yellow.bold(
 					'Warning: Cannot fetch logs on this network. Known limitation on OVM mainnet - cannot search back greater than 10k blocks'
