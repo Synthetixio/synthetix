@@ -130,25 +130,27 @@ const deployMigration = async ({
 	console.log(gray(`Starting deployment to ${network.toUpperCase()}...`));
 
 	const contractName = 'Migration_' + releaseName;
+	const libName = 'MigrationLib_' + releaseName;
+
+	let deployedLib;
 	let contractBytecode = compiled[contractName].evm.bytecode.object;
 
 	if (migrationLibrary) {
-		const libName = 'Migration_lib_' + releaseName;
 		const helperLibrary = new ethers.ContractFactory(
 			compiled[libName].abi,
 			compiled[libName].evm.bytecode.object,
 			signer
 		);
 
-		const deployerLib = await helperLibrary.deploy();
+		deployedLib = await helperLibrary.deploy();
 		console.log(
 			green(
-				`\nSuccessfully deployed helper library "${contractName}.sol": ${deployerLib.address}\n`
+				`\nSuccessfully deployed helper library "${contractName}.sol": ${deployedLib.address}\n`
 			)
 		);
 
 		contractBytecode = linker.linkBytecode(contractBytecode, {
-			[contractName + '.sol']: { [libName]: deployerLib.address },
+			[contractName + '.sol']: { [libName]: deployedLib.address },
 		});
 		console.log(green(`\nSuccessfully linked helper library\n`));
 	}
@@ -241,23 +243,40 @@ const deployMigration = async ({
 		});
 	}
 
-	await verifyMigrationContract({ deployedContract, releaseName, buildPath, etherscanUrl, useOvm });
+	if (migrationLibrary) {
+		// verify lib
+		await verifyContract({ deployedLib, libName, buildPath, etherscanUrl, useOvm });
+		// verify contract
+		await verifyContract({
+			deployedContract,
+			contractName,
+			buildPath,
+			etherscanUrl,
+			useOvm,
+			linkedLibraryName: libName,
+			linkedLibraryAddress: deployedLib.address,
+		});
+	} else {
+		await verifyContract({ deployedContract, contractName, buildPath, etherscanUrl, useOvm });
+	}
 
 	console.log(gray(`Done.`));
 };
 
-async function verifyMigrationContract({
+async function verifyContract({
 	deployedContract,
-	releaseName,
+	contractName,
 	buildPath,
 	etherscanUrl,
 	useOvm,
+	linkedLibraryName,
+	linkedLibraryAddress,
 }) {
 	const readFlattened = () => {
 		const flattenedFilename = path.join(
 			buildPath,
 			FLATTENED_FOLDER,
-			`migrations/Migration_${releaseName}.sol`
+			`migrations/${contractName}.sol`
 		);
 		try {
 			return fs.readFileSync(flattenedFilename).toString();
@@ -275,6 +294,14 @@ async function verifyMigrationContract({
 	// // The version reported by solc-js is too verbose and needs a v at the front
 	const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
 
+	const libArgs =
+		linkedLibraryName && linkedLibraryAddress
+			? {
+					libraryname1: linkedLibraryName,
+					libraryaddress1: linkedLibraryAddress,
+			  }
+			: {};
+
 	await axios.post(
 		etherscanUrl,
 		qs.stringify({
@@ -282,12 +309,13 @@ async function verifyMigrationContract({
 			action: 'verifysourcecode',
 			contractaddress: deployedContract.address,
 			sourceCode: readFlattened(),
-			contractname: 'Migration_' + releaseName,
+			contractname: contractName,
 			constructorArguements: '',
 			compilerversion: solcVersion,
 			optimizationUsed: 1,
 			runs,
 			apikey: useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY,
+			...libArgs,
 		}),
 		{
 			headers: {
