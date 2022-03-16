@@ -23,8 +23,8 @@
 			"address": "0x6fa3D41F37F544c6982693eFEe8B0d4BD88986ed",
 			"source": "SystemSettingsLib",
 			"link": "https://goerli.etherscan.io/address/0x6fa3D41F37F544c6982693eFEe8B0d4BD88986ed",
-			"timestamp": "2022-03-15T21:04:06.492Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:04:03.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x47035931e545837354f821717cbadab30be1afe9dd20154fdf751e6da3cb3c9c",
 			"network": "goerli"
 		},
 		"AddressResolver": {
@@ -50,8 +50,8 @@
 			"address": "0x1d551351613a28d676BaC1Af157799e201279198",
 			"source": "SingleNetworkAggregatorIssuedSynths",
 			"link": "https://goerli.etherscan.io/address/0x1d551351613a28d676BaC1Af157799e201279198",
-			"timestamp": "2022-03-15T21:05:04.533Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:05:03.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0xe22ee70b9905902ba612f489b6b6de3f4169613f697646f200a415e292191fe2",
 			"network": "goerli"
 		},
 		"ext:AggregatorDebtRatio": {
@@ -59,8 +59,8 @@
 			"address": "0x9Fc84992dF5496797784374B810E04238728743d",
 			"source": "SingleNetworkAggregatorDebtRatio",
 			"link": "https://goerli.etherscan.io/address/0x9Fc84992dF5496797784374B810E04238728743d",
-			"timestamp": "2022-03-15T21:05:34.655Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:05:33.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x147b22598f1632059e5b65a5fc40a396b6974235c4b9be81a87ab529841d516c",
 			"network": "goerli"
 		},
 		"FlexibleStorage": {
@@ -95,8 +95,8 @@
 			"address": "0xD2cECA6DD62243aB2d342Eb04882c86a10b35274",
 			"source": "SystemMessenger",
 			"link": "https://goerli.etherscan.io/address/0xD2cECA6DD62243aB2d342Eb04882c86a10b35274",
-			"timestamp": "2022-03-15T21:07:08.632Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:07:03.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x2f93607d271fa38bca3698a884296a139809c0663d171a97760c4610371bbbc8",
 			"network": "goerli"
 		},
 		"ExchangeRates": {
@@ -149,8 +149,8 @@
 			"address": "0x4Fa8252a6C60C891BE35Db51F1F4F5973b88dF98",
 			"source": "SynthetixDebtShare",
 			"link": "https://goerli.etherscan.io/address/0x4Fa8252a6C60C891BE35Db51F1F4F5973b88dF98",
-			"timestamp": "2022-03-15T21:09:05.306Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:09:03.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x993e1eb0314beb5acacee19e7c4b4affdcc76340cab930b0da35a44d0c9a3876",
 			"network": "goerli"
 		},
 		"ProxyFeePool": {
@@ -293,8 +293,8 @@
 			"address": "0xd054361Cc8DeE60A32bDaF4B0d1c610326c29FE5",
 			"source": "ExchangeCircuitBreaker",
 			"link": "https://goerli.etherscan.io/address/0xd054361Cc8DeE60A32bDaF4B0d1c610326c29FE5",
-			"timestamp": "2022-03-15T21:15:36.287Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:15:49.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x9ec8076d4eb02eadb502db20d79b206919ebb3a66bb71643449c98f46ecb98f8",
 			"network": "goerli"
 		},
 		"VirtualSynthMastercopy": {
@@ -302,8 +302,8 @@
 			"address": "0x08fb827Ee5A00232aDe347964225Ba4344665eD5",
 			"source": "VirtualSynthMastercopy",
 			"link": "https://goerli.etherscan.io/address/0x08fb827Ee5A00232aDe347964225Ba4344665eD5",
-			"timestamp": "2022-03-15T21:15:50.518Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:15:49.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x1d66d3b9fd3aa8495d51e94bf2c337b6e335330073a118468e206d725f2a6d6f",
 			"network": "goerli"
 		},
 		"ExchangeState": {
@@ -356,8 +356,8 @@
 			"address": "0x43CA5848a2957C0718D240c02A4381A90111591e",
 			"source": "SynthetixBridgeToOptimism",
 			"link": "https://goerli.etherscan.io/address/0x43CA5848a2957C0718D240c02A4381A90111591e",
-			"timestamp": "2022-03-15T21:18:51.552Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:18:49.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x1573d4eee8e7c845b880b5170ebe7cf164bd435a04af8c01ff4ea41013d5bc31",
 			"network": "goerli"
 		},
 		"SynthetixBridgeEscrow": {
@@ -365,8 +365,8 @@
 			"address": "0xeBaEAAD9236615542844adC5c149F86C36aD1136",
 			"source": "SynthetixBridgeEscrow",
 			"link": "https://goerli.etherscan.io/address/0xeBaEAAD9236615542844adC5c149F86C36aD1136",
-			"timestamp": "2022-03-15T21:19:05.532Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:19:04.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0xe863b25e1da9e0cea5483bc5f9e8e6839d662df78b306e0ccb833dd279b201e3",
 			"network": "goerli"
 		},
 		"OwnerRelayOnEthereum": {
@@ -374,8 +374,8 @@
 			"address": "0x7c0B9FbA343fC80086ccC248A8431D5D8531d782",
 			"source": "OwnerRelayOnEthereum",
 			"link": "https://goerli.etherscan.io/address/0x7c0B9FbA343fC80086ccC248A8431D5D8531d782",
-			"timestamp": "2022-03-15T21:19:35.678Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:19:49.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x325259d60fe5a5236819e95594bab75bdc309c93daebbd3e3a8ca8e9586dafb8",
 			"network": "goerli"
 		},
 		"SynthRedeemer": {
@@ -383,8 +383,8 @@
 			"address": "0x1557769Cf42EE9e7c8D98CCFE0b454c2DEC125B6",
 			"source": "SynthRedeemer",
 			"link": "https://goerli.etherscan.io/address/0x1557769Cf42EE9e7c8D98CCFE0b454c2DEC125B6",
-			"timestamp": "2022-03-15T21:19:53.582Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:19:49.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0xcd44d8bdca214b2e64caf3b007d0863ddb0e089ee54d23d7a26058eacd3588ec",
 			"network": "goerli"
 		},
 		"WrapperFactory": {
@@ -392,8 +392,8 @@
 			"address": "0x6c3856488e664C6b0380AAEfBFD1c28cd6727eC8",
 			"source": "WrapperFactory",
 			"link": "https://goerli.etherscan.io/address/0x6c3856488e664C6b0380AAEfBFD1c28cd6727eC8",
-			"timestamp": "2022-03-15T21:20:07.631Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:20:04.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0x497c13a69bbc4046a03fd889472b8abc0ee682babf4ca2b5428002af35be3f7b",
 			"network": "goerli"
 		},
 		"TokenStatesUSD": {
@@ -500,8 +500,8 @@
 			"address": "0x3FAe35Cfea950Fada314589213BABC54A084d5Bf",
 			"source": "EtherWrapper",
 			"link": "https://goerli.etherscan.io/address/0x3FAe35Cfea950Fada314589213BABC54A084d5Bf",
-			"timestamp": "2022-03-15T21:24:20.934Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:24:19.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0xba3881b9f799085aa5a11745d4dae6b9525d7c47119ed7a8c8cdbbff9008d730",
 			"network": "goerli"
 		},
 		"NativeEtherWrapper": {
@@ -509,8 +509,8 @@
 			"address": "0x0dde87714C3bdACB93bB1d38605aFff209a85998",
 			"source": "NativeEtherWrapper",
 			"link": "https://goerli.etherscan.io/address/0x0dde87714C3bdACB93bB1d38605aFff209a85998",
-			"timestamp": "2022-03-15T21:24:35.088Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:24:34.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0xc9cfbadb9d08cc3a2121eddaa3a64e5cc8ee0ded0ca982142118184e7599d9c8",
 			"network": "goerli"
 		},
 		"CollateralUtil": {
@@ -572,8 +572,8 @@
 			"address": "0x9c1dc5220F8eafa9fF311b57365e89FE4D2AFDDD",
 			"source": "EmptyFuturesMarketManager",
 			"link": "https://goerli.etherscan.io/address/0x9c1dc5220F8eafa9fF311b57365e89FE4D2AFDDD",
-			"timestamp": "2022-03-15T21:27:06.564Z",
-			"txn": "",
+			"timestamp": "2022-03-15T21:27:04.000Z",
+			"txn": "https://goerli.etherscan.io/tx/0xf08528ac5b71a37c9389ff19a0a84e268d2dd750ef5ad1d69b4f6391b5d26a4f",
 			"network": "goerli"
 		},
 		"SynthUtil": {
