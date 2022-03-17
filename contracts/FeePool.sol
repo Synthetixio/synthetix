@@ -48,10 +48,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     struct FeePeriod {
         uint64 feePeriodId;
         uint64 startTime;
-
         uint allNetworksSnxBackedDebt;
         uint allNetworksDebtSharesSupply;
-
         uint feesToDistribute;
         uint feesClaimed;
         uint rewardsToDistribute;
@@ -185,20 +183,20 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     function allNetworksSnxBackedDebt() public view returns (uint256 debt, uint256 updatedAt) {
-        (, int256 rawData, , uint timestamp, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
-            .latestRoundData();
-        
+        (, int256 rawData, , uint timestamp, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
+
         debt = uint(rawData);
         updatedAt = timestamp;
     }
 
     function allNetworksDebtSharesSupply() public view returns (uint256 sharesSupply, uint256 updatedAt) {
-        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
-            .latestRoundData();
+        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
 
-        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
-            .latestRoundData();
-        
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+
         uint debt = uint(rawIssuedSynths);
         sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
         updatedAt = issuedSynthsUpdatedAt < ratioUpdatedAt ? issuedSynthsUpdatedAt : ratioUpdatedAt;
@@ -266,7 +264,13 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _closeSecondary(snxBackedDebt, debtSharesSupply);
 
         // inform other chain of the chosen values
-        ISynthetixBridgeToOptimism(resolver.requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM, "Missing contract: SynthetixBridgeToOptimism")).closeFeePeriod(snxBackedDebt, debtSharesSupply);
+        ISynthetixBridgeToOptimism(
+            resolver.requireAndGetAddress(
+                CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM,
+                "Missing contract: SynthetixBridgeToOptimism"
+            )
+        )
+            .closeFeePeriod(snxBackedDebt, debtSharesSupply);
     }
 
     function closeSecondary(uint allNetworksSnxBackedDebt, uint allNetworksDebtSharesSupply) external onlyRelayer {
@@ -713,9 +717,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     modifier onlyRelayer {
         require(
-            msg.sender == address(this) ||
-            msg.sender == resolver.getAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_BASE)
-        , "Only valid relayer can call");
+            msg.sender == address(this) || msg.sender == resolver.getAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_BASE),
+            "Only valid relayer can call"
+        );
         _;
     }
 

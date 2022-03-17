@@ -197,19 +197,28 @@
 	"SynthsSOL": {
 		"deploy": false
 	},
+	"TokenStatesAVAX": {
+		"deploy": false
+	},
+	"ProxysAVAX": {
+		"deploy": false
+	},
+	"SynthsAVAX": {
+		"deploy": false
+	},
+	"TokenStatesMATIC": {
+		"deploy": false
+	},
+	"ProxysMATIC": {
+		"deploy": false
+	},
+	"SynthsMATIC": {
+		"deploy": false
+	},
 	"ExchangeCircuitBreaker": {
 		"deploy": false
 	},
 	"SignedSafeDecimalMath": {
-		"deploy": false
-	},
-	"FuturesMarketBTC": {
-		"deploy": false
-	},
-	"FuturesMarketETH": {
-		"deploy": false
-	},
-	"FuturesMarketLINK": {
 		"deploy": false
 	},
 	"FuturesMarketManager": {
@@ -221,10 +230,19 @@
 	"FuturesMarketData": {
 		"deploy": false
 	},
-	"ext:AggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedSynths": {
 		"deploy": false
 	},
-	"ext:AggregatorDebtRatio": {
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"FuturesMarketBTC": {
+		"deploy": false
+	},
+	"FuturesMarketETH": {
+		"deploy": false
+	},
+	"FuturesMarketLINK": {
 		"deploy": false
 	}
 }
