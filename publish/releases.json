@@ -538,6 +538,12 @@
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
+		},
+		{
+			"sip": 213,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -990,7 +996,7 @@
 				"major": 2,
 				"minor": 64
 			},
-			"sips": [80, 165]
+			"sips": [80, 165, 213]
 		},
 		{
 			"name": "Mizar",
