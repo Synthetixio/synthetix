@@ -41,7 +41,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     /**
      * Records a user's balance as it changes from period to period.
      * The last item in the array always represents the user's most recent balance
-     * The intermediate balance is only recorded if 
+     * The intermediate balance is only recorded if
      * `currentPeriodId` differs (which would happen upon a call to `setCurrentPeriodId`)
      */
     mapping(address => PeriodBalance[]) public balances;
@@ -52,7 +52,6 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
      * Any other period ID would represent its most recent totalSupply before the period ID changed.
      */
     mapping(uint => uint) public totalSupplyOnPeriod;
-
 
     /* ERC20 fields. */
     string public name;
@@ -78,6 +77,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         // NOTE: must match initial fee period ID on `FeePool` constructor if issuer wont report
         currentPeriodId = 1;
     }
+
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_ISSUER;
@@ -98,9 +98,10 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     function balanceOfOnPeriod(address account, uint periodId) public view returns (uint) {
         uint accountPeriodHistoryCount = balances[account].length;
 
-        int oldestHistoryIterate = int(MAX_PERIOD_ITERATE < accountPeriodHistoryCount ? accountPeriodHistoryCount - MAX_PERIOD_ITERATE : 0);
+        int oldestHistoryIterate =
+            int(MAX_PERIOD_ITERATE < accountPeriodHistoryCount ? accountPeriodHistoryCount - MAX_PERIOD_ITERATE : 0);
         int i;
-        for (i = int(accountPeriodHistoryCount) - 1;i >= oldestHistoryIterate;i--) {
+        for (i = int(accountPeriodHistoryCount) - 1; i >= oldestHistoryIterate; i--) {
             if (balances[account][uint(i)].periodId <= periodId) {
                 return uint(balances[account][uint(i)].amount);
             }
@@ -120,19 +121,18 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
     function sharePercentOnPeriod(address account, uint periodId) public view returns (uint) {
         uint balance = balanceOfOnPeriod(account, periodId);
-        
+
         if (balance == 0) {
             return 0;
         }
-        
+
         return balance.divideDecimal(totalSupplyOnPeriod[periodId]);
     }
 
     function allowance(address, address spender) public view returns (uint) {
         if (authorizedBrokers[spender]) {
             return uint(-1);
-        }
-        else {
+        } else {
             return 0;
         }
     }
@@ -164,7 +164,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         totalSupplyOnPeriod[id] = totalSupplyOnPeriod[currentPeriodId];
         currentPeriodId = id;
     }
-        
+
     function mintShare(address account, uint256 amount) external onlyIssuer {
         require(account != address(0), "ERC20: mint to the zero address");
 
@@ -186,15 +186,19 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         emit Burn(account, amount);
     }
 
-    function approve(address, uint256) external pure returns(bool) {
+    function approve(address, uint256) external pure returns (bool) {
         revert("debt shares are not transferrable");
     }
 
-    function transfer(address, uint256) external pure returns(bool) {
+    function transfer(address, uint256) external pure returns (bool) {
         revert("debt shares are not transferrable");
     }
 
-    function transferFrom(address from, address to, uint256 amount) external onlyAuthorizedBrokers returns(bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external onlyAuthorizedBrokers returns (bool) {
         require(to != address(0), "ERC20: send to the zero address");
 
         _deductBalance(from, amount);
@@ -216,8 +220,7 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
                 supply = supply.add(amount);
                 emit Mint(accounts[i], amount);
                 emit Transfer(address(0), accounts[i], amount);
-            }
-            else if (curBalance > amounts[i]) {
+            } else if (curBalance > amounts[i]) {
                 uint amount = curBalance - amounts[i];
                 _deductBalance(accounts[i], amount);
                 supply = supply.sub(amount);
@@ -239,14 +242,12 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
 
         if (accountBalanceCount == 0) {
             balances[account].push(PeriodBalance(uint128(amount), uint128(currentPeriodId)));
-        }
-        else {
+        } else {
             uint128 newAmount = uint128(uint(balances[account][accountBalanceCount - 1].amount).add(amount));
 
             if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
                 balances[account].push(PeriodBalance(newAmount, currentPeriodId));
-            }
-            else {
+            } else {
                 balances[account][accountBalanceCount - 1].amount = newAmount;
             }
         }
@@ -260,12 +261,8 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
         uint128 newAmount = uint128(uint(balances[account][accountBalanceCount - 1].amount).sub(amount));
 
         if (balances[account][accountBalanceCount - 1].periodId != currentPeriodId) {
-            balances[account].push(PeriodBalance(
-                newAmount, 
-                currentPeriodId
-            ));
-        }
-        else {
+            balances[account].push(PeriodBalance(newAmount, currentPeriodId));
+        } else {
             balances[account][accountBalanceCount - 1].amount = newAmount;
         }
     }
@@ -278,7 +275,10 @@ contract SynthetixDebtShare is Owned, MixinResolver, ISynthetixDebtShare {
     }
 
     modifier onlyAuthorizedToSnapshot() {
-        require(authorizedToSnapshot[msg.sender] || msg.sender == requireAndGetAddress(CONTRACT_ISSUER), "SynthetixDebtShare: not authorized to snapshot");
+        require(
+            authorizedToSnapshot[msg.sender] || msg.sender == requireAndGetAddress(CONTRACT_ISSUER),
+            "SynthetixDebtShare: not authorized to snapshot"
+        );
         _;
     }
 
