@@ -16,7 +16,7 @@ interface ISystemMessenger {
         bytes calldata data,
         uint32 gasLimit
     ) external;
-    
+
     // called by relayer to finalize message sent cross-chain
     function recv(
         uint srcChainId,
@@ -28,9 +28,11 @@ interface ISystemMessenger {
     ) external;
 
     function addChain(uint chainId, address messenger) external;
+
     function removeChain(uint chainId) external;
 
     function authorizeSigner(address signer) external;
+
     function revokeSigner(address signer) external;
 
     function setRequiredSignatures(uint count) external;

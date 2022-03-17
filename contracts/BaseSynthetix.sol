@@ -297,7 +297,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
-    function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external issuanceActive optionalProxy returns (bool) {
+    function teleportSynth(
+        uint targetChainId,
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) external issuanceActive optionalProxy returns (bool) {
         return issuer().teleportSynth(targetChainId, currencyKey, from, amount);
     }
 

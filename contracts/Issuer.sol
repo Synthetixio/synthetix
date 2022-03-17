@@ -172,7 +172,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function systemMessenger() internal view returns (ISystemMessenger) {
         return ISystemMessenger(requireAndGetAddress(CONTRACT_SYSTEMMESSENGER));
     }
-    
+
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
@@ -626,7 +626,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
     }
 
-    function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external onlySynthetix returns (bool) {
+    function teleportSynth(
+        uint targetChainId,
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) external onlySynthetix returns (bool) {
         require(amount > 0, "Issuer: cannot teleport 0 synths");
 
         bool successfullyTeleported = _teleportSynth(targetChainId, currencyKey, from, amount);
@@ -637,7 +642,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return successfullyTeleported;
     }
 
-    function receiveTeleportedSynth(bytes32 currencyKey, address from, uint amount) external returns (bool) {
+    function receiveTeleportedSynth(
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) external returns (bool) {
         require(msg.sender == address(systemMessenger()), "Issuer: only SystemMessenger can invoke this");
         require(amount > 0, "Issuer: cannot receive 0 teleported synths");
 
@@ -837,7 +846,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function _teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) internal returns (bool) {
+    function _teleportSynth(
+        uint targetChainId,
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) internal returns (bool) {
         // Check for invalid rates
         _requireRatesNotInvalid(synthetix().anySynthOrSNXRateIsInvalid());
 
@@ -860,19 +874,24 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // Send a message to the target chain to validate the teleported synths
-        bytes memory encodedMessage = abi.encode("receiveTeleportedSynth", targetChainId, currencyKey, from, amount.sub(teleportFee));
+        bytes memory encodedMessage =
+            abi.encode("receiveTeleportedSynth", targetChainId, currencyKey, from, amount.sub(teleportFee));
         systemMessenger().post(targetChainId, CONTRACT_NAME, encodedMessage, 0);
 
         return true;
     }
 
-    function _receiveTeleportedSynth(bytes32 currencyKey, address from, uint amount) internal returns (bool) {
+    function _receiveTeleportedSynth(
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) internal returns (bool) {
         // Create their synths
         synths[currencyKey].issue(from, amount);
 
         // Account for the issued debt in the cache
         debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
-        
+
         return true;
     }
 

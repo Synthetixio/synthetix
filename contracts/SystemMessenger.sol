@@ -7,7 +7,6 @@ import "./interfaces/ISystemMessenger.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/systemstatus
 contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
-
     bytes32 public constant CONTRACT_NAME = "SystemMessenger";
 
     uint[] public activeChains;
@@ -31,16 +30,7 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
         bytes memory data,
         uint32 gasLimit
     ) public pure returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                bytes32("Synthetixv2x"),
-                srcChainId,
-                srcNonce,
-                targetContract, 
-                data, 
-                gasLimit
-            )
-        );
+        return keccak256(abi.encodePacked(bytes32("Synthetixv2x"), srcChainId, srcNonce, targetContract, data, gasLimit));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -61,7 +51,7 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
         bytes memory data,
         uint32 gasLimit
     ) public onlyAuthorizedMessenger {
-        for (uint i = 0;i < activeChains.length;i++) {
+        for (uint i = 0; i < activeChains.length; i++) {
             post(activeChains[i], targetContract, data, gasLimit);
         }
     }
@@ -76,12 +66,13 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
     ) external {
         require(incomingNonces[srcChainId]++ == srcNonce, "can only submit next message nonce");
 
-        bytes32 signHash = keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                getMessageHash(srcChainId, srcNonce, targetContract, data, gasLimit)
-            )
-        );
+        bytes32 signHash =
+            keccak256(
+                abi.encodePacked(
+                    "\x19Ethereum Signed Message:\n32",
+                    getMessageHash(srcChainId, srcNonce, targetContract, data, gasLimit)
+                )
+            );
 
         require(validateSignatures(signHash, sigs) >= requiredSignatures, "invalid signature blob");
 
@@ -103,8 +94,8 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
         messengerAddresses[chainId] = address(0);
         incomingNonces[chainId] = 0;
         outgoingNonces[chainId] = 0;
-        
-        for (uint i = 0;i < activeChains.length;i++) {
+
+        for (uint i = 0; i < activeChains.length; i++) {
             if (activeChains[i] == chainId) {
                 activeChains[i] = activeChains[activeChains.length - 1];
 
@@ -157,13 +148,17 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
     }
 
     /**
-    * copied exactly from https://github.com/argentlabs/argent-contracts/blob/develop/contracts/modules/common/Utils.sol
-    * @notice Helper method to recover the signer at a given position from a list of concatenated signatures.
-    * @param _signedHash The signed hash
-    * @param _signatures The concatenated signatures.
-    * @param _index The index of the signature to recover.
-    */
-    function recoverSigner(bytes32 _signedHash, bytes memory _signatures, uint _index) internal pure returns (address) {
+     * copied exactly from https://github.com/argentlabs/argent-contracts/blob/develop/contracts/modules/common/Utils.sol
+     * @notice Helper method to recover the signer at a given position from a list of concatenated signatures.
+     * @param _signedHash The signed hash
+     * @param _signatures The concatenated signatures.
+     * @param _index The index of the signature to recover.
+     */
+    function recoverSigner(
+        bytes32 _signedHash,
+        bytes memory _signatures,
+        uint _index
+    ) internal pure returns (address) {
         uint8 v;
         bytes32 r;
         bytes32 s;
@@ -172,9 +167,9 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
         // for v we load 32 bytes ending with v (the first 31 come from s) then apply a mask
         // solhint-disable-next-line no-inline-assembly
         assembly {
-            r := mload(add(_signatures, add(0x20,mul(0x41,_index))))
-            s := mload(add(_signatures, add(0x40,mul(0x41,_index))))
-            v := and(mload(add(_signatures, add(0x41,mul(0x41,_index)))), 0xff)
+            r := mload(add(_signatures, add(0x20, mul(0x41, _index))))
+            s := mload(add(_signatures, add(0x40, mul(0x41, _index))))
+            v := and(mload(add(_signatures, add(0x41, mul(0x41, _index)))), 0xff)
         }
         require(v == 27 || v == 28, "Utils: bad v value in signature");
 
@@ -195,6 +190,20 @@ contract SystemMessenger is Owned, MixinResolver, ISystemMessenger {
     }
 
     /* ========== EVENTS ========== */
-    event MessagePosted(uint indexed targetChainId, uint indexed nonce, bytes32 indexed targetContract, bytes data, uint32 gasLimit);
-    event MessageProcessed(uint indexed srcChainId, uint indexed nonce, bytes32 indexed targetContract, bytes data, uint32 gasLimit, bool success, bytes resultData);
+    event MessagePosted(
+        uint indexed targetChainId,
+        uint indexed nonce,
+        bytes32 indexed targetContract,
+        bytes data,
+        uint32 gasLimit
+    );
+    event MessageProcessed(
+        uint indexed srcChainId,
+        uint indexed nonce,
+        bytes32 indexed targetContract,
+        bytes data,
+        uint32 gasLimit,
+        bool success,
+        bytes resultData
+    );
 }

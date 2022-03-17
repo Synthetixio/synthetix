@@ -112,7 +112,12 @@ interface ISynthetix {
 
     function issueSynthsOnBehalf(address issueForAddress, uint amount) external;
 
-    function teleportSynth(uint targetChainId, bytes32 currencyKey, address from, uint amount) external returns (bool);
+    function teleportSynth(
+        uint targetChainId,
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) external returns (bool);
 
     function mint() external returns (bool);
 
