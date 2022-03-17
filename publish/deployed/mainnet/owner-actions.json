@@ -1,1 +1,639 @@
-{}
+{
+	"AddressResolver.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxyFeePool.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xb440DD674e1243644791a4AdfE3A2AbB0A92d309",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"FeePoolEternalStorage.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ExchangeState.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x545973f28950f50fc6c7F52AAb4Ad214A27C0564",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x545973f28950f50fc6c7F52AAb4Ad214A27C0564#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"RewardEscrow.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesUSD.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x05a9CBe762B36632b3594DA4F082340E0e5343e8",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x05a9CBe762B36632b3594DA4F082340E0e5343e8#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysUSD.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x57Ab1ec28D129707052df4dF418D58a2D46d5f51#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesEUR.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x6568D9e750fC44AF00f857885Dfb8281c00529c4",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x6568D9e750fC44AF00f857885Dfb8281c00529c4#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysEUR.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xD71eCFF9342A5Ced620049e616c5035F1dB98620",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xD71eCFF9342A5Ced620049e616c5035F1dB98620#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesJPY.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysJPY.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xF6b1C627e95BFc3c1b4c9B825a032Ff0fBf3e07d",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xF6b1C627e95BFc3c1b4c9B825a032Ff0fBf3e07d#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesAUD.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xCb29D2cf2C65d3Be1d00F07f3441390432D55203",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xCb29D2cf2C65d3Be1d00F07f3441390432D55203#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysAUD.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xF48e200EAF9906362BB1442fca31e0835773b8B4",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xF48e200EAF9906362BB1442fca31e0835773b8B4#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesGBP.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x7e88D19A79b291cfE5696d496055f7e57F537A75",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x7e88D19A79b291cfE5696d496055f7e57F537A75#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysGBP.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x97fe22E7341a0Cd8Db6F6C021A24Dc8f4DAD855F",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x97fe22E7341a0Cd8Db6F6C021A24Dc8f4DAD855F#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesCHF.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x52496fE8a4feaEFe14d9433E00D48E6929c13deC",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x52496fE8a4feaEFe14d9433E00D48E6929c13deC#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysCHF.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x0F83287FF768D1c1e17a42F44d644D7F22e8ee1d",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x0F83287FF768D1c1e17a42F44d644D7F22e8ee1d#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesKRW.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x93B6e9FbBd2c32a0DC3C2B943B7C3CBC2fE23730",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x93B6e9FbBd2c32a0DC3C2B943B7C3CBC2fE23730#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysKRW.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x269895a3dF4D73b077Fc823dD6dA1B95f72Aaf9B",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x269895a3dF4D73b077Fc823dD6dA1B95f72Aaf9B#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesBTC.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysBTC.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesETH.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysETH.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesLINK.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x577D4a7395c6A5f46d9981a5F83fa7294926aBB0",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x577D4a7395c6A5f46d9981a5F83fa7294926aBB0#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysLINK.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xbBC455cb4F1B9e4bFC4B73970d360c8f032EfEE6",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xbBC455cb4F1B9e4bFC4B73970d360c8f032EfEE6#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesADA.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x9956c5019a24fbd5B506AD070b771577bAc5c343",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x9956c5019a24fbd5B506AD070b771577bAc5c343#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysADA.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xe36E2D3c7c34281FA3bC737950a68571736880A1",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xe36E2D3c7c34281FA3bC737950a68571736880A1#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesAAVE.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x9BcED8A8E3Ad81c9b146FFC880358f734A06f7c0",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x9BcED8A8E3Ad81c9b146FFC880358f734A06f7c0#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysAAVE.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xd2dF355C19471c8bd7D8A3aa27Ff4e26A21b4076",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xd2dF355C19471c8bd7D8A3aa27Ff4e26A21b4076#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesDOT.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x73B1a2643507Cd30F11Dfcf2D974f4373E5BC077",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x73B1a2643507Cd30F11Dfcf2D974f4373E5BC077#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysDOT.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x1715AC0743102BF5Cd58EfBB6Cf2dC2685d967b6",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x1715AC0743102BF5Cd58EfBB6Cf2dC2685d967b6#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesETHBTC.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x042A7A0022A7695454ac5Be77a4860e50c9683fC",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x042A7A0022A7695454ac5Be77a4860e50c9683fC#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysETHBTC.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x104eDF1da359506548BFc7c25bA1E28C16a70235",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x104eDF1da359506548BFc7c25bA1E28C16a70235#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"TokenStatesDEFI.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"ProxysDEFI.nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)": {
+		"target": "0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B",
+		"action": "nominateNewOwner(0x9D10DCd04130B247cD08B31f64e60Fa3B1502985)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B#writeContract",
+		"data": "0x1627540c0000000000000000000000009d10dcd04130b247cd08b31f64e60fa3b1502985"
+	},
+	"Migration_Diphda.migrate()": {
+		"target": "0x9D10DCd04130B247cD08B31f64e60Fa3B1502985",
+		"action": "Migration_Diphda.migrate()",
+		"complete": false,
+		"link": "undefined/address/0x9D10DCd04130B247cD08B31f64e60Fa3B1502985#writeContract",
+		"data": "0x8fd3ab80"
+	},
+	"AddressResolver.acceptOwnership()": {
+		"target": "0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxyFeePool.acceptOwnership()": {
+		"target": "0xb440DD674e1243644791a4AdfE3A2AbB0A92d309",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309#writeContract",
+		"data": "0x79ba5097"
+	},
+	"FeePoolEternalStorage.acceptOwnership()": {
+		"target": "0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ExchangeState.acceptOwnership()": {
+		"target": "0x545973f28950f50fc6c7F52AAb4Ad214A27C0564",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x545973f28950f50fc6c7F52AAb4Ad214A27C0564#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SystemStatus.acceptOwnership()": {
+		"target": "0x696c905F8F8c006cA46e9808fE7e00049507798F",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x696c905F8F8c006cA46e9808fE7e00049507798F#writeContract",
+		"data": "0x79ba5097"
+	},
+	"RewardEscrow.acceptOwnership()": {
+		"target": "0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F#writeContract",
+		"data": "0x79ba5097"
+	},
+	"FeePool.acceptOwnership()": {
+		"target": "0x3B2f389AeE480238A49E3A9985cd6815370712eB",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x3B2f389AeE480238A49E3A9985cd6815370712eB#writeContract",
+		"data": "0x79ba5097"
+	},
+	"DebtCache.acceptOwnership()": {
+		"target": "0x1620Aa736939597891C1940CF0d28b82566F9390",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x1620Aa736939597891C1940CF0d28b82566F9390#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ExchangeRates.acceptOwnership()": {
+		"target": "0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsUSD.acceptOwnership()": {
+		"target": "0x7df9b3f8f1C011D8BD707430e97E747479DD532a",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x7df9b3f8f1C011D8BD707430e97E747479DD532a#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesUSD.acceptOwnership()": {
+		"target": "0x05a9CBe762B36632b3594DA4F082340E0e5343e8",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x05a9CBe762B36632b3594DA4F082340E0e5343e8#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysUSD.acceptOwnership()": {
+		"target": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x57Ab1ec28D129707052df4dF418D58a2D46d5f51#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsEUR.acceptOwnership()": {
+		"target": "0x1b06a00Df0B27E7871E753720D4917a7D1aac68b",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x1b06a00Df0B27E7871E753720D4917a7D1aac68b#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesEUR.acceptOwnership()": {
+		"target": "0x6568D9e750fC44AF00f857885Dfb8281c00529c4",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x6568D9e750fC44AF00f857885Dfb8281c00529c4#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysEUR.acceptOwnership()": {
+		"target": "0xD71eCFF9342A5Ced620049e616c5035F1dB98620",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xD71eCFF9342A5Ced620049e616c5035F1dB98620#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsJPY.acceptOwnership()": {
+		"target": "0xB82f11f3168Ece7D56fe6a5679567948090de7C5",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xB82f11f3168Ece7D56fe6a5679567948090de7C5#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesJPY.acceptOwnership()": {
+		"target": "0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x4dFACfB15514C21c991ff75Bc7Bf6Fb1F98361ed#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysJPY.acceptOwnership()": {
+		"target": "0xF6b1C627e95BFc3c1b4c9B825a032Ff0fBf3e07d",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xF6b1C627e95BFc3c1b4c9B825a032Ff0fBf3e07d#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsAUD.acceptOwnership()": {
+		"target": "0xC4546bDd93cDAADA6994e84Fb6F2722C620B019C",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xC4546bDd93cDAADA6994e84Fb6F2722C620B019C#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesAUD.acceptOwnership()": {
+		"target": "0xCb29D2cf2C65d3Be1d00F07f3441390432D55203",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xCb29D2cf2C65d3Be1d00F07f3441390432D55203#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysAUD.acceptOwnership()": {
+		"target": "0xF48e200EAF9906362BB1442fca31e0835773b8B4",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xF48e200EAF9906362BB1442fca31e0835773b8B4#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsGBP.acceptOwnership()": {
+		"target": "0xAE7A2C1e326e59f2dB2132652115a59E8Adb5eBf",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xAE7A2C1e326e59f2dB2132652115a59E8Adb5eBf#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesGBP.acceptOwnership()": {
+		"target": "0x7e88D19A79b291cfE5696d496055f7e57F537A75",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x7e88D19A79b291cfE5696d496055f7e57F537A75#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysGBP.acceptOwnership()": {
+		"target": "0x97fe22E7341a0Cd8Db6F6C021A24Dc8f4DAD855F",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x97fe22E7341a0Cd8Db6F6C021A24Dc8f4DAD855F#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsCHF.acceptOwnership()": {
+		"target": "0xCC83a57B080a4c7C86F0bB892Bc180C8C7F8791d",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xCC83a57B080a4c7C86F0bB892Bc180C8C7F8791d#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesCHF.acceptOwnership()": {
+		"target": "0x52496fE8a4feaEFe14d9433E00D48E6929c13deC",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x52496fE8a4feaEFe14d9433E00D48E6929c13deC#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysCHF.acceptOwnership()": {
+		"target": "0x0F83287FF768D1c1e17a42F44d644D7F22e8ee1d",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x0F83287FF768D1c1e17a42F44d644D7F22e8ee1d#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsKRW.acceptOwnership()": {
+		"target": "0x527637bE27640d6C3e751d24DC67129A6d13E11C",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x527637bE27640d6C3e751d24DC67129A6d13E11C#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesKRW.acceptOwnership()": {
+		"target": "0x93B6e9FbBd2c32a0DC3C2B943B7C3CBC2fE23730",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x93B6e9FbBd2c32a0DC3C2B943B7C3CBC2fE23730#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysKRW.acceptOwnership()": {
+		"target": "0x269895a3dF4D73b077Fc823dD6dA1B95f72Aaf9B",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x269895a3dF4D73b077Fc823dD6dA1B95f72Aaf9B#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsBTC.acceptOwnership()": {
+		"target": "0x18FcC34bdEaaF9E3b69D2500343527c0c995b1d6",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x18FcC34bdEaaF9E3b69D2500343527c0c995b1d6#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesBTC.acceptOwnership()": {
+		"target": "0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x4F6296455F8d754c19821cF1EC8FeBF2cD456E67#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysBTC.acceptOwnership()": {
+		"target": "0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsETH.acceptOwnership()": {
+		"target": "0x4FB63c954Ef07EC74335Bb53835026C75DD91dC6",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x4FB63c954Ef07EC74335Bb53835026C75DD91dC6#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesETH.acceptOwnership()": {
+		"target": "0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x34A5ef81d18F3a305aE9C2d7DF42beef4c79031c#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysETH.acceptOwnership()": {
+		"target": "0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x5e74C9036fb86BD7eCdcb084a0673EFc32eA31cb#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsLINK.acceptOwnership()": {
+		"target": "0xe08518bA3d2467F7cA50eFE68AA00C5f78D4f3D6",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xe08518bA3d2467F7cA50eFE68AA00C5f78D4f3D6#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesLINK.acceptOwnership()": {
+		"target": "0x577D4a7395c6A5f46d9981a5F83fa7294926aBB0",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x577D4a7395c6A5f46d9981a5F83fa7294926aBB0#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysLINK.acceptOwnership()": {
+		"target": "0xbBC455cb4F1B9e4bFC4B73970d360c8f032EfEE6",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xbBC455cb4F1B9e4bFC4B73970d360c8f032EfEE6#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsADA.acceptOwnership()": {
+		"target": "0xB34F4d7c207D8979D05EDb0F63f174764Bd67825",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xB34F4d7c207D8979D05EDb0F63f174764Bd67825#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesADA.acceptOwnership()": {
+		"target": "0x9956c5019a24fbd5B506AD070b771577bAc5c343",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x9956c5019a24fbd5B506AD070b771577bAc5c343#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysADA.acceptOwnership()": {
+		"target": "0xe36E2D3c7c34281FA3bC737950a68571736880A1",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xe36E2D3c7c34281FA3bC737950a68571736880A1#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsAAVE.acceptOwnership()": {
+		"target": "0x95aE43E5E96314E4afffcf19D9419111cd11169e",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x95aE43E5E96314E4afffcf19D9419111cd11169e#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesAAVE.acceptOwnership()": {
+		"target": "0x9BcED8A8E3Ad81c9b146FFC880358f734A06f7c0",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x9BcED8A8E3Ad81c9b146FFC880358f734A06f7c0#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysAAVE.acceptOwnership()": {
+		"target": "0xd2dF355C19471c8bd7D8A3aa27Ff4e26A21b4076",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xd2dF355C19471c8bd7D8A3aa27Ff4e26A21b4076#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsDOT.acceptOwnership()": {
+		"target": "0x27b45A4208b87A899009f45888139882477Acea5",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x27b45A4208b87A899009f45888139882477Acea5#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesDOT.acceptOwnership()": {
+		"target": "0x73B1a2643507Cd30F11Dfcf2D974f4373E5BC077",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x73B1a2643507Cd30F11Dfcf2D974f4373E5BC077#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysDOT.acceptOwnership()": {
+		"target": "0x1715AC0743102BF5Cd58EfBB6Cf2dC2685d967b6",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x1715AC0743102BF5Cd58EfBB6Cf2dC2685d967b6#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsETHBTC.acceptOwnership()": {
+		"target": "0x6DF798ec713b33BE823b917F27820f2aA0cf7662",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x6DF798ec713b33BE823b917F27820f2aA0cf7662#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesETHBTC.acceptOwnership()": {
+		"target": "0x042A7A0022A7695454ac5Be77a4860e50c9683fC",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x042A7A0022A7695454ac5Be77a4860e50c9683fC#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysETHBTC.acceptOwnership()": {
+		"target": "0x104eDF1da359506548BFc7c25bA1E28C16a70235",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x104eDF1da359506548BFc7c25bA1E28C16a70235#writeContract",
+		"data": "0x79ba5097"
+	},
+	"SynthsDEFI.acceptOwnership()": {
+		"target": "0xf533aeEe48f0e04E30c2F6A1f19FbB675469a124",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xf533aeEe48f0e04E30c2F6A1f19FbB675469a124#writeContract",
+		"data": "0x79ba5097"
+	},
+	"TokenStatesDEFI.acceptOwnership()": {
+		"target": "0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB#writeContract",
+		"data": "0x79ba5097"
+	},
+	"ProxysDEFI.acceptOwnership()": {
+		"target": "0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B#writeContract",
+		"data": "0x79ba5097"
+	},
+	"Issuer.acceptOwnership()": {
+		"target": "0xE60E71E47Ca405946CF147CA9d7589a851DBcddC",
+		"action": "acceptOwnership()",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xE60E71E47Ca405946CF147CA9d7589a851DBcddC#writeContract",
+		"data": "0x79ba5097"
+	}
+}
