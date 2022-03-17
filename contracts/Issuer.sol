@@ -170,18 +170,26 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function allNetworksDebtInfo() public view returns (uint256 debt, uint256 sharesSupply, bool isStale) {
+    function allNetworksDebtInfo()
+        public
+        view
+        returns (
+            uint256 debt,
+            uint256 sharesSupply,
+            bool isStale
+        )
+    {
+        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
 
-        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS))
-            .latestRoundData();
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
-        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
-            .latestRoundData();
-        
         debt = uint(rawIssuedSynths);
         sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
-        isStale = block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
-                block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
+        isStale =
+            block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
+            block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -264,7 +272,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
         (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(currencyRate);
+        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(
+            currencyRate
+        );
         totalSystemValue = snxBackedAmount;
 
         anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
@@ -841,8 +851,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _verifyCircuitBreaker() internal returns (bool) {
-        (, int256 rawRatio, , uint ratioUpdatedAt, ) = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO))
-            .latestRoundData();
+        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
         uint deviation = _calculateDeviation(lastDebtRatio, uint(rawRatio));
 
@@ -850,16 +860,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             systemStatus().suspendIssuance(CIRCUIT_BREAKER_SUSPENSION_REASON);
             return false;
         }
-        
         lastDebtRatio = uint(rawRatio);
 
         return true;
     }
 
-    function _calculateDeviation(
-        uint last,
-        uint fresh
-    ) internal pure returns (uint deviation) {
+    function _calculateDeviation(uint last, uint fresh) internal pure returns (uint deviation) {
         if (last == 0) {
             deviation = 1;
         } else if (fresh == 0) {

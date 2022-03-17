@@ -3954,8 +3954,9 @@
 			},
 			"Exchanger": {
 				"address": "0x3e343E89F4fF8057806F54F2208940B1Cd5C40ca",
-				"status": "current",
-				"keccak256": "0x56b78b843c7799d50e8f605021af227bee40cca2098e23b490a7927d092c91aa"
+				"status": "replaced",
+				"keccak256": "0x56b78b843c7799d50e8f605021af227bee40cca2098e23b490a7927d092c91aa",
+				"replaced_in": "v2.59.0"
 			},
 			"SystemSettings": {
 				"address": "0x80d65Bb7b9436A86c1928F93D6E7cc186987Ac54",

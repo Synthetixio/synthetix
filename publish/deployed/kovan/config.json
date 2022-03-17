@@ -275,10 +275,10 @@
 	"SignedSafeDecimalMath": {
 		"deploy": false
 	},
-	"ext:AggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedSynths": {
 		"deploy": false
 	},
-	"ext:AggregatorDebtRatio": {
+	"OneNetAggregatorDebtRatio": {
 		"deploy": false
 	}
 }

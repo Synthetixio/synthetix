@@ -1176,6 +1176,8 @@ describe('publish scripts', () => {
 									.filter(([contract]) => !/^OwnerRelay/.test(contract))
 									// same for external contracts
 									.filter(([contract]) => !/^ext:/.test(contract))
+									// remove debt oracles
+									.filter(([contract]) => !/^OneNet/.test(contract))
 									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([, { source }]) =>
