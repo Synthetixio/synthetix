@@ -542,8 +542,7 @@
 		{
 			"sip": 213,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		}
 	],
 	"releases": [
