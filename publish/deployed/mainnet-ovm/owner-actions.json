@@ -1,1 +1,9 @@
-{}
+{
+	"0x3f87Ff1de58128eF8FCb4c807eFD776E1aC72E51.suspendInitiation():": {
+		"target": "0x3f87Ff1de58128eF8FCb4c807eFD776E1aC72E51",
+		"action": "0x3f87Ff1de58128eF8FCb4c807eFD776E1aC72E51.suspendInitiation():",
+		"complete": true,
+		"link": "undefined/address/0x3f87Ff1de58128eF8FCb4c807eFD776E1aC72E51#writeContract",
+		"data": "0x3872dda3"
+	}
+}
