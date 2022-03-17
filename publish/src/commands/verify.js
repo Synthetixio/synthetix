@@ -189,8 +189,10 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					runs,
 					libraryname1: 'SafeDecimalMath',
 					libraryname2: 'SystemSettingsLib',
+					libraryname3: 'SignedSafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 					libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
+					libraryaddress3: (deployment.targets['SignedSafeDecimalMath'] || {}).address,
 					apikey: etherscanKey,
 				}),
 				{

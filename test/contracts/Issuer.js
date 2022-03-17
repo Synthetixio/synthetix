@@ -102,8 +102,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SystemSettings',
 				'SystemMessenger',
 				'Issuer',
-				'SingleNetworkAggregatorIssuedSynths',
-				'SingleNetworkAggregatorDebtRatio',
+				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorDebtRatio',
 				'DebtCache',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions

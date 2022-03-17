@@ -6,6 +6,8 @@ pragma solidity ^0.5.16;
 import "./interfaces/IFuturesMarketManager.sol";
 
 contract EmptyFuturesMarketManager is IFuturesMarketManager {
+    bytes32 public constant CONTRACT_NAME = "EmptyFuturesMarketManager";
+
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
         index;
         pageSize;

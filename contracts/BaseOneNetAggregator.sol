@@ -11,7 +11,7 @@ import "./SafeDecimalMath.sol";
 
 // aggregator which reports the data from the system itself
 // useful for testing
-contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
+contract BaseOneNetAggregator is Owned, AggregatorV2V3Interface {
     using SafeDecimalMath for uint;
 
     AddressResolver public resolver;
@@ -51,11 +51,11 @@ contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
     }
 
     function getAnswer(uint256 _roundId) external view returns (int256 answer) {
-        (,answer,,,) = getRoundData(uint80(_roundId));
+        (, answer, , , ) = getRoundData(uint80(_roundId));
     }
 
     function getTimestamp(uint256 _roundId) external view returns (uint256 timestamp) {
-        (,,timestamp,,) = getRoundData(uint80(_roundId));
+        (, , timestamp, , ) = getRoundData(uint80(_roundId));
     }
 
     function getRoundData(uint80)
@@ -68,6 +68,6 @@ contract BaseSingleNetworkAggregator is Owned, AggregatorV2V3Interface {
             uint256,
             uint80
         );
-    
+
     event SetOverrideTimestamp(uint timestamp);
 }

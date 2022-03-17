@@ -112,8 +112,8 @@ contract('FeePool', async accounts => {
 				'RewardsDistribution',
 				'DelegateApprovals',
 				'CollateralManager',
-				'SingleNetworkAggregatorIssuedSynths',
-				'SingleNetworkAggregatorDebtRatio',
+				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorDebtRatio',
 				'WrapperFactory',
 			],
 		}));
