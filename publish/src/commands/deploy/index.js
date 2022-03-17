@@ -42,7 +42,7 @@ const performSafetyChecks = require('./perform-safety-checks');
 const rebuildResolverCaches = require('./rebuild-resolver-caches');
 const rebuildLegacyResolverCaches = require('./rebuild-legacy-resolver-caches');
 const systemAndParameterCheck = require('./system-and-parameter-check');
-const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+// const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
 	priorityGasPrice: '1',
@@ -435,14 +435,14 @@ const deploy = async ({
 		network,
 	});
 
-	await takeDebtSnapshotWhenRequired({
-		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
-		deployer,
-		generateSolidity,
-		runStep,
-		useOvm,
-		useFork,
-	});
+	// await takeDebtSnapshotWhenRequired({
+	// 	debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
+	// 	deployer,
+	// 	generateSolidity,
+	// 	runStep,
+	// 	useOvm,
+	// 	useFork,
+	// });
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 

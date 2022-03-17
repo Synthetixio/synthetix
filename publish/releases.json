@@ -72,7 +72,6 @@
 					"DebtCache",
 					"Synth(s|i).+",
 					"SignedSafeDecimalMath",
-					"SignedSafeMath",
 					"SystemStatus",
 					"FuturesMarketManager"
 				],
@@ -85,9 +84,8 @@
 					"DebtCache",
 					"Synth(s|i).+",
 					"SignedSafeDecimalMath",
-					"SignedSafeMath",
 					"SystemStatus",
-					"FuturesMarket",
+					"FuturesMarket.+",
 					"FuturesMarketManager",
 					"FuturesMarketSettings",
 					"FuturesMarketData"
@@ -415,15 +413,15 @@
 				"base": [
 					"FeePool",
 					"Issuer",
-					"ext:AggregatorIssuedSynths",
-					"ext:AggregatorDebtRatio",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
 					"SynthetixBridgeToOptimism"
 				],
 				"ovm": [
 					"FeePool",
 					"Issuer",
-					"ext:AggregatorIssuedSynths",
-					"ext:AggregatorDebtRatio",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
 					"SynthetixBridgeToBase"
 				]
 			}
@@ -982,7 +980,7 @@
 				"major": 2,
 				"minor": 64
 			},
-			"sips": []
+			"sips": [80, 165]
 		},
 		{
 			"name": "Diphda (Optimism)",
@@ -992,7 +990,7 @@
 				"major": 2,
 				"minor": 64
 			},
-			"sips": []
+			"sips": [80, 165]
 		},
 		{
 			"name": "Mizar",
