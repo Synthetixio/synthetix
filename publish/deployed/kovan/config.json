@@ -71,6 +71,9 @@
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
 	"Liquidations": {
 		"deploy": false
 	},
@@ -270,9 +273,6 @@
 		"deploy": false
 	},
 	"SignedSafeDecimalMath": {
-		"deploy": false
-	},
-	"FuturesMarketManager": {
 		"deploy": false
 	},
 	"OneNetAggregatorIssuedSynths": {

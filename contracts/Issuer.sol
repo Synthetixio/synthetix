@@ -860,7 +860,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             systemStatus().suspendIssuance(CIRCUIT_BREAKER_SUSPENSION_REASON);
             return false;
         }
-
         lastDebtRatio = uint(rawRatio);
 
         return true;

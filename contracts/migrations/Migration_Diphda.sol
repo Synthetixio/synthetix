@@ -1,11 +1,9 @@
-
 pragma solidity ^0.5.16;
 
 import "./MigrationLib_Diphda.sol";
 
 // solhint-disable contract-name-camelcase
 contract Migration_Diphda is BaseMigration {
-
     // https://kovan.etherscan.io/address/0x73570075092502472E4b61A7058Df1A4a1DB12f2;
     address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
 
@@ -20,7 +18,8 @@ contract Migration_Diphda is BaseMigration {
     // https://kovan.etherscan.io/address/0xc43b833F93C3896472dED3EfF73311f571e38742
     Proxy public constant proxyfeepool_i = Proxy(0xc43b833F93C3896472dED3EfF73311f571e38742);
     // https://kovan.etherscan.io/address/0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0x7bB8B3Cc191600547b9467639aD397c05AF3ce8D);
     // https://kovan.etherscan.io/address/0xa3F59b8E28cABC4411198dDa2e65C380BD5d6Dfe
     ExchangeState public constant exchangestate_i = ExchangeState(0xa3F59b8E28cABC4411198dDa2e65C380BD5d6Dfe);
     // https://kovan.etherscan.io/address/0x8c6680412e914932A9abC02B6c7cbf690e583aFA
@@ -30,7 +29,8 @@ contract Migration_Diphda is BaseMigration {
     // https://kovan.etherscan.io/address/0xF7440b98b0DC9B54BFae68288a11C48dabFE7D07
     DebtCache public constant debtcache_i = DebtCache(0xF7440b98b0DC9B54BFae68288a11C48dabFE7D07);
     // https://kovan.etherscan.io/address/0x8F630b584765E30fF08A55BF436D84041674196E
-    ExchangeRatesWithDexPricing public constant exchangerates_i = ExchangeRatesWithDexPricing(0x8F630b584765E30fF08A55BF436D84041674196E);
+    ExchangeRatesWithDexPricing public constant exchangerates_i =
+        ExchangeRatesWithDexPricing(0x8F630b584765E30fF08A55BF436D84041674196E);
     // https://kovan.etherscan.io/address/0x9a6e96A0D9cDd4213BAd9101AB7c4d7Bd1Ea5226
     MultiCollateralSynth public constant synthsusd_i = MultiCollateralSynth(0x9a6e96A0D9cDd4213BAd9101AB7c4d7Bd1Ea5226);
     // https://kovan.etherscan.io/address/0x9aF5763Dc180f388A5fd20Dd7BA4B2790566f2eF
@@ -153,69 +153,120 @@ contract Migration_Diphda is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](43);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(systemstatus_i);
-        contracts[2]= address(proxyfeepool_i);
-        contracts[3]= address(feepooleternalstorage_i);
-        contracts[4]= address(exchangestate_i);
-        contracts[5]= address(rewardescrow_i);
-        contracts[6]= address(feepool_i);
-        contracts[7]= address(debtcache_i);
-        contracts[8]= address(exchangerates_i);
-        contracts[9]= address(synthsusd_i);
-        contracts[10]= address(tokenstatesusd_i);
-        contracts[11]= address(proxysusd_i);
-        contracts[12]= address(synthseur_i);
-        contracts[13]= address(tokenstateseur_i);
-        contracts[14]= address(proxyseur_i);
-        contracts[15]= address(synthsjpy_i);
-        contracts[16]= address(tokenstatesjpy_i);
-        contracts[17]= address(proxysjpy_i);
-        contracts[18]= address(synthsaud_i);
-        contracts[19]= address(tokenstatesaud_i);
-        contracts[20]= address(proxysaud_i);
-        contracts[21]= address(synthsgbp_i);
-        contracts[22]= address(tokenstatesgbp_i);
-        contracts[23]= address(proxysgbp_i);
-        contracts[24]= address(synthskrw_i);
-        contracts[25]= address(tokenstateskrw_i);
-        contracts[26]= address(proxyskrw_i);
-        contracts[27]= address(synthschf_i);
-        contracts[28]= address(tokenstateschf_i);
-        contracts[29]= address(proxyschf_i);
-        contracts[30]= address(synthsbtc_i);
-        contracts[31]= address(tokenstatesbtc_i);
-        contracts[32]= address(proxysbtc_i);
-        contracts[33]= address(synthseth_i);
-        contracts[34]= address(tokenstateseth_i);
-        contracts[35]= address(proxyseth_i);
-        contracts[36]= address(synthslink_i);
-        contracts[37]= address(tokenstateslink_i);
-        contracts[38]= address(proxyslink_i);
-        contracts[39]= address(synthsdefi_i);
-        contracts[40]= address(tokenstatesdefi_i);
-        contracts[41]= address(proxysdefi_i);
-        contracts[42]= address(issuer_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(systemstatus_i);
+        contracts[2] = address(proxyfeepool_i);
+        contracts[3] = address(feepooleternalstorage_i);
+        contracts[4] = address(exchangestate_i);
+        contracts[5] = address(rewardescrow_i);
+        contracts[6] = address(feepool_i);
+        contracts[7] = address(debtcache_i);
+        contracts[8] = address(exchangerates_i);
+        contracts[9] = address(synthsusd_i);
+        contracts[10] = address(tokenstatesusd_i);
+        contracts[11] = address(proxysusd_i);
+        contracts[12] = address(synthseur_i);
+        contracts[13] = address(tokenstateseur_i);
+        contracts[14] = address(proxyseur_i);
+        contracts[15] = address(synthsjpy_i);
+        contracts[16] = address(tokenstatesjpy_i);
+        contracts[17] = address(proxysjpy_i);
+        contracts[18] = address(synthsaud_i);
+        contracts[19] = address(tokenstatesaud_i);
+        contracts[20] = address(proxysaud_i);
+        contracts[21] = address(synthsgbp_i);
+        contracts[22] = address(tokenstatesgbp_i);
+        contracts[23] = address(proxysgbp_i);
+        contracts[24] = address(synthskrw_i);
+        contracts[25] = address(tokenstateskrw_i);
+        contracts[26] = address(proxyskrw_i);
+        contracts[27] = address(synthschf_i);
+        contracts[28] = address(tokenstateschf_i);
+        contracts[29] = address(proxyschf_i);
+        contracts[30] = address(synthsbtc_i);
+        contracts[31] = address(tokenstatesbtc_i);
+        contracts[32] = address(proxysbtc_i);
+        contracts[33] = address(synthseth_i);
+        contracts[34] = address(tokenstateseth_i);
+        contracts[35] = address(proxyseth_i);
+        contracts[36] = address(synthslink_i);
+        contracts[37] = address(tokenstateslink_i);
+        contracts[38] = address(proxyslink_i);
+        contracts[39] = address(synthsdefi_i);
+        contracts[40] = address(tokenstatesdefi_i);
+        contracts[41] = address(proxysdefi_i);
+        contracts[42] = address(issuer_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRatesWithDexPricing", "Invalid contract supplied for ExchangeRates");
-        require(ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool", "Invalid contract supplied for FeePool");
-        require(ISynthetixNamedContract(new_ExchangeCircuitBreaker_contract).CONTRACT_NAME() == "ExchangeCircuitBreaker", "Invalid contract supplied for ExchangeCircuitBreaker");
-        require(ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache", "Invalid contract supplied for DebtCache");
-        require(ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives", "Invalid contract supplied for Exchanger");
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
-        require(ISynthetixNamedContract(new_SynthsJPY_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsJPY");
-        require(ISynthetixNamedContract(new_SynthsEUR_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsEUR");
-        require(ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsUSD");
-        require(ISynthetixNamedContract(new_SynthsAUD_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsAUD");
-        require(ISynthetixNamedContract(new_SynthsGBP_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsGBP");
-        require(ISynthetixNamedContract(new_SynthsKRW_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsKRW");
-        require(ISynthetixNamedContract(new_SynthsCHF_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsCHF");
-        require(ISynthetixNamedContract(new_SynthsETH_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsETH");
-        require(ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsBTC");
-        require(ISynthetixNamedContract(new_SynthsLINK_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsLINK");
-        require(ISynthetixNamedContract(new_SynthsDEFI_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsDEFI");
+        require(
+            ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRatesWithDexPricing",
+            "Invalid contract supplied for ExchangeRates"
+        );
+        require(
+            ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool",
+            "Invalid contract supplied for FeePool"
+        );
+        require(
+            ISynthetixNamedContract(new_ExchangeCircuitBreaker_contract).CONTRACT_NAME() == "ExchangeCircuitBreaker",
+            "Invalid contract supplied for ExchangeCircuitBreaker"
+        );
+        require(
+            ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache",
+            "Invalid contract supplied for DebtCache"
+        );
+        require(
+            ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives",
+            "Invalid contract supplied for Exchanger"
+        );
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsJPY_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsJPY"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsEUR_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsEUR"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsUSD"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsAUD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsAUD"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsGBP_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsGBP"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsKRW_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsKRW"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsCHF_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsCHF"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsETH_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsETH"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsBTC"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsLINK_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsLINK"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsDEFI_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsDEFI"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -246,13 +297,16 @@ contract Migration_Diphda is BaseMigration {
         // Import fee period from existing fee pool at index 1;
         importFeePeriod_1();
         // Import excluded-debt records from existing DebtCache;
-        debtcache_i.importExcludedIssuedDebts(IDebtCache(0x0b6f83DB2dE6cDc3cB57DC0ED79D07267F6fdc2A), IIssuer(0xD0B60E2FAb47e703ffa0da7364Efb9536C430912));
+        debtcache_i.importExcludedIssuedDebts(
+            IDebtCache(0x0b6f83DB2dE6cDc3cB57DC0ED79D07267F6fdc2A),
+            IIssuer(0xD0B60E2FAb47e703ffa0da7364Efb9536C430912)
+        );
         // Ensure the ExchangeRates contract has the standalone feed for SNX;
         exchangerates_i.addAggregator("SNX", 0x31f93DA9823d737b7E44bdee0DF389Fe62Fd1AcD);
         // Ensure the ExchangeRates contract has the standalone feed for ETH;
         exchangerates_i.addAggregator("ETH", 0x9326BFA02ADD2366b30bacB125260Af641031331);
 
-        // Call migration library split 
+        // Call migration library split
         MigrationLib_Diphda.migration_split();
 
         // Add synths to the Issuer contract - batch 1;
@@ -276,7 +330,6 @@ contract Migration_Diphda is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](22);
         addressresolver_importAddresses_names_0_0[0] = bytes32("OneNetAggregatorIssuedSynths");
@@ -324,10 +377,12 @@ contract Migration_Diphda is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[19] = address(new_SynthsLINK_contract);
         addressresolver_importAddresses_destinations_0_1[20] = address(new_SynthsDEFI_contract);
         addressresolver_importAddresses_destinations_0_1[21] = address(new_FuturesMarketManager_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x64ac15AB583fFfA6a7401B83E3aA5cf4Ad1aA92A);
@@ -353,7 +408,6 @@ contract Migration_Diphda is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](11);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25);
@@ -370,7 +424,6 @@ contract Migration_Diphda is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function systemstatus_updateAccessControls_21() internal {
         bytes32[] memory systemstatus_updateAccessControls_sections_21_0 = new bytes32[](6);
         systemstatus_updateAccessControls_sections_21_0[0] = bytes32("System");
@@ -400,61 +453,64 @@ contract Migration_Diphda is BaseMigration {
         systemstatus_updateAccessControls_canResumes_21_3[3] = bool(true);
         systemstatus_updateAccessControls_canResumes_21_3[4] = bool(true);
         systemstatus_updateAccessControls_canResumes_21_3[5] = bool(true);
-        systemstatus_i.updateAccessControls(systemstatus_updateAccessControls_sections_21_0, systemstatus_updateAccessControls_accounts_21_1, systemstatus_updateAccessControls_canSuspends_21_2, systemstatus_updateAccessControls_canResumes_21_3);
+        systemstatus_i.updateAccessControls(
+            systemstatus_updateAccessControls_sections_21_0,
+            systemstatus_updateAccessControls_accounts_21_1,
+            systemstatus_updateAccessControls_canSuspends_21_2,
+            systemstatus_updateAccessControls_canResumes_21_3
+        );
     }
 
-    
     function importFeePeriod_0() internal {
         // https://kovan.etherscan.io/address/0x4bcA7fF0a1F9BE5c8c77C6855B0ED9Fce028098E;
         FeePool existingFeePool = FeePool(0x4bcA7fF0a1F9BE5c8c77C6855B0ED9Fce028098E);
         // https://kovan.etherscan.io/address/0x42B340961496731B0c4337E2A600087A2368DfCF;
         FeePool newFeePool = FeePool(0x42B340961496731B0c4337E2A600087A2368DfCF);
         (
-                        uint64 feePeriodId_0,
-                        uint64 unused_0,
-                        uint64 startTime_0,
-                        uint feesToDistribute_0,
-                        uint feesClaimed_0,
-                        uint rewardsToDistribute_0,
-                        uint rewardsClaimed_0
-                    ) = existingFeePool.recentFeePeriods(0);
+            uint64 feePeriodId_0,
+            uint64 unused_0,
+            uint64 startTime_0,
+            uint feesToDistribute_0,
+            uint feesClaimed_0,
+            uint rewardsToDistribute_0,
+            uint rewardsClaimed_0
+        ) = existingFeePool.recentFeePeriods(0);
         newFeePool.importFeePeriod(
-                        0,
-                        feePeriodId_0,
-                        startTime_0,
-                        feesToDistribute_0,
-                        feesClaimed_0,
-                        rewardsToDistribute_0,
-                        rewardsClaimed_0
-                    );
+            0,
+            feePeriodId_0,
+            startTime_0,
+            feesToDistribute_0,
+            feesClaimed_0,
+            rewardsToDistribute_0,
+            rewardsClaimed_0
+        );
     }
 
-    
     function importFeePeriod_1() internal {
         // https://kovan.etherscan.io/address/0x4bcA7fF0a1F9BE5c8c77C6855B0ED9Fce028098E;
         FeePool existingFeePool = FeePool(0x4bcA7fF0a1F9BE5c8c77C6855B0ED9Fce028098E);
         // https://kovan.etherscan.io/address/0x42B340961496731B0c4337E2A600087A2368DfCF;
         FeePool newFeePool = FeePool(0x42B340961496731B0c4337E2A600087A2368DfCF);
         (
-                        uint64 feePeriodId_1,
-                        uint64 unused_1,
-                        uint64 startTime_1,
-                        uint feesToDistribute_1,
-                        uint feesClaimed_1,
-                        uint rewardsToDistribute_1,
-                        uint rewardsClaimed_1
-                    ) = existingFeePool.recentFeePeriods(1);
+            uint64 feePeriodId_1,
+            uint64 unused_1,
+            uint64 startTime_1,
+            uint feesToDistribute_1,
+            uint feesClaimed_1,
+            uint rewardsToDistribute_1,
+            uint rewardsClaimed_1
+        ) = existingFeePool.recentFeePeriods(1);
         newFeePool.importFeePeriod(
-                        1,
-                        feePeriodId_1,
-                        startTime_1,
-                        feesToDistribute_1,
-                        feesClaimed_1,
-                        rewardsToDistribute_1,
-                        rewardsClaimed_1
-                    );
+            1,
+            feePeriodId_1,
+            startTime_1,
+            feesToDistribute_1,
+            feesClaimed_1,
+            rewardsToDistribute_1,
+            rewardsClaimed_1
+        );
     }
-    
+
     function issuer_addSynths_77() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_77_0 = new ISynth[](11);
         issuer_addSynths_synthsToAdd_77_0[0] = ISynth(new_SynthsUSD_contract);
