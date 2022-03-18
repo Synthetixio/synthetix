@@ -211,5 +211,53 @@
 	},
 	"SynthsEUR": {
 		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketSettings": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"FuturesMarketBTC": {
+		"deploy": false
+	},
+	"FuturesMarketETH": {
+		"deploy": false
+	},
+	"FuturesMarketLINK": {
+		"deploy": false
+	},
+	"TokenStatesAAVE": {
+		"deploy": false
+	},
+	"ProxysAAVE": {
+		"deploy": false
+	},
+	"SynthsAAVE": {
+		"deploy": false
+	},
+	"TokenStatesUNI": {
+		"deploy": false
+	},
+	"ProxysUNI": {
+		"deploy": false
+	},
+	"SynthsUNI": {
+		"deploy": false
 	}
 }

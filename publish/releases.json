@@ -90,7 +90,8 @@
 					"FuturesMarketSettings",
 					"FuturesMarketData"
 				]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 83,
@@ -424,7 +425,8 @@
 					"OneNetAggregatorDebtRatio",
 					"SynthetixBridgeToBase"
 				]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 169,
@@ -542,7 +544,8 @@
 		{
 			"sip": 213,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -980,7 +983,7 @@
 		},
 		{
 			"name": "Diphda",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 64
@@ -990,7 +993,7 @@
 		{
 			"name": "Diphda (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 64
