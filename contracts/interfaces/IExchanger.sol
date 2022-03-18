@@ -72,6 +72,8 @@ interface IExchanger {
 
     function waitingPeriodSecs() external view returns (uint);
 
+    function lastExchangeRate(bytes32 currencyKey) external view returns (uint);
+
     // Mutative functions
     function exchange(
         address exchangeForAddress,
@@ -101,8 +103,6 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
-
-    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }

@@ -311,13 +311,13 @@
 	"NativeEtherWrapper": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
-		"deploy": false
-	},
 	"WrapperFactory": {
 		"deploy": false
 	},
 	"OwnerRelayOnEthereum": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
 		"deploy": false
 	},
 	"TokenStatesETHBTC": {
@@ -333,6 +333,21 @@
 		"deploy": false
 	},
 	"SynthetixDebtShare": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
 		"deploy": false
 	}
 }

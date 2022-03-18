@@ -1,6 +1,9 @@
 'use strict';
 
 const { gray, green, yellow } = require('chalk');
+
+const ethers = require('ethers');
+
 const { toBytes32 } = require('../../../..');
 
 const { reportDeployedContracts } = require('../../util');
@@ -46,12 +49,10 @@ module.exports = async ({
 				.filter(([, contract]) => !contract.skipResolver && !contract.library)
 				.map(([name, contract]) => {
 					return limitPromise(async () => {
-						const isImported = await AddressResolver.areAddressesImported(
-							[toBytes32(name)],
-							[contract.address]
-						);
+						const currentAddress = await AddressResolver.getAddress(toBytes32(name));
 
-						if (!isImported) {
+						// only import ext: addresses if they have never been imported before
+						if (currentAddress !== contract.address) {
 							console.log(green(`${name} needs to be imported to the AddressResolver`));
 
 							addressArgs[0].push(toBytes32(name));
@@ -63,6 +64,19 @@ module.exports = async ({
 					});
 				})
 		);
+
+		// SIP-165 For debt pool synthesis, also add the ext:addresses, use the single network version if they exist in deployments
+		for (const debtPoolContractName of ['AggregatorIssuedSynths', 'AggregatorDebtRatio']) {
+			const resolverName = toBytes32(`ext:${debtPoolContractName}`);
+			const currentAddress = await AddressResolver.getAddress(resolverName);
+			const contract = deployer.deployedContracts[`OneNet${debtPoolContractName}`];
+
+			if (currentAddress === ethers.constants.AddressZero && contract) {
+				console.log(yellow('Importing special aggregator', debtPoolContractName));
+				addressArgs[0].push(resolverName);
+				addressArgs[1].push(contract.address);
+			}
+		}
 
 		const { pending } = await runStep({
 			gasLimit: 6e6, // higher gas required for mainnet

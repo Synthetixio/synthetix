@@ -60,6 +60,39 @@
 			"sources": ["Exchanger", "ExchangeRates"]
 		},
 		{
+			"sip": 80,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SystemStatus",
+					"FuturesMarketManager"
+				],
+				"ovm": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SystemStatus",
+					"FuturesMarket.+",
+					"FuturesMarketManager",
+					"FuturesMarketSettings",
+					"FuturesMarketData"
+				]
+			}
+		},
+		{
 			"sip": 83,
 			"layer": "base",
 			"released": "base",
@@ -374,6 +407,26 @@
 			"released": "base"
 		},
 		{
+			"sip": 165,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"FeePool",
+					"Issuer",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
+					"SynthetixBridgeToOptimism"
+				],
+				"ovm": [
+					"FeePool",
+					"Issuer",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
+					"SynthetixBridgeToBase"
+				]
+			}
+		},
+		{
 			"sip": 169,
 			"layer": "base",
 			"released": "base"
@@ -485,6 +538,11 @@
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
+		},
+		{
+			"sip": 213,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -927,7 +985,7 @@
 				"major": 2,
 				"minor": 64
 			},
-			"sips": []
+			"sips": [80, 165]
 		},
 		{
 			"name": "Diphda (Optimism)",
@@ -937,7 +995,7 @@
 				"major": 2,
 				"minor": 64
 			},
-			"sips": []
+			"sips": [80, 165, 213]
 		},
 		{
 			"name": "Mizar",

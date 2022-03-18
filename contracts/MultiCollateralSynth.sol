@@ -78,17 +78,12 @@ contract MultiCollateralSynth is Synth {
 
     // Contracts directly interacting with multiCollateralSynth or wrapper to issue and burn
     modifier onlyInternalContracts() {
-        bool isFeePool = msg.sender == address(feePool());
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isIssuer = msg.sender == address(issuer());
+        bool isInternal = super._isInternalContract(msg.sender);
         bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isWrapper = wrapperFactory().isWrapper(msg.sender);
         bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
 
-        require(
-            isFeePool || isExchanger || isIssuer || isEtherWrapper || isWrapper || isMultiCollateral,
-            "Only FeePool, Exchanger, Issuer, Wrapper, or MultiCollateral contracts allowed"
-        );
+        require(isInternal || isWrapper || isMultiCollateral || isEtherWrapper, "Only internal contracts allowed");
         _;
     }
 }

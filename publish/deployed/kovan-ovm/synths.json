@@ -33,5 +33,15 @@
 		"name": "sSOL",
 		"asset": "SOL",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sAVAX",
+		"asset": "AVAX",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sMATIC",
+		"asset": "MATIC",
+		"subclass": "MultiCollateralSynth"
 	}
 ]
