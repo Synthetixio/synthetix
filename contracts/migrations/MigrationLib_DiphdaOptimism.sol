@@ -29,13 +29,15 @@ library MigrationLib_DiphdaOptimism {
     // ----------------------------
 
     // https://explorer.optimism.io/address/0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B
-    FuturesMarketManager public constant futuresmarketmanager_i = FuturesMarketManager(0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B);
+    FuturesMarketManager public constant futuresmarketmanager_i =
+        FuturesMarketManager(0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B);
     // https://explorer.optimism.io/address/0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C
     AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
     // https://explorer.optimism.io/address/0x4a16A42407AA491564643E1dfc1fd50af29794eF
     Proxy public constant proxyfeepool_i = Proxy(0x4a16A42407AA491564643E1dfc1fd50af29794eF);
     // https://explorer.optimism.io/address/0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
     // https://explorer.optimism.io/address/0x7EF87c14f50CFFe2e73d2C87916C3128c56593A8
     ExchangeState public constant exchangestate_i = ExchangeState(0x7EF87c14f50CFFe2e73d2C87916C3128c56593A8);
     // https://explorer.optimism.io/address/0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD
@@ -107,7 +109,8 @@ library MigrationLib_DiphdaOptimism {
     // https://explorer.optimism.io/address/0x28224ef515d01709916F5ac4D8a72664A7b56e98
     SystemSettings public constant systemsettings_i = SystemSettings(0x28224ef515d01709916F5ac4D8a72664A7b56e98);
     // https://explorer.optimism.io/address/0xaE55F163337A2A46733AA66dA9F35299f9A46e9e
-    FuturesMarketSettings public constant futuresmarketsettings_i = FuturesMarketSettings(0xaE55F163337A2A46733AA66dA9F35299f9A46e9e);
+    FuturesMarketSettings public constant futuresmarketsettings_i =
+        FuturesMarketSettings(0xaE55F163337A2A46733AA66dA9F35299f9A46e9e);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -175,7 +178,6 @@ library MigrationLib_DiphdaOptimism {
     address public constant new_FuturesMarketLINK_contract = 0x1228c7D8BBc5bC53DB181bD7B1fcE765aa83bF8A;
 
     function migrate2() external {
-
         // Ensure the new synth has the totalSupply from the previous one;
         copyTotalSupplyFrom_sUSD();
         // Ensure the sUSD synth can write to its TokenState;
@@ -305,7 +307,7 @@ library MigrationLib_DiphdaOptimism {
         issuer_addSynths_synthsToAdd_74_0[9] = ISynth(new_SynthsUNI_contract);
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_74_0);
     }
-    
+
     function copyTotalSupplyFrom_sUSD() internal {
         // https://explorer.optimism.io/address/0x78aAA3fb165deCAA729DFE3cf0E97Ab6FCF484da;
         Synth existingSynth = Synth(0x78aAA3fb165deCAA729DFE3cf0E97Ab6FCF484da);
@@ -314,7 +316,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sETH() internal {
         // https://explorer.optimism.io/address/0xBD2657CF89F930F27eE1854EF4B389773DF43b29;
         Synth existingSynth = Synth(0xBD2657CF89F930F27eE1854EF4B389773DF43b29);
@@ -323,7 +324,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sBTC() internal {
         // https://explorer.optimism.io/address/0x8Ce809a955DB85b41e7A378D7659e348e0C6AdD2;
         Synth existingSynth = Synth(0x8Ce809a955DB85b41e7A378D7659e348e0C6AdD2);
@@ -332,7 +332,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sLINK() internal {
         // https://explorer.optimism.io/address/0xF33e7B48538C9D0480a48f3b5eEf79026e2a28f6;
         Synth existingSynth = Synth(0xF33e7B48538C9D0480a48f3b5eEf79026e2a28f6);
@@ -341,7 +340,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sSOL() internal {
         // https://explorer.optimism.io/address/0x8ab13Ca3b6591554a086B7Ad2A012d25C3efD704;
         Synth existingSynth = Synth(0x8ab13Ca3b6591554a086B7Ad2A012d25C3efD704);
@@ -350,7 +348,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sAVAX() internal {
         // https://explorer.optimism.io/address/0x5C2B0fdB3C828f087FDdA19Cf7F6fF7c51022aFb;
         Synth existingSynth = Synth(0x5C2B0fdB3C828f087FDdA19Cf7F6fF7c51022aFb);
@@ -359,7 +356,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sMATIC() internal {
         // https://explorer.optimism.io/address/0x6E3FfC4161931793B7FD084E761C0D12126FD376;
         Synth existingSynth = Synth(0x6E3FfC4161931793B7FD084E761C0D12126FD376);
@@ -368,7 +364,6 @@ library MigrationLib_DiphdaOptimism {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sEUR() internal {
         // https://explorer.optimism.io/address/0x824dA469B59eC0E6E6BB5D611888aBF440970414;
         Synth existingSynth = Synth(0x824dA469B59eC0E6E6BB5D611888aBF440970414);
@@ -384,6 +379,9 @@ library MigrationLib_DiphdaOptimism {
         uint256[] memory systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_75_1 = new uint256[](2);
         systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_75_1[0] = uint256(2500000000000000);
         systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_75_1[1] = uint256(2500000000000000);
-        systemsettings_i.setExchangeFeeRateForSynths(systemsettings_setExchangeFeeRateForSynths_synthKeys_75_0, systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_75_1);
+        systemsettings_i.setExchangeFeeRateForSynths(
+            systemsettings_setExchangeFeeRateForSynths_synthKeys_75_0,
+            systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_75_1
+        );
     }
 }

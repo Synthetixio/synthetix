@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "./MigrationLib_DiphdaOptimism.sol";
@@ -13,13 +12,15 @@ contract Migration_DiphdaOptimism is BaseMigration {
     // ----------------------------
 
     // https://explorer.optimism.io/address/0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B
-    FuturesMarketManager public constant futuresmarketmanager_i = FuturesMarketManager(0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B);
+    FuturesMarketManager public constant futuresmarketmanager_i =
+        FuturesMarketManager(0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B);
     // https://explorer.optimism.io/address/0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C
     AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
     // https://explorer.optimism.io/address/0x4a16A42407AA491564643E1dfc1fd50af29794eF
     Proxy public constant proxyfeepool_i = Proxy(0x4a16A42407AA491564643E1dfc1fd50af29794eF);
     // https://explorer.optimism.io/address/0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0x41140Bf6498a36f2E44eFd49f21dAe3bbb7367c8);
     // https://explorer.optimism.io/address/0x7EF87c14f50CFFe2e73d2C87916C3128c56593A8
     ExchangeState public constant exchangestate_i = ExchangeState(0x7EF87c14f50CFFe2e73d2C87916C3128c56593A8);
     // https://explorer.optimism.io/address/0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD
@@ -91,7 +92,8 @@ contract Migration_DiphdaOptimism is BaseMigration {
     // https://explorer.optimism.io/address/0x28224ef515d01709916F5ac4D8a72664A7b56e98
     SystemSettings public constant systemsettings_i = SystemSettings(0x28224ef515d01709916F5ac4D8a72664A7b56e98);
     // https://explorer.optimism.io/address/0xaE55F163337A2A46733AA66dA9F35299f9A46e9e
-    FuturesMarketSettings public constant futuresmarketsettings_i = FuturesMarketSettings(0xaE55F163337A2A46733AA66dA9F35299f9A46e9e);
+    FuturesMarketSettings public constant futuresmarketsettings_i =
+        FuturesMarketSettings(0xaE55F163337A2A46733AA66dA9F35299f9A46e9e);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -162,70 +164,134 @@ contract Migration_DiphdaOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](40);
-        contracts[0]= address(futuresmarketmanager_i);
-        contracts[1]= address(addressresolver_i);
-        contracts[2]= address(proxyfeepool_i);
-        contracts[3]= address(feepooleternalstorage_i);
-        contracts[4]= address(exchangestate_i);
-        contracts[5]= address(systemstatus_i);
-        contracts[6]= address(feepool_i);
-        contracts[7]= address(debtcache_i);
-        contracts[8]= address(exchangerates_i);
-        contracts[9]= address(synthsusd_i);
-        contracts[10]= address(tokenstatesusd_i);
-        contracts[11]= address(proxysusd_i);
-        contracts[12]= address(synthseth_i);
-        contracts[13]= address(tokenstateseth_i);
-        contracts[14]= address(proxyseth_i);
-        contracts[15]= address(synthsbtc_i);
-        contracts[16]= address(tokenstatesbtc_i);
-        contracts[17]= address(proxysbtc_i);
-        contracts[18]= address(synthslink_i);
-        contracts[19]= address(tokenstateslink_i);
-        contracts[20]= address(proxyslink_i);
-        contracts[21]= address(synthssol_i);
-        contracts[22]= address(tokenstatessol_i);
-        contracts[23]= address(proxyssol_i);
-        contracts[24]= address(synthsavax_i);
-        contracts[25]= address(tokenstatesavax_i);
-        contracts[26]= address(proxysavax_i);
-        contracts[27]= address(synthsmatic_i);
-        contracts[28]= address(tokenstatesmatic_i);
-        contracts[29]= address(proxysmatic_i);
-        contracts[30]= address(synthseur_i);
-        contracts[31]= address(tokenstateseur_i);
-        contracts[32]= address(proxyseur_i);
-        contracts[33]= address(tokenstatesaave_i);
-        contracts[34]= address(proxysaave_i);
-        contracts[35]= address(tokenstatesuni_i);
-        contracts[36]= address(proxysuni_i);
-        contracts[37]= address(issuer_i);
-        contracts[38]= address(systemsettings_i);
-        contracts[39]= address(futuresmarketsettings_i);
+        contracts[0] = address(futuresmarketmanager_i);
+        contracts[1] = address(addressresolver_i);
+        contracts[2] = address(proxyfeepool_i);
+        contracts[3] = address(feepooleternalstorage_i);
+        contracts[4] = address(exchangestate_i);
+        contracts[5] = address(systemstatus_i);
+        contracts[6] = address(feepool_i);
+        contracts[7] = address(debtcache_i);
+        contracts[8] = address(exchangerates_i);
+        contracts[9] = address(synthsusd_i);
+        contracts[10] = address(tokenstatesusd_i);
+        contracts[11] = address(proxysusd_i);
+        contracts[12] = address(synthseth_i);
+        contracts[13] = address(tokenstateseth_i);
+        contracts[14] = address(proxyseth_i);
+        contracts[15] = address(synthsbtc_i);
+        contracts[16] = address(tokenstatesbtc_i);
+        contracts[17] = address(proxysbtc_i);
+        contracts[18] = address(synthslink_i);
+        contracts[19] = address(tokenstateslink_i);
+        contracts[20] = address(proxyslink_i);
+        contracts[21] = address(synthssol_i);
+        contracts[22] = address(tokenstatessol_i);
+        contracts[23] = address(proxyssol_i);
+        contracts[24] = address(synthsavax_i);
+        contracts[25] = address(tokenstatesavax_i);
+        contracts[26] = address(proxysavax_i);
+        contracts[27] = address(synthsmatic_i);
+        contracts[28] = address(tokenstatesmatic_i);
+        contracts[29] = address(proxysmatic_i);
+        contracts[30] = address(synthseur_i);
+        contracts[31] = address(tokenstateseur_i);
+        contracts[32] = address(proxyseur_i);
+        contracts[33] = address(tokenstatesaave_i);
+        contracts[34] = address(proxysaave_i);
+        contracts[35] = address(tokenstatesuni_i);
+        contracts[36] = address(proxysuni_i);
+        contracts[37] = address(issuer_i);
+        contracts[38] = address(systemsettings_i);
+        contracts[39] = address(futuresmarketsettings_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_OneNetAggregatorDebtRatio_contract).CONTRACT_NAME() == "OneNetAggregatorDebtRatio", "Invalid contract supplied for OneNetAggregatorDebtRatio");
-        require(ISynthetixNamedContract(new_OneNetAggregatorIssuedSynths_contract).CONTRACT_NAME() == "OneNetAggregatorIssuedSynths", "Invalid contract supplied for OneNetAggregatorIssuedSynths");
-        require(ISynthetixNamedContract(new_SystemStatus_contract).CONTRACT_NAME() == "SystemStatus", "Invalid contract supplied for SystemStatus");
-        require(ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRates", "Invalid contract supplied for ExchangeRates");
-        require(ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool", "Invalid contract supplied for FeePool");
-        require(ISynthetixNamedContract(new_ExchangeCircuitBreaker_contract).CONTRACT_NAME() == "ExchangeCircuitBreaker", "Invalid contract supplied for ExchangeCircuitBreaker");
-        require(ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache", "Invalid contract supplied for DebtCache");
-        require(ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "Exchanger", "Invalid contract supplied for Exchanger");
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
-        require(ISynthetixNamedContract(new_SynthetixBridgeToBase_contract).CONTRACT_NAME() == "SynthetixBridgeToBase", "Invalid contract supplied for SynthetixBridgeToBase");
-        require(ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsUSD");
-        require(ISynthetixNamedContract(new_SynthsETH_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsETH");
-        require(ISynthetixNamedContract(new_SynthsLINK_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsLINK");
-        require(ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsBTC");
-        require(ISynthetixNamedContract(new_SynthsSOL_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsSOL");
-        require(ISynthetixNamedContract(new_SynthsMATIC_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsMATIC");
-        require(ISynthetixNamedContract(new_SynthsAVAX_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsAVAX");
-        require(ISynthetixNamedContract(new_SynthsEUR_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsEUR");
-        require(ISynthetixNamedContract(new_SynthsAAVE_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsAAVE");
-        require(ISynthetixNamedContract(new_SynthsUNI_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsUNI");
-        require(ISynthetixNamedContract(new_FuturesMarketManager_contract).CONTRACT_NAME() == "FuturesMarketManager", "Invalid contract supplied for FuturesMarketManager");
+        require(
+            ISynthetixNamedContract(new_OneNetAggregatorDebtRatio_contract).CONTRACT_NAME() == "OneNetAggregatorDebtRatio",
+            "Invalid contract supplied for OneNetAggregatorDebtRatio"
+        );
+        require(
+            ISynthetixNamedContract(new_OneNetAggregatorIssuedSynths_contract).CONTRACT_NAME() ==
+                "OneNetAggregatorIssuedSynths",
+            "Invalid contract supplied for OneNetAggregatorIssuedSynths"
+        );
+        require(
+            ISynthetixNamedContract(new_SystemStatus_contract).CONTRACT_NAME() == "SystemStatus",
+            "Invalid contract supplied for SystemStatus"
+        );
+        require(
+            ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRates",
+            "Invalid contract supplied for ExchangeRates"
+        );
+        require(
+            ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool",
+            "Invalid contract supplied for FeePool"
+        );
+        require(
+            ISynthetixNamedContract(new_ExchangeCircuitBreaker_contract).CONTRACT_NAME() == "ExchangeCircuitBreaker",
+            "Invalid contract supplied for ExchangeCircuitBreaker"
+        );
+        require(
+            ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache",
+            "Invalid contract supplied for DebtCache"
+        );
+        require(
+            ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "Exchanger",
+            "Invalid contract supplied for Exchanger"
+        );
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthetixBridgeToBase_contract).CONTRACT_NAME() == "SynthetixBridgeToBase",
+            "Invalid contract supplied for SynthetixBridgeToBase"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsUSD"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsETH_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsETH"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsLINK_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsLINK"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsBTC"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsSOL_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsSOL"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsMATIC_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsMATIC"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsAVAX_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsAVAX"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsEUR_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsEUR"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsAAVE_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsAAVE"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsUNI_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsUNI"
+        );
+        require(
+            ISynthetixNamedContract(new_FuturesMarketManager_contract).CONTRACT_NAME() == "FuturesMarketManager",
+            "Invalid contract supplied for FuturesMarketManager"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -253,12 +319,15 @@ contract Migration_DiphdaOptimism is BaseMigration {
         // Import fee period from existing fee pool at index 1;
         importFeePeriod_1();
         // Import excluded-debt records from existing DebtCache;
-        debtcache_i.importExcludedIssuedDebts(IDebtCache(0x01f8C5e421172B67cc14B7f5F369cfb10de0acD4), IIssuer(0xdf1F1f0059bA70C182471467d3017511B1a122E8));
+        debtcache_i.importExcludedIssuedDebts(
+            IDebtCache(0x01f8C5e421172B67cc14B7f5F369cfb10de0acD4),
+            IIssuer(0xdf1F1f0059bA70C182471467d3017511B1a122E8)
+        );
         // Ensure the ExchangeRates contract has the standalone feed for SNX;
         exchangerates_i.addAggregator("SNX", 0x2FCF37343e916eAEd1f1DdaaF84458a359b53877);
         // Ensure the ExchangeRates contract has the standalone feed for ETH;
         exchangerates_i.addAggregator("ETH", 0x13e3Ee699D1909E989722E753853AE30b17e08c5);
-        
+
         MigrationLib_DiphdaOptimism.migrate2();
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
@@ -279,7 +348,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         }
     }
 
-    
     function futuresmarketmanager_addMarkets_0() internal {
         address[] memory futuresmarketmanager_addMarkets_marketsToAdd_0_0 = new address[](3);
         futuresmarketmanager_addMarkets_marketsToAdd_0_0[0] = address(new_FuturesMarketBTC_contract);
@@ -288,7 +356,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         futuresmarketmanager_i.addMarkets(futuresmarketmanager_addMarkets_marketsToAdd_0_0);
     }
 
-    
     function addressresolver_importAddresses_1() internal {
         bytes32[] memory addressresolver_importAddresses_names_1_0 = new bytes32[](32);
         addressresolver_importAddresses_names_1_0[0] = bytes32("OneNetAggregatorDebtRatio");
@@ -356,10 +423,12 @@ contract Migration_DiphdaOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_1_1[29] = address(new_FuturesMarketLINK_contract);
         addressresolver_importAddresses_destinations_1_1[30] = address(new_OneNetAggregatorIssuedSynths_contract);
         addressresolver_importAddresses_destinations_1_1[31] = address(new_OneNetAggregatorDebtRatio_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_1_0, addressresolver_importAddresses_destinations_1_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_1_0,
+            addressresolver_importAddresses_destinations_1_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x14E6f8e6Da00a32C069b11b64e48EA1FEF2361D4);
@@ -385,7 +454,6 @@ contract Migration_DiphdaOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function addressresolver_rebuildCaches_3() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](16);
         addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(new_FuturesMarketETH_contract);
@@ -407,55 +475,53 @@ contract Migration_DiphdaOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_3_0);
     }
 
-    
     function importFeePeriod_0() internal {
         // https://explorer.optimism.io/address/0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54;
         FeePool existingFeePool = FeePool(0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54);
         // https://explorer.optimism.io/address/0xD3739A5F06747e148E716Dcb7147B9BA15b70fcc;
         FeePool newFeePool = FeePool(0xD3739A5F06747e148E716Dcb7147B9BA15b70fcc);
         (
-                        uint64 feePeriodId_0,
-                        uint64 unused_0,
-                        uint64 startTime_0,
-                        uint feesToDistribute_0,
-                        uint feesClaimed_0,
-                        uint rewardsToDistribute_0,
-                        uint rewardsClaimed_0
-                    ) = existingFeePool.recentFeePeriods(0);
+            uint64 feePeriodId_0,
+            uint64 unused_0,
+            uint64 startTime_0,
+            uint feesToDistribute_0,
+            uint feesClaimed_0,
+            uint rewardsToDistribute_0,
+            uint rewardsClaimed_0
+        ) = existingFeePool.recentFeePeriods(0);
         newFeePool.importFeePeriod(
-                        0,
-                        feePeriodId_0,
-                        startTime_0,
-                        feesToDistribute_0,
-                        feesClaimed_0,
-                        rewardsToDistribute_0,
-                        rewardsClaimed_0
-                    );
+            0,
+            feePeriodId_0,
+            startTime_0,
+            feesToDistribute_0,
+            feesClaimed_0,
+            rewardsToDistribute_0,
+            rewardsClaimed_0
+        );
     }
 
-    
     function importFeePeriod_1() internal {
         // https://explorer.optimism.io/address/0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54;
         FeePool existingFeePool = FeePool(0xcFDcCFf3835Eb002eF0360F9514A66E6717fCC54);
         // https://explorer.optimism.io/address/0xD3739A5F06747e148E716Dcb7147B9BA15b70fcc;
         FeePool newFeePool = FeePool(0xD3739A5F06747e148E716Dcb7147B9BA15b70fcc);
         (
-                        uint64 feePeriodId_1,
-                        uint64 unused_1,
-                        uint64 startTime_1,
-                        uint feesToDistribute_1,
-                        uint feesClaimed_1,
-                        uint rewardsToDistribute_1,
-                        uint rewardsClaimed_1
-                    ) = existingFeePool.recentFeePeriods(1);
+            uint64 feePeriodId_1,
+            uint64 unused_1,
+            uint64 startTime_1,
+            uint feesToDistribute_1,
+            uint feesClaimed_1,
+            uint rewardsToDistribute_1,
+            uint rewardsClaimed_1
+        ) = existingFeePool.recentFeePeriods(1);
         newFeePool.importFeePeriod(
-                        1,
-                        feePeriodId_1,
-                        startTime_1,
-                        feesToDistribute_1,
-                        feesClaimed_1,
-                        rewardsToDistribute_1,
-                        rewardsClaimed_1
-                    );
+            1,
+            feePeriodId_1,
+            startTime_1,
+            feesToDistribute_1,
+            feesClaimed_1,
+            rewardsToDistribute_1,
+            rewardsClaimed_1
+        );
     }
 }
