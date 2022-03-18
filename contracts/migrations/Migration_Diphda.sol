@@ -16,7 +16,8 @@ contract Migration_Diphda is BaseMigration {
     // https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309
     Proxy public constant proxyfeepool_i = Proxy(0xb440DD674e1243644791a4AdfE3A2AbB0A92d309);
     // https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
     // https://etherscan.io/address/0x545973f28950f50fc6c7F52AAb4Ad214A27C0564
     ExchangeState public constant exchangestate_i = ExchangeState(0x545973f28950f50fc6c7F52AAb4Ad214A27C0564);
     // https://etherscan.io/address/0x696c905F8F8c006cA46e9808fE7e00049507798F
@@ -28,7 +29,8 @@ contract Migration_Diphda is BaseMigration {
     // https://etherscan.io/address/0x1620Aa736939597891C1940CF0d28b82566F9390
     DebtCache public constant debtcache_i = DebtCache(0x1620Aa736939597891C1940CF0d28b82566F9390);
     // https://etherscan.io/address/0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9
-    ExchangeRatesWithDexPricing public constant exchangerates_i = ExchangeRatesWithDexPricing(0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9);
+    ExchangeRatesWithDexPricing public constant exchangerates_i =
+        ExchangeRatesWithDexPricing(0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9);
     // https://etherscan.io/address/0x7df9b3f8f1C011D8BD707430e97E747479DD532a
     MultiCollateralSynth public constant synthsusd_i = MultiCollateralSynth(0x7df9b3f8f1C011D8BD707430e97E747479DD532a);
     // https://etherscan.io/address/0x05a9CBe762B36632b3594DA4F082340E0e5343e8
@@ -183,90 +185,169 @@ contract Migration_Diphda is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](55);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(proxyfeepool_i);
-        contracts[2]= address(feepooleternalstorage_i);
-        contracts[3]= address(exchangestate_i);
-        contracts[4]= address(systemstatus_i);
-        contracts[5]= address(rewardescrow_i);
-        contracts[6]= address(feepool_i);
-        contracts[7]= address(debtcache_i);
-        contracts[8]= address(exchangerates_i);
-        contracts[9]= address(synthsusd_i);
-        contracts[10]= address(tokenstatesusd_i);
-        contracts[11]= address(proxysusd_i);
-        contracts[12]= address(synthseur_i);
-        contracts[13]= address(tokenstateseur_i);
-        contracts[14]= address(proxyseur_i);
-        contracts[15]= address(synthsjpy_i);
-        contracts[16]= address(tokenstatesjpy_i);
-        contracts[17]= address(proxysjpy_i);
-        contracts[18]= address(synthsaud_i);
-        contracts[19]= address(tokenstatesaud_i);
-        contracts[20]= address(proxysaud_i);
-        contracts[21]= address(synthsgbp_i);
-        contracts[22]= address(tokenstatesgbp_i);
-        contracts[23]= address(proxysgbp_i);
-        contracts[24]= address(synthschf_i);
-        contracts[25]= address(tokenstateschf_i);
-        contracts[26]= address(proxyschf_i);
-        contracts[27]= address(synthskrw_i);
-        contracts[28]= address(tokenstateskrw_i);
-        contracts[29]= address(proxyskrw_i);
-        contracts[30]= address(synthsbtc_i);
-        contracts[31]= address(tokenstatesbtc_i);
-        contracts[32]= address(proxysbtc_i);
-        contracts[33]= address(synthseth_i);
-        contracts[34]= address(tokenstateseth_i);
-        contracts[35]= address(proxyseth_i);
-        contracts[36]= address(synthslink_i);
-        contracts[37]= address(tokenstateslink_i);
-        contracts[38]= address(proxyslink_i);
-        contracts[39]= address(synthsada_i);
-        contracts[40]= address(tokenstatesada_i);
-        contracts[41]= address(proxysada_i);
-        contracts[42]= address(synthsaave_i);
-        contracts[43]= address(tokenstatesaave_i);
-        contracts[44]= address(proxysaave_i);
-        contracts[45]= address(synthsdot_i);
-        contracts[46]= address(tokenstatesdot_i);
-        contracts[47]= address(proxysdot_i);
-        contracts[48]= address(synthsethbtc_i);
-        contracts[49]= address(tokenstatesethbtc_i);
-        contracts[50]= address(proxysethbtc_i);
-        contracts[51]= address(synthsdefi_i);
-        contracts[52]= address(tokenstatesdefi_i);
-        contracts[53]= address(proxysdefi_i);
-        contracts[54]= address(issuer_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(proxyfeepool_i);
+        contracts[2] = address(feepooleternalstorage_i);
+        contracts[3] = address(exchangestate_i);
+        contracts[4] = address(systemstatus_i);
+        contracts[5] = address(rewardescrow_i);
+        contracts[6] = address(feepool_i);
+        contracts[7] = address(debtcache_i);
+        contracts[8] = address(exchangerates_i);
+        contracts[9] = address(synthsusd_i);
+        contracts[10] = address(tokenstatesusd_i);
+        contracts[11] = address(proxysusd_i);
+        contracts[12] = address(synthseur_i);
+        contracts[13] = address(tokenstateseur_i);
+        contracts[14] = address(proxyseur_i);
+        contracts[15] = address(synthsjpy_i);
+        contracts[16] = address(tokenstatesjpy_i);
+        contracts[17] = address(proxysjpy_i);
+        contracts[18] = address(synthsaud_i);
+        contracts[19] = address(tokenstatesaud_i);
+        contracts[20] = address(proxysaud_i);
+        contracts[21] = address(synthsgbp_i);
+        contracts[22] = address(tokenstatesgbp_i);
+        contracts[23] = address(proxysgbp_i);
+        contracts[24] = address(synthschf_i);
+        contracts[25] = address(tokenstateschf_i);
+        contracts[26] = address(proxyschf_i);
+        contracts[27] = address(synthskrw_i);
+        contracts[28] = address(tokenstateskrw_i);
+        contracts[29] = address(proxyskrw_i);
+        contracts[30] = address(synthsbtc_i);
+        contracts[31] = address(tokenstatesbtc_i);
+        contracts[32] = address(proxysbtc_i);
+        contracts[33] = address(synthseth_i);
+        contracts[34] = address(tokenstateseth_i);
+        contracts[35] = address(proxyseth_i);
+        contracts[36] = address(synthslink_i);
+        contracts[37] = address(tokenstateslink_i);
+        contracts[38] = address(proxyslink_i);
+        contracts[39] = address(synthsada_i);
+        contracts[40] = address(tokenstatesada_i);
+        contracts[41] = address(proxysada_i);
+        contracts[42] = address(synthsaave_i);
+        contracts[43] = address(tokenstatesaave_i);
+        contracts[44] = address(proxysaave_i);
+        contracts[45] = address(synthsdot_i);
+        contracts[46] = address(tokenstatesdot_i);
+        contracts[47] = address(proxysdot_i);
+        contracts[48] = address(synthsethbtc_i);
+        contracts[49] = address(tokenstatesethbtc_i);
+        contracts[50] = address(proxysethbtc_i);
+        contracts[51] = address(synthsdefi_i);
+        contracts[52] = address(tokenstatesdefi_i);
+        contracts[53] = address(proxysdefi_i);
+        contracts[54] = address(issuer_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_OneNetAggregatorDebtRatio_contract).CONTRACT_NAME() == "OneNetAggregatorDebtRatio", "Invalid contract supplied for OneNetAggregatorDebtRatio");
-        require(ISynthetixNamedContract(new_SystemStatus_contract).CONTRACT_NAME() == "SystemStatus", "Invalid contract supplied for SystemStatus");
-        require(ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRatesWithDexPricing", "Invalid contract supplied for ExchangeRates");
-        require(ISynthetixNamedContract(new_OneNetAggregatorIssuedSynths_contract).CONTRACT_NAME() == "OneNetAggregatorIssuedSynths", "Invalid contract supplied for OneNetAggregatorIssuedSynths");
-        require(ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool", "Invalid contract supplied for FeePool");
-        require(ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives", "Invalid contract supplied for Exchanger");
-        require(ISynthetixNamedContract(new_ExchangeCircuitBreaker_contract).CONTRACT_NAME() == "ExchangeCircuitBreaker", "Invalid contract supplied for ExchangeCircuitBreaker");
-        require(ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache", "Invalid contract supplied for DebtCache");
-        require(ISynthetixNamedContract(new_SynthetixBridgeToOptimism_contract).CONTRACT_NAME() == "SynthetixBridgeToOptimism", "Invalid contract supplied for SynthetixBridgeToOptimism");
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
-        require(ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsUSD");
-        require(ISynthetixNamedContract(new_SynthsEUR_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsEUR");
-        require(ISynthetixNamedContract(new_SynthsJPY_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsJPY");
-        require(ISynthetixNamedContract(new_SynthsAUD_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsAUD");
-        require(ISynthetixNamedContract(new_SynthsGBP_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsGBP");
-        require(ISynthetixNamedContract(new_SynthsCHF_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsCHF");
-        require(ISynthetixNamedContract(new_SynthsKRW_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsKRW");
-        require(ISynthetixNamedContract(new_SynthsETH_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsETH");
-        require(ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsBTC");
-        require(ISynthetixNamedContract(new_SynthsLINK_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsLINK");
-        require(ISynthetixNamedContract(new_SynthsADA_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsADA");
-        require(ISynthetixNamedContract(new_SynthsAAVE_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsAAVE");
-        require(ISynthetixNamedContract(new_SynthsDOT_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsDOT");
-        require(ISynthetixNamedContract(new_SynthsETHBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsETHBTC");
-        require(ISynthetixNamedContract(new_SynthsDEFI_contract).CONTRACT_NAME() == "MultiCollateralSynth", "Invalid contract supplied for SynthsDEFI");
-        require(ISynthetixNamedContract(new_FuturesMarketManager_contract).CONTRACT_NAME() == "EmptyFuturesMarketManager", "Invalid contract supplied for FuturesMarketManager");
+        require(
+            ISynthetixNamedContract(new_OneNetAggregatorDebtRatio_contract).CONTRACT_NAME() == "OneNetAggregatorDebtRatio",
+            "Invalid contract supplied for OneNetAggregatorDebtRatio"
+        );
+        require(
+            ISynthetixNamedContract(new_SystemStatus_contract).CONTRACT_NAME() == "SystemStatus",
+            "Invalid contract supplied for SystemStatus"
+        );
+        require(
+            ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRatesWithDexPricing",
+            "Invalid contract supplied for ExchangeRates"
+        );
+        require(
+            ISynthetixNamedContract(new_OneNetAggregatorIssuedSynths_contract).CONTRACT_NAME() ==
+                "OneNetAggregatorIssuedSynths",
+            "Invalid contract supplied for OneNetAggregatorIssuedSynths"
+        );
+        require(
+            ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool",
+            "Invalid contract supplied for FeePool"
+        );
+        require(
+            ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives",
+            "Invalid contract supplied for Exchanger"
+        );
+        require(
+            ISynthetixNamedContract(new_ExchangeCircuitBreaker_contract).CONTRACT_NAME() == "ExchangeCircuitBreaker",
+            "Invalid contract supplied for ExchangeCircuitBreaker"
+        );
+        require(
+            ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache",
+            "Invalid contract supplied for DebtCache"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthetixBridgeToOptimism_contract).CONTRACT_NAME() == "SynthetixBridgeToOptimism",
+            "Invalid contract supplied for SynthetixBridgeToOptimism"
+        );
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsUSD"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsEUR_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsEUR"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsJPY_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsJPY"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsAUD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsAUD"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsGBP_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsGBP"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsCHF_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsCHF"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsKRW_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsKRW"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsETH_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsETH"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsBTC"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsLINK_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsLINK"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsADA_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsADA"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsAAVE_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsAAVE"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsDOT_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsDOT"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsETHBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsETHBTC"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsDEFI_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsDEFI"
+        );
+        require(
+            ISynthetixNamedContract(new_FuturesMarketManager_contract).CONTRACT_NAME() == "EmptyFuturesMarketManager",
+            "Invalid contract supplied for FuturesMarketManager"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -295,7 +376,10 @@ contract Migration_Diphda is BaseMigration {
         // Import fee period from existing fee pool at index 1;
         importFeePeriod_1();
         // Import excluded-debt records from existing DebtCache;
-        debtcache_i.importExcludedIssuedDebts(IDebtCache(0x9D5551Cd3425Dd4585c3E7Eb7E4B98902222521E), IIssuer(0x16e5ACe2B8a9DE5c42fCFd85d6EC5992a43C0837));
+        debtcache_i.importExcludedIssuedDebts(
+            IDebtCache(0x9D5551Cd3425Dd4585c3E7Eb7E4B98902222521E),
+            IIssuer(0x16e5ACe2B8a9DE5c42fCFd85d6EC5992a43C0837)
+        );
         // Ensure the ExchangeRates contract has the standalone feed for SNX;
         exchangerates_i.addAggregator("SNX", 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699);
         // Ensure the ExchangeRates contract has the standalone feed for ETH;
@@ -321,55 +405,53 @@ contract Migration_Diphda is BaseMigration {
         }
     }
 
-    
     function importFeePeriod_0() internal {
         // https://etherscan.io/address/0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec;
         FeePool existingFeePool = FeePool(0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec);
         // https://etherscan.io/address/0x3B2f389AeE480238A49E3A9985cd6815370712eB;
         FeePool newFeePool = FeePool(0x3B2f389AeE480238A49E3A9985cd6815370712eB);
         (
-                        uint64 feePeriodId_0,
-                        uint64 unused_0,
-                        uint64 startTime_0,
-                        uint feesToDistribute_0,
-                        uint feesClaimed_0,
-                        uint rewardsToDistribute_0,
-                        uint rewardsClaimed_0
-                    ) = existingFeePool.recentFeePeriods(0);
+            uint64 feePeriodId_0,
+            uint64 unused_0,
+            uint64 startTime_0,
+            uint feesToDistribute_0,
+            uint feesClaimed_0,
+            uint rewardsToDistribute_0,
+            uint rewardsClaimed_0
+        ) = existingFeePool.recentFeePeriods(0);
         newFeePool.importFeePeriod(
-                        0,
-                        feePeriodId_0,
-                        startTime_0,
-                        feesToDistribute_0,
-                        feesClaimed_0,
-                        rewardsToDistribute_0,
-                        rewardsClaimed_0
-                    );
+            0,
+            feePeriodId_0,
+            startTime_0,
+            feesToDistribute_0,
+            feesClaimed_0,
+            rewardsToDistribute_0,
+            rewardsClaimed_0
+        );
     }
 
-    
     function importFeePeriod_1() internal {
         // https://etherscan.io/address/0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec;
         FeePool existingFeePool = FeePool(0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec);
         // https://etherscan.io/address/0x3B2f389AeE480238A49E3A9985cd6815370712eB;
         FeePool newFeePool = FeePool(0x3B2f389AeE480238A49E3A9985cd6815370712eB);
         (
-                        uint64 feePeriodId_1,
-                        uint64 unused_1,
-                        uint64 startTime_1,
-                        uint feesToDistribute_1,
-                        uint feesClaimed_1,
-                        uint rewardsToDistribute_1,
-                        uint rewardsClaimed_1
-                    ) = existingFeePool.recentFeePeriods(1);
+            uint64 feePeriodId_1,
+            uint64 unused_1,
+            uint64 startTime_1,
+            uint feesToDistribute_1,
+            uint feesClaimed_1,
+            uint rewardsToDistribute_1,
+            uint rewardsClaimed_1
+        ) = existingFeePool.recentFeePeriods(1);
         newFeePool.importFeePeriod(
-                        1,
-                        feePeriodId_1,
-                        startTime_1,
-                        feesToDistribute_1,
-                        feesClaimed_1,
-                        rewardsToDistribute_1,
-                        rewardsClaimed_1
-                    );
+            1,
+            feePeriodId_1,
+            startTime_1,
+            feesToDistribute_1,
+            feesClaimed_1,
+            rewardsToDistribute_1,
+            rewardsClaimed_1
+        );
     }
 }

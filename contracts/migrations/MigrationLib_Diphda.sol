@@ -22,7 +22,7 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 library MigrationLib_Diphda {
-        // ----------------------------
+    // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
@@ -31,7 +31,8 @@ library MigrationLib_Diphda {
     // https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309
     Proxy public constant proxyfeepool_i = Proxy(0xb440DD674e1243644791a4AdfE3A2AbB0A92d309);
     // https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
     // https://etherscan.io/address/0x545973f28950f50fc6c7F52AAb4Ad214A27C0564
     ExchangeState public constant exchangestate_i = ExchangeState(0x545973f28950f50fc6c7F52AAb4Ad214A27C0564);
     // https://etherscan.io/address/0x696c905F8F8c006cA46e9808fE7e00049507798F
@@ -43,7 +44,8 @@ library MigrationLib_Diphda {
     // https://etherscan.io/address/0x1620Aa736939597891C1940CF0d28b82566F9390
     DebtCache public constant debtcache_i = DebtCache(0x1620Aa736939597891C1940CF0d28b82566F9390);
     // https://etherscan.io/address/0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9
-    ExchangeRatesWithDexPricing public constant exchangerates_i = ExchangeRatesWithDexPricing(0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9);
+    ExchangeRatesWithDexPricing public constant exchangerates_i =
+        ExchangeRatesWithDexPricing(0x6fA9E5923CBFDD39F0B625Bf1350Ffb50D5006b9);
     // https://etherscan.io/address/0x7df9b3f8f1C011D8BD707430e97E747479DD532a
     MultiCollateralSynth public constant synthsusd_i = MultiCollateralSynth(0x7df9b3f8f1C011D8BD707430e97E747479DD532a);
     // https://etherscan.io/address/0x05a9CBe762B36632b3594DA4F082340E0e5343e8
@@ -327,7 +329,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sEUR() internal {
         // https://etherscan.io/address/0xe301da3d2D3e96e57D05b8E557656629cDdbe7A0;
         Synth existingSynth = Synth(0xe301da3d2D3e96e57D05b8E557656629cDdbe7A0);
@@ -336,7 +337,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sJPY() internal {
         // https://etherscan.io/address/0x4ed5c5D5793f86c8a85E1a96E37b6d374DE0E85A;
         Synth existingSynth = Synth(0x4ed5c5D5793f86c8a85E1a96E37b6d374DE0E85A);
@@ -345,7 +345,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sAUD() internal {
         // https://etherscan.io/address/0x005d19CA7ff9D79a5Bdf0805Fc01D9D7c53B6827;
         Synth existingSynth = Synth(0x005d19CA7ff9D79a5Bdf0805Fc01D9D7c53B6827);
@@ -354,7 +353,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sGBP() internal {
         // https://etherscan.io/address/0xde3892383965FBa6eC434bE6350F85f140098708;
         Synth existingSynth = Synth(0xde3892383965FBa6eC434bE6350F85f140098708);
@@ -363,7 +361,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sCHF() internal {
         // https://etherscan.io/address/0x39DDbbb113AF3434048b9d8018a3e99d67C6eE0D;
         Synth existingSynth = Synth(0x39DDbbb113AF3434048b9d8018a3e99d67C6eE0D);
@@ -372,7 +369,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sKRW() internal {
         // https://etherscan.io/address/0xe2f532c389deb5E42DCe53e78A9762949A885455;
         Synth existingSynth = Synth(0xe2f532c389deb5E42DCe53e78A9762949A885455);
@@ -381,7 +377,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sBTC() internal {
         // https://etherscan.io/address/0x2B3eb5eF0EF06f2E02ef60B3F36Be4793d321353;
         Synth existingSynth = Synth(0x2B3eb5eF0EF06f2E02ef60B3F36Be4793d321353);
@@ -390,7 +385,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sETH() internal {
         // https://etherscan.io/address/0xc70B42930BD8D30A79B55415deC3be60827559f7;
         Synth existingSynth = Synth(0xc70B42930BD8D30A79B55415deC3be60827559f7);
@@ -399,7 +393,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sLINK() internal {
         // https://etherscan.io/address/0x3FFE35c3d412150C3B91d3E22eBA60E16030C608;
         Synth existingSynth = Synth(0x3FFE35c3d412150C3B91d3E22eBA60E16030C608);
@@ -408,7 +401,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sADA() internal {
         // https://etherscan.io/address/0x8f9fa817200F5B95f9572c8Acf2b31410C00335a;
         Synth existingSynth = Synth(0x8f9fa817200F5B95f9572c8Acf2b31410C00335a);
@@ -417,7 +409,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sAAVE() internal {
         // https://etherscan.io/address/0x0705F0716b12a703d4F8832Ec7b97C61771f0361;
         Synth existingSynth = Synth(0x0705F0716b12a703d4F8832Ec7b97C61771f0361);
@@ -426,7 +417,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sDOT() internal {
         // https://etherscan.io/address/0xfA60918C4417b64E722ca15d79C751c1f24Ab995;
         Synth existingSynth = Synth(0xfA60918C4417b64E722ca15d79C751c1f24Ab995);
@@ -435,7 +425,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sETHBTC() internal {
         // https://etherscan.io/address/0xcc3aab773e2171b2E257Ee17001400eE378aa52B;
         Synth existingSynth = Synth(0xcc3aab773e2171b2E257Ee17001400eE378aa52B);
@@ -444,7 +433,6 @@ library MigrationLib_Diphda {
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
 
-    
     function copyTotalSupplyFrom_sDEFI() internal {
         // https://etherscan.io/address/0xe59dFC746D566EB40F92ed0B162004e24E3AC932;
         Synth existingSynth = Synth(0xe59dFC746D566EB40F92ed0B162004e24E3AC932);
@@ -452,7 +440,7 @@ library MigrationLib_Diphda {
         Synth newSynth = Synth(0xf533aeEe48f0e04E30c2F6A1f19FbB675469a124);
         newSynth.setTotalSupply(existingSynth.totalSupply());
     }
-    
+
     function issuer_addSynths_96() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_96_0 = new ISynth[](15);
         issuer_addSynths_synthsToAdd_96_0[0] = ISynth(new_SynthsUSD_contract);
@@ -473,9 +461,6 @@ library MigrationLib_Diphda {
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_96_0);
     }
 
-
-
-    
     function addressresolver_importAddresses_0() external {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](28);
         addressresolver_importAddresses_names_0_0[0] = bytes32("OneNetAggregatorDebtRatio");
@@ -535,10 +520,12 @@ library MigrationLib_Diphda {
         addressresolver_importAddresses_destinations_0_1[25] = address(new_FuturesMarketManager_contract);
         addressresolver_importAddresses_destinations_0_1[26] = address(new_OneNetAggregatorIssuedSynths_contract);
         addressresolver_importAddresses_destinations_0_1[27] = address(new_OneNetAggregatorDebtRatio_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() external {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
@@ -564,7 +551,6 @@ library MigrationLib_Diphda {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() external {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](16);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(new_SynthsDOT_contract);
