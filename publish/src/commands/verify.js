@@ -123,7 +123,10 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			console.log(gray(' - Constructor arguments', constructorArguments));
 
 			const readFlattened = () => {
-				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${source}.sol`);
+				const sourcePath = Object.entries(
+					deployment.sources[source].metadata.settings.compilationTarget
+				).find(([key, value]) => value === source)[0];
+				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, sourcePath);
 				try {
 					return fs.readFileSync(flattenedFilename).toString();
 				} catch (err) {
@@ -186,8 +189,10 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					runs,
 					libraryname1: 'SafeDecimalMath',
 					libraryname2: 'SystemSettingsLib',
+					libraryname3: 'SignedSafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 					libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
+					libraryaddress3: (deployment.targets['SignedSafeDecimalMath'] || {}).address,
 					apikey: etherscanKey,
 				}),
 				{
@@ -272,6 +277,5 @@ module.exports = {
 			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-
 			.action(verify),
 };

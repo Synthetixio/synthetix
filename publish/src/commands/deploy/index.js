@@ -26,20 +26,23 @@ const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
+const configureFutures = require('./configure-futures');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
+const deployFutures = require('./deploy-futures');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
 const importFeePeriods = require('./import-fee-periods');
+const importExcludedDebt = require('./import-excluded-debt');
 const performSafetyChecks = require('./perform-safety-checks');
 const rebuildResolverCaches = require('./rebuild-resolver-caches');
 const rebuildLegacyResolverCaches = require('./rebuild-legacy-resolver-caches');
 const systemAndParameterCheck = require('./system-and-parameter-check');
-const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+// const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
 	priorityGasPrice: '1',
@@ -283,6 +286,7 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		deploymentPath,
 		generateSolidity,
 		network,
 		synths,
@@ -298,6 +302,18 @@ const deploy = async ({
 		getDeployParameter,
 		network,
 		useOvm,
+	});
+
+	await deployFutures({
+		account,
+		addressOf,
+		getDeployParameter,
+		deployer,
+		runStep,
+		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
 	});
 
 	await deployDappUtils({
@@ -357,6 +373,12 @@ const deploy = async ({
 		yes,
 	});
 
+	await importExcludedDebt({
+		deployer,
+		freshDeploy,
+		runStep,
+	});
+
 	await configureStandalonePriceFeeds({
 		deployer,
 		runStep,
@@ -366,10 +388,10 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
-		deployer,
 		explorerLinkPrefix,
-		feeds,
 		generateSolidity,
+		feeds,
+		deployer,
 		network,
 		runStep,
 		synths,
@@ -401,14 +423,26 @@ const deploy = async ({
 		runStep,
 	});
 
-	await takeDebtSnapshotWhenRequired({
-		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
+	await configureFutures({
+		addressOf,
 		deployer,
-		generateSolidity,
+		loadAndCheckRequiredSources,
 		runStep,
+		getDeployParameter,
 		useOvm,
-		useFork,
+		freshDeploy,
+		deploymentPath,
+		network,
 	});
+
+	// await takeDebtSnapshotWhenRequired({
+	// 	debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
+	// 	deployer,
+	// 	generateSolidity,
+	// 	runStep,
+	// 	useOvm,
+	// 	useFork,
+	// });
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 

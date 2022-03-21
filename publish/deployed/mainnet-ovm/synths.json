@@ -38,5 +38,15 @@
 		"name": "sEUR",
 		"asset": "EUR",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI",
+		"subclass": "MultiCollateralSynth"
 	}
 ]

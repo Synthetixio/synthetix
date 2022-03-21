@@ -164,7 +164,7 @@ contract('SupplySchedule', async accounts => {
 
 			const DAY = 60 * 60 * 24;
 			const WEEK = 604800;
-			const weekOne = inflationStartDate + 7200 + 1 * DAY; // 1 day and 120 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
+			const weekOne = inflationStartDate + 7200 * 2 + 1 * DAY; // 1 day and 120 mins within first week of Inflation supply > Inflation supply as 1 day buffer is added to lastMintEvent
 
 			async function checkMintedValues(
 				mintedSupply = new BN(0),

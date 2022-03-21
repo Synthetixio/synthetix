@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -33,7 +32,8 @@ contract Migration_Alphard is BaseMigration {
     // https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309
     Proxy public constant proxyfeepool_i = Proxy(0xb440DD674e1243644791a4AdfE3A2AbB0A92d309);
     // https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB
-    FeePoolEternalStorage public constant feepooleternalstorage_i = FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
+    FeePoolEternalStorage public constant feepooleternalstorage_i =
+        FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
     // https://etherscan.io/address/0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02
     FeePoolState public constant feepoolstate_i = FeePoolState(0x11164F6a47C3f8472D19b9aDd516Fc780cb7Ee02);
     // https://etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F
@@ -45,7 +45,8 @@ contract Migration_Alphard is BaseMigration {
     // https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F
     RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
     // https://etherscan.io/address/0x29C295B046a73Cde593f21f63091B072d407e3F2
-    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x29C295B046a73Cde593f21f63091B072d407e3F2);
+    RewardsDistribution public constant rewardsdistribution_i =
+        RewardsDistribution(0x29C295B046a73Cde593f21f63091B072d407e3F2);
     // https://etherscan.io/address/0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec
     FeePool public constant feepool_i = FeePool(0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec);
     // https://etherscan.io/address/0x16e5ACe2B8a9DE5c42fCFd85d6EC5992a43C0837
@@ -68,24 +69,36 @@ contract Migration_Alphard is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](11);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(proxyfeepool_i);
-        contracts[2]= address(feepooleternalstorage_i);
-        contracts[3]= address(feepoolstate_i);
-        contracts[4]= address(proxysynthetix_i);
-        contracts[5]= address(tokenstatesynthetix_i);
-        contracts[6]= address(synthetixstate_i);
-        contracts[7]= address(rewardescrow_i);
-        contracts[8]= address(rewardsdistribution_i);
-        contracts[9]= address(feepool_i);
-        contracts[10]= address(issuer_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(proxyfeepool_i);
+        contracts[2] = address(feepooleternalstorage_i);
+        contracts[3] = address(feepoolstate_i);
+        contracts[4] = address(proxysynthetix_i);
+        contracts[5] = address(tokenstatesynthetix_i);
+        contracts[6] = address(synthetixstate_i);
+        contracts[7] = address(rewardescrow_i);
+        contracts[8] = address(rewardsdistribution_i);
+        contracts[9] = address(feepool_i);
+        contracts[10] = address(issuer_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_SynthetixDebtShare_contract).CONTRACT_NAME() == "SynthetixDebtShare", "Invalid contract supplied for SynthetixDebtShare");
-        require(ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool", "Invalid contract supplied for FeePool");
-        require(ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix", "Invalid contract supplied for Synthetix");
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
+        require(
+            ISynthetixNamedContract(new_SynthetixDebtShare_contract).CONTRACT_NAME() == "SynthetixDebtShare",
+            "Invalid contract supplied for SynthetixDebtShare"
+        );
+        require(
+            ISynthetixNamedContract(new_FeePool_contract).CONTRACT_NAME() == "FeePool",
+            "Invalid contract supplied for FeePool"
+        );
+        require(
+            ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
+            "Invalid contract supplied for Synthetix"
+        );
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -140,7 +153,6 @@ contract Migration_Alphard is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](4);
         addressresolver_importAddresses_names_0_0[0] = bytes32("SynthetixDebtShare");
@@ -152,10 +164,12 @@ contract Migration_Alphard is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[1] = address(new_FeePool_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_Synthetix_contract);
         addressresolver_importAddresses_destinations_0_1[3] = address(new_Issuer_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_FeePool_contract);
@@ -181,7 +195,6 @@ contract Migration_Alphard is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](12);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xe59dFC746D566EB40F92ed0B162004e24E3AC932);
@@ -199,59 +212,56 @@ contract Migration_Alphard is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function importFeePeriod_0() internal {
         // https://etherscan.io/address/0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd;
         FeePool existingFeePool = FeePool(0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd);
         // https://etherscan.io/address/0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec;
         FeePool newFeePool = FeePool(0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec);
         (
-                        uint64 feePeriodId_0,
-                        uint64 unused_0,
-                        uint64 startTime_0,
-                        uint feesToDistribute_0,
-                        uint feesClaimed_0,
-                        uint rewardsToDistribute_0,
-                        uint rewardsClaimed_0
-                    ) = existingFeePool.recentFeePeriods(0);
+            uint64 feePeriodId_0,
+            uint64 unused_0,
+            uint64 startTime_0,
+            uint feesToDistribute_0,
+            uint feesClaimed_0,
+            uint rewardsToDistribute_0,
+            uint rewardsClaimed_0
+        ) = existingFeePool.recentFeePeriods(0);
         newFeePool.importFeePeriod(
-                        0,
-                        feePeriodId_0,
-                        startTime_0,
-                        feesToDistribute_0,
-                        feesClaimed_0,
-                        rewardsToDistribute_0,
-                        rewardsClaimed_0
-                    );
+            0,
+            feePeriodId_0,
+            startTime_0,
+            feesToDistribute_0,
+            feesClaimed_0,
+            rewardsToDistribute_0,
+            rewardsClaimed_0
+        );
     }
 
-    
     function importFeePeriod_1() internal {
         // https://etherscan.io/address/0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd;
         FeePool existingFeePool = FeePool(0xF66d34426C10CE91cDBcd86F8e9594AfB83049bd);
         // https://etherscan.io/address/0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec;
         FeePool newFeePool = FeePool(0xBE02A2C22a581D796b90b200CF530Fdd1e6f54ec);
         (
-                        uint64 feePeriodId_1,
-                        uint64 unused_1,
-                        uint64 startTime_1,
-                        uint feesToDistribute_1,
-                        uint feesClaimed_1,
-                        uint rewardsToDistribute_1,
-                        uint rewardsClaimed_1
-                    ) = existingFeePool.recentFeePeriods(1);
+            uint64 feePeriodId_1,
+            uint64 unused_1,
+            uint64 startTime_1,
+            uint feesToDistribute_1,
+            uint feesClaimed_1,
+            uint rewardsToDistribute_1,
+            uint rewardsClaimed_1
+        ) = existingFeePool.recentFeePeriods(1);
         newFeePool.importFeePeriod(
-                        1,
-                        feePeriodId_1,
-                        startTime_1,
-                        feesToDistribute_1,
-                        feesClaimed_1,
-                        rewardsToDistribute_1,
-                        rewardsClaimed_1
-                    );
+            1,
+            feePeriodId_1,
+            startTime_1,
+            feesToDistribute_1,
+            feesClaimed_1,
+            rewardsToDistribute_1,
+            rewardsClaimed_1
+        );
     }
 
-    
     function issuer_addSynths_19() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_19_0 = new ISynth[](15);
         issuer_addSynths_synthsToAdd_19_0[0] = ISynth(0xAFDd6B5A8aB32156dBFb4060ff87F6d9E31191bA);

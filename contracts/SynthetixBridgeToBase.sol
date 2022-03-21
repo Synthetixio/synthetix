@@ -11,6 +11,8 @@ import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
 contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, iOVM_L2DepositedToken {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+    bytes32 public constant CONTRACT_NAME = "SynthetixBridgeToBase";
+
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     // ========== CONSTRUCTOR ==========
@@ -106,6 +108,14 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         emit RewardDepositFinalized(from, amount);
     }
 
+    // invoked by Messenger on L2
+    function finalizeFeePeriodClose(uint256 snxBackedAmount, uint256 totalDebtShares) external onlyOptimismBridge {
+        // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
+        feePool().closeSecondary(snxBackedAmount, totalDebtShares);
+
+        emit FeePeriodCloseFinalized(snxBackedAmount, totalDebtShares);
+    }
+
     // ========== EVENTS ==========
     event ImportedVestingEntries(
         address indexed account,
@@ -114,4 +124,5 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     );
 
     event RewardDepositFinalized(address from, uint256 amount);
+    event FeePeriodCloseFinalized(uint snxBackedAmount, uint totalDebtShares);
 }
