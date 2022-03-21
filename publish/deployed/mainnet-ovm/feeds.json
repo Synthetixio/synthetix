@@ -30,5 +30,13 @@
 	"EUR": {
 		"asset": "EUR",
 		"feed": "0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20"
+	}, 
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0x338ed6787f463394D24813b297401B9F05a8C9d1"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0x11429eE838cC01071402f21C219870cbAc0a59A0"
 	}
 }

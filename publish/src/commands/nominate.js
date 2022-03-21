@@ -60,9 +60,20 @@ const nominate = async ({
 			throw Error(`Contract ${contract} isn't in the config for this deployment!`);
 		}
 	});
+
+	// Contracts maintained by non-pDAO owners
+	// DappMaintenance (UI control)
+	// StakingRewardsSNXWETHUniswapV3
+	// StakingRewardssUSDDAIUniswapV3
+	const excludedContracts = [
+		'StakingRewardssUSDDAIUniswapV3',
+		'StakingRewardsSNXWETHUniswapV3',
+		'DappMaintenance',
+	];
+
 	if (!contracts.length) {
-		// if contracts not supplied, use all contracts except the DappMaintenance (UI control)
-		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
+		// if contracts not supplied, use all contracts except the excluded contracts
+		contracts = Object.keys(config).filter(contract => !excludedContracts.includes(contract));
 	}
 
 	const {

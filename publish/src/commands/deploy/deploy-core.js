@@ -20,14 +20,21 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'SafeDecimalMath',
+		library: true,
 	});
 
 	await deployer.deployContract({
 		name: 'Math',
+		library: true,
 	});
 
 	await deployer.deployContract({
 		name: 'SystemSettingsLib',
+		library: true,
+	});
+
+	await deployer.deployContract({
+		name: 'SignedSafeDecimalMath',
 		library: true,
 	});
 
@@ -47,14 +54,12 @@ module.exports = async ({
 	console.log(gray(`\n------ DEPLOY SELF ORACLES ------\n`));
 
 	await deployer.deployContract({
-		name: 'ext:AggregatorIssuedSynths',
-		source: 'SingleNetworkAggregatorIssuedSynths',
+		name: 'OneNetAggregatorIssuedSynths',
 		args: [addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
-		name: 'ext:AggregatorDebtRatio',
-		source: 'SingleNetworkAggregatorDebtRatio',
+		name: 'OneNetAggregatorDebtRatio',
 		args: [addressOf(readProxyForResolver)],
 	});
 
