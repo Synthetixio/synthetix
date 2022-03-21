@@ -90,7 +90,8 @@
 					"FuturesMarketSettings",
 					"FuturesMarketData"
 				]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 83,
@@ -424,7 +425,8 @@
 					"OneNetAggregatorDebtRatio",
 					"SynthetixBridgeToBase"
 				]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 169,
@@ -537,6 +539,12 @@
 			"sip": 209,
 			"layer": "both",
 			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 213,
+			"layer": "ovm",
+			"sources": [],
 			"released": "both"
 		}
 	],
@@ -975,7 +983,7 @@
 		},
 		{
 			"name": "Diphda",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 64
@@ -985,12 +993,12 @@
 		{
 			"name": "Diphda (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 64
 			},
-			"sips": [80, 165]
+			"sips": [80, 165, 213]
 		},
 		{
 			"name": "Mizar",

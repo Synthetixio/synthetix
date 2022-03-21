@@ -26,16 +26,20 @@ const migrateDebtShares = async ({
 	privateKey,
 	useOvm,
 	useFork,
-	maxFeePerGas,
-	maxPriorityFeePerGas,
 	providerUrl,
 	etherscanAddressCsv,
 	threshold,
 	batchSize,
+	reapportion,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
+
+	const factor = ethers.utils.parseEther(reapportion);
+	const ONE = ethers.utils.parseEther('1');
+
+	console.log(factor.toString(), reapportion);
 
 	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
@@ -74,11 +78,6 @@ const migrateDebtShares = async ({
 
 	console.log(gray(`Using account with public key ${signer.address}`));
 
-	// get synthetix system contract
-	const { address: synthetixAddress } = deployment.targets['ProxySynthetix'];
-	const { abi: synthetixABI } = deployment.sources[deployment.targets['Synthetix'].source];
-	const Synthetix = new ethers.Contract(synthetixAddress, synthetixABI, provider);
-
 	const { address: debtSharesAddress } = deployment.targets['SynthetixDebtShare'];
 	const { abi: debtSharesABI } = deployment.sources[
 		deployment.targets['SynthetixDebtShare'].source
@@ -92,26 +91,31 @@ const migrateDebtShares = async ({
 
 	const addressCollateralAmounts = [];
 
-	const sUSD = ethers.utils.formatBytes32String('sUSD');
-
 	let totalDebtAccounted = ethers.BigNumber.from(0);
 	let totalDebtForgiven = ethers.BigNumber.from(0);
+	let totalDebtAfter = ethers.BigNumber.from(0);
 
 	await async.eachOfLimit(lines, 50, async (line, i) => {
 		if (line === '') return;
 
-		const address = line.split(',')[1];
+		const address = JSON.parse(line.split(',')[0]);
 
 		if (i % 100 === 0) {
 			console.log('scanning address', i, 'of', lines.length);
 		}
 
 		try {
-			const debtBalanceOf = await Synthetix.debtBalanceOf(address, sUSD);
+			const debtBalanceOf = await SynthetixDebtShare.balanceOf(address);
 
 			if (debtBalanceOf.gt(ethers.utils.parseEther(threshold))) {
-				addressCollateralAmounts.push({ address, debtBalanceOf });
+				const debtAfter = debtBalanceOf.mul(factor).div(ONE);
+
+				addressCollateralAmounts.push({
+					address,
+					debtBalanceOf: debtAfter,
+				});
 				totalDebtAccounted = totalDebtAccounted.add(debtBalanceOf);
+				totalDebtAfter = totalDebtAfter.add(debtAfter);
 			} else {
 				totalDebtForgiven = totalDebtForgiven.add(debtBalanceOf);
 			}
@@ -123,10 +127,12 @@ const migrateDebtShares = async ({
 	console.log(
 		'recorded',
 		addressCollateralAmounts.length,
-		'addresses with debt totalling',
+		'addresses with debt shares totalling',
 		ethers.utils.formatEther(totalDebtAccounted),
 		'forgiving',
-		ethers.utils.formatEther(totalDebtForgiven)
+		ethers.utils.formatEther(totalDebtForgiven),
+		'adjusting to total amount of',
+		ethers.utils.formatEther(totalDebtAfter)
 	);
 
 	for (let i = 0; i < addressCollateralAmounts.length; i += batchSize) {
@@ -181,5 +187,10 @@ module.exports = {
 				'0'
 			)
 			.option('--batch-size <value>', 'Number of addresses per import transaction', 200)
+			.option(
+				'--reapportion <value>',
+				'Set the debt shares to be a proportion of the existing value',
+				'1'
+			)
 			.action(migrateDebtShares),
 };
