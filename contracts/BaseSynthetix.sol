@@ -346,16 +346,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return remainingRewardTransferSucceedeed;
     }
 
-    function selfLiquidateAccount(address account)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
+    function selfLiquidateAccount(address account) external systemActive optionalProxy returns (bool) {
         require(account == messageSender, "Only the account owner can self liquidate");
-        
-        (uint totalRedeemed, uint amountLiquidated) =
-            issuer().selfLiquidateAccount(account);
+
+        (uint totalRedeemed, uint amountLiquidated) = issuer().selfLiquidateAccount(account);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 

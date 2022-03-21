@@ -145,7 +145,7 @@ contract MixinSystemSettings is MixinResolver {
 
     function getSelfLiquidationPenalty() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_PENALTY);
-    }  
+    }
 
     function getFlagReward() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD);

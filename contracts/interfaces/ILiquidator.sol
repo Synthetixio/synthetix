@@ -30,7 +30,11 @@ interface ILiquidator {
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool);
 
-    function calculateAmountToFixCollateral(uint debtBalance, uint collateral, bool isSelfLiquidation) external view returns (uint);
+    function calculateAmountToFixCollateral(
+        uint debtBalance,
+        uint collateral,
+        bool isSelfLiquidation
+    ) external view returns (uint);
 
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;

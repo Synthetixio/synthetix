@@ -86,14 +86,14 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
             return rewardPerTokenStored;
         }
 
-        return
-            rewardPerTokenStored.add(
-                lastUpdateTime.mul(accumulatedRewards).div(supply)
-            );
+        return rewardPerTokenStored.add(lastUpdateTime.mul(accumulatedRewards).div(supply));
     }
 
     function earned(address account) public view returns (uint256) {
-        return synthetixDebtShare().balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
+        return
+            synthetixDebtShare().balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(
+                rewards[account]
+            );
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -111,10 +111,10 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     /// @notice This is called only to update when a given account's debt share balance changes.
-    function notifyDebtChange(address account) external onlyIssuer updateReward(account) { }
+    function notifyDebtChange(address account) external onlyIssuer updateReward(account) {}
 
     /// @notice This is called only after an account is liquidated and the SNX rewards are sent to this contract.
-    function notifyRewardAmount(uint256 reward) external onlySynthetix {  
+    function notifyRewardAmount(uint256 reward) external onlySynthetix {
         lastUpdateTime = block.timestamp;
         accumulatedRewards = accumulatedRewards.add(reward);
         rewardPerTokenStored = rewardPerToken();

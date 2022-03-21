@@ -180,7 +180,11 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
-    function calculateAmountToFixCollateral(uint debtBalance, uint collateral, bool isSelfLiquidation) external view returns (uint) {
+    function calculateAmountToFixCollateral(
+        uint debtBalance,
+        uint collateral,
+        bool isSelfLiquidation
+    ) external view returns (uint) {
         uint ratio = getIssuanceRatio();
         uint unit = SafeDecimalMath.unit();
 

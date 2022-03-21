@@ -642,7 +642,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint liquidationPenalty = liquidator().liquidationPenalty();
 
         // Get the debt balance for the deliquent account
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(delinquentAccount), sUSD);
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
+            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(delinquentAccount), sUSD);
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
@@ -683,9 +684,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function selfLiquidateAccount(
-        address account
-    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {        
+    function selfLiquidateAccount(address account)
+        external
+        onlySynthetix
+        returns (uint totalRedeemed, uint amountToLiquidate)
+    {
         // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(account, sUSD), "sUSD needs to be settled");
 
@@ -693,14 +696,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(liquidator().isSelfLiquidationOpen(account), "Account not open for self liquidation");
 
         // Get the debt share balance for the account
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
+            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         // Get the amount of SNX collateral and calculate amount to fix c-ratio
         uint collateralForAccount = _collateral(account);
-        amountToLiquidate =
-            liquidator().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate), true);
+        amountToLiquidate = liquidator().calculateAmountToFixCollateral(
+            debtBalance,
+            _snxToUSD(collateralForAccount, snxRate),
+            true
+        );
 
         // what's the equivalent amount of snx for the amountToLiquidate?
         uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
@@ -715,10 +722,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             totalRedeemed = collateralForAccount;
 
             // whats the equivalent sUSD to burn for all collateral less penalty
-            amountToLiquidate = _snxToUSD(
-                collateralForAccount,
-                snxRate
-            );
+            amountToLiquidate = _snxToUSD(collateralForAccount, snxRate);
         }
 
         // Reduce debt share of account by the amount to liquidate.
