@@ -1,5 +1,4 @@
 const ethers = require('ethers');
-// const { toBytes32 } = require('../../..');
 const { assert } = require('../../contracts/common');
 
 const { addAggregatorAndSetRate } = require('../utils/rates');
@@ -18,27 +17,21 @@ function itCanTrade({ ctx }) {
 
 		const sUSDAmount = ethers.utils.parseEther('10000');
 
-		let // owner,
-			someUser,
-			otherUser;
-		let // FuturesMarketManager,
+		let someUser, otherUser;
+		let FuturesMarketManager,
 			FuturesMarketSettings,
-			// FuturesMarketData,
+			FuturesMarketData,
 			FuturesMarketBTC,
-			// FuturesMarketETH,
 			ExchangeRates,
-			// SystemStatus,
 			SynthsUSD;
 
 		before('target contracts and users', () => {
 			({
-				// FuturesMarketManager,
+				FuturesMarketManager,
 				FuturesMarketSettings,
-				// FuturesMarketData,
+				FuturesMarketData,
 				FuturesMarketBTC,
-				// FuturesMarketETH,
 				ExchangeRates,
-				// SystemStatus,
 				SynthsUSD,
 			} = ctx.contracts);
 
@@ -49,11 +42,10 @@ function itCanTrade({ ctx }) {
 
 		before('ensure users have sUSD', async () => {
 			await ensureBalance({ ctx, symbol: 'sUSD', user: someUser, balance: sUSDAmount });
-			// await ensureBalance({ ctx, symbol: 'sUSD', user: otherUser, balance: sUSDAmount });
 		});
 
-		describe('opening and closing a position', () => {
-			let market, assetKey, marketKey, price, balance, posSize1x;
+		describe('position management', () => {
+			let market, assetKey, marketKey, price, balance, posSize1x, debt;
 			const margin = toUnit('1000');
 
 			before('market and conditions', async () => {
@@ -63,6 +55,7 @@ function itCanTrade({ ctx }) {
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
+				({ debt } = await FuturesMarketManager.totalDebt());
 			});
 
 			it('user can transferMargin and withdraw it', async () => {
@@ -79,6 +72,11 @@ function itCanTrade({ ctx }) {
 			describe('with funded margin', () => {
 				before('fund margin', async () => {
 					await market.transferMargin(margin);
+				});
+
+				it('futures debt increases by the margin deposit', async () => {
+					const res = await FuturesMarketManager.totalDebt();
+					assert.bnEqual(res.debt, debt.add(margin));
 				});
 
 				it('user can open and close position', async () => {
@@ -146,6 +144,82 @@ function itCanTrade({ ctx }) {
 						assert.bnEqual(pos.margin, 0);
 					});
 				});
+			});
+		});
+
+		describe('markets and parameters', () => {
+			let allMarketsAddresses, allSummaries, allMarkets, assetKeys, marketKeys;
+
+			before('market and conditions', async () => {
+				allMarketsAddresses = await FuturesMarketManager.allMarkets();
+				allSummaries = await FuturesMarketData.allMarketSummaries();
+
+				// get market contracts
+				allMarkets = [];
+				for (const marketAddress of allMarketsAddresses) {
+					// this assumes all markets have the same source and abi, which
+					// may not be true when a migration to new futures version happens
+					allMarkets.push(
+						new ethers.Contract(marketAddress, FuturesMarketBTC.interface, ctx.provider)
+					);
+				}
+
+				// get asset and market keys
+				assetKeys = [];
+				marketKeys = [];
+				for (const someMarket of allMarkets) {
+					assetKeys.push(await someMarket.baseAsset());
+					marketKeys.push(await someMarket.marketKey());
+				}
+			});
+
+			it('number of markets and summaries', async () => {
+				assert.ok(allMarketsAddresses.length >= 3);
+				assert.ok(allMarketsAddresses.length === allSummaries.length);
+			});
+
+			it('assets are unique and have valid rates', async () => {
+				// ensure all assets are unique, this will not be true in case of migration to
+				// newer version of futures markets, but is a good check for all cases
+				// to ensure no market is being duplicated / redeployed etc
+				assert.ok(new Set(assetKeys).size === assetKeys.length);
+
+				// this should be true always as the keys are keys into a mapping
+				assert.ok(new Set(marketKeys).size === marketKeys.length);
+
+				for (const assetKey of assetKeys) {
+					const res = await ExchangeRates.rateAndInvalid(assetKey);
+					assert.bnGt(res.rate, 0);
+					assert.notOk(res.invalid);
+				}
+			});
+
+			it(`per market parameters make sense`, async () => {
+				for (const marketKey of marketKeys) {
+					// leverage
+					const maxLeverage = await FuturesMarketSettings.maxLeverage(marketKey);
+					assert.bnGt(maxLeverage, toUnit(1));
+					assert.bnLt(maxLeverage, toUnit(100));
+
+					const maxMarketValueUSD = await FuturesMarketSettings.maxMarketValueUSD(marketKey);
+					assert.bnLt(maxMarketValueUSD, toUnit(100000000));
+
+					const skewScaleUSD = await FuturesMarketSettings.skewScaleUSD(marketKey);
+					// not too small, may not be true for a deprecated (winding down) market
+					assert.bnGt(skewScaleUSD, toUnit(1));
+				}
+			});
+
+			it(`global parameters make sense`, async () => {
+				// minKeeperFee
+				const minKeeperFee = await FuturesMarketSettings.minKeeperFee();
+				assert.bnGt(minKeeperFee, toUnit(1));
+				assert.bnLt(minKeeperFee, toUnit(100));
+
+				// minInitialMargin
+				const minInitialMargin = await FuturesMarketSettings.minInitialMargin();
+				assert.bnGt(minInitialMargin, toUnit(1));
+				assert.bnLt(minInitialMargin, toUnit(200));
 			});
 		});
 	});
