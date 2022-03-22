@@ -44,6 +44,10 @@ function itCanTrade({ ctx }) {
 			await ensureBalance({ ctx, symbol: 'sUSD', user: someUser, balance: sUSDAmount });
 		});
 
+		after('reset the sUSD balance', async () => {
+			await ensureBalance({ ctx, symbol: 'sUSD', user: someUser, balance: toBN(0) });
+		});
+
 		describe('position management', () => {
 			let market, assetKey, marketKey, price, balance, posSize1x, debt;
 			const margin = toUnit('1000');
