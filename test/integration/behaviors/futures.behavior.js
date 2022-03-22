@@ -80,7 +80,11 @@ function itCanTrade({ ctx }) {
 
 				it('futures debt increases by the margin deposit', async () => {
 					const res = await FuturesMarketManager.totalDebt();
-					assert.bnEqual(res.debt, debt.add(margin));
+					assert.bnClose(
+						res.debt.toString(),
+						debt.add(margin).toString(),
+						toUnit(1).toString() // time passage causes funding changes
+					);
 				});
 
 				it('user can open and close position', async () => {
