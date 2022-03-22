@@ -68,14 +68,14 @@ function itCanTrade({ ctx }) {
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
 
 				// withdraw
-				await market.withdrawAllMargin();
+				(await market.withdrawAllMargin()).wait();
 				const withdrawBalance = await SynthsUSD.balanceOf(someUser.address);
 				assert.bnEqual(withdrawBalance, balance);
 			});
 
 			describe('with funded margin', () => {
 				before('fund margin', async () => {
-					await market.transferMargin(margin);
+					(await market.transferMargin(margin)).wait();
 				});
 
 				it('futures debt increases by the margin deposit', async () => {
@@ -94,7 +94,7 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x); // right position size
 
 					// close
-					await market.closePosition();
+					(await market.closePosition()).wait();
 					assert.bnEqual((await market.positions(someUser.address)).size, 0); // no position
 				});
 
@@ -140,7 +140,7 @@ function itCanTrade({ ctx }) {
 
 						// liquidation tx
 						const otherCaller = FuturesMarketBTC.connect(otherUser);
-						await otherCaller.liquidatePosition(someUser.address);
+						(await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
 
 						// position: rekt
 						const pos = await market.positions(someUser.address);
