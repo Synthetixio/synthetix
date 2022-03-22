@@ -2,7 +2,7 @@ const ethers = require('ethers');
 // const { toBytes32 } = require('../../..');
 const { assert } = require('../../contracts/common');
 
-// const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
+const { addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 
 // conveniece methods
@@ -19,9 +19,10 @@ function itCanTrade({ ctx }) {
 		const sUSDAmount = ethers.utils.parseEther('10000');
 
 		let // owner,
-			someUser;
+			someUser,
+			otherUser;
 		let // FuturesMarketManager,
-			// FuturesMarketSettings,
+			FuturesMarketSettings,
 			// FuturesMarketData,
 			FuturesMarketBTC,
 			// FuturesMarketETH,
@@ -32,7 +33,7 @@ function itCanTrade({ ctx }) {
 		before('target contracts and users', () => {
 			({
 				// FuturesMarketManager,
-				// FuturesMarketSettings,
+				FuturesMarketSettings,
 				// FuturesMarketData,
 				FuturesMarketBTC,
 				// FuturesMarketETH,
@@ -43,7 +44,7 @@ function itCanTrade({ ctx }) {
 
 			// owner = ctx.users.owner;
 			someUser = ctx.users.someUser;
-			// otherUser = ctx.users.otherUser;
+			otherUser = ctx.users.otherUser;
 		});
 
 		before('ensure users have sUSD', async () => {
@@ -52,12 +53,13 @@ function itCanTrade({ ctx }) {
 		});
 
 		describe('opening and closing a position', () => {
-			let market, assetKey, price, balance, posSize1x;
+			let market, assetKey, marketKey, price, balance, posSize1x;
 			const margin = toUnit('1000');
 
 			before('market and conditions', async () => {
 				market = FuturesMarketBTC.connect(someUser);
 				assetKey = await market.baseAsset();
+				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
@@ -101,6 +103,48 @@ function itCanTrade({ ctx }) {
 
 					// close
 					await market.closePosition();
+				});
+
+				describe('existing position', () => {
+					before('with max leverage', async () => {
+						// reset to known margin
+						await market.withdrawAllMargin();
+						await market.transferMargin(margin);
+
+						// lever up
+						const maxLeverage = await FuturesMarketSettings.maxLeverage(marketKey);
+						await market.modifyPosition(multiplyDecimal(posSize1x, maxLeverage));
+					});
+
+					before('if new aggregator is set and price drops 20%', async () => {
+						const newRate = multiplyDecimal(price, toUnit(0.8)); // 20% drop
+						await addAggregatorAndSetRate({ ctx, currencyKey: assetKey, rate: newRate });
+					});
+
+					it('user cannot withdraw or modify position', async () => {
+						// cannot withdraw
+						await assert.revert(market.transferMargin(toBN(-1)), 'Insufficient margin');
+
+						// cannot modify
+						await assert.revert(market.modifyPosition(toBN(-1)), 'can be liquidated');
+
+						// cannot close
+						await assert.revert(market.closePosition(), 'can be liquidated');
+					});
+
+					it('position can be liquidated by another user', async () => {
+						// can liquidate view
+						assert.ok(await market.canLiquidate(someUser.address));
+
+						// liquidation tx
+						const otherCaller = FuturesMarketBTC.connect(otherUser);
+						await otherCaller.liquidatePosition(someUser.address);
+
+						// position: rekt
+						const pos = await market.positions(someUser.address);
+						assert.bnEqual(pos.size, 0);
+						assert.bnEqual(pos.margin, 0);
+					});
 				});
 			});
 		});
