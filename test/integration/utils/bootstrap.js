@@ -73,6 +73,7 @@ function bootstrapL2({ ctx }) {
 			balance: ethers.utils.parseEther('1000000'),
 		});
 
+		// this causes spurious nonce issues and should only be used when needed
 		// if (!ctx.fork) {
 		// 	startOpsHeartbeat({
 		// 		l1Wallet: ctx.l1mock.users.user9,
@@ -118,6 +119,7 @@ function bootstrapDual({ ctx }) {
 			balance: ethers.utils.parseEther('1000000'),
 		});
 
+		// this causes spurious nonce issues and should only be used when needed
 		/* await startOpsHeartbeat({
 			l1Wallet: ctx.l1.users.user9,
 			l2Wallet: ctx.l2.users.user9,
