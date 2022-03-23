@@ -1294,6 +1294,7 @@ contract('Exchange Rates', async accounts => {
 		describe('effectiveAtomicValueAndRates', () => {
 			const MockToken = artifacts.require('MockToken');
 			const one = toUnit('1');
+			const unitIn6 = convertToDecimals(1, 6);
 			const unitIn8 = convertToDecimals(1, 8);
 
 			let dexPriceAggregator, ethAggregator;
@@ -1339,7 +1340,9 @@ contract('Exchange Rates', async accounts => {
 					};
 
 					beforeEach(async () => {
-						await dexPriceAggregator.setAssetToAssetRate(pDex);
+						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, one);
+						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, pDex);
+
 						await ethAggregator.setLatestAnswer(pClInUsdIn8, await currentTime());
 
 						await systemSettings.setAtomicPriceBuffer(destToken, clBuffer, { from: owner });
@@ -1421,10 +1424,7 @@ contract('Exchange Rates', async accounts => {
 					await ethAggregator.setLatestRoundDataShouldRevert(true);
 				});
 				it('reverts due to zero rates', async () => {
-					await assert.revert(
-						instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
-						'dex price returned 0'
-					);
+					await assert.revert(ethAggregator.latestRoundData(), 'latestRoundData reverted');
 				});
 			});
 
@@ -1654,7 +1654,8 @@ contract('Exchange Rates', async accounts => {
 				const amountIn = toUnit('10');
 
 				beforeEach(async () => {
-					await dexPriceAggregator.setAssetToAssetRate(pDex);
+					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, unitIn6);
+					await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, pDex);
 					await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
 
 					await systemSettings.setAtomicPriceBuffer(sUSD, susdBuffer, { from: owner });
@@ -1694,6 +1695,8 @@ contract('Exchange Rates', async accounts => {
 
 				describe('sUSD -> sETH', () => {
 					const rate = '0.01';
+					// esUSD has 6 decimals
+					const rateIn6 = convertToDecimals(rate, 6);
 					// esETH has 8 decimals
 					const rateIn8 = convertToDecimals(rate, 8);
 
@@ -1701,7 +1704,8 @@ contract('Exchange Rates', async accounts => {
 					const amountIn6 = convertToDecimals(1000, 6); // in input token's decimals
 
 					beforeEach('set up rates', async () => {
-						await dexPriceAggregator.setAssetToAssetRate(rateIn8); // mock requires rate to be in output's decimals
+						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, rateIn6);
+						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, rateIn8); // mock requires rate to be in output's decimals
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
 						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
@@ -1737,7 +1741,8 @@ contract('Exchange Rates', async accounts => {
 					const unitIn6 = convertToDecimals(1, 6);
 
 					beforeEach('set up rates', async () => {
-						await dexPriceAggregator.setAssetToAssetRate(rateIn6); // mock requires rate to be in output's decimals
+						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, rateIn8);
+						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, rateIn6); // mock requires rate to be in output's decimals
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
 						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
