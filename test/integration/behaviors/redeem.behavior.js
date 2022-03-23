@@ -18,8 +18,10 @@ function itCanRedeem({ ctx }) {
 
 		before('target contracts and users', () => {
 			const { addedSynths } = ctx;
-			// when no added synths, then just use sETH for testing (useful for the simulation)
-			synth = addedSynths.length ? addedSynths[0].name : 'sBTC';
+			// when no added synths, then just use another synth for testing (useful for the simulation)
+			// sETH and sBTC can't be removed because the debt may be too large for removeSynth to not underflow
+			// during debt update, so sLINK is used here
+			synth = addedSynths.length ? addedSynths[0].name : 'sLINK';
 
 			({
 				Synthetix,

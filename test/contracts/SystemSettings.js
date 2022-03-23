@@ -145,6 +145,7 @@ contract('SystemSettings', async accounts => {
 		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 2 });
 		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 3 });
 		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 4 });
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 5 });
 	});
 
 	describe('setTradingRewardsEnabled()', () => {
