@@ -416,14 +416,16 @@
 					"Issuer",
 					"OneNetAggregatorIssuedSynths",
 					"OneNetAggregatorDebtRatio",
-					"SynthetixBridgeToOptimism"
+					"SynthetixBridgeToOptimism",
+					"SystemSettings"
 				],
 				"ovm": [
 					"FeePool",
 					"Issuer",
 					"OneNetAggregatorIssuedSynths",
 					"OneNetAggregatorDebtRatio",
-					"SynthetixBridgeToBase"
+					"SynthetixBridgeToBase",
+					"SystemSettings"
 				]
 			},
 			"released": "both"
