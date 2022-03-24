@@ -13,25 +13,25 @@ interface IFuturesMarketSettings {
         uint skewScaleUSD;
     }
 
-    function takerFee(bytes32 _baseAsset) external view returns (uint);
+    function takerFee(bytes32 _marketKey) external view returns (uint);
 
-    function makerFee(bytes32 _baseAsset) external view returns (uint);
+    function makerFee(bytes32 _marketKey) external view returns (uint);
 
-    function takerFeeNextPrice(bytes32 _baseAsset) external view returns (uint);
+    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint);
 
-    function makerFeeNextPrice(bytes32 _baseAsset) external view returns (uint);
+    function makerFeeNextPrice(bytes32 _marketKey) external view returns (uint);
 
-    function nextPriceConfirmWindow(bytes32 _baseAsset) external view returns (uint);
+    function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
 
-    function maxLeverage(bytes32 _baseAsset) external view returns (uint);
+    function maxLeverage(bytes32 _marketKey) external view returns (uint);
 
-    function maxMarketValueUSD(bytes32 _baseAsset) external view returns (uint);
+    function maxMarketValueUSD(bytes32 _marketKey) external view returns (uint);
 
-    function maxFundingRate(bytes32 _baseAsset) external view returns (uint);
+    function maxFundingRate(bytes32 _marketKey) external view returns (uint);
 
-    function skewScaleUSD(bytes32 _baseAsset) external view returns (uint);
+    function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
 
-    function parameters(bytes32 _baseAsset)
+    function parameters(bytes32 _marketKey)
         external
         view
         returns (
