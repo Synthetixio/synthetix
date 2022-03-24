@@ -303,16 +303,31 @@ module.exports = async ({
 		comment: 'Set the gas limit for withdrawing from L2',
 	});
 
-	const crossDomainRelayGasLimit = await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT');
+	const crossDomainCloseFeePeriodGasLimit = await getDeployParameter(
+		'CROSS_DOMAIN_FEE_PERIOD_CLOSE_GAS_LIMIT'
+	);
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 4,
 		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(crossDomainCloseFeePeriodGasLimit),
+		write: 'setCrossDomainMessageGasLimit',
+		writeArg: [4, crossDomainCloseFeePeriodGasLimit],
+		comment: 'Set the gas limit for closing the fee period L2 from L1',
+	});
+
+	const crossDomainRelayGasLimit = await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'crossDomainMessageGasLimit',
+		readArg: 5,
+		readTarget: previousSystemSettings,
 		expected: allowZeroOrUpdateIfNonZero(crossDomainRelayGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [4, crossDomainRelayGasLimit],
+		writeArg: [5, crossDomainRelayGasLimit],
 		comment: 'Set the gas limit for relaying owner actions to L2',
 	});
 
