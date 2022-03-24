@@ -3979,8 +3979,9 @@
 			},
 			"SystemSettings": {
 				"address": "0x80d65Bb7b9436A86c1928F93D6E7cc186987Ac54",
-				"status": "current",
-				"keccak256": "0x305a91266ac645a86ebb79b7617bdc7307053f933d843cd1bfafe35cd420d008"
+				"status": "replaced",
+				"keccak256": "0x305a91266ac645a86ebb79b7617bdc7307053f933d843cd1bfafe35cd420d008",
+				"replaced_in": "v2.64.2"
 			},
 			"SystemSettingsLib": {
 				"address": "0xa62F71D599Ec6179B4f6569adD69ffC7E1A7a1c5",
@@ -4200,6 +4201,21 @@
 				"address": "0x834Ef6c82D431Ac9A7A6B66325F185b2430780D7",
 				"status": "current",
 				"keccak256": "0x70d93adddedc13bddf1a98d5846f06736949d0d26d0547bacc656be9ee829055"
+			}
+		}
+	},
+	"v2.64.2": {
+		"tag": "v2.64.2",
+		"fulltag": "v2.64.2",
+		"release": "Diphda",
+		"network": "mainnet",
+		"date": "2022-03-23T14:03:52-04:00",
+		"commit": "14c36a4b346c8cc26c65de0ba2778be6a79afc2f",
+		"contracts": {
+			"SystemSettings": {
+				"address": "0x68938Be4c72A77891E99B198F4d31C5582018b40",
+				"status": "current",
+				"keccak256": "0x0213567bb35401126849b277a1b9cccca8bec368a82f2151c1b078209763a72f"
 			}
 		}
 	}
