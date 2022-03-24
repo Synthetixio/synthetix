@@ -103,24 +103,28 @@ const migrateDebtShares = async ({
 		if (i % 100 === 0) {
 			console.log('scanning address', i, 'of', lines.length);
 		}
+		for (let i = 0; i < 5; i++) {
+			try {
+				const debtBalanceOf = await SynthetixDebtShare.balanceOf(address);
 
-		try {
-			const debtBalanceOf = await SynthetixDebtShare.balanceOf(address);
+				if (debtBalanceOf.gt(ethers.utils.parseEther(threshold))) {
+					const debtAfter = debtBalanceOf.mul(factor).div(ONE);
 
-			if (debtBalanceOf.gt(ethers.utils.parseEther(threshold))) {
-				const debtAfter = debtBalanceOf.mul(factor).div(ONE);
-
-				addressCollateralAmounts.push({
-					address,
-					debtBalanceOf: debtAfter,
-				});
-				totalDebtAccounted = totalDebtAccounted.add(debtBalanceOf);
-				totalDebtAfter = totalDebtAfter.add(debtAfter);
-			} else {
-				totalDebtForgiven = totalDebtForgiven.add(debtBalanceOf);
+					addressCollateralAmounts.push({
+						address,
+						debtBalanceOf: debtAfter,
+					});
+					totalDebtAccounted = totalDebtAccounted.add(debtBalanceOf);
+					totalDebtAfter = totalDebtAfter.add(debtAfter);
+				} else {
+					totalDebtForgiven = totalDebtForgiven.add(debtBalanceOf);
+				}
+				break;
+			} catch (err) {
+				// if (i === 4) {
+				console.log('had error for address', address, err);
+				// }
 			}
-		} catch (err) {
-			console.log('had error for address', address, err);
 		}
 	});
 
@@ -135,27 +139,27 @@ const migrateDebtShares = async ({
 		ethers.utils.formatEther(totalDebtAfter)
 	);
 
-	for (let i = 0; i < addressCollateralAmounts.length; i += batchSize) {
-		const batch = addressCollateralAmounts.slice(i, i + batchSize);
+	// for (let i = 0; i < addressCollateralAmounts.length; i += batchSize) {
+	// 	const batch = addressCollateralAmounts.slice(i, i + batchSize);
 
-		const addrs = batch.map(a => a.address);
-		const amounts = batch.map(a => a.debtBalanceOf);
+	// 	const addrs = batch.map(a => a.address);
+	// 	const amounts = batch.map(a => a.debtBalanceOf);
 
-		console.log('write action for import of addresses', i, 'through', i + batchSize);
+	// 	console.log('write action for import of addresses', i, 'through', i + batchSize);
 
-		await performTransactionalStep({
-			contract: 'SynthetixDebtShare',
-			// encodeABI: network === 'mainnet',
-			// maxFeePerGas,
-			// maxPriorityFeePerGas:  //ethers.utils.parseUnits('5', 'gwei'),
-			ownerActions,
-			ownerActionsFile,
-			signer,
-			target: SynthetixDebtShare,
-			write: 'importAddresses',
-			writeArg: [addrs, amounts], // explicitly pass array of args so array not splat as params
-		});
-	}
+	// 	await performTransactionalStep({
+	// 		contract: 'SynthetixDebtShare',
+	// 		// encodeABI: network === 'mainnet',
+	// 		// maxFeePerGas,
+	// 		// maxPriorityFeePerGas:  //ethers.utils.parseUnits('5', 'gwei'),
+	// 		ownerActions,
+	// 		ownerActionsFile,
+	// 		signer,
+	// 		target: SynthetixDebtShare,
+	// 		write: 'importAddresses',
+	// 		writeArg: [addrs, amounts], // explicitly pass array of args so array not splat as params
+	// 	});
+	// }
 
 	console.log(green('Completed successfully'));
 };
