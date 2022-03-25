@@ -3,20 +3,37 @@ const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipMinimumStakeTime } = require('../utils/skip');
+const { createMockAggregatorFactory } = require('../../utils/index')();
 
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('1000');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
-		let user;
-		let Synthetix, SynthsUSD;
+		let user, owner;
+		let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD;
 		let balancesUSD, debtsUSD;
 
 		before('target contracts and users', () => {
-			({ Synthetix, SynthsUSD } = ctx.contracts);
+			({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
+			owner = ctx.users.owner;
+		});
+
+		before('setup mock debt ratio aggregator', async () => {
+			const MockAggregatorFactory = await createMockAggregatorFactory(owner);
+			const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
+
+			await (await aggregator.setDecimals(27)).wait();
+			const { timestamp } = await ctx.provider.getBlock();
+			// debt share ratio of 0.5
+			await (
+				await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp)
+			).wait();
+
+			AddressResolver = AddressResolver.connect(owner);
+			AddressResolver.importAddresses(['ext:AggregatorDebtRatio'], [aggregator.address]);
 		});
 
 		before('ensure the user has enough SNX', async () => {
@@ -41,6 +58,30 @@ function itCanStake({ ctx }) {
 					await SynthsUSD.balanceOf(user.address),
 					balancesUSD.add(amountToIssueAndBurnsUSD)
 				);
+			});
+
+			it('issues the expected amount of debt shares', async () => {
+				assert.bnClose(
+					await SynthetixDebtShare.balanceOf(user.address),
+					balancesUSD.add(amountToIssueAndBurnsUSD)
+				);
+			});
+
+			describe('when the user issues sUSD again', () => {
+				before('issue sUSD', async () => {
+					const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
+					await tx.wait();
+				});
+
+				it('issues the expected amount of sUSD'); // pending
+
+				it('issues half the amount of sUSD'); // pending
+
+				describe('when the user burns this new amount of sUSD', () => {
+					it('debt should decrease'); // pending
+
+					it('debt share should decrease correctly'); // pending
+				});
 			});
 		});
 
@@ -72,6 +113,8 @@ function itCanStake({ ctx }) {
 					tolerance.toString()
 				);
 			});
+
+			it('reduces the expected amount of debt shares'); // pending
 		});
 	});
 }
