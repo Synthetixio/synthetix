@@ -847,7 +847,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (debtToRemove == existingDebt) {
             sds.burnShare(from, currentDebtShare);
         } else {
-            uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
+            (uint snxBackedAmount, , ) = allNetworksDebtInfo();
+            uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, snxBackedAmount);
             sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
         }
     }
