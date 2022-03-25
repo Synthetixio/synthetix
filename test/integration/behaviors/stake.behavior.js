@@ -3,38 +3,41 @@ const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipMinimumStakeTime } = require('../utils/skip');
-const { createMockAggregatorFactory } = require('../../utils/index')();
+// const { createMockAggregatorFactory } = require('../../utils/index')();
 
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('1000');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
-		let user, owner;
-		let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD;
+		// let user, owner;
+		let user;
+		// let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD;
+		let Synthetix, SynthetixDebtShare, SynthsUSD;
 		let balancesUSD, debtsUSD;
 
 		before('target contracts and users', () => {
-			({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD } = ctx.contracts);
+			({ Synthetix, SynthetixDebtShare, SynthsUSD } = ctx.contracts);
+			// ({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
-			owner = ctx.users.owner;
+			// owner = ctx.users.owner;
 		});
 
-		before('setup mock debt ratio aggregator', async () => {
-			const MockAggregatorFactory = await createMockAggregatorFactory(owner);
-			const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
+		// before('setup mock debt ratio aggregator', async () => {
+		// 	const MockAggregatorFactory = await createMockAggregatorFactory(owner);
+		// 	const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
 
-			await (await aggregator.setDecimals(27)).wait();
-			const { timestamp } = await ctx.provider.getBlock();
-			// debt share ratio of 0.5
-			await (
-				await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp)
-			).wait();
+		// 	await (await aggregator.setDecimals(27)).wait();
+		// 	const { timestamp } = await ctx.provider.getBlock();
+		// 	// debt share ratio of 0.5
+		// 	await (
+		// 		await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp)
+		// 	).wait();
 
-			AddressResolver = AddressResolver.connect(owner);
-			AddressResolver.importAddresses([toBytes32('ext:AggregatorDebtRatio')], [aggregator.address]);
-		});
+		// 	AddressResolver = AddressResolver.connect(owner);
+		// 	AddressResolver.importAddresses([toBytes32('ext:AggregatorDebtRatio')], [aggregator.address]);
+		// });
 
 		before('ensure the user has enough SNX', async () => {
 			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
