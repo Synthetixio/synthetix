@@ -19,6 +19,8 @@ function bootstrapL1({ ctx }) {
 
 		await loadUsers({ ctx });
 
+		connectContracts({ ctx });
+
 		if (ctx.fork) {
 			// Temp workaround for issue for SIP-220 on a fork
 			await resumeIssuance({ ctx });
@@ -26,8 +28,6 @@ function bootstrapL1({ ctx }) {
 				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
 			}
 		}
-
-		connectContracts({ ctx });
 
 		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 	});
@@ -39,6 +39,8 @@ function bootstrapL2({ ctx }) {
 		ctx.fork = hre.config.fork;
 
 		ctx.addedSynths = hre.config.addedSynths || [];
+
+		connectContracts({ ctx });
 
 		/*
 		 * We also bootstrap an L1 provider on the assumption that the L2 integration tests
@@ -67,8 +69,6 @@ function bootstrapL2({ ctx }) {
 		});
 
 		await loadUsers({ ctx });
-
-		connectContracts({ ctx });
 
 		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 
