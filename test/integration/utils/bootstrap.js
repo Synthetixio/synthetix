@@ -40,8 +40,6 @@ function bootstrapL2({ ctx }) {
 
 		ctx.addedSynths = hre.config.addedSynths || [];
 
-		connectContracts({ ctx });
-
 		/*
 		 * We also bootstrap an L1 provider on the assumption that the L2 integration tests
 		 * are running against an Optimism ops tool.
@@ -66,6 +64,8 @@ function bootstrapL2({ ctx }) {
 		});
 
 		await loadUsers({ ctx });
+
+		connectContracts({ ctx });
 
 		if (ctx.fork) {
 			// Note: needs to be done after contracts connected and users loaded
