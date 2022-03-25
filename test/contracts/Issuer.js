@@ -7,6 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts, mockToken } = require('./setup');
 
 const MockEtherWrapper = artifacts.require('MockEtherWrapper');
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 const {
 	currentTime,
@@ -14,6 +15,8 @@ const {
 	divideDecimalRound,
 	divideDecimal,
 	toUnit,
+	fromUnit,
+	toPreciseUnit,
 	fastForward,
 } = require('../utils')();
 
@@ -63,7 +66,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		addressResolver,
 		synthRedeemer,
 		exchanger,
-		aggregatorDebtRatio;
+		aggregatorDebtRatio,
+		debtShares;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -87,6 +91,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 			SynthRedeemer: synthRedeemer,
+			SynthetixDebtShare: debtShares,
 			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
@@ -109,6 +114,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'SynthRedeemer',
+				'SynthetixDebtShare',
 			],
 		}));
 
@@ -2752,6 +2758,59 @@ contract('Issuer (via Synthetix)', async accounts => {
 							assert.bnEqual(await sETHContract.balanceOf(account1), toUnit('25'));
 						});
 					});
+				});
+			});
+
+			describe('debt shares integration', async () => {
+				let aggTDR;
+
+				beforeEach(async () => {
+					// create aggregator mocks
+					aggTDR = await MockAggregator.new({ from: owner });
+
+					// Set debt ratio oracle value
+					await aggTDR.setLatestAnswer(toPreciseUnit('0.5'), await currentTime());
+
+					await addressResolver.importAddresses(
+						[toBytes32('ext:AggregatorDebtRatio')],
+						[aggTDR.address],
+						{
+							from: owner,
+						}
+					);
+
+					// rebuild the resolver cache in the issuer
+					await issuer.rebuildCache();
+				});
+
+				it('should correctly mint and burn debt shares corresponding to the debt ratio oracle value', async () => {
+					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+
+					// Starts at 0 balances
+					console.log('debt shares total supply before', fromUnit(await debtShares.totalSupply()));
+					console.log('susd total supply before', fromUnit(await sUSDContract.totalSupply()));
+
+					// Issue max synths (20 sUSD)
+					await synthetix.issueMaxSynths({ from: account1 });
+					console.log('debt shares total supply after', fromUnit(await debtShares.totalSupply()));
+					console.log('susd total supply after', fromUnit(await sUSDContract.totalSupply()));
+
+					// Balances should be 20 sUSD, 20 SDS.
+
+					// Issue max synths again (10 sUSD)
+					await synthetix.issueMaxSynths({ from: account1 });
+					console.log('debt shares total supply after', fromUnit(await debtShares.totalSupply()));
+					console.log('susd total supply after', fromUnit(await sUSDContract.totalSupply()));
+
+					// Balances should be 30 sUSD, 25 SDS.
+					// should be 1/2 as much debt shares added (10 sUSD added == 5 debt shares added)
+
+					await synthetix.burnSynths(toUnit('10'), { from: account1 });
+					console.log('debt shares total supply after', fromUnit(await debtShares.totalSupply()));
+					console.log('susd total supply after', fromUnit(await sUSDContract.totalSupply()));
+
+					// Balances should be 20 sUSD, 5 SDS.
+					// should be 2x as much debt shares burned (10 sUSD burned == 20 debt shares burned)
 				});
 			});
 		});
