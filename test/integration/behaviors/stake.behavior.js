@@ -13,11 +13,11 @@ function itCanStake({ ctx }) {
 		// let user, owner;
 		let user;
 		// let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD;
-		let Synthetix, SynthetixDebtShare, SynthsUSD;
+		let Synthetix, SynthsUSD;
 		let balancesUSD, debtsUSD;
 
 		before('target contracts and users', () => {
-			({ Synthetix, SynthetixDebtShare, SynthsUSD } = ctx.contracts);
+			({ Synthetix, SynthsUSD } = ctx.contracts);
 			// ({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
@@ -63,17 +63,12 @@ function itCanStake({ ctx }) {
 				);
 			});
 
-			it('issues the expected amount of debt shares', async () => {
-				assert.bnClose(
-					await SynthetixDebtShare.balanceOf(user.address),
-					balancesUSD.add(amountToIssueAndBurnsUSD)
-				);
-			});
+			it('issues the expected amount of debt shares'); // pending
 
 			describe('when the user issues sUSD again', () => {
 				before('issue sUSD', async () => {
-					const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
-					await tx.wait();
+					// const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
+					// await tx.wait();
 				});
 
 				it('issues the expected amount of sUSD'); // pending
