@@ -828,7 +828,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (sds.totalSupply() == 0) {
             sds.mintShare(from, amount);
         } else {
-            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
+            (uint snxBackedAmount, , ) = allNetworksDebtInfo();
+
+            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, snxBackedAmount));
         }
     }
 
