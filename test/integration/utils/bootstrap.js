@@ -59,9 +59,6 @@ function bootstrapL2({ ctx }) {
 			});
 
 			await loadUsers({ ctx: ctx.l1mock });
-		} else {
-			// Temp workaround for issue for SIP-220 on a fork
-			await resumeIssuance({ ctx });
 		}
 
 		ctx.provider = _setupProvider({
@@ -69,6 +66,12 @@ function bootstrapL2({ ctx }) {
 		});
 
 		await loadUsers({ ctx });
+
+		if (ctx.fork) {
+			// Note: needs to be done after contracts connected and users loaded
+			// Temp workaround for issue for SIP-220 on a fork
+			await resumeIssuance({ ctx });
+		}
 
 		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 
