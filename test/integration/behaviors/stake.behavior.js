@@ -33,7 +33,7 @@ function itCanStake({ ctx }) {
 			).wait();
 
 			AddressResolver = AddressResolver.connect(owner);
-			AddressResolver.importAddresses(['ext:AggregatorDebtRatio'], [aggregator.address]);
+			AddressResolver.importAddresses([toBytes32('ext:AggregatorDebtRatio')], [aggregator.address]);
 		});
 
 		before('ensure the user has enough SNX', async () => {
