@@ -200,14 +200,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
-        return debtAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
+        return debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
     }
 
     function _debtForShares(uint sharesAmount) internal view returns (uint) {
         (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
-        return sharesAmount.divideDecimalRoundPrecise(uint(rawRatio));
+        return sharesAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -261,7 +261,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
+        (uint snxBackedAmount, , bool debtInfoStale) = allNetworksDebtInfo();
 
         if (debtShareBalance == 0) {
             return (0, snxBackedAmount, debtInfoStale);
