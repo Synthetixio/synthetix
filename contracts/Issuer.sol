@@ -196,18 +196,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
-    function _sharesForDebt(
-        uint debtAmount
-    ) internal view returns (uint) {
+    function _sharesForDebt(uint debtAmount) internal view returns (uint) {
         (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
-            
+
         return debtAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
     }
 
-    function _debtForShares(
-        uint sharesAmount
-    ) internal view returns (uint) {
+    function _debtForShares(uint sharesAmount) internal view returns (uint) {
         (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
@@ -274,9 +270,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
         (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
 
-        debtBalance = _debtForShares(debtShareBalance).divideDecimalRound(
-            currencyRate
-        );
+        debtBalance = _debtForShares(debtShareBalance).divideDecimalRound(currencyRate);
         totalSystemValue = snxBackedAmount;
 
         anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
