@@ -2768,7 +2768,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					aggTDR = await MockAggregator.new({ from: owner });
 
 					// Set debt ratio oracle value
-					await aggTDR.setLatestAnswer(toPreciseUnit('0.3'), await currentTime());
+					await aggTDR.setLatestAnswer(toPreciseUnit('0.4'), await currentTime());
 
 					await addressResolver.importAddresses(
 						[toBytes32('ext:AggregatorDebtRatio')],
@@ -2791,36 +2791,35 @@ contract('Issuer (via Synthetix)', async accounts => {
 				it('mints the correct number of debt shares', async () => {
 					// Issue synths
 					await synthetix.issueSynths(toUnit('100'), { from: account1 });
-					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('30')); // = 0.3 * 100
+					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('250')); // = 100 / 0.4
 					assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('100'));
-
 				});
 
 				it('burns the correct number of debt shares', async () => {
 					await synthetix.issueSynths(toUnit('300'), { from: account1 });
 					await synthetix.burnSynths(toUnit('30'), { from: account1 });
-					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('81')); // = 0.3 * 270
+					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // = 270 / 0.4
 					assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270'));
 				});
 
 				describe('when debt ratio changes', () => {
 					beforeEach(async () => {
-						// user mints
+						// user mints and gets 300 susd / 0.4 = 750 debt shares
 						await synthetix.issueSynths(toUnit('300'), { from: account1 });
 
-						// Set issued synths oracle value
+						// Debt ratio oracle value is updated
 						await aggTDR.setLatestAnswer(toPreciseUnit('0.6'), await currentTime());
 					});
 
 					it('has adjusted debt', async () => {
-						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('150')); // = 90 (number of debt shares minted above) / 0.6
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('450')); // = 750 sds * 0.6
 					});
 
 					it('mints at adjusted rate', async () => {
 						await synthetix.issueSynths(toUnit('300'), { from: account1 });
 
-						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('270')); // = 90 (shares from before) + 300 * 0.6
-						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('450')); // = 150 + 300
+						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('1250')); // = 750 (shares from before) + 300 / 0.6
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('750')); // = 450 (sUSD from before ) + 300
 					});
 				});
 
@@ -2843,10 +2842,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					it('has no effect on mint or burn', async () => {
+						// user mints and gets 300 susd  / 0.4 = 750 debt shares
 						await synthetix.issueSynths(toUnit('300'), { from: account1 });
+						// user burns 30 susd / 0.4 = 75 debt shares
 						await synthetix.burnSynths(toUnit('30'), { from: account1 });
-						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('81'));
-						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270'));
+						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // 750 - 75 sds
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270')); // 300 - 30 susd
 					});
 				});
 			});
