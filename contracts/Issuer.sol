@@ -196,20 +196,22 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
-    function _debtSharesToIssuedSynth(
-        uint debtAmount,
-        uint totalSystemValue,
-        uint totalDebtShares
-    ) internal pure returns (uint) {
-        return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
+    function _sharesForDebt(
+        uint debtAmount
+    ) internal view returns (uint) {
+        (, int256 rawRatio, , , ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+            
+        return debtAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
     }
 
-    function _issuedSynthToDebtShares(
-        uint sharesAmount,
-        uint totalSystemValue,
-        uint totalDebtShares
-    ) internal pure returns (uint) {
-        return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
+    function _debtForShares(
+        uint sharesAmount
+    ) internal view returns (uint) {
+        (, int256 rawRatio, , , ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+
+        return sharesAmount.divideDecimalRoundPrecise(uint(rawRatio));
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -272,7 +274,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
         (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(
+        debtBalance = _debtForShares(debtShareBalance).divideDecimalRound(
             currencyRate
         );
         totalSystemValue = snxBackedAmount;
@@ -823,9 +825,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (sds.totalSupply() == 0) {
             sds.mintShare(from, amount);
         } else {
-            (uint snxBackedAmount, uint sharesSupply, ) = allNetworksDebtInfo();
-
-            sds.mintShare(from, _debtSharesToIssuedSynth(amount, snxBackedAmount, sharesSupply));
+            sds.mintShare(from, _sharesForDebt(amount));
         }
     }
 
@@ -841,9 +841,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (debtToRemove == existingDebt) {
             sds.burnShare(from, currentDebtShare);
         } else {
-            (uint snxBackedAmount, uint sharesSupply, ) = allNetworksDebtInfo();
-            uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, snxBackedAmount, sharesSupply);
-            sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
+            uint sharesToRemove = _sharesForDebt(debtToRemove);
+            sds.burnShare(from, sharesToRemove < currentDebtShare ? sharesToRemove : currentDebtShare);
         }
     }
 

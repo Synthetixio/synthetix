@@ -15,7 +15,6 @@ const {
 	divideDecimalRound,
 	divideDecimal,
 	toUnit,
-	fromUnit,
 	toPreciseUnit,
 	fastForward,
 } = require('../utils')();
@@ -2769,7 +2768,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					aggTDR = await MockAggregator.new({ from: owner });
 
 					// Set debt ratio oracle value
-					await aggTDR.setLatestAnswer(toPreciseUnit('0.5'), await currentTime());
+					await aggTDR.setLatestAnswer(toPreciseUnit('0.3'), await currentTime());
 
 					await addressResolver.importAddresses(
 						[toBytes32('ext:AggregatorDebtRatio')],
@@ -2781,36 +2780,74 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					// rebuild the resolver cache in the issuer
 					await issuer.rebuildCache();
+
+					// issue some initial debt to work with
+					await synthetix.issueSynths(toUnit('100'), { from: owner });
+
+					// send test user some snx so he can mint too
+					await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
 				});
 
-				it('should correctly mint and burn debt shares corresponding to the debt ratio oracle value', async () => {
-					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+				it('mints the correct number of debt shares', async () => {
+					// Issue synths
+					await synthetix.issueSynths(toUnit('100'), { from: account1 });
+					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('30')); // = 0.3 * 100
+					assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('100'));
 
-					// Starts at 0 balances
-					console.log('debt shares total supply before', fromUnit(await debtShares.totalSupply()));
-					console.log('susd total supply before', fromUnit(await sUSDContract.totalSupply()));
+				});
 
-					// Issue max synths (20 sUSD)
-					await synthetix.issueMaxSynths({ from: account1 });
-					console.log('debt shares total supply after', fromUnit(await debtShares.totalSupply()));
-					console.log('susd total supply after', fromUnit(await sUSDContract.totalSupply()));
+				it('burns the correct number of debt shares', async () => {
+					await synthetix.issueSynths(toUnit('300'), { from: account1 });
+					await synthetix.burnSynths(toUnit('30'), { from: account1 });
+					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('81')); // = 0.3 * 270
+					assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270'));
+				});
 
-					// Balances should be 20 sUSD, 20 SDS.
+				describe('when debt ratio changes', () => {
+					beforeEach(async () => {
+						// user mints
+						await synthetix.issueSynths(toUnit('300'), { from: account1 });
 
-					// Issue max synths again (10 sUSD)
-					await synthetix.issueMaxSynths({ from: account1 });
-					console.log('debt shares total supply after', fromUnit(await debtShares.totalSupply()));
-					console.log('susd total supply after', fromUnit(await sUSDContract.totalSupply()));
+						// Set issued synths oracle value
+						await aggTDR.setLatestAnswer(toPreciseUnit('0.6'), await currentTime());
+					});
 
-					// Balances should be 30 sUSD, 25 SDS.
-					// should be 1/2 as much debt shares added (10 sUSD added == 5 debt shares added)
+					it('has adjusted debt', async () => {
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('150')); // = 90 (number of debt shares minted above) / 0.6
+					});
 
-					await synthetix.burnSynths(toUnit('10'), { from: account1 });
-					console.log('debt shares total supply after', fromUnit(await debtShares.totalSupply()));
-					console.log('susd total supply after', fromUnit(await sUSDContract.totalSupply()));
+					it('mints at adjusted rate', async () => {
+						await synthetix.issueSynths(toUnit('300'), { from: account1 });
 
-					// Balances should be 20 sUSD, 5 SDS.
-					// should be 2x as much debt shares burned (10 sUSD burned == 20 debt shares burned)
+						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('270')); // = 90 (shares from before) + 300 * 0.6
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('450')); // = 150 + 300
+					});
+				});
+
+				describe('issued synths aggregator', async () => {
+					let aggTIS;
+					beforeEach(async () => {
+						// create aggregator mocks
+						aggTIS = await MockAggregator.new({ from: owner });
+
+						// Set issued synths oracle value
+						await aggTIS.setLatestAnswer(toPreciseUnit('1234123412341234'), await currentTime());
+
+						await addressResolver.importAddresses(
+							[toBytes32('ext:AggregatorIssuedSynths')],
+							[aggTIS.address],
+							{
+								from: owner,
+							}
+						);
+					});
+
+					it('has no effect on mint or burn', async () => {
+						await synthetix.issueSynths(toUnit('300'), { from: account1 });
+						await synthetix.burnSynths(toUnit('30'), { from: account1 });
+						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('81'));
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270'));
+					});
 				});
 			});
 		});
