@@ -6,7 +6,7 @@ const { skipMinimumStakeTime } = require('../utils/skip');
 const { createMockAggregatorFactory } = require('../../utils/index')();
 
 function itCanStake({ ctx }) {
-	describe.only('staking and claiming', () => {
+	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('1000');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
