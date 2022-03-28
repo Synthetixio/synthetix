@@ -548,6 +548,11 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "both"
+		},
+		{
+			"sip": 220,
+			"layer": "both",
+			"sources": ["Issuer"]
 		}
 	],
 	"releases": [
@@ -1009,7 +1014,7 @@
 				"major": 2,
 				"minor": 65
 			},
-			"sips": []
+			"sips": [220]
 		},
 		{
 			"name": "Mizar (Optimism)",
@@ -1019,7 +1024,7 @@
 				"major": 2,
 				"minor": 65
 			},
-			"sips": []
+			"sips": [220]
 		},
 		{
 			"name": "Nunki",

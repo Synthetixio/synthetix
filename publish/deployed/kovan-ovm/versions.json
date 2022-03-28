@@ -1362,8 +1362,9 @@
 			},
 			"Issuer": {
 				"address": "0x723DE2CC925B273FfE66E1B1c94DfAE6b804a83a",
-				"status": "current",
-				"keccak256": "0x7556a958ffefe9d9b125e325810944d86e22c9a241405e3627e9cdf66c73072d"
+				"status": "replaced",
+				"keccak256": "0x7556a958ffefe9d9b125e325810944d86e22c9a241405e3627e9cdf66c73072d",
+				"replaced_in": "v2.65.0-alpha"
 			},
 			"SynthsUSD": {
 				"address": "0x360bc0503362130aBE0b3393aC078B03d73a9EcA",
@@ -1479,6 +1480,21 @@
 				"address": "0x5565fcd9739182cA5e474409b2685b4C0A4829E3",
 				"status": "current",
 				"keccak256": "0x0213567bb35401126849b277a1b9cccca8bec368a82f2151c1b078209763a72f"
+			}
+		}
+	},
+	"v2.65.0-alpha": {
+		"tag": "v2.65.0-alpha",
+		"fulltag": "v2.65.0-alpha",
+		"release": "Mizar",
+		"network": "kovan",
+		"date": "2022-03-28T15:31:57-04:00",
+		"commit": "95c57330aec512b4e51adef5c5032981b4d0ef3a",
+		"contracts": {
+			"Issuer": {
+				"address": "0x2a764Dd011E0142629183ef9Fec89dd5064Ec52A",
+				"status": "current",
+				"keccak256": "0x00c5cf07e218bc3f61f97e3c7df177ea99ccc72ae09cb5bff195be9c48dea2b9"
 			}
 		}
 	}
