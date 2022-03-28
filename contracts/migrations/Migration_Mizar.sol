@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -38,13 +37,16 @@ contract Migration_Mizar is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](3);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(systemstatus_i);
-        contracts[2]= address(issuer_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(systemstatus_i);
+        contracts[2] = address(issuer_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -79,16 +81,17 @@ contract Migration_Mizar is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](1);
         addressresolver_importAddresses_names_0_0[0] = bytes32("Issuer");
         address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](1);
         addressresolver_importAddresses_destinations_0_1[0] = address(new_Issuer_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
@@ -114,7 +117,6 @@ contract Migration_Mizar is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](8);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xB34F4d7c207D8979D05EDb0F63f174764Bd67825);
@@ -128,7 +130,6 @@ contract Migration_Mizar is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function issuer_addSynths_5() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_5_0 = new ISynth[](15);
         issuer_addSynths_synthsToAdd_5_0[0] = ISynth(0x7df9b3f8f1C011D8BD707430e97E747479DD532a);
