@@ -17,7 +17,7 @@ function itCanStake({ ctx }) {
 		before('target contracts and users', () => {
 			({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD, Issuer } = ctx.contracts);
 
-			user = ctx.users.someUser;
+			user = ctx.users.otherUser;
 			owner = ctx.users.owner;
 		});
 
@@ -48,9 +48,8 @@ function itCanStake({ ctx }) {
 
 		describe('when the user issues sUSD', () => {
 			before('record balances', async () => {
-				// balances are zero
-				balancesUSD = await SynthsUSD.balanceOf(user.address); // 0 sUSD
-				debtsUSD = await SynthetixDebtShare.balanceOf(user.address); // 0 SDS
+				balancesUSD = await SynthsUSD.balanceOf(user.address);
+				debtsUSD = await SynthetixDebtShare.balanceOf(user.address);
 			});
 
 			before('issue sUSD', async () => {
@@ -62,8 +61,6 @@ function itCanStake({ ctx }) {
 			});
 
 			it('issues the expected amount of sUSD', async () => {
-				// issued 1 sUSD
-				// sUSD balance is now 1
 				assert.bnEqual(
 					await SynthsUSD.balanceOf(user.address),
 					balancesUSD.add(amountToIssueAndBurnsUSD)
@@ -71,18 +68,17 @@ function itCanStake({ ctx }) {
 			});
 
 			it('issues the expected amount of debt shares', async () => {
-				// first time it adds 1 debt share (equal to amount minted)
-				// SDS balance is now 1
+				// mints (amountToIssueAndBurnsUSD / ratio) = debt shares
 				assert.bnEqual(
 					await SynthetixDebtShare.balanceOf(user.address),
-					debtsUSD.add(amountToIssueAndBurnsUSD)
+					debtsUSD.add(amountToIssueAndBurnsUSD.mul(2))
 				);
 			});
 
 			describe('when the user issues sUSD again', () => {
 				before('record balances', async () => {
-					balancesUSD = await SynthsUSD.balanceOf(user.address); // 1 sUSD
-					debtsUSD = await SynthetixDebtShare.balanceOf(user.address); // 1 SDS
+					balancesUSD = await SynthsUSD.balanceOf(user.address);
+					debtsUSD = await SynthetixDebtShare.balanceOf(user.address);
 				});
 
 				before('issue sUSD', async () => {
@@ -91,8 +87,6 @@ function itCanStake({ ctx }) {
 				});
 
 				it('issues the expected amount of sUSD', async () => {
-					// issued 2 sUSD
-					// sUSD balance is now 4
 					assert.bnEqual(
 						await SynthsUSD.balanceOf(user.address),
 						balancesUSD.add(amountToIssueAndBurnsUSD.mul(2))
@@ -100,8 +94,7 @@ function itCanStake({ ctx }) {
 				});
 
 				it('issues the expected amount of debt shares', async () => {
-					// adds (2 sUSD / 0.5) = 4 debt shares
-					// SDS balance is now 5
+					// mints (amountToIssueAndBurnsUSD / ratio) = debt shares
 					assert.bnEqual(
 						await SynthetixDebtShare.balanceOf(user.address),
 						debtsUSD.add(amountToIssueAndBurnsUSD.mul(4))
@@ -110,8 +103,8 @@ function itCanStake({ ctx }) {
 
 				describe('when the user burns this new amount of sUSD', () => {
 					before('record balances', async () => {
-						balancesUSD = await SynthsUSD.balanceOf(user.address); // 4 sUSD
-						debtsUSD = await SynthetixDebtShare.balanceOf(user.address); // 5 SDS
+						balancesUSD = await SynthsUSD.balanceOf(user.address);
+						debtsUSD = await SynthetixDebtShare.balanceOf(user.address);
 					});
 
 					before('skip min stake time', async () => {
@@ -124,8 +117,6 @@ function itCanStake({ ctx }) {
 					});
 
 					it('debt should decrease', async () => {
-						// burnt 1 sUSD
-						// sUSD balance is now 3
 						assert.bnEqual(
 							await SynthsUSD.balanceOf(user.address),
 							balancesUSD.sub(amountToIssueAndBurnsUSD)
@@ -133,8 +124,7 @@ function itCanStake({ ctx }) {
 					});
 
 					it('debt share should decrease correctly', async () => {
-						// burns (1 sUSD / 0.5) = 2 debt shares
-						// SDS balance is now 3
+						// burns (amountToIssueAndBurnsUSD / ratio) = debt shares
 						assert.bnEqual(
 							await SynthetixDebtShare.balanceOf(user.address),
 							debtsUSD.sub(amountToIssueAndBurnsUSD.mul(2))
@@ -144,7 +134,7 @@ function itCanStake({ ctx }) {
 			});
 		});
 
-		describe('when the user burns sUSD', () => {
+		describe('when the user burns sUSD again', () => {
 			before('skip min stake time', async () => {
 				await skipMinimumStakeTime({ ctx });
 			});
@@ -174,39 +164,11 @@ function itCanStake({ ctx }) {
 			});
 
 			it('reduces the expected amount of debt shares', async () => {
-				// burns (1 sUSD / 0.5) = 2 debt shares
-				// SDS balance is now 1
-				assert.bnEqual(await SynthetixDebtShare.balanceOf(user.address), amountToIssueAndBurnsUSD);
-			});
-
-			describe('when the user burns sUSD again', () => {
-				before('record balances', async () => {
-					balancesUSD = await SynthsUSD.balanceOf(user.address); // 1 sUSD
-					debtsUSD = await SynthetixDebtShare.balanceOf(user.address); // 1 SDS
-				});
-
-				before('burn sUSD', async () => {
-					const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
-					await tx.wait();
-				});
-
-				it('burned the expected amount of sUSD', async () => {
-					// burned 1 sUSD
-					// sUSD balance is now 0.5
-					assert.bnEqual(
-						await SynthsUSD.balanceOf(user.address),
-						balancesUSD.sub(amountToIssueAndBurnsUSD.div(2))
-					);
-				});
-
-				it('burns the expected amount of debt shares', async () => {
-					// burned (1 sUSD / 0.5) = 2 debt shares
-					// SDS balance is now 0.5
-					assert.bnEqual(
-						await SynthetixDebtShare.balanceOf(user.address),
-						debtsUSD.sub(amountToIssueAndBurnsUSD)
-					);
-				});
+				// burns (amountToIssueAndBurnsUSD / ratio) = debt shares
+				assert.bnEqual(
+					await SynthetixDebtShare.balanceOf(user.address),
+					amountToIssueAndBurnsUSD.mul(2)
+				);
 			});
 		});
 	});
