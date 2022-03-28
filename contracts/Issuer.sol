@@ -200,7 +200,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
-        return debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
+        return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
     }
 
     function _debtForShares(uint sharesAmount) internal view returns (uint) {
@@ -816,10 +816,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // it is possible (eg in tests, system initialized with extra debt) to have issued debt without any shares issued
         // in which case, the first account to mint gets the debt. yw.
-        if (sds.totalSupply() == 0) {
+        uint debtShares = _sharesForDebt(amount);
+        if (debtShares == 0) {
             sds.mintShare(from, amount);
         } else {
-            sds.mintShare(from, _sharesForDebt(amount));
+            sds.mintShare(from, debtShares);
         }
     }
 
