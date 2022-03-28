@@ -196,20 +196,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
-    function _debtSharesToIssuedSynth(
-        uint debtAmount,
-        uint totalSystemValue,
-        uint totalDebtShares
-    ) internal pure returns (uint) {
-        return debtAmount.multiplyDecimalRound(totalSystemValue).divideDecimalRound(totalDebtShares);
+    function _sharesForDebt(uint debtAmount) internal view returns (uint) {
+        (, int256 rawRatio, , , ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+
+        return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
     }
 
-    function _issuedSynthToDebtShares(
-        uint sharesAmount,
-        uint totalSystemValue,
-        uint totalDebtShares
-    ) internal pure returns (uint) {
-        return sharesAmount.multiplyDecimalRound(totalDebtShares).divideDecimalRound(totalSystemValue);
+    function _debtForShares(uint sharesAmount) internal view returns (uint) {
+        (, int256 rawRatio, , , ) =
+            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+
+        return sharesAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -263,7 +261,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (uint snxBackedAmount, uint debtSharesAmount, bool debtInfoStale) = allNetworksDebtInfo();
+        (uint snxBackedAmount, , bool debtInfoStale) = allNetworksDebtInfo();
 
         if (debtShareBalance == 0) {
             return (0, snxBackedAmount, debtInfoStale);
@@ -272,9 +270,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
         (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
 
-        debtBalance = _debtSharesToIssuedSynth(debtShareBalance, snxBackedAmount, debtSharesAmount).divideDecimalRound(
-            currencyRate
-        );
+        debtBalance = _debtForShares(debtShareBalance).divideDecimalRound(currencyRate);
         totalSystemValue = snxBackedAmount;
 
         anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
@@ -636,7 +632,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint liquidationPenalty = liquidations().liquidationPenalty();
 
         // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
+        (uint debtBalance, , bool anyRateIsInvalid) =
             _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
@@ -668,7 +664,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // burn sUSD from messageSender (liquidator) and reduce account's debt
-        _burnSynths(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
+        _burnSynths(account, liquidator, amountToLiquidate, debtBalance);
 
         // Remove liquidation flag if amount liquidated fixes ratio
         if (amountToLiquidate == amountToFixRatio) {
@@ -715,7 +711,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             return;
         }
 
-        (uint maxIssuable, , uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
+        (uint maxIssuable, , , bool anyRateIsInvalid) = _remainingIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
 
         if (!issueMax) {
@@ -725,7 +721,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // Keep track of the debt they're about to create
-        _addToDebtRegister(from, amount, totalSystemDebt);
+        _addToDebtRegister(from, amount);
 
         // record issue timestamp
         _setLastIssueEvent(from);
@@ -741,8 +737,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address debtAccount,
         address burnAccount,
         uint amount,
-        uint existingDebt,
-        uint totalDebtIssued
+        uint existingDebt
     ) internal returns (uint amountBurnt) {
         // check breaker
         if (!_verifyCircuitBreaker()) {
@@ -756,7 +751,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         amountBurnt = existingDebt < amount ? existingDebt : amount;
 
         // Remove liquidated debt from the ledger
-        _removeFromDebtRegister(debtAccount, amountBurnt, existingDebt, totalDebtIssued);
+        _removeFromDebtRegister(debtAccount, amountBurnt, existingDebt);
 
         // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
         synths[sUSD].burn(burnAccount, amountBurnt);
@@ -788,7 +783,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             }
         }
 
-        (uint existingDebt, uint totalSystemValue, bool anyRateIsInvalid) =
+        (uint existingDebt, , bool anyRateIsInvalid) =
             _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(from), sUSD);
         (uint maxIssuableSynthsForAccount, bool snxRateInvalid) = _maxIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
@@ -798,7 +793,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             amount = existingDebt.sub(maxIssuableSynthsForAccount);
         }
 
-        uint amountBurnt = _burnSynths(from, from, amount, existingDebt, totalSystemValue);
+        uint amountBurnt = _burnSynths(from, from, amount, existingDebt);
 
         // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
         // Issuance ratio is fixed so should remove any liquidations
@@ -816,27 +811,23 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
     }
 
-    function _addToDebtRegister(
-        address from,
-        uint amount,
-        uint totalDebtIssued
-    ) internal {
+    function _addToDebtRegister(address from, uint amount) internal {
         ISynthetixDebtShare sds = synthetixDebtShare();
 
         // it is possible (eg in tests, system initialized with extra debt) to have issued debt without any shares issued
         // in which case, the first account to mint gets the debt. yw.
-        if (sds.totalSupply() == 0) {
+        uint debtShares = _sharesForDebt(amount);
+        if (debtShares == 0) {
             sds.mintShare(from, amount);
         } else {
-            sds.mintShare(from, _issuedSynthToDebtShares(amount, totalDebtIssued, sds.totalSupply()));
+            sds.mintShare(from, debtShares);
         }
     }
 
     function _removeFromDebtRegister(
         address from,
         uint debtToRemove,
-        uint existingDebt,
-        uint totalDebtIssued
+        uint existingDebt
     ) internal {
         ISynthetixDebtShare sds = synthetixDebtShare();
 
@@ -845,13 +836,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (debtToRemove == existingDebt) {
             sds.burnShare(from, currentDebtShare);
         } else {
-            uint balanceToRemove = _issuedSynthToDebtShares(debtToRemove, totalDebtIssued, sds.totalSupply());
-            sds.burnShare(from, balanceToRemove < currentDebtShare ? balanceToRemove : currentDebtShare);
+            uint sharesToRemove = _sharesForDebt(debtToRemove);
+            sds.burnShare(from, sharesToRemove < currentDebtShare ? sharesToRemove : currentDebtShare);
         }
     }
 
     function _verifyCircuitBreaker() internal returns (bool) {
-        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
+        (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
 
         uint deviation = _calculateDeviation(lastDebtRatio, uint(rawRatio));
