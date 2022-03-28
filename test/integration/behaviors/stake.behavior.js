@@ -3,7 +3,6 @@ const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipMinimumStakeTime } = require('../utils/skip');
-const { resumeIssuance } = require('../utils/status');
 const { createMockAggregatorFactory } = require('../../utils/index')();
 
 function itCanStake({ ctx }) {
@@ -20,15 +19,6 @@ function itCanStake({ ctx }) {
 
 			user = ctx.users.otherUser;
 			owner = ctx.users.owner;
-		});
-
-		beforeEach('resume issuance', async () => {
-			if (ctx.fork) {
-				// in case issuance is suspended in a fork, resume it
-				// (note: bootstrap should fix this - not sure why it's necessary here strictly
-				// also not sure why it's necessary as "beforeEach" rather than a single before) - JJ
-				await resumeIssuance({ ctx });
-			}
 		});
 
 		before('setup mock debt ratio aggregator', async () => {
