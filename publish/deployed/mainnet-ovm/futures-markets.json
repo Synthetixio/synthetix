@@ -93,8 +93,8 @@
 	{
 		"marketKey": "sMATIC",
 		"asset": "MATIC",
-		"takerFee": "0.003",
-		"makerFee": "0.0025",
+		"takerFee": "0.005",
+		"makerFee": "0.004",
 		"takerFeeNextPrice": "0.001",
 		"makerFeeNextPrice": "0.0",
 		"nextPriceConfirmWindow": "2",
