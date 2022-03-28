@@ -111,11 +111,15 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
         return roundId;
     }
 
+    function latestAnswer() public view returns (int256) {
+        return getAnswer(roundId);
+    }
+
     function decimals() external view returns (uint8) {
         return keyDecimals;
     }
 
-    function getAnswer(uint256 _roundId) external view returns (int256) {
+    function getAnswer(uint256 _roundId) public view returns (int256) {
         Entry memory entry = entries[_roundId];
         return entry.answer;
     }

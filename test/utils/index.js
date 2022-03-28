@@ -528,8 +528,7 @@ module.exports = ({ web3 } = {}) => {
 		return latestSolTimestamp > earliestCompiledTimestamp;
 	};
 
-	// create a factory to deploy mock price aggregators
-	const createMockAggregatorFactory = async account => {
+	const getMockAggregatorContract = () => {
 		const { compiled } = loadCompiledFiles({ buildPath });
 		const {
 			abi,
@@ -537,6 +536,12 @@ module.exports = ({ web3 } = {}) => {
 				bytecode: { object: bytecode },
 			},
 		} = compiled['MockAggregatorV2V3'];
+		return { abi, bytecode };
+	};
+
+	// create a factory to deploy mock price aggregators
+	const createMockAggregatorFactory = async account => {
+		const { abi, bytecode } = getMockAggregatorContract();
 		return new ethers.ContractFactory(abi, bytecode, account);
 	};
 
@@ -620,6 +625,7 @@ module.exports = ({ web3 } = {}) => {
 		loadLocalUsers,
 		isCompileRequired,
 		createMockAggregatorFactory,
+		getMockAggregatorContract,
 
 		setupProvider,
 		getContract,
