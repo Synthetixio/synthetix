@@ -5,8 +5,6 @@ const { connectContracts } = require('./contracts');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('./rates');
 const { ensureBalance } = require('./balances');
 const { setupOptimismWatchers, approveBridge } = require('./optimism');
-const { resumeIssuance } = require('./status');
-// const { startOpsHeartbeat } = require('./optimism-temp');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -22,8 +20,6 @@ function bootstrapL1({ ctx }) {
 		connectContracts({ ctx });
 
 		if (ctx.fork) {
-			// Temp workaround for issue for SIP-220 on a fork
-			await resumeIssuance({ ctx });
 			for (const user of Object.values(ctx.users)) {
 				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
 			}
@@ -66,12 +62,6 @@ function bootstrapL2({ ctx }) {
 		await loadUsers({ ctx });
 
 		connectContracts({ ctx });
-
-		if (ctx.fork) {
-			// Note: needs to be done after contracts connected and users loaded
-			// Temp workaround for issue for SIP-220 on a fork
-			await resumeIssuance({ ctx });
-		}
 
 		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 
