@@ -40,7 +40,7 @@
 	},
 	{
 		"marketKey": "sSOL",
-		"asset": "sSOL",
+		"asset": "SOL",
 		"takerFee": "0.005",
 		"makerFee": "0.004",
 		"takerFeeNextPrice": "0.001",
@@ -53,7 +53,7 @@
 	},
 	{
 		"marketKey": "sAVAX",
-		"asset": "sAVAX",
+		"asset": "AVAX",
 		"takerFee": "0.005",
 		"makerFee": "0.004",
 		"takerFeeNextPrice": "0.001",
@@ -66,7 +66,7 @@
 	},
 	{
 		"marketKey": "sMATIC",
-		"asset": "sMATIC",
+		"asset": "MATIC",
 		"takerFee": "0.003",
 		"makerFee": "0.0025",
 		"takerFeeNextPrice": "0.001",
@@ -79,7 +79,7 @@
 	},
 	{
 		"marketKey": "sWTI",
-		"asset": "sWTI",
+		"asset": "WTI",
 		"takerFee": "0.0025",
 		"makerFee": "0.002",
 		"takerFeeNextPrice": "0.001",
