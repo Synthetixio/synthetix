@@ -22,9 +22,13 @@ function itCanStake({ ctx }) {
 			owner = ctx.users.owner;
 		});
 
-		before('resume issuance', async () => {
-			// in case issuance is suspended in a fork, resume it
-			await resumeIssuance({ ctx });
+		beforeEach('resume issuance', async () => {
+			if (ctx.fork) {
+				// in case issuance is suspended in a fork, resume it
+				// (note: bootstrap should fix this - not sure why it's necessary here strictly
+				// also not sure why it's necessary as "beforeEach" rather than a single before) - JJ
+				await resumeIssuance({ ctx });
+			}
 		});
 
 		before('setup mock debt ratio aggregator', async () => {
