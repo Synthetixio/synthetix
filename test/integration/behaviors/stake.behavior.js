@@ -3,6 +3,7 @@ const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipMinimumStakeTime } = require('../utils/skip');
+const { resumeIssuance } = require('../utils/status');
 const { createMockAggregatorFactory } = require('../../utils/index')();
 
 function itCanStake({ ctx }) {
@@ -83,6 +84,14 @@ function itCanStake({ ctx }) {
 				before('record balances', async () => {
 					balancesUSD = await SynthsUSD.balanceOf(user.address); // 1 sUSD
 					debtsUSD = await SynthetixDebtShare.balanceOf(user.address); // 1 SDS
+				});
+
+				before('resume issuance', async () => {
+					// in case issuance is suspended in a fork, resume it
+					// (not sure why the one in bootstrap.js isn't sufficient)
+					if (ctx.fork) {
+						await resumeIssuance({ ctx });
+					}
 				});
 
 				before('issue sUSD', async () => {
@@ -183,6 +192,14 @@ function itCanStake({ ctx }) {
 				before('record balances', async () => {
 					balancesUSD = await SynthsUSD.balanceOf(user.address); // 1 sUSD
 					debtsUSD = await SynthetixDebtShare.balanceOf(user.address); // 1 SDS
+				});
+
+				before('resume issuance', async () => {
+					// in case issuance is suspended in a fork, resume it
+					// (not sure why the one in bootstrap.js isn't sufficient)
+					if (ctx.fork) {
+						await resumeIssuance({ ctx });
+					}
 				});
 
 				before('burn sUSD', async () => {
