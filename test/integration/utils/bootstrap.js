@@ -5,6 +5,8 @@ const { connectContracts } = require('./contracts');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('./rates');
 const { ensureBalance } = require('./balances');
 const { setupOptimismWatchers, approveBridge } = require('./optimism');
+const { ensureIssuance } = require('./issuance');
+
 // const { startOpsHeartbeat } = require('./optimism-temp');
 
 function bootstrapL1({ ctx }) {
@@ -18,13 +20,16 @@ function bootstrapL1({ ctx }) {
 
 		await loadUsers({ ctx });
 
+		connectContracts({ ctx });
+
 		if (ctx.fork) {
 			for (const user of Object.values(ctx.users)) {
 				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
 			}
 		}
 
-		connectContracts({ ctx });
+		// Ensure issuance is not suspended for any reason
+		await ensureIssuance({ ctx });
 
 		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 	});
@@ -63,6 +68,9 @@ function bootstrapL2({ ctx }) {
 		await loadUsers({ ctx });
 
 		connectContracts({ ctx });
+
+		// Ensure issuance is not suspended for any reason
+		await ensureIssuance({ ctx });
 
 		await increaseStalePeriodAndCheckRatesAndCache({ ctx });
 

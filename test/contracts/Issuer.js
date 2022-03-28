@@ -7,6 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts, mockToken } = require('./setup');
 
 const MockEtherWrapper = artifacts.require('MockEtherWrapper');
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 const {
 	currentTime,
@@ -14,6 +15,7 @@ const {
 	divideDecimalRound,
 	divideDecimal,
 	toUnit,
+	toPreciseUnit,
 	fastForward,
 } = require('../utils')();
 
@@ -63,7 +65,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		addressResolver,
 		synthRedeemer,
 		exchanger,
-		aggregatorDebtRatio;
+		aggregatorDebtRatio,
+		debtShares;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -87,6 +90,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
 			SynthRedeemer: synthRedeemer,
+			SynthetixDebtShare: debtShares,
 			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
@@ -109,6 +113,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'SynthRedeemer',
+				'SynthetixDebtShare',
 			],
 		}));
 
@@ -2751,6 +2756,98 @@ contract('Issuer (via Synthetix)', async accounts => {
 						it('then the user has 25 sETH remaining', async () => {
 							assert.bnEqual(await sETHContract.balanceOf(account1), toUnit('25'));
 						});
+					});
+				});
+			});
+
+			describe('debt shares integration', async () => {
+				let aggTDR;
+
+				beforeEach(async () => {
+					// create aggregator mocks
+					aggTDR = await MockAggregator.new({ from: owner });
+
+					// Set debt ratio oracle value
+					await aggTDR.setLatestAnswer(toPreciseUnit('0.4'), await currentTime());
+
+					await addressResolver.importAddresses(
+						[toBytes32('ext:AggregatorDebtRatio')],
+						[aggTDR.address],
+						{
+							from: owner,
+						}
+					);
+
+					// rebuild the resolver cache in the issuer
+					await issuer.rebuildCache();
+
+					// issue some initial debt to work with
+					await synthetix.issueSynths(toUnit('100'), { from: owner });
+
+					// send test user some snx so he can mint too
+					await synthetix.transfer(account1, toUnit('1000000'), { from: owner });
+				});
+
+				it('mints the correct number of debt shares', async () => {
+					// Issue synths
+					await synthetix.issueSynths(toUnit('100'), { from: account1 });
+					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('250')); // = 100 / 0.4
+					assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('100'));
+				});
+
+				it('burns the correct number of debt shares', async () => {
+					await synthetix.issueSynths(toUnit('300'), { from: account1 });
+					await synthetix.burnSynths(toUnit('30'), { from: account1 });
+					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // = 270 / 0.4
+					assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270'));
+				});
+
+				describe('when debt ratio changes', () => {
+					beforeEach(async () => {
+						// user mints and gets 300 susd / 0.4 = 750 debt shares
+						await synthetix.issueSynths(toUnit('300'), { from: account1 });
+
+						// Debt ratio oracle value is updated
+						await aggTDR.setLatestAnswer(toPreciseUnit('0.6'), await currentTime());
+					});
+
+					it('has adjusted debt', async () => {
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('450')); // = 750 sds * 0.6
+					});
+
+					it('mints at adjusted rate', async () => {
+						await synthetix.issueSynths(toUnit('300'), { from: account1 });
+
+						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('1250')); // = 750 (shares from before) + 300 / 0.6
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('750')); // = 450 (sUSD from before ) + 300
+					});
+				});
+
+				describe('issued synths aggregator', async () => {
+					let aggTIS;
+					beforeEach(async () => {
+						// create aggregator mocks
+						aggTIS = await MockAggregator.new({ from: owner });
+
+						// Set issued synths oracle value
+						await aggTIS.setLatestAnswer(toPreciseUnit('1234123412341234'), await currentTime());
+
+						await addressResolver.importAddresses(
+							[toBytes32('ext:AggregatorIssuedSynths')],
+							[aggTIS.address],
+							{
+								from: owner,
+							}
+						);
+					});
+
+					it('has no effect on mint or burn', async () => {
+						// user mints and gets 300 susd  / 0.4 = 750 debt shares
+						await synthetix.issueSynths(toUnit('300'), { from: account1 });
+						// user burns 30 susd / 0.4 = 75 debt shares
+						await synthetix.burnSynths(toUnit('30'), { from: account1 });
+						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // 750 - 75 sds
+						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270')); // 300 - 30 susd
 					});
 				});
 			});
