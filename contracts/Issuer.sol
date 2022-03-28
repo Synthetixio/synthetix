@@ -197,15 +197,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _sharesForDebt(uint debtAmount) internal view returns (uint) {
-        (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        int256 rawRatio = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestAnswer();
 
         return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
     }
 
     function _debtForShares(uint sharesAmount) internal view returns (uint) {
-        (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        int256 rawRatio = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestAnswer();
 
         return sharesAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
     }
@@ -683,8 +681,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function setLastDebtRatio(uint256 ratio) external onlyOwner {
-        lastDebtRatio = ratio;
+    function updateLastDebtRatio() external onlyOwner {
+        int256 rawRatio = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestAnswer();
+
+        lastDebtRatio = uint(rawRatio);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -842,8 +842,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _verifyCircuitBreaker() internal returns (bool) {
-        (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        int256 rawRatio = AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestAnswer();
 
         uint deviation = _calculateDeviation(lastDebtRatio, uint(rawRatio));
 

@@ -25,7 +25,9 @@ async function ensureIssuance({ ctx }) {
 
 		Issuer = Issuer.connect(ctx.users.owner);
 
+		// TODO - once Issuer changes in an upcoming SIP, the below should change to updateLastDebtRatio()
 		const tx = await Issuer.setLastDebtRatio(currentRatio);
+
 		await tx.wait();
 	}
 }
