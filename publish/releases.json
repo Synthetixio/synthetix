@@ -544,9 +544,25 @@
 			"released": "both"
 		},
 		{
+			"sip": 212,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 213,
 			"layer": "ovm",
 			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 217,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 220,
+			"layer": "both",
+			"sources": ["Issuer"],
 			"released": "both"
 		}
 	],
@@ -1004,22 +1020,22 @@
 		},
 		{
 			"name": "Mizar",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 65
 			},
-			"sips": []
+			"sips": [220]
 		},
 		{
 			"name": "Mizar (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 65
 			},
-			"sips": []
+			"sips": [220]
 		},
 		{
 			"name": "Nunki",

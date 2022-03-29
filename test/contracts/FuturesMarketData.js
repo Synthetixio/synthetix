@@ -150,7 +150,7 @@ contract('FuturesMarketData', accounts => {
 			const globals = await futuresMarketData.globals();
 
 			assert.bnEqual(await futuresMarketSettings.minInitialMargin(), globals.minInitialMargin);
-			assert.bnEqual(globals.minInitialMargin, toUnit('100'));
+			assert.bnEqual(globals.minInitialMargin, toUnit('40'));
 			assert.bnEqual(await futuresMarketSettings.minKeeperFee(), globals.minKeeperFee);
 			assert.bnEqual(globals.minKeeperFee, toUnit('20'));
 			assert.bnEqual(
