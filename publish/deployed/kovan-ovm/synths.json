@@ -43,5 +43,10 @@
 		"name": "sMATIC",
 		"asset": "MATIC",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sWTI",
+		"asset": "WTI",
+		"subclass": "MultiCollateralSynth"
 	}
 ]

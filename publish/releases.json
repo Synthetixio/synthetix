@@ -544,10 +544,20 @@
 			"released": "both"
 		},
 		{
+			"sip": 212,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 213,
 			"layer": "ovm",
 			"sources": [],
 			"released": "both"
+		},
+		{
+			"sip": 217,
+			"layer": "ovm",
+			"sources": []
 		},
 		{
 			"sip": 220,
@@ -1044,7 +1054,7 @@
 				"major": 2,
 				"minor": 66
 			},
-			"sips": []
+			"sips": [217, 212]
 		}
 	]
 }

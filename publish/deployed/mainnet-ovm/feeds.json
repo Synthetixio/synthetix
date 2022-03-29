@@ -38,5 +38,13 @@
 	"UNI": {
 		"asset": "UNI",
 		"feed": "0x11429eE838cC01071402f21C219870cbAc0a59A0"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0x8F7bFb42Bf7421c2b34AAD619be4654bFa7B3B8B"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0x290dd71254874f0d4356443607cb8234958DEe49"
 	}
 }

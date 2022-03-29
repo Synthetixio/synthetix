@@ -7,17 +7,17 @@ const { gray, yellow, red, cyan } = require('chalk');
 const { loadConnections } = require('../../util');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, standaloneFeeds }) => {
+module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feeds }) => {
 	const output = [];
 	const { etherscanUrl } = loadConnections({ network });
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const feeds = standaloneFeeds.concat(synths);
+	const allFeeds = Object.values(feeds).concat(synths);
 
 	let abi;
 
-	for (const { name, asset, feed } of feeds) {
+	for (const { name, asset, feed } of allFeeds) {
 		const currencyKey = name || asset; // either name of synth or asset for standalone
 		if (feed) {
 			if (!ethers.utils.isAddress(feed)) {
