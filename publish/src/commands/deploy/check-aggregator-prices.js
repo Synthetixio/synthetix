@@ -13,7 +13,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const allFeeds = feeds.concat(synths);
+	const allFeeds = Object.values(feeds).concat(synths);
 
 	let abi;
 
