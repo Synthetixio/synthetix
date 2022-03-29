@@ -366,7 +366,7 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 					// check execution would fail
 					await assert.revert(
 						futuresMarket.executeNextPriceOrder(trader, { from: trader }),
-						'Insufficient margin'
+						'Position can be liquidated'
 					);
 				});
 
@@ -489,8 +489,10 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 					// account owner
 					await assert.revert(
 						futuresMarket.executeNextPriceOrder(trader, { from: trader }),
-						'Insufficient margin'
+						'Position can be liquidated'
 					);
+					// the difference in reverts is due to difference between refund into margin
+					// in case of account owner and transfer in case of keeper
 					// keeper
 					await assert.revert(
 						futuresMarket.executeNextPriceOrder(trader, { from: trader2 }),

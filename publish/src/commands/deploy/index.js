@@ -131,8 +131,6 @@ const deploy = async ({
 		useOvm,
 	});
 
-	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
-
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
 	);
@@ -232,7 +230,7 @@ const deploy = async ({
 		network,
 		providerUrl,
 		skipFeedChecks,
-		standaloneFeeds,
+		feeds,
 		synths,
 		useFork,
 		useOvm,
@@ -379,10 +377,14 @@ const deploy = async ({
 		runStep,
 	});
 
+	// Configure all feeds as standalone in case they are being used as synth currency keys (through synth),
+	// or directly (e.g. futures). Adding just one or the other may cause issues if e.g. initially futures
+	// market exists, but later a synth is added. Or if initially both exist, but later the spot synth
+	// is removed. The standalone feed should always be added and available.
 	await configureStandalonePriceFeeds({
 		deployer,
 		runStep,
-		standaloneFeeds,
+		feeds,
 		useOvm,
 	});
 
@@ -472,7 +474,8 @@ module.exports = {
 			.description('Deploy compiled solidity files')
 			.option(
 				'-a, --add-new-synths',
-				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`
+				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`,
+				true
 			)
 			.option(
 				'-b, --build-path [value]',
