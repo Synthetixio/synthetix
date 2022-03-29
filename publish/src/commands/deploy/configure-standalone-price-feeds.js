@@ -6,13 +6,13 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
-	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
+module.exports = async ({ deployer, runStep, feeds, useOvm }) => {
+	console.log(gray(`\n------ CONFIGURE STANDALONE FEEDS ------\n`));
 
 	// Setup remaining price feeds (that aren't synths)
 	const { ExchangeRates } = deployer.deployedContracts;
 
-	for (const { asset, feed } of standaloneFeeds) {
+	for (const { asset, feed } of Object.values(feeds)) {
 		const key = asset;
 		if (isAddress(feed) && ExchangeRates) {
 			await runStep({
