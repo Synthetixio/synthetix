@@ -546,7 +546,7 @@
 		{
 			"sip": 212,
 			"layer": "ovm",
-			"sources": ["Synths.+"]
+			"sources": []
 		},
 		{
 			"sip": 213,
@@ -557,8 +557,8 @@
 		{
 			"sip": 217,
 			"layer": "ovm",
-			"sources": ["FuturesMarket.+"]
-    },
+			"sources": []
+		},
 		{
 			"sip": 220,
 			"layer": "both",
