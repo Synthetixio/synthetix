@@ -474,7 +474,8 @@ module.exports = {
 			.description('Deploy compiled solidity files')
 			.option(
 				'-a, --add-new-synths',
-				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`
+				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`,
+				true
 			)
 			.option(
 				'-b, --build-path [value]',
