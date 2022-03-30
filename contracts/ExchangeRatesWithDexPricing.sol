@@ -77,7 +77,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
         bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
-        uint dexPrice;
+        uint dexValue;
 
         if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
             // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
@@ -98,16 +98,16 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
             require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
-            dexPrice = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
+            dexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
 
-            // Derive chainlinkPriceWithBuffer from highest configured buffer between source and destination synth
+            // Derive chainlinkValueWithBuffer from highest configured buffer between source and destination synth
             uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
             uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
             uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
-            uint chainlinkPriceWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
+            uint chainlinkValueWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
             // Final value is minimum output between the price from Chainlink with a buffer and the price from Uniswap.
-            value = chainlinkPriceWithBuffer < dexPrice ? chainlinkPriceWithBuffer : dexPrice; // min
+            value = chainlinkValueWithBuffer < dexValue ? chainlinkValueWithBuffer : dexValue; // min
         }
     }
 
