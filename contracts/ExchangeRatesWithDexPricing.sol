@@ -92,7 +92,6 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         // Final value is minimum output between P_CLBUF and P_TWAP
         value = pClbufValue < pDexValue ? pClbufValue : pDexValue; // min
-        console.log("dex ", pDexValue, " | clbuf ", pClbufValue);
     }
 
     function _dexPriceDestinationValue(
