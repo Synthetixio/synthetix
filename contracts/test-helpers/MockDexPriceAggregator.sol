@@ -2,18 +2,17 @@ pragma solidity ^0.5.16;
 
 import "../interfaces/IDexPriceAggregator.sol";
 import "../interfaces/IERC20.sol";
-import "../SafeDecimalMath.sol";
 
 contract MockDexPriceAggregator is IDexPriceAggregator {
-    using SafeDecimalMath for uint;
+    uint public constant UNIT = 10**uint(18);
 
-    uint public rate;
+    mapping(address => uint) public rates;
     bool public assetToAssetShouldRevert;
 
     function assetToAsset(
         address tokenIn,
         uint amountIn,
-        address,
+        address tokenOut,
         uint
     ) external view returns (uint amountOut) {
         if (assetToAssetShouldRevert) {
@@ -21,15 +20,17 @@ contract MockDexPriceAggregator is IDexPriceAggregator {
         }
 
         uint inDecimals = IERC20(tokenIn).decimals();
+        uint outDecimals = IERC20(tokenOut).decimals();
 
-        // Output with tokenOut's decimals; assume input is given with tokenIn's decimals
-        // and rates are given with tokenOut's decimals
-        return (rate * amountIn) / 10**inDecimals;
+        uint inAmountWithRatesDecimals = (amountIn * UNIT) / 10**uint(inDecimals);
+        uint inAmountWithRatesDecimalsDollarValue = (inAmountWithRatesDecimals * rates[tokenIn]) / UNIT;
+        uint outAmountWithRatesDecimals = (inAmountWithRatesDecimalsDollarValue * UNIT) / rates[tokenOut];
+        return ((outAmountWithRatesDecimals * 10**uint(outDecimals)) / UNIT);
     }
 
-    // Rate should be specified with output token's decimals
-    function setAssetToAssetRate(uint _rate) external {
-        rate = _rate;
+    // Rate should be specified with 18 decimals
+    function setAssetToAssetRate(address _asset, uint _rate) external {
+        rates[_asset] = _rate;
     }
 
     function setAssetToAssetShouldRevert(bool _shouldRevert) external {
