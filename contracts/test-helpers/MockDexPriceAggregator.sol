@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 import "../interfaces/IDexPriceAggregator.sol";
 import "../interfaces/IERC20.sol";
+import "hardhat/console.sol";
 
 contract MockDexPriceAggregator is IDexPriceAggregator {
     uint public constant UNIT = 10**uint(18);
@@ -21,10 +22,14 @@ contract MockDexPriceAggregator is IDexPriceAggregator {
 
         uint inDecimals = IERC20(tokenIn).decimals();
         uint outDecimals = IERC20(tokenOut).decimals();
-
         uint inAmountWithRatesDecimals = (amountIn * UNIT) / 10**uint(inDecimals);
         uint inAmountWithRatesDecimalsDollarValue = (inAmountWithRatesDecimals * rates[tokenIn]) / UNIT;
-        uint outAmountWithRatesDecimals = (inAmountWithRatesDecimalsDollarValue * UNIT) / rates[tokenOut];
+        uint outAmountWithRatesDecimals;
+        if (UNIT < rates[tokenOut]) {
+            outAmountWithRatesDecimals = (inAmountWithRatesDecimalsDollarValue * UNIT) / rates[tokenOut];
+        } else {
+            outAmountWithRatesDecimals = (inAmountWithRatesDecimalsDollarValue * rates[tokenOut]) / UNIT;
+        }
         return ((outAmountWithRatesDecimals * 10**uint(outDecimals)) / UNIT);
     }
 
