@@ -1020,5 +1020,55 @@
 				"keccak256": "0x00c5cf07e218bc3f61f97e3c7df177ea99ccc72ae09cb5bff195be9c48dea2b9"
 			}
 		}
+	},
+	"v2.66.0": {
+		"tag": "v2.66.0",
+		"fulltag": "v2.66.0",
+		"release": "Nunki",
+		"network": "mainnet",
+		"date": "2022-03-31T18:56:43-04:00",
+		"commit": "a32bae6f43c4017843d5af6e1b2edacb841f95a7",
+		"contracts": {
+			"FuturesMarketSOL": {
+				"address": "0xcF853f7f8F78B2B801095b66F8ba9c5f04dB1640",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketAVAX": {
+				"address": "0x4ff54624D5FB61C34c634c3314Ed3BfE4dBB665a",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketAAVE": {
+				"address": "0x001b7876F567f0b3A639332Ed1e363839c6d85e2",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketUNI": {
+				"address": "0x5Af0072617F7f2AEB0e314e2faD1DE0231Ba97cD",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketMATIC": {
+				"address": "0xbCB2D435045E16B059b2130b28BE70b5cA47bFE5",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketXAU": {
+				"address": "0x4434f56ddBdE28fab08C4AE71970a06B300F8881",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketXAG": {
+				"address": "0xb147C69BEe211F57290a6cde9d1BAbfD0DCF3Ea3",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			},
+			"FuturesMarketEUR": {
+				"address": "0xad44873632840144fFC97b2D1de716f6E2cF0366",
+				"status": "current",
+				"keccak256": "0xab2585c72044f8a42b8cb46cc80ba7978bb81b9ad9539f44438c4f3306ddfb41"
+			}
+		}
 	}
 }
