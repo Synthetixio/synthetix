@@ -105,7 +105,6 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         uint twapWindow = getAtomicTwapWindow();
         require(twapWindow != 0, "Uninitialized atomic twap window");
-
         uint twapValueInEquivalent =
             dexPriceAggregator().assetToAsset(
                 address(sourceEquivalent),
