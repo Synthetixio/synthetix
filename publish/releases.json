@@ -557,7 +557,8 @@
 		{
 			"sip": 217,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 220,
@@ -1038,23 +1039,14 @@
 			"sips": [220]
 		},
 		{
-			"name": "Nunki",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 66
-			},
-			"sips": []
-		},
-		{
 			"name": "Nunki (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 66
 			},
-			"sips": []
+			"sips": [217]
 		}
 	]
 }

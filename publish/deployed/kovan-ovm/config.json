@@ -244,5 +244,26 @@
 	},
 	"FuturesMarketLINK": {
 		"deploy": false
+	},
+	"FuturesMarketSOL": {
+		"deploy": false
+	},
+	"FuturesMarketAVAX": {
+		"deploy": false
+	},
+	"FuturesMarketMATIC": {
+		"deploy": false
+	},
+	"FuturesMarketWTI": {
+		"deploy": false
+	},
+	"TokenStatesWTI": {
+		"deploy": false
+	},
+	"ProxysWTI": {
+		"deploy": false
+	},
+	"SynthsWTI": {
+		"deploy": false
 	}
 }
