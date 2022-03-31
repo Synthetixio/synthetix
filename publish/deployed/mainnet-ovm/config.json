@@ -259,5 +259,29 @@
 	},
 	"SynthsUNI": {
 		"deploy": false
+	},
+	"FuturesMarketSOL": {
+		"deploy": false
+	},
+	"FuturesMarketAVAX": {
+		"deploy": false
+	},
+	"FuturesMarketAAVE": {
+		"deploy": false
+	},
+	"FuturesMarketUNI": {
+		"deploy": false
+	},
+	"FuturesMarketMATIC": {
+		"deploy": false
+	},
+	"FuturesMarketXAU": {
+		"deploy": false
+	},
+	"FuturesMarketXAG": {
+		"deploy": false
+	},
+	"FuturesMarketEUR": {
+		"deploy": false
 	}
 }
