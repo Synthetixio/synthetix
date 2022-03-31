@@ -595,7 +595,6 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		6: 'Index Rebalance',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
-		100: 'Futures Market Prerelease',
 		99999: 'Emergency',
 	};
 
