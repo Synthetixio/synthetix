@@ -34,5 +34,9 @@
 	"MATIC": {
 		"asset": "MATIC",
 		"feed": "0x62FD93Fc58D94eE253542ECD5C23467F65dCdB73"
+	},
+	"WTI": {
+		"asset": "WTI",
+		"feed": "0x282C4BD8A0A9eb8EcfC61eB0A8eE7290D5060fBB"
 	}
 }

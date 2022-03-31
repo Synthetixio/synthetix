@@ -144,6 +144,9 @@ contract('FuturesMarket', accounts => {
 		// it will be enabled for specific tests
 		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
+		// tests assume 100, but in actual deployment is different
+		await futuresMarketSettings.setMinInitialMargin(minInitialMargin, { from: owner });
+
 		// Issue the trader some sUSD
 		for (const t of [trader, trader2, trader3]) {
 			await sUSD.issue(t, traderInitialBalance);
