@@ -1703,8 +1703,8 @@ contract('Exchange Rates', async accounts => {
 					const amountIn6 = convertToDecimals(1000, 6); // in input token's decimals
 
 					beforeEach('set up rates', async () => {
-						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, rateIn6);
-						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, rateIn8); // mock requires rate to be in output's decimals
+						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit(1));
+						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, toUnit(rate));
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
 						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
