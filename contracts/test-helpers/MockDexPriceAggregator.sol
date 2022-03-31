@@ -5,7 +5,7 @@ import "../interfaces/IERC20.sol";
 import "../SafeDecimalMath.sol";
 
 contract MockDexPriceAggregator is IDexPriceAggregator {
-    using SafeDecimalMath for uint;
+    uint public constant UNIT = 10**uint(18);
 
     mapping(address => uint) public rates;
     bool public assetToAssetShouldRevert;
@@ -22,11 +22,18 @@ contract MockDexPriceAggregator is IDexPriceAggregator {
 
         uint inDecimals = IERC20(tokenIn).decimals();
         uint outDecimals = IERC20(tokenOut).decimals();
-
-        return ((rates[tokenIn] * (amountIn)) / (rates[tokenOut]) / 10**inDecimals) * 10**outDecimals;
+        uint inAmountWithRatesDecimals = (amountIn * UNIT) / 10**uint(inDecimals);
+        uint inAmountWithRatesDecimalsDollarValue = (inAmountWithRatesDecimals * rates[tokenIn]) / UNIT;
+        uint outAmountWithRatesDecimals;
+        if (UNIT < rates[tokenOut]) {
+            outAmountWithRatesDecimals = (inAmountWithRatesDecimalsDollarValue * UNIT) / rates[tokenOut];
+        } else {
+            outAmountWithRatesDecimals = (inAmountWithRatesDecimalsDollarValue * rates[tokenOut]) / UNIT;
+        }
+        return ((outAmountWithRatesDecimals * 10**uint(outDecimals)) / UNIT);
     }
 
-    // Rate should be specified with output token's decimals
+    // Rate should be specified with 18 decimals
     function setAssetToAssetRate(address _asset, uint _rate) external {
         rates[_asset] = _rate;
     }
