@@ -13,7 +13,7 @@ module.exports = async ({
 	network,
 	useOvm,
 }) => {
-	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+	const { ReadProxyAddressResolver, SystemStatus } = deployer.deployedContracts;
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -51,6 +51,7 @@ module.exports = async ({
 	});
 
 	const deployedFuturesMarkets = [];
+	const marketKeysFromAddress = {};
 
 	for (const marketConfig of futuresMarkets) {
 		const baseAsset = toBytes32(marketConfig.asset);
@@ -65,6 +66,7 @@ module.exports = async ({
 
 		if (futuresMarket) {
 			deployedFuturesMarkets.push(addressOf(futuresMarket));
+			marketKeysFromAddress[addressOf(futuresMarket)] = marketKey;
 		}
 	}
 
@@ -106,6 +108,15 @@ module.exports = async ({
 				write: 'addMarkets',
 				writeArg: [toAdd],
 				gasLimit: 150e3 * toAdd.length, // extra gas per market
+			});
+
+			// Set markets as paused initially
+			await runStep({
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				write: 'suspendFuturesMarkets',
+				writeArg: [toAdd.map(address => marketKeysFromAddress[address]), 100],
+				comment: 'Ensure the newly deployed futures market is paused for prerelease.',
 			});
 		}
 	}
