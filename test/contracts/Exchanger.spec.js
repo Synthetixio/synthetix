@@ -2882,6 +2882,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								amountIn,
 								sETH,
 								atomicTrackingCode,
+								0,
 								{
 									from: account1,
 								}
@@ -2980,7 +2981,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						beforeEach(async () => {
-							await synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), {
+							await synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), 0, {
 								from: account1,
 							});
 
@@ -3003,7 +3004,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('when a user exchanges without a tracking code', () => {
 						let txn;
 						beforeEach(async () => {
-							txn = await synthetix.exchangeAtomically(sUSD, toUnit('10'), sETH, toBytes32(), {
+							txn = await synthetix.exchangeAtomically(sUSD, toUnit('10'), sETH, toBytes32(), 0, {
 								from: account1,
 							});
 						});
@@ -3114,7 +3115,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							exchangeFeeRate,
 							fee: amountFee,
 						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC));
-						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), {
+						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), 0, {
 							from: account1,
 						});
 					});
@@ -3148,7 +3149,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							exchangeFeeRate,
 							fee: amountFee,
 						} = await exchanger.getAmountsForAtomicExchange(amountIn, sBTC, sEUR));
-						await synthetix.exchangeAtomically(sBTC, amountIn, sEUR, toBytes32(), {
+						await synthetix.exchangeAtomically(sBTC, amountIn, sEUR, toBytes32(), 0, {
 							from: account1,
 						});
 					});
@@ -3182,7 +3183,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							exchangeFeeRate,
 							fee: amountFee,
 						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sAUD));
-						await synthetix.exchangeAtomically(sEUR, amountIn, sAUD, toBytes32(), {
+						await synthetix.exchangeAtomically(sEUR, amountIn, sAUD, toBytes32(), 0, {
 							from: account1,
 						});
 					});
@@ -3212,7 +3213,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		describe('it cannot exchange atomically', () => {
 			it('errors with not implemented when attempted to exchange', async () => {
 				await assert.revert(
-					synthetix.exchangeAtomically(sUSD, amountIssued, sETH, toBytes32(), {
+					synthetix.exchangeAtomically(sUSD, amountIssued, sETH, toBytes32(), 0, {
 						from: account1,
 					}),
 					'Cannot be run on this layer'
