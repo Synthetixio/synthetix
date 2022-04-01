@@ -1047,6 +1047,108 @@
 				"minor": 66
 			},
 			"sips": [217]
+		},
+		{
+			"name": "Menkent",
+			"version": {
+				"major": 2,
+				"minor": 67
+			},
+			"sips": []
+		},
+		{
+			"name": "Menkent (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 67
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirach",
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": []
+		},
+		{
+			"name": "Alpheratz",
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": []
+		},
+		{
+			"name": "Alpheratz (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": []
+		},
+		{
+			"name": "Rasalhague",
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": []
+		},
+		{
+			"name": "Rasalhague (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": []
+		},
+		{
+			"name": "Kochab",
+			"version": {
+				"major": 2,
+				"minor": 71
+			},
+			"sips": []
+		},
+		{
+			"name": "Kochab (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 71
+			},
+			"sips": []
+		},
+		{
+			"name": "Saiph",
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": []
+		},
+		{
+			"name": "Saiph (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": []
 		}
 	]
 }
