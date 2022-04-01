@@ -14,6 +14,7 @@ const {
 const { divideDecimal, multiplyDecimal, toUnit } = require('../utils')();
 
 const { getUsers, toBytes32 } = require('../..');
+const { toDecimal } = require('web3-utils');
 
 const { toBN } = web3.utils;
 
@@ -371,6 +372,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 						destinationAddress = owner,
 						trackingCode = toBytes32(),
 						asSynthetix = true,
+						minAmount = toDecimal(0),
 					} = {}) => {
 						const args = [
 							from,
@@ -379,6 +381,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							destinationCurrencyKey,
 							destinationAddress,
 							trackingCode,
+							minAmount,
 						];
 
 						return asSynthetix ? callAsSynthetix(args) : args;
