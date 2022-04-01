@@ -1233,7 +1233,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-														'but less than the total initially',
+													'but less than the total initially',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1270,7 +1270,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-														'and more than the total initially and the exchangefee rate changed',
+													'and more than the total initially and the exchangefee rate changed',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1840,7 +1840,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														);
 													}
 												});
-												it('then all succeed', () => {});
+												it('then all succeed', () => { });
 												it('when one more is tried, then if fails', async () => {
 													await assert.revert(
 														synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
@@ -2830,6 +2830,33 @@ contract('Exchanger (spec tests)', async accounts => {
 							toUnit('1')
 						);
 						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
+					});
+
+					describe('when a user sets a minimum amount', () => {
+						const amountIn = toUnit('100');
+
+						it('reverts when the received amount is too low', async () => {
+							await assert.revert(
+								synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), toUnit('.498'), {
+									from: account1,
+								}),
+								'The amount received is below the minimum amount specified.'
+							);
+						});
+
+						it('succeeds when the received amount is equal to the minimum amount', async () => {
+							await synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), toUnit('.4975'), {
+								from: account1,
+							});
+
+							let amountReceived
+							({
+								amountReceived
+							} = await exchanger.getAmountsForAtomicExchange(amountIn, sUSD, sETH));
+
+							assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
+							assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+						});
 					});
 
 					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {

@@ -105,7 +105,8 @@ contract Synthetix is BaseSynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        bytes32 trackingCode
+        bytes32 trackingCode,
+        uint minAmount
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         return
             exchanger().exchangeAtomically(
@@ -114,7 +115,8 @@ contract Synthetix is BaseSynthetix {
                 sourceAmount,
                 destinationCurrencyKey,
                 messageSender,
-                trackingCode
+                trackingCode,
+                minAmount
             );
     }
 

@@ -86,7 +86,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
-        bytes32 trackingCode
+        bytes32 trackingCode,
+        uint minAmount
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
@@ -96,6 +97,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             destinationCurrencyKey,
             destinationAddress
         );
+
+        require(amountReceived >= minAmount, "The amount received is below the minimum amount specified.");
 
         _processTradingRewards(fee, destinationAddress);
 
