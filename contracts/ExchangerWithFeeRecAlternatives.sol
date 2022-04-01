@@ -276,7 +276,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint baseRate = getAtomicExchangeFeeRate(destinationCurrencyKey);
         if (baseRate == 0) {
             // If no atomic rate was set, fallback to the regular exchange rate
-            baseRate = getExchangeFeeRate(destinationCurrencyKey);
+            baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
         }
 
         return baseRate;
