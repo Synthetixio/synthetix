@@ -1530,11 +1530,11 @@ contract('Exchanger (spec tests)', async accounts => {
 														});
 													});
 
-													// The user has 49.5 sEUR and has a rebate of 49.5 - so 99 after settlement
+													// The user has 49 sEUR and has a rebate of 49 - so 98 after settlement
 													describe('when an exchange out of sEUR for their expected balance before exchange', () => {
 														let txn;
 														beforeEach(async () => {
-															txn = await synthetix.exchange(sEUR, toUnit('49.5'), sBTC, {
+															txn = await synthetix.exchange(sEUR, toUnit('49'), sBTC, {
 																from: account1,
 															});
 														});
@@ -2036,7 +2036,8 @@ contract('Exchanger (spec tests)', async accounts => {
 						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
 						assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
 
-						assert.bnEqual(feeRate, exchangeFeeRate);
+						// Double the exchange fee rate (once for sUSD, once for sAUD)
+						assert.bnEqual(feeRate, exchangeFeeRate.add(exchangeFeeRate));
 					});
 
 					it('should emit a SynthExchange event @gasprofile', async () => {
