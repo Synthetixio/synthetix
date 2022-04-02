@@ -800,6 +800,78 @@
 			"timestamp": "2022-03-17T21:03:50.354Z",
 			"txn": "",
 			"network": "mainnet"
+		},
+		"FuturesMarketSOL": {
+			"name": "FuturesMarketSOL",
+			"address": "0xcF853f7f8F78B2B801095b66F8ba9c5f04dB1640",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0xcF853f7f8F78B2B801095b66F8ba9c5f04dB1640",
+			"timestamp": "2022-03-31T21:40:21.239Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketAVAX": {
+			"name": "FuturesMarketAVAX",
+			"address": "0x4ff54624D5FB61C34c634c3314Ed3BfE4dBB665a",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0x4ff54624D5FB61C34c634c3314Ed3BfE4dBB665a",
+			"timestamp": "2022-03-31T21:40:31.052Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketAAVE": {
+			"name": "FuturesMarketAAVE",
+			"address": "0x001b7876F567f0b3A639332Ed1e363839c6d85e2",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0x001b7876F567f0b3A639332Ed1e363839c6d85e2",
+			"timestamp": "2022-03-31T21:41:02.246Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketUNI": {
+			"name": "FuturesMarketUNI",
+			"address": "0x5Af0072617F7f2AEB0e314e2faD1DE0231Ba97cD",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0x5Af0072617F7f2AEB0e314e2faD1DE0231Ba97cD",
+			"timestamp": "2022-03-31T21:41:08.678Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketMATIC": {
+			"name": "FuturesMarketMATIC",
+			"address": "0xbCB2D435045E16B059b2130b28BE70b5cA47bFE5",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0xbCB2D435045E16B059b2130b28BE70b5cA47bFE5",
+			"timestamp": "2022-03-31T21:41:17.899Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketXAU": {
+			"name": "FuturesMarketXAU",
+			"address": "0x4434f56ddBdE28fab08C4AE71970a06B300F8881",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0x4434f56ddBdE28fab08C4AE71970a06B300F8881",
+			"timestamp": "2022-03-31T21:41:27.240Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketXAG": {
+			"name": "FuturesMarketXAG",
+			"address": "0xb147C69BEe211F57290a6cde9d1BAbfD0DCF3Ea3",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0xb147C69BEe211F57290a6cde9d1BAbfD0DCF3Ea3",
+			"timestamp": "2022-03-31T21:41:32.694Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"FuturesMarketEUR": {
+			"name": "FuturesMarketEUR",
+			"address": "0xad44873632840144fFC97b2D1de716f6E2cF0366",
+			"source": "FuturesMarket",
+			"link": "https://explorer.optimism.io/address/0xad44873632840144fFC97b2D1de716f6E2cF0366",
+			"timestamp": "2022-03-31T21:41:42.093Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
