@@ -461,22 +461,27 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	const itCalculatesFeeRateForExchange = () => {
 		describe('Given exchangeFeeRates are configured and when calling feeRateForExchange()', () => {
-			it('for two long synths, returns the regular exchange fee', async () => {
+			it('for two long synths, returns double the regular exchange fee', async () => {
 				const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
-				assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+				assert.bnEqual(
+					actualFeeRate,
+					exchangeFeeRate.mul(toBN('2')),
+					'Rate must be the exchange fee rate'
+				);
 			});
 		});
 	};
 
 	const itCalculatesFeeRateForExchange2 = () => {
 		describe('given exchange fee rates are configured into categories', () => {
+			const bipsUSD = toUnit('0');
 			const bipsFX = toUnit('0.01');
 			const bipsCrypto = toUnit('0.02');
 			const bipsInverse = toUnit('0.03');
 			beforeEach(async () => {
 				await systemSettings.setExchangeFeeRateForSynths(
-					[sAUD, sEUR, sETH, sBTC, iBTC],
-					[bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
+					[sUSD, sAUD, sEUR, sETH, sBTC, iBTC],
+					[bipsUSD, bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
 					{
 						from: owner,
 					}
@@ -708,9 +713,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							const expectedDynamicFee = toUnit(0.02)
 								.sub(threshold)
 								.mul(toBN(2));
+
 							assert.bnEqual(
 								await exchanger.feeRateForExchange(sBTC, sETH),
-								bipsCrypto.add(expectedDynamicFee)
+								bipsCrypto.add(bipsCrypto).add(expectedDynamicFee)
 							);
 							assert.deepEqual(await exchanger.dynamicFeeRateForExchange(sBTC, sETH), [
 								expectedDynamicFee,
@@ -719,7 +725,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							// reverse direction is the same
 							assert.bnEqual(
 								await exchanger.feeRateForExchange(sETH, sBTC),
-								bipsCrypto.add(expectedDynamicFee)
+								bipsCrypto.add(bipsCrypto).add(expectedDynamicFee)
 							);
 							assert.deepEqual(await exchanger.dynamicFeeRateForExchange(sETH, sBTC), [
 								expectedDynamicFee,
@@ -846,7 +852,13 @@ contract('Exchanger (spec tests)', async accounts => {
 	};
 
 	const amountAfterExchangeFee = ({ amount }) => {
-		return multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate));
+		// exchange fee is applied twice, because we assume it is the same one used for both synths in the exchange
+		return multiplyDecimal(
+			amount,
+			toUnit('1')
+				.sub(exchangeFeeRate)
+				.sub(exchangeFeeRate)
+		);
 	};
 
 	const calculateExpectedSettlementAmount = ({ amount, oldRate, newRate }) => {
