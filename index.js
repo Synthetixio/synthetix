@@ -438,7 +438,11 @@ const getFuturesMarkets = ({
 	if (!fs.existsSync(pathToFuturesMarketsList)) {
 		return [];
 	}
-	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
+	const futuresMarkets = JSON.parse(fs.readFileSync(pathToFuturesMarketsList)) || [];
+	return futuresMarkets.map(futuresMarket => {
+		// mixin the asset details
+		return Object.assign({}, assets[futuresMarket.asset], futuresMarket);
+	});
 };
 
 /**
