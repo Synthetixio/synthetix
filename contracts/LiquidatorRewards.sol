@@ -18,19 +18,18 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetix.sol";
 
-/// @title Upgrade Liquidation Mechanism V2 (SIP-148)
-/// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15.
+/// @title Liquidator Rewards (SIP-148)
+/// @notice This contract holds SNX from liquidated positions.
+/// @dev SNX stakers may claim their rewards based on their share of the debt pool.
 contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
-    uint256 public accumulatedRewards;
-    uint256 public rewardPerTokenStored;
-    uint256 public lastUpdateTime;
+    uint256 public rewardPerShareStored;
 
-    mapping(address => uint256) public userRewardPerTokenPaid;
+    mapping(address => uint256) public userRewardPerSharePaid;
     mapping(address => uint256) public rewards;
 
     bytes32 public constant CONTRACT_NAME = "LiquidatorRewards";
@@ -80,18 +79,19 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
-    function rewardPerToken() public view returns (uint256) {
-        uint supply = synthetixDebtShare().totalSupply();
-        if (supply == 0) {
-            return rewardPerTokenStored;
+    function rewardPerShare() public view returns (uint256) {
+        (, uint sharesSupply, ) = issuer().allNetworksDebtInfo();
+
+        if (sharesSupply == 0) {
+            return 0;
         }
 
-        return rewardPerTokenStored.add(lastUpdateTime.mul(accumulatedRewards).div(supply));
+        return (IERC20(address(synthetix())).balanceOf(address(this))).div(sharesSupply);
     }
 
     function earned(address account) public view returns (uint256) {
         return
-            synthetixDebtShare().balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(
+            synthetixDebtShare().balanceOf(account).mul(rewardPerShare().sub(userRewardPerSharePaid[account])).div(1e18).add(
                 rewards[account]
             );
     }
@@ -108,45 +108,18 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         }
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
-
-    /// @notice This is called only to update when a given account's debt share balance changes.
-    function notifyDebtChange(address account) external onlyIssuer updateReward(account) {}
-
-    /// @notice This is called only after an account is liquidated and the SNX rewards are sent to this contract.
-    function notifyRewardAmount(uint256 reward) external onlySynthetix {
-        lastUpdateTime = block.timestamp;
-        accumulatedRewards = accumulatedRewards.add(reward);
-        rewardPerTokenStored = rewardPerToken();
-        emit RewardAdded(reward);
-    }
-
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
-        lastUpdateTime = block.timestamp;
-        rewardPerTokenStored = rewardPerToken();
+        rewardPerShareStored = rewardPerShare();
         if (account != address(0)) {
             rewards[account] = earned(account);
-            userRewardPerTokenPaid[account] = rewardPerTokenStored;
+            userRewardPerSharePaid[account] = rewardPerShareStored;
         }
-        _;
-    }
-
-    modifier onlyIssuer {
-        bool isIssuer = msg.sender == address(issuer());
-        require(isIssuer, "Issuer only");
-        _;
-    }
-
-    modifier onlySynthetix {
-        bool isSynthetix = msg.sender == address(synthetix());
-        require(isSynthetix, "Synthetix only");
         _;
     }
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(uint256 reward);
     event RewardPaid(address indexed user, uint256 reward);
 }

@@ -5,13 +5,9 @@ interface ILiquidatorRewards {
 
     function earned(address account) external view returns (uint256);
 
-    function rewardPerToken() external view returns (uint256);
+    function rewardPerShare() external view returns (uint256);
 
     // Mutative
 
     function getReward() external;
-
-    function notifyDebtChange(address account) external;
-
-    function notifyRewardAmount(uint256 reward) external;
 }
