@@ -48,15 +48,5 @@
 		"name": "sUNI",
 		"asset": "UNI",
 		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sXAU",
-		"asset": "XAU",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sXAG",
-		"asset": "XAG",
-		"subclass": "MultiCollateralSynth"
 	}
 ]
