@@ -41,8 +41,8 @@ function itCanLiquidate({ ctx }) {
 			await SystemSettings.setLiquidationRatio(ethers.utils.parseEther('0.5')); // 200% c-ratio
 			await SystemSettings.setLiquidationPenalty(ethers.utils.parseEther('0.3')); // 30% penalty
 			await SystemSettings.setSelfLiquidationPenalty(ethers.utils.parseEther('0.2')); // 20% penalty
-			await SystemSettings.setFlagReward(ethers.utils.parseEther('10')); // 10 SNX
-			await SystemSettings.setLiquidateReward(ethers.utils.parseEther('20')); // 20 SNX
+			await SystemSettings.setFlagReward(ethers.utils.parseEther('1')); // 1 SNX
+			await SystemSettings.setLiquidateReward(ethers.utils.parseEther('2')); // 2 SNX
 		});
 
 		before('ensure user4 has SNX', async () => {
@@ -50,7 +50,7 @@ function itCanLiquidate({ ctx }) {
 				ctx,
 				symbol: 'SNX',
 				user: user4,
-				balance: ethers.utils.parseEther('100'),
+				balance: ethers.utils.parseEther('800'),
 			});
 		});
 
@@ -59,7 +59,7 @@ function itCanLiquidate({ ctx }) {
 			await addAggregatorAndSetRate({
 				ctx,
 				currencyKey: toBytes32('SNX'),
-				rate: '1000000000000000000',
+				rate: '6000000000000000000',
 			});
 		});
 
@@ -68,7 +68,7 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		it('cannot be liquidated at this point', async () => {
-			assert.equal(await Liquidator.isForcedLiquidationOpen(user4.address), false);
+			assert.equal(await Liquidator.isLiquidationOpen(user4.address, false), false);
 		});
 
 		describe('getting marked', () => {
@@ -76,7 +76,7 @@ function itCanLiquidate({ ctx }) {
 				await addAggregatorAndSetRate({
 					ctx,
 					currencyKey: toBytes32('SNX'),
-					rate: '200000000000000000',
+					rate: '100000000000000000',
 				});
 			});
 
@@ -93,7 +93,7 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			it('still not open for liquidation', async () => {
-				assert.equal(await Liquidator.isForcedLiquidationOpen(user4.address), false);
+				assert.equal(await Liquidator.isLiquidationOpen(user4.address, false), false);
 			});
 
 			it('deadline has not passed yet', async () => {
@@ -120,10 +120,7 @@ function itCanLiquidate({ ctx }) {
 						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(user6.address);
 						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(Liquidator.address);
 
-						await Synthetix.connect(user6).liquidateDelinquentAccount(
-							user4.address,
-							ethers.utils.parseEther('100')
-						);
+						await Synthetix.connect(user6).liquidateDelinquentAccount(user4.address);
 					});
 
 					it('reduces the debt share balance of the liquidated', async () => {

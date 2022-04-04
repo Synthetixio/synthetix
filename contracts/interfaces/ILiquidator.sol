@@ -24,9 +24,7 @@ interface ILiquidator {
 
     function getLiquidationCallerForAccount(address account) external view returns (address);
 
-    function isForcedLiquidationOpen(address account) external view returns (bool);
-
-    function isSelfLiquidationOpen(address account) external view returns (bool);
+    function isLiquidationOpen(address account, bool isSelfLiquidation) external view returns (bool);
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool);
 

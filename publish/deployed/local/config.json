@@ -77,9 +77,6 @@
 	"Issuer": {
 		"deploy": true
 	},
-	"EternalStorageLiquidator": {
-		"deploy": true
-	},
 	"Liquidator": {
 		"deploy": true
 	},

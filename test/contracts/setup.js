@@ -502,11 +502,6 @@ const setupContract = async ({
 				from: owner,
 			});
 		},
-		async Liquidator() {
-			await cache['EternalStorageLiquidator'].setAssociatedContract(instance.address, {
-				from: owner,
-			});
-		},
 		async Exchanger() {
 			await Promise.all([
 				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),

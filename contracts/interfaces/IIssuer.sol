@@ -5,6 +5,16 @@ import "../interfaces/ISynth.sol";
 // https://docs.synthetix.io/contracts/source/interfaces/iissuer
 interface IIssuer {
     // Views
+
+    function allNetworksDebtInfo()
+        external
+        view
+        returns (
+            uint256 debt,
+            uint256 sharesSupply,
+            bool isStale
+        );
+
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
@@ -89,12 +99,7 @@ interface IIssuer {
 
     function setCurrentPeriodId(uint128 periodId) external;
 
-    function liquidateDelinquentAccount(
-        address delinquentAccount,
-        uint susdAmount,
-        address liquidatorAccount
-    ) external returns (uint totalRedeemed, uint amountToLiquidate);
-
-    // Used to self-liquidate an account back to the target c-ratio (issuanceRatio).
-    function selfLiquidateAccount(address account) external returns (uint totalRedeemed, uint amountToLiquidate);
+    function liquidateAccount(address account, bool isSelfLiquidation)
+        external
+        returns (uint totalRedeemed, uint amountToLiquidate);
 }

@@ -313,14 +313,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @notice Liquidate an account and distribute the redeemed SNX rewards.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (e.g. due to escrowed balance)
-    function liquidateDelinquentAccount(address account, uint susdAmount)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        (uint totalRedeemed, uint amountLiquidated) =
-            issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
+    function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, false);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
@@ -340,16 +334,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bool remainingRewardTransferSucceedeed = _transferByProxy(account, address(liquidatorRewards()), remainingReward);
         require(remainingRewardTransferSucceedeed, "Remaining rewards transfer did not succeed");
 
-        // Inform the LiquidatorRewards contract about the redeemed SNX rewards.
-        liquidatorRewards().notifyRewardAmount(remainingReward);
-
         return remainingRewardTransferSucceedeed;
     }
 
-    function selfLiquidateAccount(address account) external systemActive optionalProxy returns (bool) {
-        require(account == messageSender, "Only the account owner can self liquidate");
+    function liquidateSelf(address account) external systemActive optionalProxy returns (bool) {
+        require(account == messageSender, "Only the account owner can liquidate itself");
 
-        (uint totalRedeemed, uint amountLiquidated) = issuer().selfLiquidateAccount(account);
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, true);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 
@@ -357,9 +348,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
         bool success = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
         require(success, "Transfer did not succeed");
-
-        // Inform the LiquidatorRewards contract about the freshly redeemed SNX rewards.
-        liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;
     }

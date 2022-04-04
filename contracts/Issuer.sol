@@ -358,6 +358,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             balance = balance.add(rewardEscrowV2().balanceOf(account));
         }
 
+        if (address(liquidatorRewards()) != address(0)) {
+            balance = balance.add(liquidatorRewards().earned(account));
+        }
+
         return balance;
     }
 
@@ -623,106 +627,59 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
     }
 
-    function liquidateDelinquentAccount(
-        address delinquentAccount,
-        uint susdAmount,
-        address liquidatorAccount
-    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidatorAccount, sUSD), "sUSD needs to be settled");
-
-        // Check if account is eligible for forced liquidation
-        require(liquidator().isForcedLiquidationOpen(delinquentAccount), "Account not open for liquidation");
-
-        // Get the penalty for forced liquidation
-        uint liquidationPenalty = liquidator().liquidationPenalty();
-
-        // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
-            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(delinquentAccount), sUSD);
-        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
-        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
-
-        // Get the amount of SNX collateral and calculate amount to fix c-ratio
-        uint collateralForAccount = _collateral(delinquentAccount);
-        uint amountToFixRatio =
-            liquidator().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate), false);
-
-        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
-        amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
-
-        // what's the equivalent amount of snx for the amountToLiquidate?
-        uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
-
-        // Add penalty
-        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-
-        // if total SNX to redeem is greater than account's collateral
-        // account is under collateralised, liquidate all collateral and reduce sUSD to burn
-        if (totalRedeemed > collateralForAccount) {
-            // set totalRedeemed to all transferable collateral
-            totalRedeemed = collateralForAccount;
-
-            // whats the equivalent sUSD to burn for all collateral less penalty
-            amountToLiquidate = _snxToUSD(
-                collateralForAccount.divideDecimal(SafeDecimalMath.unit().sub(liquidationPenalty)),
-                snxRate
-            );
-        }
-
-        // Reduce debt share of delinquent account by the amount to liquidate.
-        _removeFromDebtRegister(delinquentAccount, amountToLiquidate, debtBalance);
-
-        // Remove liquidation flag if amount liquidated fixes ratio
-        if (amountToLiquidate == amountToFixRatio) {
-            // Remove liquidation
-            liquidator().removeAccountInLiquidation(delinquentAccount);
-        }
-    }
-
-    function selfLiquidateAccount(address account)
+    function liquidateAccount(address account, bool isSelfLiquidation)
         external
         onlySynthetix
         returns (uint totalRedeemed, uint amountToLiquidate)
     {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(account, sUSD), "sUSD needs to be settled");
+        require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
-        // Check if account is eligible for self liquidation
-        require(liquidator().isSelfLiquidationOpen(account), "Account not open for self liquidation");
+        // Get the penalty for the liquidation type
+        uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getLiquidationPenalty();
 
-        // Get the debt share balance for the account
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) =
+        // Get the account's debt balance
+        (uint debtBalance, , bool anyRateIsInvalid) =
             _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
+
+        // Get the SNX rate
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
-        // Get the amount of SNX collateral and calculate amount to fix c-ratio
+        // Get the total amount of SNX collateral (including escrows and rewards)
         uint collateralForAccount = _collateral(account);
+
+        // Calculate the amount of debt to liquidate to fix c-ratio
         amountToLiquidate = liquidator().calculateAmountToFixCollateral(
             debtBalance,
             _snxToUSD(collateralForAccount, snxRate),
-            true
+            isSelfLiquidation
         );
 
-        // what's the equivalent amount of snx for the amountToLiquidate?
+        // Get the equivalent amount of SNX for the amount to liquidate
         uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
 
-        // Add penalty
-        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(getSelfLiquidationPenalty()));
+        // Factor in the liquidation penalty
+        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
-        // if total SNX to redeem is greater than account's collateral
-        // account is under collateralised, liquidate all collateral and reduce sUSD to burn
+        // If the total SNX to redeem is greater than account's collateral, liquidate all collateral
         if (totalRedeemed > collateralForAccount) {
-            // set totalRedeemed to all transferable collateral
-            totalRedeemed = collateralForAccount;
+            // Set totalRedeemed to all transferable collateral (SNX not in escrow)
+            totalRedeemed = IERC20(address(synthetix())).balanceOf(account);
 
-            // whats the equivalent sUSD to burn for all collateral less penalty
-            amountToLiquidate = _snxToUSD(collateralForAccount, snxRate);
+            // Get the equivalent debt amount to burn for all collateral (less penalty).
+            amountToLiquidate = _snxToUSD(collateralForAccount.divideDecimal(SafeDecimalMath.unit().sub(penalty)), snxRate);
         }
 
-        // Reduce debt share of account by the amount to liquidate.
+        // Reduce debt by amount to liquidate.
         _removeFromDebtRegister(account, amountToLiquidate, debtBalance);
+
+        // Account for the burnt debt in the cache.
+        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountToLiquidate));
+
+        if (!isSelfLiquidation) {
+            // Remove liquidation flag
+            liquidator().removeAccountInLiquidation(account);
+        }
     }
 
     function setCurrentPeriodId(uint128 periodId) external {
@@ -863,11 +820,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
     }
 
-    /// @notice Inform the LiquidatorRewards that there has been a change in debt
-    function _notifyDebtChange(address account) internal {
-        liquidatorRewards().notifyDebtChange(account);
-    }
-
     function _addToDebtRegister(address from, uint amount) internal {
         ISynthetixDebtShare sds = synthetixDebtShare();
 
@@ -879,7 +831,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         } else {
             sds.mintShare(from, debtShares);
         }
-        _notifyDebtChange(from);
     }
 
     function _removeFromDebtRegister(
@@ -897,7 +848,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint sharesToRemove = _sharesForDebt(debtToRemove);
             sds.burnShare(from, sharesToRemove < currentDebtShare ? sharesToRemove : currentDebtShare);
         }
-        _notifyDebtChange(from);
     }
 
     function _verifyCircuitBreaker() internal returns (bool) {
