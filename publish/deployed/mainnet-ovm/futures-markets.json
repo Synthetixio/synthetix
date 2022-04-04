@@ -1,7 +1,7 @@
 [
 	{
 		"marketKey": "sBTC",
-		"asset": "BTC",
+		"asset": "sBTC",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
 		"takerFeeNextPrice": "0.001",
@@ -15,7 +15,7 @@
 	},
 	{
 		"marketKey": "sETH",
-		"asset": "ETH",
+		"asset": "sETH",
 		"takerFee": "0.003",
 		"makerFee": "0.0025",
 		"takerFeeNextPrice": "0.001",
@@ -29,7 +29,7 @@
 	},
 	{
 		"marketKey": "sLINK",
-		"asset": "LINK",
+		"asset": "sLINK",
 		"takerFee": "0.004",
 		"makerFee": "0.0035",
 		"takerFeeNextPrice": "0.001",
