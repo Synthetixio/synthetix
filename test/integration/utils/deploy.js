@@ -26,6 +26,7 @@ async function prepareDeploy(...args) {
 async function deployInstance({
 	addNewSynths,
 	buildPath,
+	deploymentPath,
 	freshDeploy = true,
 	generateSolidity = false,
 	ignoreCustomParameters = false,
@@ -41,6 +42,7 @@ async function deployInstance({
 	await commands.deploy({
 		addNewSynths,
 		buildPath,
+		deploymentPath,
 		concurrency: 1,
 		freshDeploy,
 		generateSolidity,
