@@ -775,7 +775,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint feeRate, bool tooVolatile)
     {
-        // Get the exchange fee rate as per destination currencyKey
+        // Get the exchange fee rate as per the source currencyKey and destination currencyKey
         uint baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
         uint dynamicFee;
         (dynamicFee, tooVolatile) = _dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
@@ -795,7 +795,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint feeRate, bool tooVolatile) {
-        // Get the exchange fee rate as per destination currencyKey
+        // Get the exchange fee rate as per the source currencyKey and destination currencyKey
         uint baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
         uint dynamicFee;
         (dynamicFee, tooVolatile) = _dynamicFeeRateForExchangeAtRounds(
