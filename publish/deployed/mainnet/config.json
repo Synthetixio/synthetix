@@ -128,9 +128,6 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -195,9 +192,6 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
 		"deploy": false
 	},
 	"TokenStatesLINK": {
