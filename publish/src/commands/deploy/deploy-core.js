@@ -181,7 +181,7 @@ module.exports = async ({
 
 	const proxySynthetix = await deployer.deployContract({
 		name: 'ProxySynthetix',
-		source: 'Proxy',
+		source: 'ProxyERC20',
 		args: [account],
 	});
 
