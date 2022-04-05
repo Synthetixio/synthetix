@@ -416,14 +416,16 @@
 					"Issuer",
 					"OneNetAggregatorIssuedSynths",
 					"OneNetAggregatorDebtRatio",
-					"SynthetixBridgeToOptimism"
+					"SynthetixBridgeToOptimism",
+					"SystemSettings"
 				],
 				"ovm": [
 					"FeePool",
 					"Issuer",
 					"OneNetAggregatorIssuedSynths",
 					"OneNetAggregatorDebtRatio",
-					"SynthetixBridgeToBase"
+					"SynthetixBridgeToBase",
+					"SystemSettings"
 				]
 			},
 			"released": "both"
@@ -542,9 +544,26 @@
 			"released": "both"
 		},
 		{
+			"sip": 212,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 213,
 			"layer": "ovm",
 			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 217,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 220,
+			"layer": "both",
+			"sources": ["Issuer"],
 			"released": "both"
 		}
 	],
@@ -1002,39 +1021,132 @@
 		},
 		{
 			"name": "Mizar",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 65
 			},
-			"sips": []
+			"sips": [220]
 		},
 		{
 			"name": "Mizar (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 65
 			},
-			"sips": []
-		},
-		{
-			"name": "Nunki",
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 66
-			},
-			"sips": []
+			"sips": [220]
 		},
 		{
 			"name": "Nunki (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 66
+			},
+			"sips": [217]
+		},
+		{
+			"name": "Menkent",
+			"version": {
+				"major": 2,
+				"minor": 67
+			},
+			"sips": []
+		},
+		{
+			"name": "Menkent (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 67
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirach",
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": []
+		},
+		{
+			"name": "Alpheratz",
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": []
+		},
+		{
+			"name": "Alpheratz (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": []
+		},
+		{
+			"name": "Rasalhague",
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": []
+		},
+		{
+			"name": "Rasalhague (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": []
+		},
+		{
+			"name": "Kochab",
+			"version": {
+				"major": 2,
+				"minor": 71
+			},
+			"sips": []
+		},
+		{
+			"name": "Kochab (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 71
+			},
+			"sips": []
+		},
+		{
+			"name": "Saiph",
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": []
+		},
+		{
+			"name": "Saiph (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 72
 			},
 			"sips": []
 		}

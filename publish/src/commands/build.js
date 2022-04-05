@@ -49,9 +49,11 @@ const build = async ({
 	// Start with the libraries, then copy our own contracts on top to ensure
 	// if there's a naming clash our code wins.
 	console.log(gray('Finding .sol files...'));
-	const libraries = findSolFiles({ sourcePath: 'node_modules' });
+	const libraries = findSolFiles({
+		sourcePath: path.join(__dirname, '..', '..', '..', 'node_modules'),
+	});
 	const contracts = findSolFiles({
-		sourcePath: CONTRACTS_FOLDER,
+		sourcePath: path.join(__dirname, '..', '..', '..', CONTRACTS_FOLDER),
 		ignore: []
 			.concat(!migrations ? /^migrations\// : [])
 			.concat(!testHelpers ? /^test-helpers\// : []),

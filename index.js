@@ -166,6 +166,7 @@ const defaults = {
 	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_RELAY_GAS_LIMIT: `${8e6}`,
+	CROSS_DOMAIN_FEE_PERIOD_CLOSE_GAS_LIMIT: `${8e6}`,
 
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
@@ -203,7 +204,7 @@ const defaults = {
 	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
 	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
-	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
+	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('40'), // minimum initial margin for all markets
 	// SIP-120
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
 	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
@@ -344,18 +345,9 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 		feeds = JSON.parse(fs.readFileSync(pathToFeeds));
 	}
 
-	const synths = getSynths({ network, useOvm, path, fs, deploymentPath, skipPopulate: true });
-
 	// now mix in the asset data
 	return Object.entries(feeds).reduce((memo, [asset, entry]) => {
-		memo[asset] = Object.assign(
-			// standalone feeds are those without a synth using them
-			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
-			// removed from the system
-			{ standalone: !synths.find(synth => synth.asset === asset) || asset === 'ETH' },
-			assets[asset],
-			entry
-		);
+		memo[asset] = Object.assign(assets[asset], entry);
 		return memo;
 	}, {});
 };
@@ -446,7 +438,19 @@ const getFuturesMarkets = ({
 	if (!fs.existsSync(pathToFuturesMarketsList)) {
 		return [];
 	}
-	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
+	const futuresMarkets = JSON.parse(fs.readFileSync(pathToFuturesMarketsList)) || [];
+	return futuresMarkets.map(futuresMarket => {
+		/**
+		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
+		 * Unfortunately due to some historical reasons 'sBTC', 'sETH' and 'sLINK' does not follow this format
+		 * We adjust for that here.
+		 */
+		const marketsWithIncorrectAssetKey = ['sBTC', 'sETH', 'sLINK'];
+		const assetKeyNeedsAdjustment = marketsWithIncorrectAssetKey.includes(futuresMarket.asset);
+		const assetKey = assetKeyNeedsAdjustment ? futuresMarket.asset.slice(1) : futuresMarket.asset;
+		// mixin the asset details
+		return Object.assign({}, assets[assetKey], futuresMarket);
+	});
 };
 
 /**
