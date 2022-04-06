@@ -56,6 +56,10 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
     }
 
+    function counterpart() internal view returns (address) {
+        return synthetixBridgeToBase();
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -123,11 +127,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     }
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function finalizeWithdrawal(address to, uint256 amount) external {
-        // ensure function only callable from L2 Bridge via messenger (aka relayer)
-        require(msg.sender == address(messenger()), "Only the relayer can call this");
-        require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
-
+    function finalizeWithdrawal(address to, uint256 amount) external onlyCounterpart {
         // transfer amount back to user
         synthetixERC20().transferFrom(synthetixBridgeEscrow(), to, amount);
 

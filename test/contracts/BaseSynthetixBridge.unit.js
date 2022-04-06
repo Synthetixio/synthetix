@@ -5,16 +5,25 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const { toBytes32 } = require('../..');
 const { smockit } = require('@eth-optimism/smock');
 
+const { toUnit } = require('../utils')();
+
 const BaseSynthetixBridge = artifacts.require('BaseSynthetixBridge');
 
 contract('BaseSynthetixBridge (unit tests)', accounts => {
-	const [owner, smockedMessenger, flexibleStorage] = accounts;
+	const [, owner, user1, smockedMessenger] = accounts;
+
+	const sETH = toBytes32('sETH');
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: BaseSynthetixBridge.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['resumeInitiation', 'suspendInitiation'],
+			expected: [
+				'resumeInitiation',
+				'suspendInitiation',
+				'initiateSynthTransfer',
+				'finalizeSynthTransfer',
+			],
 		});
 	});
 
@@ -22,8 +31,10 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 		let messenger;
 		let synthetix;
 		let resolver;
+		let issuer;
 		let feePool;
 		let rewardEscrow;
+		let flexibleStorage;
 
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
@@ -39,19 +50,29 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 			feePool = await smockit(artifacts.require('FeePool').abi);
 
-			// now add to address resolver
+			issuer = await smockit(artifacts.require('Issuer').abi);
+			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
+
 			resolver = await artifacts.require('AddressResolver').new(owner);
 
 			await resolver.importAddresses(
-				['ext:Messenger', 'Synthetix', 'RewardEscrowV2', 'FlexibleStorage', 'FeePool'].map(
-					toBytes32
-				),
+				[
+					'ext:Messenger',
+					'Synthetix',
+					'RewardEscrowV2',
+					'FlexibleStorage',
+					'Issuer',
+					'FeePool',
+					'base:SynthetixBridgeToOptimism',
+				].map(toBytes32),
 				[
 					messenger.address,
 					synthetix.address,
 					rewardEscrow.address,
-					flexibleStorage,
+					flexibleStorage.address,
+					issuer.address,
 					feePool.address,
+					issuer.address,
 				],
 				{ from: owner }
 			);
@@ -61,7 +82,9 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			let instance;
 
 			beforeEach(async () => {
-				instance = await artifacts.require('BaseSynthetixBridge').new(owner, resolver.address);
+				instance = await artifacts
+					.require('SynthetixBridgeToBase') // have to use a sub-contract becuase `BaseSynthetixBridge` is abstract
+					.new(owner, resolver.address);
 
 				await instance.rebuildCache();
 			});
@@ -157,6 +180,65 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 						it('a InitiationResumed event is emitted', async () => {
 							assert.eventEqual(txn, 'InitiationResumed', []);
 						});
+					});
+				});
+			});
+
+			describe('initiateSynthTransfer', () => {
+				describe('when successfully invoked', () => {
+					let txn;
+					beforeEach(async () => {
+						txn = await instance.initiateSynthTransfer(sETH, owner, toUnit('100'), { from: user1 });
+					});
+
+					it('burns synths from caller', () => {
+						assert.bnEqual(issuer.smocked.burnFreeSynths.calls[0].amount, toUnit('100'));
+					});
+
+					it('calls messenger', () => {
+						assert.bnEqual(messenger.smocked.sendMessage.calls[0]._target, issuer.address);
+					});
+
+					it('emits event', () => {
+						assert.eventEqual(txn, 'InitiateSynthTransfer', [sETH, owner, toUnit('100')]);
+					});
+				});
+			});
+
+			describe('finalizeSynthTransfer', () => {
+				beforeEach('set counterpart bridge', async () => {
+					messenger.smocked.xDomainMessageSender.will.return.with(issuer.address);
+				});
+
+				it('fails if xdomainmessagesender doesnt match counterpart', async () => {
+					messenger.smocked.xDomainMessageSender.will.return.with(owner);
+					await assert.revert(instance.finalizeSynthTransfer(sETH, owner, '100'));
+				});
+
+				it('can only be called by messenger and registered counterpart', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: instance.finalizeSynthTransfer,
+						accounts,
+						address: smockedMessenger,
+						args: [sETH, owner, '100'],
+						reason: 'Only the relayer can call this',
+					});
+				});
+
+				describe('when successfully invoked', () => {
+					let txn;
+					beforeEach(async () => {
+						txn = await instance.finalizeSynthTransfer(sETH, user1, toUnit('125'), {
+							from: smockedMessenger,
+						});
+					});
+
+					it('mints synths to the destination', () => {
+						assert.bnEqual(issuer.smocked.issueFreeSynths.calls[0].amount, toUnit('125'));
+					});
+
+					it('emits event', () => {
+						assert.eventEqual(txn, 'FinalizeSynthTransfer', [sETH, user1, toUnit('125')]);
 					});
 				});
 			});

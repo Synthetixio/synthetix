@@ -10,6 +10,7 @@ import "./interfaces/IBaseSynthetixBridge.sol";
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/IIssuer.sol";
 import "./interfaces/IFeePool.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
@@ -18,6 +19,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bool public initiationActive;
@@ -42,6 +44,10 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
@@ -50,15 +56,30 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         require(initiationActive, "Initiation deactivated");
     }
 
+    function counterpart() internal view returns (address);
+
+    function onlyAllowFromCounterpart() internal view {
+        // ensure function only callable from the L2 bridge via messenger (aka relayer)
+        iAbs_BaseCrossDomainMessenger _messenger = messenger();
+        require(msg.sender == address(_messenger), "Only the relayer can call this");
+        require(_messenger.xDomainMessageSender() == counterpart(), "Only a counterpart bridge can invoke");
+    }
+
+    modifier onlyCounterpart() {
+        onlyAllowFromCounterpart();
+        _;
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_REWARDESCROW;
-        newAddresses[3] = CONTRACT_FEEPOOL;
+        newAddresses[3] = CONTRACT_ISSUER;
+        newAddresses[4] = CONTRACT_FEEPOOL;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -83,9 +104,34 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         emit InitiationResumed();
     }
 
+    function initiateSynthTransfer(bytes32 currencyKey, address destination, uint amount) external {
+        issuer().burnFreeSynths(currencyKey, msg.sender, amount);
+
+        // create message payload
+        bytes memory messageData = abi.encodeWithSelector(this.initiateSynthTransfer.selector, currencyKey, destination, amount);
+
+        // relay the message to Bridge on L1 via L2 Messenger
+        messenger().sendMessage(
+            counterpart(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
+        );
+
+        emit InitiateSynthTransfer(currencyKey, destination, amount);
+    }
+
+    function finalizeSynthTransfer(bytes32 currencyKey, address destination, uint amount) external onlyCounterpart {
+        issuer().issueFreeSynths(currencyKey, destination, amount);
+
+        emit FinalizeSynthTransfer(currencyKey, destination, amount);
+    }
+
     // ========== EVENTS ==========
 
     event InitiationSuspended();
 
     event InitiationResumed();
+
+    event InitiateSynthTransfer(bytes32 indexed currencyKey, address indexed destination, uint256 amount);
+    event FinalizeSynthTransfer(bytes32 indexed currencyKey, address indexed destination, uint256 amount);
 }
