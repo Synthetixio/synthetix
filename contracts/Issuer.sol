@@ -573,7 +573,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
 
         // record issue timestamp
-        _setLastIssueEvent(from);
+        _setLastIssueEvent(to);
 
         // Create their synths
         synths[currencyKey].issue(to, amount);
