@@ -95,6 +95,15 @@ interface IIssuer {
 
     function setCurrentPeriodId(uint128 periodId) external;
 
-    function issueFreeSynths(bytes32 currencyKey, address to, uint amount) external;
-    function burnFreeSynths(bytes32 currencyKey, address to, uint amount) external;
+    function issueFreeSynths(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external;
+
+    function burnFreeSynths(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external;
 }

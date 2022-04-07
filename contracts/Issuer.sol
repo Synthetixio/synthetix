@@ -563,7 +563,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function issueFreeSynths(bytes32 currencyKey, address to, uint amount) external onlyBrokers {
+    function issueFreeSynths(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external onlyBrokers {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -571,7 +575,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[currencyKey].issue(to, amount);
     }
 
-    function burnFreeSynths(bytes32 currencyKey, address from, uint amount) external onlyBrokers {
+    function burnFreeSynths(
+        bytes32 currencyKey,
+        address from,
+        uint amount
+    ) external onlyBrokers {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -889,9 +897,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== MODIFIERS ========== */
 
     function _onlyBrokers() internal view {
-        require(msg.sender == address(synthetix()) ||
+        require(
+            msg.sender == address(synthetix()) ||
                 msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM) ||
-                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE), "Issuer: Only trusted brokers can perform this action");
+                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE),
+            "Issuer: Only trusted brokers can perform this action"
+        );
     }
 
     modifier onlyBrokers() {
