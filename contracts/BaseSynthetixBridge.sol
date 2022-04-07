@@ -108,13 +108,14 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         issuer().burnFreeSynths(currencyKey, msg.sender, amount);
 
         // create message payload
-        bytes memory messageData = abi.encodeWithSelector(this.initiateSynthTransfer.selector, currencyKey, destination, amount);
+        bytes memory messageData = abi.encodeWithSelector(this.finalizeSynthTransfer.selector, currencyKey, destination, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
             counterpart(),
             messageData,
-            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
+            //uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
+            3000000
         );
 
         emit InitiateSynthTransfer(currencyKey, destination, amount);

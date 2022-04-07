@@ -555,7 +555,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							instance.finalizeWithdrawal(user1, 100, {
 								from: smockedMessenger,
 							}),
-							'Only the L2 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});
