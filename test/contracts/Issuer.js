@@ -152,6 +152,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
+				'issueFreeSynths',
+				'burnFreeSynths',
 				'issueMaxSynths',
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
@@ -179,7 +181,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -187,7 +189,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
@@ -195,7 +197,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynths,
 				args: [account1],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -203,7 +205,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynthsOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
@@ -211,7 +213,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -219,7 +221,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
@@ -227,7 +229,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('liquidateDelinquentAccount() cannot be invoked directly by a user', async () => {
@@ -235,7 +237,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.liquidateDelinquentAccount,
 				args: [account1, toUnit('1'), account2],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -243,7 +245,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only trusted brokers can perform this action',
 			});
 		});
 		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
