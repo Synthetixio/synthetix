@@ -109,6 +109,8 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         address destination,
         uint amount
     ) external {
+        require(destination != address(0), "Cannot send to zero address");
+
         issuer().burnFreeSynths(currencyKey, msg.sender, amount);
 
         // create message payload
@@ -119,8 +121,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         messenger().sendMessage(
             counterpart(),
             messageData,
-            //uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
-            3000000
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
         emit InitiateSynthTransfer(currencyKey, destination, amount);

@@ -571,8 +571,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
+
+        // record issue timestamp
+        _setLastIssueEvent(from);
+
         // Create their synths
         synths[currencyKey].issue(to, amount);
+
+        // Account for the issued debt in the cache
+        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
     }
 
     function burnFreeSynths(
@@ -585,6 +592,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Burn some synths
         synths[currencyKey].burn(from, amount);
+
+        // Account for the burnt debt in the cache.
+        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amount));
     }
 
     function issueSynths(address from, uint amount) external onlyBrokers {
