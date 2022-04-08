@@ -514,6 +514,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 198,
+			"layer": "both",
+			"sources": ["Synthetix", "Exchanger", "ExchangeRates", "SystemSettings", "SystemSettingsLib"]
+		},
+		{
 			"sip": 199,
 			"layer": "ovm",
 			"sources": [],
