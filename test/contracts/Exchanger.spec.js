@@ -550,45 +550,40 @@ contract('Exchanger (spec tests)', async accounts => {
 					const amount = toUnit('1000');
 
 					it('updates exchange fee amounts appropriately', async () => {
-						await systemSettings.setExchangeFeeRateForSynths(
-							[sUSD],
-							[toUnit(0)],
-							{
-								from: owner,
-							}
-						);
-						await systemSettings.setExchangeFeeRateForSynths(
-							[sAUD],
-							[toUnit(0)],
-							{
-								from: owner,
-							}
-						);
+						await systemSettings.setExchangeFeeRateForSynths([sUSD], [toUnit(0)], {
+							from: owner,
+						});
+						await systemSettings.setExchangeFeeRateForSynths([sAUD], [toUnit(0)], {
+							from: owner,
+						});
 
-						const { exchangeFeeRate: exchangeFeeRate1 } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
+						const { exchangeFeeRate: exchangeFeeRate1 } = await exchanger.getAmountsForExchange(
+							amount,
+							sUSD,
+							sAUD
+						);
 						assert.bnEqual(exchangeFeeRate1, 0);
 
-						await systemSettings.setExchangeFeeRateForSynths(
-							[sUSD],
-							[toUnit(0.1)],
-							{
-								from: owner,
-							}
+						await systemSettings.setExchangeFeeRateForSynths([sUSD], [toUnit(0.1)], {
+							from: owner,
+						});
+						const { exchangeFeeRate: exchangeFeeRate2 } = await exchanger.getAmountsForExchange(
+							amount,
+							sUSD,
+							sAUD
 						);
-						const { exchangeFeeRate: exchangeFeeRate2 } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
 						assert.bnEqual(exchangeFeeRate2, toUnit(0.1));
 
-						await systemSettings.setExchangeFeeRateForSynths(
-							[sAUD],
-							[toUnit(0.01)],
-							{
-								from: owner,
-							}
+						await systemSettings.setExchangeFeeRateForSynths([sAUD], [toUnit(0.01)], {
+							from: owner,
+						});
+						const { exchangeFeeRate: exchangeFeeRate3 } = await exchanger.getAmountsForExchange(
+							amount,
+							sUSD,
+							sAUD
 						);
-						const { exchangeFeeRate: exchangeFeeRate3 } = await exchanger.getAmountsForExchange(amount, sUSD, sAUD);
 						assert.bnEqual(exchangeFeeRate3, toUnit(0.11));
 					});
-
 				});
 
 				describe('when tripling an exchange rate', () => {
@@ -1290,7 +1285,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-													'but less than the total initially',
+														'but less than the total initially',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1327,7 +1322,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-													'and more than the total initially and the exchangefee rate changed',
+														'and more than the total initially and the exchangefee rate changed',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1897,7 +1892,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														);
 													}
 												});
-												it('then all succeed', () => { });
+												it('then all succeed', () => {});
 												it('when one more is tried, then if fails', async () => {
 													await assert.revert(
 														synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
