@@ -423,22 +423,25 @@ const getFuturesMarkets = ({
 	fs,
 	deploymentPath,
 } = {}) => {
+	let futuresMarkets;
 	if (!deploymentPath && (!path || !fs)) {
-		return data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+		futuresMarkets = data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+	} else {
+		const pathToFuturesMarketsList = deploymentPath
+			? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					useOvm,
+					file: constants.FUTURES_MARKETS_FILENAME,
+			  });
+		if (!fs.existsSync(pathToFuturesMarketsList)) {
+			futuresMarkets = [];
+		} else {
+			futuresMarkets = JSON.parse(fs.readFileSync(pathToFuturesMarketsList)) || [];
+		}
 	}
 
-	const pathToFuturesMarketsList = deploymentPath
-		? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
-		: getPathToNetwork({
-				network,
-				path,
-				useOvm,
-				file: constants.FUTURES_MARKETS_FILENAME,
-		  });
-	if (!fs.existsSync(pathToFuturesMarketsList)) {
-		return [];
-	}
-	const futuresMarkets = JSON.parse(fs.readFileSync(pathToFuturesMarketsList)) || [];
 	return futuresMarkets.map(futuresMarket => {
 		/**
 		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
