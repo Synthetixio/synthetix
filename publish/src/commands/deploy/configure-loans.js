@@ -248,17 +248,19 @@ module.exports = async ({
 	}
 
 	const CollateralManagerShorts = collateralManagerDefaults['SHORTS'];
-	for (const synth of CollateralManagerShorts) {
-		await runStep({
-			contract: 'CollateralManager',
-			gasLimit: 1e6,
-			target: CollateralManager,
-			read: 'shortableSynthsByKey',
-			readArg: toBytes32(synth),
-			expected: input => input,
-			write: 'addShortableSynths',
-			writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
-			comment: `Ensure the CollateralManager contract has associated short ${synth} added`,
-		});
+	if (CollateralManager.shortableSynthsByKey) {
+		for (const synth of CollateralManagerShorts) {
+			await runStep({
+				contract: 'CollateralManager',
+				gasLimit: 1e6,
+				target: CollateralManager,
+				read: 'shortableSynthsByKey',
+				readArg: toBytes32(synth),
+				expected: input => input,
+				write: 'addShortableSynths',
+				writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
+				comment: `Ensure the CollateralManager contract has associated short ${synth} added`,
+			});
+		}
 	}
 };
