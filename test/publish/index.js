@@ -246,14 +246,14 @@ describe('publish scripts', () => {
 				targets = getTarget();
 				synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
+				Synthetix = getContract({ target: 'ProxySynthetix', source: 'Synthetix' });
 				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
 				Exchanger = getContract({ target: 'Exchanger' });
 				DebtCache = getContract({ target: 'DebtCache' });
 
 				Issuer = getContract({ target: 'Issuer' });
 
-				sUSDContract = getContract({ target: 'ProxyERC20sUSD', source: 'Synth' });
+				sUSDContract = getContract({ target: 'ProxysUSD', source: 'Synth' });
 
 				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
 				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
