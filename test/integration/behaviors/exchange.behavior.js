@@ -55,7 +55,7 @@ function itCanExchange({ ctx }) {
 				assert.bnEqual(await SynthsETH.balanceOf(owner.address), balancesETH.add(expectedAmount));
 			});
 
-			before('skip if waiting period is zero', async function () {
+			before('skip if waiting period is zero', async function() {
 				const waitingPeriodSecs = await Exchanger.waitingPeriodSecs();
 				if (waitingPeriodSecs.toString() === '0') {
 					console.log(
@@ -91,8 +91,7 @@ function itCanExchange({ ctx }) {
 		});
 	});
 
-	describe.only('settings are configurable', async () => {
-
+	describe('settings are configurable', async () => {
 		let owner, SystemSettings;
 
 		before('target contracts and users', () => {
@@ -101,14 +100,19 @@ function itCanExchange({ ctx }) {
 		});
 
 		it('set sUSD to use the pure chainlink price for atomic swap', async () => {
-			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'), false);
+			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(
+				toBytes32('sUSD'),
+				false
+			);
 			const resp1 = await SystemSettings.pureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'));
 			assert.bnEqual(resp1, false);
-			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'), true);
+			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(
+				toBytes32('sUSD'),
+				true
+			);
 			const resp2 = await SystemSettings.pureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'));
 			assert.bnEqual(resp2, true);
 		});
-
 	});
 }
 
