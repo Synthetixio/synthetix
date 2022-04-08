@@ -565,6 +565,11 @@
 			"layer": "both",
 			"sources": ["Issuer"],
 			"released": "both"
+		},
+		{
+			"sip": 222,
+			"layer": "both",
+			"sources": ["Exchanger"]
 		}
 	],
 	"releases": [
