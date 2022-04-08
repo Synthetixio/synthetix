@@ -86,7 +86,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
-        bytes32 trackingCode
+        bytes32 trackingCode,
+        uint minAmount
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
@@ -96,6 +97,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             destinationCurrencyKey,
             destinationAddress
         );
+
+        require(amountReceived >= minAmount, "The amount received is below the minimum amount specified.");
 
         _processTradingRewards(fee, destinationAddress);
 
@@ -135,13 +138,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        // One of src/dest synth must be sUSD (checked below for gas optimization reasons)
-        require(
-            !exchangeRates().synthTooVolatileForAtomicExchange(
-                sourceCurrencyKey == sUSD ? destinationCurrencyKey : sourceCurrencyKey
-            ),
-            "Src/dest synth too volatile"
-        );
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
@@ -177,7 +175,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             "Atomic rate deviates too much"
         );
 
-        // Ensure src/dest synth is sUSD and determine sUSD value of exchange
+        // Determine sUSD value of exchange
         uint sourceSusdValue;
         if (sourceCurrencyKey == sUSD) {
             // Use after-settled amount as this is amount converted (not sourceAmount)
@@ -186,7 +184,10 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
             sourceSusdValue = systemConvertedAmount;
         } else {
-            revert("Src/dest synth must be sUSD");
+            // Otherwise, convert source to sUSD value
+            (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
+                _getAmountsForAtomicExchangeMinusFees(sourceAmount, sourceCurrencyKey, sUSD);
+            sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
         }
 
         // Check and update atomic volume limit

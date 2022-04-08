@@ -169,7 +169,7 @@ contract('BaseSynthetix', async accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.exchangeAtomically,
 				accounts,
-				args: [sUSD, amount, sETH, toBytes32('AGGREGATOR')],
+				args: [sUSD, amount, sETH, toBytes32('AGGREGATOR'), 0],
 				reason: 'Cannot be run on this layer',
 			});
 		});

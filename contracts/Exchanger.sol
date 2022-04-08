@@ -359,7 +359,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint,
         bytes32,
         address,
-        bytes32
+        bytes32,
+        uint
     ) external returns (uint) {
         _notImplemented();
     }
