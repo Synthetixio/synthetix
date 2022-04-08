@@ -80,12 +80,6 @@
 	"SynthsUSD": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -258,6 +252,30 @@
 		"deploy": false
 	},
 	"SynthsUNI": {
+		"deploy": false
+	},
+	"FuturesMarketSOL": {
+		"deploy": false
+	},
+	"FuturesMarketAVAX": {
+		"deploy": false
+	},
+	"FuturesMarketAAVE": {
+		"deploy": false
+	},
+	"FuturesMarketUNI": {
+		"deploy": false
+	},
+	"FuturesMarketMATIC": {
+		"deploy": false
+	},
+	"FuturesMarketXAU": {
+		"deploy": false
+	},
+	"FuturesMarketXAG": {
+		"deploy": false
+	},
+	"FuturesMarketEUR": {
 		"deploy": false
 	}
 }

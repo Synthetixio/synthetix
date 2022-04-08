@@ -80,12 +80,6 @@
 	"SynthsUSD": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -243,6 +237,27 @@
 		"deploy": false
 	},
 	"FuturesMarketLINK": {
+		"deploy": false
+	},
+	"FuturesMarketSOL": {
+		"deploy": false
+	},
+	"FuturesMarketAVAX": {
+		"deploy": false
+	},
+	"FuturesMarketMATIC": {
+		"deploy": false
+	},
+	"FuturesMarketWTI": {
+		"deploy": false
+	},
+	"TokenStatesWTI": {
+		"deploy": false
+	},
+	"ProxysWTI": {
+		"deploy": false
+	},
+	"SynthsWTI": {
 		"deploy": false
 	}
 }

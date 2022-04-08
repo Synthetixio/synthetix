@@ -1,6 +1,7 @@
 'use strict';
 
-const { gray } = require('chalk');
+const { gray, yellow } = require('chalk');
+const { confirmAction } = require('../../util');
 const { toBytes32 } = require('../../../..');
 const w3utils = require('web3-utils');
 
@@ -18,7 +19,7 @@ module.exports = async ({
 
 	if (!useOvm) return;
 
-	const { FuturesMarketSettings: futuresMarketSettings } = deployer.deployedContracts;
+	const { FuturesMarketSettings: futuresMarketSettings, SystemStatus } = deployer.deployedContracts;
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -82,6 +83,7 @@ module.exports = async ({
 			maxMarketValueUSD,
 			maxFundingRate,
 			skewScaleUSD,
+			paused,
 		} = market;
 
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
@@ -113,6 +115,47 @@ module.exports = async ({
 				write: `set${capSetting}`,
 				writeArg: [marketKeyBytes, value],
 			});
+		}
+
+		// pause or resume market according to config
+		const shouldPause = paused; // config value
+		const isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+
+		if (shouldPause & !isPaused) {
+			await runStep({
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				write: 'suspendFuturesMarket',
+				writeArg: [marketKeyBytes, 2],
+				comment: 'Ensure futures market is paused according to config',
+			});
+		} else if (isPaused & !shouldPause) {
+			console.log(
+				yellow(
+					`⚠⚠⚠ WARNING: The market ${marketKey} is paused, 
+					but according to config should be resumed. Confirm that this market should
+					be resumed in this release and it's not a misconfiguration issue.`
+				)
+			);
+
+			let resume; // in case we're trying to resume something that doesn't need to be resumed
+			try {
+				await confirmAction(gray('Unpause the market? (y/n) '));
+				resume = true;
+			} catch (err) {
+				console.log(gray('Market will remain paused'));
+				resume = false;
+			}
+
+			if (resume) {
+				await runStep({
+					contract: 'SystemStatus',
+					target: SystemStatus,
+					write: 'resumeFuturesMarket',
+					writeArg: [marketKeyBytes],
+					comment: 'Ensure futures market is un-paused according to config',
+				});
+			}
 		}
 	}
 };

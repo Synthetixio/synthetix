@@ -755,6 +755,69 @@
 			"timestamp": "2022-03-16T03:56:01.170Z",
 			"txn": "",
 			"network": "kovan"
+		},
+		"TokenStatesWTI": {
+			"name": "TokenStatesWTI",
+			"address": "0x412c870daAb642aA87715e2EA860d20E48E73267",
+			"source": "TokenState",
+			"link": "https://kovan-explorer.optimism.io/address/0x412c870daAb642aA87715e2EA860d20E48E73267",
+			"timestamp": "2022-03-29T06:54:59.238Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysWTI": {
+			"name": "ProxysWTI",
+			"address": "0x6b27e4554f2FEFc04F4bd9AE0D2A77f348d12cfA",
+			"source": "ProxyERC20",
+			"link": "https://kovan-explorer.optimism.io/address/0x6b27e4554f2FEFc04F4bd9AE0D2A77f348d12cfA",
+			"timestamp": "2022-03-29T06:55:09.570Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthsWTI": {
+			"name": "SynthsWTI",
+			"address": "0x8e08BF90B979698AdB6d722E9e27263f36366414",
+			"source": "MultiCollateralSynth",
+			"link": "https://kovan-explorer.optimism.io/address/0x8e08BF90B979698AdB6d722E9e27263f36366414",
+			"timestamp": "2022-03-29T06:55:14.505Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"FuturesMarketSOL": {
+			"name": "FuturesMarketSOL",
+			"address": "0x1991bEA1eB08a78701F3330934B2301Fc6520AbA",
+			"source": "FuturesMarket",
+			"link": "https://kovan-explorer.optimism.io/address/0x1991bEA1eB08a78701F3330934B2301Fc6520AbA",
+			"timestamp": "2022-03-29T06:55:20.795Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"FuturesMarketAVAX": {
+			"name": "FuturesMarketAVAX",
+			"address": "0xc00E7C2Bd7B0Fb95DbBF10d2d336399A939099ee",
+			"source": "FuturesMarket",
+			"link": "https://kovan-explorer.optimism.io/address/0xc00E7C2Bd7B0Fb95DbBF10d2d336399A939099ee",
+			"timestamp": "2022-03-29T06:55:30.881Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"FuturesMarketMATIC": {
+			"name": "FuturesMarketMATIC",
+			"address": "0x8e0df45f66E620F85dF1D0490Cd2b19E57a4232A",
+			"source": "FuturesMarket",
+			"link": "https://kovan-explorer.optimism.io/address/0x8e0df45f66E620F85dF1D0490Cd2b19E57a4232A",
+			"timestamp": "2022-03-29T06:55:36.574Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"FuturesMarketWTI": {
+			"name": "FuturesMarketWTI",
+			"address": "0x929d8EC9A885cdCfdF28EA31B4A356532757DE5E",
+			"source": "FuturesMarket",
+			"link": "https://kovan-explorer.optimism.io/address/0x929d8EC9A885cdCfdF28EA31B4A356532757DE5E",
+			"timestamp": "2022-03-29T06:55:42.056Z",
+			"txn": "",
+			"network": "kovan"
 		}
 	},
 	"sources": {
