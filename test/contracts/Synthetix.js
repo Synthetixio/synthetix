@@ -120,6 +120,7 @@ contract('Synthetix', async accounts => {
 		const currencyKey1 = sAUD;
 		const currencyKey2 = sEUR;
 		const trackingCode = toBytes32('1inch');
+		const minAmount = '0';
 		const msgSender = owner;
 
 		it('exchangeWithVirtual is called with the right arguments', async () => {
@@ -158,15 +159,23 @@ contract('Synthetix', async accounts => {
 		});
 
 		it('exchangeAtomically is called with the right arguments ', async () => {
-			await synthetix.exchangeAtomically(currencyKey1, amount1, currencyKey2, trackingCode, {
-				from: owner,
-			});
+			await synthetix.exchangeAtomically(
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				trackingCode,
+				minAmount,
+				{
+					from: owner,
+				}
+			);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][0], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][1], currencyKey1);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][2].toString(), amount1);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][3], currencyKey2);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][4], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][5], trackingCode);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][6], minAmount);
 		});
 	});
 

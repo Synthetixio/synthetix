@@ -89,6 +89,7 @@ contract('SystemSettings', async accounts => {
 				'setExchangeDynamicFeeWeightDecay',
 				'setExchangeDynamicFeeRounds',
 				'setExchangeMaxDynamicFee',
+				'setPureChainlinkPriceForAtomicSwapsEnabled',
 			],
 		});
 	});
@@ -1578,6 +1579,33 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setExchangeMaxDynamicFee(toUnit('11'), { from: owner }),
 				'MAX_EXCHANGE_FEE_RATE exceeded'
 			);
+		});
+	});
+
+	describe('setPureChainlinkPriceForAtomicSwapsEnabled()', () => {
+		const currencyKey = toBytes32('sUSD');
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled,
+				args: [currencyKey, true],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
+				currencyKey,
+				true,
+				{ from: owner }
+			);
+			const actual = await systemSettings.pureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+			assert.bnEqual(
+				actual,
+				true,
+				'Configured pure chainlink price for atomic swaps enabled is set correctly'
+			);
+			assert.eventEqual(txn, 'PureChainlinkPriceForAtomicSwapsEnabledUpdated', [currencyKey, true]);
 		});
 	});
 });
