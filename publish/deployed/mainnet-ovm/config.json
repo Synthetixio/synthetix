@@ -80,12 +80,6 @@
 	"SynthsUSD": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},

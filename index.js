@@ -630,7 +630,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: 'SNX',
 				asset: 'SNX',
 				name: 'Synthetix',
-				address: targets.ProxyERC20.address,
+				address: targets.ProxySynthetix.address,
 				decimals: 18,
 			},
 			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
@@ -642,8 +642,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: synth.name,
 				asset: synth.asset,
 				name: synth.description,
-				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
-					.address,
+				address: (targets[`Proxy${synth.name}`] || {}).address,
 				index: synth.index,
 				decimals: 18,
 				feed: synth.feed,
