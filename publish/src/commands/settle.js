@@ -137,7 +137,7 @@ const settle = async ({
 	};
 
 	const Synthetix = getContract({
-		label: 'ProxyERC20',
+		label: 'ProxySynthetix',
 		source: 'Synthetix',
 	});
 

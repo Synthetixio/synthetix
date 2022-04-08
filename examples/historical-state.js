@@ -17,7 +17,7 @@ program
 	.description('Inspect historical state of Synthetix at some given block')
 	.arguments('[args...]')
 	.option('-b, --block-number <value>', 'Block')
-	.option('-c, --contract <value>', 'The contract label or address', 'ProxyERC20')
+	.option('-c, --contract <value>', 'The contract label or address', 'ProxySynthetix')
 	.option('-s, --source <value>', 'The label of the source contract', 'Synthetix')
 	.option('-m, --method <value>', 'The method name', 'name')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
