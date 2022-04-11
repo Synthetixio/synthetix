@@ -2903,7 +2903,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								amountIn,
 								sETH,
 								toBytes32(),
-								toUnit('.4975'),
+								toUnit('.495'),
 								{
 									from: account1,
 								}
