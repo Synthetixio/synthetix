@@ -223,6 +223,7 @@ function _printMessengerLog(log) {
 		const argValue = event.args[0];
 		console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
 	} catch (err) {
+		console.error('Error XXX', err);
 		console.error('could not parse messenger log:', log);
 	}
 }
