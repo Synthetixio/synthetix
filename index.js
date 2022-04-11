@@ -423,22 +423,37 @@ const getFuturesMarkets = ({
 	fs,
 	deploymentPath,
 } = {}) => {
+	let futuresMarkets;
 	if (!deploymentPath && (!path || !fs)) {
-		return data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+		futuresMarkets = data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+	} else {
+		const pathToFuturesMarketsList = deploymentPath
+			? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					useOvm,
+					file: constants.FUTURES_MARKETS_FILENAME,
+			  });
+		if (!fs.existsSync(pathToFuturesMarketsList)) {
+			futuresMarkets = [];
+		} else {
+			futuresMarkets = JSON.parse(fs.readFileSync(pathToFuturesMarketsList)) || [];
+		}
 	}
 
-	const pathToFuturesMarketsList = deploymentPath
-		? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
-		: getPathToNetwork({
-				network,
-				path,
-				useOvm,
-				file: constants.FUTURES_MARKETS_FILENAME,
-		  });
-	if (!fs.existsSync(pathToFuturesMarketsList)) {
-		return [];
-	}
-	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
+	return futuresMarkets.map(futuresMarket => {
+		/**
+		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
+		 * Unfortunately due to some historical reasons 'sBTC', 'sETH' and 'sLINK' does not follow this format
+		 * We adjust for that here.
+		 */
+		const marketsWithIncorrectAssetKey = ['sBTC', 'sETH', 'sLINK'];
+		const assetKeyNeedsAdjustment = marketsWithIncorrectAssetKey.includes(futuresMarket.asset);
+		const assetKey = assetKeyNeedsAdjustment ? futuresMarket.asset.slice(1) : futuresMarket.asset;
+		// mixin the asset details
+		return Object.assign({}, assets[assetKey], futuresMarket);
+	});
 };
 
 /**
