@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../AddressResolver.sol";
@@ -33,7 +32,8 @@ contract Migration_MenkentOptimism is BaseMigration {
     // https://kovan-explorer.optimism.io/address/0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C
     TokenState public constant tokenstatesynthetix_i = TokenState(0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C);
     // https://kovan-explorer.optimism.io/address/0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB
-    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB);
+    RewardsDistribution public constant rewardsdistribution_i =
+        RewardsDistribution(0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB);
     // https://kovan-explorer.optimism.io/address/0xC964D325096ba170bF34f7c267405467D9E48353
     ExchangeRates public constant exchangerates_i = ExchangeRates(0xC964D325096ba170bF34f7c267405467D9E48353);
     // https://kovan-explorer.optimism.io/address/0xE90F90DCe5010F615bEC29c5db2D9df798D48183
@@ -56,19 +56,28 @@ contract Migration_MenkentOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](7);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(proxysynthetix_i);
-        contracts[2]= address(exchangestate_i);
-        contracts[3]= address(tokenstatesynthetix_i);
-        contracts[4]= address(rewardsdistribution_i);
-        contracts[5]= address(exchangerates_i);
-        contracts[6]= address(systemstatus_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(proxysynthetix_i);
+        contracts[2] = address(exchangestate_i);
+        contracts[3] = address(tokenstatesynthetix_i);
+        contracts[4] = address(rewardsdistribution_i);
+        contracts[5] = address(exchangerates_i);
+        contracts[6] = address(systemstatus_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_SystemSettings_contract).CONTRACT_NAME() == "SystemSettings", "Invalid contract supplied for SystemSettings");
-        require(ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRates", "Invalid contract supplied for ExchangeRates");
-        require(ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "Exchanger", "Invalid contract supplied for Exchanger");
+        require(
+            ISynthetixNamedContract(new_SystemSettings_contract).CONTRACT_NAME() == "SystemSettings",
+            "Invalid contract supplied for SystemSettings"
+        );
+        require(
+            ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRates",
+            "Invalid contract supplied for ExchangeRates"
+        );
+        require(
+            ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "Exchanger",
+            "Invalid contract supplied for Exchanger"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -145,7 +154,6 @@ contract Migration_MenkentOptimism is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](4);
         addressresolver_importAddresses_names_0_0[0] = bytes32("SystemSettings");
@@ -157,10 +165,12 @@ contract Migration_MenkentOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[1] = address(new_ExchangeRates_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_Synthetix_contract);
         addressresolver_importAddresses_destinations_0_1[3] = address(new_Exchanger_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_SystemSettings_contract);
@@ -186,7 +196,6 @@ contract Migration_MenkentOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](15);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x5e719d22C6ad679B28FE17E9cf56d3ad613a6723);
