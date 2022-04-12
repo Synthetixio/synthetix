@@ -7,8 +7,6 @@ const { ensureBalance } = require('../utils/balances');
 const { finalizationOnL2, finalizationOnL1 } = require('../utils/optimism');
 const { approveIfNeeded } = require('../utils/approve');
 
-const { toBytes32 } = require('../../../index');
-
 describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
@@ -23,8 +21,6 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 	let ownerBalance, ownerL2Balance;
 
 	let depositReceipt;
-
-	const sUSD = toBytes32('sUSD');
 
 	describe('when the owner sends sUSD', () => {
 		before('target contracts and users', () => {
@@ -61,7 +57,6 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 			SynthetixBridgeToOptimism = SynthetixBridgeToOptimism.connect(owner);
 
 			const tx = await SynthetixBridgeToOptimism.initiateSynthTransfer(
-				sUSD,
 				owner.address,
 				amountToDeposit
 			);
@@ -96,7 +91,6 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 					SynthetixBridgeToBase = SynthetixBridgeToBase.connect(owner);
 
 					const tx = await SynthetixBridgeToBase.initiateSynthTransfer(
-						sUSD,
 						owner.address,
 						amountToDeposit
 					);

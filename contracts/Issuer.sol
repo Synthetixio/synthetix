@@ -571,7 +571,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
-
         // record issue timestamp
         _setLastIssueEvent(to);
 

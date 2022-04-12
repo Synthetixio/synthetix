@@ -22,6 +22,8 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
+    bytes32 private constant sUSD = "sUSD";
+
     bool public initiationActive;
 
     // ========== CONSTRUCTOR ==========
@@ -104,18 +106,13 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         emit InitiationResumed();
     }
 
-    function initiateSynthTransfer(
-        bytes32 currencyKey,
-        address destination,
-        uint amount
-    ) external {
+    function initiateSynthTransfer(address destination, uint amount) external {
         require(destination != address(0), "Cannot send to zero address");
 
-        issuer().burnFreeSynths(currencyKey, msg.sender, amount);
+        issuer().burnFreeSynths(sUSD, msg.sender, amount);
 
         // create message payload
-        bytes memory messageData =
-            abi.encodeWithSelector(this.finalizeSynthTransfer.selector, currencyKey, destination, amount);
+        bytes memory messageData = abi.encodeWithSelector(this.finalizeSynthTransfer.selector, destination, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
@@ -124,17 +121,13 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit InitiateSynthTransfer(currencyKey, destination, amount);
+        emit InitiateSynthTransfer(sUSD, destination, amount);
     }
 
-    function finalizeSynthTransfer(
-        bytes32 currencyKey,
-        address destination,
-        uint amount
-    ) external onlyCounterpart {
-        issuer().issueFreeSynths(currencyKey, destination, amount);
+    function finalizeSynthTransfer(address destination, uint amount) external onlyCounterpart {
+        issuer().issueFreeSynths(sUSD, destination, amount);
 
-        emit FinalizeSynthTransfer(currencyKey, destination, amount);
+        emit FinalizeSynthTransfer(sUSD, destination, amount);
     }
 
     // ========== EVENTS ==========

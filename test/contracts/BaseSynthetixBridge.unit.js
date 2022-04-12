@@ -12,7 +12,7 @@ const BaseSynthetixBridge = artifacts.require('BaseSynthetixBridge');
 contract('BaseSynthetixBridge (unit tests)', accounts => {
 	const [, owner, user1, smockedMessenger] = accounts;
 
-	const sETH = toBytes32('sETH');
+	const sUSD = toBytes32('sUSD');
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -188,7 +188,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 				describe('when successfully invoked', () => {
 					let txn;
 					beforeEach(async () => {
-						txn = await instance.initiateSynthTransfer(sETH, owner, toUnit('100'), { from: user1 });
+						txn = await instance.initiateSynthTransfer(owner, toUnit('100'), { from: user1 });
 					});
 
 					it('burns synths from caller', () => {
@@ -200,7 +200,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					});
 
 					it('emits event', () => {
-						assert.eventEqual(txn, 'InitiateSynthTransfer', [sETH, owner, toUnit('100')]);
+						assert.eventEqual(txn, 'InitiateSynthTransfer', [sUSD, owner, toUnit('100')]);
 					});
 				});
 			});
@@ -212,7 +212,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 				it('fails if xdomainmessagesender doesnt match counterpart', async () => {
 					messenger.smocked.xDomainMessageSender.will.return.with(owner);
-					await assert.revert(instance.finalizeSynthTransfer(sETH, owner, '100'));
+					await assert.revert(instance.finalizeSynthTransfer(owner, '100'));
 				});
 
 				it('can only be called by messenger and registered counterpart', async () => {
@@ -220,7 +220,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 						fnc: instance.finalizeSynthTransfer,
 						accounts,
 						address: smockedMessenger,
-						args: [sETH, owner, '100'],
+						args: [owner, '100'],
 						reason: 'Only the relayer can call this',
 					});
 				});
@@ -228,7 +228,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 				describe('when successfully invoked', () => {
 					let txn;
 					beforeEach(async () => {
-						txn = await instance.finalizeSynthTransfer(sETH, user1, toUnit('125'), {
+						txn = await instance.finalizeSynthTransfer(user1, toUnit('125'), {
 							from: smockedMessenger,
 						});
 					});
@@ -238,7 +238,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					});
 
 					it('emits event', () => {
-						assert.eventEqual(txn, 'FinalizeSynthTransfer', [sETH, user1, toUnit('125')]);
+						assert.eventEqual(txn, 'FinalizeSynthTransfer', [sUSD, user1, toUnit('125')]);
 					});
 				});
 			});
