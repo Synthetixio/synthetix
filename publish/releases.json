@@ -563,7 +563,7 @@
 			"sip": 217,
 			"layer": "ovm",
 			"sources": [],
-			"released": "ovm"
+			"released": "both"
 		},
 		{
 			"sip": 220,
