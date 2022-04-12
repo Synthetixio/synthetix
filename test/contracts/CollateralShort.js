@@ -169,8 +169,8 @@ contract('CollateralShort', async accounts => {
 		await setupShort();
 		await updateRatesWithDefaults();
 
-		// set a 0.3% default exchange fee rate
-		const exchangeFeeRate = toUnit('0.003');
+		// set a 0.15% default exchange fee rate on each synth
+		const exchangeFeeRate = toUnit('0.0015');
 		const synthKeys = [sETH, sUSD];
 		await setExchangeFeeRateForSynths({
 			owner,

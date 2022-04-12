@@ -64,7 +64,7 @@ describe('deployments', () => {
 						contracts = {
 							Synthetix: getContract({
 								source: useOvm ? 'MintableSynthetix' : 'Synthetix',
-								target: 'ProxyERC20',
+								target: 'ProxySynthetix',
 							}),
 							ExchangeRates: getContract({ target: 'ExchangeRates' }),
 						};
@@ -136,7 +136,11 @@ describe('deployments', () => {
 											);
 											const tokenName = await tokenContract.methods.name().call();
 
-											if (token === 'Synthetix' || token === 'ProxyERC20') {
+											if (
+												token === 'Synthetix' ||
+												token === 'ProxyERC20' ||
+												token === 'ProxySynthetix'
+											) {
 												assert.strictEqual(tokenName, 'Synthetix Network Token');
 											} else if (token.includes('Proxy')) {
 												const synthType = token.slice(5);

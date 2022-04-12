@@ -422,6 +422,19 @@ library SystemSettingsLib {
         );
     }
 
+    function setPureChainlinkPriceForAtomicSwapsEnabled(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        bool _enabled
+    ) external {
+        flexibleStorage.setBoolValue(
+            SETTINGS_CONTRACT_NAME,
+            keccak256(abi.encodePacked(settingName, _currencyKey)),
+            _enabled
+        );
+    }
+
     function setExchangeMaxDynamicFee(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
