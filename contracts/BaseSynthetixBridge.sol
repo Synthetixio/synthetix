@@ -106,7 +106,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         emit InitiationResumed();
     }
 
-    function initiateSynthTransfer(address destination, uint amount) external {
+    function initiateSynthTransfer(address destination, uint amount) external requireInitiationActive {
         require(destination != address(0), "Cannot send to zero address");
 
         issuer().burnFreeSynths(sUSD, msg.sender, amount);
