@@ -69,28 +69,68 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             uint systemDestinationRate
         )
     {
-        IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
-        require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
-
-        IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
-        require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
-
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
         );
-        // Derive P_CLBUF from highest configured buffer between source and destination synth
-        uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
-        uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
-        uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
-        uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
-        // refactired due to stack too deep
-        uint pDexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
+        bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
+        bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
+        uint dexValue;
 
-        // Final value is minimum output between P_CLBUF and P_TWAP
-        value = pClbufValue < pDexValue ? pClbufValue : pDexValue; // min
+        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
+            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
+            uint sourceRate =
+                usePureChainlinkPriceForSource
+                    ? systemSourceRate
+                    : _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount);
+            uint destRate =
+                usePureChainlinkPriceForDest
+                    ? systemDestinationRate
+                    : _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount);
+
+            value = sourceAmount.mul(sourceRate).div(destRate);
+        } else {
+            // Otherwise, we get the price from Uniswap
+            IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
+            require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
+            IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
+            require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
+
+            dexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
+
+            // Derive chainlinkValueWithBuffer from highest configured buffer between source and destination synth
+            uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
+            uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
+            uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
+            uint chainlinkValueWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
+
+            // Final value is minimum output between the price from Chainlink with a buffer and the price from Uniswap.
+            value = chainlinkValueWithBuffer < dexValue ? chainlinkValueWithBuffer : dexValue; // min
+        }
+    }
+
+    /// @notice Retrieve the TWAP (time-weighted average price) of an asset from its Uniswap V3-equivalent pool
+    /// @dev By default, the TWAP oracle 'hops' through the wETH pool. This can be overridden. See DexPriceAggregator for more information.
+    /// @dev The TWAP oracle doesn't take into account variable slippage due to trade amounts, as Uniswap's OracleLibary doesn't cross ticks based on their liquidity. See: https://docs.uniswap.org/protocol/concepts/V3-overview/oracle#deriving-price-from-a-tick
+    /// @param currencyKey The currency key of the synth we're retrieving the price for
+    /// @param amount The amount of the asset we're interested in
+    /// @return The price of the asset
+    function _getPriceFromDexAggregator(bytes32 currencyKey, uint amount) internal view returns (uint) {
+        require(amount != 0, "Amount must be greater than 0");
+
+        IERC20 inputEquivalent = IERC20(getAtomicEquivalentForDexPricing(currencyKey));
+        require(address(inputEquivalent) != address(0), "No atomic equivalent for input");
+
+        IERC20 susdEquivalent = IERC20(getAtomicEquivalentForDexPricing("sUSD"));
+        require(address(susdEquivalent) != address(0), "No atomic equivalent for sUSD");
+
+        uint result =
+            _dexPriceDestinationValue(inputEquivalent, susdEquivalent, amount).mul(SafeDecimalMath.unit()).div(amount);
+        require(result != 0, "Result must be greater than 0");
+
+        return result;
     }
 
     function _dexPriceDestinationValue(

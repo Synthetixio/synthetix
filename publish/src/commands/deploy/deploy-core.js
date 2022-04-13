@@ -173,38 +173,29 @@ module.exports = async ({
 		],
 	});
 
-	// New Synthetix proxy.
-	const proxyERC20Synthetix = await deployer.deployContract({
-		name: 'ProxyERC20',
-		args: [account],
-	});
-
 	const tokenStateSynthetix = await deployer.deployContract({
 		name: 'TokenStateSynthetix',
 		source: 'LegacyTokenState',
 		args: [account, account],
 	});
 
+	const proxySynthetix = await deployer.deployContract({
+		name: 'ProxySynthetix',
+		source: 'ProxyERC20',
+		args: [account],
+	});
+
 	await deployer.deployContract({
 		name: 'Synthetix',
 		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
-		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
+		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
-			addressOf(proxyERC20Synthetix),
+			addressOf(proxySynthetix),
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
 			addressOf(readProxyForResolver),
 		],
-	});
-
-	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
-	// To be removed after May 30, 2020:
-	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
-	await deployer.deployContract({
-		name: 'ProxySynthetix',
-		source: 'Proxy',
-		args: [account],
 	});
 
 	await deployer.deployContract({

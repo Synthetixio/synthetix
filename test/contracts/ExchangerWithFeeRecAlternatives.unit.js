@@ -14,6 +14,7 @@ const {
 const { divideDecimal, multiplyDecimal, toUnit } = require('../utils')();
 
 const { getUsers, toBytes32 } = require('../..');
+const { toDecimal } = require('web3-utils');
 
 const { toBN } = web3.utils;
 
@@ -21,7 +22,7 @@ let ExchangerWithFeeRecAlternatives;
 
 contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 	const [, owner] = accounts;
-	const [sUSD, sETH, sBTC, iETH] = ['sUSD', 'sETH', 'sBTC', 'iETH'].map(toBytes32);
+	const [sUSD, sETH, iETH] = ['sUSD', 'sETH', 'iETH'].map(toBytes32);
 	const maxAtomicValuePerBlock = toUnit('1000000');
 	const baseFeeRate = toUnit('0.003'); // 30bps
 	const overrideFeeRate = toUnit('0.01'); // 100bps
@@ -371,6 +372,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 						destinationAddress = owner,
 						trackingCode = toBytes32(),
 						asSynthetix = true,
+						minAmount = toDecimal(0),
 					} = {}) => {
 						const args = [
 							from,
@@ -379,6 +381,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							destinationCurrencyKey,
 							destinationAddress,
 							trackingCode,
+							minAmount,
 						];
 
 						return asSynthetix ? callAsSynthetix(args) : args;
@@ -435,29 +438,26 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 									() => {
 										behaviors.whenMockedWithVolatileSynth({ synth: sETH, volatile: true }, () => {
 											describe('when synth pricing is deemed volatile', () => {
-												it('reverts due to volatility', async () => {
+												it('reverts due to src volatility', async () => {
+													const args = getExchangeArgs({
+														sourceCurrencyKey: sETH,
+														destinationCurrencyKey: sUSD,
+													});
+													await assert.revert(
+														this.instance.exchangeAtomically(...args),
+														'Src synth too volatile'
+													);
+												});
+												it('reverts due to dest volatility', async () => {
 													const args = getExchangeArgs({
 														sourceCurrencyKey: sUSD,
 														destinationCurrencyKey: sETH,
 													});
 													await assert.revert(
 														this.instance.exchangeAtomically(...args),
-														'Src/dest synth too volatile'
+														'Dest synth too volatile'
 													);
 												});
-											});
-										});
-
-										describe('when sUSD is not in src/dest pair', () => {
-											it('reverts requiring src/dest to be sUSD', async () => {
-												const args = getExchangeArgs({
-													sourceCurrencyKey: sBTC,
-													destinationCurrencyKey: sETH,
-												});
-												await assert.revert(
-													this.instance.exchangeAtomically(...args),
-													'Src/dest synth must be sUSD'
-												);
 											});
 										});
 

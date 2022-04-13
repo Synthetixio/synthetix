@@ -638,7 +638,7 @@ contract('Rewards Integration Tests', accounts => {
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%
-			const potentialFee = exchangeFeeIncurred(toUnit('10000'));
+			const potentialFee = exchangeFeeIncurred(toUnit('20000'));
 			await synthetix.issueSynths(tenK.sub(half(potentialFee)), { from: account3 });
 
 			// Get the SNX mintableSupply for week 2

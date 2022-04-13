@@ -53,7 +53,7 @@ contract('FeePool', async accounts => {
 		return result[0];
 	}
 
-	const exchangeFeeRate = toUnit('0.003'); // 30 bips
+	const exchangeFeeRate = toUnit('0.006'); // 30 bips, applied on each synth
 	const amountReceivedFromExchange = amountToExchange => {
 		return multiplyDecimal(amountToExchange, toUnit('1').sub(exchangeFeeRate));
 	};
@@ -402,7 +402,7 @@ contract('FeePool', async accounts => {
 
 			// Now we should have some fees.
 			feesAvailable = await feePool.feesAvailable(owner);
-			assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')));
+			assert.bnClose(feesAvailable[0], fee.div(web3.utils.toBN('3')), CLAIM_AMOUNT_DELTA_TOLERATED);
 
 			feesAvailable = await feePool.feesAvailable(account1);
 			assert.bnClose(
@@ -452,7 +452,7 @@ contract('FeePool', async accounts => {
 
 			// Now we should have some fees.
 			feesAvailable = await feePool.feesAvailable(owner);
-			assert.bnClose(feesAvailable[0], oneThird(fee));
+			assert.bnClose(feesAvailable[0], oneThird(fee), CLAIM_AMOUNT_DELTA_TOLERATED);
 			feesAvailable = await feePool.feesAvailable(account1);
 			assert.bnClose(feesAvailable[0], twoThirds(fee), CLAIM_AMOUNT_DELTA_TOLERATED);
 
@@ -471,7 +471,7 @@ contract('FeePool', async accounts => {
 			}
 
 			feesAvailable = await feePool.feesAvailable(account1);
-			assert.bnClose(feesAvailable[0], twoThirds(twoThirds(fee)));
+			assert.bnClose(feesAvailable[0], twoThirds(twoThirds(fee)), CLAIM_AMOUNT_DELTA_TOLERATED);
 
 			// But once they claim they should have zero.
 			await feePool.claimFees({ from: account1 });

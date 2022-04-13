@@ -101,7 +101,8 @@ interface ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        bytes32 trackingCode
+        bytes32 trackingCode,
+        uint minAmount
     ) external returns (uint amountReceived);
 
     function issueMaxSynths() external;

@@ -1,4 +1,3 @@
 # these files are irrelevant outside of a single developer's machine,
 # so no need to persist them in source control
-deployment.json
 owner-actions.json
