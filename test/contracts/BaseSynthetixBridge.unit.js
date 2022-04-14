@@ -188,6 +188,9 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 				describe('when successfully invoked', () => {
 					let txn;
 					beforeEach(async () => {
+						// two initiate calls to verify summation
+						await instance.initiateSynthTransfer(user1, toUnit('50'), { from: owner });
+
 						txn = await instance.initiateSynthTransfer(owner, toUnit('100'), { from: user1 });
 					});
 
@@ -197,6 +200,10 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 					it('calls messenger', () => {
 						assert.bnEqual(messenger.smocked.sendMessage.calls[0]._target, issuer.address);
+					});
+
+					it('increments synthTransferSent', async () => {
+						assert.bnEqual(await instance.synthTransferSent(), toUnit('150'));
 					});
 
 					it('emits event', () => {
@@ -228,6 +235,9 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 				describe('when successfully invoked', () => {
 					let txn;
 					beforeEach(async () => {
+						// two calls to verify summation
+						await instance.finalizeSynthTransfer(owner, toUnit('50'), { from: smockedMessenger });
+
 						txn = await instance.finalizeSynthTransfer(user1, toUnit('125'), {
 							from: smockedMessenger,
 						});
@@ -235,6 +245,10 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 					it('mints synths to the destination', () => {
 						assert.bnEqual(issuer.smocked.issueFreeSynths.calls[0].amount, toUnit('125'));
+					});
+
+					it('increments synthTransferReceived', async () => {
+						assert.bnEqual(await instance.synthTransferReceived(), toUnit('175'));
 					});
 
 					it('emits event', () => {

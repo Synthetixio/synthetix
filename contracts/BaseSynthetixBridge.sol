@@ -26,6 +26,9 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
     bool public initiationActive;
 
+    uint public synthTransferSent;
+    uint public synthTransferReceived;
+
     // ========== CONSTRUCTOR ==========
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
@@ -121,11 +124,15 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
+        synthTransferSent += amount;
+
         emit InitiateSynthTransfer(sUSD, destination, amount);
     }
 
     function finalizeSynthTransfer(address destination, uint amount) external onlyCounterpart {
         issuer().issueFreeSynths(sUSD, destination, amount);
+
+        synthTransferReceived += amount;
 
         emit FinalizeSynthTransfer(sUSD, destination, amount);
     }
