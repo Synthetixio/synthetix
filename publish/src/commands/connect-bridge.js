@@ -134,7 +134,7 @@ const connectBridge = async ({
 				const calldata = await SynthetixBridgeEscrow.interface.encodeFunctionData('approveBridge', [
 					Synthetix.address,
 					SynthetixBridgeToOptimism.address,
-					ethers.utils.parseEther('100000000000'),
+					ethers.constants.MaxUint256,
 				]);
 				console.log('Calldata is', calldata);
 				await confirmAction(
@@ -150,7 +150,7 @@ const connectBridge = async ({
 				const tx = await SynthetixBridgeEscrow.approveBridge(
 					Synthetix.address,
 					SynthetixBridgeToOptimism.address,
-					ethers.utils.parseEther('100000000000'),
+					ethers.constants.MaxUint256,
 					params
 				);
 				const receipt = await tx.wait();
