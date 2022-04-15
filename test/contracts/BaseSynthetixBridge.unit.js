@@ -12,7 +12,7 @@ const BaseSynthetixBridge = artifacts.require('BaseSynthetixBridge');
 contract('BaseSynthetixBridge (unit tests)', accounts => {
 	const [, owner, user1, smockedMessenger] = accounts;
 
-	const sUSD = toBytes32('sUSD');
+	const [sUSD, sETH] = [toBytes32('sUSD'), toBytes32('sETH')];
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -32,6 +32,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 		let synthetix;
 		let resolver;
 		let issuer;
+		let exchangeRates;
 		let feePool;
 		let rewardEscrow;
 		let flexibleStorage;
@@ -51,6 +52,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			feePool = await smockit(artifacts.require('FeePool').abi);
 
 			issuer = await smockit(artifacts.require('Issuer').abi);
+			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
@@ -62,6 +64,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					'RewardEscrowV2',
 					'FlexibleStorage',
 					'Issuer',
+					'ExchangeRates',
 					'FeePool',
 					'base:SynthetixBridgeToOptimism',
 				].map(toBytes32),
@@ -71,6 +74,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					rewardEscrow.address,
 					flexibleStorage.address,
 					issuer.address,
+					exchangeRates.address,
 					feePool.address,
 					issuer.address,
 				],
@@ -185,17 +189,45 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			});
 
 			describe('initiateSynthTransfer', () => {
-				describe('when successfully invoked', () => {
-					let txn;
-					beforeEach(async () => {
-						// two initiate calls to verify summation
-						await instance.initiateSynthTransfer(user1, toUnit('50'), { from: owner });
+				it('fails if requested synth is not enabled for cross chain transfer', async () => {
+					await assert.revert(
+						instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
+						'Synth not enabled for cross chain transfer'
+					);
+				});
 
-						txn = await instance.initiateSynthTransfer(owner, toUnit('100'), { from: user1 });
+				describe('when enabled for cross chain transfer', () => {
+					let txn;
+
+					beforeEach('run synth transfer calls', async () => {
+						// fake the value that would be set by first `initiateSynthTransfer`
+						// this also simultaneously enables synth trade
+						flexibleStorage.smocked.getUIntValue.will.return.with(toUnit('50').toString());
+
+						// two initiate calls to verify summation
+						await instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner });
+
+						txn = await instance.initiateSynthTransfer(sUSD, owner, toUnit('100'), { from: user1 });
+					});
+
+					it('fails if initiation is not active', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(
+							instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
+							'Initiation deactivated'
+						);
+					});
+
+					it('fails if issuance is not active', async () => {
+						await assert.revert(
+							instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
+							'Issuance suspended'
+						);
 					});
 
 					it('burns synths from caller', () => {
-						assert.bnEqual(issuer.smocked.burnFreeSynths.calls[0].amount, toUnit('100'));
+						assert.bnEqual(issuer.smocked.burnSynthsWithoutDebt.calls[0].amount, toUnit('100'));
 					});
 
 					it('calls messenger', () => {
@@ -203,7 +235,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					});
 
 					it('increments synthTransferSent', async () => {
-						assert.bnEqual(await instance.synthTransferSent(), toUnit('150'));
+						assert.bnEqual(flexibleStorage.smocked.setUIntValue.calls[0].value, toUnit('150'));
 					});
 
 					it('emits event', () => {
@@ -219,7 +251,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 				it('fails if xdomainmessagesender doesnt match counterpart', async () => {
 					messenger.smocked.xDomainMessageSender.will.return.with(owner);
-					await assert.revert(instance.finalizeSynthTransfer(owner, '100'));
+					await assert.revert(instance.finalizeSynthTransfer(sUSD, owner, '100'));
 				});
 
 				it('can only be called by messenger and registered counterpart', async () => {
@@ -227,7 +259,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 						fnc: instance.finalizeSynthTransfer,
 						accounts,
 						address: smockedMessenger,
-						args: [owner, '100'],
+						args: [sUSD, owner, '100'],
 						reason: 'Only the relayer can call this',
 					});
 				});
@@ -235,25 +267,60 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 				describe('when successfully invoked', () => {
 					let txn;
 					beforeEach(async () => {
-						// two calls to verify summation
-						await instance.finalizeSynthTransfer(owner, toUnit('50'), { from: smockedMessenger });
+						// fake the value that would be set by previous `finalizeSynthTransfer`
+						flexibleStorage.smocked.getUIntValue.will.return.with(toUnit('50').toString());
 
-						txn = await instance.finalizeSynthTransfer(user1, toUnit('125'), {
+						// two calls to verify summation
+						await instance.finalizeSynthTransfer(sETH, owner, toUnit('50'), {
+							from: smockedMessenger,
+						});
+
+						txn = await instance.finalizeSynthTransfer(sUSD, user1, toUnit('125'), {
 							from: smockedMessenger,
 						});
 					});
 
 					it('mints synths to the destination', () => {
-						assert.bnEqual(issuer.smocked.issueFreeSynths.calls[0].amount, toUnit('125'));
+						assert.bnEqual(issuer.smocked.issueSynthsWithoutDebt.calls[0].amount, toUnit('125'));
 					});
 
 					it('increments synthTransferReceived', async () => {
-						assert.bnEqual(await instance.synthTransferReceived(), toUnit('175'));
+						assert.bnEqual(flexibleStorage.smocked.setUIntValue.calls[0].value, toUnit('175'));
 					});
 
 					it('emits event', () => {
 						assert.eventEqual(txn, 'FinalizeSynthTransfer', [sUSD, user1, toUnit('125')]);
 					});
+				});
+			});
+
+			describe('synthTransferSent & synthTransferReceived', () => {
+				beforeEach('set fake values', () => {
+					// create some fake synths
+					issuer.smocked.availableCurrencyKeys.will.return.with([sUSD, sETH]);
+
+					// set some exchange rates
+					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with({
+						rates: [toUnit('1'), toUnit('3')],
+						anyRateInvalid: false,
+					});
+
+					// set flexible storage to a fake value
+					flexibleStorage.smocked.getUIntValues.will.return.with([toUnit('100'), toUnit('200')]);
+				});
+
+				it('reverts if rates are innaccurate', async () => {
+					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with({
+						rates: [toUnit('1'), toUnit('3')],
+						anyRateInvalid: true,
+					});
+
+					await assert.revert(instance.synthTransferSent(), 'Rates are not accurate');
+				});
+
+				it('correctly sums', async () => {
+					assert.bnEqual(await instance.synthTransferSent(), toUnit(700));
+					assert.bnEqual(await instance.synthTransferReceived(), toUnit(700));
 				});
 			});
 		});

@@ -223,6 +223,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getAtomicVolatilityUpdateThreshold(currencyKey);
     }
 
+    // SIP-229 Atomic exchanges
+    // enable/disable sending of synths cross chain
+    function crossChainTransferEnabled(bytes32 currencyKey) external view returns (uint) {
+        return getCrossSynthTransferEnabled(currencyKey);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
@@ -455,6 +461,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
 
+    function setCrossSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
+        flexibleStorage().setCrossSynthTransferEnabled(
+            SETTING_CROSS_SYNTH_TRANSFER_ENABLED,
+            _currencyKey,
+            _value
+        );
+        emit CrossSynthTransferEnabledUpdated(_currencyKey, _value);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event IssuanceRatioUpdated(uint newRatio);
@@ -492,4 +507,5 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
     event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
     event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
+    event CrossSynthTransferEnabledUpdated(bytes32 synthKey, uint value);
 }

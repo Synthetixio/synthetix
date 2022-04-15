@@ -7,27 +7,38 @@ import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/IBaseSynthetixBridge.sol";
 
+// Libraries
+import "./Math.sol";
+import "./SafeDecimalMath.sol";
+
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IFeePool.sol";
+import "./interfaces/IExchangeRates.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge {
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
+    bytes32 private constant CONTRACT_EXCHANGERATES = "ExchangeRates";
 
     bytes32 private constant sUSD = "sUSD";
 
     bool public initiationActive;
 
-    uint public synthTransferSent;
-    uint public synthTransferReceived;
+    bytes32 private constant SYNTH_TRANSFER_NAMESPACE = "SynthTransfer";
+    bytes32 private constant SYNTH_TRANSFER_SENT = "Sent";
+    bytes32 private constant SYNTH_TRANSFER_RECV = "Recv";
 
     // ========== CONSTRUCTOR ==========
 
@@ -57,6 +68,14 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
+    function flexibleStorage() internal view returns (IFlexibleStorage) {
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
+    }
+
+    function exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
+    }
+
     function initiatingActive() internal view {
         require(initiationActive, "Initiation deactivated");
     }
@@ -70,28 +89,38 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         require(_messenger.xDomainMessageSender() == counterpart(), "Only a counterpart bridge can invoke");
     }
 
-    modifier onlyCounterpart() {
-        onlyAllowFromCounterpart();
-        _;
-    }
-
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_REWARDESCROW;
         newAddresses[3] = CONTRACT_ISSUER;
         newAddresses[4] = CONTRACT_FEEPOOL;
+        newAddresses[5] = CONTRACT_FLEXIBLESTORAGE;
+        newAddresses[6] = CONTRACT_EXCHANGERATES;
         addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    function synthTransferSent() public view returns (uint) {
+        return _sumTransferAmounts(SYNTH_TRANSFER_SENT);
+    }
+
+    function synthTransferReceived() public view returns (uint) {
+        return _sumTransferAmounts(SYNTH_TRANSFER_RECV);
     }
 
     // ========== MODIFIERS ============
 
     modifier requireInitiationActive() {
         initiatingActive();
+        _;
+    }
+
+    modifier onlyCounterpart() {
+        onlyAllowFromCounterpart();
         _;
     }
 
@@ -109,13 +138,16 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         emit InitiationResumed();
     }
 
-    function initiateSynthTransfer(address destination, uint amount) external requireInitiationActive {
+    function initiateSynthTransfer(bytes32 currencyKey, address destination, uint amount) external requireInitiationActive {
         require(destination != address(0), "Cannot send to zero address");
+        require(getCrossSynthTransferEnabled(currencyKey) > 0, "Synth not enabled for cross chain transfer");
+        
+        _incrementSynthsTransferCounter(SYNTH_TRANSFER_SENT, currencyKey, amount);
 
-        issuer().burnFreeSynths(sUSD, msg.sender, amount);
+        issuer().burnSynthsWithoutDebt(currencyKey, msg.sender, amount);
 
         // create message payload
-        bytes memory messageData = abi.encodeWithSelector(this.finalizeSynthTransfer.selector, destination, amount);
+        bytes memory messageData = abi.encodeWithSelector(this.finalizeSynthTransfer.selector, currencyKey, destination, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
@@ -124,17 +156,52 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        synthTransferSent += amount;
-
         emit InitiateSynthTransfer(sUSD, destination, amount);
     }
 
-    function finalizeSynthTransfer(address destination, uint amount) external onlyCounterpart {
-        issuer().issueFreeSynths(sUSD, destination, amount);
+    function finalizeSynthTransfer(bytes32 currencyKey, address destination, uint amount) external onlyCounterpart {
+        
+        _incrementSynthsTransferCounter(SYNTH_TRANSFER_RECV, currencyKey, amount);
 
-        synthTransferReceived += amount;
+        issuer().issueSynthsWithoutDebt(currencyKey, destination, amount);
 
-        emit FinalizeSynthTransfer(sUSD, destination, amount);
+        emit FinalizeSynthTransfer(currencyKey, destination, amount);
+    }
+
+    // ==== INTERNAL FUNCTIONS ====
+
+    function _incrementSynthsTransferCounter(bytes32 group, bytes32 currencyKey, uint amount) internal {
+        bytes32 key = keccak256(abi.encodePacked(group, currencyKey));
+        
+        uint currentSynths = flexibleStorage().getUIntValue(SYNTH_TRANSFER_NAMESPACE,key);
+
+        flexibleStorage().setUIntValue(
+            SYNTH_TRANSFER_NAMESPACE,
+            key,
+            currentSynths + amount
+        );
+    }
+
+    function _sumTransferAmounts(bytes32 group) internal view returns (uint sum) {
+        // get list of synths from issuer
+        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
+
+        // get all synth rates
+        (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+
+        require(!isInvalid, "Rates are not accurate");
+
+        // get all values
+        bytes32[] memory transferAmountKeys = new bytes32[](currencyKeys.length);
+        for (uint i = 0;i < currencyKeys.length;i++) {
+            transferAmountKeys[i] = keccak256(abi.encodePacked(group, currencyKeys));
+        }
+
+        uint[] memory transferAmounts = flexibleStorage().getUIntValues(SYNTH_TRANSFER_NAMESPACE, transferAmountKeys);
+
+        for (uint i = 0;i < currencyKeys.length;i++) {
+            sum = sum.add(transferAmounts[i].multiplyDecimalRound(rates[i]));
+        }
     }
 
     // ========== EVENTS ==========

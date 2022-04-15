@@ -563,11 +563,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function issueFreeSynths(
+    function issueSynthsWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount
-    ) external onlyBrokers {
+    ) external onlyTrustedMinters {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -581,11 +581,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
     }
 
-    function burnFreeSynths(
+    function burnSynthsWithoutDebt(
         bytes32 currencyKey,
         address from,
         uint amount
-    ) external onlyBrokers {
+    ) external onlyTrustedMinters {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -596,13 +596,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amount));
     }
 
-    function issueSynths(address from, uint amount) external onlyBrokers {
+    function issueSynths(address from, uint amount) external onlySynthetix {
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
         _issueSynths(from, amount, false);
     }
 
-    function issueMaxSynths(address from) external onlyBrokers {
+    function issueMaxSynths(address from) external onlySynthetix {
         _issueSynths(from, 0, true);
     }
 
@@ -610,17 +610,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address issueForAddress,
         address from,
         uint amount
-    ) external onlyBrokers {
+    ) external onlySynthetix {
         _requireCanIssueOnBehalf(issueForAddress, from);
         _issueSynths(issueForAddress, amount, false);
     }
 
-    function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlyBrokers {
+    function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlySynthetix {
         _requireCanIssueOnBehalf(issueForAddress, from);
         _issueSynths(issueForAddress, 0, true);
     }
 
-    function burnSynths(address from, uint amount) external onlyBrokers {
+    function burnSynths(address from, uint amount) external onlySynthetix {
         _voluntaryBurnSynths(from, amount, false);
     }
 
@@ -628,16 +628,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address burnForAddress,
         address from,
         uint amount
-    ) external onlyBrokers {
+    ) external onlySynthetix {
         _requireCanBurnOnBehalf(burnForAddress, from);
         _voluntaryBurnSynths(burnForAddress, amount, false);
     }
 
-    function burnSynthsToTarget(address from) external onlyBrokers {
+    function burnSynthsToTarget(address from) external onlySynthetix {
         _voluntaryBurnSynths(from, 0, true);
     }
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlyBrokers {
+    function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
         _requireCanBurnOnBehalf(burnForAddress, from);
         _voluntaryBurnSynths(burnForAddress, 0, true);
     }
@@ -654,7 +654,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address account,
         uint susdAmount,
         address liquidator
-    ) external onlyBrokers returns (uint totalRedeemed, uint amountToLiquidate) {
+    ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
         // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
 
@@ -904,18 +904,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     /* ========== MODIFIERS ========== */
-
-    function _onlyBrokers() internal view {
-        require(
-            msg.sender == address(synthetix()) ||
-                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM) ||
-                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE),
-            "Issuer: Only trusted brokers can perform this action"
-        );
+    modifier onlySynthetix() {
+        require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
+        _;
     }
 
-    modifier onlyBrokers() {
-        _onlyBrokers(); // Use an internal function to save code size.
+    modifier onlyTrustedMinters() {
+        require(
+                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM) ||
+                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE), "Issuer: Only trusted minters can perform this action"
+        );
         _;
     }
 

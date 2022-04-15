@@ -95,13 +95,13 @@ interface IIssuer {
 
     function setCurrentPeriodId(uint128 periodId) external;
 
-    function issueFreeSynths(
+    function issueSynthsWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount
     ) external;
 
-    function burnFreeSynths(
+    function burnSynthsWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount
