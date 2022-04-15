@@ -225,7 +225,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-229 Atomic exchanges
     // enable/disable sending of synths cross chain
-    function crossChainTransferEnabled(bytes32 currencyKey) external view returns (uint) {
+    function crossSynthTransferEnabled(bytes32 currencyKey) external view returns (uint) {
         return getCrossSynthTransferEnabled(currencyKey);
     }
 
