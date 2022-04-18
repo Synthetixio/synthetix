@@ -16,27 +16,51 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 
 	const [sUSD, sETH] = [toBytes32('sUSD'), toBytes32('sETH')];
 
-	let owner;
-	let SynthsUSD, SynthetixBridgeToOptimism;
+	let owner, ownerL2;
+	let SynthsUSD, SynthetixBridgeToOptimism, SystemSettings;
 
-	let SynthsUSDL2, SynthetixBridgeToBase;
+	let SynthsUSDL2, SynthetixBridgeToBase, SystemSettingsL2;
 
 	let ownerBalance, ownerL2Balance;
 
 	let depositReceipt;
 
-	describe('when the owner sends sUSD', () => {
+	describe.only('when the owner sends sUSD', () => {
 		before('target contracts and users', () => {
-			({ SynthsUSD, SynthetixBridgeToOptimism } = ctx.l1.contracts);
-			({ SynthsUSD: SynthsUSDL2, SynthetixBridgeToBase } = ctx.l2.contracts);
+			({ SynthsUSD, SynthetixBridgeToOptimism, SystemSettings } = ctx.l1.contracts);
+			({
+				SynthsUSD: SynthsUSDL2,
+				SynthetixBridgeToBase,
+				SystemSettings: SystemSettingsL2,
+			} = ctx.l2.contracts);
 
 			owner = ctx.l1.users.owner;
+			ownerL2 = ctx.l2.users.owner;
+		});
+
+		before('set system settings', async () => {
+			let tx;
+			tx = await SystemSettings.connect(owner).setCrossSynthTransferEnabled(sUSD, 1);
+			await tx.wait();
+			tx = await SystemSettings.connect(owner).setCrossSynthTransferEnabled(sETH, 1);
+			await tx.wait();
+			tx = await SystemSettingsL2.connect(ownerL2).setCrossSynthTransferEnabled(sUSD, 1);
+			await tx.wait();
+			tx = await SystemSettingsL2.connect(ownerL2).setCrossSynthTransferEnabled(sETH, 1);
+			await tx.wait();
 		});
 
 		before('ensure balance', async () => {
 			await ensureBalance({
 				ctx: ctx.l1,
 				symbol: 'sUSD',
+				user: owner,
+				balance: amountToDeposit.mul(2),
+			});
+
+			await ensureBalance({
+				ctx: ctx.l1,
+				symbol: 'sETH',
 				user: owner,
 				balance: amountToDeposit.mul(2),
 			});
