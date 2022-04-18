@@ -6,16 +6,16 @@ interface IExchangeCircuitBreaker {
 
     function exchangeRates() external view returns (address);
 
-    function rateWithInvalid(bytes32 currencyKey) external view returns (uint, bool);
+    function isInvalid(address oracleAddress, uint value) external view returns (bool);
 
     function priceDeviationThresholdFactor() external view returns (uint);
 
     function isDeviationAboveThreshold(uint base, uint comparison) external view returns (bool);
 
-    function lastExchangeRate(bytes32 currencyKey) external view returns (uint);
+    function lastValue(address oracleAddress) external view returns (uint);
 
     // Mutative functions
-    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
+    function resetLastValue(address[] calldata currencyKeys, uint[] calldata values) external;
 
-    function rateWithBreakCircuit(bytes32 currencyKey) external returns (uint lastValidRate, bool circuitBroken);
+    function probeCircuitBreaker(address aggregator, uint value) external returns (bool broken);
 }

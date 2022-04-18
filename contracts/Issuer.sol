@@ -18,6 +18,7 @@ import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
@@ -74,7 +75,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant sUSD = "sUSD";
-    bytes32 internal constant sETH = "sETH";
     bytes32 internal constant SNX = "SNX";
 
     // Flexible storage names
@@ -86,6 +86,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
@@ -108,17 +109,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
-        newAddresses[3] = CONTRACT_SYNTHETIXDEBTSHARE;
-        newAddresses[4] = CONTRACT_FEEPOOL;
-        newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[6] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
-        newAddresses[8] = CONTRACT_LIQUIDATIONS;
-        newAddresses[9] = CONTRACT_DEBTCACHE;
-        newAddresses[10] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[11] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
-        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[3] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[4] = CONTRACT_SYNTHETIXDEBTSHARE;
+        newAddresses[5] = CONTRACT_FEEPOOL;
+        newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[7] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[8] = CONTRACT_SYNTHETIXESCROW;
+        newAddresses[9] = CONTRACT_LIQUIDATIONS;
+        newAddresses[10] = CONTRACT_DEBTCACHE;
+        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[12] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[14] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -132,6 +134,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    }
+
+    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
@@ -707,7 +713,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool issueMax
     ) internal {
         // check breaker
-        if (!_verifyCircuitBreaker()) {
+        if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
             return;
         }
 
@@ -740,7 +746,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint existingDebt
     ) internal returns (uint amountBurnt) {
         // check breaker
-        if (!_verifyCircuitBreaker()) {
+        if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
             return 0;
         }
 
@@ -769,7 +775,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool burnToTarget
     ) internal {
         // check breaker
-        if (!_verifyCircuitBreaker()) {
+        if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
             return;
         }
 
@@ -841,31 +847,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function _verifyCircuitBreaker() internal returns (bool) {
+    function _verifyDebtRatioCircuitBreaker() internal returns (bool) {
+        address debtRatioAggregator = requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO);
         (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+            AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
 
-        uint deviation = _calculateDeviation(lastDebtRatio, uint(rawRatio));
-
-        if (deviation >= getPriceDeviationThresholdFactor()) {
-            systemStatus().suspendIssuance(CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return false;
-        }
-        lastDebtRatio = uint(rawRatio);
-
-        return true;
+        return exchangeCircuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio));
     }
 
-    function _calculateDeviation(uint last, uint fresh) internal pure returns (uint deviation) {
-        if (last == 0) {
-            deviation = 1;
-        } else if (fresh == 0) {
-            deviation = uint(-1);
-        } else if (last > fresh) {
-            deviation = last.divideDecimal(fresh);
-        } else {
-            deviation = fresh.divideDecimal(last);
-        }
+    function _verifySynthetixCircuitBreaker() internal returns (bool) {
+        (, bool broken) = exchangeRates().rateWithSafetyChecks(SNX);
+
+        return broken;
     }
 
     /* ========== MODIFIERS ========== */

@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
+import "./MixinResolver.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
@@ -22,6 +23,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeDecimalMath for uint;
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
+
+    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+
+
     //slither-disable-next-line naming-convention
     bytes32 internal constant sUSD = "sUSD";
 
@@ -68,7 +73,36 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
+    function rateWithSafetyChecks(bytes32 currencyKey) external returns (uint rate, bool broken) {
+        RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
+
+        if (currencyKey == sUSD) {
+            return (rateAndTime.rate, false);
+        }
+
+        bool broken = exchangeCircuitBreaker().probeCircuitBreaker(address(aggregators[currencyKey]), rateAndTime.rate);
+
+        return (
+            rateAndTime.rate,
+            _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
+                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags())) ||
+                broken
+        );
+    }
+
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
+
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
+    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    }
 
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory currencies) {
         uint count = 0;
@@ -258,7 +292,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return (
             rateAndTime.rate,
             _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
-                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()))
+                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags())) ||
+                exchangeCircuitBreaker().isInvalid(address(aggregators[currencyKey]), rateAndTime.rate)
         );
     }
 
@@ -279,7 +314,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
             if (!anyRateInvalid && currencyKeys[i] != sUSD) {
-                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time);
+                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) || exchangeCircuitBreaker().isInvalid(address(aggregators[currencyKeys[i]]), rateEntry.rate);
             }
         }
     }
