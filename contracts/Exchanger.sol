@@ -155,7 +155,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function volumePartner() internal view returns (IVolumePartner) {
-        return IFeePool(requireAndGetAddress(CONTRACT_VOLUME_PARTNER));
+        return IVolumePartner(requireAndGetAddress(CONTRACT_VOLUME_PARTNER));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -339,7 +339,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address rewardAddress,
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
-        uint fee;
+        uint protocolFee;
+        uint partnerFee;
         if (from != exchangeForAddress) {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         }
@@ -468,7 +469,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // SIP-65: Decentralized Circuit Breaker
         // mutative call to suspend system if the rate is invalid
         if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, 0, IVirtualSynth(0));
         }
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
@@ -476,7 +477,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
         if (sourceAmountAfterSettlement == 0) {
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, 0, IVirtualSynth(0));
         }
 
         bool tooVolatile;
@@ -490,7 +491,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         if (tooVolatile) {
             // do not exchange if rates are too volatile, this to prevent charging
             // dynamic fees that are over the max value
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, 0, IVirtualSynth(0));
         }
 
         // Note: fees are denominated in the destinationCurrencyKey.

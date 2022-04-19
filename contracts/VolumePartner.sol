@@ -14,6 +14,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/ISynth.sol";
 import "./interfaces/IExchanger.sol";
+import "./interfaces/IIssuer.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/volumepartner
@@ -24,7 +25,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
     bytes32 public constant CONTRACT_NAME = "VolumePartner";
 
     // Where fees are pooled in sUSD.
-    address public constant FEE_ADDRESS = 0x000FEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEe0;
+    address public constant FEE_ADDRESS = 0x0000fEefEeFeEFEEfEefeEfEEFeEfeefEEFEEfEE;
 
     // sUSD currencyKey. Fees stored and paid in sUSD
     bytes32 private sUSD = "sUSD";
@@ -41,6 +42,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
     constructor(
@@ -53,9 +55,10 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](2);
+        bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        newAddresses[1] = CONTRACT_FUTURES_MARKET_MANAGER;
+        newAddresses[1] = CONTRACT_ISSUER;
+        newAddresses[2] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -65,6 +68,10 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
 
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function getFeeRate(bytes32 volumePartnerCode) external returns (uint) {
@@ -91,7 +98,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
 
     function accrueFee(bytes32 volumePartnerCode, uint amount) external onlyInternalContracts {
         issuer().synths(sUSD).issue(FEE_ADDRESS, amount);
-        volumePartnerData[volumePartnerCode].balance.plus(amount);
+        volumePartnerData[volumePartnerCode].balance.add(amount);
     }
 
     function claimFees(bytes32 volumePartnerCode, address recipientAddress) external notFeeAddress(recipientAddress) {
