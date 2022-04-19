@@ -92,6 +92,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     }
 
     /*
+     * Returns whether a given address is a market.
+     */
+    function isMarket(address market) external view returns (bool) {
+        return _markets.contains(market);
+    }
+
+    /*
      * The market addresses for a given set of market key strings.
      */
     function marketsForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory) {

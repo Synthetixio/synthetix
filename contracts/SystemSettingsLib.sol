@@ -445,4 +445,14 @@ library SystemSettingsLib {
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
     }
+
+    function setMaxVolumePartnerFee(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint maxFee
+    ) external {
+        require(maxFee != 0, "Max volume partner fee cannot be 0");
+
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
+    }
 }

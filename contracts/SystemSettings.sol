@@ -113,6 +113,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getExchangeDynamicFeeConfig().maxFee;
     }
 
+    /// @notice Get the max volume partner fee
+    /// @return The max volume partner fee
+    function maxVolumePartnerFee() external view returns (uint) {
+        return getMaxVolumePartnerFee();
+    }
+
     /* ========== End Exchange Related Fees ========== */
 
     function minimumStakeTime() external view returns (uint) {

@@ -25,6 +25,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY = "exchangeDynamicFeeWeightDecay";
     bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS = "exchangeDynamicFeeRounds";
     bytes32 internal constant SETTING_EXCHANGE_MAX_DYNAMIC_FEE = "exchangeMaxDynamicFee";
+    bytes32 internal constant SETTING_MAX_VOLUME_PARTNER_FEE = "maxVolumePartnerFee";
     /* ========== End Exchange Fees Related ========== */
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
@@ -159,6 +160,10 @@ contract MixinSystemSettings is MixinResolver {
         keys[3] = SETTING_EXCHANGE_MAX_DYNAMIC_FEE;
         uint[] memory values = flexibleStorage().getUIntValues(SETTING_CONTRACT_NAME, keys);
         return DynamicFeeConfig({threshold: values[0], weightDecay: values[1], rounds: values[2], maxFee: values[3]});
+    }
+
+    function getMaxVolumePartnerFee() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MAX_VOLUME_PARTNER_FEE);
     }
 
     /* ========== End Exchange Related Fees ========== */
