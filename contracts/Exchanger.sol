@@ -21,6 +21,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
+import "./interfaces/IVolumePartner.sol";
 import "./Proxyable.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -90,6 +91,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 private constant CONTRACT_VOLUME_PARTNER = "VolumePartner";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -97,7 +99,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](10);
+        bytes32[] memory newAddresses = new bytes32[](11);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -108,6 +110,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
         newAddresses[9] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[9] = CONTRACT_VOLUME_PARTNER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -149,6 +152,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function debtCache() internal view returns (IExchangerInternalDebtCache) {
         return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+
+    function volumePartner() internal view returns (IVolumePartner) {
+        return IFeePool(requireAndGetAddress(CONTRACT_VOLUME_PARTNER));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -337,19 +344,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         }
 
-        (amountReceived, fee, vSynth) = _exchange(
+        (amountReceived, protocolFee, partnerFee, vSynth) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            virtualSynth
+            virtualSynth,
+            trackingCode
         );
 
-        _processTradingRewards(fee, rewardAddress);
+        _processTradingRewards(protocolFee, rewardAddress);
 
         if (trackingCode != bytes32(0)) {
-            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, partnerFee);
         }
     }
 
@@ -424,12 +432,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
-        bool virtualSynth
+        bool virtualSynth,
+        bytes32 trackingCode
     )
         internal
         returns (
             uint amountReceived,
-            uint fee,
+            uint protocolFee,
+            uint partnerFee,
             IVirtualSynth vSynth
         )
     {
@@ -483,9 +493,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
+        // Note: fees are denominated in the destinationCurrencyKey.
         amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
-        // Note: `fee` is denominated in the destinationCurrencyKey.
-        fee = entry.destinationAmount.sub(amountReceived);
+        protocolFee = entry.destinationAmount.sub(amountReceived);
+
+        if (trackingCode != bytes32(0)) {
+            uint amountMinusPartnerFee =
+                _deductFeesFromAmount(entry.destinationAmount, volumePartner().getFeeRate(trackingCode));
+            partnerFee = amountMinusPartnerFee.sub(amountReceived);
+            amountReceived = amountReceived.sub(partnerFee);
+        }
 
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -504,20 +521,28 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationAddress = address(vSynth);
         }
 
-        // Remit the fee if required
-        if (fee > 0) {
-            // Normalize fee to sUSD
-            // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+        // Remit the protocolFee if required
+        if (protocolFee > 0) {
+            // Normalize protocolFee to sUSD
+            // Note: `protocolFee` is being reused to avoid stack too deep errors.
+            protocolFee = exchangeRates().effectiveValue(destinationCurrencyKey, protocolFee, sUSD);
 
-            // Remit the fee in sUSDs
-            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+            // Remit the protocolFee in sUSDs
+            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), protocolFee);
 
             // Tell the fee pool about this
-            feePool().recordFeePaid(fee);
+            feePool().recordFeePaid(protocolFee);
         }
 
-        // Note: As of this point, `fee` is denominated in sUSD.
+        if (partnerFee > 0) {
+            // Normalize partnerFee to sUSD
+            // Note: `partnerFee` is being reused to avoid stack too deep errors.
+            partnerFee = exchangeRates().effectiveValue(destinationCurrencyKey, partnerFee, sUSD);
+
+            volumePartner().accrueFee(trackingCode, partnerFee);
+        }
+
+        // Note: As of this point, fees are denominated in sUSD.
 
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange

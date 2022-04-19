@@ -83,15 +83,14 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
             "This volume partner code has already been registered."
         );
         require(volumePartnerCodeOwner != address(0), "Owner cannot be the zero address.");
-        require(feeRate < getMaxVolumePartnerFee(), "Fee rate must be less than the maximum.");
+        require(feeRate <= getMaxVolumePartnerFee(), "Fee rate must be less than or equal to the maximum.");
 
         volumePartnerData[volumePartnerCode].owner = volumePartnerCodeOwner;
         volumePartnerData[volumePartnerCode].feeRate = feeRate;
     }
 
-    function accrueFees(bytes32 volumePartnerCode, uint amount) external onlyInternalContracts {
-        ISynth sUSDSynth = issuer().synths(sUSD);
-        // Transfer `amount` of sUSD to `FEE_ADDRESS`
+    function accrueFee(bytes32 volumePartnerCode, uint amount) external onlyInternalContracts {
+        issuer().synths(sUSD).issue(FEE_ADDRESS, amount);
         volumePartnerData[volumePartnerCode].balance.plus(amount);
     }
 
@@ -126,7 +125,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
             msg.sender == volumePartnerData[volumePartnerCode].owner,
             "You are not the owner of this volume partner code"
         );
-        require(feeRate < getMaxVolumePartnerFee(), "Fee rate must be less than the maximum.");
+        require(feeRate <= getMaxVolumePartnerFee(), "Fee rate must be less than or equal to the maximum.");
 
         volumePartnerData[volumePartnerCode].feeRate = feeRate;
     }
@@ -158,7 +157,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
     }
 
     function _isInternalContract(address account) internal view returns (bool) {
-        return account == address(exchanger()) || futuresMarketManager().isMarket(account);
+        return account == address(exchanger()) || futuresMarketManager().isMarket(account); // just change this to get futuresmarketmanager and then have an accrue fees proxy call like issueSUSD in the uturemarketsmanager contract
     }
 
     modifier onlyInternalContracts {
