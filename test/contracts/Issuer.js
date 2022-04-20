@@ -197,7 +197,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.burnSynthsWithoutDebt,
 				args: [sUSD, owner, toUnit(100)],
-				// full functionality of this method requires issuing synths, 
+				// full functionality of this method requires issuing synths,
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
 				reason: 'Issuer: Only trusted minters can perform this action',

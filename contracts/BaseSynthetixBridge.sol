@@ -141,16 +141,21 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         emit InitiationResumed();
     }
 
-    function initiateSynthTransfer(bytes32 currencyKey, address destination, uint amount) external requireInitiationActive {
+    function initiateSynthTransfer(
+        bytes32 currencyKey,
+        address destination,
+        uint amount
+    ) external requireInitiationActive {
         require(destination != address(0), "Cannot send to zero address");
         require(getCrossSynthTransferEnabled(currencyKey) > 0, "Synth not enabled for cross chain transfer");
-        
+
         _incrementSynthsTransferCounter(SYNTH_TRANSFER_SENT, currencyKey, amount);
 
         issuer().burnSynthsWithoutDebt(currencyKey, msg.sender, amount);
 
         // create message payload
-        bytes memory messageData = abi.encodeWithSelector(this.finalizeSynthTransfer.selector, currencyKey, destination, amount);
+        bytes memory messageData =
+            abi.encodeWithSelector(this.finalizeSynthTransfer.selector, currencyKey, destination, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
@@ -162,8 +167,11 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         emit InitiateSynthTransfer(sUSD, destination, amount);
     }
 
-    function finalizeSynthTransfer(bytes32 currencyKey, address destination, uint amount) external onlyCounterpart {
-        
+    function finalizeSynthTransfer(
+        bytes32 currencyKey,
+        address destination,
+        uint amount
+    ) external onlyCounterpart {
         _incrementSynthsTransferCounter(SYNTH_TRANSFER_RECV, currencyKey, amount);
 
         issuer().issueSynthsWithoutDebt(currencyKey, destination, amount);
@@ -173,16 +181,16 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
     // ==== INTERNAL FUNCTIONS ====
 
-    function _incrementSynthsTransferCounter(bytes32 group, bytes32 currencyKey, uint amount) internal {
+    function _incrementSynthsTransferCounter(
+        bytes32 group,
+        bytes32 currencyKey,
+        uint amount
+    ) internal {
         bytes32 key = keccak256(abi.encodePacked(SYNTH_TRANSFER_NAMESPACE, group, currencyKey));
-        
+
         uint currentSynths = flexibleStorage().getUIntValue(CONTRACT_NAME(), key);
 
-        flexibleStorage().setUIntValue(
-            CONTRACT_NAME(),
-            key,
-            currentSynths.add(amount)
-        );
+        flexibleStorage().setUIntValue(CONTRACT_NAME(), key, currentSynths.add(amount));
     }
 
     function _sumTransferAmounts(bytes32 group) internal view returns (uint sum) {
@@ -196,13 +204,13 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
         // get all values
         bytes32[] memory transferAmountKeys = new bytes32[](currencyKeys.length);
-        for (uint i = 0;i < currencyKeys.length;i++) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             transferAmountKeys[i] = keccak256(abi.encodePacked(SYNTH_TRANSFER_NAMESPACE, group, currencyKeys[i]));
         }
 
         uint[] memory transferAmounts = flexibleStorage().getUIntValues(CONTRACT_NAME(), transferAmountKeys);
 
-        for (uint i = 0;i < currencyKeys.length;i++) {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             sum = sum.add(transferAmounts[i].multiplyDecimalRound(rates[i]));
         }
     }

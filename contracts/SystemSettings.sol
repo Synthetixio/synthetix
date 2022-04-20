@@ -462,11 +462,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setCrossSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
-        flexibleStorage().setCrossSynthTransferEnabled(
-            SETTING_CROSS_SYNTH_TRANSFER_ENABLED,
-            _currencyKey,
-            _value
-        );
+        flexibleStorage().setCrossSynthTransferEnabled(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, _currencyKey, _value);
         emit CrossSynthTransferEnabledUpdated(_currencyKey, _value);
     }
 

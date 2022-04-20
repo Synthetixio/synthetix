@@ -28,7 +28,7 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 
 	let depositReceipt;
 
-	describe.only('when the owner sends sUSD and sETH', () => {
+	describe('when the owner sends sUSD and sETH', () => {
 		before('target contracts and users', () => {
 			({ SynthsUSD, SynthsETH, SynthetixBridgeToOptimism, SystemSettings } = ctx.l1.contracts);
 			({

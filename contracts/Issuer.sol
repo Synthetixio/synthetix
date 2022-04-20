@@ -911,8 +911,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     modifier onlyTrustedMinters() {
         require(
-                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM) ||
-                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE), "Issuer: Only trusted minters can perform this action"
+            msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM) ||
+                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE),
+            "Issuer: Only trusted minters can perform this action"
         );
         _;
     }

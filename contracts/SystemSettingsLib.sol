@@ -428,11 +428,7 @@ library SystemSettingsLib {
         bytes32 _currencyKey,
         uint _value
     ) external {
-        flexibleStorage.setUIntValue(
-            SETTINGS_CONTRACT_NAME,
-            keccak256(abi.encodePacked(settingName, _currencyKey)),
-            _value
-        );
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _currencyKey)), _value);
     }
 
     function setExchangeMaxDynamicFee(
