@@ -223,6 +223,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getAtomicVolatilityUpdateThreshold(currencyKey);
     }
 
+    // SIP-198: Atomic Exchange At Pure Chainlink Price
+    // Whether to use the pure Chainlink price for a given currency key
+    function pureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) external view returns (bool) {
+        return getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+    }
+
     // SIP-229 Atomic exchanges
     // enable/disable sending of synths cross chain
     function crossSynthTransferEnabled(bytes32 currencyKey) external view returns (uint) {
@@ -461,6 +467,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
 
+    function setPureChainlinkPriceForAtomicSwapsEnabled(bytes32 _currencyKey, bool _enabled) external onlyOwner {
+        flexibleStorage().setPureChainlinkPriceForAtomicSwapsEnabled(
+            SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED,
+            _currencyKey,
+            _enabled
+        );
+        emit PureChainlinkPriceForAtomicSwapsEnabledUpdated(_currencyKey, _enabled);
+    }
+
     function setCrossSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
         flexibleStorage().setCrossSynthTransferEnabled(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, _currencyKey, _value);
         emit CrossSynthTransferEnabledUpdated(_currencyKey, _value);
@@ -503,5 +518,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
     event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
     event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
+    event PureChainlinkPriceForAtomicSwapsEnabledUpdated(bytes32 synthKey, bool enabled);
     event CrossSynthTransferEnabledUpdated(bytes32 synthKey, uint value);
 }

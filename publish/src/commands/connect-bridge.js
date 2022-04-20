@@ -42,6 +42,8 @@ const connectBridge = async ({
 		wallet: walletL1,
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
+		Synthetix,
+		BridgeEscrow: SynthetixBridgeEscrow,
 		OwnerRelay: OwnerRelayOnEthereum,
 	} = await setupInstance({
 		network: l1Network,
@@ -102,6 +104,64 @@ const connectBridge = async ({
 		cachables: [SynthetixBridgeToBase, OwnerRelayOnOptimism],
 		dryRun,
 	});
+
+	// check approval (bridge needs ERC20 approval to spend bridge escrow's SNX for withdrawals)
+	const currentAllowance = await Synthetix.allowance(
+		SynthetixBridgeEscrow.address,
+		SynthetixBridgeToOptimism.address
+	);
+
+	console.log(
+		gray(
+			'Current allowance for bridge to spend bridge escrow SNX is',
+			ethers.utils.formatEther(currentAllowance)
+		)
+	);
+
+	if (currentAllowance.lt(ethers.utils.parseEther('100000000000'))) {
+		// called when allowance is under 100 B
+
+		console.log(yellow('The bridge does not have sufficient allowance.'));
+
+		if (!dryRun) {
+			console.log(
+				yellow.inverse(
+					`  * CALLING SynthetixBridgeEscrow.approveBridge(SNX, 'SynthetixBridgeToOptimism', UInt256.MAX))`
+				)
+			);
+			const owner = await SynthetixBridgeEscrow.owner();
+			if (walletL1.address.toLowerCase() !== owner.toLowerCase()) {
+				const calldata = await SynthetixBridgeEscrow.interface.encodeFunctionData('approveBridge', [
+					Synthetix.address,
+					SynthetixBridgeToOptimism.address,
+					ethers.constants.MaxUint256,
+				]);
+				console.log('Calldata is', calldata);
+				await confirmAction(
+					yellow(
+						`    ⚠️  AddressResolver is owned by ${owner} and the current signer is ${walletL1.address}.
+						Please execute the above transaction and press "y" when done.`
+					)
+				);
+			} else {
+				const params = {
+					gasLimit: l1GasLimit,
+				};
+				const tx = await SynthetixBridgeEscrow.approveBridge(
+					Synthetix.address,
+					SynthetixBridgeToOptimism.address,
+					ethers.constants.MaxUint256,
+					params
+				);
+				const receipt = await tx.wait();
+				console.log(gray(`    > tx hash: ${receipt.transactionHash}`));
+			}
+		} else {
+			console.log(yellow('  * Skipping, since this is a DRY RUN'));
+		}
+	} else {
+		console.log(gray('this is sufficient'));
+	}
 
 	console.log = logger;
 };
@@ -260,11 +320,35 @@ const setupInstance = async ({
 	});
 	console.log(gray(`  > ${relayName}:`, OwnerRelay.address));
 
+	let Synthetix;
+	let BridgeEscrow;
+
+	if (!useOvm) {
+		Synthetix = getContract({
+			contract: 'ProxySynthetix',
+			getTarget,
+			getSource,
+			sourceName: 'Synthetix',
+			deploymentPath,
+			wallet,
+		});
+
+		BridgeEscrow = getContract({
+			contract: 'SynthetixBridgeEscrow',
+			getTarget,
+			getSource,
+			deploymentPath,
+			wallet,
+		});
+	}
+
 	return {
-		wallet,
 		AddressResolver,
-		SynthetixBridge,
+		BridgeEscrow,
 		OwnerRelay,
+		Synthetix,
+		SynthetixBridge,
+		wallet,
 	};
 };
 
@@ -316,13 +400,13 @@ const bootstrapConnection = ({
 	};
 };
 
-const getContract = ({ contract, deploymentPath, getTarget, getSource, wallet }) => {
+const getContract = ({ contract, deploymentPath, getTarget, getSource, wallet, sourceName }) => {
 	const target = getTarget({ deploymentPath, contract });
 	if (!target) {
 		throw new Error(`Unable to find deployed target for ${contract} in ${deploymentPath}`);
 	}
 
-	const source = getSource({ deploymentPath, contract });
+	const source = getSource({ deploymentPath, contract: sourceName || contract });
 	if (!source) {
 		throw new Error(`Unable to find source for ${contract}`);
 	}

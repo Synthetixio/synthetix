@@ -176,6 +176,7 @@ const setupContract = async ({
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
+		ProxySynthetix: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		SynthUtil: [tryGetAddressOf('AddressResolver')],
 		DappMaintenance: [owner],
