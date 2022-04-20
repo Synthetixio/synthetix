@@ -181,7 +181,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         flexibleStorage().setUIntValue(
             CONTRACT_NAME(),
             key,
-            currentSynths + amount
+            currentSynths.add(amount)
         );
     }
 
