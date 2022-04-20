@@ -4,6 +4,7 @@ const hre = require('hardhat');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { ensureBalance } = require('../utils/balances');
+const { addAggregatorAndSetRate } = require('../utils/rates');
 const { finalizationOnL2, finalizationOnL1 } = require('../utils/optimism');
 const { approveIfNeeded } = require('../utils/approve');
 const { toBytes32 } = require('../../..');
@@ -12,24 +13,27 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
+	const ETH_RATE = '1000';
+
 	const amountToDeposit = ethers.utils.parseEther('10');
 
 	const [sUSD, sETH] = [toBytes32('sUSD'), toBytes32('sETH')];
 
 	let owner, ownerL2;
-	let SynthsUSD, SynthetixBridgeToOptimism, SystemSettings;
+	let SynthsUSD, SynthsETH, SynthetixBridgeToOptimism, SystemSettings;
 
-	let SynthsUSDL2, SynthetixBridgeToBase, SystemSettingsL2;
+	let SynthsUSDL2, SynthsETHL2, SynthetixBridgeToBase, SystemSettingsL2;
 
 	let ownerBalance, ownerL2Balance;
 
 	let depositReceipt;
 
-	describe.only('when the owner sends sUSD', () => {
+	describe.only('when the owner sends sUSD and sETH', () => {
 		before('target contracts and users', () => {
-			({ SynthsUSD, SynthetixBridgeToOptimism, SystemSettings } = ctx.l1.contracts);
+			({ SynthsUSD, SynthsETH, SynthetixBridgeToOptimism, SystemSettings } = ctx.l1.contracts);
 			({
 				SynthsUSD: SynthsUSDL2,
+				SynthsETH: SynthsETHL2,
 				SynthetixBridgeToBase,
 				SystemSettings: SystemSettingsL2,
 			} = ctx.l2.contracts);
@@ -50,17 +54,31 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 			await tx.wait();
 		});
 
+		before('set rates', async () => {
+			await addAggregatorAndSetRate({
+				ctx: ctx.l1,
+				currencyKey: sETH,
+				rate: ethers.utils.parseEther(ETH_RATE),
+			});
+
+			await addAggregatorAndSetRate({
+				ctx: ctx.l2,
+				currencyKey: sETH,
+				rate: ethers.utils.parseEther(ETH_RATE),
+			});
+		});
+
 		before('ensure balance', async () => {
 			await ensureBalance({
 				ctx: ctx.l1,
-				symbol: 'sUSD',
+				symbol: 'sETH',
 				user: owner,
 				balance: amountToDeposit.mul(2),
 			});
 
 			await ensureBalance({
 				ctx: ctx.l1,
-				symbol: 'sETH',
+				symbol: 'sUSD',
 				user: owner,
 				balance: amountToDeposit.mul(2),
 			});
@@ -73,6 +91,13 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 
 		before('approve if needed', async () => {
 			await approveIfNeeded({
+				token: SynthsETH,
+				owner,
+				beneficiary: SynthetixBridgeToOptimism,
+				amount: amountToDeposit,
+			});
+
+			await approveIfNeeded({
 				token: SynthsUSD,
 				owner,
 				beneficiary: SynthetixBridgeToOptimism,
@@ -83,19 +108,19 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 		before('make 2 deposits', async () => {
 			SynthetixBridgeToOptimism = SynthetixBridgeToOptimism.connect(owner);
 
-			const tx2 = await SynthetixBridgeToOptimism.initiateSynthTransfer(
-				sETH,
-				owner.address,
-				amountToDeposit
-			);
-			await tx2.wait();
-
 			const tx = await SynthetixBridgeToOptimism.initiateSynthTransfer(
 				sUSD,
 				owner.address,
 				amountToDeposit
 			);
-			depositReceipt = await tx.wait();
+			await tx.wait();
+
+			const tx2 = await SynthetixBridgeToOptimism.initiateSynthTransfer(
+				sETH,
+				owner.address,
+				amountToDeposit
+			);
+			depositReceipt = await tx2.wait();
 		});
 
 		it('decreases the owner balance', async () => {
@@ -105,7 +130,11 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 		});
 
 		it('records amount sent', async () => {
-			assert.bnEqual(await SynthetixBridgeToBase.synthTransferSent(), amountToDeposit.mul(2));
+			// 1 ETH = 1000 USD and we sent equal amount of each. so `amountToDeposit * 1001`
+			assert.bnEqual(
+				await SynthetixBridgeToOptimism.synthTransferSent(),
+				amountToDeposit.mul(1001)
+			);
 		});
 
 		describe('when the deposit gets picked up in L2', () => {
@@ -122,10 +151,18 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 					await SynthsUSDL2.balanceOf(owner.address),
 					ownerL2Balance.add(amountToDeposit)
 				);
+
+				assert.bnEqual(
+					await SynthsETHL2.balanceOf(owner.address),
+					ownerL2Balance.add(amountToDeposit)
+				);
 			});
 
 			it('records amount received', async () => {
-				assert.bnEqual(await SynthetixBridgeToBase.synthTransferReceived(), amountToDeposit.mul(2));
+				assert.bnEqual(
+					await SynthetixBridgeToBase.synthTransferReceived(),
+					amountToDeposit.mul(1001)
+				);
 			});
 
 			describe('send back to L1', () => {
@@ -134,6 +171,7 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 					SynthetixBridgeToBase = SynthetixBridgeToBase.connect(owner);
 
 					const tx = await SynthetixBridgeToBase.initiateSynthTransfer(
+						sUSD,
 						owner.address,
 						amountToDeposit
 					);

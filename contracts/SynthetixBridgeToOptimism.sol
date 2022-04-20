@@ -16,15 +16,16 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     using SafeERC20 for IERC20;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-
-    bytes32 public constant CONTRACT_NAME = "SynthetixBridgeToOptimism";
-
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
     bytes32 private constant CONTRACT_SYNTHETIXBRIDGEESCROW = "SynthetixBridgeEscrow";
 
     uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 26;
+
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "SynthetixBridgeToOptimism";
+    }
 
     // ========== CONSTRUCTOR ==========
 

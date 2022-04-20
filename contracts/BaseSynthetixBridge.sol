@@ -32,6 +32,9 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_EXCHANGERATES = "ExchangeRates";
 
+    // have to define this function like this here because contract name is required for FlexibleStorage
+    function CONTRACT_NAME() public pure returns (bytes32);
+
     bytes32 private constant sUSD = "sUSD";
 
     bool public initiationActive;
@@ -171,12 +174,12 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     // ==== INTERNAL FUNCTIONS ====
 
     function _incrementSynthsTransferCounter(bytes32 group, bytes32 currencyKey, uint amount) internal {
-        bytes32 key = keccak256(abi.encodePacked(group, currencyKey));
+        bytes32 key = keccak256(abi.encodePacked(SYNTH_TRANSFER_NAMESPACE, group, currencyKey));
         
-        uint currentSynths = flexibleStorage().getUIntValue(SYNTH_TRANSFER_NAMESPACE,key);
+        uint currentSynths = flexibleStorage().getUIntValue(CONTRACT_NAME(), key);
 
         flexibleStorage().setUIntValue(
-            SYNTH_TRANSFER_NAMESPACE,
+            CONTRACT_NAME(),
             key,
             currentSynths + amount
         );
@@ -194,10 +197,10 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         // get all values
         bytes32[] memory transferAmountKeys = new bytes32[](currencyKeys.length);
         for (uint i = 0;i < currencyKeys.length;i++) {
-            transferAmountKeys[i] = keccak256(abi.encodePacked(group, currencyKeys));
+            transferAmountKeys[i] = keccak256(abi.encodePacked(SYNTH_TRANSFER_NAMESPACE, group, currencyKeys[i]));
         }
 
-        uint[] memory transferAmounts = flexibleStorage().getUIntValues(SYNTH_TRANSFER_NAMESPACE, transferAmountKeys);
+        uint[] memory transferAmounts = flexibleStorage().getUIntValues(CONTRACT_NAME(), transferAmountKeys);
 
         for (uint i = 0;i < currencyKeys.length;i++) {
             sum = sum.add(transferAmounts[i].multiplyDecimalRound(rates[i]));
