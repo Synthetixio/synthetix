@@ -315,7 +315,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 						anyRateInvalid: true,
 					});
 
-					await assert.revert(instance.synthTransferSent(), 'Rates are not accurate');
+					await assert.revert(instance.synthTransferSent(), 'Rates are invalid');
 				});
 
 				it('correctly sums', async () => {

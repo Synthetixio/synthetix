@@ -192,7 +192,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         // get all synth rates
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
-        require(!isInvalid, "Rates are not accurate");
+        require(!isInvalid, "Rates are invalid");
 
         // get all values
         bytes32[] memory transferAmountKeys = new bytes32[](currencyKeys.length);
