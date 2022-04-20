@@ -480,15 +480,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, 0, IVirtualSynth(0));
         }
 
-        bool tooVolatile;
-        (entry.exchangeFeeRate, tooVolatile) = _feeRateForExchangeAtRounds(
+        // tooVolatile included on the entry object to avoid a stack too deep error
+        (entry.exchangeFeeRate, entry.tooVolatile) = _feeRateForExchangeAtRounds(
             sourceCurrencyKey,
             destinationCurrencyKey,
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
 
-        if (tooVolatile) {
+        if (entry.tooVolatile) {
             // do not exchange if rates are too volatile, this to prevent charging
             // dynamic fees that are over the max value
             return (0, 0, 0, IVirtualSynth(0));
@@ -499,9 +499,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         protocolFee = entry.destinationAmount.sub(amountReceived);
 
         if (trackingCode != bytes32(0)) {
-            uint amountMinusPartnerFee =
-                _deductFeesFromAmount(entry.destinationAmount, volumePartner().getFeeRate(trackingCode));
-            partnerFee = amountMinusPartnerFee.sub(amountReceived);
+            partnerFee = _deductFeesFromAmount(entry.destinationAmount, volumePartner().getFeeRate(trackingCode)).sub(
+                amountReceived
+            );
             amountReceived = amountReceived.sub(partnerFee);
         }
 

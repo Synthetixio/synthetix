@@ -23,6 +23,7 @@ interface IExchanger {
         uint exchangeDynamicFeeRate;
         uint roundIdForSrc;
         uint roundIdForDest;
+        bool tooVolatile;
     }
 
     // Views
