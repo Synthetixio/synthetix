@@ -106,7 +106,7 @@ contract('BaseSynthetix', async accounts => {
 				'settle',
 				'transfer',
 				'transferFrom',
-				'selfLiquidateAccount',
+				'liquidateSelf',
 				'liquidateDelinquentAccount',
 			],
 		});

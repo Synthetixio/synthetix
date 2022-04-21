@@ -331,22 +331,24 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         // Transfer the remaining SNX to the LiquidatorRewards contract.
         uint remainingReward = totalRedeemed.sub(liquidateReward.add(flagReward));
-        bool remainingRewardTransferSucceedeed = _transferByProxy(account, address(liquidatorRewards()), remainingReward);
-        require(remainingRewardTransferSucceedeed, "Remaining rewards transfer did not succeed");
+        if (remainingReward > 0) {
+            bool remainingRewardTransferSucceedeed =
+                _transferByProxy(account, address(liquidatorRewards()), remainingReward);
+            require(remainingRewardTransferSucceedeed, "Remaining rewards transfer did not succeed");
+        }
 
-        return remainingRewardTransferSucceedeed;
+        return true;
     }
 
-    function liquidateSelf(address account) external systemActive optionalProxy returns (bool) {
-        require(account == messageSender, "Only the account owner can liquidate itself");
+    function liquidateSelf() external systemActive optionalProxy returns (bool) {
+        // Liquidate the account with the isSelfLiquidation flag set to true.
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(messageSender, true);
 
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, true);
-
-        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+        emitAccountLiquidated(messageSender, totalRedeemed, amountLiquidated, messageSender);
 
         // Transfer SNX redeemed to the LiquidatorRewards contract
         // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
-        bool success = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
+        bool success = _transferByProxy(messageSender, address(liquidatorRewards()), totalRedeemed);
         require(success, "Transfer did not succeed");
 
         return success;

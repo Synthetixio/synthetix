@@ -132,7 +132,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
             // Open for liquidation if the deadline has passed and the user has enough SNX collateral.
-            if (_deadlinePassed(liquidation.deadline) && _hasEnoughCollateral(account)) {
+            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNX(account)) {
                 return true;
             }
             return false;
@@ -151,7 +151,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return deadline > 0 && now > deadline;
     }
 
-    function _hasEnoughCollateral(address account) internal view returns (bool) {
+    /// @notice Checks if an account has enough SNX balance to be open for liquidation.
+    function _hasEnoughSNX(address account) internal view returns (bool) {
         uint balance = IERC20(address(synthetix())).balanceOf(account);
         return balance > (getLiquidateReward().add(getFlagReward()));
     }

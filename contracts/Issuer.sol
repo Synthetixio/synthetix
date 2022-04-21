@@ -21,7 +21,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidator.sol";
-import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
@@ -94,7 +93,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
-    bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -107,7 +105,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](15);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -119,10 +117,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[8] = CONTRACT_LIQUIDATOR;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[11] = CONTRACT_LIQUIDATORREWARDS;
-        newAddresses[12] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
-        newAddresses[14] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[11] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -148,10 +145,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function liquidator() internal view returns (ILiquidator) {
         return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
-    }
-
-    function liquidatorRewards() internal view returns (ILiquidatorRewards) {
-        return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -356,10 +349,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         if (address(rewardEscrowV2()) != address(0)) {
             balance = balance.add(rewardEscrowV2().balanceOf(account));
-        }
-
-        if (address(liquidatorRewards()) != address(0)) {
-            balance = balance.add(liquidatorRewards().earned(account));
         }
 
         return balance;
@@ -663,8 +652,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // If the total SNX to redeem is greater than account's collateral, liquidate all collateral
         if (totalRedeemed > collateralForAccount) {
-            // Set totalRedeemed to all transferable collateral (SNX not in escrow)
-            totalRedeemed = IERC20(address(synthetix())).balanceOf(account);
+            // Set totalRedeemed to all transferable collateral
+            totalRedeemed = collateralForAccount;
 
             // Get the equivalent debt amount to burn for all collateral (less penalty).
             amountToLiquidate = _snxToUSD(collateralForAccount.divideDecimal(SafeDecimalMath.unit().sub(penalty)), snxRate);
@@ -676,10 +665,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Account for the burnt debt in the cache.
         debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountToLiquidate));
 
-        if (!isSelfLiquidation) {
-            // Remove liquidation flag
-            liquidator().removeAccountInLiquidation(account);
-        }
+        // Remove liquidation flag
+        liquidator().removeAccountInLiquidation(account);
     }
 
     function setCurrentPeriodId(uint128 periodId) external {

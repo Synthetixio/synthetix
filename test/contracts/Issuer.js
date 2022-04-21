@@ -156,8 +156,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
 				'issueSynthsOnBehalf',
-				'selfLiquidateAccount',
-				'liquidateDelinquentAccount',
+				'liquidateAccount',
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',
@@ -231,18 +230,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the synthetix contract can perform this action',
 			});
 		});
-		it('liquidateDelinquentAccount() cannot be invoked directly by a user', async () => {
+		it('liquidateAccount() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.liquidateDelinquentAccount,
-				args: [account1, toUnit('1'), account2],
-				accounts,
-				reason: 'Only the synthetix contract can perform this action',
-			});
-		});
-		it('selfLiquidateAccount() cannot be invoked directly by a user', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: issuer.selfLiquidateAccount,
-				args: [account1],
+				fnc: issuer.liquidateAccount,
+				args: [account1, false],
 				accounts,
 				reason: 'Only the synthetix contract can perform this action',
 			});

@@ -201,10 +201,7 @@ contract('Liquidator', accounts => {
 					);
 				});
 				it('when liquidateSelf() is invoked, it reverts with operation prohibited', async () => {
-					await assert.revert(
-						synthetix.liquidateSelf(alice, { from: owner }),
-						'Operation prohibited'
-					);
+					await assert.revert(synthetix.liquidateSelf({ from: owner }), 'Operation prohibited');
 				});
 				it('when checkAndRemoveAccountInLiquidation() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
@@ -354,10 +351,7 @@ contract('Liquidator', accounts => {
 					await Promise.all([synthetix.rebuildCache(), issuer.rebuildCache()]);
 				});
 				it('when Alice is not is not open for self liquidation then revert', async () => {
-					await assert.revert(
-						synthetix.liquidateSelf(alice, { from: alice }),
-						'Not open for liquidation'
-					);
+					await assert.revert(synthetix.liquidateSelf({ from: alice }), 'Not open for liquidation');
 				});
 			});
 			describe('when Alice is undercollateralized', () => {
@@ -420,7 +414,7 @@ contract('Liquidator', accounts => {
 						await updateSNXPrice('10');
 
 						await assert.revert(
-							synthetix.liquidateSelf(alice, {
+							synthetix.liquidateSelf({
 								from: alice,
 							}),
 							'Not open for liquidation'
@@ -455,7 +449,7 @@ contract('Liquidator', accounts => {
 							aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
 							aliceDebtValueBefore = await synthetix.debtBalanceOf(alice, sUSD);
 
-							await synthetix.liquidateSelf(alice, {
+							await synthetix.liquidateSelf({
 								from: alice,
 							});
 						});
@@ -836,7 +830,7 @@ contract('Liquidator', accounts => {
 								});
 							});
 							describe('given Alice has $600 Debt, $800 worth of SNX Collateral and c-ratio at 133.33%', () => {
-								describe('when bob calls liquidate on Alice fixing the ratio', () => {
+								describe('when bob calls liquidateDelinquentAccount on Alice', () => {
 									let ratio;
 									let penalty;
 									let aliceDebtShareBefore;
@@ -855,13 +849,13 @@ contract('Liquidator', accounts => {
 										aliceCollateralBefore = await synthetix.collateral(alice);
 										aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
 										aliceDebtValueBefore = await synthetix.debtBalanceOf(alice, sUSD);
-									});
-									it('then Bob can liquidate Alice once fixing the c-ratio', async () => {
+
 										// Should be able to liquidate and fix c-ratio
 										await synthetix.liquidateDelinquentAccount(alice, {
 											from: bob,
 										});
-
+									});
+									it('then Bob can liquidate Alice once fixing the c-ratio', async () => {
 										const cratio = await synthetix.collateralisationRatio(alice);
 
 										// check Alice ratio is above or equal to target issuance ratio
@@ -926,10 +920,7 @@ contract('Liquidator', accounts => {
 				);
 			});
 			it('then liquidateSelf fails', async () => {
-				await assert.revert(
-					synthetix.liquidateSelf(alice, { from: alice }),
-					'Not open for liquidation'
-				);
+				await assert.revert(synthetix.liquidateSelf({ from: alice }), 'Not open for liquidation');
 			});
 		});
 		describe('When David collateral value is less than debt issued + penalty) ', () => {
