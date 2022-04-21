@@ -29,6 +29,13 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint192 volume;
     }
 
+    // To avoid 'stack too deep' errors
+    struct ExchangeAtomicallyLocalVars {
+        uint systemConvertedAmount;
+        uint systemSourceRate;
+        uint systemDestinationRate;
+    }
+
     ExchangeVolumeAtPeriod public lastAtomicVolume;
 
     constructor(address _owner, address _resolver) public MinimalProxyFactory() Exchanger(_owner, _resolver) {}
@@ -173,11 +180,14 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             uint partnerFee
         )
     {
+        ExchangeAtomicallyLocalVars memory localVars;
+
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
         require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
         require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
 
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        uint sourceAmountAfterSettlement;
+        sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
@@ -185,19 +195,15 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             return (0, 0, 0);
         }
 
-        uint systemConvertedAmount;
-        uint systemSourceRate;
-        uint systemDestinationRate;
-
         // Note: also ensures the given synths are allowed to be atomically exchanged
         (
             amountReceived, // output amount with fee taken out (denominated in dest currency)
             protocolFee, // fee amount (denominated in dest currency)
             partnerFee, // fee amount (denominated in dest currency) // applied fee rate
             ,
-            systemConvertedAmount, // current system value without fees (denominated in dest currency)
-            systemSourceRate, // current system rate for src currency
-            systemDestinationRate // current system rate for dest currency
+            localVars.systemConvertedAmount, // current system value without fees (denominated in dest currency)
+            localVars.systemSourceRate, // current system rate for src currency
+            localVars.systemDestinationRate // current system rate for dest currency
         ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmountAfterSettlement,
             sourceCurrencyKey,
@@ -212,18 +218,21 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
         // Sanity check atomic output's value against current system value (checking atomic rates)
         require(
-            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(protocolFee)),
+            !exchangeCircuitBreaker().isDeviationAboveThreshold(
+                localVars.systemConvertedAmount,
+                amountReceived.add(protocolFee)
+            ),
             "Atomic rate deviates too much"
         );
 
-        // Determine sUSD value of exchange
         uint sourceSusdValue;
+        // Determine sUSD value of exchange
         if (sourceCurrencyKey == sUSD) {
             // Use after-settled amount as this is amount converted (not sourceAmount)
             sourceSusdValue = sourceAmountAfterSettlement;
         } else if (destinationCurrencyKey == sUSD) {
-            // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
-            sourceSusdValue = systemConvertedAmount;
+            // In this case the localVars.systemConvertedAmount would be the fee-free sUSD value of the source synth
+            sourceSusdValue = localVars.systemConvertedAmount;
         } else {
             // Otherwise, convert source to sUSD value
             (uint amountReceivedInUSD, uint sUsdProtocolFee, uint sUsdPartnerFee, , , , ) =
@@ -278,7 +287,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // exchange volume.
         _updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
-            [systemSourceRate, systemDestinationRate]
+            [localVars.systemSourceRate, localVars.systemDestinationRate]
         );
 
         // Let the DApps know there was a Synth exchange
@@ -357,8 +366,11 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
         if (trackingCode != bytes32(0)) {
             uint partnerFeeRate = volumePartner().getFeeRate(trackingCode);
-            (uint destinationAmount, , ) =
-                exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+            (destinationAmount, , ) = exchangeRates().effectiveValueAndRates(
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey
+            );
             partnerFee = _deductFeesFromAmount(destinationAmount, partnerFeeRate).sub(amountReceived);
             amountReceived = amountReceived.sub(partnerFee);
             exchangeFeeRate = exchangeFeeRate.add(partnerFeeRate);
