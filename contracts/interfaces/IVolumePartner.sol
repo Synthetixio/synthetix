@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 interface IVolumePartner {
-    function getFeeRate(bytes32 volumePartnerCode) external returns (uint);
+    function getFeeRate(bytes32 volumePartnerCode) external view returns (uint);
 
     function registerVolumePartnerCode(
         bytes32 volumePartnerCode,

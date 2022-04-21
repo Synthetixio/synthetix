@@ -958,7 +958,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
     )
-        external
+        public
         view
         returns (
             uint amountReceived,
@@ -994,6 +994,38 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
+    }
+
+    function getAmountsForExchangeWithTrackingCode(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        )
+    {
+        (amountReceived, fee, exchangeFeeRate) = getAmountsForExchange(
+            sourceAmount,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+
+        if (trackingCode != bytes32(0)) {
+            uint partnerFeeRate = volumePartner().getFeeRate(trackingCode);
+            (uint destinationAmount, , ) =
+                exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+            uint partnerFee = _deductFeesFromAmount(destinationAmount, partnerFeeRate).sub(amountReceived);
+
+            amountReceived = amountReceived.sub(partnerFee);
+            fee = fee.add(partnerFee);
+            exchangeFeeRate = exchangeFeeRate.add(partnerFeeRate);
+        }
     }
 
     function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)

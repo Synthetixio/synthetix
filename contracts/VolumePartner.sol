@@ -74,7 +74,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
-    function getFeeRate(bytes32 volumePartnerCode) external returns (uint) {
+    function getFeeRate(bytes32 volumePartnerCode) external view returns (uint) {
         return volumePartnerData[volumePartnerCode].feeRate;
     }
 

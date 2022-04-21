@@ -69,6 +69,20 @@ interface IExchanger {
             uint exchangeFeeRate
         );
 
+    function getAmountsForExchangeWithTrackingCode(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        );
+
     function priceDeviationThresholdFactor() external view returns (uint);
 
     function waitingPeriodSecs() external view returns (uint);
