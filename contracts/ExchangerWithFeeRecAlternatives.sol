@@ -67,15 +67,41 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         view
         returns (
             uint amountReceived,
-            uint fee,
+            uint protocolFee,
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
+        (amountReceived, protocolFee, , exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
-            destinationCurrencyKey
+            destinationCurrencyKey,
+            bytes32(0)
         );
+    }
+
+    function getAmountsForAtomicExchangeWithTrackingCode(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint totalFee,
+            uint exchangeFeeRate
+        )
+    {
+        uint protocolFee;
+        uint partnerFee;
+        (amountReceived, protocolFee, partnerFee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
+            sourceAmount,
+            sourceCurrencyKey,
+            destinationCurrencyKey,
+            trackingCode
+        );
+        totalFee = protocolFee.add(partnerFee);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -89,21 +115,23 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         bytes32 trackingCode,
         uint minAmount
     ) external onlySynthetixorSynth returns (uint amountReceived) {
-        uint fee;
-        (amountReceived, fee) = _exchangeAtomically(
+        uint protocolFee;
+        uint partnerFee;
+        (amountReceived, protocolFee, partnerFee) = _exchangeAtomically(
             from,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            destinationAddress
+            destinationAddress,
+            trackingCode
         );
 
         require(amountReceived >= minAmount, "The amount received is below the minimum amount specified.");
 
-        _processTradingRewards(fee, destinationAddress);
+        _processTradingRewards(protocolFee, destinationAddress);
 
         if (trackingCode != bytes32(0)) {
-            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, partnerFee);
         }
     }
 
@@ -135,8 +163,16 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress
-    ) internal returns (uint amountReceived, uint fee) {
+        address destinationAddress,
+        bytes32 trackingCode
+    )
+        internal
+        returns (
+            uint amountReceived,
+            uint protocolFee,
+            uint partnerFee
+        )
+    {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
         require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
         require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
@@ -146,10 +182,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
         if (sourceAmountAfterSettlement == 0) {
-            return (0, 0);
+            return (0, 0, 0);
         }
 
-        uint exchangeFeeRate;
         uint systemConvertedAmount;
         uint systemSourceRate;
         uint systemDestinationRate;
@@ -157,21 +192,27 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // Note: also ensures the given synths are allowed to be atomically exchanged
         (
             amountReceived, // output amount with fee taken out (denominated in dest currency)
-            fee, // fee amount (denominated in dest currency)
-            exchangeFeeRate, // applied fee rate
+            protocolFee, // fee amount (denominated in dest currency)
+            partnerFee, // fee amount (denominated in dest currency) // applied fee rate
+            ,
             systemConvertedAmount, // current system value without fees (denominated in dest currency)
             systemSourceRate, // current system rate for src currency
             systemDestinationRate // current system rate for dest currency
-        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
+        ) = _getAmountsForAtomicExchangeMinusFees(
+            sourceAmountAfterSettlement,
+            sourceCurrencyKey,
+            destinationCurrencyKey,
+            trackingCode
+        );
 
         // SIP-65: Decentralized Circuit Breaker (checking current system rates)
         if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0);
+            return (0, 0, 0);
         }
 
         // Sanity check atomic output's value against current system value (checking atomic rates)
         require(
-            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
+            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(protocolFee)),
             "Atomic rate deviates too much"
         );
 
@@ -185,9 +226,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             sourceSusdValue = systemConvertedAmount;
         } else {
             // Otherwise, convert source to sUSD value
-            (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
-                _getAmountsForAtomicExchangeMinusFees(sourceAmount, sourceCurrencyKey, sUSD);
-            sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
+            (uint amountReceivedInUSD, uint sUsdProtocolFee, uint sUsdPartnerFee, , , , ) =
+                _getAmountsForAtomicExchangeMinusFees(sourceAmount, sourceCurrencyKey, sUSD, trackingCode);
+            sourceSusdValue = amountReceivedInUSD.add(sUsdProtocolFee).add(sUsdPartnerFee);
         }
 
         // Check and update atomic volume limit
@@ -206,17 +247,25 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             false // no vsynths
         );
 
-        // Remit the fee if required
-        if (fee > 0) {
-            // Normalize fee to sUSD
-            // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+        // Remit the protocolFee if required
+        if (protocolFee > 0) {
+            // Normalize protocolFee to sUSD
+            // Note: `protocolFee` is being reused to avoid stack too deep errors.
+            protocolFee = exchangeRates().effectiveValue(destinationCurrencyKey, protocolFee, sUSD);
 
             // Remit the fee in sUSDs
-            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), protocolFee);
 
             // Tell the fee pool about this
-            feePool().recordFeePaid(fee);
+            feePool().recordFeePaid(protocolFee);
+        }
+
+        if (partnerFee > 0) {
+            // Normalize partnerFee to sUSD
+            // Note: `partnerFee` is being reused to avoid stack too deep errors.
+            partnerFee = exchangeRates().effectiveValue(destinationCurrencyKey, partnerFee, sUSD);
+
+            volumePartner().accrueFee(trackingCode, partnerFee);
         }
 
         // Note: As of this point, `fee` is denominated in sUSD.
@@ -283,13 +332,15 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     function _getAmountsForAtomicExchangeMinusFees(
         uint sourceAmount,
         bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
     )
         internal
         view
         returns (
             uint amountReceived,
-            uint fee,
+            uint protocolFee,
+            uint partnerFee,
             uint exchangeFeeRate,
             uint systemConvertedAmount,
             uint systemSourceRate,
@@ -302,7 +353,16 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
-        fee = destinationAmount.sub(amountReceived);
+        protocolFee = destinationAmount.sub(amountReceived);
+
+        if (trackingCode != bytes32(0)) {
+            uint partnerFeeRate = volumePartner().getFeeRate(trackingCode);
+            (uint destinationAmount, , ) =
+                exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+            partnerFee = _deductFeesFromAmount(destinationAmount, partnerFeeRate).sub(amountReceived);
+            amountReceived = amountReceived.sub(partnerFee);
+            exchangeFeeRate = exchangeFeeRate.add(partnerFeeRate);
+        }
     }
 
     event VirtualSynthCreated(
