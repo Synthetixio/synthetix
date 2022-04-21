@@ -94,11 +94,14 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
 
         volumePartnerData[volumePartnerCode].owner = volumePartnerCodeOwner;
         volumePartnerData[volumePartnerCode].feeRate = feeRate;
+
+        emit VolumePartnerCodeRegistered(volumePartnerCode, volumePartnerCodeOwner, msg.sender, feeRate);
     }
 
     function accrueFee(bytes32 volumePartnerCode, uint amount) external onlyInternalContracts {
         issuer().synths(sUSD).issue(FEE_ADDRESS, amount);
         volumePartnerData[volumePartnerCode].balance.add(amount);
+        emit FeesAccrued(volumePartnerCode, msg.sender, amount);
     }
 
     function claimFees(bytes32 volumePartnerCode, address recipientAddress) external notFeeAddress(recipientAddress) {
@@ -125,6 +128,8 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
 
         // Mint their new synths
         sUSDSynth.issue(recipientAddress, sUSDAmount);
+
+        emit FeesClaimed(volumePartnerCode, msg.sender, recipientAddress, sUSDAmount);
     }
 
     function updateFeeRate(bytes32 volumePartnerCode, uint feeRate) external {
@@ -135,6 +140,8 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
         require(feeRate <= getMaxVolumePartnerFee(), "Fee rate must be less than or equal to the maximum.");
 
         volumePartnerData[volumePartnerCode].feeRate = feeRate;
+
+        emit FeeRateUpdated(volumePartnerCode, msg.sender, feeRate);
     }
 
     function nominateOwner(bytes32 volumePartnerCode, address nominee) external {
@@ -143,7 +150,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
             "You are not the owner of this volume partner code"
         );
         volumePartnerData[volumePartnerCode].nominatedOwner = nominee;
-        //emit OwnerNomination(nominee);
+        emit OwnerNominated(volumePartnerCode, nominee);
     }
 
     function acceptOwnership(bytes32 volumePartnerCode) external {
@@ -151,7 +158,11 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
             msg.sender == volumePartnerData[volumePartnerCode].nominatedOwner,
             "You are not the nominated owner of this volume partner code"
         );
-        //emit OwnerUpdate(owner, nominatedOwner);
+        emit OwnershipAccepted(
+            volumePartnerCode,
+            volumePartnerData[volumePartnerCode].owner,
+            volumePartnerData[volumePartnerCode].nominatedOwner
+        );
         volumePartnerData[volumePartnerCode].owner = volumePartnerData[volumePartnerCode].nominatedOwner;
         volumePartnerData[volumePartnerCode].nominatedOwner = address(0);
     }
@@ -172,5 +183,16 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
         _;
     }
 
-    /* ========== Proxy Events ========== */
+    // ========== EVENTS ==========
+    event VolumePartnerCodeRegistered(
+        bytes32 indexed volumePartnerCode,
+        address indexed owner,
+        address indexed caller,
+        uint feeRate
+    );
+    event FeeRateUpdated(bytes32 indexed volumePartnerCode, address indexed caller, uint feeRate);
+    event FeesAccrued(bytes32 indexed volumePartnerCode, address indexed source, uint amount);
+    event FeesClaimed(bytes32 indexed volumePartnerCode, address indexed caller, address indexed recipient, uint amount);
+    event OwnerNominated(bytes32 indexed volumePartnerCode, address indexed nominee);
+    event OwnershipAccepted(bytes32 indexed volumePartnerCode, address indexed previousOwner, address indexed newOwner);
 }
