@@ -26,7 +26,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
 
-
     //slither-disable-next-line naming-convention
     bytes32 internal constant sUSD = "sUSD";
 
@@ -73,7 +72,14 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    function rateWithSafetyChecks(bytes32 currencyKey) external returns (uint rate, bool broken, bool staleOrInvalid) {
+    function rateWithSafetyChecks(bytes32 currencyKey)
+        external
+        returns (
+            uint rate,
+            bool broken,
+            bool staleOrInvalid
+        )
+    {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
         if (currencyKey == sUSD) {
@@ -314,7 +320,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
             if (!anyRateInvalid && currencyKeys[i] != sUSD) {
-                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) || circuitBreaker().isInvalid(address(aggregators[currencyKeys[i]]), rateEntry.rate);
+                anyRateInvalid =
+                    flagList[i] ||
+                    _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) ||
+                    circuitBreaker().isInvalid(address(aggregators[currencyKeys[i]]), rateEntry.rate);
             }
         }
     }

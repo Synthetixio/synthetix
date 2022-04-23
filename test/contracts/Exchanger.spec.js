@@ -3292,14 +3292,6 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 					await fastForward(10);
 					await updateRates([target], [toUnit(rate.toString())]);
-
-					const aggregatorAddress = await exchangeRates.aggregators(target);
-
-					console.log('checking circuit breaker');
-					if ((await circuitBreaker.lastValue(aggregatorAddress)).eq(0)) {
-						console.log('fixing circuit breaker');
-						await circuitBreaker.resetLastValue(aggregatorAddress, rate);
-					}
 				});
 			};
 
@@ -3361,6 +3353,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
+										circuitBreaker,
 										[sETH, sEUR],
 										[toUnit(baseRate * 3).toString(), toUnit('1.9')]
 									);
@@ -3384,6 +3377,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
+										circuitBreaker,
 										[sETH, sEUR],
 										[toUnit(baseRate * 1.1).toString(), toUnit('10')]
 									);
@@ -3971,7 +3965,7 @@ contract('Exchanger (spec tests)', async accounts => {
 	};
 
 	async function updateRates(keys, rates) {
-		await updateAggregatorRates(exchangeRates, keys, rates);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, keys, rates);
 	}
 
 	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {

@@ -61,7 +61,7 @@ async function updateAggregatorRates(
 		await aggregator.setLatestAnswer(rates[i], timestamp);
 
 		if (circuitBreaker) {
-			//console.log('circuitbreaker', (await circuitBreaker.lastValue(aggregatorAddress)).toString(), (await circuitBreaker.lastValue(aggregatorAddress)).toString() !== '0')
+			// console.log('circuitbreaker', (await circuitBreaker.lastValue(aggregatorAddress)).toString(), (await circuitBreaker.lastValue(aggregatorAddress)).toString() !== '0')
 			if ((await circuitBreaker.lastValue(aggregatorAddress)).toString() !== '0') {
 				await circuitBreaker.resetLastValue([aggregatorAddress], [rates[i]], {
 					from: await circuitBreaker.owner(),
@@ -154,13 +154,13 @@ module.exports = {
 
 	updateAggregatorRates,
 
-	async updateRatesWithDefaults({ exchangeRates, owner, debtCache }) {
+	async updateRatesWithDefaults({ exchangeRates, circuitBreaker, owner, debtCache }) {
 		const keys = ['SNX', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
 		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
 		// set up any missing aggregators
 		await setupMissingPriceAggregators(exchangeRates, owner, keys);
 
-		await updateAggregatorRates(exchangeRates, keys, rates);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 

@@ -293,6 +293,7 @@ contract('DebtCache', async accounts => {
 	beforeEach(async () => {
 		await updateAggregatorRates(
 			exchangeRates,
+			null,
 			[sAUD, sEUR, SNX, sETH, ETH, iETH],
 			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
 		);
@@ -412,6 +413,7 @@ contract('DebtCache', async accounts => {
 			// set up initial prices
 			await updateAggregatorRates(
 				exchangeRates,
+				null,
 				[sAUD, sEUR, sETH],
 				['0.5', '2', '100'].map(toUnit)
 			);
@@ -489,6 +491,7 @@ contract('DebtCache', async accounts => {
 			it('updates the cached values for all individual synths', async () => {
 				await updateAggregatorRates(
 					exchangeRates,
+					null,
 					[sAUD, sEUR, sETH],
 					['1', '3', '200'].map(toUnit)
 				);
@@ -520,6 +523,7 @@ contract('DebtCache', async accounts => {
 				// Revalidate the cache once rates are no longer stale
 				await updateAggregatorRates(
 					exchangeRates,
+					null,
 					[sAUD, sEUR, SNX, sETH, ETH, iETH],
 					['0.5', '2', '100', '200', '200', '200'].map(toUnit)
 				);
@@ -653,6 +657,7 @@ contract('DebtCache', async accounts => {
 
 				await updateAggregatorRates(
 					exchangeRates,
+					null,
 					[sAUD, sEUR, sETH],
 					['1', '3', '200'].map(toUnit)
 				);
@@ -690,6 +695,7 @@ contract('DebtCache', async accounts => {
 				// But even if we update all rates, we can't revalidate the cache using the partial update function
 				await updateAggregatorRates(
 					exchangeRates,
+					null,
 					[sAUD, sEUR, sETH],
 					['0.5', '2', '100'].map(toUnit)
 				);

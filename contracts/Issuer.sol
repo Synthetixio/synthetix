@@ -850,8 +850,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     // trips the breaker and returns boolean, where true means the rate is healthy
     function _verifyDebtRatioCircuitBreaker() internal returns (bool) {
         address debtRatioAggregator = requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO);
-        (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
+        (, int256 rawRatio, , , ) = AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
 
         return !circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio));
     }

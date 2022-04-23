@@ -166,6 +166,7 @@ contract('PurgeableSynth', accounts => {
 			beforeEach(async () => {
 				await updateAggregatorRates(
 					exchangeRates,
+					null,
 					[sAUD, SNX, iETH],
 					['0.5', '1', '170'].map(toUnit)
 				);

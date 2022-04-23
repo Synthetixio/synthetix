@@ -54,6 +54,7 @@ contract('SynthUtil', accounts => {
 	beforeEach(async () => {
 		await updateAggregatorRates(
 			exchangeRates,
+			null,
 			[sBTC, iBTC, SNX],
 			['5000', '5000', '0.2'].map(toUnit)
 		);

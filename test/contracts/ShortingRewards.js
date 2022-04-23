@@ -68,7 +68,12 @@ contract('ShortingRewards', accounts => {
 		const rewardsTokenIdentifier = await rewardsToken.symbol();
 
 		await systemSettings.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
-		await updateAggregatorRates(exchangeRates, null, [toBytes32(rewardsTokenIdentifier)], [toUnit('2')]);
+		await updateAggregatorRates(
+			exchangeRates,
+			null,
+			[toBytes32(rewardsTokenIdentifier)],
+			[toUnit('2')]
+		);
 		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
 	};
 
