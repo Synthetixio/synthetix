@@ -465,7 +465,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(result[0], toUnit(550));
 				assert.isFalse(result[1]);
 
-				await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['1', '3'].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sAUD, sEUR], ['1', '3'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 				assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(700));
 				result = await debtCache.currentDebt();
@@ -1068,7 +1068,7 @@ contract('DebtCache', async accounts => {
 
 				const debts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
 
-				await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['1', '1'].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sAUD, sEUR], ['1', '1'].map(toUnit));
 
 				await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
 				const postDebts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
@@ -1103,7 +1103,7 @@ contract('DebtCache', async accounts => {
 				// set a high price deviation threshold factor to be sure it doesn't trigger here
 				await systemSettings.setPriceDeviationThresholdFactor(toUnit('99'), { from: owner });
 
-				await updateAggregatorRates(exchangeRates, [sAUD, sEUR], ['2', '1'].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sAUD, sEUR], ['2', '1'].map(toUnit));
 
 				await fastForward(100);
 

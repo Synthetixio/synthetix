@@ -73,20 +73,20 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    function rateWithSafetyChecks(bytes32 currencyKey) external returns (uint rate, bool broken) {
+    function rateWithSafetyChecks(bytes32 currencyKey) external returns (uint rate, bool broken, bool staleOrInvalid) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
         if (currencyKey == sUSD) {
-            return (rateAndTime.rate, false);
+            return (rateAndTime.rate, false, false);
         }
 
         bool broken = circuitBreaker().probeCircuitBreaker(address(aggregators[currencyKey]), rateAndTime.rate);
 
         return (
             rateAndTime.rate,
+            broken,
             _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
-                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags())) ||
-                broken
+                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()))
         );
     }
 

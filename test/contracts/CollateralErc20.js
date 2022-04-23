@@ -90,7 +90,7 @@ contract('CollateralErc20', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -301,20 +301,20 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('when the price falls by 25% our c ratio is 150%', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [7500].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sBTC], [7500].map(toUnit));
 
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
 			it('when the price increases by 100% our c ratio is 400%', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [20000].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sBTC], [20000].map(toUnit));
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(4));
 			});
 
 			it('when the price fallsby 50% our cratio is 100%', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [5000].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sBTC], [5000].map(toUnit));
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1));
 			});
@@ -335,7 +335,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('price changes should not change the cratio', async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [75].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sBTC], [75].map(toUnit));
 				const ratio = await cerc20.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
@@ -895,7 +895,7 @@ contract('CollateralErc20', async accounts => {
 			let liquidationAmount;
 
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [7000].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sBTC], [7000].map(toUnit));
 
 				await issuesUSDToAccount(toUnit(5000), account2);
 
@@ -945,7 +945,7 @@ contract('CollateralErc20', async accounts => {
 
 		describe('when a loan needs to be completely liquidated', async () => {
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sBTC], [5000].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sBTC], [5000].map(toUnit));
 
 				loan = await cerc20.loans(id);
 

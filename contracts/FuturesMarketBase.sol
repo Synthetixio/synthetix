@@ -645,12 +645,12 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         //  despite reverting immediately after if circuit is broken, which may seem silly.
         //  This is in order to persist last-rate in circuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
-        (uint price, bool circuitBroken) = _exchangeRates().rateWithSafetyChecks(baseAsset);
+        (uint price, bool circuitBroken, bool invalid) = _exchangeRates().rateWithSafetyChecks(baseAsset);
         // revert if price is invalid or circuit was broken
         // note: we revert here, which means that circuit is not really broken (is not persisted), this is
         //  because the futures methods and interface are designed for reverts, and do not support no-op
         //  return values.
-        _revertIfError(circuitBroken, Status.InvalidPrice);
+        _revertIfError(circuitBroken || invalid, Status.InvalidPrice);
         return price;
     }
 

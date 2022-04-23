@@ -82,7 +82,7 @@ contract('Synth', async accounts => {
 
 	beforeEach(async () => {
 		// Send a price update to guarantee we're not stale.
-		await updateAggregatorRates(exchangeRates, [SNX], ['0.1'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [SNX], ['0.1'].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
@@ -734,7 +734,7 @@ contract('Synth', async accounts => {
 				}));
 
 				// Send a price update to guarantee we're not stale.
-				await updateAggregatorRates(exchangeRates, [sEUR], ['1'].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sEUR], ['1'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 			});
 

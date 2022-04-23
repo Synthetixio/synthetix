@@ -178,7 +178,7 @@ contract('CollateralUtil', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
 
 		await issuesUSDToAccount(toUnit(1000), owner);
 		await issuesBTCtoAccount(toUnit(10), owner);
@@ -216,7 +216,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('when we start at 200%, we can take a 25% reduction in collateral prices', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7500)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(7500)]);
 
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
@@ -224,7 +224,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('when we start at 200%, a price shock of 30% in the collateral requires 25% of the loan to be liquidated', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(7000)]);
 
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
@@ -232,7 +232,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('when we start at 200%, a price shock of 40% in the collateral requires 75% of the loan to be liquidated', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(6000)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(6000)]);
 
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
@@ -240,7 +240,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('when we start at 200%, a price shock of 45% in the collateral requires 100% of the loan to be liquidated', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(5500)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(5500)]);
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(5000), '10000');
@@ -262,7 +262,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('when BTC is @ $20000 and we are liquidating 1000 sUSD, then redeem 0.055 BTC', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(20000)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(20000)]);
 
 			collateralRedeemed = await util.collateralRedeemed(sUSD, oneThousandsUSD, collateralKey);
 
@@ -270,7 +270,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('when BTC is @ $7000 and we are liquidating 2500 sUSD, then redeem 0.36666 ETH', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(7000)]);
 
 			collateralRedeemed = await util.collateralRedeemed(sUSD, toUnit(2500), collateralKey);
 
@@ -282,7 +282,7 @@ contract('CollateralUtil', async accounts => {
 
 			assert.bnEqual(collateralRedeemed, toUnit(1.1));
 
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(1000)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(1000)]);
 
 			collateralRedeemed = await util.collateralRedeemed(sBTC, toUnit(1), collateralKey);
 

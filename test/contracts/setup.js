@@ -1268,7 +1268,7 @@ const setupAllContracts = async ({
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
-				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], null, [assetKey], [toUnit('1')]);
 				await Promise.all([
 					returnObj['FuturesMarketSettings'].setParameters(
 						marketKey,
@@ -1308,7 +1308,12 @@ const setupAllContracts = async ({
 		// setup SNX price feed
 		const SNX = toBytes32('SNX');
 		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
-		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+		await updateAggregatorRates(
+			returnObj['ExchangeRates'],
+			returnObj['CircuitBreaker'],
+			[SNX],
+			[toUnit('0.2')]
+		);
 	}
 
 	return returnObj;

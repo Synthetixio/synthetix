@@ -213,7 +213,7 @@ contract('PurgeableSynth', accounts => {
 					});
 					describe('when rates are received', () => {
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [iETH], ['170'].map(toUnit));
+							await updateAggregatorRates(exchangeRates, null, [iETH], ['170'].map(toUnit));
 							await debtCache.takeDebtSnapshot();
 						});
 						it('then purge() still works as expected', async () => {
@@ -326,7 +326,7 @@ contract('PurgeableSynth', accounts => {
 	describe('Replacing an existing Synth with a Purgeable one to purge and remove it', () => {
 		describe('when sAUD has a price', () => {
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sAUD], ['0.776845993'].map(toUnit));
+				await updateAggregatorRates(exchangeRates, null, [sAUD], ['0.776845993'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 			});
 			describe('when a user holds some sAUD', () => {

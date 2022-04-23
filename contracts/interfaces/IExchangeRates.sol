@@ -109,5 +109,5 @@ interface IExchangeRates {
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool);
 
-    function rateWithSafetyChecks(bytes32 currencyKey) external returns (uint rate, bool isInvalid);
+    function rateWithSafetyChecks(bytes32 currencyKey) external returns (uint rate, bool broken, bool invalid);
 }

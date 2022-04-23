@@ -84,7 +84,7 @@ contract('Liquidations', accounts => {
 	};
 
 	const updateSNXPrice = async rate => {
-		await updateAggregatorRates(exchangeRates, [SNX], [rate].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [SNX], [rate].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 	};
 
