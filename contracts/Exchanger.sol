@@ -14,7 +14,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IExchangeCircuitBreaker.sol";
+import "./interfaces/ICircuitBreaker.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
@@ -89,7 +89,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
-    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -123,8 +123,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    function circuitBreaker() internal view returns (ICircuitBreaker) {
+        return ICircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -168,7 +168,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function lastExchangeRate(bytes32 currencyKey) external view returns (uint) {
-        return exchangeCircuitBreaker().lastValue(address(exchangeRates().aggregators(currencyKey)));
+        return circuitBreaker().lastValue(address(exchangeRates().aggregators(currencyKey)));
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -224,7 +224,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
             bool sip65condition =
-                exchangeCircuitBreaker().isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived);
+                circuitBreaker().isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived);
             if (!sip65condition) {
                 if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
                     // if they received more than they should have, add to the reclaim tally

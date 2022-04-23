@@ -234,7 +234,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
     }
 
     // convenience view to access exchangeRates contract for methods that are not exposed
-    // via _exchangeCircuitBreaker() contract
+    // via _circuitBreaker() contract
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }

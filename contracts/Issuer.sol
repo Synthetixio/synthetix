@@ -18,7 +18,7 @@ import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IExchangeCircuitBreaker.sol";
+import "./interfaces/ICircuitBreaker.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
@@ -86,7 +86,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
     bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
@@ -105,7 +105,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](15);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -136,8 +136,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    function circuitBreaker() internal view returns (ICircuitBreaker) {
+        return ICircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
@@ -852,7 +852,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, int256 rawRatio, , , ) =
             AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
 
-        return exchangeCircuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio));
+        return circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio));
     }
 
     function _verifySynthetixCircuitBreaker() internal returns (bool) {

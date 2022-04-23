@@ -643,7 +643,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
         // note: rateWithSafetyChecks (mutative) is used here instead of rateAndInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
-        //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
+        //  This is in order to persist last-rate in circuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
         (uint price, bool circuitBroken) = _exchangeRates().rateWithSafetyChecks(baseAsset);
         // revert if price is invalid or circuit was broken

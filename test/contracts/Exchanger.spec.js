@@ -84,6 +84,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		resolver,
 		debtCache,
 		issuer,
+		circuitBreaker,
 		flexibleStorage;
 
 	const itReadsTheWaitingPeriod = () => {
@@ -288,29 +289,41 @@ contract('Exchanger (spec tests)', async accounts => {
 				);
 			});
 			describe('when a user exchanges into sETH over the default threshold factor', () => {
+				let logs;
 				beforeEach(async () => {
 					await fastForward(10);
 					// base rate of sETH is 100 from shared setup above
 					await updateRates([sETH], [toUnit('300')]);
-					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+					const { tx: hash } = await synthetix.exchange(sUSD, toUnit('1'), sETH, {
+						from: account1,
+					});
+
+					logs = await getDecodedLogs({
+						hash,
+						contracts: [synthetix, exchanger, systemStatus],
+					});
 				});
-				it('then the synth is suspended', async () => {
-					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-					assert.ok(suspended);
-					assert.equal(reason, '65');
+				it('no exchange took place', async () => {
+					assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
 				});
 			});
 			describe('when a user exchanges into sETH under the default threshold factor', () => {
+				let logs;
 				beforeEach(async () => {
 					await fastForward(10);
 					// base rate of sETH is 100 from shared setup above
 					await updateRates([sETH], [toUnit('33')]);
-					await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
+					const { tx: hash } = await synthetix.exchange(sUSD, toUnit('1'), sETH, {
+						from: account1,
+					});
+
+					logs = await getDecodedLogs({
+						hash,
+						contracts: [synthetix, exchanger, systemStatus],
+					});
 				});
-				it('then the synth is suspended', async () => {
-					const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-					assert.ok(suspended);
-					assert.equal(reason, '65');
+				it('no exchange took place', async () => {
+					assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
 				});
 			});
 			describe('changing the factor works', () => {
@@ -2497,7 +2510,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							);
 						});
 
-						it('then it causes a suspension from price deviation as the price is 9', async () => {
+						it('then it causes a breaker trip from price deviation as the price is 9', async () => {
 							const { tx: hash } = await synthetix.exchange(sUSD, toUnit('1'), sETH, {
 								from: account1,
 							});
@@ -2510,15 +2523,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							// assert no exchange
 							assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
 
-							// assert suspension
-							const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-							assert.ok(suspended);
-							assert.equal(reason, '65');
-
-							// check view reverts since synth is now suspended
+							// check view reverts since breaker has tripped
 							await assert.revert(
 								exchanger.getAmountsForExchange(toUnit('1'), sUSD, sETH),
-								'suspended'
+								'rate invalid'
 							);
 						});
 					});
@@ -2533,7 +2541,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								'synth rate invalid'
 							);
 						});
-						it('then it causes a suspension from price deviation', async () => {
+						it('then it causes a breaker trip from price deviation', async () => {
 							// await assert.revert(
 							const { tx: hash } = await synthetix.exchange(sETH, toUnit('1'), sUSD, {
 								from: account1,
@@ -2547,15 +2555,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							// assert no exchange
 							assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
 
-							// assert suspension
-							const { suspended, reason } = await systemStatus.synthSuspension(sETH);
-							assert.ok(suspended);
-							assert.equal(reason, '65');
-
-							// check view reverts since synth is now suspended
+							// check view reverts since breaker has tripped
 							await assert.revert(
 								exchanger.getAmountsForExchange(toUnit('1'), sETH, sUSD),
-								'suspended'
+								'rate invalid'
 							);
 						});
 					});
@@ -3289,6 +3292,14 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 					await fastForward(10);
 					await updateRates([target], [toUnit(rate.toString())]);
+
+					const aggregatorAddress = await exchangeRates.aggregators(target);
+
+					console.log('checking circuit breaker');
+					if ((await circuitBreaker.lastValue(aggregatorAddress)).eq(0)) {
+						console.log('fixing circuit breaker');
+						await circuitBreaker.resetLastValue(aggregatorAddress, rate);
+					}
 				});
 			};
 
@@ -3359,11 +3370,8 @@ contract('Exchanger (spec tests)', async accounts => {
 										await sETHContract.issue(account2, toUnit('1'));
 										await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account2 });
 									});
-									it('then the source side has not persisted the rate', async () => {
-										assert.bnEqual(
-											await exchanger.lastExchangeRate(sETH),
-											toUnit(baseRate.toString())
-										);
+									it('then the source side persisted the rate', async () => {
+										assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate * 3));
 									});
 									it('then the dest side has persisted the rate', async () => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('1.9'));
@@ -3407,7 +3415,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.equal(await exchanger.isSynthRateInvalid(toBytes32('XYZ')), true);
 						});
 						describe('when a synth rate changes outside of the range', () => {
-							updateRate({ target: sETH, rate: baseRate * 2 });
+							updateRate({ target: sETH, rate: baseRate * 5 });
 
 							it('when called with that synth, returns true', async () => {
 								assert.equal(await exchanger.isSynthRateInvalid(sETH), true);
@@ -3481,24 +3489,11 @@ contract('Exchanger (spec tests)', async accounts => {
 											});
 										});
 										if (Math.abs(factor) >= baseFactor || spikeExpected) {
-											it('then the synth is suspended', async () => {
-												const { suspended, reason } = await systemStatus.synthSuspension(target);
-												assert.ok(suspended);
-												assert.equal(reason, '65');
-											});
-											it('and no exchange took place', async () => {
+											it('no exchange took place', async () => {
 												assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
 											});
 										} else {
-											it('then neither synth is suspended', async () => {
-												const suspensions = await Promise.all([
-													systemStatus.synthSuspension(from),
-													systemStatus.synthSuspension(to),
-												]);
-												assert.ok(!suspensions[0].suspended);
-												assert.ok(!suspensions[1].suspended);
-											});
-											it('and an exchange took place', async () => {
+											it('an exchange took place', async () => {
 												assert.ok(logs.some(({ name } = {}) => name === 'SynthExchange'));
 											});
 										}
@@ -4001,6 +3996,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				AddressResolver: resolver,
 				DebtCache: debtCache,
 				Issuer: issuer,
+				CircuitBreaker: circuitBreaker,
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
@@ -4020,6 +4016,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					'SystemSettings',
 					'DelegateApprovals',
 					'FlexibleStorage',
+					'CircuitBreaker',
 					'CollateralManager',
 				],
 				mocks: {

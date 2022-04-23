@@ -111,7 +111,8 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 	};
 
 	const itPricesSpikeDeviation = () => {
-		describe('priceSpikeDeviation', () => {
+		// skipped because the relevant functionality has been replaced by `CircuitBreaker`
+		describe.skip('priceSpikeDeviation', () => {
 			const baseRate = 100;
 
 			const updateRate = ({ target, rate }) => {

@@ -171,7 +171,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
         // Sanity check atomic output's value against current system value (checking atomic rates)
         require(
-            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
+            !circuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
             "Atomic rate deviates too much"
         );
 

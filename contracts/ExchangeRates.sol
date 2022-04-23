@@ -15,7 +15,7 @@ import "./SafeDecimalMath.sol";
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
-import "./interfaces/IExchangeCircuitBreaker.sol";
+import "./interfaces/ICircuitBreaker.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
@@ -24,7 +24,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     bytes32 public constant CONTRACT_NAME = "ExchangeRates";
 
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
 
 
     //slither-disable-next-line naming-convention
@@ -80,7 +80,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return (rateAndTime.rate, false);
         }
 
-        bool broken = exchangeCircuitBreaker().probeCircuitBreaker(address(aggregators[currencyKey]), rateAndTime.rate);
+        bool broken = circuitBreaker().probeCircuitBreaker(address(aggregators[currencyKey]), rateAndTime.rate);
 
         return (
             rateAndTime.rate,
@@ -100,8 +100,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return combineArrays(existingAddresses, newAddresses);
     }
 
-    function exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    function circuitBreaker() internal view returns (ICircuitBreaker) {
+        return ICircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory currencies) {
@@ -293,7 +293,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             rateAndTime.rate,
             _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
                 _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags())) ||
-                exchangeCircuitBreaker().isInvalid(address(aggregators[currencyKey]), rateAndTime.rate)
+                circuitBreaker().isInvalid(address(aggregators[currencyKey]), rateAndTime.rate)
         );
     }
 
@@ -314,7 +314,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             rates[i] = rateEntry.rate;
             if (!anyRateInvalid && currencyKeys[i] != sUSD) {
-                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) || exchangeCircuitBreaker().isInvalid(address(aggregators[currencyKeys[i]]), rateEntry.rate);
+                anyRateInvalid = flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) || circuitBreaker().isInvalid(address(aggregators[currencyKeys[i]]), rateEntry.rate);
             }
         }
     }

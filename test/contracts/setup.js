@@ -183,6 +183,7 @@ const setupContract = async ({
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		CircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
@@ -697,7 +698,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['ExchangeCircuitBreaker'],
+			mocks: ['CircuitBreaker'],
 		},
 		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
@@ -792,6 +793,11 @@ const setupAllContracts = async ({
 			],
 		},
 		{
+			contract: 'CircuitBreaker',
+			mocks: [],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
+		},
+		{
 			contract: 'ExchangeCircuitBreaker',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
@@ -807,7 +813,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
@@ -827,7 +833,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
@@ -982,18 +988,13 @@ const setupAllContracts = async ({
 				'FuturesMarketSettings',
 				'SystemStatus',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
-			deps: [
-				'AddressResolver',
-				'FuturesMarketManager',
-				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
-			],
+			deps: ['AddressResolver', 'FuturesMarketManager', 'FlexibleStorage', 'CircuitBreaker'],
 		},
 
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
