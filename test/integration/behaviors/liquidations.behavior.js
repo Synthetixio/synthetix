@@ -9,9 +9,9 @@ const { skipLiquidationDelay } = require('../utils/skip');
 function itCanLiquidate({ ctx }) {
 	describe('liquidating', () => {
 		let owner;
-		let user4;
-		let user5;
-		let user6;
+		let liquidatedUser;
+		let liquidatorUser;
+		let flaggerUser;
 		let exchangeRate;
 		let Synthetix, SynthetixDebtShare, Liquidator, LiquidatorRewards, SystemSettings;
 
@@ -24,7 +24,7 @@ function itCanLiquidate({ ctx }) {
 				SystemSettings,
 			} = ctx.contracts);
 
-			({ owner, user4, user5, user6 } = ctx.users);
+			({ owner, liquidatedUser, flaggerUser, liquidatorUser } = ctx.users);
 
 			SystemSettings = SystemSettings.connect(owner);
 		});
@@ -45,11 +45,11 @@ function itCanLiquidate({ ctx }) {
 			await SystemSettings.setLiquidateReward(ethers.utils.parseEther('2')); // 2 SNX
 		});
 
-		before('ensure user4 has SNX', async () => {
+		before('ensure liquidatedUser has SNX', async () => {
 			await ensureBalance({
 				ctx,
 				symbol: 'SNX',
-				user: user4,
+				user: liquidatedUser,
 				balance: ethers.utils.parseEther('800'),
 			});
 		});
@@ -63,12 +63,12 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
-		before('user4 stakes their SNX', async () => {
-			await Synthetix.connect(user4).issueMaxSynths();
+		before('liquidatedUser stakes their SNX', async () => {
+			await Synthetix.connect(liquidatedUser).issueMaxSynths();
 		});
 
 		it('cannot be liquidated at this point', async () => {
-			assert.equal(await Liquidator.isLiquidationOpen(user4.address, false), false);
+			assert.equal(await Liquidator.isLiquidationOpen(liquidatedUser.address, false), false);
 		});
 
 		describe('getting marked', () => {
@@ -81,7 +81,7 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			before('liquidation is marked', async () => {
-				await Liquidator.connect(user5).flagAccountForLiquidation(user4.address);
+				await Liquidator.connect(flaggerUser).flagAccountForLiquidation(liquidatedUser.address);
 			});
 
 			after('restore exchange rate', async () => {
@@ -93,11 +93,11 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			it('still not open for liquidation', async () => {
-				assert.equal(await Liquidator.isLiquidationOpen(user4.address, false), false);
+				assert.equal(await Liquidator.isLiquidationOpen(liquidatedUser.address, false), false);
 			});
 
 			it('deadline has not passed yet', async () => {
-				assert.equal(await Liquidator.isLiquidationDeadlinePassed(user4.address), false);
+				assert.equal(await Liquidator.isLiquidationDeadlinePassed(liquidatedUser.address), false);
 			});
 
 			describe('when the liquidation delay passes', () => {
@@ -112,47 +112,49 @@ function itCanLiquidate({ ctx }) {
 						beforeLiquidateRewardCredittedSnx,
 						beforeRemainingRewardCredittedSnx;
 
-					before('user6 calls liquidateDelinquentAccount', async () => {
-						beforeDebt = (await SynthetixDebtShare.balanceOf(user4.address)).toString();
+					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
+						beforeDebt = (await SynthetixDebtShare.balanceOf(liquidatedUser.address)).toString();
 						beforeSupply = await SynthetixDebtShare.totalSupply();
-						beforeDebttedSnx = await Synthetix.balanceOf(user4.address);
-						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(user5.address);
-						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(user6.address);
+						beforeDebttedSnx = await Synthetix.balanceOf(liquidatedUser.address);
+						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
+						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(liquidatorUser.address);
 						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(Liquidator.address);
 
-						await Synthetix.connect(user6).liquidateDelinquentAccount(user4.address);
+						await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(
+							liquidatedUser.address
+						);
 					});
 
 					it('reduces the debt share balance of the liquidated', async () => {
-						assert.bnLt(await SynthetixDebtShare.balanceOf(user4.address), beforeDebt);
+						assert.bnLt(await SynthetixDebtShare.balanceOf(liquidatedUser.address), beforeDebt);
 					});
 
 					it('reduces the total supply of debt shares', async () => {
 						assert.bnLt(await SynthetixDebtShare.totalSupply(), beforeSupply);
 					});
 
-					it('transfers the flag reward to user5', async () => {
+					it('transfers the flag reward to flaggerUser', async () => {
 						const flagReward = await Liquidator.flagReward();
 						assert.bnNotEqual(flagReward, '0');
 						assert.bnEqual(
-							await Synthetix.balanceOf(user5.address),
+							await Synthetix.balanceOf(flaggerUser.address),
 							beforeFlagRewardCredittedSnx.add(flagReward)
 						);
 					});
 
-					it('transfers the liquidate reward to user6', async () => {
+					it('transfers the liquidate reward to liquidatorUser', async () => {
 						const liquidateReward = await Liquidator.liquidateReward();
 						assert.bnNotEqual(liquidateReward, '0');
 						assert.bnEqual(
-							await Synthetix.balanceOf(user6.address),
+							await Synthetix.balanceOf(liquidatorUser.address),
 							beforeLiquidateRewardCredittedSnx.add(liquidateReward)
 						);
 					});
 
 					it('transfers the remaining SNX to LiquidatorRewards', async () => {
 						const remainingReward = beforeDebttedSnx
-							.sub(await Synthetix.balanceOf(user5.address))
-							.sub(await Synthetix.balanceOf(user6.address));
+							.sub(await Synthetix.balanceOf(flaggerUser.address))
+							.sub(await Synthetix.balanceOf(liquidatorUser.address));
 						assert.bnNotEqual(remainingReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(LiquidatorRewards.address),
