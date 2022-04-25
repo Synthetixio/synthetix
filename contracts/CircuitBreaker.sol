@@ -18,6 +18,8 @@ import "./Proxyable.sol";
 // Chainlink
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
+import "hardhat/console.sol";
+
 /**
  * Compares current exchange rate to previous, and suspends a synth if the
  * difference is outside of deviation bounds.
@@ -61,7 +63,7 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     // Returns rate and its "invalid" state.
     // Rate can be invalid due to range out of bounds.
     function isInvalid(address oracleAddress, uint value) external view returns (bool) {
-        return _circuitBroken[oracleAddress] || _isRateOutOfBounds(oracleAddress, value);
+        return _circuitBroken[oracleAddress] || _isRateOutOfBounds(oracleAddress, value) || value == 0;
     }
 
     function isDeviationAboveThreshold(uint base, uint comparison) external view returns (bool) {
@@ -99,12 +101,12 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     function probeCircuitBreaker(address oracleAddress, uint value) external returns (bool circuitBroken) {
         // check system status
         if (!systemStatus().systemSuspended() && _isRateOutOfBounds(oracleAddress, value)) {
-            _circuitBroken[oracleAddress] = true;
+            _circuitBroken[oracleAddress] = _lastValue[oracleAddress] != 0;
         }
 
         _lastValue[oracleAddress] = value;
 
-        return _circuitBroken[oracleAddress];
+        return _circuitBroken[oracleAddress] || value == 0;
     }
 
     /**
@@ -146,6 +148,8 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      * if rate is outside of deviation w.r.t any of the 3 previous ones (excluding the last one).
      */
     function _isRateOutOfBounds(address oracleAddress, uint current) internal view returns (bool) {
+        console.log("probed", current);
+        console.log("vs old", _lastValue[oracleAddress]);
         uint last = _lastValue[oracleAddress];
 
         if (last > 0) {

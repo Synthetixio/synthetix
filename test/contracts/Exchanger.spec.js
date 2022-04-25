@@ -2521,6 +2521,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 
 							// assert no exchange
+							console.log(logs);
 							assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
 
 							// check view reverts since breaker has tripped
@@ -3291,12 +3292,16 @@ contract('Exchanger (spec tests)', async accounts => {
 			const updateRate = ({ target, rate }) => {
 				beforeEach(async () => {
 					await fastForward(10);
-					await updateRates([target], [toUnit(rate.toString())]);
+					// this function will not update `circuitBreaker`, which is behavior we want for tests below
+					await updateAggregatorRates(exchangeRates, null, [target], [rate]);
 				});
 			};
 
 			describe(`when the price of sETH is ${baseRate}`, () => {
-				updateRate({ target: sETH, rate: baseRate });
+				beforeEach(' set initial eth rate', async () => {
+					// we want circuit breaker updated here, so we use `updateRates`
+					await updateRates([sETH], [baseRate]);
+				});
 
 				describe('when price spike deviation is set to a factor of 2', () => {
 					const baseFactor = 2;
@@ -3377,7 +3382,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									await fastForward(10);
 									await updateAggregatorRates(
 										exchangeRates,
-										circuitBreaker,
+										null,
 										[sETH, sEUR],
 										[toUnit(baseRate * 1.1).toString(), toUnit('10')]
 									);
@@ -3394,7 +3399,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										);
 									});
 									it('and the dest side has persisted the rate', async () => {
-										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
 									});
 								});
 							});
@@ -4092,6 +4097,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				AddressResolver: resolver,
 				DebtCache: debtCache,
 				Issuer: issuer,
+				CircuitBreaker: circuitBreaker,
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
@@ -4111,6 +4117,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					'SystemSettings',
 					'DelegateApprovals',
 					'FlexibleStorage',
+					'CircuitBreaker',
 					'CollateralManager',
 				],
 			}));

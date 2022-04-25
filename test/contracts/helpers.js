@@ -61,12 +61,9 @@ async function updateAggregatorRates(
 		await aggregator.setLatestAnswer(rates[i], timestamp);
 
 		if (circuitBreaker) {
-			// console.log('circuitbreaker', (await circuitBreaker.lastValue(aggregatorAddress)).toString(), (await circuitBreaker.lastValue(aggregatorAddress)).toString() !== '0')
-			if ((await circuitBreaker.lastValue(aggregatorAddress)).toString() !== '0') {
-				await circuitBreaker.resetLastValue([aggregatorAddress], [rates[i]], {
-					from: await circuitBreaker.owner(),
-				});
-			}
+			await circuitBreaker.resetLastValue([aggregatorAddress], [rates[i]], {
+				from: await circuitBreaker.owner(),
+			});
 		}
 	}
 }

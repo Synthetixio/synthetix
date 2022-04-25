@@ -23,6 +23,8 @@ import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
 
+import "hardhat/console.sol";
+
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
     function emitExchangeTracking(
@@ -559,6 +561,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // check both currencies unless they're sUSD, since its rate is never invalid (gas savings)
         if (sourceCurrencyKey != sUSD) {
             (, circuitBroken, ) = exchangeRates().rateWithSafetyChecks(sourceCurrencyKey);
+            console.log("src broken", circuitBroken);
         }
 
         if (destinationCurrencyKey != sUSD) {
@@ -567,6 +570,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // depend on which synth is source and which is destination)
             bool destCircuitBroken;
             (, destCircuitBroken, ) = exchangeRates().rateWithSafetyChecks(destinationCurrencyKey);
+            console.log("destBroken", destCircuitBroken);
             circuitBroken = circuitBroken || destCircuitBroken;
         }
     }
