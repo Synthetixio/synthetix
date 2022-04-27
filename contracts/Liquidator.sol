@@ -151,7 +151,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return deadline > 0 && now > deadline;
     }
 
-    /// @notice Checks if an account has enough SNX balance to be open for liquidation.
+    /// @notice Checks if an account has enough SNX balance to be considered open for forced liquidation.
     function _hasEnoughSNX(address account) internal view returns (bool) {
         uint balance = IERC20(address(synthetix())).balanceOf(account);
         return balance > (getLiquidateReward().add(getFlagReward()));
@@ -167,13 +167,12 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     function calculateAmountToFixCollateral(
         uint debtBalance,
         uint collateral,
-        bool isSelfLiquidation
+        uint penalty
     ) external view returns (uint) {
         uint ratio = getIssuanceRatio();
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
-        uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getLiquidationPenalty();
         uint divisor = unit.sub(unit.add(penalty).multiplyDecimal(ratio));
 
         return dividend.divideDecimal(divisor);

@@ -10,4 +10,6 @@ interface ILiquidatorRewards {
     // Mutative
 
     function getReward() external;
+
+    function notifyRewardAmount(uint256 reward) external;
 }

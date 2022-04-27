@@ -616,6 +616,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
     }
 
+    // SIP-148: Upgraded Liquidation Mechanism
+    /// @notice This is where the core internal liquidation logic resides. This function can only be invoked by Synthetix.
+    /// @param account The account to be liquidated
+    /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
+    /// @return uint the total amount of collateral (SNX) to redeem
+    /// @return uint the amount of debt (sUSD) to burn in order to fix the account's c-ratio
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
         onlySynthetix
@@ -641,7 +647,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         amountToLiquidate = liquidator().calculateAmountToFixCollateral(
             debtBalance,
             _snxToUSD(collateralForAccount, snxRate),
-            isSelfLiquidation
+            penalty
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate

@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
@@ -11,22 +10,25 @@ import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 
+// Libraries
+import "./SafeDecimalMath.sol";
+
 // Internal references
-import "./interfaces/ILiquidator.sol";
-import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardEscrowV2.sol";
-import "./interfaces/ISynthetix.sol";
+import "./interfaces/ISynthetixDebtShare.sol";
 
 /// @title Liquidator Rewards (SIP-148)
 /// @notice This contract holds SNX from liquidated positions.
 /// @dev SNX stakers may claim their rewards based on their share of the debt pool.
 contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, ReentrancyGuard {
     using SafeMath for uint256;
+    using SafeDecimalMath for uint256;
     using SafeERC20 for IERC20;
 
     /* ========== STATE VARIABLES ========== */
 
+    uint256 public accumulatedRewards;
     uint256 public rewardPerShareStored;
 
     mapping(address => uint256) public userRewardPerSharePaid;
@@ -36,7 +38,6 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_SYNTHETIXDEBTSHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
@@ -50,17 +51,12 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
-        newAddresses[0] = CONTRACT_LIQUIDATOR;
-        newAddresses[1] = CONTRACT_SYNTHETIXDEBTSHARE;
-        newAddresses[2] = CONTRACT_ISSUER;
-        newAddresses[3] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[4] = CONTRACT_SYNTHETIX;
+        bytes32[] memory newAddresses = new bytes32[](4);
+        newAddresses[0] = CONTRACT_SYNTHETIXDEBTSHARE;
+        newAddresses[1] = CONTRACT_ISSUER;
+        newAddresses[2] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[3] = CONTRACT_SYNTHETIX;
         return combineArrays(existingAddresses, newAddresses);
-    }
-
-    function liquidator() internal view returns (ILiquidator) {
-        return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
 
     function synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
@@ -75,8 +71,8 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    function synthetix() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function rewardPerShare() public view returns (uint256) {
@@ -86,14 +82,15 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
             return 0;
         }
 
-        return (IERC20(address(synthetix())).balanceOf(address(this))).div(sharesSupply);
+        return accumulatedRewards.divideDecimal(sharesSupply);
     }
 
     function earned(address account) public view returns (uint256) {
         return
-            synthetixDebtShare().balanceOf(account).mul(rewardPerShare().sub(userRewardPerSharePaid[account])).div(1e18).add(
-                rewards[account]
-            );
+            synthetixDebtShare()
+                .balanceOf(account)
+                .multiplyDecimal(rewardPerShare().sub(userRewardPerSharePaid[account]))
+                .add(rewards[account]);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -102,10 +99,18 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            IERC20(address(synthetix())).approve(address(rewardEscrowV2()), reward);
+            synthetix().approve(address(rewardEscrowV2()), reward);
             rewardEscrowV2().createEscrowEntry(msg.sender, reward, getLiquidationEscrowDuration());
             emit RewardPaid(msg.sender, reward);
         }
+    }
+
+    /* ========== RESTRICTED FUNCTIONS ========== */
+
+    /// @notice This is called only after an account is liquidated and the SNX rewards are sent to this contract.
+    function notifyRewardAmount(uint256 reward) external onlySynthetix {
+        accumulatedRewards = accumulatedRewards.add(reward);
+        rewardPerShareStored = rewardPerShare();
     }
 
     /* ========== MODIFIERS ========== */
@@ -116,6 +121,12 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
             rewards[account] = earned(account);
             userRewardPerSharePaid[account] = rewardPerShareStored;
         }
+        _;
+    }
+
+    modifier onlySynthetix {
+        bool isSynthetix = msg.sender == address(synthetix());
+        require(isSynthetix, "Synthetix only");
         _;
     }
 

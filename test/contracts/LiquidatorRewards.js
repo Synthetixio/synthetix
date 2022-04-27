@@ -3,6 +3,7 @@ const { toBN } = require('web3-utils');
 
 const { toBytes32 } = require('../..');
 const {
+	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setupPriceAggregators,
 	updateAggregatorRates,
@@ -13,9 +14,15 @@ const { toUnit } = require('../utils')();
 
 contract('LiquidatorRewards', accounts => {
 	const [sAUD, sEUR, SNX, sETH, ETH] = ['sAUD', 'sEUR', 'SNX', 'sETH', 'ETH'].map(toBytes32);
-	const [, owner, , , stakingAccount1] = accounts;
+	const [, owner, , , stakingAccount1, mockSynthetix] = accounts;
 
-	let synthetix, synthetixDebtShare, exchangeRates, synths, debtCache, liquidatorRewards;
+	let addressResolver,
+		debtCache,
+		exchangeRates,
+		liquidatorRewards,
+		synths,
+		synthetix,
+		synthetixDebtShare;
 
 	const ZERO_BN = toBN(0);
 
@@ -27,6 +34,11 @@ contract('LiquidatorRewards', accounts => {
 
 		const totalSupply = await synthetixDebtShare.totalSupply();
 		assert.bnGt(totalSupply, ZERO_BN);
+
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [mockSynthetix], {
+			from: owner,
+		});
+		await liquidatorRewards.rebuildCache();
 	};
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -34,6 +46,7 @@ contract('LiquidatorRewards', accounts => {
 	before(async () => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
 		({
+			AddressResolver: addressResolver,
 			DebtCache: debtCache,
 			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
@@ -76,7 +89,7 @@ contract('LiquidatorRewards', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: liquidatorRewards.abi,
 			ignoreParents: ['ReentrancyGuard', 'Owned'],
-			expected: ['getReward', 'rebuildCache'],
+			expected: ['getReward', 'notifyRewardAmount', 'rebuildCache'],
 		});
 	});
 
@@ -88,6 +101,24 @@ contract('LiquidatorRewards', accounts => {
 		it('reward balance should be zero', async () => {
 			const rewardsBalance = await synthetix.balanceOf(liquidatorRewards.address);
 			assert.equal(0, rewardsBalance);
+
+			const accumulatedRewards = await liquidatorRewards.accumulatedRewards();
+			assert.equal(0, accumulatedRewards);
+		});
+	});
+
+	describe('Function permissions', () => {
+		const rewardValue = toUnit(100);
+
+		it('only synthetix can call notifyRewardAmount', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: liquidatorRewards.notifyRewardAmount,
+				accounts,
+				args: [rewardValue],
+				address: synthetix.address,
+				skipPassCheck: true,
+				reason: 'Synthetix only',
+			});
 		});
 	});
 
@@ -101,6 +132,10 @@ contract('LiquidatorRewards', accounts => {
 
 			const rewardValue = toUnit('100');
 			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
+
+			await liquidatorRewards.notifyRewardAmount(rewardValue, {
+				from: mockSynthetix,
+			});
 
 			const rewardPerShare = await liquidatorRewards.rewardPerShare();
 			assert.bnGt(rewardPerShare, ZERO_BN);
@@ -118,22 +153,35 @@ contract('LiquidatorRewards', accounts => {
 			const rewardValue = toUnit('100');
 			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
 
+			await liquidatorRewards.notifyRewardAmount(rewardValue, {
+				from: mockSynthetix,
+			});
+
 			const earned = await liquidatorRewards.earned(stakingAccount1);
 			assert.bnGt(earned, ZERO_BN);
 		});
 
 		it('rewards balance should increase if new rewards come in', async () => {
+			// TODO: earned call
 			const rewardsBalanceBefore = await synthetix.balanceOf(liquidatorRewards.address);
+			const accumulatedRewardsBefore = await liquidatorRewards.accumulatedRewards();
 
 			await setupStaker();
 
 			const newRewards = toUnit('5000');
 			await synthetix.transfer(liquidatorRewards.address, newRewards, { from: owner });
 
-			const rewardsBalanceAfter = await synthetix.balanceOf(liquidatorRewards.address);
+			await liquidatorRewards.notifyRewardAmount(newRewards, {
+				from: mockSynthetix,
+			});
 
+			const rewardsBalanceAfter = await synthetix.balanceOf(liquidatorRewards.address);
 			assert.bnEqual(rewardsBalanceBefore, ZERO_BN);
 			assert.bnGt(rewardsBalanceAfter, rewardsBalanceBefore);
+
+			const accumulatedRewardsAfter = await liquidatorRewards.accumulatedRewards();
+			assert.bnEqual(accumulatedRewardsBefore, ZERO_BN);
+			assert.bnGt(accumulatedRewardsAfter, accumulatedRewardsBefore);
 		});
 	});
 
@@ -146,11 +194,26 @@ contract('LiquidatorRewards', accounts => {
 			const rewardValue = toUnit('100');
 			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
 
-			const initialEarnedBal = await liquidatorRewards.earned(stakingAccount1);
-			await liquidatorRewards.getReward({ from: stakingAccount1 });
-			const postEarnedBal = await liquidatorRewards.earned(stakingAccount1);
+			await liquidatorRewards.notifyRewardAmount(rewardValue, {
+				from: mockSynthetix,
+			});
 
-			assert.bnLt(postEarnedBal, initialEarnedBal);
+			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
+				from: owner,
+			});
+			await liquidatorRewards.rebuildCache();
+
+			const initialEarnedBal = await liquidatorRewards.earned(stakingAccount1);
+
+			const tx = await liquidatorRewards.getReward({ from: stakingAccount1 });
+
+			assert.eventEqual(tx, 'RewardPaid', {
+				user: stakingAccount1,
+				reward: initialEarnedBal,
+			});
+
+			const postEarnedBal = await liquidatorRewards.earned(stakingAccount1);
+			assert.bnEqual(postEarnedBal, '0');
 
 			const rewardsBalanceAfter = await synthetix.balanceOf(liquidatorRewards.address);
 			assert.bnGt(rewardsBalanceAfter, rewardsBalanceBefore);

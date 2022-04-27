@@ -5,26 +5,28 @@ const { assert } = require('../../contracts/common');
 const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 const { skipLiquidationDelay } = require('../utils/skip');
+// const { createMockAggregatorFactory } = require('../../utils/index')();
 
 function itCanLiquidate({ ctx }) {
 	describe('liquidating', () => {
 		let owner;
+		let someUser;
 		let liquidatedUser;
 		let liquidatorUser;
 		let flaggerUser;
 		let exchangeRate;
-		let Synthetix, SynthetixDebtShare, Liquidator, LiquidatorRewards, SystemSettings;
+		let Liquidator, LiquidatorRewards, Synthetix, SynthetixDebtShare, SystemSettings;
 
 		before('target contracts and users', () => {
 			({
-				Synthetix,
-				SynthetixDebtShare,
 				Liquidator,
 				LiquidatorRewards,
+				Synthetix,
+				SynthetixDebtShare,
 				SystemSettings,
 			} = ctx.contracts);
 
-			({ owner, liquidatedUser, flaggerUser, liquidatorUser } = ctx.users);
+			({ owner, someUser, liquidatedUser, flaggerUser, liquidatorUser } = ctx.users);
 
 			SystemSettings = SystemSettings.connect(owner);
 		});
@@ -54,6 +56,15 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
+		before('ensure someUser has SNX', async () => {
+			await ensureBalance({
+				ctx,
+				symbol: 'SNX',
+				user: someUser,
+				balance: ethers.utils.parseEther('100'),
+			});
+		});
+
 		before('exchange rate is set', async () => {
 			exchangeRate = await getRate({ ctx, symbol: 'SNX' });
 			await addAggregatorAndSetRate({
@@ -65,6 +76,10 @@ function itCanLiquidate({ ctx }) {
 
 		before('liquidatedUser stakes their SNX', async () => {
 			await Synthetix.connect(liquidatedUser).issueMaxSynths();
+		});
+
+		before('someUser stakes their SNX', async () => {
+			await Synthetix.connect(someUser).issueMaxSynths();
 		});
 
 		it('cannot be liquidated at this point', async () => {
@@ -118,7 +133,9 @@ function itCanLiquidate({ ctx }) {
 						beforeDebttedSnx = await Synthetix.balanceOf(liquidatedUser.address);
 						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
 						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(liquidatorUser.address);
-						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(Liquidator.address);
+						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
+							LiquidatorRewards.address
+						);
 
 						await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(
 							liquidatedUser.address
@@ -135,7 +152,6 @@ function itCanLiquidate({ ctx }) {
 
 					it('transfers the flag reward to flaggerUser', async () => {
 						const flagReward = await Liquidator.flagReward();
-						assert.bnNotEqual(flagReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(flaggerUser.address),
 							beforeFlagRewardCredittedSnx.add(flagReward)
@@ -144,7 +160,6 @@ function itCanLiquidate({ ctx }) {
 
 					it('transfers the liquidate reward to liquidatorUser', async () => {
 						const liquidateReward = await Liquidator.liquidateReward();
-						assert.bnNotEqual(liquidateReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(liquidatorUser.address),
 							beforeLiquidateRewardCredittedSnx.add(liquidateReward)
@@ -160,6 +175,24 @@ function itCanLiquidate({ ctx }) {
 							await Synthetix.balanceOf(LiquidatorRewards.address),
 							beforeRemainingRewardCredittedSnx.add(remainingReward)
 						);
+					});
+
+					it('should allow someUser to claim their share of the liquidation rewards', async () => {
+						const earnedReward = await LiquidatorRewards.earned(someUser.address);
+
+						const tx = await LiquidatorRewards.connect(someUser).getReward();
+
+						const { events } = await tx.wait();
+
+						const event = events.find(l => l.event === 'RewardPaid');
+						const payee = event.args.user;
+						const reward = event.args.reward;
+
+						assert.equal(payee, someUser.address);
+						assert.bnEqual(reward, earnedReward);
+
+						const earnedRewardAfterClaiming = await LiquidatorRewards.earned(someUser.address);
+						assert.bnEqual(earnedRewardAfterClaiming, '0');
 					});
 				});
 			});

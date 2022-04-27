@@ -31,7 +31,7 @@ interface ILiquidator {
     function calculateAmountToFixCollateral(
         uint debtBalance,
         uint collateral,
-        bool isSelfLiquidation
+        uint penalty
     ) external view returns (uint);
 
     // Mutative Functions

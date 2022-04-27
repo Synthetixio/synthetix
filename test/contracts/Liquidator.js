@@ -41,6 +41,7 @@ contract('Liquidator', accounts => {
 	let addressResolver,
 		exchangeRates,
 		liquidator,
+		liquidatorRewards,
 		synthetix,
 		synthetixDebtShare,
 		systemSettings,
@@ -55,6 +56,7 @@ contract('Liquidator', accounts => {
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			Liquidator: liquidator,
+			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
 			SynthetixDebtShare: synthetixDebtShare,
 			SystemSettings: systemSettings,
@@ -297,7 +299,7 @@ contract('Liquidator', accounts => {
 						const susdToLiquidate = await liquidator.calculateAmountToFixCollateral(
 							debtBefore,
 							collateralBefore,
-							false
+							penalty
 						);
 
 						assert.bnEqual(susdToLiquidate, expectedAmount);
@@ -321,7 +323,7 @@ contract('Liquidator', accounts => {
 						const susdToLiquidate = await liquidator.calculateAmountToFixCollateral(
 							debtBefore,
 							collateralBefore,
-							false
+							penalty
 						);
 
 						assert.bnEqual(susdToLiquidate, expectedAmount);
@@ -470,7 +472,7 @@ contract('Liquidator', accounts => {
 							amountToFixRatio = await liquidator.calculateAmountToFixCollateral(
 								aliceDebtValueBefore,
 								aliceCollateralBefore,
-								true
+								penalty
 							);
 
 							assert.bnEqual(amountToFixRatio, expectedAmount);
@@ -485,6 +487,15 @@ contract('Liquidator', accounts => {
 							const collateralRatio = divideDecimal(debtAfter, collateralAfterMinusPenalty);
 
 							assert.bnEqual(collateralRatio, ratio);
+
+							// Alice should not be open for liquidation anymore
+							assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
+
+							// Check that the redeemed SNX is sent to the LiquidatorRewards contract
+							assert.bnEqual(
+								await synthetix.balanceOf(liquidatorRewards.address),
+								aliceCollateralBefore.sub(collateralAfterMinusPenalty)
+							);
 						});
 					});
 				});
@@ -709,11 +720,17 @@ contract('Liquidator', accounts => {
 								await updateSNXPrice('1');
 								burnTransaction = await synthetix.burnSynthsToTarget({ from: alice });
 							});
-							// TODO: AccountRemovedFromLiquidation is emitted off the Liquidator contract
-							xit('then AccountRemovedFromLiquidation event is emitted', async () => {
-								assert.eventEqual(burnTransaction, 'AccountRemovedFromLiquidation', {
-									account: alice,
-								});
+							it('then AccountRemovedFromLiquidation event is emitted', async () => {
+								const logs = artifacts
+									.require('Liquidator')
+									.decodeLogs(burnTransaction.receipt.rawLogs);
+								assert.eventEqual(
+									logs.find(log => log.event === 'AccountRemovedFromLiquidation'),
+									'AccountRemovedFromLiquidation',
+									{
+										account: alice,
+									}
+								);
 							});
 							it('then Alice liquidation entry is removed', async () => {
 								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
@@ -788,10 +805,17 @@ contract('Liquidator', accounts => {
 							it('then alice has no more debt', async () => {
 								assert.bnEqual(toUnit(0), await synthetixDebtShare.balanceOf(alice));
 							});
-							xit('then AccountRemovedFromLiquidation event is emitted', async () => {
-								assert.eventEqual(burnTransaction, 'AccountRemovedFromLiquidation', {
-									account: alice,
-								});
+							it('then AccountRemovedFromLiquidation event is emitted', async () => {
+								const logs = artifacts
+									.require('Liquidator')
+									.decodeLogs(burnTransaction.receipt.rawLogs);
+								assert.eventEqual(
+									logs.find(log => log.event === 'AccountRemovedFromLiquidation'),
+									'AccountRemovedFromLiquidation',
+									{
+										account: alice,
+									}
+								);
 							});
 							it('then Alice liquidation entry is removed', async () => {
 								const deadline = await liquidator.getLiquidationDeadlineForAccount(alice);
@@ -831,11 +855,13 @@ contract('Liquidator', accounts => {
 							});
 							describe('given Alice has $600 Debt, $800 worth of SNX Collateral and c-ratio at 133.33%', () => {
 								describe('when bob calls liquidateDelinquentAccount on Alice', () => {
+									let txn;
 									let ratio;
 									let penalty;
 									let aliceDebtShareBefore;
 									let aliceDebtValueBefore;
 									let aliceCollateralBefore;
+									let bobSnxBalanceBefore;
 									let amountToFixRatio;
 									beforeEach(async () => {
 										// Given issuance ratio is 800%
@@ -850,8 +876,11 @@ contract('Liquidator', accounts => {
 										aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
 										aliceDebtValueBefore = await synthetix.debtBalanceOf(alice, sUSD);
 
+										// Record Bobs state
+										bobSnxBalanceBefore = await synthetix.balanceOf(bob);
+
 										// Should be able to liquidate and fix c-ratio
-										await synthetix.liquidateDelinquentAccount(alice, {
+										txn = await synthetix.liquidateDelinquentAccount(alice, {
 											from: bob,
 										});
 									});
@@ -874,7 +903,7 @@ contract('Liquidator', accounts => {
 										amountToFixRatio = await liquidator.calculateAmountToFixCollateral(
 											aliceDebtValueBefore,
 											aliceCollateralBefore,
-											false
+											penalty
 										);
 
 										assert.bnEqual(amountToFixRatio, expectedAmount);
@@ -890,11 +919,30 @@ contract('Liquidator', accounts => {
 
 										assert.bnEqual(collateralRatio, ratio);
 
-										// Alice should have liquidator closed
+										// Alice should not be open for liquidation anymore
 										assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
 
 										// Alice should have liquidation entry removed
 										assert.bnEqual(await liquidator.getLiquidationDeadlineForAccount(alice), 0);
+
+										const logs = artifacts.require('Liquidator').decodeLogs(txn.receipt.rawLogs);
+										assert.eventEqual(
+											logs.find(log => log.event === 'AccountRemovedFromLiquidation'),
+											'AccountRemovedFromLiquidation',
+											{
+												account: alice,
+											}
+										);
+
+										// then the liquidation rewards are properly distributed to bob
+										const flagReward = await liquidator.flagReward();
+										const liquidateReward = await liquidator.liquidateReward();
+										const caller = await liquidator.getLiquidationCallerForAccount(alice);
+
+										assert.bnEqual(
+											await synthetix.balanceOf(caller),
+											bobSnxBalanceBefore.add(flagReward).add(liquidateReward)
+										);
 									});
 								});
 							});
