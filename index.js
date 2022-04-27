@@ -137,10 +137,10 @@ const defaults = {
 		crypto: w3utils.toWei('0.01'),
 		index: w3utils.toWei('0.01'),
 	},
-	EXCHANGE_DYNAMIC_FEE_THRESHOLD: w3utils.toWei('0.004'), // 40 bps
-	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: w3utils.toWei('0.9'), // dynamic fee weight decay for each round
-	EXCHANGE_DYNAMIC_FEE_ROUNDS: '10', // dynamic fee rounds
-	EXCHANGE_MAX_DYNAMIC_FEE: w3utils.toWei('0.05'), // cap max dynamic fee to 5%
+	EXCHANGE_DYNAMIC_FEE_THRESHOLD: w3utils.toWei('0.0025'),
+	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: w3utils.toWei('0.95'), // dynamic fee weight decay for each round
+	EXCHANGE_DYNAMIC_FEE_ROUNDS: '6', // dynamic fee rounds
+	EXCHANGE_MAX_DYNAMIC_FEE: w3utils.toWei('0.015'), // cap max dynamic fee
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
@@ -610,6 +610,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		6: 'Index Rebalance',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
+		80: 'Futures configuration', // pausing according to deployment configuration
 		99999: 'Emergency',
 	};
 
