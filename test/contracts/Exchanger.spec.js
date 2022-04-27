@@ -14,7 +14,15 @@ const {
 	toBN,
 } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const {
+	setupAllContracts,
+	constantsOverrides: {
+		EXCHANGE_DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+		EXCHANGE_MAX_DYNAMIC_FEE,
+	},
+} = require('./setup');
 
 const {
 	setExchangeFeeRateForSynths,
@@ -31,15 +39,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: {
-		WAITING_PERIOD_SECS,
-		PRICE_DEVIATION_THRESHOLD_FACTOR,
-		ATOMIC_MAX_VOLUME_PER_BLOCK,
-		EXCHANGE_DYNAMIC_FEE_ROUNDS,
-		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
-		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
-		EXCHANGE_MAX_DYNAMIC_FEE,
-	},
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ATOMIC_MAX_VOLUME_PER_BLOCK },
 } = require('../..');
 
 const bnCloseVariance = '30';
