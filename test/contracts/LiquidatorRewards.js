@@ -10,11 +10,11 @@ const {
 } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts } = require('./setup');
-const { toUnit } = require('../utils')();
+const { toUnit, fastForward } = require('../utils')();
 
 contract('LiquidatorRewards', accounts => {
 	const [sAUD, sEUR, SNX, sETH, ETH] = ['sAUD', 'sEUR', 'SNX', 'sETH', 'ETH'].map(toBytes32);
-	const [, owner, , , stakingAccount1, mockSynthetix] = accounts;
+	const [, owner, , , stakingAccount1, stakingAccount2, mockSynthetix] = accounts;
 
 	let addressResolver,
 		debtCache,
@@ -22,20 +22,34 @@ contract('LiquidatorRewards', accounts => {
 		liquidatorRewards,
 		synths,
 		synthetix,
-		synthetixDebtShare;
+		synthetixDebtShare,
+		systemSettings;
 
 	const ZERO_BN = toBN(0);
 
-	const setupStaker = async () => {
+	const setupStakers = async () => {
 		const snxCollateral = toUnit('1000');
 		await synthetix.transfer(stakingAccount1, snxCollateral, { from: owner });
+		await synthetix.transfer(stakingAccount2, snxCollateral, { from: owner });
 
 		await synthetix.issueMaxSynths({ from: stakingAccount1 });
-
-		const totalSupply = await synthetixDebtShare.totalSupply();
-		assert.bnGt(totalSupply, ZERO_BN);
+		await synthetix.issueMaxSynths({ from: stakingAccount2 });
 
 		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [mockSynthetix], {
+			from: owner,
+		});
+		await liquidatorRewards.rebuildCache();
+	};
+
+	const setupReward = async () => {
+		const rewardValue = toUnit('1000');
+		await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
+
+		await liquidatorRewards.notifyRewardAmount(rewardValue, {
+			from: mockSynthetix,
+		});
+
+		await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
 			from: owner,
 		});
 		await liquidatorRewards.rebuildCache();
@@ -48,10 +62,11 @@ contract('LiquidatorRewards', accounts => {
 		({
 			AddressResolver: addressResolver,
 			DebtCache: debtCache,
+			ExchangeRates: exchangeRates,
 			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
 			SynthetixDebtShare: synthetixDebtShare,
-			ExchangeRates: exchangeRates,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -100,15 +115,15 @@ contract('LiquidatorRewards', accounts => {
 		});
 		it('reward balance should be zero', async () => {
 			const rewardsBalance = await synthetix.balanceOf(liquidatorRewards.address);
-			assert.equal(0, rewardsBalance);
+			assert.bnEqual(rewardsBalance, ZERO_BN);
 
 			const accumulatedRewards = await liquidatorRewards.accumulatedRewards();
-			assert.equal(0, accumulatedRewards);
+			assert.bnEqual(accumulatedRewards, ZERO_BN);
 		});
 	});
 
 	describe('Function permissions', () => {
-		const rewardValue = toUnit(100);
+		const rewardValue = toUnit('100');
 
 		it('only synthetix can call notifyRewardAmount', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -128,7 +143,7 @@ contract('LiquidatorRewards', accounts => {
 		});
 
 		it('should be > 0', async () => {
-			await setupStaker();
+			await setupStakers();
 
 			const rewardValue = toUnit('100');
 			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
@@ -140,6 +155,56 @@ contract('LiquidatorRewards', accounts => {
 			const rewardPerShare = await liquidatorRewards.rewardPerShare();
 			assert.bnGt(rewardPerShare, ZERO_BN);
 		});
+
+		describe('changes based on total debt share supply', () => {
+			beforeEach(async () => {
+				await setupStakers();
+
+				const rewardValue = toUnit('100');
+				await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
+
+				await liquidatorRewards.notifyRewardAmount(rewardValue, {
+					from: mockSynthetix,
+				});
+			});
+
+			it('should decrease if total supply of debt shares increases', async () => {
+				const beforeRewardPerShare = await liquidatorRewards.rewardPerShare();
+				const beforeDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const beforeDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				await synthetix.transfer(stakingAccount2, toUnit('1000'), { from: owner });
+				await synthetix.issueMaxSynths({ from: stakingAccount2 });
+
+				const afterRewardPerShare = await liquidatorRewards.rewardPerShare();
+				const afterDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const afterDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				assert.bnLt(afterRewardPerShare, beforeRewardPerShare);
+				assert.bnGt(afterDebtShareBalance, beforeDebtShareBalance);
+				assert.bnGt(afterDebtSharesSupply, beforeDebtSharesSupply);
+			});
+
+			it('should increase if total supply of debt shares decreases', async () => {
+				const beforeRewardPerShare = await liquidatorRewards.rewardPerShare();
+				const beforeDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const beforeDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				// skip minimumStakeTime in order to burn synths
+				await systemSettings.setMinimumStakeTime(10, { from: owner });
+				await fastForward(10);
+
+				await synthetix.burnSynths(toUnit('100'), { from: stakingAccount2 });
+
+				const afterRewardPerShare = await liquidatorRewards.rewardPerShare();
+				const afterDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const afterDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				assert.bnGt(afterRewardPerShare, beforeRewardPerShare);
+				assert.bnLt(afterDebtShareBalance, beforeDebtShareBalance);
+				assert.bnLt(afterDebtSharesSupply, beforeDebtSharesSupply);
+			});
+		});
 	});
 
 	describe('earned()', () => {
@@ -148,7 +213,7 @@ contract('LiquidatorRewards', accounts => {
 		});
 
 		it('should be > 0 when staking', async () => {
-			await setupStaker();
+			await setupStakers();
 
 			const rewardValue = toUnit('100');
 			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
@@ -161,12 +226,12 @@ contract('LiquidatorRewards', accounts => {
 			assert.bnGt(earned, ZERO_BN);
 		});
 
-		it('rewards balance should increase if new rewards come in', async () => {
-			// TODO: earned call
+		it('should increase if new rewards come in', async () => {
+			await setupStakers();
+
+			const earnedBalanceBefore = await liquidatorRewards.earned(stakingAccount1);
 			const rewardsBalanceBefore = await synthetix.balanceOf(liquidatorRewards.address);
 			const accumulatedRewardsBefore = await liquidatorRewards.accumulatedRewards();
-
-			await setupStaker();
 
 			const newRewards = toUnit('5000');
 			await synthetix.transfer(liquidatorRewards.address, newRewards, { from: owner });
@@ -175,35 +240,96 @@ contract('LiquidatorRewards', accounts => {
 				from: mockSynthetix,
 			});
 
+			const earnedBalanceAfter = await liquidatorRewards.earned(stakingAccount1);
+			assert.bnEqual(earnedBalanceBefore, ZERO_BN);
+			assert.bnGt(earnedBalanceAfter, earnedBalanceBefore);
+
 			const rewardsBalanceAfter = await synthetix.balanceOf(liquidatorRewards.address);
 			assert.bnEqual(rewardsBalanceBefore, ZERO_BN);
-			assert.bnGt(rewardsBalanceAfter, rewardsBalanceBefore);
+			assert.bnEqual(rewardsBalanceAfter, rewardsBalanceBefore.add(newRewards));
 
 			const accumulatedRewardsAfter = await liquidatorRewards.accumulatedRewards();
 			assert.bnEqual(accumulatedRewardsBefore, ZERO_BN);
-			assert.bnGt(accumulatedRewardsAfter, accumulatedRewardsBefore);
+			assert.bnEqual(accumulatedRewardsAfter, accumulatedRewardsBefore.add(newRewards));
+		});
+
+		describe('changes when minting or burning debt', () => {
+			beforeEach(async () => {
+				await setupStakers();
+
+				const rewardValue = toUnit('100');
+				await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
+
+				await liquidatorRewards.notifyRewardAmount(rewardValue, {
+					from: mockSynthetix,
+				});
+			});
+
+			it('should decrease after minting', async () => {
+				const beforeEarnedValue = await liquidatorRewards.earned(stakingAccount1);
+				const beforeDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const beforeDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				await synthetix.transfer(stakingAccount2, toUnit('1000'), { from: owner });
+				await synthetix.issueMaxSynths({ from: stakingAccount2 });
+
+				const afterEarnedValue = await liquidatorRewards.earned(stakingAccount1);
+				const afterDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const afterDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				assert.bnLt(afterEarnedValue, beforeEarnedValue);
+				assert.bnGt(afterDebtShareBalance, beforeDebtShareBalance);
+				assert.bnGt(afterDebtSharesSupply, beforeDebtSharesSupply);
+			});
+
+			it('should increase after burning', async () => {
+				const beforeEarnedValue = await liquidatorRewards.earned(stakingAccount1);
+				const beforeDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const beforeDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				// skip minimumStakeTime in order to burn synths
+				await systemSettings.setMinimumStakeTime(10, { from: owner });
+				await fastForward(10);
+
+				await synthetix.burnSynths(toUnit('100'), { from: stakingAccount2 });
+
+				const afterEarnedValue = await liquidatorRewards.earned(stakingAccount1);
+				const afterDebtShareBalance = await synthetixDebtShare.balanceOf(stakingAccount2);
+				const afterDebtSharesSupply = await synthetixDebtShare.totalSupply();
+
+				assert.bnGt(afterEarnedValue, beforeEarnedValue);
+				assert.bnLt(afterDebtShareBalance, beforeDebtShareBalance);
+				assert.bnLt(afterDebtSharesSupply, beforeDebtSharesSupply);
+			});
 		});
 	});
 
 	describe('getReward()', () => {
-		it('rewards balance should decrease if rewards are claimed', async () => {
-			const rewardsBalanceBefore = await synthetix.balanceOf(liquidatorRewards.address);
+		beforeEach(async () => {
+			await setupStakers();
+		});
 
-			await setupStaker();
+		it('should be zero if there are no rewards to claim', async () => {
+			const accumulatedRewards = await liquidatorRewards.accumulatedRewards();
+			assert.bnEqual(accumulatedRewards, ZERO_BN);
 
-			const rewardValue = toUnit('100');
-			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
+			const postEarnedBal = await liquidatorRewards.earned(stakingAccount1);
+			assert.bnEqual(postEarnedBal, ZERO_BN);
 
-			await liquidatorRewards.notifyRewardAmount(rewardValue, {
-				from: mockSynthetix,
-			});
+			const collateralBefore = await synthetix.collateral(stakingAccount1);
 
-			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [synthetix.address], {
-				from: owner,
-			});
-			await liquidatorRewards.rebuildCache();
+			await liquidatorRewards.getReward({ from: stakingAccount1 });
+
+			const collateralAfter = await synthetix.collateral(stakingAccount1);
+
+			assert.bnEqual(collateralAfter, collateralBefore);
+		});
+
+		it('should decrease after rewards are claimed', async () => {
+			await setupReward();
 
 			const initialEarnedBal = await liquidatorRewards.earned(stakingAccount1);
+			const rewardsBalanceBeforeClaim = await synthetix.balanceOf(liquidatorRewards.address);
 
 			const tx = await liquidatorRewards.getReward({ from: stakingAccount1 });
 
@@ -213,10 +339,50 @@ contract('LiquidatorRewards', accounts => {
 			});
 
 			const postEarnedBal = await liquidatorRewards.earned(stakingAccount1);
-			assert.bnEqual(postEarnedBal, '0');
+			assert.bnEqual(postEarnedBal, ZERO_BN);
 
-			const rewardsBalanceAfter = await synthetix.balanceOf(liquidatorRewards.address);
-			assert.bnGt(rewardsBalanceAfter, rewardsBalanceBefore);
+			const rewardsBalanceAfterClaim = await synthetix.balanceOf(liquidatorRewards.address);
+			assert.bnEqual(rewardsBalanceAfterClaim, rewardsBalanceBeforeClaim.sub(initialEarnedBal));
+		});
+
+		it('should not allow rewards to be claimed again', async () => {
+			await setupReward();
+
+			const initialEarnedBal = await liquidatorRewards.earned(stakingAccount1);
+			const rewardsBalanceBeforeClaim = await synthetix.balanceOf(liquidatorRewards.address);
+
+			// claim rewards for the first time
+			await liquidatorRewards.getReward({ from: stakingAccount1 });
+
+			const rewardsBalanceAfterClaim = await synthetix.balanceOf(liquidatorRewards.address);
+			assert.bnEqual(rewardsBalanceAfterClaim, rewardsBalanceBeforeClaim.sub(initialEarnedBal));
+
+			const collateralBefore = await synthetix.collateral(stakingAccount1);
+
+			// attempt to claim rewards again before any new rewards come in
+			await liquidatorRewards.getReward({ from: stakingAccount1 });
+
+			const collateralAfter = await synthetix.collateral(stakingAccount1);
+
+			assert.bnEqual(collateralAfter, collateralBefore);
+		});
+
+		it('should remain the same for an account who did not claim yet', async () => {
+			await setupReward();
+
+			const initialEarnedBal1 = await liquidatorRewards.earned(stakingAccount1);
+			const initialEarnedBal2 = await liquidatorRewards.earned(stakingAccount2);
+
+			assert.bnGt(initialEarnedBal1, ZERO_BN);
+			assert.bnGt(initialEarnedBal2, ZERO_BN);
+
+			await liquidatorRewards.getReward({ from: stakingAccount1 });
+
+			const postEarnedBal1 = await liquidatorRewards.earned(stakingAccount1);
+			assert.bnEqual(postEarnedBal1, ZERO_BN);
+
+			const postEarnedBal2 = await liquidatorRewards.earned(stakingAccount2);
+			assert.bnEqual(postEarnedBal2, initialEarnedBal2);
 		});
 	});
 });
