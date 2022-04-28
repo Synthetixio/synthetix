@@ -98,7 +98,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
+    bytes32 internal constant CONTRACT_PERPSV2SETTINGS = "PerpsV2Settings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     // convenience struct for passing params between position modification helper functions
@@ -147,7 +147,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[3] = CONTRACT_FUTURESMARKETSETTINGS;
+        newAddresses[3] = CONTRACT_PERPSV2SETTINGS;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
@@ -169,7 +169,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
     }
 
     function _settings() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_FUTURESMARKETSETTINGS);
+        return requireAndGetAddress(CONTRACT_PERPSV2SETTINGS);
     }
 
     /* ---------- Market Details ---------- */

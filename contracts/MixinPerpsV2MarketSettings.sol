@@ -9,7 +9,7 @@ import "./interfaces/IFlexibleStorage.sol";
 contract MixinPerpsV2MarketSettings is MixinResolver {
     /* ========== CONSTANTS ========== */
 
-    bytes32 internal constant SETTING_CONTRACT_NAME = "FuturesMarketSettings";
+    bytes32 internal constant SETTING_CONTRACT_NAME = "PerpsV2Settings";
 
     /* ---------- Parameter Names ---------- */
 
@@ -26,12 +26,12 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     // Global settings
     // minimum liquidation fee payable to liquidator
-    bytes32 internal constant SETTING_MIN_KEEPER_FEE = "futuresMinKeeperFee";
+    bytes32 internal constant SETTING_MIN_KEEPER_FEE = "minKeeperFee";
     // liquidation fee basis points payed to liquidator
-    bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "futuresLiquidationFeeRatio";
+    bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "liquidationFeeRatio";
     // liquidation buffer to prevent negative margin upon liquidation
-    bytes32 internal constant SETTING_LIQUIDATION_BUFFER_RATIO = "futuresLiquidationBufferRatio";
-    bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
+    bytes32 internal constant SETTING_LIQUIDATION_BUFFER_RATIO = "liquidationBufferRatio";
+    bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "minInitialMargin";
 
     /* ---------- Address Resolver Configuration ---------- */
 

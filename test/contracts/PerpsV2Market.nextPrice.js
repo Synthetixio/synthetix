@@ -7,8 +7,8 @@ const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
-contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
-	let futuresMarketSettings,
+contract('PerpsV2Market mixin for next price orders', accounts => {
+	let perpsSettings,
 		perpsMarket,
 		exchangeRates,
 		exchangeCircuitBreaker,
@@ -41,7 +41,7 @@ contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
 
 	before(async () => {
 		({
-			FuturesMarketSettings: futuresMarketSettings,
+			PerpsV2Settings: perpsSettings,
 			PerpsV2MarketpBTC: perpsMarket,
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
@@ -55,7 +55,7 @@ contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
 			feeds: ['BTC', 'ETH'],
 			contracts: [
 				'FuturesMarketManager',
-				'FuturesMarketSettings',
+				'PerpsV2Settings',
 				'PerpsV2MarketpBTC',
 				'AddressResolver',
 				'FeePool',
@@ -100,7 +100,7 @@ contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsMarket.orderFee(size))[0];
-			const keeperFee = await futuresMarketSettings.minKeeperFee();
+			const keeperFee = await perpsSettings.minKeeperFee();
 			const tx = await perpsMarket.submitNextPriceOrder(size, { from: trader });
 
 			// check order
@@ -190,7 +190,7 @@ contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsMarket.orderFee(size))[0];
-			const keeperFee = await futuresMarketSettings.minKeeperFee();
+			const keeperFee = await perpsSettings.minKeeperFee();
 			const tx = await perpsMarket.submitNextPriceOrderWithTracking(size, trackingCode, {
 				from: trader,
 			});
@@ -318,7 +318,7 @@ contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				spotFee = (await perpsMarket.orderFee(size))[0];
-				keeperFee = await futuresMarketSettings.minKeeperFee();
+				keeperFee = await perpsSettings.minKeeperFee();
 				await perpsMarket.submitNextPriceOrder(size, { from: trader });
 			});
 
@@ -441,7 +441,7 @@ contract('PerpsV2Market MixinFuturesNextPriceOrders', accounts => {
 				// commitFee is the fee that would be chanrged for a spot trade when order is submitted
 				commitFee = (await perpsMarket.orderFee(size))[0];
 				// keeperFee is the minimum keeperFee for the system
-				keeperFee = await futuresMarketSettings.minKeeperFee();
+				keeperFee = await perpsSettings.minKeeperFee();
 				await perpsMarket.submitNextPriceOrder(size, { from: trader });
 			});
 

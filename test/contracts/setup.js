@@ -303,6 +303,7 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
+		PerpsV2Settings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketpBTC: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('BTC'), // base asset
@@ -1026,14 +1027,20 @@ const setupAllContracts = async ({
 				'ExchangeCircuitBreaker',
 			],
 		},
+		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
+
 		// perps v2
+		{
+			contract: 'PerpsV2Settings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
 		{
 			contract: 'PerpsV2MarketpBTC',
 			source: 'TestablePerpsV2Market',
 			deps: [
 				'AddressResolver',
 				'FuturesMarketManager',
-				'FuturesMarketSettings',
+				'PerpsV2Settings',
 				'SystemStatus',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
@@ -1049,8 +1056,6 @@ const setupAllContracts = async ({
 				'ExchangeCircuitBreaker',
 			],
 		},
-
-		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 	];
 
 	// check contract list for contracts with the same address resolver name
@@ -1306,6 +1311,7 @@ const setupAllContracts = async ({
 			}),
 		]);
 
+		// legacy futures
 		if (returnObj['FuturesMarketSettings']) {
 			const promises = [
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
@@ -1355,14 +1361,33 @@ const setupAllContracts = async ({
 				promises.push(setupFuturesMarket(returnObj['FuturesMarketETH']));
 			}
 
-			// perps V2
+			await Promise.all(promises);
+		}
+
+		// perps V2
+		if (returnObj['PerpsV2Settings']) {
+			const promises = [
+				returnObj['PerpsV2Settings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setMinKeeperFee(FUTURES_MIN_KEEPER_FEE, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
+					from: owner,
+				}),
+			];
+
 			const setupPerpsV2Market = async market => {
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
 				await Promise.all([
-					returnObj['FuturesMarketSettings'].setParameters(
+					returnObj['PerpsV2Settings'].setParameters(
 						marketKey,
 						toWei('0.003'), // 0.3% taker fee
 						toWei('0.001'), // 0.1% maker fee
