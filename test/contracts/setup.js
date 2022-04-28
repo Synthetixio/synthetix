@@ -302,6 +302,17 @@ const setupContract = async ({
 			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
+		// perps v2
+		PerpsV2MarketpBTC: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('BTC'), // base asset
+			toBytes32('pBTC'), // market key
+		],
+		PerpsV2MarketpETH: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('ETH'), // base asset
+			toBytes32('pETH'), // market key
+		],
 	};
 
 	let instance;
@@ -567,6 +578,16 @@ const setupContract = async ({
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 			]);
 		},
+		async PerpsV2MarketpBTC() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
+		async PerpsV2MarketpETH() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
@@ -673,6 +694,7 @@ const setupAllContracts = async ({
 	mocks = {},
 	contracts = [],
 	synths = [],
+	feeds = [],
 }) => {
 	const [, owner] = accounts;
 
@@ -981,6 +1003,7 @@ const setupAllContracts = async ({
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
+		// perps v1 - "futures"
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
@@ -996,6 +1019,29 @@ const setupAllContracts = async ({
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		// perps v2
+		{
+			contract: 'PerpsV2MarketpBTC',
+			source: 'TestablePerpsV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'SystemStatus',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'PerpsV2MarketpETH',
+			source: 'TestablePerpsV2Market',
 			deps: [
 				'AddressResolver',
 				'FuturesMarketManager',
@@ -1309,6 +1355,36 @@ const setupAllContracts = async ({
 				promises.push(setupFuturesMarket(returnObj['FuturesMarketETH']));
 			}
 
+			// perps V2
+			const setupPerpsV2Market = async market => {
+				const assetKey = await market.baseAsset();
+				const marketKey = await market.marketKey();
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await Promise.all([
+					returnObj['FuturesMarketSettings'].setParameters(
+						marketKey,
+						toWei('0.003'), // 0.3% taker fee
+						toWei('0.001'), // 0.1% maker fee
+						toWei('0.0005'), // 0.05% taker fee next price
+						toWei('0.0001'), // 0.01% maker fee next price
+						toBN('2'), // 2 rounds next price confirm window
+						toWei('10'), // 10x max leverage
+						toWei('100000'), // 100000 max market debt
+						toWei('0.1'), // 10% max funding rate
+						toWei('100000'), // 100000 USD skewScaleUSD
+						{ from: owner }
+					),
+				]);
+			};
+
+			if (returnObj['PerpsV2MarketpBTC']) {
+				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpBTC']));
+			}
+			if (returnObj['PerpsV2MarketpETH']) {
+				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpETH']));
+			}
+
 			await Promise.all(promises);
 		}
 	}
@@ -1321,10 +1397,11 @@ const setupAllContracts = async ({
 	);
 
 	if (returnObj['ExchangeRates']) {
-		// setup SNX price feed
-		const SNX = toBytes32('SNX');
-		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
-		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+		// setup SNX price feed and any other feeds
+		const keys = ['SNX', ...(feeds || [])].map(toBytes32);
+		const prices = ['0.2', ...(feeds || []).map(() => '1.0')].map(toUnit);
+		await setupPriceAggregators(returnObj['ExchangeRates'], owner, keys);
+		await updateAggregatorRates(returnObj['ExchangeRates'], keys, prices);
 	}
 
 	return returnObj;
