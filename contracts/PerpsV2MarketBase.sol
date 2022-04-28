@@ -589,19 +589,23 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
     function _assetPriceRequireSystemChecks() internal returns (uint) {
         // check that market isn't suspended, revert with appropriate message
         _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
-        // check that synth is active, and wasn't suspended, revert with appropriate message
-        _systemStatus().requireSynthActive(baseAsset);
-        // check if circuit breaker if price is within deviation tolerance and system & synth is active
-        // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
-        //  despite reverting immediately after if circuit is broken, which may seem silly.
+        // TODO: refactor the following when circuit breaker is updated.
+        // The reason both view and mutative are used is because the breaker validates that the
+        // synth exists, and for perps - the there is no synth, so in case of attempting to suspend
+        // the suspension fails (reverts due to "No such synth")
+
+        // check the view first and revert if price is invalid or out deviation range
+        (uint price, bool invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
+        _revertIfError(invalid, Status.InvalidPrice);
+        // note: rateWithBreakCircuit (mutative) is used here in addition to rateWithInvalid (view).
+        //  This is despite reverting immediately after if circuit is broken, which may seem silly.
         //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
-        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset);
-        // revert if price is invalid or circuit was broken
-        // note: we revert here, which means that circuit is not really broken (is not persisted), this is
-        //  because the methods and interface are designed for reverts, and do not support no-op
-        //  return values.
-        _revertIfError(circuitBroken, Status.InvalidPrice);
+        // This also means that the circuit will not be broken in unhappy case (synth suspended)
+        // because this method will revert above. The reason it has to revert is that perps
+        // don't support no-op actions.
+        _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset); // persist rate for next checks
+
         return price;
     }
 

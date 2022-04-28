@@ -796,24 +796,6 @@ contract('PerpsV2Market', accounts => {
 			assert.bnClose((await perpsMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
 		});
 
-		it('Reverts if the synth is suspended', async () => {
-			await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
-
-			// suspend
-			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
-			// should revert
-			await assert.revert(
-				perpsMarket.transferMargin(toUnit('-1000'), { from: trader }),
-				'Synth is suspended'
-			);
-
-			// resume
-			await systemStatus.resumeSynth(baseAsset, { from: owner });
-			// should work now
-			await perpsMarket.transferMargin(toUnit('-1000'), { from: trader });
-			assert.bnClose((await perpsMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
-		});
-
 		describe('No position', async () => {
 			it('New margin', async () => {
 				assert.bnEqual((await perpsMarket.positions(trader)).margin, toBN(0));
@@ -976,27 +958,6 @@ contract('PerpsV2Market', accounts => {
 
 			// resume
 			await systemStatus.resumeSystem({ from: owner });
-			// should work now
-			await perpsMarket.modifyPosition(size, { from: trader });
-			const position = await perpsMarket.positions(trader);
-			assert.bnEqual(position.size, size);
-			assert.bnEqual(position.lastPrice, price);
-		});
-
-		it('Cannot modify a position if the synth is suspended', async () => {
-			const margin = toUnit('1000');
-			await perpsMarket.transferMargin(margin, { from: trader });
-			const size = toUnit('10');
-			const price = toUnit('200');
-			await setPrice(baseAsset, price);
-
-			// suspend
-			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
-			// should revert modifying position
-			await assert.revert(perpsMarket.modifyPosition(size, { from: trader }), 'Synth is suspended');
-
-			// resume
-			await systemStatus.resumeSynth(baseAsset, { from: owner });
 			// should work now
 			await perpsMarket.modifyPosition(size, { from: trader });
 			const position = await perpsMarket.positions(trader);
@@ -2130,24 +2091,6 @@ contract('PerpsV2Market', accounts => {
 					assert.bnClose((await perpsMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
 				});
 
-				it('Reverts if the synth is suspended', async () => {
-					await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
-
-					// suspend
-					await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
-					// should revert
-					await assert.revert(
-						perpsMarket.withdrawAllMargin({ from: trader }),
-						'Synth is suspended'
-					);
-
-					// resume
-					await systemStatus.resumeSynth(baseAsset, { from: owner });
-					// should work now
-					await perpsMarket.withdrawAllMargin({ from: trader });
-					assert.bnClose((await perpsMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
-				});
-
 				it('allows users to withdraw all their margin', async () => {
 					await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
 					await perpsMarket.transferMargin(toUnit('3000'), { from: trader2 });
@@ -3068,23 +3011,6 @@ contract('PerpsV2Market', accounts => {
 
 				// resume
 				await systemStatus.resumeSystem({ from: owner });
-				// should work now
-				assert.isTrue(await perpsMarket.canLiquidate(trader));
-			});
-
-			it('No liquidations while the synth is suspended', async () => {
-				await setPrice(baseAsset, toUnit('250'));
-				await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
-				await perpsMarket.modifyPosition(toUnit('20'), { from: trader });
-				await setPrice(baseAsset, toUnit('25'));
-				assert.isTrue(await perpsMarket.canLiquidate(trader));
-
-				// suspend
-				await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
-				assert.isFalse(await perpsMarket.canLiquidate(trader));
-
-				// resume
-				await systemStatus.resumeSynth(baseAsset, { from: owner });
 				// should work now
 				assert.isTrue(await perpsMarket.canLiquidate(trader));
 			});
