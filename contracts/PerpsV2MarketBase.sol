@@ -814,7 +814,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
             _manager().payFee(fee);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                emit FuturesTracking(params.trackingCode, baseAsset, marketKey, params.sizeDelta, fee);
+                emit Tracking(params.trackingCode, baseAsset, marketKey, params.sizeDelta, fee);
             }
         }
 
@@ -993,5 +993,5 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
 
     event FundingRecomputed(int funding, uint index, uint timestamp);
 
-    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
+    event Tracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
 }

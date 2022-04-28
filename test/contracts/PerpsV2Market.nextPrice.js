@@ -229,7 +229,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsMarket] });
 
 			decodedEventEqual({
-				event: 'FuturesTracking',
+				event: 'Tracking',
 				emittedFrom: perpsMarket.address,
 				args: [trackingCode, baseAsset, marketKey, size, expectedFee],
 				log: decodedLogs[3],

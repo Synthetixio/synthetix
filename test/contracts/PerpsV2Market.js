@@ -918,7 +918,7 @@ contract('PerpsV2Market', accounts => {
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsMarket] });
 			assert.equal(decodedLogs.length, 4); // funding, issued, tracking, pos-modified
 			decodedEventEqual({
-				event: 'FuturesTracking',
+				event: 'Tracking',
 				emittedFrom: perpsMarket.address,
 				args: [trackingCode, baseAsset, marketKey, size, fee],
 				log: decodedLogs[2],
@@ -1385,7 +1385,7 @@ contract('PerpsV2Market', accounts => {
 				const fee = multiplyDecimal(toUnit(2000), makerFee);
 
 				decodedEventEqual({
-					event: 'FuturesTracking',
+					event: 'Tracking',
 					emittedFrom: perpsMarket.address,
 					args: [trackingCode, baseAsset, marketKey, size.neg(), fee],
 					log: decodedLogs[2],
