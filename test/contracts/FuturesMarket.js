@@ -1,12 +1,12 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const {
-	toBytes32,
-	defaults: { EXCHANGE_DYNAMIC_FEE_THRESHOLD },
-} = require('../..');
+const { toBytes32 } = require('../..');
 const { toBN } = web3.utils;
 const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const {
+	setupAllContracts,
+	constantsOverrides: { EXCHANGE_DYNAMIC_FEE_THRESHOLD },
+} = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const {
 	getDecodedLogs,
