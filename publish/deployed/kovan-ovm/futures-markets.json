@@ -96,5 +96,33 @@
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "300000000",
 		"paused": true
+	},
+	{
+		"marketKey": "sXAU",
+		"asset": "XAU",
+		"takerFee": "0.0015",
+		"makerFee": "0.0015",
+		"takerFeeNextPrice": "0.001",
+		"makerFeeNextPrice": "0.001",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "100000000",
+		"paused": false
+	},
+	{
+		"marketKey": "sXAG",
+		"asset": "XAG",
+		"takerFee": "0.0015",
+		"makerFee": "0.0015",
+		"takerFeeNextPrice": "0.001",
+		"makerFeeNextPrice": "0.001",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "100000000",
+		"paused": false
 	}
 ]
