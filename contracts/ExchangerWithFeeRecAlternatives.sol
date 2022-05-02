@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Exchanger.sol";
+import "./ExchangerBase.sol";
 
 // Internal references
 import "./MinimalProxyFactory.sol";
@@ -19,7 +19,7 @@ interface IVirtualSynthInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerwithfeereclamationalternatives
-contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
+contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, ExchangerBase {
     bytes32 public constant CONTRACT_NAME = "ExchangerWithFeeRecAlternatives";
 
     using SafeMath for uint;
@@ -38,14 +38,14 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
     ExchangeVolumeAtPeriod public lastAtomicVolume;
 
-    constructor(address _owner, address _resolver) public MinimalProxyFactory() Exchanger(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) public MinimalProxyFactory() ExchangerBase(_owner, _resolver) {}
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_VIRTUALSYNTH_MASTERCOPY = "VirtualSynthMastercopy";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = Exchanger.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = ExchangerBase.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_VIRTUALSYNTH_MASTERCOPY;
         addresses = combineArrays(existingAddresses, newAddresses);
