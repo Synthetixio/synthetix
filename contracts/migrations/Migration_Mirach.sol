@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -45,16 +44,25 @@ contract Migration_Mirach is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](4);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(systemstatus_i);
-        contracts[2]= address(issuer_i);
-        contracts[3]= address(systemsettings_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(systemstatus_i);
+        contracts[2] = address(issuer_i);
+        contracts[3] = address(systemsettings_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_SystemSettings_contract).CONTRACT_NAME() == "SystemSettings", "Invalid contract supplied for SystemSettings");
-        require(ISynthetixNamedContract(new_SynthetixBridgeToOptimism_contract).CONTRACT_NAME() == "SynthetixBridgeToOptimism", "Invalid contract supplied for SynthetixBridgeToOptimism");
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
+        require(
+            ISynthetixNamedContract(new_SystemSettings_contract).CONTRACT_NAME() == "SystemSettings",
+            "Invalid contract supplied for SystemSettings"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthetixBridgeToOptimism_contract).CONTRACT_NAME() == "SynthetixBridgeToOptimism",
+            "Invalid contract supplied for SynthetixBridgeToOptimism"
+        );
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -91,7 +99,6 @@ contract Migration_Mirach is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](3);
         addressresolver_importAddresses_names_0_0[0] = bytes32("SystemSettings");
@@ -101,10 +108,12 @@ contract Migration_Mirach is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[0] = address(new_SystemSettings_contract);
         addressresolver_importAddresses_destinations_0_1[1] = address(new_SynthetixBridgeToOptimism_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_Issuer_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_SystemSettings_contract);
@@ -130,7 +139,6 @@ contract Migration_Mirach is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](5);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x23d4b4D2318aFAA26205c21192696aDb64BA86c2);
@@ -141,7 +149,6 @@ contract Migration_Mirach is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function issuer_addSynths_7() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_7_0 = new ISynth[](11);
         issuer_addSynths_synthsToAdd_7_0[0] = ISynth(0x9a6e96A0D9cDd4213BAd9101AB7c4d7Bd1Ea5226);
@@ -158,12 +165,14 @@ contract Migration_Mirach is BaseMigration {
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_7_0);
     }
 
-    
     function systemsettings_setExchangeFeeRateForSynths_8() internal {
         bytes32[] memory systemsettings_setExchangeFeeRateForSynths_synthKeys_8_0 = new bytes32[](1);
         systemsettings_setExchangeFeeRateForSynths_synthKeys_8_0[0] = bytes32("sUSD");
         uint256[] memory systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_8_1 = new uint256[](1);
         systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_8_1[0] = uint256(3000000000000000);
-        systemsettings_i.setExchangeFeeRateForSynths(systemsettings_setExchangeFeeRateForSynths_synthKeys_8_0, systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_8_1);
+        systemsettings_i.setExchangeFeeRateForSynths(
+            systemsettings_setExchangeFeeRateForSynths_synthKeys_8_0,
+            systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_8_1
+        );
     }
 }
