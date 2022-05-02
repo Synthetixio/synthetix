@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const mustache = require('mustache');
-const YamlValidator = require('yaml-validator');
 const execa = require('execa');
 
 async function main() {
@@ -41,10 +40,6 @@ async function main() {
 
 	const outputPath = path.join(__dirname, 'config.yml');
 	fs.writeFileSync(outputPath, output);
-
-	// Run a yaml validator to make sure everything looks pretty
-	const validator = new YamlValidator();
-	validator.validate([outputPath]);
 
 	// Also run circleci validation if circleci is in path
 	try {
