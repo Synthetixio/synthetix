@@ -1064,8 +1064,9 @@
 			},
 			"SystemSettingsLib": {
 				"address": "0x415bE5d790F51fabF4321Be402917DB518a09Ef3",
-				"status": "current",
-				"keccak256": "0x371f31315fadd13809d51123c75dcc31e199ae69b8df9c968cb46aca50831d1f"
+				"status": "replaced",
+				"keccak256": "0x371f31315fadd13809d51123c75dcc31e199ae69b8df9c968cb46aca50831d1f",
+				"replaced_in": "v2.67.0-alpha"
 			}
 		}
 	},
@@ -1085,8 +1086,9 @@
 			},
 			"Synthetix": {
 				"address": "0xc7d4AF2B7c32ea13ea64911c672C89254251c652",
-				"status": "current",
-				"keccak256": "0x556b1e187596601c7a676e0174fb7b324997f452cb4ea6e21cb706f91878bbe8"
+				"status": "replaced",
+				"keccak256": "0x556b1e187596601c7a676e0174fb7b324997f452cb4ea6e21cb706f91878bbe8",
+				"replaced_in": "v2.67.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0x7B49bAfad6d255880F7844a022DbdB1De5440Fe5",
@@ -1342,8 +1344,9 @@
 			},
 			"ExchangeRates": {
 				"address": "0x9FFB4aA93612c9681203118941F983Bb1bB59d20",
-				"status": "current",
-				"keccak256": "0x784975ca860b590e5fb06cc20b64b046a152fe406c5cc0c8f6be1761714bceab"
+				"status": "replaced",
+				"keccak256": "0x784975ca860b590e5fb06cc20b64b046a152fe406c5cc0c8f6be1761714bceab",
+				"replaced_in": "v2.67.0-alpha"
 			},
 			"FeePool": {
 				"address": "0x6Bd33a593D27De9af7EBb5fCBc012BBe7541A456",
@@ -1357,8 +1360,9 @@
 			},
 			"Exchanger": {
 				"address": "0x0D521f5320D754f0B844f88c0cA7c377a448edaf",
-				"status": "current",
-				"keccak256": "0x3f0e732cb19bb1a58e3440b98d276717d7e151eabf3f2be02561d6a292e8b01f"
+				"status": "replaced",
+				"keccak256": "0x3f0e732cb19bb1a58e3440b98d276717d7e151eabf3f2be02561d6a292e8b01f",
+				"replaced_in": "v2.67.0-alpha"
 			},
 			"Issuer": {
 				"address": "0x723DE2CC925B273FfE66E1B1c94DfAE6b804a83a",
@@ -1478,8 +1482,9 @@
 		"contracts": {
 			"SystemSettings": {
 				"address": "0x5565fcd9739182cA5e474409b2685b4C0A4829E3",
-				"status": "current",
-				"keccak256": "0x0213567bb35401126849b277a1b9cccca8bec368a82f2151c1b078209763a72f"
+				"status": "replaced",
+				"keccak256": "0x0213567bb35401126849b277a1b9cccca8bec368a82f2151c1b078209763a72f",
+				"replaced_in": "v2.67.0-alpha"
 			}
 		}
 	},
