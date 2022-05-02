@@ -126,7 +126,7 @@ module.exports = async ({
 				contract: 'SystemStatus',
 				target: SystemStatus,
 				write: 'suspendFuturesMarket',
-				writeArg: [marketKeyBytes, 2],
+				writeArg: [marketKeyBytes, 80],
 				comment: 'Ensure futures market is paused according to config',
 			});
 		} else if (isPaused & !shouldPause) {
