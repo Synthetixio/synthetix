@@ -300,20 +300,23 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					issuer.smocked.availableCurrencyKeys.will.return.with([sUSD, sETH]);
 
 					// set some exchange rates
-					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with({
-						rates: [toUnit('1'), toUnit('3')],
-						anyRateInvalid: false,
-					});
+					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with([
+						[toUnit('1').toString(), toUnit('3').toString()],
+						false,
+					]);
 
 					// set flexible storage to a fake value
-					flexibleStorage.smocked.getUIntValues.will.return.with([toUnit('100'), toUnit('200')]);
+					flexibleStorage.smocked.getUIntValues.will.return.with([
+						toUnit('100').toString(),
+						toUnit('200').toString(),
+					]);
 				});
 
 				it('reverts if rates are innaccurate', async () => {
-					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with({
-						rates: [toUnit('1'), toUnit('3')],
-						anyRateInvalid: true,
-					});
+					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with([
+						[toUnit('1').toString(), toUnit('3').toString()],
+						true,
+					]);
 
 					await assert.revert(instance.synthTransferSent(), 'Rates are invalid');
 				});
