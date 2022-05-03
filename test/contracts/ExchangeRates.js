@@ -1253,18 +1253,6 @@ contract('Exchange Rates', async accounts => {
 			});
 		});
 
-		describe('atomicPriceBuffer', () => {
-			describe('when price buffer for SNX is changed in the system settings', () => {
-				const priceBuffer = toUnit('0.003');
-				beforeEach(async () => {
-					await systemSettings.setAtomicPriceBuffer(SNX, priceBuffer, { from: owner });
-				});
-				it('then rateStalePeriod is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicPriceBuffer(SNX), priceBuffer);
-				});
-			});
-		});
-
 		describe('src/dest do not have an atomic equivalent for dex pricing', () => {
 			beforeEach(async () => {
 				const MockToken = artifacts.require('MockToken');
@@ -1343,8 +1331,6 @@ contract('Exchange Rates', async accounts => {
 						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, pDex);
 
 						await ethAggregator.setLatestAnswer(pClInUsdIn8, await currentTime());
-
-						await systemSettings.setAtomicPriceBuffer(destToken, clBuffer, { from: owner });
 
 						rates = await instance.effectiveAtomicValueAndRates(srcToken, amountIn, destToken);
 					});
@@ -1656,9 +1642,6 @@ contract('Exchange Rates', async accounts => {
 					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit(1));
 					await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, pDex);
 					await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
-
-					await systemSettings.setAtomicPriceBuffer(sUSD, susdBuffer, { from: owner });
-					await systemSettings.setAtomicPriceBuffer(sETH, sethBuffer, { from: owner });
 				});
 
 				it('prices pClBuf with the highest buffer', async () => {
@@ -1707,8 +1690,6 @@ contract('Exchange Rates', async accounts => {
 							toUnit(rate)
 						);
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
-
-						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
 					});
 
 					it('dex aggregator mock provides expected results', async () => {
@@ -1748,8 +1729,6 @@ contract('Exchange Rates', async accounts => {
 							toUnit(rate)
 						);
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
-
-						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
 					});
 
 					it('dex aggregator mock provides expected results', async () => {

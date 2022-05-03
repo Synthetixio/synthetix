@@ -40,10 +40,6 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         return getAtomicEquivalentForDexPricing(currencyKey);
     }
 
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicPriceBuffer(currencyKey);
-    }
-
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityConsiderationWindow(currencyKey);
     }
@@ -100,14 +96,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
             dexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
 
-            // Derive chainlinkValueWithBuffer from highest configured buffer between source and destination synth
-            uint sourceBuffer = getAtomicPriceBuffer(sourceCurrencyKey);
-            uint destBuffer = getAtomicPriceBuffer(destinationCurrencyKey);
-            uint priceBuffer = sourceBuffer > destBuffer ? sourceBuffer : destBuffer; // max
-            uint chainlinkValueWithBuffer = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
-
-            // Final value is minimum output between the price from Chainlink with a buffer and the price from Uniswap.
-            value = chainlinkValueWithBuffer < dexValue ? chainlinkValueWithBuffer : dexValue; // min
+            // Final value is minimum output between the price from Chainlink and the price from Uniswap.
+            value = systemValue < dexValue ? systemValue : dexValue; // min
         }
     }
 

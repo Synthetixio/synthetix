@@ -53,8 +53,6 @@ interface ISystemSettings {
 
     function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint);
-
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint);
 
     function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint);
