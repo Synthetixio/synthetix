@@ -606,10 +606,10 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		2: 'Market Closure',
 		4: 'iSynth Reprice',
 		6: 'Index Rebalance',
-		231: 'Latency Breaker', //https://sips.synthetix.io/sips/sip-231/
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		80: 'Futures configuration', // pausing according to deployment configuration
+		231: 'Latency Breaker', //https://sips.synthetix.io/sips/sip-231/
 		99999: 'Emergency',
 	};
 
