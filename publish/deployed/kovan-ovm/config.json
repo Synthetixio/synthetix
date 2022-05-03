@@ -259,5 +259,26 @@
 	},
 	"SynthsWTI": {
 		"deploy": false
+	},
+	"FuturesMarketXAU": {
+		"deploy": false
+	},
+	"FuturesMarketXAG": {
+		"deploy": false
+	},
+	"FuturesMarketAAVE": {
+		"deploy": false
+	},
+	"FuturesMarketAPE": {
+		"deploy": false
+	},
+	"FuturesMarketAXS": {
+		"deploy": false
+	},
+	"FuturesMarketUNI": {
+		"deploy": false
+	},
+	"FuturesMarketLUNA": {
+		"deploy": false
 	}
 }
