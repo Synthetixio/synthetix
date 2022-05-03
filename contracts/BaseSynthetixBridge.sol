@@ -35,8 +35,6 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     // have to define this function like this here because contract name is required for FlexibleStorage
     function CONTRACT_NAME() public pure returns (bytes32);
 
-    bytes32 private constant sUSD = "sUSD";
-
     bool public initiationActive;
 
     bytes32 private constant SYNTH_TRANSFER_NAMESPACE = "SynthTransfer";
@@ -164,7 +162,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit InitiateSynthTransfer(sUSD, destination, amount);
+        emit InitiateSynthTransfer(currencyKey, destination, amount);
     }
 
     function finalizeSynthTransfer(

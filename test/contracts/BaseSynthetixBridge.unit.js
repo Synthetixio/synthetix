@@ -219,13 +219,6 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 						);
 					});
 
-					it('fails if issuance is not active', async () => {
-						await assert.revert(
-							instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
-							'Issuance suspended'
-						);
-					});
-
 					it('burns synths from caller', () => {
 						assert.bnEqual(issuer.smocked.burnSynthsWithoutDebt.calls[0].amount, toUnit('100'));
 					});

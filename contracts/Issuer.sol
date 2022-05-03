@@ -567,7 +567,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bytes32 currencyKey,
         address to,
         uint amount
-    ) external onlyTrustedMinters {
+    ) external onlyTrustedMinters issuanceActive synthActive(currencyKey) {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -585,9 +585,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bytes32 currencyKey,
         address from,
         uint amount
-    ) external onlyTrustedMinters {
+    ) external onlyTrustedMinters issuanceActive synthActive(currencyKey) {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
+
+        exchanger().settle(from, currencyKey);
 
         // Burn some synths
         synths[currencyKey].burn(from, amount);
@@ -925,6 +927,24 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     modifier onlySynthRedeemer() {
         _onlySynthRedeemer();
         _;
+    }
+
+    modifier issuanceActive() {
+        _issuanceActive();
+        _;
+    }
+
+    function _issuanceActive() private {
+        systemStatus().requireIssuanceActive();
+    }
+
+    modifier synthActive(bytes32 currencyKey) {
+        _synthActive(currencyKey);
+        _;
+    }
+
+    function _synthActive(bytes32 currencyKey) private {
+        systemStatus().requireSynthActive(currencyKey);
     }
 
     /* ========== EVENTS ========== */
