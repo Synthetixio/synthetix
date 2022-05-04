@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -22,11 +21,13 @@ contract Migration_MirachOptimism is BaseMigration {
     // ----------------------------
 
     // https://kovan-explorer.optimism.io/address/0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9
-    FuturesMarketManager public constant futuresmarketmanager_i = FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
+    FuturesMarketManager public constant futuresmarketmanager_i =
+        FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
     // https://kovan-explorer.optimism.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6
     AddressResolver public constant addressresolver_i = AddressResolver(0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6);
     // https://kovan-explorer.optimism.io/address/0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB
-    FuturesMarketSettings public constant futuresmarketsettings_i = FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
+    FuturesMarketSettings public constant futuresmarketsettings_i =
+        FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
     // https://kovan-explorer.optimism.io/address/0xE90F90DCe5010F615bEC29c5db2D9df798D48183
     SystemStatus public constant systemstatus_i = SystemStatus(0xE90F90DCe5010F615bEC29c5db2D9df798D48183);
 
@@ -49,10 +50,10 @@ contract Migration_MirachOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](4);
-        contracts[0]= address(futuresmarketmanager_i);
-        contracts[1]= address(addressresolver_i);
-        contracts[2]= address(futuresmarketsettings_i);
-        contracts[3]= address(systemstatus_i);
+        contracts[0] = address(futuresmarketmanager_i);
+        contracts[1] = address(addressresolver_i);
+        contracts[2] = address(futuresmarketsettings_i);
+        contracts[3] = address(systemstatus_i);
     }
 
     function migrate() external onlyOwner {
@@ -89,7 +90,6 @@ contract Migration_MirachOptimism is BaseMigration {
         }
     }
 
-    
     function futuresmarketmanager_removeMarkets_0() internal {
         address[] memory futuresmarketmanager_removeMarkets_marketsToRemove_0_0 = new address[](7);
         futuresmarketmanager_removeMarkets_marketsToRemove_0_0[0] = address(0x522aBb55e6f1e1E9E5Fccf5e8f3FeF3e31093530);
@@ -102,7 +102,6 @@ contract Migration_MirachOptimism is BaseMigration {
         futuresmarketmanager_i.removeMarkets(futuresmarketmanager_removeMarkets_marketsToRemove_0_0);
     }
 
-    
     function futuresmarketmanager_addMarkets_1() internal {
         address[] memory futuresmarketmanager_addMarkets_marketsToAdd_1_0 = new address[](2);
         futuresmarketmanager_addMarkets_marketsToAdd_1_0[0] = address(new_FuturesMarketXAU_contract);
@@ -110,7 +109,6 @@ contract Migration_MirachOptimism is BaseMigration {
         futuresmarketmanager_i.addMarkets(futuresmarketmanager_addMarkets_marketsToAdd_1_0);
     }
 
-    
     function addressresolver_importAddresses_2() internal {
         bytes32[] memory addressresolver_importAddresses_names_2_0 = new bytes32[](5);
         addressresolver_importAddresses_names_2_0[0] = bytes32("SystemSettings");
@@ -124,10 +122,12 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_2_1[2] = address(new_SynthetixBridgeToBase_contract);
         addressresolver_importAddresses_destinations_2_1[3] = address(new_FuturesMarketXAG_contract);
         addressresolver_importAddresses_destinations_2_1[4] = address(new_FuturesMarketXAU_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_2_0, addressresolver_importAddresses_destinations_2_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_2_0,
+            addressresolver_importAddresses_destinations_2_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_3() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(new_SystemSettings_contract);
@@ -153,7 +153,6 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_3_0);
     }
 
-    
     function addressresolver_rebuildCaches_4() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_4_0 = new MixinResolver[](7);
         addressresolver_rebuildCaches_destinations_4_0[0] = MixinResolver(0x8e08BF90B979698AdB6d722E9e27263f36366414);
