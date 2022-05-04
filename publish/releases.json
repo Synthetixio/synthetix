@@ -1087,6 +1087,7 @@
 		},
 		{
 			"name": "Menkent (Optimism)",
+			"released": true,
 			"ovm": true,
 			"version": {
 				"major": 2,
