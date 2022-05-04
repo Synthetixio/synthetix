@@ -12,7 +12,6 @@ const data = {
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
-	'kovan-ovm-futures': require('./publish/deployed/kovan-ovm-futures'),
 };
 
 const assets = require('./publish/assets.json');
@@ -158,7 +157,6 @@ const defaults = {
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
-		'kovan-ovm-futures': '0x4200000000000000000000000000000000000006',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,

@@ -196,6 +196,11 @@ async function _getSynth({ ctx, user, symbol, amount }) {
 
 		spent = spent.add(partialAmount);
 		const newBalance = await token.balanceOf(user.address);
+
+		if (newBalance.eq(0)) {
+			throw new Error('received no synths from exchange, did breaker trip? is rate set?');
+		}
+
 		remaining = amount.sub(newBalance);
 
 		// estimate what more to send based on the rate we got for the first exchange
