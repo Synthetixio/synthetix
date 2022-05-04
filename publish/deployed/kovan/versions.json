@@ -7290,5 +7290,40 @@
 				"keccak256": "0x00c5cf07e218bc3f61f97e3c7df177ea99ccc72ae09cb5bff195be9c48dea2b9"
 			}
 		}
+	},
+	"v2.67.0-alpha": {
+		"tag": "v2.67.0-alpha",
+		"fulltag": "v2.67.0-alpha",
+		"release": "Menkent",
+		"network": "kovan",
+		"date": "2022-04-12T10:37:23-07:00",
+		"commit": "2900a61054affe0fed008c8b2f927cfbf39ccb23",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xD9b6bAEc9847189bd4f9B0c8D5Bb2512e0368aBf",
+				"status": "current",
+				"keccak256": "0x1dfe695db7353cb1802f067af071d6e43d6a3c85b805a6c12c2ff106b91aa074"
+			},
+			"Synthetix": {
+				"address": "0x80a371e65dB3dD35b39d094AED82c28bafeA9A65",
+				"status": "current",
+				"keccak256": "0xcdd50c64963981c20cd56e791f89109b77bb2419ecdef91d8d40764ba82d8395"
+			},
+			"Exchanger": {
+				"address": "0xD63db8cD2dbFd7E0999D8D58C94d9ECF0004e180",
+				"status": "current",
+				"keccak256": "0x38d839b77040ffd26378338aa474385625c498211ac06348c801b3428cd57070"
+			},
+			"SystemSettings": {
+				"address": "0xc54369b816E162014a857075a56DE8226b08FfCC",
+				"status": "current",
+				"keccak256": "0x696479127827821fc836c8f1999942b0c6131fa097e58af13a1fc9c8640cccd5"
+			},
+			"SystemSettingsLib": {
+				"address": "0x79124c5EE8e279B9b8bD3cF576af6bA9b5957654",
+				"status": "current",
+				"keccak256": "0x7a3c1b3e73194975d2f1b8096ac052ccc81a62463887e59c0e6fd4b63a4183ad"
+			}
+		}
 	}
 }
