@@ -73,32 +73,37 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         bool usePureChainlinkPriceForSource = getPureChainlinkPriceForAtomicSwapsEnabled(sourceCurrencyKey);
         bool usePureChainlinkPriceForDest = getPureChainlinkPriceForAtomicSwapsEnabled(destinationCurrencyKey);
-        uint dexValue;
+        uint sourceRate;
+        uint destRate;
 
-        if (usePureChainlinkPriceForSource || usePureChainlinkPriceForDest) {
-            // If either can rely on the pure Chainlink price, use it and get the rate from Uniswap for the other if necessary
-            uint sourceRate =
-                usePureChainlinkPriceForSource
-                    ? systemSourceRate
-                    : _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount);
-            uint destRate =
-                usePureChainlinkPriceForDest
-                    ? systemDestinationRate
-                    : _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount);
-
-            value = sourceAmount.mul(sourceRate).div(destRate);
+        // Handle the different scenarios that may arise when trading currencies with or without the PureChainlinkPrice set.
+        // outlined here: https://sips.synthetix.io/sips/sip-198/#computation-methodology-in-atomic-pricing
+        if (usePureChainlinkPriceForSource && usePureChainlinkPriceForDest) {
+            // SRC and DEST are both set to trade at the PureChainlinkPrice
+            sourceRate = systemSourceRate;
+            destRate = systemDestinationRate;
+        } else if (!usePureChainlinkPriceForSource && usePureChainlinkPriceForDest) {
+            // SRC is NOT set to PureChainlinkPrice and DEST is set to PureChainlinkPrice
+            sourceRate = _getMinValue(systemSourceRate, _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount));
+            destRate = systemDestinationRate;
+        } else if (usePureChainlinkPriceForSource && !usePureChainlinkPriceForDest) {
+            // SRC is set to PureChainlinkPrice and DEST is NOT set to PureChainlinkPrice
+            sourceRate = systemSourceRate;
+            destRate = _getMaxValue(systemDestinationRate, _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount));
         } else {
-            // Otherwise, we get the price from Uniswap
-            IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
-            require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
-            IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
-            require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
-
-            dexValue = _dexPriceDestinationValue(sourceEquivalent, destEquivalent, sourceAmount);
-
-            // Final value is minimum output between the price from Chainlink and the price from Uniswap.
-            value = systemValue < dexValue ? systemValue : dexValue; // min
+            // Otherwise, neither SRC nor DEST is set to PureChainlinkPrice.
+            sourceRate = _getMinValue(systemSourceRate, _getPriceFromDexAggregator(sourceCurrencyKey, sourceAmount));
+            destRate = _getMaxValue(systemDestinationRate, _getPriceFromDexAggregator(destinationCurrencyKey, sourceAmount));
         }
+        value = sourceAmount.mul(sourceRate).div(destRate);
+    }
+
+    function _getMinValue(uint x, uint y) internal pure returns (uint) {
+        return x < y ? x : y;
+    }
+
+    function _getMaxValue(uint x, uint y) internal pure returns (uint) {
+        return x > y ? x : y;
     }
 
     /// @notice Retrieve the TWAP (time-weighted average price) of an asset from its Uniswap V3-equivalent pool
