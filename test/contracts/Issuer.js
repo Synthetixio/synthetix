@@ -1282,7 +1282,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 
 						it('maintains debt cache', async () => {
-							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(100)));
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(20000)));
 						});
 					});
 				});
@@ -1306,7 +1306,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 
 						it('maintains debt cache', async () => {
-							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(50)));
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(10000)));
 						});
 					});
 				});
