@@ -105,11 +105,11 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function synthTransferSent() public view returns (uint) {
+    function synthTransferSent() external view returns (uint) {
         return _sumTransferAmounts(SYNTH_TRANSFER_SENT);
     }
 
-    function synthTransferReceived() public view returns (uint) {
+    function synthTransferReceived() external view returns (uint) {
         return _sumTransferAmounts(SYNTH_TRANSFER_RECV);
     }
 
@@ -145,7 +145,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         uint amount
     ) external requireInitiationActive {
         require(destination != address(0), "Cannot send to zero address");
-        require(getCrossSynthTransferEnabled(currencyKey) > 0, "Synth not enabled for cross chain transfer");
+        require(getCrossChainSynthTransferEnabled(currencyKey) > 0, "Synth not enabled for cross chain transfer");
 
         _incrementSynthsTransferCounter(SYNTH_TRANSFER_SENT, currencyKey, amount);
 

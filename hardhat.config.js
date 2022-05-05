@@ -92,6 +92,6 @@ module.exports = {
 
 	mocha: {
 		timeout: 120e3, // 120s
-		retries: 1,
+		retries: 3,
 	},
 };

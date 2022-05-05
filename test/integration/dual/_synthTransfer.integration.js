@@ -47,13 +47,13 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 
 		before('set system settings', async () => {
 			let tx;
-			tx = await SystemSettings.connect(owner).setCrossSynthTransferEnabled(sUSD, 1);
+			tx = await SystemSettings.connect(owner).setCrossChainSynthTransferEnabled(sUSD, 1);
 			await tx.wait();
-			tx = await SystemSettings.connect(owner).setCrossSynthTransferEnabled(sETH, 1);
+			tx = await SystemSettings.connect(owner).setCrossChainSynthTransferEnabled(sETH, 1);
 			await tx.wait();
-			tx = await SystemSettingsL2.connect(ownerL2).setCrossSynthTransferEnabled(sUSD, 1);
+			tx = await SystemSettingsL2.connect(ownerL2).setCrossChainSynthTransferEnabled(sUSD, 1);
 			await tx.wait();
-			tx = await SystemSettingsL2.connect(ownerL2).setCrossSynthTransferEnabled(sETH, 1);
+			tx = await SystemSettingsL2.connect(ownerL2).setCrossChainSynthTransferEnabled(sETH, 1);
 			await tx.wait();
 		});
 
