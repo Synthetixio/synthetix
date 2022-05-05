@@ -38,6 +38,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let rewardEscrow;
 		let flexibleStorage;
 		let feePool;
+		let issuer;
+		let exchangeRates;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -50,6 +52,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 			feePool = await smockit(artifacts.require('FeePool').abi);
+			issuer = await smockit(artifacts.require('Issuer').abi);
+			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
@@ -60,6 +64,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					'base:SynthetixBridgeToOptimism',
 					'RewardEscrowV2',
 					'FeePool',
+					'Issuer',
+					'ExchangeRates',
 				].map(toBytes32),
 				[
 					flexibleStorage.address,
@@ -68,6 +74,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					snxBridgeToOptimism,
 					rewardEscrow.address,
 					feePool.address,
+					issuer.address,
+					exchangeRates.address,
 				],
 				{ from: owner }
 			);
@@ -119,7 +127,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							instance.finalizeEscrowMigration(user1, escrowedAmount, emptyArray, {
 								from: smockedMessenger,
 							}),
-							'Only the L1 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});
@@ -273,7 +281,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							instance.finalizeDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
-							'Only the L1 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});
@@ -324,7 +332,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							instance.finalizeRewardDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
-							'Only the L1 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});
@@ -377,7 +385,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							instance.finalizeFeePeriodClose(1, 1, {
 								from: smockedMessenger,
 							}),
-							'Only the L1 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});

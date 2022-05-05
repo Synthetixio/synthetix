@@ -251,6 +251,12 @@
 	"FuturesMarketWTI": {
 		"deploy": false
 	},
+	"FuturesMarketXAU": {
+		"deploy": false
+	},
+	"FuturesMarketXAG": {
+		"deploy": false
+	},
 	"TokenStatesWTI": {
 		"deploy": false
 	},
@@ -258,12 +264,6 @@
 		"deploy": false
 	},
 	"SynthsWTI": {
-		"deploy": false
-	},
-	"FuturesMarketXAU": {
-		"deploy": false
-	},
-	"FuturesMarketXAG": {
 		"deploy": false
 	},
 	"FuturesMarketAAVE": {
@@ -279,6 +279,24 @@
 		"deploy": false
 	},
 	"FuturesMarketLUNA": {
+		"deploy": false
+	},
+	"TokenStatesXAU": {
+		"deploy": false
+	},
+	"ProxysXAU": {
+		"deploy": false
+	},
+	"SynthsXAU": {
+		"deploy": false
+	},
+	"TokenStatesXAG": {
+		"deploy": false
+	},
+	"ProxysXAG": {
+		"deploy": false
+	},
+	"SynthsXAG": {
 		"deploy": false
 	}
 }

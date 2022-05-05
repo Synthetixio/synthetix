@@ -435,6 +435,15 @@ library SystemSettingsLib {
         );
     }
 
+    function setCrossSynthTransferEnabled(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        uint _value
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _currencyKey)), _value);
+    }
+
     function setExchangeMaxDynamicFee(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
