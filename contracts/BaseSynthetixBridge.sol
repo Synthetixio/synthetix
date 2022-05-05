@@ -149,7 +149,8 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
         _incrementSynthsTransferCounter(SYNTH_TRANSFER_SENT, currencyKey, amount);
 
-        issuer().burnSynthsWithoutDebt(currencyKey, msg.sender, amount);
+        bool rateInvalid = issuer().burnSynthsWithoutDebt(currencyKey, msg.sender, amount);
+        require(!rateInvalid, "Cannot initiate if synth rate is invalid");
 
         // create message payload
         bytes memory messageData =

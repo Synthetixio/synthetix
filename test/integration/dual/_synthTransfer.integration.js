@@ -4,7 +4,7 @@ const hre = require('hardhat');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { ensureBalance } = require('../utils/balances');
-const { addAggregatorAndSetRate } = require('../utils/rates');
+const { addAggregatorAndSetRate, updateCache } = require('../utils/rates');
 const { finalizationOnL2, finalizationOnL1 } = require('../utils/optimism');
 const { approveIfNeeded } = require('../utils/approve');
 const { skipWaitingPeriod } = require('../utils/skip');
@@ -14,7 +14,7 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
-	const ETH_RATE = '1000';
+	const ETH_RATE = '0.5';
 
 	const amountToDeposit = ethers.utils.parseEther('10');
 
@@ -23,7 +23,7 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 	let owner, ownerL2, user, userL2;
 	let SynthsUSD, SynthsETH, SynthetixBridgeToOptimism, SystemSettings;
 
-	let SynthsUSDL2, SynthsETHL2, SynthetixBridgeToBase, SystemSettingsL2;
+	let SynthsUSDL2, SynthsETHL2, SynthetixBridgeToBase, SystemSettingsL2, SystemStatusL2;
 
 	let userBalance, userL2Balance;
 
@@ -37,6 +37,7 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 				SynthsETH: SynthsETHL2,
 				SynthetixBridgeToBase,
 				SystemSettings: SystemSettingsL2,
+				SystemStatus: SystemStatusL2,
 			} = ctx.l2.contracts);
 
 			owner = ctx.l1.users.owner;
@@ -71,6 +72,12 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 			});
 		});
 
+		before('suspend stuff on L2, transfer should still succeed', async () => {
+			// suspending the system is a good way to simulate that no suspensions will stop a transfer from finalizing
+			const tx = await SystemStatusL2.connect(ownerL2).suspendSystem(1);
+			await tx.wait();
+		});
+
 		before('ensure balance', async () => {
 			await ensureBalance({
 				ctx: ctx.l1,
@@ -92,6 +99,8 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 				user: user,
 				balance: ethers.utils.parseEther('0.1'),
 			});
+
+			await updateCache({ ctx: ctx.l1 });
 		});
 
 		before('record balances', async () => {
@@ -147,7 +156,7 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 			// 1 ETH = 1000 USD and we sent equal amount of each. so `amountToDeposit * 1001`
 			assert.bnEqual(
 				await SynthetixBridgeToOptimism.synthTransferSent(),
-				amountToDeposit.mul(1001)
+				amountToDeposit.add(amountToDeposit.div(2))
 			);
 		});
 
@@ -175,12 +184,18 @@ describe('initiateSynthTransfer() integration tests (L1, L2)', () => {
 			it('records amount received', async () => {
 				assert.bnEqual(
 					await SynthetixBridgeToBase.synthTransferReceived(),
-					amountToDeposit.mul(1001)
+					amountToDeposit.add(amountToDeposit.div(2))
 				);
 			});
 
 			describe('send back to L1', () => {
 				let withdrawReceipt;
+
+				before('resume L2', async () => {
+					const tx = await SystemStatusL2.connect(ownerL2).resumeSystem();
+					await tx.wait();
+				});
+
 				before('transfer synths', async () => {
 					SynthetixBridgeToBase = SynthetixBridgeToBase.connect(userL2);
 
