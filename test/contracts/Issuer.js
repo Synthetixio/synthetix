@@ -1266,26 +1266,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('issueSynthsWithoutDebt', () => {
-					it('fails if issuance not active', async () => {
-						await systemStatus.suspendIssuance(1, { from: owner });
-						await assert.revert(
-							issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Issuance is suspended'
-						);
-					});
-
-					it('fails if synth not active', async () => {
-						await systemStatus.suspendSynth(sETH, 1, { from: owner });
-						await assert.revert(
-							issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Synth is suspended'
-						);
-					});
-
 					describe('successfully invoked', () => {
 						let beforeCachedDebt;
 
@@ -1308,26 +1288,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('burnSynthsWithoutDebt', () => {
-					it('fails if issuance not active', async () => {
-						await systemStatus.suspendIssuance(1, { from: owner });
-						await assert.revert(
-							issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Issuance is suspended'
-						);
-					});
-
-					it('fails if synth not active', async () => {
-						await systemStatus.suspendSynth(sETH, 1, { from: owner });
-						await assert.revert(
-							issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Synth is suspended'
-						);
-					});
-
 					describe('successfully invoked', () => {
 						let beforeCachedDebt;
 

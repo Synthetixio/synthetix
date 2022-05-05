@@ -17,6 +17,7 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/ISystemStatus.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge {
@@ -31,6 +32,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_EXCHANGERATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYSTEM_STATUS = "SystemStatus";
 
     // have to define this function like this here because contract name is required for FlexibleStorage
     function CONTRACT_NAME() public pure returns (bytes32);
@@ -77,6 +79,10 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
     }
 
+    function systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEM_STATUS));
+    }
+
     function initiatingActive() internal view {
         require(initiationActive, "Initiation deactivated");
     }
@@ -94,7 +100,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
+        bytes32[] memory newAddresses = new bytes32[](8);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_REWARDESCROW;
@@ -102,6 +108,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
         newAddresses[4] = CONTRACT_FEEPOOL;
         newAddresses[5] = CONTRACT_FLEXIBLESTORAGE;
         newAddresses[6] = CONTRACT_EXCHANGERATES;
+        newAddresses[7] = CONTRACT_SYSTEM_STATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -146,6 +153,7 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     ) external requireInitiationActive {
         require(destination != address(0), "Cannot send to zero address");
         require(getCrossChainSynthTransferEnabled(currencyKey) > 0, "Synth not enabled for cross chain transfer");
+        systemStatus().requireSynthActive(currencyKey);
 
         _incrementSynthsTransferCounter(SYNTH_TRANSFER_SENT, currencyKey, amount);
 

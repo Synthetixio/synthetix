@@ -40,6 +40,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let feePool;
 		let issuer;
 		let exchangeRates;
+		let systemStatus;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -54,6 +55,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			feePool = await smockit(artifacts.require('FeePool').abi);
 			issuer = await smockit(artifacts.require('Issuer').abi);
 			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
+			systemStatus = await smockit(artifacts.require('SystemStatus').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
@@ -66,6 +68,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					'FeePool',
 					'Issuer',
 					'ExchangeRates',
+					'SystemStatus',
 				].map(toBytes32),
 				[
 					flexibleStorage.address,
@@ -76,6 +79,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					feePool.address,
 					issuer.address,
 					exchangeRates.address,
+					systemStatus.address,
 				],
 				{ from: owner }
 			);
