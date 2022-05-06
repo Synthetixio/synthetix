@@ -21,6 +21,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidator.sol";
+import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
@@ -93,6 +94,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
+    bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -115,6 +117,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[6] = CONTRACT_REWARDESCROW_V2;
         newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[8] = CONTRACT_LIQUIDATOR;
+        newAddresses[8] = CONTRACT_LIQUIDATOR_REWARDS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_SYNTHREDEEMER;
         newAddresses[11] = CONTRACT_SYSTEMSTATUS;
@@ -145,6 +148,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function liquidator() internal view returns (ILiquidator) {
         return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
+    }
+
+    function liquidatorRewards() internal view returns (ILiquidatorRewards) {
+        return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATOR_REWARDS));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -814,6 +821,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _addToDebtRegister(address from, uint amount) internal {
+        // important: this has to happen before any updates to user's debt shares
+        liquidatorRewards().updateEntry(from);
+
         ISynthetixDebtShare sds = synthetixDebtShare();
 
         // it is possible (eg in tests, system initialized with extra debt) to have issued debt without any shares issued
@@ -831,6 +841,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint debtToRemove,
         uint existingDebt
     ) internal {
+        // important: this has to happen before any updates to user's debt shares
+        liquidatorRewards().updateEntry(from);
+
         ISynthetixDebtShare sds = synthetixDebtShare();
 
         uint currentDebtShare = sds.balanceOf(from);

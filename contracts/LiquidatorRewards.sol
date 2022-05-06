@@ -26,13 +26,17 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     using SafeDecimalMath for uint256;
     using SafeERC20 for IERC20;
 
+    struct AccountRewardsEntry {
+        uint128 claimable;
+        uint128 entryAccumulatedRewards;
+    }
+
     /* ========== STATE VARIABLES ========== */
 
-    uint256 public accumulatedRewards;
-    uint256 public rewardPerShareStored;
+    uint256 public accumulatedRewardsPerShare;
 
-    mapping(address => uint256) public userRewardPerSharePaid;
-    mapping(address => uint256) public rewards;
+    mapping(address => AccountRewardsEntry) public entries;
+    mapping(address => bool) public initiated;
 
     bytes32 public constant CONTRACT_NAME = "LiquidatorRewards";
 
@@ -75,33 +79,42 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
-    function rewardPerShare() public view returns (uint256) {
-        (, uint sharesSupply, ) = issuer().allNetworksDebtInfo();
-
-        if (sharesSupply == 0) {
-            return 0;
-        }
-
-        return accumulatedRewards.divideDecimal(sharesSupply);
-    }
-
     function earned(address account) public view returns (uint256) {
+        AccountRewardsEntry memory entry = entries[account];
         return
             synthetixDebtShare()
                 .balanceOf(account)
-                .multiplyDecimal(rewardPerShare().sub(userRewardPerSharePaid[account]))
-                .add(rewards[account]);
+                .multiplyDecimal(accumulatedRewardsPerShare.sub(entry.entryAccumulatedRewards))
+                .add(entry.claimable);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function getReward() external nonReentrant updateReward(msg.sender) {
-        uint256 reward = rewards[msg.sender];
+    function getReward() external nonReentrant {
+        updateEntry(msg.sender);
+
+        uint256 reward = entries[msg.sender].claimable;
         if (reward > 0) {
-            rewards[msg.sender] = 0;
+            entries[msg.sender].claimable = 0;
             synthetix().approve(address(rewardEscrowV2()), reward);
             rewardEscrowV2().createEscrowEntry(msg.sender, reward, getLiquidationEscrowDuration());
             emit RewardPaid(msg.sender, reward);
+        }
+    }
+
+    // called every time a user's number of debt shares changes, or they claim rewards
+    // has no useful purpose if called outside of these cases
+    function updateEntry(address account) public {
+        // when user enters for the first time
+        if (!initiated[account]) {
+            entries[account].entryAccumulatedRewards = uint128(accumulatedRewardsPerShare);
+            initiated[account] = true;
+        }
+        else {
+            entries[account] = AccountRewardsEntry(
+                uint128(earned(account)),
+                uint128(accumulatedRewardsPerShare)
+            );
         }
     }
 
@@ -109,20 +122,14 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /// @notice This is called only after an account is liquidated and the SNX rewards are sent to this contract.
     function notifyRewardAmount(uint256 reward) external onlySynthetix {
-        accumulatedRewards = accumulatedRewards.add(reward);
-        rewardPerShareStored = rewardPerShare();
+        uint sharesSupply = synthetixDebtShare().totalSupply();
+
+        if (sharesSupply > 0) {
+            accumulatedRewardsPerShare = accumulatedRewardsPerShare.add(reward.divideDecimal(sharesSupply));
+        }
     }
 
     /* ========== MODIFIERS ========== */
-
-    modifier updateReward(address account) {
-        rewardPerShareStored = rewardPerShare();
-        if (account != address(0)) {
-            rewards[account] = earned(account);
-            userRewardPerSharePaid[account] = rewardPerShareStored;
-        }
-        _;
-    }
 
     modifier onlySynthetix {
         bool isSynthetix = msg.sender == address(synthetix());
