@@ -1083,7 +1083,7 @@
 				"major": 2,
 				"minor": 67
 			},
-			"sips": []
+			"sips": [198, 222]
 		},
 		{
 			"name": "Menkent (Optimism)",
@@ -1093,7 +1093,7 @@
 				"major": 2,
 				"minor": 67
 			},
-			"sips": []
+			"sips": [198, 222]
 		},
 		{
 			"name": "Mirach",
