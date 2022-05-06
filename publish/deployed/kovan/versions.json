@@ -7225,8 +7225,9 @@
 			},
 			"SynthetixBridgeToOptimism": {
 				"address": "0x8f9D085D1bdfB6c05a4Cd82553e871B3e61e70CD",
-				"status": "current",
-				"keccak256": "0xb29d49be5864f8cc37a421cabf0897de98e083711cc8d68487bb390467ae9d97"
+				"status": "replaced",
+				"keccak256": "0xb29d49be5864f8cc37a421cabf0897de98e083711cc8d68487bb390467ae9d97",
+				"replaced_in": "v2.68.0-alpha"
 			},
 			"SynthsKRW": {
 				"address": "0x5EA49De5ECD0183dCB95252ef252FE2C9e677c85",
@@ -7286,8 +7287,9 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0x4c3aeC1499f5892D8C5880760E2b35ABB450C404",
-				"status": "current",
-				"keccak256": "0x00c5cf07e218bc3f61f97e3c7df177ea99ccc72ae09cb5bff195be9c48dea2b9"
+				"status": "replaced",
+				"keccak256": "0x00c5cf07e218bc3f61f97e3c7df177ea99ccc72ae09cb5bff195be9c48dea2b9",
+				"replaced_in": "v2.68.0-alpha"
 			}
 		}
 	},
@@ -7316,13 +7318,45 @@
 			},
 			"SystemSettings": {
 				"address": "0xc54369b816E162014a857075a56DE8226b08FfCC",
-				"status": "current",
-				"keccak256": "0x696479127827821fc836c8f1999942b0c6131fa097e58af13a1fc9c8640cccd5"
+				"status": "replaced",
+				"keccak256": "0x696479127827821fc836c8f1999942b0c6131fa097e58af13a1fc9c8640cccd5",
+				"replaced_in": "v2.68.0-alpha"
 			},
 			"SystemSettingsLib": {
 				"address": "0x79124c5EE8e279B9b8bD3cF576af6bA9b5957654",
+				"status": "replaced",
+				"keccak256": "0x7a3c1b3e73194975d2f1b8096ac052ccc81a62463887e59c0e6fd4b63a4183ad",
+				"replaced_in": "v2.68.0-alpha"
+			}
+		}
+	},
+	"v2.68.0-alpha": {
+		"tag": "v2.68.0-alpha",
+		"fulltag": "v2.68.0-alpha",
+		"release": "Mirach",
+		"network": "kovan",
+		"date": "2022-05-06T14:13:37-07:00",
+		"commit": "5ca27785fad8237fb0710eac01421cafbbd69647",
+		"contracts": {
+			"Issuer": {
+				"address": "0xAb6dA3A3C7428606851f2bd33C118B2a77183578",
 				"status": "current",
-				"keccak256": "0x7a3c1b3e73194975d2f1b8096ac052ccc81a62463887e59c0e6fd4b63a4183ad"
+				"keccak256": "0x89c2dfe6423f9db7f97274421997a8f971e07ab2d590dd19559e5fb523fcbfee"
+			},
+			"SystemSettings": {
+				"address": "0xa090A311Aa4FEb1399D4463c44B357D05E41946c",
+				"status": "current",
+				"keccak256": "0x6d7e1121faeb22dd47d1ab9d69e93c681155d36746d4639ddaa154fa8b446a50"
+			},
+			"SynthetixBridgeToOptimism": {
+				"address": "0x828d4F922E446c76E2D0e0582EAa38acc4d793a2",
+				"status": "current",
+				"keccak256": "0xb24be3f313a81136bb5fb6dd64bfaaf201772b6f73b02839e56738babc5a8fb5"
+			},
+			"SystemSettingsLib": {
+				"address": "0x081158Dd1DE2B2128DD65eFFF67aA61b48dc7568",
+				"status": "current",
+				"keccak256": "0xd3fd944f5b20248f756d86ef9fd94fb07058f27345404116ebbe79cacb9ef3e5"
 			}
 		}
 	}
