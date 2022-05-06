@@ -47,6 +47,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let messenger;
 		let synthetix;
 		let issuer;
+		let exchangeRates;
 		let resolver;
 		let rewardEscrow;
 		const escrowAmount = 100;
@@ -65,6 +66,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
+			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
@@ -74,6 +76,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'ext:Messenger',
 					'Synthetix',
 					'Issuer',
+					'ExchangeRates',
 					'FeePool',
 					'RewardsDistribution',
 					'ovm:SynthetixBridgeToBase',
@@ -85,6 +88,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					messenger.address,
 					synthetix.address,
 					issuer.address,
+					exchangeRates.address,
 					FeePool,
 					rewardsDistribution,
 					snxBridgeToBase,
@@ -555,7 +559,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							instance.finalizeWithdrawal(user1, 100, {
 								from: smockedMessenger,
 							}),
-							'Only the L2 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});

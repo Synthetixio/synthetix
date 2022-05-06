@@ -575,6 +575,24 @@
 			"sip": 222,
 			"layer": "both",
 			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 229,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"SynthetixBridgeToOptimism",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				],
+				"ovm": [
+					"SynthetixBridgeToBase",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				]
+			}
 		}
 	],
 	"releases": [
@@ -1060,20 +1078,22 @@
 		},
 		{
 			"name": "Menkent",
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 67
 			},
-			"sips": []
+			"sips": [198, 222]
 		},
 		{
 			"name": "Menkent (Optimism)",
+			"released": true,
 			"ovm": true,
 			"version": {
 				"major": 2,
 				"minor": 67
 			},
-			"sips": []
+			"sips": [198, 222]
 		},
 		{
 			"name": "Mirach",
@@ -1081,7 +1101,7 @@
 				"major": 2,
 				"minor": 68
 			},
-			"sips": []
+			"sips": [229]
 		},
 		{
 			"name": "Mirach (Optimism)",
@@ -1090,7 +1110,7 @@
 				"major": 2,
 				"minor": 68
 			},
-			"sips": []
+			"sips": [229]
 		},
 		{
 			"name": "Alpheratz",

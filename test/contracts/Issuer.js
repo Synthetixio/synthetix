@@ -45,7 +45,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [, owner, account1, account2, account3, account6] = accounts;
+	const [, owner, account1, account2, account3, account6, synthetixBridgeToOptimism] = accounts;
 
 	let synthetix,
 		systemStatus,
@@ -117,6 +117,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 			],
 		}));
 
+		// mocks for bridge
+		await addressResolver.importAddresses(
+			['SynthetixBridgeToOptimism'].map(toBytes32),
+			[synthetixBridgeToOptimism],
+			{ from: owner }
+		);
+
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
 	});
 
@@ -152,6 +159,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
+				'issueSynthsWithoutDebt',
+				'burnSynthsWithoutDebt',
 				'issueMaxSynths',
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
@@ -174,12 +183,33 @@ contract('Issuer (via Synthetix)', async accounts => {
 	});
 
 	describe('protected methods', () => {
+		it('issueSynthsWithoutDebt() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.issueSynthsWithoutDebt,
+				args: [sUSD, owner, toUnit(100)],
+				accounts,
+				address: synthetixBridgeToOptimism,
+				reason: 'Issuer: Only trusted minters can perform this action',
+			});
+		});
+
+		it('burnSynthsWithoutDebt() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnSynthsWithoutDebt,
+				args: [sUSD, owner, toUnit(100)],
+				// full functionality of this method requires issuing synths,
+				// so just test that its blocked here and don't include the trusted addr
+				accounts: [owner, account1],
+				reason: 'Issuer: Only trusted minters can perform this action',
+			});
+		});
+
 		it('issueSynths() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: issuer.issueSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -187,7 +217,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
@@ -195,7 +225,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynths,
 				args: [account1],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -203,7 +233,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynthsOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
@@ -211,7 +241,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -219,7 +249,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
@@ -227,7 +257,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('liquidateDelinquentAccount() cannot be invoked directly by a user', async () => {
@@ -235,7 +265,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.liquidateDelinquentAccount,
 				args: [account1, toUnit('1'), account2],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -243,7 +273,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
 		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
@@ -1233,6 +1263,92 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// these rounding errors don't cause the system to be out of balance.
 					assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), toUnit('20'));
 					assert.bnClose(await synthetix.debtBalanceOf(account2, sUSD), toUnit('20'));
+				});
+
+				describe('issueSynthsWithoutDebt', () => {
+					it('fails if issuance not active', async () => {
+						await systemStatus.suspendIssuance(1, { from: owner });
+						await assert.revert(
+							issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
+								from: synthetixBridgeToOptimism,
+							}),
+							'Issuance is suspended'
+						);
+					});
+
+					it('fails if synth not active', async () => {
+						await systemStatus.suspendSynth(sETH, 1, { from: owner });
+						await assert.revert(
+							issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
+								from: synthetixBridgeToOptimism,
+							}),
+							'Synth is suspended'
+						);
+					});
+
+					describe('successfully invoked', () => {
+						let beforeCachedDebt;
+
+						beforeEach(async () => {
+							beforeCachedDebt = await debtCache.cachedDebt();
+
+							await issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
+								from: synthetixBridgeToOptimism,
+							});
+						});
+
+						it('issues synths', async () => {
+							assert.bnEqual(await sETHContract.balanceOf(owner), toUnit(100));
+						});
+
+						it('maintains debt cache', async () => {
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(100)));
+						});
+					});
+				});
+
+				describe('burnSynthsWithoutDebt', () => {
+					it('fails if issuance not active', async () => {
+						await systemStatus.suspendIssuance(1, { from: owner });
+						await assert.revert(
+							issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(100), {
+								from: synthetixBridgeToOptimism,
+							}),
+							'Issuance is suspended'
+						);
+					});
+
+					it('fails if synth not active', async () => {
+						await systemStatus.suspendSynth(sETH, 1, { from: owner });
+						await assert.revert(
+							issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(100), {
+								from: synthetixBridgeToOptimism,
+							}),
+							'Synth is suspended'
+						);
+					});
+
+					describe('successfully invoked', () => {
+						let beforeCachedDebt;
+
+						beforeEach(async () => {
+							beforeCachedDebt = await debtCache.cachedDebt();
+							await issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
+								from: synthetixBridgeToOptimism,
+							});
+							await issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(50), {
+								from: synthetixBridgeToOptimism,
+							});
+						});
+
+						it('burns synths', async () => {
+							assert.bnEqual(await sETHContract.balanceOf(owner), toUnit(50));
+						});
+
+						it('maintains debt cache', async () => {
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(50)));
+						});
+					});
 				});
 
 				describe('issueMaxSynths', () => {
@@ -2232,8 +2348,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// Increase the value of sEUR relative to synthetix
 				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('1.1')]);
 				await debtCache.takeDebtSnapshot();
-
-				console.log('issuing');
 
 				await assert.revert(
 					synthetix.issueSynths(synthsToNotIssueYet, { from: account1 }),

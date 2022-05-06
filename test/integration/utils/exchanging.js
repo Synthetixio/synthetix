@@ -2,6 +2,7 @@ const ethers = require('ethers');
 const { ensureBalance } = require('./balances');
 const { toBytes32 } = require('../../../index');
 const { updateCache } = require('../utils/rates');
+const { skipWaitingPeriod } = require('../utils/skip');
 
 async function exchangeSomething({ ctx }) {
 	let { Synthetix } = ctx.contracts;
@@ -17,12 +18,21 @@ async function exchangeSomething({ ctx }) {
 }
 
 async function exchangeSynths({ ctx, src, dest, amount, user }) {
-	let { Synthetix } = ctx.contracts;
+	let { Synthetix, ExchangeCircuitBreaker } = ctx.contracts;
 	Synthetix = Synthetix.connect(user);
+	ExchangeCircuitBreaker = ExchangeCircuitBreaker.connect(ctx.users.owner);
 
 	await ensureBalance({ ctx, symbol: src, user, balance: amount });
 
-	const tx = await Synthetix.exchange(toBytes32(src), amount, toBytes32(dest));
+	// ensure that circuit breaker wont get int he way
+	let tx = await ExchangeCircuitBreaker.resetLastExchangeRate([toBytes32(src), toBytes32(dest)]);
+
+	tx = await Synthetix.exchange(toBytes32(src), amount, toBytes32(dest));
+	await tx.wait();
+
+	await skipWaitingPeriod({ ctx });
+
+	tx = await Synthetix.settle(toBytes32(dest));
 	await tx.wait();
 }
 
