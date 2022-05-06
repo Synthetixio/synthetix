@@ -64,6 +64,7 @@ contract('SystemSettings', async accounts => {
 				'setAtomicVolatilityConsiderationWindow',
 				'setAtomicVolatilityUpdateThreshold',
 				'setCollapseFeeRate',
+				'setCrossSynthTransferEnabled',
 				'setCrossDomainMessageGasLimit',
 				'setDebtSnapshotStaleTime',
 				'setEtherWrapperBurnFeeRate',
@@ -1340,6 +1341,45 @@ contract('SystemSettings', async accounts => {
 			it('allows to be reset to zero', async () => {
 				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 0, { from: owner });
 				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), 0);
+			});
+		});
+	});
+
+	describe('setCrossSynthTransferEnabled', () => {
+		const sETH = toBytes32('sETH');
+		const enabled = 1;
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setCrossSynthTransferEnabled,
+				args: [sETH, enabled],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setCrossSynthTransferEnabled(sETH, enabled, {
+					from: owner,
+				});
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.crossSynthTransferEnabled(sETH), enabled);
+			});
+
+			it('and emits an AtomicVolatilityUpdateThresholdUpdated event', async () => {
+				assert.eventEqual(txn, 'CrossSynthTransferEnabledUpdated', [sETH, enabled]);
+			});
+
+			it('allows to be changed', async () => {
+				const newValue = 0;
+				await systemSettings.setCrossSynthTransferEnabled(sETH, newValue, {
+					from: owner,
+				});
+				assert.bnEqual(await systemSettings.crossSynthTransferEnabled(sETH), newValue);
 			});
 		});
 	});

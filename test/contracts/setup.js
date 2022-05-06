@@ -20,10 +20,10 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
-		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
-		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
-		EXCHANGE_DYNAMIC_FEE_ROUNDS,
-		EXCHANGE_MAX_DYNAMIC_FEE,
+		// EXCHANGE_DYNAMIC_FEE_THRESHOLD, // overridden
+		// EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, // overridden
+		// EXCHANGE_DYNAMIC_FEE_ROUNDS, // overridden
+		// EXCHANGE_MAX_DYNAMIC_FEE, // overridden
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
@@ -35,7 +35,7 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
-		FUTURES_MIN_KEEPER_FEE,
+		// FUTURES_MIN_KEEPER_FEE, // overridden
 		FUTURES_LIQUIDATION_FEE_RATIO,
 		FUTURES_LIQUIDATION_BUFFER_RATIO,
 		FUTURES_MIN_INITIAL_MARGIN,
@@ -43,6 +43,15 @@ const {
 } = require('../../');
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
+
+// constants overrides for testing (to avoid having to update tests for config changes)
+const constantsOverrides = {
+	EXCHANGE_DYNAMIC_FEE_ROUNDS: '10',
+	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: toWei('0.95'),
+	EXCHANGE_DYNAMIC_FEE_THRESHOLD: toWei('0.004'),
+	EXCHANGE_MAX_DYNAMIC_FEE: toWei('0.05'),
+	FUTURES_MIN_KEEPER_FEE: toWei('20'),
+};
 
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
@@ -1207,21 +1216,30 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
-			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(EXCHANGE_DYNAMIC_FEE_THRESHOLD, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
-				EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_THRESHOLD,
 				{
 					from: owner,
 				}
 			),
-			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(EXCHANGE_DYNAMIC_FEE_ROUNDS, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setExchangeMaxDynamicFee(EXCHANGE_MAX_DYNAMIC_FEE, {
-				from: owner,
-			}),
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_ROUNDS,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeMaxDynamicFee(
+				constantsOverrides.EXCHANGE_MAX_DYNAMIC_FEE,
+				{
+					from: owner,
+				}
+			),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,
@@ -1248,9 +1266,12 @@ const setupAllContracts = async ({
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setMinKeeperFee(FUTURES_MIN_KEEPER_FEE, {
-					from: owner,
-				}),
+				returnObj['FuturesMarketSettings'].setMinKeeperFee(
+					constantsOverrides.FUTURES_MIN_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
 				returnObj['FuturesMarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
@@ -1318,4 +1339,5 @@ module.exports = {
 	mockGenericContractFnc,
 	setupContract,
 	setupAllContracts,
+	constantsOverrides,
 };
