@@ -102,4 +102,16 @@ interface IIssuer {
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
         returns (uint totalRedeemed, uint amountToLiquidate);
+
+    function issueSynthsWithoutDebt(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external;
+
+    function burnSynthsWithoutDebt(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external;
 }
