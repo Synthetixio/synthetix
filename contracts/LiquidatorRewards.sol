@@ -109,12 +109,8 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
         if (!initiated[account]) {
             entries[account].entryAccumulatedRewards = uint128(accumulatedRewardsPerShare);
             initiated[account] = true;
-        }
-        else {
-            entries[account] = AccountRewardsEntry(
-                uint128(earned(account)),
-                uint128(accumulatedRewardsPerShare)
-            );
+        } else {
+            entries[account] = AccountRewardsEntry(uint128(earned(account)), uint128(accumulatedRewardsPerShare));
         }
     }
 
