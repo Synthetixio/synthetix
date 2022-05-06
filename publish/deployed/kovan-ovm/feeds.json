@@ -38,5 +38,13 @@
 	"WTI": {
 		"asset": "WTI",
 		"feed": "0x282C4BD8A0A9eb8EcfC61eB0A8eE7290D5060fBB"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0x7b219F57a8e9C7303204Af681e9fA69d17ef626f"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0x166B620003Bc28243C75c1a98d39f25062C30234"
 	}
 }
