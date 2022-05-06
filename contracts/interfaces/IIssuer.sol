@@ -94,4 +94,16 @@ interface IIssuer {
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
 
     function setCurrentPeriodId(uint128 periodId) external;
+
+    function issueSynthsWithoutDebt(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external;
+
+    function burnSynthsWithoutDebt(
+        bytes32 currencyKey,
+        address to,
+        uint amount
+    ) external;
 }
