@@ -1268,13 +1268,13 @@ contract('Exchange Rates', async accounts => {
 			it('reverts on src not having equivalent', async () => {
 				await assert.revert(
 					instance.effectiveAtomicValueAndRates(sUSD, toUnit('1'), sETH),
-					'No atomic equivalent for src'
+					'No atomic equivalent for input'
 				);
 			});
 			it('reverts on dest not having equivalent', async () => {
 				await assert.revert(
 					instance.effectiveAtomicValueAndRates(sETH, toUnit('1'), sUSD),
-					'No atomic equivalent for dest'
+					'No atomic equivalent for sUSD'
 				);
 			});
 		});
@@ -1290,10 +1290,9 @@ contract('Exchange Rates', async accounts => {
 			function itGivesTheCorrectRates({
 				inputs: { amountIn, srcToken, destToken },
 				rates: { pDex, pCl: pClRaw },
-				settings: { clBuffer },
 				expected: { amountOut: expectedAmountOut, rateTypes: expectedRateTypes },
 			}) {
-				describe(`P_DEX of ${pDex}, P_CL of ${pClRaw}, and CL_BUFFER of ${clBuffer}bps`, () => {
+				describe(`P_DEX of ${pDex}, P_CL of ${pClRaw}`, () => {
 					let rates;
 
 					// Array-ify expected output types to allow for multiple rates types to be equivalent
@@ -1303,7 +1302,6 @@ contract('Exchange Rates', async accounts => {
 
 					// Adjust inputs to unit
 					pDex = toUnit(pDex);
-					clBuffer = toUnit(clBuffer).div(toBN('10000')); // bps to unit percentage
 
 					const pClIn8 = convertToDecimals(pClRaw, 8);
 					const pClIn18 = toUnit(pClRaw);
@@ -1323,7 +1321,7 @@ contract('Exchange Rates', async accounts => {
 							: multiplyDecimal(amountIn, pClIn18); // x dest * rate (usd/dest)
 					const potentialOutputs = {
 						pDex: multiplyDecimal(amountIn, pDex),
-						pClBuf: multiplyDecimal(pClOut, one.sub(clBuffer)),
+						pClRaw: pClOut,
 					};
 
 					beforeEach(async () => {
@@ -1430,99 +1428,81 @@ contract('Exchange Rates', async accounts => {
 				const srcToken = sUSD;
 				const destToken = sETH;
 
-				// P_DEX of 0.01, P_CL of 0.011, and CL_BUFFER of 50bps
+				// P_DEX of 0.01, P_CL of 0.011
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '0.01',
 						pCl: '0.011',
 					},
-					settings: {
-						clBuffer: '50', // bps
-					},
 					expected: {
-						amountOut: toUnit('10'),
-						rateTypes: 'pDex',
+						amountOut: toUnit('11.0000000011'), // precision required due to 8 decimal precision
+						rateTypes: 'pClRaw',
 					},
 				});
 
-				// P_DEX of 0.01, P_CL of 0.0099, and CL_BUFFER of 50bps
+				// P_DEX of 0.01, P_CL of 0.0099
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '0.01',
 						pCl: '0.0099',
 					},
-					settings: {
-						clBuffer: '50', // bps
-					},
 					expected: {
-						amountOut: toUnit('9.8505000000098505'), // precision required due to 8 decimal precision
-						rateTypes: 'pClBuf',
+						amountOut: toUnit('9.9000000000099'),
+						rateTypes: 'pClRaw',
 					},
 				});
 
-				// Given P_DEX of 0.01, P_CL of 0.01, and CL_BUFFER of 50bps
+				// Given P_DEX of 0.01, P_CL of 0.01
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '0.01',
 						pCl: '0.01',
-					},
-					settings: {
-						clBuffer: '50', // bps
-					},
-					expected: {
-						amountOut: toUnit('9.95'),
-						rateTypes: 'pClBuf',
-					},
-				});
-
-				// Given P_DEX of 0.0099, P_CL of 0.01, and CL_BUFFER of 200bps
-				itGivesTheCorrectRates({
-					inputs: { amountIn, srcToken, destToken },
-					rates: {
-						pDex: '0.0099',
-						pCl: '0.01',
-					},
-					settings: {
-						clBuffer: '200', // bps
-					},
-					expected: {
-						amountOut: toUnit('9.8'),
-						rateTypes: 'pClBuf',
-					},
-				});
-
-				// Given P_DEX of 0.0099, P_CL of 0.01, and CL_BUFFER of 0bps
-				itGivesTheCorrectRates({
-					inputs: { amountIn, srcToken, destToken },
-					rates: {
-						pDex: '0.0099',
-						pCl: '0.01',
-					},
-					settings: {
-						clBuffer: '0', // bps
-					},
-					expected: {
-						amountOut: toUnit('9.9'),
-						rateTypes: 'pDex',
-					},
-				});
-
-				// P_DEX of 0.01, P_SPOT of 0.01, P_CL of 0.01, and CL_BUFFER of 0bps
-				itGivesTheCorrectRates({
-					inputs: { amountIn, srcToken, destToken },
-					rates: {
-						pDex: '0.01',
-						pCl: '0.01',
-					},
-					settings: {
-						clBuffer: '0', // bps
 					},
 					expected: {
 						amountOut: toUnit('10'),
-						rateTypes: ['pDex', 'pClBuf'],
+						rateTypes: 'pClRaw',
+					},
+				});
+
+				// Given P_DEX of 0.0099, P_CL of 0.01
+				itGivesTheCorrectRates({
+					inputs: { amountIn, srcToken, destToken },
+					rates: {
+						pDex: '0.0099',
+						pCl: '0.01',
+					},
+					expected: {
+						amountOut: toUnit('10'),
+						rateTypes: 'pClRaw',
+					},
+				});
+
+				// Given P_DEX of 0.0099, P_CL of 0.01
+				itGivesTheCorrectRates({
+					inputs: { amountIn, srcToken, destToken },
+					rates: {
+						pDex: '0.0099',
+						pCl: '0.01',
+					},
+					expected: {
+						amountOut: toUnit('10'),
+						rateTypes: 'pClRaw',
+					},
+				});
+
+				// P_DEX of 0.01, P_SPOT of 0.01, P_CL of 0.01
+				itGivesTheCorrectRates({
+					inputs: { amountIn, srcToken, destToken },
+					rates: {
+						pDex: '0.01',
+						pCl: '0.01',
+					},
+					expected: {
+						amountOut: toUnit('10'),
+						rateTypes: ['pDex', 'pClRaw'],
 					},
 				});
 			});
@@ -1532,15 +1512,12 @@ contract('Exchange Rates', async accounts => {
 				const srcToken = sETH;
 				const destToken = sUSD;
 
-				// P_DEX of 100, P_CL of 110, and CL_BUFFER of 50bps
+				// P_DEX of 100, P_CL of 110
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '100',
 						pCl: '110',
-					},
-					settings: {
-						clBuffer: '50', // bps
 					},
 					expected: {
 						amountOut: toUnit('1000'),
@@ -1548,63 +1525,38 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// P_DEX of 100, P_CL of 99, and CL_BUFFER of 50bps
+				// P_DEX of 100, P_CL of 99
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '100',
 						pCl: '99',
 					},
-					settings: {
-						clBuffer: '50', // bps
-					},
 					expected: {
-						amountOut: toUnit('985.05'),
-						rateTypes: 'pClBuf',
+						amountOut: toUnit('990'),
+						rateTypes: 'pClRaw',
 					},
 				});
 
-				// P_DEX of 100, P_CL of 100, and CL_BUFFER of 50bps
+				// P_DEX of 100, P_CL of 100
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '100',
 						pCl: '100',
 					},
-					settings: {
-						clBuffer: '50', // bps
-					},
 					expected: {
-						amountOut: toUnit('995'),
-						rateTypes: 'pClBuf',
+						amountOut: toUnit('1000'),
+						rateTypes: 'pClRaw',
 					},
 				});
 
-				// P_DEX of 99, P_CL of 100, and CL_BUFFER of 200bps
+				// P_DEX of 99, P_CL of 100
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '99',
 						pCl: '100',
-					},
-					settings: {
-						clBuffer: '200', // bps
-					},
-					expected: {
-						amountOut: toUnit('980'),
-						rateTypes: 'pClBuf',
-					},
-				});
-
-				// P_DEX of 99, P_CL of 100, and CL_BUFFER of 0bps
-				itGivesTheCorrectRates({
-					inputs: { amountIn, srcToken, destToken },
-					rates: {
-						pDex: '99',
-						pCl: '100',
-					},
-					settings: {
-						clBuffer: '0', // bps
 					},
 					expected: {
 						amountOut: toUnit('990'),
@@ -1612,46 +1564,30 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// P_DEX of 100, P_CL of 100, and CL_BUFFER of 0bps
+				// P_DEX of 99, P_CL of 100
+				itGivesTheCorrectRates({
+					inputs: { amountIn, srcToken, destToken },
+					rates: {
+						pDex: '99',
+						pCl: '100',
+					},
+					expected: {
+						amountOut: toUnit('990'),
+						rateTypes: 'pDex',
+					},
+				});
+
+				// P_DEX of 100, P_CL of 100
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
 						pDex: '100',
 						pCl: '100',
 					},
-					settings: {
-						clBuffer: '0', // bps
-					},
 					expected: {
 						amountOut: toUnit('1000'),
-						rateTypes: ['pDex', 'pClBuf'],
+						rateTypes: ['pDex', 'pClRaw'],
 					},
-				});
-			});
-
-			describe('when both tokens have a price buffer set', () => {
-				const pCl = toUnit('100');
-				const pClAggregator = convertToDecimals(100, 8);
-				const pDex = pCl.mul(toBN('2'));
-				const susdBuffer = toUnit('0.003');
-				const sethBuffer = toUnit('0.005');
-
-				const amountIn = toUnit('10');
-
-				beforeEach(async () => {
-					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit(1));
-					await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, pDex);
-					await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
-				});
-
-				it('prices pClBuf with the highest buffer', async () => {
-					const rates = await instance.effectiveAtomicValueAndRates(sETH, amountIn, sUSD);
-					const higherBuffer = susdBuffer.gt(sethBuffer) ? susdBuffer : sethBuffer;
-					const expectedValue = multiplyDecimal(
-						multiplyDecimal(amountIn, pCl),
-						one.sub(higherBuffer)
-					);
-					assert.bnEqual(rates.value, expectedValue);
 				});
 			});
 
