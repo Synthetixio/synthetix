@@ -35,7 +35,7 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
-		FUTURES_MIN_KEEPER_FEE,
+		// FUTURES_MIN_KEEPER_FEE, // overridden
 		FUTURES_LIQUIDATION_FEE_RATIO,
 		FUTURES_LIQUIDATION_BUFFER_RATIO,
 		FUTURES_MIN_INITIAL_MARGIN,
@@ -50,6 +50,7 @@ const constantsOverrides = {
 	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: toWei('0.95'),
 	EXCHANGE_DYNAMIC_FEE_THRESHOLD: toWei('0.004'),
 	EXCHANGE_MAX_DYNAMIC_FEE: toWei('0.05'),
+	FUTURES_MIN_KEEPER_FEE: toWei('20'),
 };
 
 /**
@@ -1265,9 +1266,12 @@ const setupAllContracts = async ({
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setMinKeeperFee(FUTURES_MIN_KEEPER_FEE, {
-					from: owner,
-				}),
+				returnObj['FuturesMarketSettings'].setMinKeeperFee(
+					constantsOverrides.FUTURES_MIN_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
 				returnObj['FuturesMarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
