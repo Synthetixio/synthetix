@@ -208,5 +208,19 @@
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "10000000",
 		"paused": false
+	},
+	{
+		"marketKey": "sEUR",
+		"asset": "EUR",
+		"takerFee": "0.0015",
+		"makerFee": "0.0015",
+		"takerFeeNextPrice": "0.001",
+		"makerFeeNextPrice": "0.001",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "100000000",
+		"paused": false
 	}
 ]

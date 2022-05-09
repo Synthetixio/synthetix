@@ -58,5 +58,10 @@
 		"name": "sXAG",
 		"asset": "XAG",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sEUR",
+		"asset": "EUR",
+		"subclass": "MultiCollateralSynth"
 	}
 ]
