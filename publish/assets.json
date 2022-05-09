@@ -434,5 +434,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Matic"
+	},
+	"INR": {
+		"asset": "INR",
+		"category": "forex",
+		"sign": "₹",
+		"description": "Indian Rupee"
 	}
 }
