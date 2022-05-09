@@ -169,7 +169,7 @@
 	},
 	{
 		"marketKey": "sDYDX",
-		"asset": "APE",
+		"asset": "DYDX",
 		"takerFee": "0.065",
 		"makerFee": "0.055",
 		"takerFeeNextPrice": "0.045",
