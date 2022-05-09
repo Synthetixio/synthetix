@@ -998,7 +998,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger'],
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1023,6 +1023,7 @@ const setupAllContracts = async ({
 			deps: [
 				'AddressResolver',
 				'FuturesMarketManager',
+				'FuturesMarketSettings',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
