@@ -17,7 +17,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
-// basic views that are expected supoorted for v1 (IFuturesMarket) and v2 markets (IPerpsV2Market)
+// basic views that are expected to be supported by v1 (IFuturesMarket) and v2 markets (IPerpsV2Market)
 interface IMarketViews {
     function marketKey() external view returns (bytes32);
 
@@ -122,7 +122,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         uint total;
         bool anyIsInvalid;
         uint numOfMarkets = _markets.elements.length;
-        for (uint i; i < numOfMarkets; i++) {
+        for (uint i = 0; i < numOfMarkets; i++) {
             (uint marketDebt, bool invalid) = IMarketViews(_markets.elements[i]).marketDebt();
             total = total.add(marketDebt);
             anyIsInvalid = anyIsInvalid || invalid;
