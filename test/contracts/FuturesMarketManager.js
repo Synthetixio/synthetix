@@ -1,6 +1,7 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { updateAggregatorRates } = require('./helpers');
 const { setupAllContracts, setupContract } = require('./setup');
 const { toUnit } = require('../utils')();
 const { toBytes32, constants } = require('../..');
@@ -15,26 +16,54 @@ const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesMarketManager', accounts => {
-	let futuresMarketManager, sUSD, debtCache, synthetix, addressResolver;
+	let futuresMarketManager,
+		futuresMarketSettings,
+		// perpsSettings,
+		systemSettings,
+		exchangeRates,
+		exchangeCircuitBreaker,
+		sUSD,
+		debtCache,
+		synthetix,
+		addressResolver;
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const initialMint = toUnit('100000');
 
+	async function setPrice(asset, price, resetCircuitBreaker = true) {
+		await updateAggregatorRates(exchangeRates, [asset], [price]);
+		// reset the last price to the new price, so that we don't trip the breaker
+		// on various tests that change prices beyond the allowed deviation
+		if (resetCircuitBreaker) {
+			// flag defaults to true because the circuit breaker is not tested in most tests
+			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
+		}
+	}
+
 	before(async () => {
 		({
 			FuturesMarketManager: futuresMarketManager,
+			FuturesMarketSettings: futuresMarketSettings,
+			// PerpsV2Settings: perpsSettings,
+			ExchangeRates: exchangeRates,
+			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
 			DebtCache: debtCache,
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
+			feeds: ['BTC', 'ETH', 'LINK'],
 			contracts: [
 				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'PerpsV2Settings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
+				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
@@ -477,6 +506,132 @@ contract('FuturesMarketManager', accounts => {
 				assert.isFalse((await futuresMarketManager.totalDebt())[1]);
 				assert.isFalse((await debtCache.currentDebt())[1]);
 			});
+		});
+	});
+
+	// helpful views
+	describe('Market summaries', () => {
+		const traderInitialBalance = toUnit(1000000);
+		const assets = ['BTC', 'ETH', 'LINK'];
+		const marketKeys = [];
+		const markets = [];
+
+		beforeEach(async () => {
+			// Add v1 markets
+			for (const symbol of assets) {
+				const assetKey = toBytes32(symbol);
+				const marketKey = toBytes32('s' + symbol);
+
+				const market = await setupContract({
+					accounts,
+					contract: 'FuturesMarket',
+					args: [
+						addressResolver.address,
+						assetKey, // base asset
+						marketKey,
+					],
+				});
+
+				markets.push(market);
+				marketKeys.push(marketKey);
+
+				await addressResolver.rebuildCaches([market.address], { from: owner });
+
+				await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+				await setPrice(assetKey, toUnit(1000));
+
+				// Now that the market exists we can set the all its parameters
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					toUnit('0.005'), // 0.5% taker fee
+					toUnit('0.001'), // 0.1% maker fee
+					toUnit('0.0005'), // 0.05% taker fee next price
+					toUnit('0'), // 0% maker fee next price
+					toBN('2'), // 2 rounds next price confirm window
+					toUnit('5'), // 5x max leverage
+					toUnit('1000000'), // 1000000 max total margin
+					toUnit('0.2'), // 20% max funding rate
+					toUnit('100000'), // 100000 USD skewScaleUSD
+					{ from: owner }
+				);
+			}
+
+			// disable dynamic fee for simpler testing
+			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+
+			// Issue the traders some sUSD
+			await sUSD.issue(trader, traderInitialBalance);
+
+			// Update the rates to ensure they aren't stale
+			await setPrice(await markets[0].baseAsset(), toUnit(100));
+
+			// The traders take positions on market
+			await markets[0].transferMargin(toUnit('1000'), { from: trader });
+			await markets[0].modifyPosition(toUnit('5'), { from: trader });
+
+			await markets[1].transferMargin(toUnit('3000'), { from: trader });
+			await markets[1].modifyPosition(toUnit('4'), { from: trader });
+			await setPrice(await markets[1].baseAsset(), toUnit('999'));
+		});
+
+		it('For markets', async () => {
+			const market = markets[1];
+			const assetKey = toBytes32(assets[1]);
+			const marketKey = marketKeys[1];
+			const summary = (await futuresMarketManager.marketSummariesForKeys([marketKey]))[0];
+
+			const { price } = await market.assetPrice();
+
+			assert.equal(summary.market, market.address);
+			assert.equal(summary.marketKey, marketKey);
+			assert.equal(summary.asset, assetKey);
+			assert.equal(summary.price, price);
+			assert.equal(summary.marketSize, await market.marketSize());
+			assert.equal(summary.marketSkew, await market.marketSkew());
+			assert.equal(summary.currentFundingRate, await market.currentFundingRate());
+		});
+
+		it('For market keys', async () => {
+			const summaries = await futuresMarketManager.marketSummaries([
+				markets[0].address,
+				markets[1].address,
+			]);
+			const summariesForKeys = await futuresMarketManager.marketSummariesForKeys(
+				marketKeys.slice(0, 2)
+			);
+			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForKeys));
+		});
+
+		it('All summaries', async () => {
+			const summaries = await futuresMarketManager.allMarketSummaries();
+
+			const btcSummary = summaries.find(summary => summary.marketKey === toBytes32('sBTC'));
+			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('sETH'));
+			const linkSummary = summaries.find(summary => summary.marketKey === toBytes32('sLINK'));
+
+			assert.equal(btcSummary.market, markets[0].address);
+			assert.equal(btcSummary.asset, toBytes32(assets[0]));
+			let price = await markets[0].assetPrice();
+			assert.equal(btcSummary.price, price.price);
+			assert.equal(btcSummary.marketSize, await markets[0].marketSize());
+			assert.equal(btcSummary.marketSkew, await markets[0].marketSkew());
+			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
+
+			assert.equal(ethSummary.market, markets[1].address);
+			assert.equal(ethSummary.asset, toBytes32(assets[1]));
+			price = await markets[1].assetPrice();
+			assert.equal(ethSummary.price, price.price);
+			assert.equal(ethSummary.marketSize, await markets[1].marketSize());
+			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
+			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
+
+			assert.equal(linkSummary.market, await futuresMarketManager.marketForKey(toBytes32('sLINK')));
+			assert.equal(linkSummary.asset, toBytes32('LINK'));
+			assert.equal(linkSummary.price, toUnit(1000));
+			assert.equal(linkSummary.marketSize, toUnit(0));
+			assert.equal(linkSummary.marketSkew, toUnit(0));
+			assert.equal(linkSummary.currentFundingRate, toUnit(0));
 		});
 	});
 });
