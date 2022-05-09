@@ -123,7 +123,7 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sXAG",
@@ -137,7 +137,7 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sEUR",
@@ -151,7 +151,7 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sAPE",
