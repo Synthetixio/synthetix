@@ -46,5 +46,9 @@
 	"XAG": {
 		"asset": "XAG",
 		"feed": "0x166B620003Bc28243C75c1a98d39f25062C30234"
+	},
+	"APE": {
+		"asset": "APE",
+		"feed": "0x0d79df66BE487753B02D015Fb622DED7f0E9798d"
 	}
 }
