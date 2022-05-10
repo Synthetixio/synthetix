@@ -191,22 +191,18 @@ contract Migration_MirachOptimism is BaseMigration {
         futuresmarketsettings_i.setMakerFeeNextPrice("sAPE", 7500000000000000);
         futuresmarketsettings_i.setNextPriceConfirmWindow("sAPE", 2);
         futuresmarketsettings_i.setMaxLeverage("sAPE", 10000000000000000000);
-        futuresmarketsettings_i.setMaxMarketValueUSD("sAPE", 2000000000000000000000000);
+        futuresmarketsettings_i.setMaxMarketValueUSD("sAPE", 0);
         futuresmarketsettings_i.setMaxFundingRate("sAPE", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sAPE", 10000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sAPE", 80);
         futuresmarketsettings_i.setTakerFee("sDYDX", 6500000000000000);
         futuresmarketsettings_i.setMakerFee("sDYDX", 5500000000000000);
         futuresmarketsettings_i.setTakerFeeNextPrice("sDYDX", 4500000000000000);
         futuresmarketsettings_i.setMakerFeeNextPrice("sDYDX", 4500000000000000);
         futuresmarketsettings_i.setNextPriceConfirmWindow("sDYDX", 2);
         futuresmarketsettings_i.setMaxLeverage("sDYDX", 10000000000000000000);
-        futuresmarketsettings_i.setMaxMarketValueUSD("sDYDX", 2000000000000000000000000);
+        futuresmarketsettings_i.setMaxMarketValueUSD("sDYDX", 0);
         futuresmarketsettings_i.setMaxFundingRate("sDYDX", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sDYDX", 10000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sDYDX", 80);
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         nominateAll();
