@@ -48,5 +48,20 @@
 		"name": "sWTI",
 		"asset": "WTI",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sXAU",
+		"asset": "XAU",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sXAG",
+		"asset": "XAG",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sEUR",
+		"asset": "EUR",
+		"subclass": "MultiCollateralSynth"
 	}
 ]
