@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -31,7 +30,8 @@ contract Migration_MirachOptimism is BaseMigration {
     // ----------------------------
 
     // https://kovan-explorer.optimism.io/address/0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9
-    FuturesMarketManager public constant futuresmarketmanager_i = FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
+    FuturesMarketManager public constant futuresmarketmanager_i =
+        FuturesMarketManager(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
     // https://kovan-explorer.optimism.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6
     AddressResolver public constant addressresolver_i = AddressResolver(0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6);
     // https://kovan-explorer.optimism.io/address/0x0064A673267696049938AA47595dD0B3C2e705A1
@@ -43,7 +43,8 @@ contract Migration_MirachOptimism is BaseMigration {
     // https://kovan-explorer.optimism.io/address/0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C
     TokenState public constant tokenstatesynthetix_i = TokenState(0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C);
     // https://kovan-explorer.optimism.io/address/0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB
-    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB);
+    RewardsDistribution public constant rewardsdistribution_i =
+        RewardsDistribution(0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB);
     // https://kovan-explorer.optimism.io/address/0xc445310e8100AFE57F95782F97F890Aa52b7204e
     ExchangeRates public constant exchangerates_i = ExchangeRates(0xc445310e8100AFE57F95782F97F890Aa52b7204e);
     // https://kovan-explorer.optimism.io/address/0xF6f4f3D2E06Af9BC431b8bC869A2B138a5175C26
@@ -55,7 +56,8 @@ contract Migration_MirachOptimism is BaseMigration {
     // https://kovan-explorer.optimism.io/address/0x4B693b1F4fA6045B0e510e651F04496e13961f56
     Issuer public constant issuer_i = Issuer(0x4B693b1F4fA6045B0e510e651F04496e13961f56);
     // https://kovan-explorer.optimism.io/address/0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB
-    FuturesMarketSettings public constant futuresmarketsettings_i = FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
+    FuturesMarketSettings public constant futuresmarketsettings_i =
+        FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -90,19 +92,19 @@ contract Migration_MirachOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](13);
-        contracts[0]= address(futuresmarketmanager_i);
-        contracts[1]= address(addressresolver_i);
-        contracts[2]= address(proxysynthetix_i);
-        contracts[3]= address(exchangestate_i);
-        contracts[4]= address(systemstatus_i);
-        contracts[5]= address(tokenstatesynthetix_i);
-        contracts[6]= address(rewardsdistribution_i);
-        contracts[7]= address(exchangerates_i);
-        contracts[8]= address(tokenstatesuni_i);
-        contracts[9]= address(tokenstateseur_i);
-        contracts[10]= address(proxyseur_i);
-        contracts[11]= address(issuer_i);
-        contracts[12]= address(futuresmarketsettings_i);
+        contracts[0] = address(futuresmarketmanager_i);
+        contracts[1] = address(addressresolver_i);
+        contracts[2] = address(proxysynthetix_i);
+        contracts[3] = address(exchangestate_i);
+        contracts[4] = address(systemstatus_i);
+        contracts[5] = address(tokenstatesynthetix_i);
+        contracts[6] = address(rewardsdistribution_i);
+        contracts[7] = address(exchangerates_i);
+        contracts[8] = address(tokenstatesuni_i);
+        contracts[9] = address(tokenstateseur_i);
+        contracts[10] = address(proxyseur_i);
+        contracts[11] = address(issuer_i);
+        contracts[12] = address(futuresmarketsettings_i);
     }
 
     function migrate() external onlyOwner {
@@ -217,14 +219,13 @@ contract Migration_MirachOptimism is BaseMigration {
             returnOwnership(contracts[i]);
         }
     }
-    
+
     function futuresmarketmanager_addMarkets_1() internal {
         address[] memory futuresmarketmanager_addMarkets_marketsToAdd_1_0 = new address[](1);
         futuresmarketmanager_addMarkets_marketsToAdd_1_0[0] = address(new_FuturesMarketEUR_contract);
         futuresmarketmanager_i.addMarkets(futuresmarketmanager_addMarkets_marketsToAdd_1_0);
     }
 
-    
     function addressresolver_importAddresses_2() internal {
         bytes32[] memory addressresolver_importAddresses_names_2_0 = new bytes32[](12);
         addressresolver_importAddresses_names_2_0[0] = bytes32("SystemSettings");
@@ -252,10 +253,12 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_2_1[9] = address(new_FuturesMarketXAU_contract);
         addressresolver_importAddresses_destinations_2_1[10] = address(new_FuturesMarketXAG_contract);
         addressresolver_importAddresses_destinations_2_1[11] = address(new_FuturesMarketEUR_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_2_0, addressresolver_importAddresses_destinations_2_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_2_0,
+            addressresolver_importAddresses_destinations_2_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_3() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(new_SystemSettings_contract);
@@ -281,7 +284,6 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_3_0);
     }
 
-    
     function addressresolver_rebuildCaches_4() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_4_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_4_0[0] = MixinResolver(0x5e719d22C6ad679B28FE17E9cf56d3ad613a6723);
@@ -307,7 +309,6 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_4_0);
     }
 
-    
     function addressresolver_rebuildCaches_5() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_5_0 = new MixinResolver[](8);
         addressresolver_rebuildCaches_destinations_5_0[0] = MixinResolver(0x8C1D513188Cc86c1e8c9bE002F69f174016f1d17);
@@ -321,7 +322,6 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_5_0);
     }
 
-    
     function issuer_addSynths_48() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_48_0 = new ISynth[](13);
         issuer_addSynths_synthsToAdd_48_0[0] = ISynth(0x360bc0503362130aBE0b3393aC078B03d73a9EcA);
