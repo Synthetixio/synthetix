@@ -496,24 +496,6 @@ module.exports = async ({
 		}
 	}
 
-	const atomicPriceBuffer = await getDeployParameter('ATOMIC_PRICE_BUFFER');
-	if (SystemSettings.atomicPriceBuffer && atomicPriceBuffer) {
-		for (const [currencyKey, buffer] of Object.entries(atomicPriceBuffer)) {
-			await runStep({
-				contract: 'SystemSettings',
-				target: SystemSettings,
-				read: 'atomicPriceBuffer',
-				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
-				expected: input => input !== 0, // only change if zero
-				write: 'setAtomicPriceBuffer',
-				writeArg: [toBytes32(currencyKey), buffer],
-				comment:
-					'SIP-120 Set the price buffer applied to the base chainlink rate when comparing atomically',
-			});
-		}
-	}
-
 	const atomicVolatilityConsiderationWindow = await getDeployParameter(
 		'ATOMIC_VOLATILITY_CONSIDERATION_WINDOW'
 	);

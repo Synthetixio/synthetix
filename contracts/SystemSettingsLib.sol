@@ -373,19 +373,6 @@ library SystemSettingsLib {
         );
     }
 
-    function setAtomicPriceBuffer(
-        IFlexibleStorage flexibleStorage,
-        bytes32 settingName,
-        bytes32 _currencyKey,
-        uint _buffer
-    ) external {
-        flexibleStorage.setUIntValue(
-            SETTINGS_CONTRACT_NAME,
-            keccak256(abi.encodePacked(settingName, _currencyKey)),
-            _buffer
-        );
-    }
-
     function setAtomicVolatilityConsiderationWindow(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
