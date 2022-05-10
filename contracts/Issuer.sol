@@ -567,7 +567,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bytes32 currencyKey,
         address to,
         uint amount
-    ) external onlyTrustedMinters issuanceActive synthActive(currencyKey) {
+    ) external onlyTrustedMinters returns (bool rateInvalid) {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -578,14 +578,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[currencyKey].issue(to, amount);
 
         // Account for the issued debt in the cache
-        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
+        (uint rate, bool rateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount.multiplyDecimal(rate)));
+
+        // returned so that the caller can decide what to do if the rate is invalid
+        return rateInvalid;
     }
 
     function burnSynthsWithoutDebt(
         bytes32 currencyKey,
         address from,
         uint amount
-    ) external onlyTrustedMinters issuanceActive synthActive(currencyKey) {
+    ) external onlyTrustedMinters returns (bool rateInvalid) {
         require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot issue 0 synths");
 
@@ -594,8 +598,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Burn some synths
         synths[currencyKey].burn(from, amount);
 
-        // Account for the burnt debt in the cache.
-        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amount));
+        // Account for the burnt debt in the cache. If rate is invalid, the user won't be able to exchange
+        (uint rate, bool rateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amount.multiplyDecimal(rate)));
+
+        // returned so that the caller can decide what to do if the rate is invalid
+        return rateInvalid;
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
