@@ -572,8 +572,8 @@
 			"address": "0x1f674fe1827e8021c64D0e320B33f67360BdE652",
 			"source": "SystemSettings",
 			"link": "https://kovan.etherscan.io/address/0x1f674fe1827e8021c64D0e320B33f67360BdE652",
-			"timestamp": "2022-05-10T01:26:23.274Z",
-			"txn": "",
+			"timestamp": "2022-05-10T01:26:36.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x6b4e82965930c4794f67f3bcb64b4b0c670208b3b0e3d5ad02a8db205724cf57",
 			"network": "kovan"
 		},
 		"TradingRewards": {
@@ -707,8 +707,8 @@
 			"address": "0x6Eb1f66f9Bf4F265eC7c50Cd93D39d1f7C8AB200",
 			"source": "SynthetixBridgeToOptimism",
 			"link": "https://kovan.etherscan.io/address/0x6Eb1f66f9Bf4F265eC7c50Cd93D39d1f7C8AB200",
-			"timestamp": "2022-05-10T01:27:19.296Z",
-			"txn": "",
+			"timestamp": "2022-05-10T01:27:28.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xa2dd383c174753c3ee7ae5ae0a7c63aeb8760d272f66ca108ec97d9efb2afeaf",
 			"network": "kovan"
 		},
 		"ShortingRewardssETH": {
@@ -824,8 +824,8 @@
 			"address": "0x9ba73DAa27f8686f8dD4915f345A89B4b0Be730A",
 			"source": "SystemSettingsLib",
 			"link": "https://kovan.etherscan.io/address/0x9ba73DAa27f8686f8dD4915f345A89B4b0Be730A",
-			"timestamp": "2022-05-10T01:26:08.331Z",
-			"txn": "",
+			"timestamp": "2022-05-10T01:26:20.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x43fd102c15d7d32c3a260e5e61eb1a1b6cd28c17f3a8870a55369671cdbb8173",
 			"network": "kovan"
 		},
 		"SynthetixDebtShare": {
