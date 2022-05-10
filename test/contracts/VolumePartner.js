@@ -2,17 +2,18 @@ const { contract } = require('hardhat');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toBytes32, constants: { ZERO_ADDRESS } } = require('../..');
-const { toUnit } = require('../utils')();
+const { setupPriceAggregators, setExchangeFeeRateForSynths, updateAggregatorRates } = require('./helpers');
+const { toUnit, toBN } = require('../utils')();
 
 contract('VolumePartner', accounts => {
     const [deployerAccount, owner, relayer, account1, account2] = accounts;
-    let volumePartner, systemSettings;
+    let volumePartner, systemSettings, exchanger, exchangeRates, synthetix, sUSDContract;
 
     beforeEach(async () => {
-        ({ SystemSettings: systemSettings, VolumePartner: volumePartner } = await setupAllContracts({
+        ({ SystemSettings: systemSettings, VolumePartner: volumePartner, Exchanger: exchanger, ExchangeRates: exchangeRates, Synthetix: synthetix, SynthsUSD: sUSDContract } = await setupAllContracts({
             accounts,
             synths: ['sUSD', 'sAUD'],
-            contracts: ['FuturesMarketManager', 'Exchanger', 'Issuer', 'VolumePartner']
+            contracts: ['FuturesMarketManager', 'Exchanger', 'Issuer', 'VolumePartner', 'ExchangeRates', 'Synthetix']
         }));
         await systemSettings.setMaxVolumePartnerFee(toUnit('0.1'), {
             from: owner,
@@ -138,6 +139,58 @@ contract('VolumePartner', accounts => {
         const resp3 = await volumePartner.volumePartnerData(toBytes32('CODE7'))
         assert.bnEqual(resp3.owner, account2);
         assert.bnEqual(resp3.nominatedOwner, ZERO_ADDRESS);
+    })
+
+    describe('Accruing fees', () => {
+
+        it('Cannot be called from an external address', async () => {
+            await assert.revert(
+                volumePartner.accrueFee(toBytes32('CODE8'), 100, { from: account1 }),
+                'Only Internal Contracts'
+            );
+        })
+
+        it.only('Can accrue fees from a normal exchange', async () => {
+            const [sUSD, sAUD] = ['sUSD', 'sAUD'].map(toBytes32);
+            await setupPriceAggregators(exchangeRates, owner, [sAUD]);
+
+            await updateAggregatorRates(exchangeRates, [sAUD], ['0.5'].map(toUnit));
+            const exchangeFeeRate = toUnit('0.02');
+            const synthKeys = [sAUD];
+            await setExchangeFeeRateForSynths({
+                owner,
+                systemSettings,
+                synthKeys,
+                exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+            });
+
+            await volumePartner.registerVolumePartnerCode(toBytes32('CODE8'), account1, toUnit('0.01'));
+
+            const amount = toUnit('10000');
+            await sUSDContract.issue(account1, amount);
+            const { exchangeFeeRate: exchangeFeeRate1 } = await exchanger.getAmountsForExchangeWithTrackingCode(
+                amount,
+                sUSD,
+                sAUD,
+                toBytes32('CODE8')
+            );
+            assert.bnEqual(exchangeFeeRate1, toUnit('0.03')); // Sum of fee rates
+
+            await synthetix.exchangeWithTracking(sUSD, amount, sAUD, ZERO_ADDRESS, toBytes32('CODE8'), { from: account1 });
+
+            const resp1 = await volumePartner.volumePartnerData(toBytes32('CODE8'))
+            assert.bnEqual(resp1.balance, amount.div(toBN(100))) // Should be 1% of the exchange amount, per toUnit('0.01')
+        });
+
+        it('Can accrue fees from an atomic exchange', async () => {
+            // T.C.
+
+        });
+    })
+
+    describe('Claiming fees', () => {
+        // T.C.
+
     })
 
 })

@@ -100,7 +100,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
 
     function accrueFee(bytes32 volumePartnerCode, uint amount) external onlyInternalContracts {
         issuer().synths(sUSD).issue(FEE_ADDRESS, amount);
-        volumePartnerData[volumePartnerCode].balance.add(amount);
+        volumePartnerData[volumePartnerCode].balance = volumePartnerData[volumePartnerCode].balance.add(amount);
         emit FeesAccrued(volumePartnerCode, msg.sender, amount);
     }
 
