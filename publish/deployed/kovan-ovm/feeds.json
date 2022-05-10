@@ -50,5 +50,9 @@
 	"APE": {
 		"asset": "APE",
 		"feed": "0x0d79df66BE487753B02D015Fb622DED7f0E9798d"
+	},
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0x7e3786902Bf8EBC196d9a5f06Da4d1Bc0E62D432"
 	}
 }
