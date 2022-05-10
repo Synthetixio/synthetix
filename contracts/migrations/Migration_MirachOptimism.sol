@@ -9,9 +9,6 @@ import "../SystemStatus.sol";
 import "../TokenState.sol";
 import "../RewardsDistribution.sol";
 import "../ExchangeRates.sol";
-import "../TokenState.sol";
-import "../TokenState.sol";
-import "../ProxyERC20.sol";
 import "../Issuer.sol";
 import "../FuturesMarketSettings.sol";
 
@@ -45,16 +42,10 @@ contract Migration_MirachOptimism is BaseMigration {
     // https://kovan-explorer.optimism.io/address/0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB
     RewardsDistribution public constant rewardsdistribution_i =
         RewardsDistribution(0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB);
-    // https://kovan-explorer.optimism.io/address/0xc445310e8100AFE57F95782F97F890Aa52b7204e
-    ExchangeRates public constant exchangerates_i = ExchangeRates(0xc445310e8100AFE57F95782F97F890Aa52b7204e);
-    // https://kovan-explorer.optimism.io/address/0xF6f4f3D2E06Af9BC431b8bC869A2B138a5175C26
-    TokenState public constant tokenstatesuni_i = TokenState(0xF6f4f3D2E06Af9BC431b8bC869A2B138a5175C26);
-    // https://kovan-explorer.optimism.io/address/0xB16748B76C430F7cC9d8dbE617A77f09e49B482B
-    TokenState public constant tokenstateseur_i = TokenState(0xB16748B76C430F7cC9d8dbE617A77f09e49B482B);
-    // https://kovan-explorer.optimism.io/address/0xafD28E395D2865862D06A3d9cb7d4189e09c4Df2
-    ProxyERC20 public constant proxyseur_i = ProxyERC20(0xafD28E395D2865862D06A3d9cb7d4189e09c4Df2);
-    // https://kovan-explorer.optimism.io/address/0x4B693b1F4fA6045B0e510e651F04496e13961f56
-    Issuer public constant issuer_i = Issuer(0x4B693b1F4fA6045B0e510e651F04496e13961f56);
+    // https://kovan-explorer.optimism.io/address/0x37488De9A5Eaf311840D4B21a5B35A16bcb69603
+    ExchangeRates public constant exchangerates_i = ExchangeRates(0x37488De9A5Eaf311840D4B21a5B35A16bcb69603);
+    // https://kovan-explorer.optimism.io/address/0xe964C44F4f2a2755BcC789743aD0566DE2994364
+    Issuer public constant issuer_i = Issuer(0xe964C44F4f2a2755BcC789743aD0566DE2994364);
     // https://kovan-explorer.optimism.io/address/0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB
     FuturesMarketSettings public constant futuresmarketsettings_i =
         FuturesMarketSettings(0xEA567e05844ba0e257D80F6b579a1C2beB82bfCB);
@@ -63,35 +54,23 @@ contract Migration_MirachOptimism is BaseMigration {
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://kovan-explorer.optimism.io/address/0xF2eb8F0E482aF001640CADCf114CaeE83cEb4181
-    address public constant new_SystemSettings_contract = 0xF2eb8F0E482aF001640CADCf114CaeE83cEb4181;
-    // https://kovan-explorer.optimism.io/address/0xc445310e8100AFE57F95782F97F890Aa52b7204e
-    address public constant new_ExchangeRates_contract = 0xc445310e8100AFE57F95782F97F890Aa52b7204e;
-    // https://kovan-explorer.optimism.io/address/0x6Be0Af96D79f13a98692e01f23Ec4fcd364104a8
-    address public constant new_Synthetix_contract = 0x6Be0Af96D79f13a98692e01f23Ec4fcd364104a8;
-    // https://kovan-explorer.optimism.io/address/0x509375Df1672C573B861E2ee9baF7CC08eeA3607
-    address public constant new_Exchanger_contract = 0x509375Df1672C573B861E2ee9baF7CC08eeA3607;
-    // https://kovan-explorer.optimism.io/address/0x4B693b1F4fA6045B0e510e651F04496e13961f56
-    address public constant new_Issuer_contract = 0x4B693b1F4fA6045B0e510e651F04496e13961f56;
-    // https://kovan-explorer.optimism.io/address/0xd2D5ba8fCCb2B7d5432B86713dEd5b125d2Ad98c
-    address public constant new_SynthetixBridgeToBase_contract = 0xd2D5ba8fCCb2B7d5432B86713dEd5b125d2Ad98c;
-    // https://kovan-explorer.optimism.io/address/0xB16748B76C430F7cC9d8dbE617A77f09e49B482B
-    address public constant new_TokenStatesEUR_contract = 0xB16748B76C430F7cC9d8dbE617A77f09e49B482B;
-    // https://kovan-explorer.optimism.io/address/0xafD28E395D2865862D06A3d9cb7d4189e09c4Df2
-    address public constant new_ProxysEUR_contract = 0xafD28E395D2865862D06A3d9cb7d4189e09c4Df2;
-    // https://kovan-explorer.optimism.io/address/0x2eC164E5b91f9627193C0268F1462327e3D7EC68
-    address public constant new_SynthsEUR_contract = 0x2eC164E5b91f9627193C0268F1462327e3D7EC68;
-    // https://kovan-explorer.optimism.io/address/0x86BE944F673D77B93dc5F19655C915b002d42beb
-    address public constant new_FuturesMarketXAU_contract = 0x86BE944F673D77B93dc5F19655C915b002d42beb;
-    // https://kovan-explorer.optimism.io/address/0x944E3E0cDE5daB927AB174bc22C4c0dA013436B6
-    address public constant new_FuturesMarketXAG_contract = 0x944E3E0cDE5daB927AB174bc22C4c0dA013436B6;
-    // https://kovan-explorer.optimism.io/address/0xd33773480c9b05FDC22359d51992DCE704bDa1d2
-    address public constant new_FuturesMarketEUR_contract = 0xd33773480c9b05FDC22359d51992DCE704bDa1d2;
+    // https://kovan-explorer.optimism.io/address/0x37488De9A5Eaf311840D4B21a5B35A16bcb69603
+    address public constant new_ExchangeRates_contract = 0x37488De9A5Eaf311840D4B21a5B35A16bcb69603;
+    // https://kovan-explorer.optimism.io/address/0x218Cc3767CA033bcAc447D7522064670794B1007
+    address public constant new_SystemSettings_contract = 0x218Cc3767CA033bcAc447D7522064670794B1007;
+    // https://kovan-explorer.optimism.io/address/0xFAB9B9350fD9b3F00E6e6332229C61ca3AcA487c
+    address public constant new_Synthetix_contract = 0xFAB9B9350fD9b3F00E6e6332229C61ca3AcA487c;
+    // https://kovan-explorer.optimism.io/address/0xA76E33cec81a985033430df1A9f1786479Fb2c87
+    address public constant new_Exchanger_contract = 0xA76E33cec81a985033430df1A9f1786479Fb2c87;
+    // https://kovan-explorer.optimism.io/address/0xe964C44F4f2a2755BcC789743aD0566DE2994364
+    address public constant new_Issuer_contract = 0xe964C44F4f2a2755BcC789743aD0566DE2994364;
+    // https://kovan-explorer.optimism.io/address/0x5b643DFC67f9701929A0b55f23e0Af61df50E75D
+    address public constant new_SynthetixBridgeToBase_contract = 0x5b643DFC67f9701929A0b55f23e0Af61df50E75D;
 
     constructor() public BaseMigration(OWNER) {}
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
-        contracts = new address[](13);
+        contracts = new address[](10);
         contracts[0] = address(futuresmarketmanager_i);
         contracts[1] = address(addressresolver_i);
         contracts[2] = address(proxysynthetix_i);
@@ -100,11 +79,8 @@ contract Migration_MirachOptimism is BaseMigration {
         contracts[5] = address(tokenstatesynthetix_i);
         contracts[6] = address(rewardsdistribution_i);
         contracts[7] = address(exchangerates_i);
-        contracts[8] = address(tokenstatesuni_i);
-        contracts[9] = address(tokenstateseur_i);
-        contracts[10] = address(proxyseur_i);
-        contracts[11] = address(issuer_i);
-        contracts[12] = address(futuresmarketsettings_i);
+        contracts[8] = address(issuer_i);
+        contracts[9] = address(futuresmarketsettings_i);
     }
 
     function migrate() external onlyOwner {
@@ -112,6 +88,7 @@ contract Migration_MirachOptimism is BaseMigration {
         acceptAll();
 
         // MIGRATION
+        futuresmarketmanager_removeMarkets_0();
         futuresmarketmanager_addMarkets_1();
         // Import all new contracts into the address resolver;
         addressresolver_importAddresses_2();
@@ -165,8 +142,6 @@ contract Migration_MirachOptimism is BaseMigration {
         exchangerates_i.addAggregator("sBTC", 0xd9BdB42229F1aefe47Cdf028408272686445D3ff);
         // Ensure the ExchangeRates contract has the feed for sLINK;
         exchangerates_i.addAggregator("sLINK", 0x4e5A8fe9d533dec45C7CB57D548B049785BA9861);
-        // Ensure the sUNI synth can write to its TokenState;
-        tokenstatesuni_i.setAssociatedContract(0x99Fd0EbBE8144591F75A12E3E0edcF6d51DfF877);
         // Ensure the ExchangeRates contract has the feed for sUNI;
         exchangerates_i.addAggregator("sUNI", 0xbac904786e476632e75fC6214C797fA80cce9311);
         // Ensure the ExchangeRates contract has the feed for sAAVE;
@@ -183,24 +158,15 @@ contract Migration_MirachOptimism is BaseMigration {
         exchangerates_i.addAggregator("sXAU", 0x7b219F57a8e9C7303204Af681e9fA69d17ef626f);
         // Ensure the ExchangeRates contract has the feed for sXAG;
         exchangerates_i.addAggregator("sXAG", 0x166B620003Bc28243C75c1a98d39f25062C30234);
-        // Ensure the sEUR synth can write to its TokenState;
-        tokenstateseur_i.setAssociatedContract(new_SynthsEUR_contract);
-        // Ensure the sEUR synth Proxy is correctly connected to the Synth;
-        proxyseur_i.setTarget(Proxyable(new_SynthsEUR_contract));
         // Ensure the ExchangeRates contract has the feed for sEUR;
         exchangerates_i.addAggregator("sEUR", 0x7e3786902Bf8EBC196d9a5f06Da4d1Bc0E62D432);
         // Add synths to the Issuer contract - batch 1;
-        issuer_addSynths_48();
-        futuresmarketsettings_i.setTakerFee("sWTI", 5000000000000000);
-        futuresmarketsettings_i.setTakerFee("sEUR", 1500000000000000);
-        futuresmarketsettings_i.setMakerFee("sEUR", 1500000000000000);
-        futuresmarketsettings_i.setTakerFeeNextPrice("sEUR", 1000000000000000);
-        futuresmarketsettings_i.setMakerFeeNextPrice("sEUR", 1000000000000000);
-        futuresmarketsettings_i.setNextPriceConfirmWindow("sEUR", 2);
-        futuresmarketsettings_i.setMaxLeverage("sEUR", 10000000000000000000);
-        futuresmarketsettings_i.setMaxMarketValueUSD("sEUR", 1000000000000000000000000);
-        futuresmarketsettings_i.setMaxFundingRate("sEUR", 100000000000000000);
-        futuresmarketsettings_i.setSkewScaleUSD("sEUR", 100000000000000000000000000);
+        issuer_addSynths_43();
+        futuresmarketsettings_i.setTakerFee("sAPE", 85000000000000000);
+        futuresmarketsettings_i.setMakerFee("sAPE", 75000000000000000);
+        futuresmarketsettings_i.setTakerFeeNextPrice("sAPE", 65000000000000000);
+        futuresmarketsettings_i.setMakerFeeNextPrice("sAPE", 65000000000000000);
+        futuresmarketsettings_i.setSkewScaleUSD("sAPE", 10000000000000000000000000);
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         nominateAll();
@@ -220,39 +186,40 @@ contract Migration_MirachOptimism is BaseMigration {
         }
     }
 
+    function futuresmarketmanager_removeMarkets_0() internal {
+        address[] memory futuresmarketmanager_removeMarkets_marketsToRemove_0_0 = new address[](2);
+        futuresmarketmanager_removeMarkets_marketsToRemove_0_0[0] = address(0x01aac5868ee944F162C347FE9d43aa3229267CBd);
+        futuresmarketmanager_removeMarkets_marketsToRemove_0_0[1] = address(0x6D0C13aF650bA81798cf48632506Fcc3A38Ed644);
+        futuresmarketmanager_i.removeMarkets(futuresmarketmanager_removeMarkets_marketsToRemove_0_0);
+    }
+
     function futuresmarketmanager_addMarkets_1() internal {
-        address[] memory futuresmarketmanager_addMarkets_marketsToAdd_1_0 = new address[](1);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[0] = address(new_FuturesMarketEUR_contract);
+        address[] memory futuresmarketmanager_addMarkets_marketsToAdd_1_0 = new address[](7);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[0] = address(0x86BE944F673D77B93dc5F19655C915b002d42beb);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[1] = address(0x944E3E0cDE5daB927AB174bc22C4c0dA013436B6);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[2] = address(0x8C1D513188Cc86c1e8c9bE002F69f174016f1d17);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[3] = address(0x522aBb55e6f1e1E9E5Fccf5e8f3FeF3e31093530);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[4] = address(0x72CeE2960b65aa4d37DDb89b83b2adeB64d34d2E);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[5] = address(0xe6c5F1dBde6aB671c60E511c2dC064f5F43BF988);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[6] = address(0x8e5691736079FebEfD8A634FC0d6eE0478Cc940b);
         futuresmarketmanager_i.addMarkets(futuresmarketmanager_addMarkets_marketsToAdd_1_0);
     }
 
     function addressresolver_importAddresses_2() internal {
-        bytes32[] memory addressresolver_importAddresses_names_2_0 = new bytes32[](12);
-        addressresolver_importAddresses_names_2_0[0] = bytes32("SystemSettings");
-        addressresolver_importAddresses_names_2_0[1] = bytes32("ExchangeRates");
+        bytes32[] memory addressresolver_importAddresses_names_2_0 = new bytes32[](6);
+        addressresolver_importAddresses_names_2_0[0] = bytes32("ExchangeRates");
+        addressresolver_importAddresses_names_2_0[1] = bytes32("SystemSettings");
         addressresolver_importAddresses_names_2_0[2] = bytes32("Synthetix");
         addressresolver_importAddresses_names_2_0[3] = bytes32("Exchanger");
         addressresolver_importAddresses_names_2_0[4] = bytes32("Issuer");
         addressresolver_importAddresses_names_2_0[5] = bytes32("SynthetixBridgeToBase");
-        addressresolver_importAddresses_names_2_0[6] = bytes32("TokenStatesEUR");
-        addressresolver_importAddresses_names_2_0[7] = bytes32("ProxysEUR");
-        addressresolver_importAddresses_names_2_0[8] = bytes32("SynthsEUR");
-        addressresolver_importAddresses_names_2_0[9] = bytes32("FuturesMarketXAU");
-        addressresolver_importAddresses_names_2_0[10] = bytes32("FuturesMarketXAG");
-        addressresolver_importAddresses_names_2_0[11] = bytes32("FuturesMarketEUR");
-        address[] memory addressresolver_importAddresses_destinations_2_1 = new address[](12);
-        addressresolver_importAddresses_destinations_2_1[0] = address(new_SystemSettings_contract);
-        addressresolver_importAddresses_destinations_2_1[1] = address(new_ExchangeRates_contract);
+        address[] memory addressresolver_importAddresses_destinations_2_1 = new address[](6);
+        addressresolver_importAddresses_destinations_2_1[0] = address(new_ExchangeRates_contract);
+        addressresolver_importAddresses_destinations_2_1[1] = address(new_SystemSettings_contract);
         addressresolver_importAddresses_destinations_2_1[2] = address(new_Synthetix_contract);
         addressresolver_importAddresses_destinations_2_1[3] = address(new_Exchanger_contract);
         addressresolver_importAddresses_destinations_2_1[4] = address(new_Issuer_contract);
         addressresolver_importAddresses_destinations_2_1[5] = address(new_SynthetixBridgeToBase_contract);
-        addressresolver_importAddresses_destinations_2_1[6] = address(new_TokenStatesEUR_contract);
-        addressresolver_importAddresses_destinations_2_1[7] = address(new_ProxysEUR_contract);
-        addressresolver_importAddresses_destinations_2_1[8] = address(new_SynthsEUR_contract);
-        addressresolver_importAddresses_destinations_2_1[9] = address(new_FuturesMarketXAU_contract);
-        addressresolver_importAddresses_destinations_2_1[10] = address(new_FuturesMarketXAG_contract);
-        addressresolver_importAddresses_destinations_2_1[11] = address(new_FuturesMarketEUR_contract);
         addressresolver_i.importAddresses(
             addressresolver_importAddresses_names_2_0,
             addressresolver_importAddresses_destinations_2_1
@@ -261,19 +228,19 @@ contract Migration_MirachOptimism is BaseMigration {
 
     function addressresolver_rebuildCaches_3() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](20);
-        addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(new_SystemSettings_contract);
-        addressresolver_rebuildCaches_destinations_3_0[1] = MixinResolver(0x20540E5EB1faff0DB6B1Dc5f0427C27f3852e2Ab);
-        addressresolver_rebuildCaches_destinations_3_0[2] = MixinResolver(0xCD203357dA8c641BA99765ba0583BE4Ccd8D2121);
-        addressresolver_rebuildCaches_destinations_3_0[3] = MixinResolver(new_Exchanger_contract);
-        addressresolver_rebuildCaches_destinations_3_0[4] = MixinResolver(0xe345a6eE3e7ED9ef3F394DB658ca69a2d7A614A8);
-        addressresolver_rebuildCaches_destinations_3_0[5] = MixinResolver(new_Issuer_contract);
-        addressresolver_rebuildCaches_destinations_3_0[6] = MixinResolver(new_SynthetixBridgeToBase_contract);
-        addressresolver_rebuildCaches_destinations_3_0[7] = MixinResolver(0x5c9AD159E8fC9DC2dD081872dA56961e0B43d6AD);
-        addressresolver_rebuildCaches_destinations_3_0[8] = MixinResolver(0xd98Ca2C4EFeFADC5Fe1e80ee4b872086E3Eac01C);
-        addressresolver_rebuildCaches_destinations_3_0[9] = MixinResolver(0xc7960401a5Ca5A201d41Cf6532C7d2803f8D5Ce4);
-        addressresolver_rebuildCaches_destinations_3_0[10] = MixinResolver(0xD170549da4115c39EC42D6101eAAE5604F26150d);
-        addressresolver_rebuildCaches_destinations_3_0[11] = MixinResolver(0x5D3f869d8D54C6b987225feaC137851Eb93b2C06);
-        addressresolver_rebuildCaches_destinations_3_0[12] = MixinResolver(new_ExchangeRates_contract);
+        addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(0x20540E5EB1faff0DB6B1Dc5f0427C27f3852e2Ab);
+        addressresolver_rebuildCaches_destinations_3_0[1] = MixinResolver(0xCD203357dA8c641BA99765ba0583BE4Ccd8D2121);
+        addressresolver_rebuildCaches_destinations_3_0[2] = MixinResolver(new_Exchanger_contract);
+        addressresolver_rebuildCaches_destinations_3_0[3] = MixinResolver(0xe345a6eE3e7ED9ef3F394DB658ca69a2d7A614A8);
+        addressresolver_rebuildCaches_destinations_3_0[4] = MixinResolver(new_Issuer_contract);
+        addressresolver_rebuildCaches_destinations_3_0[5] = MixinResolver(new_SynthetixBridgeToBase_contract);
+        addressresolver_rebuildCaches_destinations_3_0[6] = MixinResolver(0x5c9AD159E8fC9DC2dD081872dA56961e0B43d6AD);
+        addressresolver_rebuildCaches_destinations_3_0[7] = MixinResolver(0xd98Ca2C4EFeFADC5Fe1e80ee4b872086E3Eac01C);
+        addressresolver_rebuildCaches_destinations_3_0[8] = MixinResolver(0xc7960401a5Ca5A201d41Cf6532C7d2803f8D5Ce4);
+        addressresolver_rebuildCaches_destinations_3_0[9] = MixinResolver(0xD170549da4115c39EC42D6101eAAE5604F26150d);
+        addressresolver_rebuildCaches_destinations_3_0[10] = MixinResolver(0x5D3f869d8D54C6b987225feaC137851Eb93b2C06);
+        addressresolver_rebuildCaches_destinations_3_0[11] = MixinResolver(new_ExchangeRates_contract);
+        addressresolver_rebuildCaches_destinations_3_0[12] = MixinResolver(new_SystemSettings_contract);
         addressresolver_rebuildCaches_destinations_3_0[13] = MixinResolver(0xB613d148E47525478bD8A91eF7Cf2F7F63d81858);
         addressresolver_rebuildCaches_destinations_3_0[14] = MixinResolver(0xEC4075Ff2452907FCf86c8b7EA5B0B378e187373);
         addressresolver_rebuildCaches_destinations_3_0[15] = MixinResolver(new_Synthetix_contract);
@@ -295,7 +262,7 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_rebuildCaches_destinations_4_0[6] = MixinResolver(0x8e08BF90B979698AdB6d722E9e27263f36366414);
         addressresolver_rebuildCaches_destinations_4_0[7] = MixinResolver(0x8B1CC80c79025477Ab1665284ff08d731FcbC3cF);
         addressresolver_rebuildCaches_destinations_4_0[8] = MixinResolver(0xf94f90B6BeEEb67327581Fe104a1A078B7AC8F89);
-        addressresolver_rebuildCaches_destinations_4_0[9] = MixinResolver(new_SynthsEUR_contract);
+        addressresolver_rebuildCaches_destinations_4_0[9] = MixinResolver(0x2eC164E5b91f9627193C0268F1462327e3D7EC68);
         addressresolver_rebuildCaches_destinations_4_0[10] = MixinResolver(0xA3e4c049dA5Fe1c5e046fb3dCe270297D9b2c6a9);
         addressresolver_rebuildCaches_destinations_4_0[11] = MixinResolver(0x6bF98Cf7eC95EB0fB90d277515e040D32B104e1C);
         addressresolver_rebuildCaches_destinations_4_0[12] = MixinResolver(0x698E403AaC625345C6E5fC2D0042274350bEDf78);
@@ -303,8 +270,8 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_rebuildCaches_destinations_4_0[14] = MixinResolver(0x1991bEA1eB08a78701F3330934B2301Fc6520AbA);
         addressresolver_rebuildCaches_destinations_4_0[15] = MixinResolver(0xc00E7C2Bd7B0Fb95DbBF10d2d336399A939099ee);
         addressresolver_rebuildCaches_destinations_4_0[16] = MixinResolver(0x8e0df45f66E620F85dF1D0490Cd2b19E57a4232A);
-        addressresolver_rebuildCaches_destinations_4_0[17] = MixinResolver(new_FuturesMarketXAU_contract);
-        addressresolver_rebuildCaches_destinations_4_0[18] = MixinResolver(new_FuturesMarketXAG_contract);
+        addressresolver_rebuildCaches_destinations_4_0[17] = MixinResolver(0x86BE944F673D77B93dc5F19655C915b002d42beb);
+        addressresolver_rebuildCaches_destinations_4_0[18] = MixinResolver(0x944E3E0cDE5daB927AB174bc22C4c0dA013436B6);
         addressresolver_rebuildCaches_destinations_4_0[19] = MixinResolver(0x929d8EC9A885cdCfdF28EA31B4A356532757DE5E);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_4_0);
     }
@@ -316,27 +283,27 @@ contract Migration_MirachOptimism is BaseMigration {
         addressresolver_rebuildCaches_destinations_5_0[2] = MixinResolver(0x72CeE2960b65aa4d37DDb89b83b2adeB64d34d2E);
         addressresolver_rebuildCaches_destinations_5_0[3] = MixinResolver(0xe6c5F1dBde6aB671c60E511c2dC064f5F43BF988);
         addressresolver_rebuildCaches_destinations_5_0[4] = MixinResolver(0x8e5691736079FebEfD8A634FC0d6eE0478Cc940b);
-        addressresolver_rebuildCaches_destinations_5_0[5] = MixinResolver(new_FuturesMarketEUR_contract);
+        addressresolver_rebuildCaches_destinations_5_0[5] = MixinResolver(0xd33773480c9b05FDC22359d51992DCE704bDa1d2);
         addressresolver_rebuildCaches_destinations_5_0[6] = MixinResolver(0xEEc90126956e4de2394Ec6Bd1ce8dCc1097D32C9);
         addressresolver_rebuildCaches_destinations_5_0[7] = MixinResolver(0x057Af46c8f48D9bc574d043e46DBF33fbaE023EA);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_5_0);
     }
 
-    function issuer_addSynths_48() internal {
-        ISynth[] memory issuer_addSynths_synthsToAdd_48_0 = new ISynth[](13);
-        issuer_addSynths_synthsToAdd_48_0[0] = ISynth(0x360bc0503362130aBE0b3393aC078B03d73a9EcA);
-        issuer_addSynths_synthsToAdd_48_0[1] = ISynth(0x9745E33Fa3151065568385f915C48d9E538B42a2);
-        issuer_addSynths_synthsToAdd_48_0[2] = ISynth(0x32FebC59E02FA5DaFb0A5e6D603a0693c53A0F34);
-        issuer_addSynths_synthsToAdd_48_0[3] = ISynth(0x5e719d22C6ad679B28FE17E9cf56d3ad613a6723);
-        issuer_addSynths_synthsToAdd_48_0[4] = ISynth(0x99Fd0EbBE8144591F75A12E3E0edcF6d51DfF877);
-        issuer_addSynths_synthsToAdd_48_0[5] = ISynth(0xcDcD73dE9cc2B0A7285B75765Ef7b957963E57aa);
-        issuer_addSynths_synthsToAdd_48_0[6] = ISynth(0xBA097Fa1ABF647995154c8e9D77CEd04123b593f);
-        issuer_addSynths_synthsToAdd_48_0[7] = ISynth(0xdA730bF21BA6360af34cF065B042978017f2bf49);
-        issuer_addSynths_synthsToAdd_48_0[8] = ISynth(0xDbcfd6F265528d08FB7faA0934e18cf49A03AD65);
-        issuer_addSynths_synthsToAdd_48_0[9] = ISynth(0x8e08BF90B979698AdB6d722E9e27263f36366414);
-        issuer_addSynths_synthsToAdd_48_0[10] = ISynth(0x8B1CC80c79025477Ab1665284ff08d731FcbC3cF);
-        issuer_addSynths_synthsToAdd_48_0[11] = ISynth(0xf94f90B6BeEEb67327581Fe104a1A078B7AC8F89);
-        issuer_addSynths_synthsToAdd_48_0[12] = ISynth(new_SynthsEUR_contract);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_48_0);
+    function issuer_addSynths_43() internal {
+        ISynth[] memory issuer_addSynths_synthsToAdd_43_0 = new ISynth[](13);
+        issuer_addSynths_synthsToAdd_43_0[0] = ISynth(0x360bc0503362130aBE0b3393aC078B03d73a9EcA);
+        issuer_addSynths_synthsToAdd_43_0[1] = ISynth(0x9745E33Fa3151065568385f915C48d9E538B42a2);
+        issuer_addSynths_synthsToAdd_43_0[2] = ISynth(0x32FebC59E02FA5DaFb0A5e6D603a0693c53A0F34);
+        issuer_addSynths_synthsToAdd_43_0[3] = ISynth(0x5e719d22C6ad679B28FE17E9cf56d3ad613a6723);
+        issuer_addSynths_synthsToAdd_43_0[4] = ISynth(0x99Fd0EbBE8144591F75A12E3E0edcF6d51DfF877);
+        issuer_addSynths_synthsToAdd_43_0[5] = ISynth(0xcDcD73dE9cc2B0A7285B75765Ef7b957963E57aa);
+        issuer_addSynths_synthsToAdd_43_0[6] = ISynth(0xBA097Fa1ABF647995154c8e9D77CEd04123b593f);
+        issuer_addSynths_synthsToAdd_43_0[7] = ISynth(0xdA730bF21BA6360af34cF065B042978017f2bf49);
+        issuer_addSynths_synthsToAdd_43_0[8] = ISynth(0xDbcfd6F265528d08FB7faA0934e18cf49A03AD65);
+        issuer_addSynths_synthsToAdd_43_0[9] = ISynth(0x8e08BF90B979698AdB6d722E9e27263f36366414);
+        issuer_addSynths_synthsToAdd_43_0[10] = ISynth(0x8B1CC80c79025477Ab1665284ff08d731FcbC3cF);
+        issuer_addSynths_synthsToAdd_43_0[11] = ISynth(0xf94f90B6BeEEb67327581Fe104a1A078B7AC8F89);
+        issuer_addSynths_synthsToAdd_43_0[12] = ISynth(0x2eC164E5b91f9627193C0268F1462327e3D7EC68);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_43_0);
     }
 }
