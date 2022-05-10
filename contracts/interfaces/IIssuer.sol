@@ -99,11 +99,11 @@ interface IIssuer {
         bytes32 currencyKey,
         address to,
         uint amount
-    ) external;
+    ) external returns (bool rateInvalid);
 
     function burnSynthsWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount
-    ) external;
+    ) external returns (bool rateInvalid);
 }

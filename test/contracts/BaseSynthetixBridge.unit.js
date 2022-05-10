@@ -36,6 +36,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 		let feePool;
 		let rewardEscrow;
 		let flexibleStorage;
+		let systemStatus;
 
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
@@ -53,6 +54,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 			issuer = await smockit(artifacts.require('Issuer').abi);
 			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
+			systemStatus = await smockit(artifacts.require('SystemStatus').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
@@ -67,6 +69,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					'ExchangeRates',
 					'FeePool',
 					'base:SynthetixBridgeToOptimism',
+					'SystemStatus',
 				].map(toBytes32),
 				[
 					messenger.address,
@@ -77,6 +80,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					exchangeRates.address,
 					feePool.address,
 					issuer.address,
+					systemStatus.address,
 				],
 				{ from: owner }
 			);
@@ -193,6 +197,16 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					await assert.revert(
 						instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
 						'Synth not enabled for cross chain transfer'
+					);
+				});
+
+				it('fails if synth is not enabled', async () => {
+					flexibleStorage.smocked.getUIntValue.will.return.with(toUnit('50').toString());
+					systemStatus.smocked.requireSynthActive.will.revert.with('suspended');
+
+					await assert.revert(
+						instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
+						'unexpected'
 					);
 				});
 

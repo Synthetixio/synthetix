@@ -1266,26 +1266,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('issueSynthsWithoutDebt', () => {
-					it('fails if issuance not active', async () => {
-						await systemStatus.suspendIssuance(1, { from: owner });
-						await assert.revert(
-							issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Issuance is suspended'
-						);
-					});
-
-					it('fails if synth not active', async () => {
-						await systemStatus.suspendSynth(sETH, 1, { from: owner });
-						await assert.revert(
-							issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Synth is suspended'
-						);
-					});
-
 					describe('successfully invoked', () => {
 						let beforeCachedDebt;
 
@@ -1302,32 +1282,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 
 						it('maintains debt cache', async () => {
-							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(100)));
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(20000)));
 						});
 					});
 				});
 
 				describe('burnSynthsWithoutDebt', () => {
-					it('fails if issuance not active', async () => {
-						await systemStatus.suspendIssuance(1, { from: owner });
-						await assert.revert(
-							issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Issuance is suspended'
-						);
-					});
-
-					it('fails if synth not active', async () => {
-						await systemStatus.suspendSynth(sETH, 1, { from: owner });
-						await assert.revert(
-							issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: synthetixBridgeToOptimism,
-							}),
-							'Synth is suspended'
-						);
-					});
-
 					describe('successfully invoked', () => {
 						let beforeCachedDebt;
 
@@ -1346,7 +1306,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						});
 
 						it('maintains debt cache', async () => {
-							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(50)));
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(10000)));
 						});
 					});
 				});
