@@ -355,6 +355,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit ExchangeMaxDynamicFeeUpdated(maxFee);
     }
 
+    function setMaxVolumePartnerFee(uint maxFee) external onlyOwner {
+        flexibleStorage().setMaxVolumePartnerFee(SETTING_MAX_VOLUME_PARTNER_FEE, maxFee);
+        emit MaxVolumePartnerFeeUpdated(maxFee);
+    }
+
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
         flexibleStorage().setMinimumStakeTime(SETTING_MINIMUM_STAKE_TIME, _seconds);
         emit MinimumStakeTimeUpdated(_seconds);
@@ -495,6 +500,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event ExchangeDynamicFeeRoundsUpdated(uint dynamicFeeRounds);
     event ExchangeMaxDynamicFeeUpdated(uint maxDynamicFee);
     /* ========== End Exchange Fees Related ========== */
+    event MaxVolumePartnerFeeUpdated(uint maxFee);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);

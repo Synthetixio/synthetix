@@ -25,8 +25,8 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY = "exchangeDynamicFeeWeightDecay";
     bytes32 internal constant SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS = "exchangeDynamicFeeRounds";
     bytes32 internal constant SETTING_EXCHANGE_MAX_DYNAMIC_FEE = "exchangeMaxDynamicFee";
-    bytes32 internal constant SETTING_MAX_VOLUME_PARTNER_FEE = "maxVolumePartnerFee";
     /* ========== End Exchange Fees Related ========== */
+    bytes32 internal constant SETTING_MAX_VOLUME_PARTNER_FEE = "maxVolumePartnerFee";
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
