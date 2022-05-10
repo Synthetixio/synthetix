@@ -110,7 +110,6 @@ contract Migration_MirachOptimism is BaseMigration {
         acceptAll();
 
         // MIGRATION
-        futuresmarketmanager_removeMarkets_0();
         futuresmarketmanager_addMarkets_1();
         // Import all new contracts into the address resolver;
         addressresolver_importAddresses_2();
@@ -191,11 +190,6 @@ contract Migration_MirachOptimism is BaseMigration {
         // Add synths to the Issuer contract - batch 1;
         issuer_addSynths_48();
         futuresmarketsettings_i.setTakerFee("sWTI", 5000000000000000);
-        futuresmarketsettings_i.setTakerFee("sAPE", 85000000000000000);
-        futuresmarketsettings_i.setMakerFee("sAPE", 75000000000000000);
-        futuresmarketsettings_i.setTakerFeeNextPrice("sAPE", 65000000000000000);
-        futuresmarketsettings_i.setMakerFeeNextPrice("sAPE", 65000000000000000);
-        futuresmarketsettings_i.setSkewScaleUSD("sAPE", 10000000000000000000000000);
         futuresmarketsettings_i.setTakerFee("sEUR", 1500000000000000);
         futuresmarketsettings_i.setMakerFee("sEUR", 1500000000000000);
         futuresmarketsettings_i.setTakerFeeNextPrice("sEUR", 1000000000000000);
@@ -223,27 +217,10 @@ contract Migration_MirachOptimism is BaseMigration {
             returnOwnership(contracts[i]);
         }
     }
-
-    
-    function futuresmarketmanager_removeMarkets_0() internal {
-        address[] memory futuresmarketmanager_removeMarkets_marketsToRemove_0_0 = new address[](2);
-        futuresmarketmanager_removeMarkets_marketsToRemove_0_0[0] = address(0x01aac5868ee944F162C347FE9d43aa3229267CBd);
-        futuresmarketmanager_removeMarkets_marketsToRemove_0_0[1] = address(0x6D0C13aF650bA81798cf48632506Fcc3A38Ed644);
-        futuresmarketmanager_i.removeMarkets(futuresmarketmanager_removeMarkets_marketsToRemove_0_0);
-    }
-
     
     function futuresmarketmanager_addMarkets_1() internal {
-        address[] memory futuresmarketmanager_addMarkets_marketsToAdd_1_0 = new address[](9);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[0] = address(new_FuturesMarketXAU_contract);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[1] = address(new_FuturesMarketXAG_contract);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[2] = address(0x8C1D513188Cc86c1e8c9bE002F69f174016f1d17);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[3] = address(0x522aBb55e6f1e1E9E5Fccf5e8f3FeF3e31093530);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[4] = address(0x72CeE2960b65aa4d37DDb89b83b2adeB64d34d2E);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[5] = address(0xe6c5F1dBde6aB671c60E511c2dC064f5F43BF988);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[6] = address(0x8e5691736079FebEfD8A634FC0d6eE0478Cc940b);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[7] = address(0x522aBb55e6f1e1E9E5Fccf5e8f3FeF3e31093530);
-        futuresmarketmanager_addMarkets_marketsToAdd_1_0[8] = address(new_FuturesMarketEUR_contract);
+        address[] memory futuresmarketmanager_addMarkets_marketsToAdd_1_0 = new address[](1);
+        futuresmarketmanager_addMarkets_marketsToAdd_1_0[0] = address(new_FuturesMarketEUR_contract);
         futuresmarketmanager_i.addMarkets(futuresmarketmanager_addMarkets_marketsToAdd_1_0);
     }
 
