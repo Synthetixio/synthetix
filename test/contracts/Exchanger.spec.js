@@ -3213,13 +3213,13 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					it('used the correct atomic exchange rate', async () => {
-						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('40000')); // pure (bc its worse)
 						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure
 						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInEur);
 					});
 
 					it('updates atomic volume correctly', async () => {
-						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('50000')); // dex
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('40000')); // pure (bc its worse)
 						const lastAtomicVolume = await exchanger.lastAtomicVolume();
 						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
 					});
