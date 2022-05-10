@@ -48,5 +48,10 @@
 		"name": "sUNI",
 		"asset": "UNI",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sINR",
+		"asset": "INR",
+		"subclass": "MultiCollateralSynth"
 	}
 ]

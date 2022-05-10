@@ -435,7 +435,7 @@ library SystemSettingsLib {
         );
     }
 
-    function setCrossSynthTransferEnabled(
+    function setCrossChainSynthTransferEnabled(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         bytes32 _currencyKey,

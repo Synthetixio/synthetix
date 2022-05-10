@@ -434,5 +434,23 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Matic"
+	},
+	"APE": {
+		"asset": "APE",
+		"category": "crypto",
+		"sign": "",
+		"description": "ApeCoin"
+	},
+	"DYDX": {
+		"asset": "DYDX",
+		"category": "crypto",
+		"sign": "",
+		"description": "dYdX"
+	},
+	"INR": {
+		"asset": "INR",
+		"category": "forex",
+		"sign": "₹",
+		"description": "Indian Rupee"
 	}
 }

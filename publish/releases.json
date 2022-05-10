@@ -560,10 +560,20 @@
 			"released": "both"
 		},
 		{
+			"sip": 216,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 217,
 			"layer": "ovm",
 			"sources": [],
 			"released": "both"
+		},
+		{
+			"sip": 219,
+			"layer": "ovm",
+			"sources": []
 		},
 		{
 			"sip": 220,
@@ -575,6 +585,11 @@
 			"sip": 222,
 			"layer": "both",
 			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 223,
+			"layer": "ovm",
+			"sources": []
 		},
 		{
 			"sip": 229,
@@ -1077,31 +1092,12 @@
 			"sips": [217]
 		},
 		{
-			"name": "Menkent",
-			"released": true,
-			"version": {
-				"major": 2,
-				"minor": 67
-			},
-			"sips": [198, 222]
-		},
-		{
-			"name": "Menkent (Optimism)",
-			"released": true,
-			"ovm": true,
-			"version": {
-				"major": 2,
-				"minor": 67
-			},
-			"sips": [198, 222]
-		},
-		{
 			"name": "Mirach",
 			"version": {
 				"major": 2,
 				"minor": 68
 			},
-			"sips": [229]
+			"sips": [198, 222, 229]
 		},
 		{
 			"name": "Mirach (Optimism)",
@@ -1110,7 +1106,7 @@
 				"major": 2,
 				"minor": 68
 			},
-			"sips": [229]
+			"sips": [198, 222, 229]
 		},
 		{
 			"name": "Alpheratz",
