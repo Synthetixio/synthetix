@@ -1450,7 +1450,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													await fastForward(60);
 												});
 
-												describe.only('when full exchange() is invoked before settle', () => {
+												describe('when full exchange() is invoked before settle', () => {
 													let expectedAmountReceived;
 													beforeEach(async () => {
 														const srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
