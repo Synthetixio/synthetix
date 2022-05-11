@@ -298,5 +298,17 @@
 	},
 	"SynthsXAG": {
 		"deploy": false
+	},
+	"FuturesMarketEUR": {
+		"deploy": false
+	},
+	"TokenStatesEUR": {
+		"deploy": false
+	},
+	"ProxysEUR": {
+		"deploy": false
+	},
+	"SynthsEUR": {
+		"deploy": false
 	}
 }

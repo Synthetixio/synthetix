@@ -243,8 +243,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				}
 
 				if (status !== 'Pass - Verified') {
-					console.log(gray(' - Sleeping for 5 seconds and re-checking.'));
-					await new Promise(resolve => setTimeout(resolve, 5000));
+					console.log(gray(' - Sleeping for 15 seconds and re-checking.'));
+					await new Promise(resolve => setTimeout(resolve, 15000));
 				} else {
 					console.log(green(` - Verified ${name}`));
 					tableData.push([name, address, 'Successfully verified']);
