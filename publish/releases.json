@@ -516,7 +516,14 @@
 		{
 			"sip": 198,
 			"layer": "both",
-			"sources": ["Synthetix", "Exchanger", "ExchangeRates", "SystemSettings", "SystemSettingsLib"]
+			"sources": [
+				"Synthetix",
+				"Exchanger",
+				"ExchangeRates",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
 		},
 		{
 			"sip": 199,
@@ -562,7 +569,8 @@
 		{
 			"sip": 216,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 217,
@@ -573,7 +581,8 @@
 		{
 			"sip": 219,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 220,
@@ -584,12 +593,14 @@
 		{
 			"sip": 222,
 			"layer": "both",
-			"sources": ["Exchanger"]
+			"sources": ["Exchanger"],
+			"released": "both"
 		},
 		{
 			"sip": 223,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 229,
@@ -607,7 +618,8 @@
 					"SystemSettings",
 					"SystemSettingsLib"
 				]
-			}
+			},
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -1097,7 +1109,8 @@
 				"major": 2,
 				"minor": 68
 			},
-			"sips": [198, 222, 229]
+			"sips": [198, 222, 229],
+			"released": true
 		},
 		{
 			"name": "Mirach (Optimism)",
@@ -1106,7 +1119,8 @@
 				"major": 2,
 				"minor": 68
 			},
-			"sips": [198, 216, 219, 222, 223, 229]
+			"sips": [198, 216, 219, 222, 223, 229],
+			"released": true
 		},
 		{
 			"name": "Alpheratz",
