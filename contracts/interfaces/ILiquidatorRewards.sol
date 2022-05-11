@@ -5,11 +5,11 @@ interface ILiquidatorRewards {
 
     function earned(address account) external view returns (uint256);
 
-    function rewardPerShare() external view returns (uint256);
-
     // Mutative
 
     function getReward() external;
 
     function notifyRewardAmount(uint256 reward) external;
+
+    function updateEntry(address account) external;
 }
