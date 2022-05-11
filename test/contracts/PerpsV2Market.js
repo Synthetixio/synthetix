@@ -1280,8 +1280,7 @@ contract('PerpsV2Market', accounts => {
 
 				assert.bnEqual(position.margin, remaining);
 				assert.bnEqual(position.size, toUnit(0));
-				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.lastFundingIndex, toBN(0));
+				assert.bnEqual(position.lastPrice, toUnit('199'));
 
 				// Skew, size, entry notional sum, debt are updated.
 				assert.bnEqual(await perpsMarket.marketSkew(), toUnit(0));
@@ -1393,40 +1392,42 @@ contract('PerpsV2Market', accounts => {
 				});
 			});
 
-			it('opening a new position gets a new id', async () => {
+			it('transferring margin sets position id', async () => {
 				await setPrice(baseAsset, toUnit('100'));
 
-				await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
-				await perpsMarket.transferMargin(toUnit('1000'), { from: trader2 });
-
-				// No position ids at first.
-				let { id: positionId } = await perpsMarket.positions(trader);
-				assert.bnEqual(positionId, toBN('0'));
-				positionId = (await perpsMarket.positions(trader2)).id;
-				assert.bnEqual(positionId, toBN('0'));
+				// no positions
+				assert.equal(await perpsMarket.lastPositionId(), 0);
 
 				// Trader 1 gets position id 1.
-				let tx = await perpsMarket.modifyPosition(toUnit('10'), { from: trader });
+				let tx = await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsMarket],
 				});
-				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[3].name, 'PositionModified');
+				assert.equal(decodedLogs[3].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[3].events[0].value, toBN('1'));
+				assert.equal(await perpsMarket.positionIdOwner(1), trader);
 
-				// trader2 gets the subsequent id
-				tx = await perpsMarket.modifyPosition(toUnit('10'), { from: trader2 });
+				// next is 2
+				assert.equal(await perpsMarket.lastPositionId(), 1);
+
+				// trader 2 gets 2
+				tx = await perpsMarket.transferMargin(toUnit('1000'), { from: trader2 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsMarket],
 				});
-				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
+				assert.equal(decodedLogs[3].name, 'PositionModified');
+				assert.equal(decodedLogs[3].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[3].events[0].value, toBN('2'));
+				assert.equal(await perpsMarket.positionIdOwner(2), trader2);
+
+				// next is 3
+				assert.equal(await perpsMarket.lastPositionId(), 2);
 
 				// And the ids have been modified
-				positionId = (await perpsMarket.positions(trader)).id;
+				let positionId = (await perpsMarket.positions(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
 				positionId = (await perpsMarket.positions(trader2)).id;
 				assert.bnEqual(positionId, toBN('2'));
@@ -1464,7 +1465,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(positionId, toBN('1'));
 			});
 
-			it('closing a position deletes the id but emits it in the event', async () => {
+			it('closing a position does not delete the id', async () => {
 				await setPrice(baseAsset, toUnit('100'));
 				await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
 				await perpsMarket.transferMargin(toUnit('1000'), { from: trader2 });
@@ -1492,7 +1493,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				positionId = (await perpsMarket.positions(trader)).id;
-				assert.bnEqual(positionId, toBN('0'));
+				assert.bnEqual(positionId, toBN('1'));
 
 				// Close by modifyPosition
 				tx = await perpsMarket.modifyPosition(toUnit('10'), { from: trader2 });
@@ -1515,12 +1516,9 @@ contract('PerpsV2Market', accounts => {
 				assert.equal(decodedLogs[2].name, 'PositionModified');
 				assert.equal(decodedLogs[2].events[0].name, 'id');
 				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
-
-				positionId = (await perpsMarket.positions(trader)).id;
-				assert.bnEqual(positionId, toBN('0'));
 			});
 
-			it('closing a position and opening one after should increment the position id', async () => {
+			it('closing a position and opening one after should not increment the position id', async () => {
 				await transferMarginAndModifyPosition({
 					market: perpsMarket,
 					account: trader,
@@ -1554,10 +1552,12 @@ contract('PerpsV2Market', accounts => {
 
 				assert.equal(decodedLogs[2].name, 'PositionModified');
 				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				const { id: newPositionId } = await perpsMarket.positions(trader);
-				assert.bnEqual(newPositionId, toBN('2'));
+				assert.bnEqual(newPositionId, toBN('1'));
+
+				assert.bnEqual(await perpsMarket.positionIdOwner(toBN('1')), trader);
 			});
 		});
 
@@ -3132,10 +3132,10 @@ contract('PerpsV2Market', accounts => {
 
 				assert.isFalse(await perpsMarket.canLiquidate(trader));
 				const position = await perpsMarket.positions(trader, { from: noBalance });
+				assert.bnEqual(position.id, 1);
+				assert.bnEqual(await perpsMarket.positionIdOwner(1), trader);
 				assert.bnEqual(position.margin, toUnit(0));
 				assert.bnEqual(position.size, toUnit(0));
-				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.lastFundingIndex, toBN(0));
 
 				const liquidationFee = multiplyDecimal(
 					multiplyDecimal(await perpsSettings.liquidationFeeRatio(), newPrice),
@@ -3234,10 +3234,10 @@ contract('PerpsV2Market', accounts => {
 				const tx = await perpsMarket.liquidatePosition(trader3, { from: noBalance });
 
 				const position = await perpsMarket.positions(trader3, { from: noBalance });
+				assert.bnEqual(position.id, 3);
+				assert.bnEqual(await perpsMarket.positionIdOwner(3), trader3);
 				assert.bnEqual(position.margin, toUnit(0));
 				assert.bnEqual(position.size, toUnit(0));
-				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.lastFundingIndex, toBN(0));
 
 				// in this case, proportional fee is smaller than minimum fee
 				const liquidationFee = multiplyDecimal(

@@ -75,6 +75,10 @@ interface IPerpsV2Market {
 
     function fundingSequenceLength() external view returns (uint length);
 
+    function lastPositionId() external view returns (uint);
+
+    function positionIdOwner(uint id) external view returns (address);
+
     /* ---------- Position Details ---------- */
 
     function notionalValue(address account) external view returns (int value, bool invalid);

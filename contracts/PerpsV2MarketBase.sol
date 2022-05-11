@@ -80,6 +80,9 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
      */
     mapping(address => Position) public positions;
 
+    /// mapping of position id to account addresses
+    mapping(uint => address) public positionIdOwner;
+
     /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
      * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
@@ -87,8 +90,8 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
      */
     int128 internal _entryDebtCorrection;
 
-    // This increments for each position; zero reflects a position that does not exist.
-    uint64 internal _nextPositionId = 1;
+    // This increments for each position; zero id reflects a position id that wasn't initialized.
+    uint64 public lastPositionId = 0;
 
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
@@ -725,11 +728,26 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         }
 
         Position storage position = positions[sender];
+
+        // initialise id if nto initialised and store update id=>account mapping
+        _initPosition(sender, position);
+
+        // add the margin
         _updatePositionMargin(position, price, marginDelta);
 
         emit MarginTransferred(sender, marginDelta);
 
         emit PositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
+    }
+
+    function _initPosition(address account, Position storage position) internal {
+        // if position has no id, give it an incremental id
+        if (position.id == 0) {
+            lastPositionId++; // increment position id
+            uint64 id = lastPositionId;
+            position.id = id;
+            positionIdOwner[id] = account;
+        }
     }
 
     // updates the stored position margin in place (on the stored position)
@@ -753,6 +771,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
 
         // Update the account's position with the realised margin.
         position.margin = uint128(margin);
+
         // We only need to update their funding/PnL details if they actually have a position open
         if (positionSize != 0) {
             position.lastPrice = uint128(price);
@@ -825,23 +844,10 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         // Record the trade
         uint64 id = oldPosition.id;
         uint fundingIndex = _latestFundingIndex();
-        if (newPosition.size == 0) {
-            // If the position is being closed, we no longer need to track these details.
-            delete position.id;
-            delete position.size;
-            delete position.lastPrice;
-            delete position.lastFundingIndex;
-        } else {
-            if (oldPosition.size == 0) {
-                // New positions get new ids.
-                id = _nextPositionId;
-                _nextPositionId += 1;
-            }
-            position.id = id;
-            position.size = newPosition.size;
-            position.lastPrice = uint128(params.price);
-            position.lastFundingIndex = uint64(fundingIndex);
-        }
+        position.size = newPosition.size;
+        position.lastPrice = uint128(params.price);
+        position.lastFundingIndex = uint64(fundingIndex);
+
         // emit the modification event
         emit PositionModified(
             id,
@@ -937,8 +943,9 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
             Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
         );
 
-        // Close the position itself.
-        delete positions[account];
+        // Close the position size and margin
+        delete positions[account].size;
+        delete positions[account].margin;
 
         // Issue the reward to the liquidator.
         uint liqFee = _liquidationFee(positionSize, price);
