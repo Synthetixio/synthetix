@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./MixinPerpsV2MarketSettings.sol";
-import "./interfaces/IPerpsV2BaseTypes.sol";
+import "./interfaces/IPerpsV2Market.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
