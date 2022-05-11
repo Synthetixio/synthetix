@@ -1216,7 +1216,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 												});
 
-												describe.only('when full exchange() is invoked before settle', () => {
+												describe('when full exchange() is invoked before settle', () => {
 													let expectedAmountReceived;
 													beforeEach(async () => {
 														expectedAmountReceived = (
@@ -1444,6 +1444,48 @@ contract('Exchanger (spec tests)', async accounts => {
 												assert.bnEqual(rebateAmount, expected.rebateAmount);
 												assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 											});
+
+											describe('when another minute passes', () => {
+												beforeEach(async () => {
+													await fastForward(60);
+												});
+
+												describe.only('when full exchange() is invoked before settle', () => {
+													let expectedAmountReceived;
+													beforeEach(async () => {
+														const srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
+														const expectedSettlement = calculateExpectedSettlementAmount({
+															amount: amountOfSrcExchanged,
+															oldRate: divideDecimal(1, 2),
+															newRate: divideDecimal(1, 1),
+														});
+
+														expectedAmountReceived = (
+															await exchanger.getAmountsForExchange(
+																srcBalanceBeforeExchange.add(expectedSettlement.rebateAmount),
+																sEUR,
+																sBTC
+															)
+														)[0];
+
+														await synthetix.exchange(
+															sEUR,
+															await sEURContract.balanceOf(account1),
+															sBTC,
+															{
+																from: account1,
+															}
+														);
+													});
+													it('then exchanges with settled amount', async () => {
+														assert.bnEqual(
+															await sBTCContract.balanceOf(account1),
+															expectedAmountReceived
+														);
+													});
+												});
+											});
+
 											describe('when the user makes a 2nd exchange of 100 sUSD into sUSD:sEUR at 1:1', () => {
 												beforeEach(async () => {
 													// fast forward 60 seconds so 1st exchange is using first rate
@@ -1453,6 +1495,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														from: account1,
 													});
 												});
+
 												describe('and then the price increases for sUSD:sEUR to 2:1', () => {
 													beforeEach(async () => {
 														await fastForward(5);
