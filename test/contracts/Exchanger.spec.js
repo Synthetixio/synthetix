@@ -100,7 +100,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
 					});
-					it('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
+					it.only('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
 						const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 						timeIsClose({ actual: maxSecs, expected: 90, variance: 2 });
 					});
@@ -3979,7 +3979,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		await updateAggregatorRates(exchangeRates, keys, rates);
 	}
 
-	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
+	describe.only('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 			const synths = ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];

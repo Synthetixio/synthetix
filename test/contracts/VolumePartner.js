@@ -25,7 +25,6 @@ contract('VolumePartner', accounts => {
             });
 
             await setupPriceAggregators(exchangeRates, owner, [sAUD]);
-
             await updateAggregatorRates(exchangeRates, [sAUD], ['0.5'].map(toUnit));
             await setExchangeFeeRateForSynths({
                 owner,
@@ -221,6 +220,33 @@ contract('VolumePartner', accounts => {
             await systemSettings.setMaxVolumePartnerFee(toUnit('0.1'), {
                 from: owner,
             });
+
+            const keys = [sAUD];
+            const rates = ['0.5'].map(toUnit);
+            await setupPriceAggregators(exchangeRates, owner, keys);
+            await updateAggregatorRates(exchangeRates, keys, rates);
+
+            await setExchangeFeeRateForSynths({
+                owner,
+                systemSettings,
+                synthKeys,
+                exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+            });
+
+            await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
+                sUSD,
+                true,
+                {
+                    from: owner,
+                }
+            );
+            await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
+                sAUD,
+                true,
+                {
+                    from: owner,
+                }
+            );
         });
 
         it('Can accrue fees from an atomic exchange', async () => {
@@ -234,7 +260,7 @@ contract('VolumePartner', accounts => {
                 amount,
                 sAUD,
                 toBytes32('CODE12'),
-                toUnit('0'),
+                0,
                 {
                     from: account1,
                 }

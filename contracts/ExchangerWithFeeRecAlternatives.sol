@@ -371,7 +371,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, ExchangerBase {
                 sourceAmount,
                 destinationCurrencyKey
             );
-            partnerFee = _deductFeesFromAmount(destinationAmount, partnerFeeRate).sub(amountReceived);
+            partnerFee = destinationAmount.sub(_deductFeesFromAmount(destinationAmount, partnerFeeRate));
             amountReceived = amountReceived.sub(partnerFee);
             exchangeFeeRate = exchangeFeeRate.add(partnerFeeRate);
         }
@@ -384,4 +384,91 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, ExchangerBase {
         bytes32 currencyKey,
         uint amount
     );
+
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
+        _notImplemented();
+    }
+
+    function dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint feeRate, bool tooVolatile)
+    {
+        _notImplemented();
+    }
+
+    function getAmountsForExchange(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        )
+    {
+        _notImplemented();
+    }
+
+    function getAmountsForExchangeWithTrackingCode(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        )
+    {
+        _notImplemented();
+    }
+
+    function priceDeviationThresholdFactor() external view returns (uint) {
+        _notImplemented();
+    }
+
+    function waitingPeriodSecs() external view returns (uint) {
+        _notImplemented();
+    }
+
+    function lastExchangeRate(bytes32 currencyKey) external view returns (uint) {
+        _notImplemented();
+    }
+
+    // Mutative functions
+    function exchange(
+        address exchangeForAddress,
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bool virtualSynth,
+        address rewardAddress,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived, IVirtualSynth vSynth) {
+        _notImplemented();
+    }
+
+    function settle(address from, bytes32 currencyKey)
+        external
+        returns (
+            uint reclaimed,
+            uint refunded,
+            uint numEntries
+        )
+    {
+        _notImplemented();
+    }
+
+    function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
+        _notImplemented();
+    }
 }

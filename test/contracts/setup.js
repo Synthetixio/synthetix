@@ -861,6 +861,7 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'DebtCache',
 				'ExchangeCircuitBreaker',
+				'VolumePartner',
 			],
 		},
 		{
