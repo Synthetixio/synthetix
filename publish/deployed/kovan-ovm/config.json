@@ -80,12 +80,6 @@
 	"SynthsUSD": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -257,6 +251,12 @@
 	"FuturesMarketWTI": {
 		"deploy": false
 	},
+	"FuturesMarketXAU": {
+		"deploy": false
+	},
+	"FuturesMarketXAG": {
+		"deploy": false
+	},
 	"TokenStatesWTI": {
 		"deploy": false
 	},
@@ -264,6 +264,51 @@
 		"deploy": false
 	},
 	"SynthsWTI": {
+		"deploy": false
+	},
+	"FuturesMarketAAVE": {
+		"deploy": false
+	},
+	"FuturesMarketAPE": {
+		"deploy": false
+	},
+	"FuturesMarketAXS": {
+		"deploy": false
+	},
+	"FuturesMarketUNI": {
+		"deploy": false
+	},
+	"FuturesMarketLUNA": {
+		"deploy": false
+	},
+	"TokenStatesXAU": {
+		"deploy": false
+	},
+	"ProxysXAU": {
+		"deploy": false
+	},
+	"SynthsXAU": {
+		"deploy": false
+	},
+	"TokenStatesXAG": {
+		"deploy": false
+	},
+	"ProxysXAG": {
+		"deploy": false
+	},
+	"SynthsXAG": {
+		"deploy": false
+	},
+	"FuturesMarketEUR": {
+		"deploy": false
+	},
+	"TokenStatesEUR": {
+		"deploy": false
+	},
+	"ProxysEUR": {
+		"deploy": false
+	},
+	"SynthsEUR": {
 		"deploy": false
 	}
 }

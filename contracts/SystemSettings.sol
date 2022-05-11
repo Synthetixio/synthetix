@@ -206,12 +206,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-120 Atomic exchanges
-    // price dampener for chainlink prices when considered for atomic exchanges
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicPriceBuffer(currencyKey);
-    }
-
-    // SIP-120 Atomic exchanges
     // consideration window for determining synth volatility
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityConsiderationWindow(currencyKey);
@@ -221,6 +215,18 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // update threshold for determining synth volatility
     function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityUpdateThreshold(currencyKey);
+    }
+
+    // SIP-198: Atomic Exchange At Pure Chainlink Price
+    // Whether to use the pure Chainlink price for a given currency key
+    function pureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) external view returns (bool) {
+        return getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+    }
+
+    // SIP-229 Atomic exchanges
+    // enable/disable sending of synths cross chain
+    function crossChainSynthTransferEnabled(bytes32 currencyKey) external view returns (uint) {
+        return getCrossChainSynthTransferEnabled(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -432,11 +438,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
-    function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
-        flexibleStorage().setAtomicPriceBuffer(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey, _buffer);
-        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
-    }
-
     function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
         flexibleStorage().setAtomicVolatilityConsiderationWindow(
             SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
@@ -453,6 +454,20 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
             _threshold
         );
         emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
+    }
+
+    function setPureChainlinkPriceForAtomicSwapsEnabled(bytes32 _currencyKey, bool _enabled) external onlyOwner {
+        flexibleStorage().setPureChainlinkPriceForAtomicSwapsEnabled(
+            SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED,
+            _currencyKey,
+            _enabled
+        );
+        emit PureChainlinkPriceForAtomicSwapsEnabledUpdated(_currencyKey, _enabled);
+    }
+
+    function setCrossChainSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
+        flexibleStorage().setCrossChainSynthTransferEnabled(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, _currencyKey, _value);
+        emit CrossChainSynthTransferEnabledUpdated(_currencyKey, _value);
     }
 
     // ========== EVENTS ==========
@@ -489,7 +504,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event AtomicTwapWindowUpdated(uint newWindow);
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
     event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
     event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
     event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
+    event PureChainlinkPriceForAtomicSwapsEnabledUpdated(bytes32 synthKey, bool enabled);
+    event CrossChainSynthTransferEnabledUpdated(bytes32 synthKey, uint value);
 }

@@ -12,7 +12,6 @@ const data = {
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
-	'kovan-ovm-futures': require('./publish/deployed/kovan-ovm-futures'),
 };
 
 const assets = require('./publish/assets.json');
@@ -158,7 +157,6 @@ const defaults = {
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
-		'kovan-ovm-futures': '0x4200000000000000000000000000000000000006',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
@@ -201,7 +199,7 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 5 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: '0',
 
-	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
+	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('5'), // 5 sUSD min keeper fee
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
 	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('40'), // minimum initial margin for all markets
@@ -611,6 +609,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		80: 'Futures configuration', // pausing according to deployment configuration
+		231: 'Latency Breaker', // https://sips.synthetix.io/sips/sip-231/
 		99999: 'Emergency',
 	};
 
@@ -631,7 +630,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: 'SNX',
 				asset: 'SNX',
 				name: 'Synthetix',
-				address: targets.ProxyERC20.address,
+				address: targets.ProxySynthetix.address,
 				decimals: 18,
 			},
 			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
@@ -643,8 +642,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: synth.name,
 				asset: synth.asset,
 				name: synth.description,
-				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
-					.address,
+				address: (targets[`Proxy${synth.name}`] || {}).address,
 				index: synth.index,
 				decimals: 18,
 				feed: synth.feed,

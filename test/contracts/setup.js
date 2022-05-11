@@ -20,10 +20,10 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
-		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
-		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
-		EXCHANGE_DYNAMIC_FEE_ROUNDS,
-		EXCHANGE_MAX_DYNAMIC_FEE,
+		// EXCHANGE_DYNAMIC_FEE_THRESHOLD, // overridden
+		// EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, // overridden
+		// EXCHANGE_DYNAMIC_FEE_ROUNDS, // overridden
+		// EXCHANGE_MAX_DYNAMIC_FEE, // overridden
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
@@ -35,7 +35,7 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
-		FUTURES_MIN_KEEPER_FEE,
+		// FUTURES_MIN_KEEPER_FEE, // overridden
 		FUTURES_LIQUIDATION_FEE_RATIO,
 		FUTURES_LIQUIDATION_BUFFER_RATIO,
 		FUTURES_MIN_INITIAL_MARGIN,
@@ -43,6 +43,15 @@ const {
 } = require('../../');
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
+
+// constants overrides for testing (to avoid having to update tests for config changes)
+const constantsOverrides = {
+	EXCHANGE_DYNAMIC_FEE_ROUNDS: '10',
+	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: toWei('0.95'),
+	EXCHANGE_DYNAMIC_FEE_THRESHOLD: toWei('0.004'),
+	EXCHANGE_MAX_DYNAMIC_FEE: toWei('0.05'),
+	FUTURES_MIN_KEEPER_FEE: toWei('20'),
+};
 
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
@@ -176,6 +185,7 @@ const setupContract = async ({
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
+		ProxySynthetix: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		SynthUtil: [tryGetAddressOf('AddressResolver')],
 		DappMaintenance: [owner],
@@ -293,6 +303,18 @@ const setupContract = async ({
 			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
+		// perps v2
+		PerpsV2Settings: [owner, tryGetAddressOf('AddressResolver')],
+		PerpsV2MarketpBTC: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('BTC'), // base asset
+			toBytes32('pBTC'), // market key
+		],
+		PerpsV2MarketpETH: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('ETH'), // base asset
+			toBytes32('pETH'), // market key
+		],
 	};
 
 	let instance;
@@ -558,6 +580,16 @@ const setupContract = async ({
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 			]);
 		},
+		async PerpsV2MarketpBTC() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
+		async PerpsV2MarketpETH() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
@@ -664,6 +696,7 @@ const setupAllContracts = async ({
 	mocks = {},
 	contracts = [],
 	synths = [],
+	feeds = [],
 }) => {
 	const [, owner] = accounts;
 
@@ -966,12 +999,13 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger'],
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
+		// perps v1 - "futures"
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
@@ -990,12 +1024,40 @@ const setupAllContracts = async ({
 			deps: [
 				'AddressResolver',
 				'FuturesMarketManager',
+				'FuturesMarketSettings',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
 		},
-
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
+
+		// perps v2
+		{
+			contract: 'PerpsV2Settings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'PerpsV2MarketpBTC',
+			source: 'TestablePerpsV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'PerpsV2Settings',
+				'SystemStatus',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'PerpsV2MarketpETH',
+			source: 'TestablePerpsV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
 	];
 
 	// check contract list for contracts with the same address resolver name
@@ -1206,21 +1268,30 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
-			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(EXCHANGE_DYNAMIC_FEE_THRESHOLD, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
-				EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_THRESHOLD,
 				{
 					from: owner,
 				}
 			),
-			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(EXCHANGE_DYNAMIC_FEE_ROUNDS, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setExchangeMaxDynamicFee(EXCHANGE_MAX_DYNAMIC_FEE, {
-				from: owner,
-			}),
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_ROUNDS,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeMaxDynamicFee(
+				constantsOverrides.EXCHANGE_MAX_DYNAMIC_FEE,
+				{
+					from: owner,
+				}
+			),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,
@@ -1242,14 +1313,18 @@ const setupAllContracts = async ({
 			}),
 		]);
 
+		// legacy futures
 		if (returnObj['FuturesMarketSettings']) {
 			const promises = [
 				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['FuturesMarketSettings'].setMinKeeperFee(FUTURES_MIN_KEEPER_FEE, {
-					from: owner,
-				}),
+				returnObj['FuturesMarketSettings'].setMinKeeperFee(
+					constantsOverrides.FUTURES_MIN_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
 				returnObj['FuturesMarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
@@ -1293,6 +1368,55 @@ const setupAllContracts = async ({
 
 			await Promise.all(promises);
 		}
+
+		// perps V2
+		if (returnObj['PerpsV2Settings']) {
+			const promises = [
+				returnObj['PerpsV2Settings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setMinKeeperFee(constantsOverrides.FUTURES_MIN_KEEPER_FEE, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
+					from: owner,
+				}),
+			];
+
+			const setupPerpsV2Market = async market => {
+				const assetKey = await market.baseAsset();
+				const marketKey = await market.marketKey();
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await Promise.all([
+					returnObj['PerpsV2Settings'].setParameters(
+						marketKey,
+						toWei('0.003'), // 0.3% taker fee
+						toWei('0.001'), // 0.1% maker fee
+						toWei('0.0005'), // 0.05% taker fee next price
+						toWei('0.0001'), // 0.01% maker fee next price
+						toBN('2'), // 2 rounds next price confirm window
+						toWei('10'), // 10x max leverage
+						toWei('100000'), // 100000 max market debt
+						toWei('0.1'), // 10% max funding rate
+						toWei('100000'), // 100000 USD skewScaleUSD
+						{ from: owner }
+					),
+				]);
+			};
+
+			if (returnObj['PerpsV2MarketpBTC']) {
+				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpBTC']));
+			}
+			if (returnObj['PerpsV2MarketpETH']) {
+				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpETH']));
+			}
+
+			await Promise.all(promises);
+		}
 	}
 
 	// finally if any of our contracts have setAddressResolver (from MockSynth), then invoke it
@@ -1303,10 +1427,11 @@ const setupAllContracts = async ({
 	);
 
 	if (returnObj['ExchangeRates']) {
-		// setup SNX price feed
-		const SNX = toBytes32('SNX');
-		await setupPriceAggregators(returnObj['ExchangeRates'], owner, [SNX]);
-		await updateAggregatorRates(returnObj['ExchangeRates'], [SNX], [toUnit('0.2')]);
+		// setup SNX price feed and any other feeds
+		const keys = ['SNX', ...(feeds || [])].map(toBytes32);
+		const prices = ['0.2', ...(feeds || []).map(() => '1.0')].map(toUnit);
+		await setupPriceAggregators(returnObj['ExchangeRates'], owner, keys);
+		await updateAggregatorRates(returnObj['ExchangeRates'], keys, prices);
 	}
 
 	return returnObj;
@@ -1317,4 +1442,5 @@ module.exports = {
 	mockGenericContractFnc,
 	setupContract,
 	setupAllContracts,
+	constantsOverrides,
 };

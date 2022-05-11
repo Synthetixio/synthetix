@@ -3,7 +3,7 @@
 		"marketKey": "sBTC",
 		"asset": "sBTC",
 		"takerFee": "0.003",
-		"makerFee": "0.002",
+		"makerFee": "0.0025",
 		"takerFeeNextPrice": "0.002",
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
@@ -22,7 +22,7 @@
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "7000000",
+		"maxMarketValueUSD": "25000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "300000000",
 		"paused": false
@@ -30,10 +30,10 @@
 	{
 		"marketKey": "sLINK",
 		"asset": "sLINK",
-		"takerFee": "0.004",
-		"makerFee": "0.0035",
-		"takerFeeNextPrice": "0.002",
-		"makerFeeNextPrice": "0.002",
+		"takerFee": "0.0035",
+		"makerFee": "0.003",
+		"takerFeeNextPrice": "0.0025",
+		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "3000000",
@@ -44,8 +44,8 @@
 	{
 		"marketKey": "sSOL",
 		"asset": "SOL",
-		"takerFee": "0.008",
-		"makerFee": "0.007",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
 		"takerFeeNextPrice": "0.003",
 		"makerFeeNextPrice": "0.003",
 		"nextPriceConfirmWindow": "2",
@@ -58,10 +58,10 @@
 	{
 		"marketKey": "sAVAX",
 		"asset": "AVAX",
-		"takerFee": "0.008",
-		"makerFee": "0.007",
-		"takerFeeNextPrice": "0.003",
-		"makerFeeNextPrice": "0.003",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
+		"takerFeeNextPrice": "0.0025",
+		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
@@ -72,10 +72,10 @@
 	{
 		"marketKey": "sAAVE",
 		"asset": "AAVE",
-		"takerFee": "0.008",
-		"makerFee": "0.007",
-		"takerFeeNextPrice": "0.003",
-		"makerFeeNextPrice": "0.003",
+		"takerFee": "0.0045",
+		"makerFee": "0.004",
+		"takerFeeNextPrice": "0.0035",
+		"makerFeeNextPrice": "0.0035",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
@@ -86,8 +86,8 @@
 	{
 		"marketKey": "sUNI",
 		"asset": "UNI",
-		"takerFee": "0.008",
-		"makerFee": "0.007",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
 		"takerFeeNextPrice": "0.003",
 		"makerFeeNextPrice": "0.003",
 		"nextPriceConfirmWindow": "2",
@@ -100,8 +100,8 @@
 	{
 		"marketKey": "sMATIC",
 		"asset": "MATIC",
-		"takerFee": "0.008",
-		"makerFee": "0.007",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
 		"takerFeeNextPrice": "0.003",
 		"makerFeeNextPrice": "0.003",
 		"nextPriceConfirmWindow": "2",
@@ -120,10 +120,10 @@
 		"makerFeeNextPrice": "0.001",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "1000000",
+		"maxMarketValueUSD": "2500000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sXAG",
@@ -137,7 +137,7 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sEUR",
@@ -151,6 +151,34 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
-		"paused": true
+		"paused": false
+	},
+	{
+		"marketKey": "sAPE",
+		"asset": "APE",
+		"takerFee": "0.0095",
+		"makerFee": "0.0085",
+		"takerFeeNextPrice": "0.0075",
+		"makerFeeNextPrice": "0.0075",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "2000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "10000000",
+		"paused": false
+	},
+	{
+		"marketKey": "sDYDX",
+		"asset": "DYDX",
+		"takerFee": "0.0065",
+		"makerFee": "0.0055",
+		"takerFeeNextPrice": "0.0045",
+		"makerFeeNextPrice": "0.0045",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "2000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "10000000",
+		"paused": false
 	}
 ]

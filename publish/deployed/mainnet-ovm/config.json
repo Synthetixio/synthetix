@@ -80,12 +80,6 @@
 	"SynthsUSD": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -282,6 +276,21 @@
 		"deploy": false
 	},
 	"FuturesMarketEUR": {
+		"deploy": false
+	},
+	"FuturesMarketAPE": {
+		"deploy": false
+	},
+	"FuturesMarketDYDX": {
+		"deploy": false
+	},
+	"TokenStatesINR": {
+		"deploy": false
+	},
+	"ProxysINR": {
+		"deploy": false
+	},
+	"SynthsINR": {
 		"deploy": false
 	}
 }

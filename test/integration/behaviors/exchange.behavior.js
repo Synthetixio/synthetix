@@ -90,6 +90,30 @@ function itCanExchange({ ctx }) {
 			});
 		});
 	});
+
+	describe('settings are configurable', async () => {
+		let owner, SystemSettings;
+
+		before('target contracts and users', () => {
+			({ SystemSettings } = ctx.contracts);
+			owner = ctx.users.owner;
+		});
+
+		it('set sUSD to use the pure chainlink price for atomic swap', async () => {
+			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(
+				toBytes32('sUSD'),
+				false
+			);
+			const resp1 = await SystemSettings.pureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'));
+			assert.bnEqual(resp1, false);
+			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(
+				toBytes32('sUSD'),
+				true
+			);
+			const resp2 = await SystemSettings.pureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'));
+			assert.bnEqual(resp2, true);
+		});
+	});
 }
 
 module.exports = {
