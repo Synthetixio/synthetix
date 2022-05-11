@@ -439,9 +439,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
+        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+
+        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
+        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+        if (sourceAmountAfterSettlement == 0) {
+            return (0, 0, IVirtualSynth(0));
+        }
+
         (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
-            sourceAmount,
+            sourceAmountAfterSettlement,
             destinationCurrencyKey,
             entry.roundIdForSrc,
             entry.roundIdForDest
@@ -449,7 +457,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         _ensureCanExchangeAtRound(
             sourceCurrencyKey,
-            sourceAmount,
+            sourceAmountAfterSettlement,
             destinationCurrencyKey,
             entry.roundIdForSrc,
             entry.roundIdForDest
@@ -458,14 +466,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // SIP-65: Decentralized Circuit Breaker
         // mutative call to suspend system if the rate is invalid
         if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0, IVirtualSynth(0));
-        }
-
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
-
-        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
-        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmountAfterSettlement == 0) {
             return (0, 0, IVirtualSynth(0));
         }
 

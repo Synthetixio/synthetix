@@ -1215,6 +1215,35 @@ contract('Exchanger (spec tests)', async accounts => {
 														newRate: divideDecimal(1, 4),
 													});
 												});
+
+												describe.only('when full exchange() is invoked before settle', () => {
+													let expectedAmountReceived;
+													beforeEach(async () => {
+														expectedAmountReceived = (
+															await exchanger.getAmountsForExchange(
+																srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
+																sEUR,
+																sBTC
+															)
+														)[0];
+
+														await synthetix.exchange(
+															sEUR,
+															await sEURContract.balanceOf(account1),
+															sBTC,
+															{
+																from: account1,
+															}
+														);
+													});
+													it('then exchanges with settled amount', async () => {
+														assert.bnEqual(
+															await sBTCContract.balanceOf(account1),
+															expectedAmountReceived
+														);
+													});
+												});
+
 												describe('when settle() is invoked', () => {
 													let transaction;
 													beforeEach(async () => {
