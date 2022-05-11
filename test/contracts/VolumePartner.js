@@ -216,7 +216,7 @@ contract('VolumePartner', accounts => {
             ({ SystemSettings: systemSettings, VolumePartner: volumePartner, Exchanger: exchanger, ExchangeRates: exchangeRates, Synthetix: synthetix, SynthsUSD: sUSDContract } = await setupAllContracts({
                 accounts,
                 synths: ['sUSD', 'sAUD'],
-                contracts: ['FuturesMarketManager', 'Issuer', 'VolumePartner', 'Synthetix', 'ExchangerWithFeeRecAlternatives', 'ExchangeRatesWithDexPricing']
+                contracts: ['ExchangerWithFeeRecAlternatives', 'ExchangeRatesWithDexPricing', 'FuturesMarketManager', 'Issuer', 'VolumePartner', 'Synthetix']
             }));
             await systemSettings.setMaxVolumePartnerFee(toUnit('0.1'), {
                 from: owner,

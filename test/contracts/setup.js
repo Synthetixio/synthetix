@@ -239,7 +239,7 @@ const setupContract = async ({
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
-		VolumePartner: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
+		VolumePartner: [tryGetAddressOf('ProxyVolumePartner'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
 			tryGetAddressOf('TokenStateSynth'),
