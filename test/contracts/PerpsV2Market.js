@@ -185,6 +185,10 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
+		it('contract has CONTRACT_NAME getter', async () => {
+			assert.equal(await perpsMarket.CONTRACT_NAME(), toBytes32('PerpsV2Market'));
+		});
+
 		it('static parameters are set properly at construction', async () => {
 			assert.equal(await perpsMarket.baseAsset(), baseAsset);
 			assert.equal(await perpsMarket.marketKey(), marketKey);

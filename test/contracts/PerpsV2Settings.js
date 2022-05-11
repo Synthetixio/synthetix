@@ -112,6 +112,10 @@ contract('PerpsV2Settings', accounts => {
 		});
 	});
 
+	it('contract has CONTRACT_NAME getter', async () => {
+		assert.equal(await perpsSettings.CONTRACT_NAME(), toBytes32('PerpsV2Settings'));
+	});
+
 	describe('Parameter setting', () => {
 		let params;
 

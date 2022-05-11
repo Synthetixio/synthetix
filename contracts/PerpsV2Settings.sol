@@ -18,6 +18,8 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
 
     bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
+    bytes32 public constant CONTRACT_NAME = "PerpsV2Settings";
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {}

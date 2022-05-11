@@ -98,6 +98,10 @@ contract('FuturesMarketManager', accounts => {
 				],
 			});
 		});
+
+		it('contract has CONTRACT_NAME getter', async () => {
+			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('FuturesMarketManager'));
+		});
 	});
 
 	describe('Market management', () => {

@@ -96,6 +96,8 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
 
+    bytes32 public constant CONTRACT_NAME = "PerpsV2Market";
+
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
