@@ -22,7 +22,7 @@
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "7000000",
+		"maxMarketValueUSD": "25000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "300000000",
 		"paused": false
@@ -120,7 +120,7 @@
 		"makerFeeNextPrice": "0.001",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "1000000",
+		"maxMarketValueUSD": "2500000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "100000000",
 		"paused": false
@@ -156,29 +156,29 @@
 	{
 		"marketKey": "sAPE",
 		"asset": "APE",
-		"takerFee": "0.085",
-		"makerFee": "0.075",
-		"takerFeeNextPrice": "0.065",
-		"makerFeeNextPrice": "0.065",
+		"takerFee": "0.0095",
+		"makerFee": "0.0085",
+		"takerFeeNextPrice": "0.0075",
+		"makerFeeNextPrice": "0.0075",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "2000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "10000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sDYDX",
 		"asset": "DYDX",
-		"takerFee": "0.065",
-		"makerFee": "0.055",
-		"takerFeeNextPrice": "0.045",
-		"makerFeeNextPrice": "0.045",
+		"takerFee": "0.0065",
+		"makerFee": "0.0055",
+		"takerFeeNextPrice": "0.0045",
+		"makerFeeNextPrice": "0.0045",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "2000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "10000000",
-		"paused": true
+		"paused": false
 	}
 ]

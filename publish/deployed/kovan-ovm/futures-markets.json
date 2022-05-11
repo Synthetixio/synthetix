@@ -196,20 +196,6 @@
 		"paused": false
 	},
 	{
-		"marketKey": "sAPE",
-		"asset": "APE",
-		"takerFee": "0.085",
-		"makerFee": "0.075",
-		"takerFeeNextPrice": "0.065",
-		"makerFeeNextPrice": "0.065",
-		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
-		"maxMarketValueUSD": "2000000",
-		"maxFundingRate": "0.1",
-		"skewScaleUSD": "10000000",
-		"paused": false
-	},
-	{
 		"marketKey": "sEUR",
 		"asset": "EUR",
 		"takerFee": "0.0015",

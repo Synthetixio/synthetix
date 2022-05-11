@@ -55,19 +55,19 @@ class SafeBatchSubmitter {
 
 			let matchedTxnIsPending = false;
 
-			for (const {
-				nonce,
-				dataDecoded: {
-					parameters: [{ valueDecoded }],
-				},
-			} of pendingTxns.results) {
+			for (const { nonce } of pendingTxns.results) {
 				// figure out what the next unused nonce position is (including everything else in the queue)
 				this.unusedNoncePosition = Math.max(this.unusedNoncePosition, nonce + 1);
-				matchedTxnIsPending =
-					matchedTxnIsPending ||
-					(valueDecoded || []).find(
-						entry => entry.to === to && entry.data === data && entry.value === value
-					);
+				console.log('Incremented nonce to ', this.unusedNoncePosition);
+
+				const dataDecoded = pendingTxns.results.parameters;
+				if (dataDecoded !== undefined) {
+					matchedTxnIsPending =
+						matchedTxnIsPending ||
+						(dataDecoded.valueDecoded || []).find(
+							entry => entry.to === to && entry.data === data && entry.value === value
+						);
+				}
 			}
 
 			if (matchedTxnIsPending) {
