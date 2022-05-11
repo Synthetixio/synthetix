@@ -82,8 +82,8 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
     /*
      * The maximum allowable notional value on each side of a market.
      */
-    function maxMarketValueUSD(bytes32 _marketKey) public view returns (uint) {
-        return _maxMarketValueUSD(_marketKey);
+    function maxSingleSideValueUSD(bytes32 _marketKey) public view returns (uint) {
+        return _maxSingleSideValueUSD(_marketKey);
     }
 
     /*
@@ -110,7 +110,7 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
             uint makerFeeNextPrice,
             uint nextPriceConfirmWindow,
             uint maxLeverage,
-            uint maxMarketValueUSD,
+            uint maxSingleSideValueUSD,
             uint maxFundingRate,
             uint skewScaleUSD
         )
@@ -121,7 +121,7 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         makerFeeNextPrice = _makerFeeNextPrice(_marketKey);
         nextPriceConfirmWindow = _nextPriceConfirmWindow(_marketKey);
         maxLeverage = _maxLeverage(_marketKey);
-        maxMarketValueUSD = _maxMarketValueUSD(_marketKey);
+        maxSingleSideValueUSD = _maxSingleSideValueUSD(_marketKey);
         maxFundingRate = _maxFundingRate(_marketKey);
         skewScaleUSD = _skewScaleUSD(_marketKey);
     }
@@ -198,8 +198,8 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         _setParameter(_marketKey, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValueUSD(bytes32 _marketKey, uint _maxMarketValueUSD) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
+    function setMaxSingleSideValueUSD(bytes32 _marketKey, uint _maxSingleSideValueUSD) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_SINGLE_SIDE_VALUE, _maxSingleSideValueUSD);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
@@ -232,7 +232,7 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         uint _makerFeeNextPrice,
         uint _nextPriceConfirmWindow,
         uint _maxLeverage,
-        uint _maxMarketValueUSD,
+        uint _maxSingleSideValueUSD,
         uint _maxFundingRate,
         uint _skewScaleUSD
     ) external onlyOwner {
@@ -243,7 +243,7 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         setMakerFeeNextPrice(_marketKey, _makerFeeNextPrice);
         setNextPriceConfirmWindow(_marketKey, _nextPriceConfirmWindow);
         setMaxLeverage(_marketKey, _maxLeverage);
-        setMaxMarketValueUSD(_marketKey, _maxMarketValueUSD);
+        setMaxSingleSideValueUSD(_marketKey, _maxSingleSideValueUSD);
         setMaxFundingRate(_marketKey, _maxFundingRate);
         setSkewScaleUSD(_marketKey, _skewScaleUSD);
     }

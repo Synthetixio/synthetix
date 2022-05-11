@@ -504,7 +504,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValueUSD(marketKey).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
+                uint(int(_maxSingleSideValueUSD(marketKey).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
                 oldPos.size,
                 newPos.size
             )

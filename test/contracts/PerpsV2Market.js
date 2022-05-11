@@ -61,7 +61,7 @@ contract('PerpsV2Market', accounts => {
 	const takerFeeNextPrice = toUnit('0.0005');
 	const makerFeeNextPrice = toUnit('0.0001');
 	const maxLeverage = toUnit('10');
-	const maxMarketValueUSD = toUnit('100000');
+	const maxSingleSideValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
 	const skewScaleUSD = toUnit('100000');
 	const initialPrice = toUnit('100');
@@ -194,7 +194,7 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(parameters.takerFeeNextPrice, takerFeeNextPrice);
 			assert.bnEqual(parameters.makerFeeNextPrice, makerFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
-			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
+			assert.bnEqual(parameters.maxSingleSideValueUSD, maxSingleSideValueUSD);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
 			assert.bnEqual(parameters.skewScaleUSD, skewScaleUSD);
 		});
@@ -1091,16 +1091,16 @@ contract('PerpsV2Market', accounts => {
 			it('properly reports the max order size on each side', async () => {
 				let maxOrderSizes = await perpsMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxMarketValueUSD, initialPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, initialPrice));
+				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxSingleSideValueUSD, initialPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxSingleSideValueUSD, initialPrice));
 
 				let newPrice = toUnit('193');
 				await setPrice(baseAsset, newPrice);
 
 				maxOrderSizes = await perpsMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxMarketValueUSD, newPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxSingleSideValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxSingleSideValueUSD, newPrice));
 
 				// Submit order on one side, leaving part of what's left.
 
@@ -1117,9 +1117,9 @@ contract('PerpsV2Market', accounts => {
 				maxOrderSizes = await perpsMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('400'))
+					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('400'))
 				);
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxSingleSideValueUSD, newPrice));
 
 				// Submit order on the other side, removing all available supply.
 				await transferMarginAndModifyPosition({
@@ -1133,7 +1133,7 @@ contract('PerpsV2Market', accounts => {
 				maxOrderSizes = await perpsMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('400'))
+					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('400'))
 				); // Long side is unaffected
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
@@ -1149,7 +1149,7 @@ contract('PerpsV2Market', accounts => {
 				maxOrderSizes = await perpsMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('600'))
+					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
@@ -1165,11 +1165,11 @@ contract('PerpsV2Market', accounts => {
 				maxOrderSizes = await perpsMarket.maxOrderSizes();
 				assert.bnEqual(
 					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('600'))
+					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnClose(
 					maxOrderSizes.short,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('666.73333')),
+					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('666.73333')),
 					toUnit('0.001')
 				);
 			});
@@ -1180,7 +1180,7 @@ contract('PerpsV2Market', accounts => {
 					const leverage = side === 'long' ? toUnit('10') : toUnit('-10');
 
 					beforeEach(async () => {
-						await perpsSettings.setMaxMarketValueUSD(marketKey, toUnit('10000'), {
+						await perpsSettings.setMaxSingleSideValueUSD(marketKey, toUnit('10000'), {
 							from: owner,
 						});
 						await setPrice(baseAsset, toUnit('1'));
@@ -2430,7 +2430,7 @@ contract('PerpsV2Market', accounts => {
 
 			describe(`${side}`, () => {
 				beforeEach(async () => {
-					await perpsSettings.setMaxMarketValueUSD(marketKey, toUnit('100000'), {
+					await perpsSettings.setMaxSingleSideValueUSD(marketKey, toUnit('100000'), {
 						from: owner,
 					});
 				});

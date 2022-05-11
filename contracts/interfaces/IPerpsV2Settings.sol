@@ -8,7 +8,7 @@ interface IPerpsV2Settings {
         uint makerFeeNextPrice;
         uint nextPriceConfirmWindow;
         uint maxLeverage;
-        uint maxMarketValueUSD;
+        uint maxSingleSideValueUSD;
         uint maxFundingRate;
         uint skewScaleUSD;
     }
@@ -25,7 +25,7 @@ interface IPerpsV2Settings {
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 
-    function maxMarketValueUSD(bytes32 _marketKey) external view returns (uint);
+    function maxSingleSideValueUSD(bytes32 _marketKey) external view returns (uint);
 
     function maxFundingRate(bytes32 _marketKey) external view returns (uint);
 
@@ -41,7 +41,7 @@ interface IPerpsV2Settings {
             uint _makerFeeNextPrice,
             uint _nextPriceConfirmWindow,
             uint _maxLeverage,
-            uint _maxMarketValueUSD,
+            uint _maxSingleSideValueUSD,
             uint _maxFundingRate,
             uint _skewScaleUSD
         );

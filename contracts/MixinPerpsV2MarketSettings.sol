@@ -20,7 +20,7 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAKER_FEE_NEXT_PRICE = "makerFeeNextPrice";
     bytes32 internal constant PARAMETER_NEXT_PRICE_CONFIRM_WINDOW = "nextPriceConfirmWindow";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
+    bytes32 internal constant PARAMETER_MAX_SINGLE_SIDE_VALUE = "maxSingleSideValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
 
@@ -82,8 +82,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAX_LEVERAGE);
     }
 
-    function _maxMarketValueUSD(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAX_MARKET_VALUE);
+    function _maxSingleSideValueUSD(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_SINGLE_SIDE_VALUE);
     }
 
     function _skewScaleUSD(bytes32 _marketKey) internal view returns (uint) {

@@ -28,7 +28,7 @@ contract('PerpsV2Settings', accounts => {
 	const makerFeeNextPrice = toUnit('0.0001');
 	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
-	const maxMarketValueUSD = toUnit('100000');
+	const maxSingleSideValueUSD = toUnit('100000');
 
 	const maxFundingRate = toUnit('0.1');
 	const skewScaleUSD = toUnit('10000');
@@ -100,7 +100,7 @@ contract('PerpsV2Settings', accounts => {
 				'setMakerFeeNextPrice',
 				'setNextPriceConfirmWindow',
 				'setMaxLeverage',
-				'setMaxMarketValueUSD',
+				'setMaxSingleSideValueUSD',
 				'setMaxFundingRate',
 				'setSkewScaleUSD',
 				'setParameters',
@@ -123,7 +123,7 @@ contract('PerpsV2Settings', accounts => {
 				makerFeeNextPrice,
 				nextPriceConfirmWindow,
 				maxLeverage,
-				maxMarketValueUSD,
+				maxSingleSideValueUSD,
 				maxFundingRate,
 				skewScaleUSD,
 			}).map(([key, val]) => {
