@@ -91,9 +91,14 @@ interface IPerpsV2Market {
 
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid);
 
-    function liquidationPrice(address account) external view returns (uint price, bool invalid);
-
-    function liquidationFee(address account) external view returns (uint);
+    function approxLiquidationPriceAndFee(address account)
+        external
+        view
+        returns (
+            uint price,
+            uint fee,
+            bool invalid
+        );
 
     function canLiquidate(address account) external view returns (bool);
 
