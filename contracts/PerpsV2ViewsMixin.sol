@@ -7,7 +7,7 @@ import "./PerpsV2MarketBase.sol";
  * A mixin that implements vairous useful views that are used externally but
  * aren't used inside the core contract (so don't need to clutter the contract file)
  */
-contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
+contract PerpsV2ViewsMixin is PerpsV2MarketBase {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */

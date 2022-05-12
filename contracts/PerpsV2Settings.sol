@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinPerpsV2MarketSettings.sol";
+import "./PerpsV2SettingsMixin.sol";
 
 // Internal references
 import "./interfaces/IPerpsV2Settings.sol";
@@ -11,7 +11,7 @@ import "./interfaces/IPerpsV2Market.sol";
 // market manager is still the V1 one
 import "./interfaces/IFuturesMarketManager.sol";
 
-contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings {
+contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -22,12 +22,12 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) PerpsV2SettingsMixin(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);

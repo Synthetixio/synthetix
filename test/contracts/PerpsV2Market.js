@@ -165,7 +165,7 @@ contract('PerpsV2Market', accounts => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsMarket.abi,
-				ignoreParents: ['MixinPerpsV2MarketSettings'],
+				ignoreParents: ['PerpsV2SettingsMixin'],
 				expected: [
 					'transferMargin',
 					'withdrawAllMargin',

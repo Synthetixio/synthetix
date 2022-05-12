@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./MixinPerpsV2MarketSettings.sol";
+import "./PerpsV2SettingsMixin.sol";
 import "./interfaces/IPerpsV2Market.sol";
 
 // Libraries
@@ -28,7 +28,7 @@ interface IFuturesMarketManagerInternal {
     function payFee(uint amount) external;
 }
 
-contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
+contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -120,7 +120,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         address _resolver,
         bytes32 _baseAsset,
         bytes32 _marketKey
-    ) public MixinPerpsV2MarketSettings(_resolver) {
+    ) public PerpsV2SettingsMixin(_resolver) {
         baseAsset = _baseAsset;
         marketKey = _marketKey;
 
@@ -146,7 +146,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
     /* ---------- External Contracts ---------- */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
