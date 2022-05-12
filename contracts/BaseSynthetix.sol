@@ -323,7 +323,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             uint flagReward = liquidator().flagReward();
             uint liquidateReward = liquidator().liquidateReward();
             // Check if the total amount of redeemed SNX is enough to payout the liquidation rewards.
-            if (totalRedeemed > (flagReward.add(liquidateReward))) {
+            if (totalRedeemed > flagReward.add(liquidateReward)) {
                 // Transfer the flagReward to the account who flagged this account for liquidation.
                 address flagger = liquidator().getLiquidationCallerForAccount(account);
                 bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);

@@ -30,8 +30,8 @@ library SystemSettingsLib {
 
     uint public constant MAX_LIQUIDATION_PENALTY = 3e18 / 10; // Max 30% liquidation penalty / bonus
 
-    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 24 hours;
+    uint public constant MAX_LIQUIDATION_DELAY = 3 days;
+    uint public constant MIN_LIQUIDATION_DELAY = 300; // 5 min
 
     // Exchange fee may not exceed 10%.
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
@@ -39,7 +39,7 @@ library SystemSettingsLib {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
-    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
+    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 12e6;
     uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
 
     int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
