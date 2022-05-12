@@ -396,7 +396,7 @@
 		{
 			"sip": 148,
 			"layer": "both",
-			"sources": ["Issuer", "Liquidator", "LiquidatorRewards", "Synthetix", "SystemSettings"]
+			"sources": ["Issuer", "Liquidator", "LiquidatorRewards", "Synthetix", "SystemSettings", "SystemSettingsLib"]
 		},
 		{
 			"sip": 167,
