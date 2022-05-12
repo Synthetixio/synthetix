@@ -114,7 +114,7 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 		it('cannot exceed the maximum ovm gas limit', async () => {
-			const newLimit = 8.000001e6;
+			const newLimit = 12.000001e6;
 			const gasLimitType = 0;
 			await assert.revert(
 				systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
@@ -431,7 +431,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setLiquidationDelay,
-				args: [oneWeek],
+				args: [day],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -458,10 +458,10 @@ contract('SystemSettings', async accounts => {
 			const liquidationDelay = await systemSettings.liquidationDelay();
 			assert.bnEqual(liquidationDelay, day);
 		});
-		it('owner can set liquidationDelay to 30 days', async () => {
-			await systemSettings.setLiquidationDelay(30 * day, { from: owner });
+		it('owner can set liquidationDelay to 3 days', async () => {
+			await systemSettings.setLiquidationDelay(3 * day, { from: owner });
 			const liquidationDelay = await systemSettings.liquidationDelay();
-			assert.bnEqual(liquidationDelay, 30 * day);
+			assert.bnEqual(liquidationDelay, 3 * day);
 		});
 	});
 
