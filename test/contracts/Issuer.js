@@ -293,6 +293,25 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
+
+		describe('fails if both networks addresses set for trusted minters', () => {
+			beforeEach(async () => {
+				await addressResolver.importAddresses(
+					[toBytes32('SynthetixBridgeToBase')],
+					[issuer.address],
+					{ from: owner }
+				);
+			});
+
+			it('reverts', async () => {
+				await assert.revert(
+					issuer.issueSynthsWithoutDebt(sUSD, owner, toUnit(100), {
+						from: synthetixBridgeToOptimism,
+					}),
+					'One of the trusted minters is not 0'
+				);
+			});
+		});
 	});
 
 	describe('when minimum stake time is set to 0', () => {
