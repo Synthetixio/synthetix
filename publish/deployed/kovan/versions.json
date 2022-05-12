@@ -7303,18 +7303,21 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xD9b6bAEc9847189bd4f9B0c8D5Bb2512e0368aBf",
-				"status": "current",
-				"keccak256": "0x1dfe695db7353cb1802f067af071d6e43d6a3c85b805a6c12c2ff106b91aa074"
+				"status": "replaced",
+				"keccak256": "0x1dfe695db7353cb1802f067af071d6e43d6a3c85b805a6c12c2ff106b91aa074",
+				"replaced_in": "v2.68.1-alpha"
 			},
 			"Synthetix": {
 				"address": "0x80a371e65dB3dD35b39d094AED82c28bafeA9A65",
-				"status": "current",
-				"keccak256": "0xcdd50c64963981c20cd56e791f89109b77bb2419ecdef91d8d40764ba82d8395"
+				"status": "replaced",
+				"keccak256": "0xcdd50c64963981c20cd56e791f89109b77bb2419ecdef91d8d40764ba82d8395",
+				"replaced_in": "v2.68.1-alpha"
 			},
 			"Exchanger": {
 				"address": "0xD63db8cD2dbFd7E0999D8D58C94d9ECF0004e180",
-				"status": "current",
-				"keccak256": "0x38d839b77040ffd26378338aa474385625c498211ac06348c801b3428cd57070"
+				"status": "replaced",
+				"keccak256": "0x38d839b77040ffd26378338aa474385625c498211ac06348c801b3428cd57070",
+				"replaced_in": "v2.68.1-alpha"
 			},
 			"SystemSettings": {
 				"address": "0xc54369b816E162014a857075a56DE8226b08FfCC",
@@ -7340,23 +7343,72 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0xAb6dA3A3C7428606851f2bd33C118B2a77183578",
-				"status": "current",
-				"keccak256": "0x89c2dfe6423f9db7f97274421997a8f971e07ab2d590dd19559e5fb523fcbfee"
+				"status": "replaced",
+				"keccak256": "0x89c2dfe6423f9db7f97274421997a8f971e07ab2d590dd19559e5fb523fcbfee",
+				"replaced_in": "v2.68.1-alpha"
 			},
 			"SystemSettings": {
 				"address": "0xa090A311Aa4FEb1399D4463c44B357D05E41946c",
-				"status": "current",
-				"keccak256": "0x6d7e1121faeb22dd47d1ab9d69e93c681155d36746d4639ddaa154fa8b446a50"
+				"status": "replaced",
+				"keccak256": "0x6d7e1121faeb22dd47d1ab9d69e93c681155d36746d4639ddaa154fa8b446a50",
+				"replaced_in": "v2.68.1-alpha"
 			},
 			"SynthetixBridgeToOptimism": {
 				"address": "0x828d4F922E446c76E2D0e0582EAa38acc4d793a2",
-				"status": "current",
-				"keccak256": "0xb24be3f313a81136bb5fb6dd64bfaaf201772b6f73b02839e56738babc5a8fb5"
+				"status": "replaced",
+				"keccak256": "0xb24be3f313a81136bb5fb6dd64bfaaf201772b6f73b02839e56738babc5a8fb5",
+				"replaced_in": "v2.68.1-alpha"
 			},
 			"SystemSettingsLib": {
 				"address": "0x081158Dd1DE2B2128DD65eFFF67aA61b48dc7568",
+				"status": "replaced",
+				"keccak256": "0xd3fd944f5b20248f756d86ef9fd94fb07058f27345404116ebbe79cacb9ef3e5",
+				"replaced_in": "v2.68.1-alpha"
+			}
+		}
+	},
+	"v2.68.1-alpha": {
+		"tag": "v2.68.1-alpha",
+		"fulltag": "v2.68.1-alpha",
+		"release": "Mirach",
+		"network": "kovan",
+		"date": "2022-05-10T10:51:06-04:00",
+		"commit": "59e5a09b3e70d4eb9cba5dad2cf692cb5f5bd9ea",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x412c870daAb642aA87715e2EA860d20E48E73267",
 				"status": "current",
-				"keccak256": "0xd3fd944f5b20248f756d86ef9fd94fb07058f27345404116ebbe79cacb9ef3e5"
+				"keccak256": "0x87564ce6ba744b9ccd9f4c1295332ebbe5392196baa76c39a125ead78e941cab"
+			},
+			"Synthetix": {
+				"address": "0x6b27e4554f2FEFc04F4bd9AE0D2A77f348d12cfA",
+				"status": "current",
+				"keccak256": "0x2fa686cbff316a55fb346d4864b998e50685cee613841bf3541812dbe74f988a"
+			},
+			"Exchanger": {
+				"address": "0x8e08BF90B979698AdB6d722E9e27263f36366414",
+				"status": "current",
+				"keccak256": "0xf5962b3f3687b36c7c40dab9561f8c2896815bacf409014d046b1dcd93d56652"
+			},
+			"Issuer": {
+				"address": "0x1991bEA1eB08a78701F3330934B2301Fc6520AbA",
+				"status": "current",
+				"keccak256": "0xfd4ffa7b4beb5faddfe9ecd13ec21d6d31fbf6f182dfc78c4df7ccce4f1f6b99"
+			},
+			"SystemSettings": {
+				"address": "0x1FEdC443D6c05475310fC62E5d4bf5c431cd06B6",
+				"status": "current",
+				"keccak256": "0xc9dca64837d645f46a699dddd0c527d302e278a1ccf253579dcfae64bbbaf7d3"
+			},
+			"SynthetixBridgeToOptimism": {
+				"address": "0xc00E7C2Bd7B0Fb95DbBF10d2d336399A939099ee",
+				"status": "current",
+				"keccak256": "0xdff9df88e885c9026ab62c879f5378f213292e70ca6e99106893271b0ca9109a"
+			},
+			"SystemSettingsLib": {
+				"address": "0xB023d49Fc98eB2f955fA1dF2B2868bFf62C671E6",
+				"status": "current",
+				"keccak256": "0xc61227b8c9f852b438b6229b216219fa59b4d7705129c55bd3f0a5356a3b87ab"
 			}
 		}
 	}
