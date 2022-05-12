@@ -168,6 +168,7 @@ contract('Rewards Integration Tests', accounts => {
 				'Synthetix',
 				'SystemSettings',
 				'CollateralManager',
+				'LiquidatorRewards',
 			],
 		}));
 
