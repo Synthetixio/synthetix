@@ -442,7 +442,7 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setLiquidationDelay(0, {
 					from: owner,
 				}),
-				'Must be greater than 24 hours'
+				'Must be greater than MIN_LIQUIDATION_DELAY'
 			);
 		});
 		it('when setLiquidationDelay is set above 30 days then revert', async () => {
@@ -450,7 +450,7 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setLiquidationDelay(31 * day, {
 					from: owner,
 				}),
-				'Must be less than 30 days'
+				'Must be less than MAX_LIQUIDATION_DELAY'
 			);
 		});
 		it('owner can set liquidationDelay to 1 day', async () => {

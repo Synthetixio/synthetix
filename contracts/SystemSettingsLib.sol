@@ -135,8 +135,8 @@ library SystemSettingsLib {
         bytes32 settingName,
         uint time
     ) external {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 24 hours");
+        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than MAX_LIQUIDATION_DELAY");
+        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than MIN_LIQUIDATION_DELAY");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, time);
     }
