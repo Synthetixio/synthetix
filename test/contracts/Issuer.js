@@ -105,6 +105,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthetixEscrow',
 				'SystemSettings',
 				'Issuer',
+				'LiquidatorRewards',
 				'OneNetAggregatorIssuedSynths',
 				'OneNetAggregatorDebtRatio',
 				'DebtCache',
