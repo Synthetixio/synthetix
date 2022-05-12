@@ -90,15 +90,15 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function getReward() external nonReentrant {
-        updateEntry(msg.sender);
+    function getReward(address account) external nonReentrant {
+        updateEntry(account);
 
-        uint256 reward = entries[msg.sender].claimable;
+        uint256 reward = entries[account].claimable;
         if (reward > 0) {
-            entries[msg.sender].claimable = 0;
+            entries[account].claimable = 0;
             synthetix().approve(address(rewardEscrowV2()), reward);
-            rewardEscrowV2().createEscrowEntry(msg.sender, reward, getLiquidationEscrowDuration());
-            emit RewardPaid(msg.sender, reward);
+            rewardEscrowV2().createEscrowEntry(account, reward, getLiquidationEscrowDuration());
+            emit RewardPaid(account, reward);
         }
     }
 

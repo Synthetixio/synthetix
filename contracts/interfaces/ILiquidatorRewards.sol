@@ -7,7 +7,7 @@ interface ILiquidatorRewards {
 
     // Mutative
 
-    function getReward() external;
+    function getReward(address account) external;
 
     function notifyRewardAmount(uint256 reward) external;
 

@@ -314,6 +314,9 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+        // Get the unclaimed liquidator rewards for this account.
+        liquidatorRewards().getReward(account);
+
         (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, false);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);

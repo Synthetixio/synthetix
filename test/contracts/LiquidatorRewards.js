@@ -262,7 +262,7 @@ contract('LiquidatorRewards', accounts => {
 
 			const collateralBefore = await synthetix.collateral(stakingAccount1);
 
-			await liquidatorRewards.getReward({ from: stakingAccount1 });
+			await liquidatorRewards.getReward(stakingAccount1, { from: stakingAccount1 });
 
 			const collateralAfter = await synthetix.collateral(stakingAccount1);
 
@@ -275,7 +275,7 @@ contract('LiquidatorRewards', accounts => {
 			const initialEarnedBal = await liquidatorRewards.earned(stakingAccount1);
 			const rewardsBalanceBeforeClaim = await synthetix.balanceOf(liquidatorRewards.address);
 
-			const tx = await liquidatorRewards.getReward({ from: stakingAccount1 });
+			const tx = await liquidatorRewards.getReward(stakingAccount1, { from: stakingAccount1 });
 
 			assert.eventEqual(tx, 'RewardPaid', {
 				user: stakingAccount1,
@@ -296,7 +296,7 @@ contract('LiquidatorRewards', accounts => {
 			const rewardsBalanceBeforeClaim = await synthetix.balanceOf(liquidatorRewards.address);
 
 			// claim rewards for the first time
-			await liquidatorRewards.getReward({ from: stakingAccount1 });
+			await liquidatorRewards.getReward(stakingAccount1, { from: stakingAccount1 });
 
 			const rewardsBalanceAfterClaim = await synthetix.balanceOf(liquidatorRewards.address);
 			assert.bnEqual(rewardsBalanceAfterClaim, rewardsBalanceBeforeClaim.sub(initialEarnedBal));
@@ -304,7 +304,7 @@ contract('LiquidatorRewards', accounts => {
 			const collateralBefore = await synthetix.collateral(stakingAccount1);
 
 			// attempt to claim rewards again before any new rewards come in
-			await liquidatorRewards.getReward({ from: stakingAccount1 });
+			await liquidatorRewards.getReward(stakingAccount1, { from: stakingAccount1 });
 
 			const collateralAfter = await synthetix.collateral(stakingAccount1);
 
@@ -320,7 +320,7 @@ contract('LiquidatorRewards', accounts => {
 			assert.bnGt(initialEarnedBal1, ZERO_BN);
 			assert.bnGt(initialEarnedBal2, ZERO_BN);
 
-			await liquidatorRewards.getReward({ from: stakingAccount1 });
+			await liquidatorRewards.getReward(stakingAccount1, { from: stakingAccount1 });
 
 			const postEarnedBal1 = await liquidatorRewards.earned(stakingAccount1);
 			assert.bnEqual(postEarnedBal1, ZERO_BN);
