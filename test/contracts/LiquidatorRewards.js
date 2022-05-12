@@ -140,6 +140,14 @@ contract('LiquidatorRewards', accounts => {
 
 	describe('earned()', () => {
 		it('should be 0 when not staking', async () => {
+			await addressResolver.importAddresses(['Synthetix'].map(toBytes32), [mockSynthetix], {
+				from: owner,
+			});
+			await liquidatorRewards.rebuildCache();
+
+			const rewardValue = toUnit('100');
+			await synthetix.transfer(liquidatorRewards.address, rewardValue, { from: owner });
+
 			assert.bnEqual(await liquidatorRewards.earned(stakingAccount1), ZERO_BN);
 		});
 
