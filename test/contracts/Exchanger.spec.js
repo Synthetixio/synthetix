@@ -3389,7 +3389,11 @@ contract('Exchanger (spec tests)', async accounts => {
 								describe('exchanges for sAUD -> sEUR', () => {
 									beforeEach('exchange', async () => {
 										expectedReceiveAmount = (
-											await exchanger.getAmountsForAtomicExchange(adjustedTransferBalance, sAUD, sEUR)
+											await exchanger.getAmountsForAtomicExchange(
+												adjustedTransferBalance,
+												sAUD,
+												sEUR
+											)
 										)[0];
 
 										await synthetix.exchangeAtomically(sAUD, balanceBefore, sEUR, toBytes32(), 0, {
