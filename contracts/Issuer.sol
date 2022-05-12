@@ -109,7 +109,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](15);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -119,12 +119,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[6] = CONTRACT_REWARDESCROW_V2;
         newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[8] = CONTRACT_LIQUIDATOR;
-        newAddresses[8] = CONTRACT_LIQUIDATOR_REWARDS;
-        newAddresses[9] = CONTRACT_DEBTCACHE;
-        newAddresses[10] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[11] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
-        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[9] = CONTRACT_LIQUIDATOR_REWARDS;
+        newAddresses[10] = CONTRACT_DEBTCACHE;
+        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[12] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[14] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
