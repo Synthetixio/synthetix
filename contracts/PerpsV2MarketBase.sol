@@ -110,8 +110,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
     struct TradeParams {
         int sizeDelta;
         uint price;
-        uint takerFee;
-        uint makerFee;
+        uint baseFee;
         bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
@@ -397,16 +396,11 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         return _notionalValue(position.size, price).divideDecimal(int(remainingMargin_));
     }
 
-    function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal view returns (uint fee) {
+    function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal pure returns (uint fee) {
         // usd value of the difference in position
         int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
 
-        // If the order is submitted on the same side as the skew (increasing it) - the taker fee is charged.
-        // Otherwise if the order is opposite to the skew, the maker fee is charged.
-        // the case where the order flips the skew is ignored for simplicity due to being negligible
-        // in both size of effect and frequency of occurrence
-        uint staticRate = _sameSide(notionalDiff, marketSkew) ? params.takerFee : params.makerFee;
-        uint feeRate = staticRate.add(dynamicFeeRate);
+        uint feeRate = params.baseFee.add(dynamicFeeRate);
         return _abs(notionalDiff.multiplyDecimal(int(feeRate)));
     }
 
@@ -884,13 +878,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         _recomputeFunding(price);
         _trade(
             msg.sender,
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: trackingCode
-            })
+            TradeParams({sizeDelta: sizeDelta, price: price, baseFee: _baseFee(marketKey), trackingCode: trackingCode})
         );
     }
 
@@ -913,13 +901,7 @@ contract PerpsV2MarketBase is MixinPerpsV2MarketSettings, IPerpsV2BaseTypes {
         _recomputeFunding(price);
         _trade(
             msg.sender,
-            TradeParams({
-                sizeDelta: -size,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: trackingCode
-            })
+            TradeParams({sizeDelta: -size, price: price, baseFee: _baseFee(marketKey), trackingCode: trackingCode})
         );
     }
 

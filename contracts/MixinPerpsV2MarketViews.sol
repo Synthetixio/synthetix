@@ -135,13 +135,7 @@ contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
         (uint price, bool isInvalid) = assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
         TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: bytes32(0)
-            });
+            TradeParams({sizeDelta: sizeDelta, price: price, baseFee: _baseFee(marketKey), trackingCode: bytes32(0)});
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
     }
 
@@ -167,13 +161,7 @@ contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
         }
 
         TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: bytes32(0)
-            });
+            TradeParams({sizeDelta: sizeDelta, price: price, baseFee: _baseFee(marketKey), trackingCode: bytes32(0)});
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(positions[sender], params);
 
         liqPrice = _approxLiquidationPrice(newPosition, newPosition.lastPrice);
