@@ -457,13 +457,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             entry.roundIdForDest
         );
 
-        _ensureCanExchangeAtRound(
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
-        );
+        _ensureCanExchangeAtRound(sourceCurrencyKey, destinationCurrencyKey, entry.roundIdForSrc, entry.roundIdForDest);
 
         // SIP-65: Decentralized Circuit Breaker
         // mutative call to suspend system if the rate is invalid
@@ -644,13 +638,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function _ensureCanExchangeAtRound(
         bytes32 sourceCurrencyKey,
-        uint sourceAmount,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
 
         bytes32[] memory synthKeys = new bytes32[](2);
         synthKeys[0] = sourceCurrencyKey;
