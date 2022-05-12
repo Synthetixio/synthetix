@@ -712,13 +712,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Factor in the liquidation penalty
         totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
-        // If the total SNX to redeem is greater than account's collateral, liquidate all collateral
-        if (totalRedeemed > collateralForAccount) {
-            // Set totalRedeemed to all transferable collateral
-            totalRedeemed = collateralForAccount;
+        // If the total SNX to redeem is greater than account's collateral,
+        uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
+        if (totalRedeemed > transferableBalance) {
+            // Set totalRedeemed to all transferable collateral.
+            totalRedeemed = transferableBalance;
 
-            // Get the equivalent debt amount to burn for all collateral (less penalty).
-            amountToLiquidate = _snxToUSD(collateralForAccount.divideDecimal(SafeDecimalMath.unit().sub(penalty)), snxRate);
+            // Liquidate their debt based on the ratio of their transferable collateral.
+            amountToLiquidate = debtBalance.multiplyDecimal(transferableBalance).divideDecimal(collateralForAccount);
         }
 
         // Reduce debt by amount to liquidate.
