@@ -433,6 +433,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             IVirtualSynth vSynth
         )
     {
+        require(sourceAmount > 0, "Zero amount");
+
         // Using struct to resolve stack too deep error
         IExchanger.ExchangeEntry memory entry;
 
