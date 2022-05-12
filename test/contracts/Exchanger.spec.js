@@ -3348,7 +3348,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 					});
 
-					function settlementCase(newPrice) {
+					const settlementCase = newPrice => {
 						describe(`price of sAUD changes to ${newPrice} immediately after trade`, () => {
 							let balanceBefore;
 							let adjustedTransferBalance;
@@ -3376,7 +3376,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								);
 							});
 
-							beforeEach('change', async () => {
+							beforeEach(`AUD price changes to ${newPrice}`, async () => {
 								await fastForward(5);
 								await updateRates([sAUD], [newPrice]);
 							});
@@ -3412,7 +3412,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 							});
 						});
-					}
+					};
 
 					settlementCase(toUnit('0.7'));
 					settlementCase(toUnit('0.8'));
