@@ -365,6 +365,10 @@ contract('Liquidator', accounts => {
 					await synthetix.transfer(alice, toUnit('800'), { from: owner });
 					await synthetix.issueMaxSynths({ from: alice });
 
+					// Bob issues sUSD $6000
+					await synthetix.transfer(bob, toUnit('8000'), { from: owner });
+					await synthetix.issueMaxSynths({ from: bob });
+
 					// Drop SNX value to $1 (Collateral worth $800 after)
 					await updateSNXPrice('1');
 				});
@@ -376,7 +380,7 @@ contract('Liquidator', accounts => {
 				});
 				describe('when Alice issuance ratio is fixed as SNX price increases', () => {
 					beforeEach(async () => {
-						await updateSNXPrice(toUnit('6'));
+						await updateSNXPrice('6');
 
 						const liquidationRatio = await liquidator.liquidationRatio();
 
@@ -432,6 +436,7 @@ contract('Liquidator', accounts => {
 				});
 				describe('given Alice has $600 Debt, $800 worth of SNX Collateral and c-ratio at 133.33%', () => {
 					describe('when Alice calls self liquidate', () => {
+						let txn;
 						let ratio;
 						let penalty;
 						let aliceDebtShareBefore;
@@ -451,7 +456,7 @@ contract('Liquidator', accounts => {
 							aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
 							aliceDebtValueBefore = await synthetix.debtBalanceOf(alice, sUSD);
 
-							await synthetix.liquidateSelf({
+							txn = await synthetix.liquidateSelf({
 								from: alice,
 							});
 						});
@@ -492,9 +497,14 @@ contract('Liquidator', accounts => {
 							assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
 
 							// Check that the redeemed SNX is sent to the LiquidatorRewards contract
-							assert.bnEqual(
-								await synthetix.balanceOf(liquidatorRewards.address),
-								aliceCollateralBefore.sub(collateralAfterMinusPenalty)
+							const logs = artifacts.require('Synthetix').decodeLogs(txn.receipt.rawLogs);
+							assert.eventEqual(
+								logs.find(log => log.event === 'AccountLiquidated'),
+								'AccountLiquidated',
+								{
+									account: alice,
+									snxRedeemed: await synthetix.balanceOf(liquidatorRewards.address),
+								}
 							);
 						});
 					});
@@ -527,6 +537,10 @@ contract('Liquidator', accounts => {
 					// Alice issues sUSD $600
 					await synthetix.transfer(alice, toUnit('800'), { from: owner });
 					await synthetix.issueMaxSynths({ from: alice });
+
+					// Bob issues sUSD $6000
+					await synthetix.transfer(bob, toUnit('8000'), { from: owner });
+					await synthetix.issueMaxSynths({ from: bob });
 
 					// Drop SNX value to $1 (Collateral worth $800 after)
 					await updateSNXPrice('1');
