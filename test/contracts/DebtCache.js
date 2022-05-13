@@ -272,6 +272,7 @@ contract('DebtCache', async accounts => {
 				'SynthetixEscrow',
 				'SystemSettings',
 				'Issuer',
+				'LiquidatorRewards',
 				'DebtCache',
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions

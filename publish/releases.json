@@ -394,6 +394,11 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 148,
+			"layer": "both",
+			"sources": ["Issuer", "Liquidator", "LiquidatorRewards", "Synthetix", "SystemSettings", "SystemSettingsLib"]
+		},
+		{
 			"sip": 167,
 			"layer": "both",
 			"sources": {
