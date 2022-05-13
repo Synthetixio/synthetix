@@ -265,8 +265,12 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(futuresMarketManager());
     }
 
+    function _isInternalContractOrViaProxy(address account) internal view returns (bool) {
+        return _isInternalContract(account) || (account == address(proxy) && _isInternalContract(messageSender));
+    }
+
     modifier onlyInternalContracts() {
-        require(_isInternalContract(msg.sender), "Only internal contracts allowed");
+        require(_isInternalContractOrViaProxy(msg.sender), "Only internal contracts allowed");
         _;
     }
 
