@@ -256,7 +256,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         );
     }
 
-    function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
+    function transfer(address to, uint value) external onlyProxy systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
 
@@ -270,7 +270,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address from,
         address to,
         uint value
-    ) external optionalProxy systemActive returns (bool) {
+    ) external onlyProxy systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(from, value);
 
@@ -336,7 +336,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 // The remaining SNX to be sent to the LiquidatorRewards contract.
                 stakerRewards = totalRedeemed.sub(flagReward.add(liquidateReward));
             } else {
-                /* If the total amount of redeemed SNX is greater than zero 
+                /* If the total amount of redeemed SNX is greater than zero
                 but is less than the sum of the flag & liquidate rewards,
                 then just send all of the SNX to the LiquidatorRewards contract. */
                 stakerRewards = totalRedeemed;
