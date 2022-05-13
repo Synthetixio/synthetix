@@ -15,7 +15,6 @@ module.exports = async ({
 	dryRun,
 	limitPromise,
 	runStep,
-	useOvm,
 }) => {
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
@@ -59,10 +58,12 @@ module.exports = async ({
 
 							// SIP-238 Ensure Synthetix and Synths use proxies instead of underlyings
 							if (name === 'Synthetix') {
-								addressArgs[1].push(allContracts['ProxySynthetix'].address);
-							} else if (/Synths.*/.test(name)) {
-								const synth = name.split('Synths')[1].trim();
-								addressArgs[1].push(allContracts[`Proxy${synth}`].address);
+								console.log(gray('--> Using ProxySynthetix for this (SIP-238)'));
+								addressArgs[1].push(deployer.deployedContracts['ProxySynthetix'].address);
+							} else if (/^Synths.*/.test(name)) {
+								const synth = name.split('Synth')[1].trim();
+								console.log(gray(`--> Using Proxy${synth} for this (SIP-238)`));
+								addressArgs[1].push(deployer.deployedContracts[`Proxy${synth}`].address);
 							} else {
 								addressArgs[1].push(contract.address);
 							}
