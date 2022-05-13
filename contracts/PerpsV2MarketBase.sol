@@ -25,7 +25,7 @@ interface IFuturesMarketManagerInternal {
 
     function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
-    function payFee(uint amount) external;
+    function payFee(uint amount, bytes32 trackingCode) external;
 }
 
 contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
@@ -736,7 +736,7 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
         Position storage position = positions[sender];
 
-        // initialise id if nto initialised and store update id=>account mapping
+        // initialise id if not initialised and store update id=>account mapping
         _initPosition(sender, position);
 
         // add the margin
@@ -840,7 +840,7 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
         // Send the fee to the fee pool
         if (0 < fee) {
-            _manager().payFee(fee);
+            _manager().payFee(fee, params.trackingCode);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
                 emit Tracking(params.trackingCode, baseAsset, marketKey, params.sizeDelta, fee);
@@ -954,7 +954,7 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
         // Send any positive margin buffer to the fee pool
         if (remMargin > liqFee) {
-            _manager().payFee(remMargin.sub(liqFee));
+            _manager().payFee(remMargin.sub(liqFee), bytes32(0));
         }
     }
 

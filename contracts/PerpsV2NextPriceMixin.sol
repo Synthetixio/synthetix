@@ -130,7 +130,7 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
         }
 
         // pay the commitDeposit as fee to the FeePool
-        _manager().payFee(order.commitDeposit);
+        _manager().payFee(order.commitDeposit, order.trackingCode);
 
         // remove stored order
         // important!! position of the account, not the msg.sender

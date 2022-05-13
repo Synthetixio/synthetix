@@ -269,12 +269,22 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         return amount;
     }
 
-    /*
+    /**
      * Allows markets to issue exchange fees into the fee pool and notify it that this occurred.
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
+    function payFee(uint amount, bytes32 trackingCode) external onlyMarkets {
+        _payFee(amount, trackingCode);
+    }
+
+    // backwards compatibility with futures v1
     function payFee(uint amount) external onlyMarkets {
+        _payFee(amount, bytes32(0));
+    }
+
+    function _payFee(uint amount, bytes32 trackingCode) internal {
+        delete trackingCode; // unused for now, will be used SIP 203
         IFeePool pool = _feePool();
         _sUSD().issue(pool.FEE_ADDRESS(), amount);
         pool.recordFeePaid(amount);
