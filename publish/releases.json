@@ -625,6 +625,11 @@
 				]
 			},
 			"released": "both"
+		}, 
+		{
+			"sip": 236,
+			"layer": "both",
+			"sources": ["Exchanger"]
 		}
 	],
 	"releases": [
@@ -1133,7 +1138,7 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236]
 		},
 		{
 			"name": "Alpheratz (Optimism)",
@@ -1142,7 +1147,7 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236]
 		},
 		{
 			"name": "Rasalhague",
