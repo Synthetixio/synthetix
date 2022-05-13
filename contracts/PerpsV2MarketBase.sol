@@ -572,8 +572,6 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
      */
     function assetPrice() public view returns (uint price, bool invalid) {
         (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
-        // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
         return (price, invalid);
     }
 
@@ -581,13 +579,21 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
     /* ---------- Market Operations ---------- */
 
-    /*
+    /**
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
      * This is mutative because the circuit breaker stores the last price on every invocation.
+     * @param allowMarketPaused if true, checks everything except the specific market, if false
+     *  checks only top level checks (system, exchange, futures)
      */
-    function _assetPriceRequireSystemChecks() internal returns (uint) {
+    function _assetPriceRequireSystemChecks(bool allowMarketPaused) internal returns (uint) {
         // check that market isn't suspended, revert with appropriate message
-        _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
+        if (allowMarketPaused) {
+            // this will check system activbe, exchange active, futures active
+            _systemStatus().requireFuturesActive();
+        } else {
+            // this will check all of the above + that specific market is active
+            _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
+        }
         // TODO: refactor the following when circuit breaker is updated.
         // The reason both view and mutative are used is because the breaker validates that the
         // synth exists, and for perps - the there is no synth, so in case of attempting to suspend
@@ -606,6 +612,11 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset); // persist rate for next checks
 
         return price;
+    }
+
+    // default of allowMarketPaused is false, allow calling without this flag
+    function _assetPriceRequireSystemChecks() internal returns (uint) {
+        return _assetPriceRequireSystemChecks(false);
     }
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
@@ -629,7 +640,7 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     function recomputeFunding() external returns (uint lastIndex) {
         // only FuturesMarketSettings is allowed to use this method
         _revertIfError(msg.sender != _settings(), Status.NotPermitted);
-        // This method is the only mutative method that uses the view _assetPrice()
+        // This method uses the view _assetPrice()
         // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
         // This is because this method is used by system settings when changing funding related
         // parameters, so needs to function even when system / market is paused. E.g. to facilitate
@@ -795,7 +806,10 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external {
-        uint price = _assetPriceRequireSystemChecks();
+        // allow topping up margin if this specific market is paused.
+        // will still revert on all other checks (system, exchange, futures in general)
+        bool allowMarketPaused = marginDelta > 0;
+        uint price = _assetPriceRequireSystemChecks(allowMarketPaused);
         _recomputeFunding(price);
         _transferMargin(marginDelta, price, msg.sender);
     }

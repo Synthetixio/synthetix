@@ -2914,23 +2914,6 @@ contract('PerpsV2Market', accounts => {
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 				assert.isFalse(await perpsMarket.canLiquidate(trader));
 			});
-
-			it('No liquidations while the system is suspended', async () => {
-				await setPrice(baseAsset, toUnit('250'));
-				await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
-				await perpsMarket.modifyPosition(toUnit('20'), { from: trader });
-				await setPrice(baseAsset, toUnit('25'));
-				assert.isTrue(await perpsMarket.canLiquidate(trader));
-
-				// suspend
-				await systemStatus.suspendSystem('3', { from: owner });
-				assert.isFalse(await perpsMarket.canLiquidate(trader));
-
-				// resume
-				await systemStatus.resumeSystem({ from: owner });
-				// should work now
-				assert.isTrue(await perpsMarket.canLiquidate(trader));
-			});
 		});
 
 		describe('liquidatePosition', () => {
@@ -3489,7 +3472,7 @@ contract('PerpsV2Market', accounts => {
 		function revertChecks(revertMessage) {
 			it('then mutative market actions revert', async () => {
 				await assert.revert(
-					perpsMarket.transferMargin(toUnit('1000'), { from: trader }),
+					perpsMarket.transferMargin(toUnit('-100'), { from: trader }),
 					revertMessage
 				);
 				await assert.revert(perpsMarket.withdrawAllMargin({ from: trader }), revertMessage);
@@ -3532,6 +3515,13 @@ contract('PerpsV2Market', accounts => {
 			// check reverts are as expecte
 			revertChecks('Futures markets are suspended');
 
+			it('Transfer margin fails for adding as well', async () => {
+				await assert.revert(
+					perpsMarket.transferMargin(toUnit('100'), { from: trader }),
+					'Futures markets are suspended'
+				);
+			});
+
 			describe('when futures markets are resumed', () => {
 				beforeEach(async () => {
 					// suspend
@@ -3563,6 +3553,14 @@ contract('PerpsV2Market', accounts => {
 
 			// check reverts are as expecte
 			revertChecks('Market suspended');
+
+			it('can add margin, but cannot remove', async () => {
+				await perpsMarket.transferMargin(toUnit('100'), { from: trader });
+				await assert.revert(
+					perpsMarket.transferMargin(toUnit('-100'), { from: trader }),
+					'Market suspended'
+				);
+			});
 
 			describe('when market is resumed', () => {
 				beforeEach(async () => {
