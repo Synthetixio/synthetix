@@ -14,7 +14,10 @@ async function loadUsers({ ctx }) {
 	ctx.users.deployer = ctx.users.owner;
 	ctx.users.someUser = wallets[1];
 	ctx.users.otherUser = wallets[2];
-	for (let i = 3; i < wallets.length; i++) {
+	ctx.users.liquidatedUser = wallets[3];
+	ctx.users.liquidatorUser = wallets[4];
+	ctx.users.flaggerUser = wallets[5];
+	for (let i = 6; i < wallets.length; i++) {
 		ctx.users[`user${i}`] = wallets[i];
 	}
 

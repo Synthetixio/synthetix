@@ -5,6 +5,16 @@ import "../interfaces/ISynth.sol";
 // https://docs.synthetix.io/contracts/source/interfaces/iissuer
 interface IIssuer {
     // Views
+
+    function allNetworksDebtInfo()
+        external
+        view
+        returns (
+            uint256 debt,
+            uint256 sharesSupply,
+            bool isStale
+        );
+
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
@@ -87,13 +97,11 @@ interface IIssuer {
         uint balance
     ) external;
 
-    function liquidateDelinquentAccount(
-        address account,
-        uint susdAmount,
-        address liquidator
-    ) external returns (uint totalRedeemed, uint amountToLiquidate);
-
     function setCurrentPeriodId(uint128 periodId) external;
+
+    function liquidateAccount(address account, bool isSelfLiquidation)
+        external
+        returns (uint totalRedeemed, uint amountToLiquidate);
 
     function issueSynthsWithoutDebt(
         bytes32 currencyKey,
