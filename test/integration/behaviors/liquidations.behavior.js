@@ -134,23 +134,20 @@ function itCanLiquidate({ ctx }) {
 				});
 
 				describe('getting liquidated', () => {
+					let tx;
 					let beforeDebtShares, beforeSharesSupply;
-					let beforeDebttedSnx,
-						beforeFlagRewardCredittedSnx,
+					let beforeFlagRewardCredittedSnx,
 						beforeLiquidateRewardCredittedSnx,
 						beforeRemainingRewardCredittedSnx;
 
 					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
 						beforeDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
 						beforeSharesSupply = await SynthetixDebtShare.totalSupply();
-						beforeDebttedSnx = await Synthetix.balanceOf(user7.address);
 						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
 						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(liquidatorUser.address);
 						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
 							LiquidatorRewards.address
 						);
-
-						await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user7.address);
 					});
 
 					it('fixes the c-ratio of the completely liquidated user7', async () => {
@@ -187,10 +184,13 @@ function itCanLiquidate({ ctx }) {
 					});
 
 					it('transfers the remaining SNX to LiquidatorRewards', async () => {
-						const remainingReward = beforeDebttedSnx
-							.sub(await Synthetix.balanceOf(flaggerUser.address))
-							.sub(await Synthetix.balanceOf(liquidatorUser.address))
-							.sub(await Synthetix.balanceOf(user7.address));
+						const { events } = await tx.wait();
+						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
+						const snxRedeemed = liqEvent.args.snxRedeemed;
+
+						const flagReward = await Liquidator.flagReward();
+						const liquidateReward = await Liquidator.liquidateReward();
+						const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
 						assert.bnNotEqual(remainingReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(LiquidatorRewards.address),
@@ -254,23 +254,22 @@ function itCanLiquidate({ ctx }) {
 				});
 
 				describe('getting liquidated', () => {
+					let tx;
 					let beforeDebtShares, beforeSharesSupply;
-					let beforeDebttedSnx,
-						beforeFlagRewardCredittedSnx,
+					let beforeFlagRewardCredittedSnx,
 						beforeLiquidateRewardCredittedSnx,
 						beforeRemainingRewardCredittedSnx;
 
 					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
 						beforeDebtShares = await SynthetixDebtShare.balanceOf(liquidatedUser.address);
 						beforeSharesSupply = await SynthetixDebtShare.totalSupply();
-						beforeDebttedSnx = await Synthetix.balanceOf(liquidatedUser.address);
 						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
 						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(liquidatorUser.address);
 						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
 							LiquidatorRewards.address
 						);
 
-						await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(
+						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(
 							liquidatedUser.address
 						);
 					});
@@ -279,7 +278,6 @@ function itCanLiquidate({ ctx }) {
 						const cratio = await Synthetix.collateralisationRatio(liquidatedUser.address);
 						const targetIssuanceRatio = await Liquidator.issuanceRatio();
 						assert.bnLte(cratio, targetIssuanceRatio);
-						console.log((await SynthetixDebtShare.balanceOf(liquidatedUser.address)).toString());
 					});
 
 					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
@@ -315,10 +313,13 @@ function itCanLiquidate({ ctx }) {
 					});
 
 					it('transfers the remaining SNX to LiquidatorRewards', async () => {
-						const remainingReward = beforeDebttedSnx
-							.sub(await Synthetix.balanceOf(flaggerUser.address))
-							.sub(await Synthetix.balanceOf(liquidatorUser.address))
-							.sub(await Synthetix.balanceOf(liquidatedUser.address));
+						const { events } = await tx.wait();
+						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
+						const snxRedeemed = liqEvent.args.snxRedeemed;
+
+						const flagReward = await Liquidator.flagReward();
+						const liquidateReward = await Liquidator.liquidateReward();
+						const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
 						assert.bnNotEqual(remainingReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(LiquidatorRewards.address),

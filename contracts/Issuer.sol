@@ -707,26 +707,22 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
-        uint snxRedeemed = _usdToSnx(amountToLiquidate, snxRate);
+        totalRedeemed = _usdToSnx(amountToLiquidate, snxRate);
 
-        // Factor in the liquidation penalty
-        totalRedeemed = snxRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(penalty));
-
-        // If the total SNX to redeem is greater than account's collateral,
+        // The balanceOf here can be considered "transferable" since it's not escrowed,
+        // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
         if (totalRedeemed > transferableBalance) {
             // Set totalRedeemed to all transferable collateral.
+            // i.e. the value of the account's staking position relative to balanceOf will be unwound.
             totalRedeemed = transferableBalance;
 
             // Liquidate their debt based on the ratio of their transferable collateral.
             amountToLiquidate = debtBalance.multiplyDecimal(transferableBalance).divideDecimal(collateralForAccount);
         }
 
-        // Reduce debt by amount to liquidate.
+        // Reduce debt shares by amount to liquidate.
         _removeFromDebtRegister(account, amountToLiquidate, debtBalance);
-
-        // Account for the burnt debt in the cache.
-        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountToLiquidate));
 
         // Remove liquidation flag
         liquidator().removeAccountInLiquidation(account);
