@@ -56,7 +56,16 @@ module.exports = async ({
 							console.log(green(`${name} needs to be imported to the AddressResolver`));
 
 							addressArgs[0].push(toBytes32(name));
-							addressArgs[1].push(contract.address);
+
+							// SIP-238 Ensure Synthetix and Synths use proxies instead of underlyings
+							if (name === 'Synthetix') {
+								addressArgs[1].push(allContracts['ProxySynthetix'].address);
+							} else if (/Synths.*/.test(name)) {
+								const synth = name.split('Synths')[1].trim();
+								addressArgs[1].push(allContracts[`Proxy${synth}`].address);
+							} else {
+								addressArgs[1].push(contract.address);
+							}
 
 							const { source, address } = contract;
 							newContractsBeingAdded[contract.address] = { name, source, address, contract };
