@@ -707,7 +707,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
-        totalRedeemed = _usdToSnx(amountToLiquidate, snxRate);
+        totalRedeemed = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.

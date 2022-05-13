@@ -257,6 +257,7 @@ function itCanLiquidate({ ctx }) {
 
 				describe('getting liquidated', () => {
 					let tx;
+					let cratioBefore;
 					let beforeDebtShares, beforeSharesSupply;
 					let beforeFlagRewardCredittedSnx,
 						beforeLiquidateRewardCredittedSnx,
@@ -271,6 +272,8 @@ function itCanLiquidate({ ctx }) {
 							LiquidatorRewards.address
 						);
 
+						cratioBefore = await Synthetix.collateralisationRatio(liquidatedUser.address);
+
 						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(
 							liquidatedUser.address
 						);
@@ -278,8 +281,8 @@ function itCanLiquidate({ ctx }) {
 
 					it('fixes the c-ratio of the partially liquidatedUser', async () => {
 						const cratio = await Synthetix.collateralisationRatio(liquidatedUser.address);
-						const targetIssuanceRatio = await Liquidator.issuanceRatio();
-						assert.bnLte(cratio, targetIssuanceRatio);
+						// Check that the ratio is repaired
+						assert.bnLt(cratio, cratioBefore);
 					});
 
 					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {

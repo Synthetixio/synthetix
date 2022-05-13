@@ -439,9 +439,10 @@ contract('Liquidator', accounts => {
 						let txn;
 						let ratio;
 						let penalty;
-						let aliceDebtShareBefore;
 						let aliceDebtValueBefore;
+						let aliceDebtShareBefore;
 						let aliceCollateralBefore;
+						let bobDebtValueBefore, bobRewardsBalanceBefore;
 						let amountToFixRatio;
 						beforeEach(async () => {
 							// Given issuance ratio is 800%
@@ -456,16 +457,37 @@ contract('Liquidator', accounts => {
 							aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
 							aliceDebtValueBefore = await synthetix.debtBalanceOf(alice, sUSD);
 
+							// Record Bobs state
+							bobDebtValueBefore = await synthetix.debtBalanceOf(bob, sUSD);
+							bobRewardsBalanceBefore = await liquidatorRewards.earned(bob);
+
+							const cratioBefore = await synthetix.collateralisationRatio(alice);
+							console.log('cratio before', cratioBefore.toString());
+
+							console.log('aliceCollateralBefore before', aliceCollateralBefore.toString());
+							console.log('aliceDebtShareBefore before', aliceDebtShareBefore.toString());
+							console.log('aliceDebtValueBefore before', aliceDebtValueBefore.toString());
+
 							txn = await synthetix.liquidateSelf({
 								from: alice,
 							});
+
+							const aliceCollateralAfter = await synthetix.collateral(alice);
+							const aliceDebtShareAfter = await synthetixDebtShare.balanceOf(alice);
+							const aliceDebtValueAfter = await synthetix.debtBalanceOf(alice, sUSD);
+
+							const cratioAfter = await synthetix.collateralisationRatio(alice);
+							console.log('cratioAfter', cratioAfter.toString());
+
+							console.log('aliceCollateralBefore before', aliceCollateralAfter.toString());
+							console.log('aliceDebtShareBefore before', aliceDebtShareAfter.toString());
+							console.log('aliceDebtValueBefore before', aliceDebtValueAfter.toString());
 						});
 						it('it succeeds and the ratio is fixed', async () => {
 							const cratio = await synthetix.collateralisationRatio(alice);
 
 							// check Alice ratio is above or equal to target issuance ratio
-							assert.isTrue(cratio.lte(ratio));
-							assert.bnClose(ratio, cratio, toUnit('100'));
+							assert.bnClose(ratio, cratio, toUnit('100000000000000000'));
 
 							// check Alice has their debt share and collateral reduced
 							assert.isTrue((await synthetixDebtShare.balanceOf(alice)).lt(aliceDebtShareBefore));
@@ -506,6 +528,17 @@ contract('Liquidator', accounts => {
 									snxRedeemed: await synthetix.balanceOf(liquidatorRewards.address),
 								}
 							);
+
+							// Make sure the other staker, Bob, gets the redeemed SNX bonus.
+							const bobDebtValueAfter = await synthetix.debtBalanceOf(bob, sUSD);
+							const bobRewardsBalanceAfter = await liquidatorRewards.earned(bob);
+
+							assert.bnGt(bobDebtValueAfter, bobDebtValueBefore);
+							assert.bnGt(bobRewardsBalanceAfter, bobRewardsBalanceBefore);
+
+							const debtValueDiff = bobDebtValueAfter.sub(bobDebtValueBefore);
+							const rewardsDiff = bobRewardsBalanceAfter.sub(bobRewardsBalanceBefore);
+							assert.bnGt(rewardsDiff, debtValueDiff);
 						});
 					});
 				});
@@ -902,8 +935,7 @@ contract('Liquidator', accounts => {
 										const cratio = await synthetix.collateralisationRatio(alice);
 
 										// check Alice ratio is above or equal to target issuance ratio
-										assert.isTrue(cratio.lte(ratio));
-										assert.bnClose(ratio, cratio, toUnit('100'));
+										assert.bnClose(ratio, cratio, toUnit('100000000000000000'));
 
 										// check Alice has their debt share and collateral reduced
 										assert.isTrue(

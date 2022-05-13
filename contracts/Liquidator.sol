@@ -181,16 +181,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-        _liquidation.deadline = flexibleStorage().getUIntValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(_getKey(LIQUIDATION_DEADLINE, account), account))
-        );
+        _liquidation.deadline = flexibleStorage().getUIntValue(CONTRACT_NAME, _getKey(LIQUIDATION_DEADLINE, account));
 
         // This is used to reward the caller for flagging an account for liquidation.
-        _liquidation.caller = flexibleStorage().getAddressValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(_getKey(LIQUIDATION_CALLER, account), account))
-        );
+        _liquidation.caller = flexibleStorage().getAddressValue(CONTRACT_NAME, _getKey(LIQUIDATION_CALLER, account));
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -257,25 +251,14 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         address _caller
     ) internal {
         // record liquidation deadline and caller
-        flexibleStorage().setUIntValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(_getKey(LIQUIDATION_DEADLINE, _account), _account)),
-            _deadline
-        );
+        flexibleStorage().setUIntValue(CONTRACT_NAME, _getKey(LIQUIDATION_DEADLINE, _account), _deadline);
 
-        flexibleStorage().setAddressValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(_getKey(LIQUIDATION_CALLER, _account), _account)),
-            _caller
-        );
+        flexibleStorage().setAddressValue(CONTRACT_NAME, _getKey(LIQUIDATION_CALLER, _account), _caller);
     }
 
     /// @notice Only delete the deadline value, keep caller for flag reward payout
     function _removeLiquidationEntry(address _account) internal {
-        flexibleStorage().deleteUIntValue(
-            CONTRACT_NAME,
-            keccak256(abi.encodePacked(_getKey(LIQUIDATION_DEADLINE, _account), _account))
-        );
+        flexibleStorage().deleteUIntValue(CONTRACT_NAME, _getKey(LIQUIDATION_DEADLINE, _account));
 
         emit AccountRemovedFromLiquidation(_account, now);
     }
