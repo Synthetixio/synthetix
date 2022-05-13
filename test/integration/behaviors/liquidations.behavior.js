@@ -148,6 +148,8 @@ function itCanLiquidate({ ctx }) {
 						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
 							LiquidatorRewards.address
 						);
+
+						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user7.address);
 					});
 
 					it('fixes the c-ratio of the completely liquidated user7', async () => {
