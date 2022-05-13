@@ -396,7 +396,14 @@
 		{
 			"sip": 148,
 			"layer": "both",
-			"sources": ["Issuer", "Liquidator", "LiquidatorRewards", "Synthetix", "SystemSettings", "SystemSettingsLib"]
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"LiquidatorRewards",
+				"Synthetix",
+				"SystemSettings",
+				"SystemSettingsLib"
+			]
 		},
 		{
 			"sip": 167,
@@ -625,6 +632,11 @@
 				]
 			},
 			"released": "both"
+		},
+		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Synthetix", "Synths.*"]
 		}
 	],
 	"releases": [

@@ -457,7 +457,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function _onlyExchanger() private view {
-        require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
+        require(
+            msg.sender == address(exchanger()) || (msg.sender == address(proxy) && messageSender == address(exchanger())),
+            "Only Exchanger can invoke this"
+        );
     }
 
     // ========== EVENTS ==========

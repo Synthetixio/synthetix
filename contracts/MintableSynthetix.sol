@@ -23,7 +23,10 @@ contract MintableSynthetix is BaseSynthetix {
     }
 
     function onlyAllowFromBridge() internal view {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by bridge");
+        require(
+            msg.sender == synthetixBridge() || (msg.sender == address(proxy) && messageSender == synthetixBridge()),
+            "Can only be invoked by bridge"
+        );
     }
 
     /* ========== MODIFIERS =================== */
