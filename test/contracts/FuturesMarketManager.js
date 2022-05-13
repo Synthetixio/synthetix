@@ -95,6 +95,7 @@ contract('FuturesMarketManager', accounts => {
 					'issueSUSD',
 					'burnSUSD',
 					'payFee',
+					'payFee',
 				],
 			});
 		});
