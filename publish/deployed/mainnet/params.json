@@ -48,5 +48,13 @@
 			"sETH": "3",
 			"sBTC": "3"
 		}
+	},
+	{
+		"name": "LIQUIDATION_DELAY",
+		"value": "43200"
+	},
+	{
+		"name": "LIQUIDATION_RATIO",
+		"value": "666666666666666666"
 	}
 ]

@@ -62,6 +62,7 @@ contract('BaseSynthetix', async accounts => {
 				'SystemStatus',
 				'DebtCache',
 				'Issuer',
+				'LiquidatorRewards',
 				'OneNetAggregatorDebtRatio',
 				'Exchanger',
 				'RewardsDistribution',
@@ -106,6 +107,7 @@ contract('BaseSynthetix', async accounts => {
 				'settle',
 				'transfer',
 				'transferFrom',
+				'liquidateSelf',
 				'liquidateDelinquentAccount',
 			],
 		});
