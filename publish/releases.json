@@ -396,7 +396,15 @@
 		{
 			"sip": 148,
 			"layer": "both",
-			"sources": ["Issuer", "Liquidator", "LiquidatorRewards", "Synthetix", "SystemSettings", "SystemSettingsLib"]
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"LiquidatorRewards",
+				"Synthetix",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
 		},
 		{
 			"sip": 167,
@@ -625,11 +633,12 @@
 				]
 			},
 			"released": "both"
-		}, 
+		},
 		{
 			"sip": 236,
 			"layer": "both",
-			"sources": ["Exchanger"]
+			"sources": ["Exchanger"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -1138,7 +1147,8 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": [148, 236]
+			"sips": [148, 236],
+			"released": true
 		},
 		{
 			"name": "Alpheratz (Optimism)",
@@ -1147,7 +1157,8 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": [148, 236]
+			"sips": [148, 236],
+			"released": true
 		},
 		{
 			"name": "Rasalhague",
