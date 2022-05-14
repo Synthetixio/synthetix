@@ -292,5 +292,11 @@
 	},
 	"SynthsINR": {
 		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
+		"deploy": false
 	}
 }

@@ -12,6 +12,14 @@
 		"value": "4200"
 	},
 	{
+		"name": "LIQUIDATION_DELAY",
+		"value": "43200"
+	},
+	{
+		"name": "LIQUIDATION_RATIO",
+		"value": "666666666666666666"
+	},
+	{
 		"name": "FLAG_REWARD",
 		"value": "1000000000000000000"
 	},
