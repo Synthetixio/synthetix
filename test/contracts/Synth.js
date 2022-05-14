@@ -65,6 +65,7 @@ contract('Synth', async accounts => {
 				'AddressResolver',
 				'DebtCache',
 				'Issuer', // required to issue via Synthetix
+				'LiquidatorRewards',
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
 				'FlexibleStorage',

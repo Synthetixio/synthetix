@@ -133,15 +133,15 @@ module.exports = async ({
 		args: [account, addressOf(delegateApprovalsEternalStorage)],
 	});
 
-	const liquidations = await deployer.deployContract({
-		name: 'Liquidations',
+	await deployer.deployContract({
+		name: 'Liquidator',
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
-		name: 'EternalStorageLiquidations',
-		source: 'EternalStorage',
-		args: [account, addressOf(liquidations)],
+		name: 'LiquidatorRewards',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({

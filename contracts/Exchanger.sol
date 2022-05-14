@@ -433,39 +433,35 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             IVirtualSynth vSynth
         )
     {
+        require(sourceAmount > 0, "Zero amount");
+
         // Using struct to resolve stack too deep error
         IExchanger.ExchangeEntry memory entry;
 
         entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
-        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
-        );
-
-        _ensureCanExchangeAtRound(
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            entry.roundIdForSrc,
-            entry.roundIdForDest
-        );
-
-        // SIP-65: Decentralized Circuit Breaker
-        // mutative call to suspend system if the rate is invalid
-        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0, IVirtualSynth(0));
-        }
-
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
         if (sourceAmountAfterSettlement == 0) {
+            return (0, 0, IVirtualSynth(0));
+        }
+
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            entry.roundIdForSrc,
+            entry.roundIdForDest
+        );
+
+        _ensureCanExchangeAtRound(sourceCurrencyKey, destinationCurrencyKey, entry.roundIdForSrc, entry.roundIdForDest);
+
+        // SIP-65: Decentralized Circuit Breaker
+        // mutative call to suspend system if the rate is invalid
+        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
             return (0, 0, IVirtualSynth(0));
         }
 
@@ -642,13 +638,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function _ensureCanExchangeAtRound(
         bytes32 sourceCurrencyKey,
-        uint sourceAmount,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
-        require(sourceAmount > 0, "Zero amount");
 
         bytes32[] memory synthKeys = new bytes32[](2);
         synthKeys[0] = sourceCurrencyKey;

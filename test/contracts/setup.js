@@ -18,7 +18,11 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
+		LIQUIDATION_ESCROW_DURATION,
 		LIQUIDATION_PENALTY,
+		SELF_LIQUIDATION_PENALTY,
+		FLAG_REWARD,
+		LIQUIDATE_REWARD,
 		RATE_STALE_PERIOD,
 		// EXCHANGE_DYNAMIC_FEE_THRESHOLD, // overridden
 		// EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, // overridden
@@ -252,7 +256,8 @@ const setupContract = async ({
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
-		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
+		Liquidator: [owner, tryGetAddressOf('AddressResolver')],
+		LiquidatorRewards: [owner, tryGetAddressOf('AddressResolver')],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -269,7 +274,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sUSD'),
-			toUnit(1.2),
+			toUnit(1.35),
 			toUnit(100),
 		],
 		CollateralEth: [
@@ -277,7 +282,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'),
-			toUnit(1.3),
+			toUnit(1.35),
 			toUnit(2),
 		],
 		CollateralShort: [
@@ -285,7 +290,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sUSD'),
-			toUnit(1.2),
+			toUnit(1.35),
 			toUnit(100),
 		],
 		WETH: [],
@@ -516,11 +521,6 @@ const setupContract = async ({
 		},
 		async DelegateApprovals() {
 			await cache['EternalStorageDelegateApprovals'].setAssociatedContract(instance.address, {
-				from: owner,
-			});
-		},
-		async Liquidations() {
-			await cache['EternalStorageLiquidations'].setAssociatedContract(instance.address, {
 				from: owner,
 			});
 		},
@@ -765,8 +765,12 @@ const setupAllContracts = async ({
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
-		{ contract: 'EternalStorage', forContract: 'Liquidations' },
-		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
+		{ contract: 'EternalStorage', forContract: 'Liquidator' },
+		{ contract: 'Liquidator', deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage'] },
+		{
+			contract: 'LiquidatorRewards',
+			deps: ['AddressResolver', 'Liquidator', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
+		},
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
@@ -876,7 +880,8 @@ const setupAllContracts = async ({
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
-				'Liquidations',
+				'Liquidator',
+				'LiquidatorRewards',
 			],
 			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
@@ -889,7 +894,8 @@ const setupAllContracts = async ({
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
-				'Liquidations',
+				'Liquidator',
+				'LiquidatorRewards',
 			],
 			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
@@ -899,7 +905,8 @@ const setupAllContracts = async ({
 			mocks: [
 				'Exchanger',
 				'SynthetixEscrow',
-				'Liquidations',
+				'Liquidator',
+				'LiquidatorRewards',
 				'Issuer',
 				'SystemStatus',
 				'SynthetixBridgeToBase',
@@ -1266,7 +1273,15 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationEscrowDuration(LIQUIDATION_ESCROW_DURATION, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setFlagReward(FLAG_REWARD, { from: owner }),
+			returnObj['SystemSettings'].setLiquidateReward(LIQUIDATE_REWARD, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(
 				constantsOverrides.EXCHANGE_DYNAMIC_FEE_THRESHOLD,

@@ -28,10 +28,10 @@ library SystemSettingsLib {
     uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
     uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
 
-    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
+    uint public constant MAX_LIQUIDATION_PENALTY = 3e18 / 10; // Max 30% liquidation penalty / bonus
 
-    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 1 days;
+    uint public constant MAX_LIQUIDATION_DELAY = 3 days;
+    uint public constant MIN_LIQUIDATION_DELAY = 300; // 5 min
 
     // Exchange fee may not exceed 10%.
     uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
@@ -39,7 +39,7 @@ library SystemSettingsLib {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
-    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
+    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 12e6;
     uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
 
     int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
@@ -135,8 +135,8 @@ library SystemSettingsLib {
         bytes32 settingName,
         uint time
     ) external {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
+        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than MAX_LIQUIDATION_DELAY");
+        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than MIN_LIQUIDATION_DELAY");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, time);
     }
@@ -161,6 +161,14 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _liquidationRatio);
     }
 
+    function setLiquidationEscrowDuration(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint duration
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, duration);
+    }
+
     function setLiquidationPenalty(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
@@ -169,6 +177,32 @@ library SystemSettingsLib {
         require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);
+    }
+
+    function setSelfLiquidationPenalty(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint penalty
+    ) external {
+        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
+
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);
+    }
+
+    function setFlagReward(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint reward
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, reward);
+    }
+
+    function setLiquidateReward(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        uint reward
+    ) external {
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, reward);
     }
 
     function setRateStalePeriod(

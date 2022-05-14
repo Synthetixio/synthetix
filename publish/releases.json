@@ -394,6 +394,11 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 148,
+			"layer": "both",
+			"sources": ["Issuer", "Liquidator", "LiquidatorRewards", "Synthetix", "SystemSettings", "SystemSettingsLib"]
+		},
+		{
 			"sip": 167,
 			"layer": "both",
 			"sources": {
@@ -620,6 +625,11 @@
 				]
 			},
 			"released": "both"
+		}, 
+		{
+			"sip": 236,
+			"layer": "both",
+			"sources": ["Exchanger"]
 		}
 	],
 	"releases": [
@@ -1128,7 +1138,7 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236]
 		},
 		{
 			"name": "Alpheratz (Optimism)",
@@ -1137,7 +1147,7 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236]
 		},
 		{
 			"name": "Rasalhague",
