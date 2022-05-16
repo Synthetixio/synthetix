@@ -470,9 +470,10 @@ contract('SystemSettings', async accounts => {
 			await setupSettings();
 		});
 		it('can only be invoked by owner', async () => {
+			const ratio = divideDecimal(toUnit('2'), toUnit('3'));
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setLiquidationRatio,
-				args: [toUnit('.5')],
+				args: [ratio],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -482,15 +483,15 @@ contract('SystemSettings', async accounts => {
 			beforeEach(async () => {
 				await systemSettings.setLiquidationPenalty(toUnit('0.1'), { from: owner });
 			});
-			it('owner can change liquidationRatio to 300%', async () => {
-				const ratio = divideDecimal(toUnit('1'), toUnit('3'));
+			it('owner can change liquidationRatio to 150%', async () => {
+				const ratio = divideDecimal(toUnit('2'), toUnit('3'));
 				await systemSettings.setLiquidationRatio(ratio, {
 					from: owner,
 				});
 				assert.bnClose(await systemSettings.liquidationRatio(), ratio);
 			});
-			it('owner can change liquidationRatio to 200%', async () => {
-				const ratio = toUnit('.5');
+			it('owner can change liquidationRatio to 120%', async () => {
+				const ratio = divideDecimal(toUnit('1'), toUnit('1.2'));
 				await systemSettings.setLiquidationRatio(ratio, { from: owner });
 				assert.bnEqual(await systemSettings.liquidationRatio(), ratio);
 			});
