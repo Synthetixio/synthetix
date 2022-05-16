@@ -41,12 +41,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"Liquidations": {
-		"deploy": false
-	},
 	"RewardEscrow": {
 		"deploy": false
 	},

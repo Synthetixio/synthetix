@@ -68,13 +68,7 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
 	"FuturesMarketManager": {
-		"deploy": false
-	},
-	"Liquidations": {
 		"deploy": false
 	},
 	"RewardEscrow": {
