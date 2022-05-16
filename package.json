@@ -20,7 +20,7 @@
 		"fork:ovm": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet --use-ovm",
 		"test": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat test",
 		"describe": "hardhat describe",
-		"test:deployments": "mocha test/deployments -- --timeout 60000",
+		"test:deployments": "mocha test/deployments -- --timeout 100000",
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --bail --timeout 240000\""
 	},
