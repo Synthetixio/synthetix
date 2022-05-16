@@ -355,11 +355,11 @@ const setupContract = async ({
 			await Promise.all(
 				[
 					(cache['TokenStateSynthetix'].setAssociatedContract(instance.address, { from: owner }),
-					cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
-					cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
-					instance.setProxy(cache['ProxyERC20Synthetix'].address, {
-						from: owner,
-					})),
+						cache['ProxySynthetix'].setTarget(instance.address, { from: owner }),
+						cache['ProxyERC20Synthetix'].setTarget(instance.address, { from: owner }),
+						instance.setProxy(cache['ProxyERC20Synthetix'].address, {
+							from: owner,
+						})),
 				]
 					.concat(
 						// If there's a SupplySchedule and it has the method we need (i.e. isn't a mock)
@@ -415,11 +415,11 @@ const setupContract = async ({
 					(cache['TokenStateBaseSynthetix'].setAssociatedContract(instance.address, {
 						from: owner,
 					}),
-					cache['ProxyBaseSynthetix'].setTarget(instance.address, { from: owner }),
-					cache['ProxyERC20BaseSynthetix'].setTarget(instance.address, { from: owner }),
-					instance.setProxy(cache['ProxyERC20BaseSynthetix'].address, {
-						from: owner,
-					})),
+						cache['ProxyBaseSynthetix'].setTarget(instance.address, { from: owner }),
+						cache['ProxyERC20BaseSynthetix'].setTarget(instance.address, { from: owner }),
+						instance.setProxy(cache['ProxyERC20BaseSynthetix'].address, {
+							from: owner,
+						})),
 				]
 					.concat(
 						// If there's a rewards distribution that's not a mock
@@ -451,11 +451,11 @@ const setupContract = async ({
 					(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
 						from: owner,
 					}),
-					cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
-					cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
-					instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
-						from: owner,
-					})),
+						cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
+						cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
+						instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
+							from: owner,
+						})),
 				]
 					.concat(
 						// If there's a rewards distribution that's not a mock
@@ -1207,9 +1207,20 @@ const setupAllContracts = async ({
 			log(`Importing into AddressResolver:\n\t - ${Object.keys(returnObj).join('\n\t - ')}`);
 		}
 
+		const addressResolverAddresses = Object.entries(returnObj).map(([key, val]) => {
+			console.log(key)
+			if (key == "Synthetix") {
+				return [toBytes32(key), returnObj['ProxyERC20Synthetix']];
+			} else if (key.startsWith('Synths') || key.startsWith('Synthi')) {
+				return [toBytes32(key), returnObj[key.replace('Synth', 'ProxyERC20')]];
+			} else {
+				return [toBytes32(key), val]
+			}
+		})
+
 		await returnObj['AddressResolver'].importAddresses(
-			Object.keys(returnObj).map(toBytes32),
-			Object.values(returnObj).map(entry =>
+			addressResolverAddresses.map(x => x[0]),
+			addressResolverAddresses.map(([, entry]) =>
 				// use 0x1111 address for any mocks that have no actual deployment
 				entry === true ? '0x' + '1'.repeat(40) : entry.address
 			),
@@ -1449,7 +1460,28 @@ const setupAllContracts = async ({
 		await updateAggregatorRates(returnObj['ExchangeRates'], keys, prices);
 	}
 
-	return returnObj;
+	async function mapValuesAsync(object, asyncFn) {
+		return Object.fromEntries(
+			await Promise.all(
+				Object.entries(object).map(async ([key, value]) => [
+					key,
+					await asyncFn(value, key, object)
+				])
+			)
+		);
+	}
+
+	return await mapValuesAsync(returnObj, async (val, key) => {
+		if (key == "Synthetix") {
+			return await artifacts.require(key).at(returnObj['ProxyERC20Synthetix'].address);
+		} else if (key.startsWith('Synths') || key.startsWith('Synthi')) {
+			console.log(`${key}: ${val.address}`, await returnObj[key.replace('Synth', 'ProxyERC20')].target());
+			console.log(await returnObj[key.replace('Synth', 'ProxyERC20')].totalSupply())
+			return await artifacts.require('MockSynth').at(returnObj[key.replace('Synth', 'ProxyERC20')].address);
+		} else {
+			return val
+		}
+	});
 };
 
 module.exports = {
