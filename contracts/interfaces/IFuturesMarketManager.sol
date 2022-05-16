@@ -12,6 +12,4 @@ interface IFuturesMarketManager {
     function marketsForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory);
 
     function totalDebt() external view returns (uint debt, bool isInvalid);
-
-    function isMarket(address market) external view returns (bool);
 }

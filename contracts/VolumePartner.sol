@@ -175,7 +175,7 @@ contract VolumePartner is Owned, Proxyable, LimitedSetup, MixinSystemSettings, I
     }
 
     function _isInternalContract(address account) internal view returns (bool) {
-        return account == address(exchanger()) || futuresMarketManager().isMarket(account); // just change this to get futuresmarketmanager and then have an accrue fees proxy call like issueSUSD in the uturemarketsmanager contract
+        return account == address(exchanger()) || account == address(futuresMarketManager());
     }
 
     modifier onlyInternalContracts {
