@@ -132,7 +132,11 @@ contract('Liquidator', accounts => {
 		});
 		it('liquidation collateral ratio is inverted ratio', async () => {
 			const liquidationCollateralRatio = await liquidator.liquidationCollateralRatio();
-			assert.bnEqual(liquidationCollateralRatio, divideDecimal(toUnit('1'), LIQUIDATION_RATIO));
+			assert.bnClose(liquidationCollateralRatio, divideDecimal(toUnit('1'), LIQUIDATION_RATIO));
+		});
+		it('liquidation escrow duration', async () => {
+			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
+			assert.bnEqual(liquidationEscrowDuration, LIQUIDATION_ESCROW_DURATION);
 		});
 		it('liquidation escrow duration', async () => {
 			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
@@ -372,8 +376,8 @@ contract('Liquidator', accounts => {
 					// Drop SNX value to $1 (Collateral worth $800 after)
 					await updateSNXPrice('1');
 				});
-				it('and liquidation Collateral Ratio is 200%', async () => {
-					assert.bnEqual(await liquidator.liquidationCollateralRatio(), toUnit('2'));
+				it('and liquidation Collateral Ratio is 150%', async () => {
+					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
 				});
 				it('and self liquidation penalty is 20%', async () => {
 					assert.bnEqual(await liquidator.selfLiquidationPenalty(), SELF_LIQUIDATION_PENALTY);
@@ -461,27 +465,9 @@ contract('Liquidator', accounts => {
 							bobDebtValueBefore = await synthetix.debtBalanceOf(bob, sUSD);
 							bobRewardsBalanceBefore = await liquidatorRewards.earned(bob);
 
-							const cratioBefore = await synthetix.collateralisationRatio(alice);
-							console.log('cratio before', cratioBefore.toString());
-
-							console.log('aliceCollateralBefore before', aliceCollateralBefore.toString());
-							console.log('aliceDebtShareBefore before', aliceDebtShareBefore.toString());
-							console.log('aliceDebtValueBefore before', aliceDebtValueBefore.toString());
-
 							txn = await synthetix.liquidateSelf({
 								from: alice,
 							});
-
-							const aliceCollateralAfter = await synthetix.collateral(alice);
-							const aliceDebtShareAfter = await synthetixDebtShare.balanceOf(alice);
-							const aliceDebtValueAfter = await synthetix.debtBalanceOf(alice, sUSD);
-
-							const cratioAfter = await synthetix.collateralisationRatio(alice);
-							console.log('cratioAfter', cratioAfter.toString());
-
-							console.log('aliceCollateralBefore before', aliceCollateralAfter.toString());
-							console.log('aliceDebtShareBefore before', aliceDebtShareAfter.toString());
-							console.log('aliceDebtValueBefore before', aliceDebtValueAfter.toString());
 						});
 						it('it succeeds and the ratio is fixed', async () => {
 							const cratio = await synthetix.collateralisationRatio(alice);
@@ -578,8 +564,8 @@ contract('Liquidator', accounts => {
 					// Drop SNX value to $1 (Collateral worth $800 after)
 					await updateSNXPrice('1');
 				});
-				it('and liquidation Collateral Ratio is 200%', async () => {
-					assert.bnEqual(await liquidator.liquidationCollateralRatio(), toUnit('2'));
+				it('and liquidation Collateral Ratio is 150%', async () => {
+					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
 				});
 				it('and liquidation penalty is 10%', async () => {
 					assert.bnEqual(await liquidator.liquidationPenalty(), LIQUIDATION_PENALTY);

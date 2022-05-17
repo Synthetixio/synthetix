@@ -68,13 +68,7 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
 	"FuturesMarketManager": {
-		"deploy": false
-	},
-	"Liquidations": {
 		"deploy": false
 	},
 	"RewardEscrow": {
@@ -273,6 +267,12 @@
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
 		"deploy": false
 	}
 }
