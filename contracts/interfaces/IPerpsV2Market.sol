@@ -18,11 +18,12 @@ interface IPerpsV2BaseTypes {
 
     // If margin/size are positive, the position is long; if negative then it is short.
     struct Position {
-        uint64 id;
-        uint64 lastFundingIndex;
-        uint128 margin;
-        uint128 lastPrice;
-        int128 size;
+        bytes32 marketKey;
+        uint id;
+        FundingEntry lastFundingEntry;
+        uint margin;
+        uint lastPrice;
+        int size;
     }
 
     // next-price order storage
@@ -32,6 +33,22 @@ interface IPerpsV2BaseTypes {
         uint128 commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds
         uint128 keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
         bytes32 trackingCode; // tracking code to emit on execution for volume source fee sharing
+    }
+
+    struct Market {
+        bytes32 baseAsset;
+        uint marketSize;
+        int marketSkew;
+        int entryDebtCorrection;
+        uint lastPositionId;
+        FundingEntry[] fundingSequence;
+        mapping(address => Position) positions;
+        mapping(uint => address) positionIdOwner;
+    }
+
+    struct FundingEntry {
+        int funding;
+        uint timestamp;
     }
 }
 
