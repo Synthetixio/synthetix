@@ -138,10 +138,6 @@ contract('Liquidator', accounts => {
 			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
 			assert.bnEqual(liquidationEscrowDuration, LIQUIDATION_ESCROW_DURATION);
 		});
-		it('liquidation escrow duration', async () => {
-			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
-			assert.bnEqual(liquidationEscrowDuration, LIQUIDATION_ESCROW_DURATION);
-		});
 		it('liquidation penalty ', async () => {
 			const liquidationPenalty = await liquidator.liquidationPenalty();
 			assert.bnEqual(liquidationPenalty, LIQUIDATION_PENALTY);
