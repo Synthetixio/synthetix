@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./PerpsV2SettingsMixin.sol";
@@ -42,15 +43,11 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     using SignedSafeDecimalMath for int;
     using SafeDecimalMath for uint;
 
-    /* ========== PUBLIC STATE ========== */
-
-    mapping(bytes32 => Market) public markets;
-
-    mapping(uint8 => string) internal _errorMessages;
+    /* ========== PUBLIC CONSTANTS ========== */
 
     bytes32 public constant CONTRACT_NAME = "PerpsV2Engine";
 
-    /* ========== INTERNAL STATE ========== */
+    /* ========== INTERNAL CONSTANTS ========== */
 
     // This is the same unit as used inside `SignedSafeDecimalMath`.
     int private constant _UNIT = int(10**uint(18));
@@ -58,16 +55,25 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     //slither-disable-next-line naming-convention
     bytes32 internal constant sUSD = "sUSD";
 
+    mapping(uint8 => string) internal _errorMessages;
+
     // Address Resolver Configuration
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSV2SETTINGS = "PerpsV2Settings";
+    bytes32 internal constant CONTRACT_PERPSV2STORAGE = "PerpsV2Storage";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     /* ========== EVENTS ========== */
 
-    event MarginModified(bytes32 indexed marketKey, address indexed account, int marginDelta);
+    event MarginModified(
+        bytes32 indexed marketKey,
+        address indexed account,
+        int marginDelta,
+        int transferDelta,
+        int lockedDelta
+    );
 
     event PositionModified(
         bytes32 indexed marketKey,
@@ -122,12 +128,13 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[3] = CONTRACT_PERPSV2SETTINGS;
-        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[4] = CONTRACT_PERPSV2STORAGE;
+        newAddresses[5] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -136,12 +143,19 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
      * Public because used both externally and internally
      */
     function assetPrice(bytes32 marketKey) public view returns (uint price, bool invalid) {
-        bytes32 baseAsset = _loadMarket(marketKey).baseAsset;
+        bytes32 baseAsset = _marketScalars(marketKey).baseAsset;
         (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
         return (price, invalid);
     }
 
     /* ========== EXTERNAL MUTATIVE METHODS ========== */
+
+    function initMarket(bytes32 marketKey, bytes32 baseAsset) external {
+        // only manager can call
+        _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
+        // init in storage
+        _storage().initMarket(marketKey, baseAsset);
+    }
 
     /**
      * Pushes a new entry to the funding sequence at the current price and funding rate.
@@ -174,24 +188,26 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     function transferMargin(
         bytes32 marketKey,
         address account,
-        int marginDelta
+        int amount
     ) external onlyRouters(marketKey, account) {
         // allow topping up margin if this specific market is paused.
         // will still revert on all other checks (system, exchange, futures in general)
-        bool allowMarketPaused = marginDelta > 0;
+        bool allowMarketPaused = amount > 0;
         uint price = _assetPriceRequireSystemChecks(marketKey, allowMarketPaused);
         _recomputeFunding(marketKey, price);
-        _transferMargin(marketKey, account, marginDelta, price);
+        // handle the transfer and modify margin
+        _transferMargin(marketKey, account, amount, price);
     }
 
-    function modifyMarginWithoutTransfer(
+    // used to lock funds from margin for future orders / payments according to order router logic
+    function modifyLockedMargin(
         bytes32 marketKey,
         address account,
-        int marginDelta
+        int amount
     ) external onlyRouters(marketKey, account) {
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
-        _modifyMargin(marketKey, account, marginDelta, price);
+        _modifyMargin(marketKey, account, 0, amount, price);
     }
 
     function trade(
@@ -225,72 +241,6 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         _liquidatePosition(marketKey, account, price, liquidator);
     }
 
-    /* ========== EXTERNAL STORAGE MUTATIVE (to be refactored) ========== */
-
-    function initMarket(bytes32 marketKey, bytes32 baseAsset) external {
-        // only manager can call
-        _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
-        // validate input
-        require(marketKey != bytes32(0), "market key cannot be empty");
-        require(baseAsset != bytes32(0), "asset key cannot be empty");
-        // load market
-        Market storage market = markets[marketKey];
-        // check is not initialized already
-        require(market.baseAsset == bytes32(0), "already initialized");
-        // set asset
-        market.baseAsset = baseAsset;
-        // initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
-        market.fundingSequence.push(FundingEntry(0, block.timestamp));
-    }
-
-    /* ========== INTERNAL STORAGE MUTATIVE (to be refactored) ========== */
-
-    function _loadOrInitPosition(bytes32 marketKey, address account) internal returns (Position memory position) {
-        Market storage market = _loadMarket(marketKey);
-        position = market.positions[account];
-
-        // if position has no id, it wasn't initialized, initialize it:
-        if (position.id == 0) {
-            // set marketKey
-            position.marketKey = marketKey;
-            // id
-            market.lastPositionId++; // increment position id
-            uint id = market.lastPositionId;
-            position.id = id;
-            // update owner mapping
-            market.positionIdOwner[id] = account;
-        }
-    }
-
-    function _pushFundingEntry(bytes32 marketKey, FundingEntry memory newEntry) internal {
-        _loadMarket(marketKey).fundingSequence.push(newEntry);
-    }
-
-    function _storePosition(
-        bytes32 marketKey,
-        address account,
-        uint newMargin,
-        int newSize,
-        uint price
-    ) internal {
-        // ensure it's initialized
-        _loadOrInitPosition(marketKey, account);
-        // load the storage
-        Position storage position = _loadMarket(marketKey).positions[account];
-        // update
-        position.margin = newMargin;
-        position.size = newSize;
-        position.lastPrice = price;
-        position.lastFundingEntry = _lastFundingEntry(marketKey);
-    }
-
-    function _storeMarketAggregates(bytes32 marketKey, MarketAggregates memory marketAggs) internal view {
-        Market storage market = _loadMarket(marketKey);
-        market.marketSize = marketAggs.marketSize;
-        market.marketSkew = marketAggs.marketSkew;
-        market.entryDebtCorrection = marketAggs.entryDebtCorrection;
-    }
-
     /* ========== INTERNAL TYPES ========== */
 
     // internal convenience struct for passing params between position modification helper functions
@@ -301,49 +251,38 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         bytes32 trackingCode; // tracking code for volume source fee sharing
     }
 
-    // internal convenience struct for stored market aggregate values
-    struct MarketAggregates {
-        uint marketSize;
-        int marketSkew;
-        int entryDebtCorrection;
-    }
-
     /* ========== INTERNAL MUTATIVE LOGIC METHODS ========== */
 
-    function _updateStorage(
+    function _updateStoredPosition(
         bytes32 marketKey,
         address account,
         uint newMargin,
+        uint newLocked,
         int newSize,
         uint price
     ) internal {
         // get previous values
-        Position memory oldPosition = _loadOrInitPosition(marketKey, account);
+        Position memory oldPosition = _storage().positions(marketKey, account);
         // update position
-        _storePosition(marketKey, account, newMargin, newSize, price);
+        _storage().storePosition(marketKey, account, newMargin, newLocked, newSize, price);
         // load new position
-        Position memory newPosition = _loadOrInitPosition(marketKey, account);
+        Position memory newPosition = _storage().positions(marketKey, account);
 
         // update aggregates
-        MarketAggregates memory marketAggs = _loadMarketAggregates(marketKey);
-
-        // apply the resulting debt correction
-        int delta = _positionDebtCorrection(newPosition).sub(_positionDebtCorrection(oldPosition));
-        marketAggs.entryDebtCorrection = marketAggs.entryDebtCorrection.add(delta);
+        MarketScalars memory market = _marketScalars(marketKey);
 
         // update market size and skew
         int oldSize = oldPosition.size;
         int newSize = newPosition.size;
-        if (oldSize != newSize) {
-            // Update the aggregated market size and skew with the new order size
-            marketAggs.marketSkew = marketAggs.marketSkew.add(newSize).sub(oldSize);
-            marketAggs.marketSize = marketAggs.marketSize.add(_abs(newSize)).sub(_abs(oldSize));
-        }
+        int debtCorrectionDelta = _positionDebtCorrection(newPosition).sub(_positionDebtCorrection(oldPosition));
 
-        _storeMarketAggregates(marketKey, marketAggs);
+        _storage().storeMarketAggregates(
+            marketKey,
+            market.marketSize.add(_abs(newSize)).sub(_abs(oldSize)),
+            market.marketSkew.add(newSize).sub(oldSize),
+            market.entryDebtCorrection.add(debtCorrectionDelta)
+        );
     }
-
-    /* ---------- Market Operations ---------- */
 
     /**
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
@@ -354,27 +293,29 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     function _assetPriceRequireSystemChecks(bytes32 marketKey, bool allowMarketPaused) internal returns (uint) {
         // check that market isn't suspended, revert with appropriate message
         if (allowMarketPaused) {
-            // this will check system activbe, exchange active, futures active
+            // this will check system acivbe, exchange active, futures active
             _systemStatus().requireFuturesActive();
         } else {
             // this will check all of the above + that specific market is active
             _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
         }
-        // TODO: refactor the following when circuit breaker is updated.
-        // The reason both view and mutative are used is because the breaker validates that the
-        // synth exists, and for perps - the there is no synth, so in case of attempting to suspend
-        // the suspension fails (reverts due to "No such synth")
+        // TODO: refactor the following when circuit breaker is updated (SIP 230).
+        // The reason both view and mutative are used is because the breaker, if attempting to suspend,
+        // is trying to validate that the synth exists, and for perps - there is no synth,
+        // so the suspension fails (reverts due to "No such synth"), but the happy path works ok
 
         // check the view first and revert if price is invalid or out deviation range
-        bytes32 baseAsset = _loadMarket(marketKey).baseAsset;
+        bytes32 baseAsset = _marketScalars(marketKey).baseAsset;
         (uint price, bool invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
         _revertIfError(invalid, Status.InvalidPrice);
+
         // note: rateWithBreakCircuit (mutative) is used here in addition to rateWithInvalid (view).
-        //  This is despite reverting immediately after if circuit is broken, which may seem silly.
+        //  This is despite reverting above if circuit is broken, which may seem silly.
         //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
-        // This also means that the circuit will not be broken in unhappy case (synth suspended)
-        // because this method will revert above. The reason it has to revert is that perps
+        // This also means that the circuit will not be broken in unhappy case
+        // because of the revert above.
+        // The reason it has to revert instead of causing suspension is that perps
         // don't support no-op actions.
         _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset); // persist rate for next checks
 
@@ -387,83 +328,86 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     }
 
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
-        FundingEntry memory newEntry = FundingEntry(_nextFundingAmount(marketKey, price), block.timestamp);
-        _pushFundingEntry(marketKey, newEntry);
-        emit FundingRecomputed(marketKey, newEntry.funding, newEntry.timestamp);
+        int newFundingAmount = _nextFundingAmount(marketKey, price);
+        _storage().pushFundingEntry(marketKey, newFundingAmount);
+        emit FundingRecomputed(marketKey, newFundingAmount, block.timestamp);
     }
 
     function _transferMargin(
         bytes32 marketKey,
         address account,
-        int marginDelta,
+        int transferDelta,
         uint price
     ) internal {
-        // Transfer no tokens if marginDelta is 0
-        uint absDelta = _abs(marginDelta);
+        // Transfer no tokens if transferDelta is 0
+        uint absDelta = _abs(transferDelta);
 
         // if trying to add margin, handle reclamantion
-        if (marginDelta > 0) {
+        if (transferDelta > 0) {
             // Ensure we handle reclamation when burning tokens.
             uint postReclamationAmount = _manager().burnSUSD(account, absDelta);
             if (postReclamationAmount != absDelta) {
                 // If balance was insufficient, the actual delta will be smaller
-                marginDelta = int(postReclamationAmount);
+                transferDelta = int(postReclamationAmount);
             }
-        }
-
-        // now check updated delta
-        if (marginDelta < 0) {
+        } else if (transferDelta < 0) {
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their sUSD balance, and debited from their margin account.
             _manager().issueSUSD(account, absDelta);
-        } else {
-            // Zero delta is a no-op
-            return;
         }
 
-        // now that account's sUSD was handled, modify the margin of the position
-        _modifyMargin(marketKey, account, marginDelta, price);
+        if (transferDelta == 0) {
+            return; // no-op (side effect: maybe settles reclamation)
+        } else {
+            // now that account's sUSD was handled, modify the margin of the position
+            _modifyMargin(marketKey, account, transferDelta, 0, price);
+        }
     }
 
     function _modifyMargin(
         bytes32 marketKey,
         address account,
-        int marginDelta,
+        int transferDelta,
+        int lockedDelta,
         uint price
     ) internal {
-        Position memory oldPosition = _loadOrInitPosition(marketKey, account);
+        Position memory oldPosition = _storage().positionWithInit(marketKey, account);
 
         bytes32 marketKey = oldPosition.marketKey;
 
-        // Determine new margin, ensuring that the result is positive.
-        (uint margin, Status status) = _realizedMarginAfterDelta(oldPosition, price, marginDelta);
+        uint newLocked; // calculate new locked margin
+        if (lockedDelta > 0) {
+            // can't lock more than margin
+            require(uint(lockedDelta) <= oldPosition.margin, "not enough margin");
+            newLocked = oldPosition.lockedMargin.add(uint(lockedDelta));
+        } else if (lockedDelta < 0) {
+            // can't unlock more than locked
+            require(uint(-lockedDelta) <= oldPosition.lockedMargin, "not enough locked");
+            newLocked = oldPosition.lockedMargin.sub(uint(-lockedDelta));
+        } else {
+            newLocked = oldPosition.lockedMargin;
+        }
+
+        // adding the unlocked margin to the margin delta
+        // subtraction because lockedDelta is w.r.t to locked margin, so is negative w.r.t to margin
+        // so marginDelta will increase if lockedDelta is negative
+        int marginDelta = transferDelta.add(-lockedDelta);
+
+        // Determine new margin, ensuring that the result is positive and non liquidatable
+        (uint newMargin, Status status) = _realizedMarginAfterDelta(oldPosition, price, marginDelta, true, true);
 
         // check result
         _revertIfError(status);
 
-        // The user can decrease their margin with an existing position as long as:
-        //     * they have sufficient margin to do so
-        //     * the resulting margin would not be lower than the liquidation margin or min initial margin
-        //     * the resulting leverage is lower than the maximum leverage
-        if (marginDelta < 0 && oldPosition.size != 0) {
-            int notional = _notionalValue(oldPosition.size, price);
-            uint liqMargin = _liquidationMargin(notional);
-            uint curLeverage = _abs(_currentLeverage(notional, margin));
-            _revertIfError(
-                (margin < _minInitialMargin()) || (margin <= liqMargin) || (curLeverage > _maxLeverage(marketKey)),
-                Status.InsufficientMargin
-            );
-        }
+        _updateStoredPosition(marketKey, account, newMargin, newLocked, oldPosition.size, price);
 
-        _updateStorage(marketKey, account, margin, oldPosition.size, price);
-
-        emit MarginModified(marketKey, account, marginDelta);
+        emit MarginModified(marketKey, account, marginDelta, transferDelta, lockedDelta);
 
         emit PositionModified({
             marketKey: marketKey,
             id: oldPosition.id,
             account: account,
-            margin: margin,
+            margin: newMargin,
             size: oldPosition.size,
             tradeSize: 0,
             price: price,
@@ -476,7 +420,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         address account,
         TradeParams memory params
     ) internal {
-        Position memory oldPosition = _loadOrInitPosition(marketKey, account);
+        Position memory oldPosition = _storage().positionWithInit(marketKey, account);
 
         // Compute the new position after performing the trade
         (uint newMargin, int newSize, uint fee, Status status) = _postTradeDetails(oldPosition, params);
@@ -485,7 +429,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         _revertIfError(status);
 
         // store change
-        _updateStorage(marketKey, account, newMargin, newSize, params.price);
+        _updateStoredPosition(marketKey, account, newMargin, oldPosition.lockedMargin, newSize, params.price);
 
         // Send the fee to the fee pool
         if (0 < fee) {
@@ -521,7 +465,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         uint price,
         address liquidator
     ) internal {
-        Position memory prevPosition = _loadOrInitPosition(marketKey, account);
+        Position memory prevPosition = _storage().positionWithInit(marketKey, account);
 
         // check can actually liquidate
         _revertIfError(!_canLiquidate(prevPosition, price), Status.CannotLiquidate);
@@ -529,8 +473,8 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         // get remaining margin for sending any leftover buffer to fee pool
         uint remMargin = _remainingMargin(prevPosition, price);
 
-        // store the new position
-        _updateStorage(marketKey, account, 0, 0, price);
+        // store the new position, don't touch the locked margin
+        _updateStoredPosition(marketKey, account, 0, prevPosition.lockedMargin, 0, price);
 
         // Issue the reward to the liquidator.
         uint liqFee = _liquidationFee(_notionalValue(prevPosition.size, price));
@@ -579,34 +523,21 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
+    function _storage() internal view returns (IPerpsV2Storage) {
+        return IPerpsV2Storage(requireAndGetAddress(CONTRACT_PERPSV2STORAGE));
+    }
+
     function _settings() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_PERPSV2SETTINGS);
     }
 
-    /* ========== STORAGE VIEWS (to be refactored) ========== */
+    /* ========== INTERNAL LOGIC VIEWS ========== */
 
-    function _loadMarket(bytes32 marketKey) internal view returns (Market storage market) {
-        market = markets[marketKey];
+    function _marketScalars(bytes32 marketKey) internal view returns (MarketScalars memory market) {
+        market = _storage().marketScalars(marketKey);
         require(market.baseAsset != bytes32(0), "market not initialised");
         return market;
     }
-
-    function _lastFundingEntry(bytes32 marketKey) internal view returns (FundingEntry memory entry) {
-        FundingEntry[] storage fundingSequence = _loadMarket(marketKey).fundingSequence;
-        return fundingSequence[fundingSequence.length.sub(1)];
-    }
-
-    function _loadMarketAggregates(bytes32 marketKey) internal view returns (MarketAggregates memory) {
-        Market storage market = _loadMarket(marketKey);
-        return
-            MarketAggregates({
-                marketSize: market.marketSize,
-                marketSkew: market.marketSkew,
-                entryDebtCorrection: market.entryDebtCorrection
-            });
-    }
-
-    /* ========== INTERNAL LOGIC VIEWS ========== */
 
     /* ---------- Market Details ---------- */
 
@@ -620,7 +551,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         require(price > 0, "price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-        return _loadMarket(marketKey).marketSkew.divideDecimal(int(skewScaleBaseAsset));
+        return _marketScalars(marketKey).marketSkew.divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(bytes32 marketKey, uint price) internal view returns (int) {
@@ -631,7 +562,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     }
 
     function _unrecordedFunding(bytes32 marketKey, uint price) internal view returns (int funding) {
-        uint lastTimestamp = _lastFundingEntry(marketKey).timestamp;
+        uint lastTimestamp = _storage().lastFundingEntry(marketKey).timestamp;
         int elapsed = int(block.timestamp.sub(lastTimestamp));
         // The current funding rate, rescaled to a percentage per second.
         int currentFundingRatePerSecond = _currentFundingRate(marketKey, price) / 1 days;
@@ -643,7 +574,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
     function _nextFundingAmount(bytes32 marketKey, uint price) internal view returns (int funding) {
-        return (_lastFundingEntry(marketKey).funding).add(_unrecordedFunding(marketKey, price));
+        return (_storage().lastFundingEntry(marketKey).funding).add(_unrecordedFunding(marketKey, price));
     }
 
     /*
@@ -660,35 +591,37 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         The overall market debt is the sum of the remaining margin in all positions. The intuition is that
         the debt of a single position is the value withdrawn upon closing that position.
 
-        single position remaining margin = initial-margin + profit-loss + accrued-funding =
-            = initial-margin + q * (price - last-price) + q * funding-accrued-per-unit
-            = initial-margin + q * price - q * last-price + q * (funding - initial-funding)
+        single position remaining margin = margin-deposits + profit-loss + accrued-funding =
+            = margin-deposits + q * (price - last-price) + q * funding-accrued-per-unit
+            = margin-deposits + q * price - q * last-price + q * (funding - initial-funding)
 
         Total debt = sum ( position remaining margins )
-            = sum ( initial-margin + q * price - q * last-price + q * (funding - initial-funding) )
-            = sum( q * price ) + sum( q * funding ) + sum( initial-margin - q * last-price - q * initial-funding )
-            = skew * price + skew * funding + sum( initial-margin - q * ( last-price + initial-funding ) )
-            = skew (price + funding) + sum( initial-margin - q * ( last-price + initial-funding ) )
+            = sum ( margin-deposits + q * price - q * last-price + q * (funding - initial-funding) )
+            = sum( q * price ) + sum( q * funding ) + sum( margin-deposits - q * last-price - q * initial-funding )
+            = skew * price + skew * funding + sum( margin-deposits - q * ( last-price + initial-funding ) )
+            = skew (price + funding) + sum( margin-deposits - q * ( last-price + initial-funding ) )
 
-        The last term: sum( initial-margin - q * ( last-price + initial-funding ) ) being the position debt correction
+        The last term: sum( margin-deposits - q * ( last-price + initial-funding ) ) being the position debt correction
             that is tracked with each position change using this method. 
         
         The first term and the full debt calculation using current skew, price, and funding is calculated globally in _marketDebt().
          */
         int initialFunding = position.lastFundingEntry.funding;
-        return int(position.margin).sub(position.size.multiplyDecimal(int(position.lastPrice).add(initialFunding)));
+        // both position margin and locked margin are counted as debt, since both can be withdrawn unless lost
+        int marginDeposits = int(position.margin.add(position.lockedMargin));
+        return marginDeposits.sub(position.size.multiplyDecimal(int(position.lastPrice).add(initialFunding)));
     }
 
     function _marketDebt(bytes32 marketKey, uint price) internal view returns (uint) {
-        MarketAggregates memory marketAggs = _loadMarketAggregates(marketKey);
+        MarketScalars memory market = _marketScalars(marketKey);
         // short circuit and also convenient during setup
-        if (marketAggs.marketSkew == 0 && marketAggs.entryDebtCorrection == 0) {
+        if (market.marketSkew == 0 && market.entryDebtCorrection == 0) {
             // if these are 0, the resulting calculation is necessarily zero as well
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
         int priceWithFunding = int(price).add(_nextFundingAmount(marketKey, price));
-        int totalDebt = marketAggs.marketSkew.multiplyDecimal(priceWithFunding).add(marketAggs.entryDebtCorrection);
+        int totalDebt = market.marketSkew.multiplyDecimal(priceWithFunding).add(market.entryDebtCorrection);
         return uint(_max(totalDebt, 0));
     }
 
@@ -714,8 +647,8 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
         // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
         // we check that the side of the market their order is on would not break the limit.
-        int newSkew = _loadMarket(marketKey).marketSkew.sub(oldSize).add(newSize);
-        int newMarketSize = int(_loadMarket(marketKey).marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
+        int newSkew = _marketScalars(marketKey).marketSkew.sub(oldSize).add(newSize);
+        int newMarketSize = int(_marketScalars(marketKey).marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
 
         int newSideSize;
         if (0 < newSize) {
@@ -773,21 +706,38 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     function _realizedMarginAfterDelta(
         Position memory position,
         uint price,
-        int marginDelta
+        int marginDelta,
+        bool checkMinMargin,
+        bool checkLeverage
     ) internal view returns (uint margin, Status statusCode) {
-        int newMargin = _marginPlusProfitFunding(position, price).add(marginDelta);
-        if (newMargin < 0) {
+        int newMarginInt = _marginPlusProfitFunding(position, price).add(marginDelta);
+        if (newMarginInt < 0) {
             return (0, Status.InsufficientMargin);
         }
 
-        uint uMargin = uint(newMargin);
-        // minimum margin beyond which position can be liquidated
-        uint lMargin = _liquidationMargin(_notionalValue(position.size, price));
-        if (position.size != 0 && uMargin <= lMargin) {
-            return (uMargin, Status.CanLiquidate);
+        uint newMargin = uint(newMarginInt);
+
+        int notional = _notionalValue(position.size, price);
+        // position size is not 0 maybe check leverage and and liquidation margin
+        if (notional != 0) {
+            // minimum margin beyond which position can be liquidated
+            if (newMargin <= _liquidationMargin(notional)) {
+                return (newMargin, Status.CanLiquidate);
+            }
+
+            int curLeverage = _currentLeverage(notional, newMargin);
+            // check leverage if check is needed (skipped for trade fee deltas, and checked after trade)
+            if (checkLeverage && _abs(curLeverage) > _maxLeverage(position.marketKey)) {
+                return (newMargin, Status.MaxLeverageExceeded);
+            }
         }
 
-        return (uMargin, Status.Ok);
+        // check that min margin is kept if check is needed (skipped for size decreasing trades)
+        if (checkMinMargin && newMargin < _minInitialMargin()) {
+            return (newMargin, Status.InsufficientMargin);
+        }
+
+        return (newMargin, Status.Ok);
     }
 
     function _remainingMargin(Position memory position, uint price) internal view returns (uint) {
@@ -883,7 +833,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
     function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, _loadMarket(marketKey).baseAsset);
+        return _exchanger().dynamicFeeRateForExchange(sUSD, _marketScalars(marketKey).baseAsset);
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
@@ -910,6 +860,8 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
             return (oldMargin, oldSize, 0, Status.CanLiquidate);
         }
 
+        newSize = oldPos.size.add(params.sizeDelta);
+
         // get the dynamic fee rate SIP-184
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate(marketKey);
         if (tooVolatile) {
@@ -919,15 +871,6 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         // calculate the total fee for exchange
         fee = _orderFee(params, dynamicFeeRate);
 
-        // Deduct the fee.
-        // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        (newMargin, status) = _realizedMarginAfterDelta(oldPos, params.price, -int(fee));
-        if (_isError(status)) {
-            return (oldMargin, oldSize, 0, status);
-        }
-
-        newSize = oldPos.size.add(params.sizeDelta);
-
         // always allow to decrease a position, otherwise a margin of minInitialMargin can never
         // decrease a position as the price goes against them.
         // we also add the paid out fee for the minInitialMargin because otherwise minInitialMargin
@@ -935,12 +878,14 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         // a fee (so the margin that otherwise would need to be transferred would have to include the future
         // fee as well, making the UX and definition of min-margin confusing).
         bool positionDecreasing = _sameSide(oldPos.size, newSize) && _abs(newSize) < _abs(oldPos.size);
-        if (!positionDecreasing) {
-            // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
-            // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
-            if (newMargin.add(fee) < _minInitialMargin()) {
-                return (oldMargin, oldSize, 0, Status.InsufficientMargin);
-            }
+
+        // Deduct the fee
+        // It is an error if the realised margin minus the fee is negative or subject to liquidation.
+        // min margin is only checked if position is increasing
+        // leverage check is skipped because it's checked later for the position after the trade
+        (newMargin, status) = _realizedMarginAfterDelta(oldPos, params.price, -int(fee), !positionDecreasing, false);
+        if (_isError(status)) {
+            return (oldMargin, oldSize, 0, status);
         }
 
         // check that new position margin is above liquidation margin

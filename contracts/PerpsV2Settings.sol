@@ -56,35 +56,35 @@ contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
     /*
      * The number of price update rounds during which confirming next-price is allowed
      */
-    function nextPriceConfirmWindow(bytes32 _marketKey) public view returns (uint) {
+    function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint) {
         return _nextPriceConfirmWindow(_marketKey);
     }
 
     /*
      * The maximum allowable leverage in a market.
      */
-    function maxLeverage(bytes32 _marketKey) public view returns (uint) {
+    function maxLeverage(bytes32 _marketKey) external view returns (uint) {
         return _maxLeverage(_marketKey);
     }
 
     /*
      * The maximum allowable notional value on each side of a market.
      */
-    function maxSingleSideValueUSD(bytes32 _marketKey) public view returns (uint) {
+    function maxSingleSideValueUSD(bytes32 _marketKey) external view returns (uint) {
         return _maxSingleSideValueUSD(_marketKey);
     }
 
     /*
      * The maximum theoretical funding rate per day charged by a market.
      */
-    function maxFundingRate(bytes32 _marketKey) public view returns (uint) {
+    function maxFundingRate(bytes32 _marketKey) external view returns (uint) {
         return _maxFundingRate(_marketKey);
     }
 
     /*
      * The skew level at which the max funding rate will be charged.
      */
-    function skewScaleUSD(bytes32 _marketKey) public view returns (uint) {
+    function skewScaleUSD(bytes32 _marketKey) external view returns (uint) {
         return _skewScaleUSD(_marketKey);
     }
 
@@ -155,12 +155,12 @@ contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
     }
 
     function setBaseFee(bytes32 _marketKey, uint _baseFee) public onlyOwner {
-        require(_baseFee <= 1e18, "taker fee greater than 1");
+        require(_baseFee <= 1e18, "base fee greater than 1");
         _setParameter(_marketKey, PARAMETER_BASE_FEE, _baseFee);
     }
 
     function setBaseFeeNextPrice(bytes32 _marketKey, uint _baseFeeNextPrice) public onlyOwner {
-        require(_baseFeeNextPrice <= 1e18, "taker fee greater than 1");
+        require(_baseFeeNextPrice <= 1e18, "base fee greater than 1");
         _setParameter(_marketKey, PARAMETER_BASE_FEE_NEXT_PRICE, _baseFeeNextPrice);
     }
 

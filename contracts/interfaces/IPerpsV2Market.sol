@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 interface IPerpsV2BaseTypes {
     enum Status {
@@ -22,6 +23,12 @@ interface IPerpsV2BaseTypes {
         uint id;
         FundingEntry lastFundingEntry;
         uint margin;
+        // locked margin is used to withhold margin for
+        // possible future operations (e.g. orders) or possible payments (fees)
+        // it is tracked in order to correctly account for market debt instead of just burning
+        // and minting sUSD without tracking the amounts, and in order to only allow locking/unlocking
+        // correct amounts of already transferred amounts
+        uint lockedMargin;
         uint lastPrice;
         int size;
     }
@@ -35,21 +42,58 @@ interface IPerpsV2BaseTypes {
         bytes32 trackingCode; // tracking code to emit on execution for volume source fee sharing
     }
 
-    struct Market {
+    struct MarketScalars {
         bytes32 baseAsset;
         uint marketSize;
         int marketSkew;
         int entryDebtCorrection;
         uint lastPositionId;
-        FundingEntry[] fundingSequence;
-        mapping(address => Position) positions;
-        mapping(uint => address) positionIdOwner;
     }
 
     struct FundingEntry {
         int funding;
         uint timestamp;
     }
+}
+
+interface IPerpsV2Storage {
+    // views
+
+    function marketScalars(bytes32 marketKey) external view returns (IPerpsV2BaseTypes.MarketScalars memory);
+
+    function fundingSequences(bytes32 marketKey, uint index) external view returns (IPerpsV2BaseTypes.FundingEntry memory);
+
+    function fundingSequenceLength(bytes32 marketKey) external view returns (uint);
+
+    function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsV2BaseTypes.FundingEntry memory);
+
+    function positions(bytes32 marketKey, address account) external view returns (IPerpsV2BaseTypes.Position memory);
+
+    function positionIdToAccount(bytes32 marketKey, uint positionId) external view returns (address account);
+
+    // mutative restricted to engine contract
+
+    function initMarket(bytes32 marketKey, bytes32 baseAsset) external;
+
+    function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsV2BaseTypes.Position memory);
+
+    function pushFundingEntry(bytes32 marketKey, int funding) external;
+
+    function storePosition(
+        bytes32 marketKey,
+        address account,
+        uint newMargin,
+        uint newLocked,
+        int newSize,
+        uint price
+    ) external;
+
+    function storeMarketAggregates(
+        bytes32 marketKey,
+        uint marketSize,
+        int marketSkew,
+        int entryDebtCorrection
+    ) external;
 }
 
 interface IPerpsV2Market {
@@ -94,7 +138,7 @@ interface IPerpsV2Market {
 
     function lastPositionId() external view returns (uint);
 
-    function positionIdOwner(uint id) external view returns (address);
+    function positionIdToAccount(uint id) external view returns (address);
 
     /* ---------- Position Details ---------- */
 
