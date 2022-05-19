@@ -121,12 +121,16 @@ const defaults = {
 	ISSUANCE_RATIO: w3utils
 		.toBN(1)
 		.mul(w3utils.toBN(1e18))
-		.div(w3utils.toBN(6))
-		.toString(), // 1/6 = 0.16666666667
+		.div(w3utils.toBN(3))
+		.toString(), // 1/3 = 0.3333333333 // 300% ratio
 	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
 	LIQUIDATION_DELAY: (3600 * 24).toString(), // 24 hours
-	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
+	LIQUIDATION_RATIO: w3utils
+		.toBN(1)
+		.mul(w3utils.toBN(2e18))
+		.div(w3utils.toBN(3))
+		.toString(), // 2/3 = 0.6666666667 // 150% ratio
 	LIQUIDATION_ESCROW_DURATION: (3600 * 24 * 365).toString(), // 1 year
 	LIQUIDATION_PENALTY: w3utils.toWei('0.3'), // 30% penalty
 	SELF_LIQUIDATION_PENALTY: w3utils.toWei('0.2'), // 20% penalty
