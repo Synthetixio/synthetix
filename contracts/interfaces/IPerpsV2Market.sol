@@ -1,7 +1,14 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-interface IPerpsV2BaseTypes {
+// a contract / interface of this name is expected
+interface IPerpsV2Market {
+    struct Empty {
+        bool empty;
+    } // no empty blocks
+}
+
+interface IPerpsV2Types {
     enum Status {
         Ok,
         InvalidPrice,
@@ -54,28 +61,123 @@ interface IPerpsV2BaseTypes {
         int funding;
         uint timestamp;
     }
+
+    struct PositionStatus {
+        int profitLoss;
+        int accruedFunding;
+        uint remainingMargin;
+        uint accessibleMargin;
+        bool canLiquidate;
+        uint approxLiquidationPrice;
+        uint approxLiquidationFee;
+        bool priceInvalid;
+    }
 }
 
-interface IPerpsV2Storage {
+interface IPerpsV2EngineExternal {
+    // views
+    function assetPrice(bytes32 marketKey) external view returns (uint price, bool invalid);
+
+    function storageContract() external view returns (IPerpsV2StorageExternal);
+
+    function marketSizes(bytes32 marketKey) external view returns (uint long, uint short);
+
+    function marketDebt(bytes32 marketKey) external view returns (uint debt, bool invalid);
+
+    function currentFundingRate(bytes32 marketKey) external view returns (int);
+
+    function unrecordedFunding(bytes32 marketKey) external view returns (int funding, bool invalid);
+
+    function positionDetails(bytes32 marketKey, address account)
+        external
+        view
+        returns (IPerpsV2Types.Position memory position, IPerpsV2Types.PositionStatus memory positionStatus);
+
+    function orderFee(
+        bytes32 marketKey,
+        int sizeDelta,
+        uint feeRate
+    ) external view returns (uint fee, bool invalid);
+
+    function postTradeDetails(
+        bytes32 marketKey,
+        address account,
+        int sizeDelta,
+        uint feeRate
+    )
+        external
+        view
+        returns (
+            uint margin,
+            int size,
+            uint fee,
+            IPerpsV2Types.Status status
+        );
+
+    // mutative
+    function liquidatePosition(
+        bytes32 marketKey,
+        address account,
+        address liquidator
+    ) external;
+}
+
+interface IPerpsV2EngineInternal {
+    // internal mutative
+
+    // only manager
+    function initMarket(bytes32 marketKey, bytes32 baseAsset) external;
+
+    // only settings
+    function recomputeFunding(bytes32 marketKey) external;
+
+    // only routers
+    function transferMargin(
+        bytes32 marketKey,
+        address account,
+        int amount
+    ) external;
+
+    // only routers
+    function modifyLockedMargin(
+        bytes32 marketKey,
+        address account,
+        int lockAmount,
+        uint burnAmount
+    ) external;
+
+    // only routers
+    function trade(
+        bytes32 marketKey,
+        address account,
+        int sizeDelta,
+        uint feeRate,
+        bytes32 trackingCode
+    ) external;
+}
+
+interface IPerpsV2StorageExternal {
     // views
 
-    function marketScalars(bytes32 marketKey) external view returns (IPerpsV2BaseTypes.MarketScalars memory);
+    function marketScalars(bytes32 marketKey) external view returns (IPerpsV2Types.MarketScalars memory);
 
-    function fundingSequences(bytes32 marketKey, uint index) external view returns (IPerpsV2BaseTypes.FundingEntry memory);
+    function fundingSequences(bytes32 marketKey, uint index) external view returns (IPerpsV2Types.FundingEntry memory);
 
     function fundingSequenceLength(bytes32 marketKey) external view returns (uint);
 
-    function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsV2BaseTypes.FundingEntry memory);
+    function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsV2Types.FundingEntry memory);
 
-    function positions(bytes32 marketKey, address account) external view returns (IPerpsV2BaseTypes.Position memory);
+    function positions(bytes32 marketKey, address account) external view returns (IPerpsV2Types.Position memory);
 
     function positionIdToAccount(bytes32 marketKey, uint positionId) external view returns (address account);
+}
 
+interface IPerpsV2StorageInternal {
     // mutative restricted to engine contract
 
     function initMarket(bytes32 marketKey, bytes32 baseAsset) external;
 
-    function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsV2BaseTypes.Position memory);
+    function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsV2Types.Position memory);
 
     function pushFundingEntry(bytes32 marketKey, int funding) external;
 
@@ -96,90 +198,35 @@ interface IPerpsV2Storage {
     ) external;
 }
 
-interface IPerpsV2Market {
-    /* ========== FUNCTION INTERFACE ========== */
+interface IFuturesMarketManagerInternal {
+    function issueSUSD(address account, uint amount) external;
 
-    /* ---------- Market Details ---------- */
+    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
-    function marketKey() external view returns (bytes32 key);
+    function payFee(uint amount, bytes32 trackingCode) external;
 
-    function baseAsset() external view returns (bytes32 key);
+    function approvedRouter(
+        address router,
+        bytes32 marketKey,
+        address account
+    ) external returns (bool approved);
+}
 
-    function marketSize() external view returns (uint128 size);
+interface IPerpsV2Orders {
+    // VIEWS
+    function engineContract() external view returns (IPerpsV2EngineExternal);
 
-    function marketSkew() external view returns (int128 skew);
+    function storageContract() external view returns (IPerpsV2StorageExternal);
 
-    function fundingLastRecomputed() external view returns (uint32 timestamp);
+    function nextPriceOrders(bytes32 marketKey, address account) external view returns (IPerpsV2Types.NextPriceOrder memory);
 
-    function fundingSequence(uint index) external view returns (int128 netFunding);
+    function baseFee(bytes32 marketKey) external view returns (uint feeRate);
 
-    function positions(address account)
-        external
-        view
-        returns (
-            uint64 id,
-            uint64 fundingIndex,
-            uint128 margin,
-            uint128 lastPrice,
-            int128 size
-        );
+    function baseFeeNextPrice(bytes32 marketKey) external view returns (uint feeRate);
 
-    function assetPrice() external view returns (uint price, bool invalid);
+    function currentRoundId(bytes32 marketKey) external view returns (uint);
 
-    function marketSizes() external view returns (uint long, uint short);
-
-    function marketDebt() external view returns (uint debt, bool isInvalid);
-
-    function currentFundingRate() external view returns (int fundingRate);
-
-    function unrecordedFunding() external view returns (int funding, bool invalid);
-
-    function fundingSequenceLength() external view returns (uint length);
-
-    function lastPositionId() external view returns (uint);
-
-    function positionIdToAccount(uint id) external view returns (address);
-
-    /* ---------- Position Details ---------- */
-
-    function notionalValue(address account) external view returns (int value, bool invalid);
-
-    function profitLoss(address account) external view returns (int pnl, bool invalid);
-
-    function accruedFunding(address account) external view returns (int funding, bool invalid);
-
-    function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid);
-
-    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid);
-
-    function approxLiquidationPriceAndFee(address account)
-        external
-        view
-        returns (
-            uint price,
-            uint fee,
-            bool invalid
-        );
-
-    function canLiquidate(address account) external view returns (bool);
-
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
-
-    function postTradeDetails(int sizeDelta, address sender)
-        external
-        view
-        returns (
-            uint margin,
-            int size,
-            uint price,
-            uint liqPrice,
-            uint fee,
-            IPerpsV2BaseTypes.Status status
-        );
-
-    /* ---------- Market Operations ---------- */
-
-    function recomputeFunding() external returns (uint lastIndex);
+    // MUTATIVE
 
     function transferMargin(int marginDelta) external;
 

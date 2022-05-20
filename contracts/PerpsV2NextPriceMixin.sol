@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./PerpsV2MarketBase.sol";
+import "./PerpsV2OrdersBase.sol";
 
 /**
  Mixin that implements NextPrice orders mechanism for the perps market.
@@ -15,9 +15,18 @@ import "./PerpsV2MarketBase.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
-    /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
-    mapping(address => NextPriceOrder) public nextPriceOrders;
+contract PerpsV2NextPriceMixin is PerpsV2OrdersBase {
+    /// @dev Holds a mapping of [marketKey][account] to orders. Only one order per market & account is supported
+    mapping(bytes32 => mapping(address => NextPriceOrder)) public nextPriceOrders;
+
+    function baseFeeNextPrice(bytes32 marketKey) external view returns (uint) {
+        return _baseFeeNextPrice(marketKey);
+    }
+
+    function currentRoundId(bytes32 marketKey) public view returns (uint) {
+        bytes32 baseAsset = storageContract().marketScalars(marketKey).baseAsset;
+        return _exchangeRates().getCurrentRoundId(baseAsset);
+    }
 
     ///// Mutative methods
 
@@ -28,46 +37,42 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
      * incorrectly submitted orders (that cannot be filled).
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      */
-    function submitNextPriceOrder(int sizeDelta) external {
-        _submitNextPriceOrder(sizeDelta, bytes32(0));
+    function submitNextPriceOrder(bytes32 marketKey, int sizeDelta) external {
+        _submitNextPriceOrder(marketKey, sizeDelta, bytes32(0));
     }
 
     /// same as submitNextPriceOrder but emits an event with the tracking code
     /// to allow volume source fee sharing for integrations
-    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
-        _submitNextPriceOrder(sizeDelta, trackingCode);
+    function submitNextPriceOrderWithTracking(
+        bytes32 marketKey,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external {
+        _submitNextPriceOrder(marketKey, sizeDelta, trackingCode);
     }
 
-    function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
+    function _submitNextPriceOrder(
+        bytes32 marketKey,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) internal {
+        address account = msg.sender;
         // check that a previous order doesn't exist
-        require(nextPriceOrders[msg.sender].sizeDelta == 0, "previous order exists");
-
-        // storage position as it's going to be modified to deduct commitFee and keeperFee
-        Position storage position = positions[msg.sender];
+        require(nextPriceOrders[marketKey][account].sizeDelta == 0, "previous order exists");
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert
-        uint price = _assetPriceRequireSystemChecks();
-        uint fundingIndex = _recomputeFunding(price);
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                baseFee: _baseFeeNextPrice(marketKey),
-                trackingCode: trackingCode
-            });
-        (, , Status status) = _postTradeDetails(position, params);
-        _revertIfError(status);
+        uint feeRate = _baseFeeNextPrice(marketKey);
+        (, , , Status status) = engineContract().postTradeDetails(marketKey, account, sizeDelta, feeRate);
+        require(status == Status.Ok, "order would fail as spot");
 
         // deduct fees from margin
-        uint commitDeposit = _nextPriceCommitDeposit(params);
+        uint commitDeposit = _nextPriceCommitDeposit(marketKey, sizeDelta);
         uint keeperDeposit = _minKeeperFee();
-        _updatePositionMargin(position, price, -int(commitDeposit + keeperDeposit));
-        // emit event for modifying the position (subtracting the fees from margin)
-        emit PositionModified(position.id, msg.sender, position.margin, position.size, 0, price, fundingIndex, 0);
+        _engineInternal().modifyLockedMargin(marketKey, account, int(commitDeposit + keeperDeposit), 0);
 
         // create order
-        uint targetRoundId = _exchangeRates().getCurrentRoundId(baseAsset) + 1; // next round
+        uint targetRoundId = currentRoundId(marketKey) + 1; // next round
         NextPriceOrder memory order =
             NextPriceOrder({
                 sizeDelta: int128(sizeDelta),
@@ -78,7 +83,8 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
             });
         // emit event
         emit NextPriceOrderSubmitted(
-            msg.sender,
+            marketKey,
+            account,
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
@@ -86,7 +92,7 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
             order.trackingCode
         );
         // store order
-        nextPriceOrders[msg.sender] = order;
+        nextPriceOrders[marketKey][account] = order;
     }
 
     /**
@@ -101,44 +107,49 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
      *  or send to the msg.sender if it's not the account holder.
      * @param account the account for which the stored order should be cancelled
      */
-    function cancelNextPriceOrder(address account) external {
+    function cancelNextPriceOrder(bytes32 marketKey, address account) external {
+        address keeper = msg.sender;
+
         // important!! order of the account, not the msg.sender
-        NextPriceOrder memory order = nextPriceOrders[account];
+        NextPriceOrder memory order = nextPriceOrders[marketKey][account];
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
+        uint curRoundId = currentRoundId(marketKey);
 
-        if (account == msg.sender) {
-            // this is account owner
-            // refund keeper fee to margin
-            Position storage position = positions[account];
-            uint price = _assetPriceRequireSystemChecks();
-            uint fundingIndex = _recomputeFunding(price);
-            _updatePositionMargin(position, price, int(order.keeperDeposit));
-
-            // emit event for modifying the position (add the fee to margin)
-            emit PositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
+        uint burn = order.keeperDeposit;
+        uint refund = 0;
+        if (account == keeper) {
+            // this is account owner, so refund keeper fee to margin
+            refund += order.keeperDeposit;
         } else {
             // this is someone else (like a keeper)
             // cancellation by third party is only possible when execution cannot be attempted any longer
             // otherwise someone might try to grief an account by cancelling for the keeper fee
-            require(_confirmationWindowOver(currentRoundId, order.targetRoundId), "cannot be cancelled by keeper yet");
+            require(
+                _confirmationWindowOver(marketKey, curRoundId, order.targetRoundId),
+                "cannot be cancelled by keeper yet"
+            );
 
+            // burn keeper fee from locked margin
+            burn += order.keeperDeposit;
             // send keeper fee to keeper
-            _manager().issueSUSD(msg.sender, order.keeperDeposit);
+            _manager().issueSUSD(keeper, order.keeperDeposit);
         }
+        // record the margin changes
+        // lockAmount = -refund because refund is unlocked back into margin
+        _engineInternal().modifyLockedMargin(marketKey, account, -int(refund), burn);
 
         // pay the commitDeposit as fee to the FeePool
         _manager().payFee(order.commitDeposit, order.trackingCode);
 
         // remove stored order
-        // important!! position of the account, not the msg.sender
-        delete nextPriceOrders[account];
+        delete nextPriceOrders[marketKey][account];
         // emit event
         emit NextPriceOrderRemoved(
+            marketKey,
             account,
-            currentRoundId,
+            curRoundId,
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
@@ -160,61 +171,49 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a next-price order
      */
-    function executeNextPriceOrder(address account) external {
+    function executeNextPriceOrder(bytes32 marketKey, address account) external {
+        address keeper = msg.sender;
         // important!: order  of the account, not the sender!
-        NextPriceOrder memory order = nextPriceOrders[account];
+        NextPriceOrder memory order = nextPriceOrders[marketKey][account];
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
         // check round-Id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
-        require(order.targetRoundId <= currentRoundId, "target roundId not reached");
+        uint curRoundId = currentRoundId(marketKey);
+        require(order.targetRoundId <= curRoundId, "target roundId not reached");
 
         // check order is not too old to execute
         // we cannot allow executing old orders because otherwise perps knowledge
         // can be used to trigger failures of orders that are more profitable
         // then the commitFee that was charged, or can be used to confirm
         // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(!_confirmationWindowOver(currentRoundId, order.targetRoundId), "order too old, use cancel");
+        require(!_confirmationWindowOver(marketKey, curRoundId, order.targetRoundId), "order too old, use cancel");
 
         // handle the fees and refunds according to the mechanism rules
-        uint toRefund = order.commitDeposit; // refund the commitment deposit
+        uint refund = order.commitDeposit; // refund the commitment deposit
+        uint burn = 0;
 
         // refund keeperFee to margin if it's the account holder
-        if (msg.sender == account) {
-            toRefund += order.keeperDeposit;
+        if (keeper == account) {
+            refund += order.keeperDeposit;
         } else {
-            _manager().issueSUSD(msg.sender, order.keeperDeposit);
+            burn += order.keeperDeposit;
+            _manager().issueSUSD(keeper, order.keeperDeposit);
         }
+        // record the margin changes
+        // lockAmount = -refund because refund is unlocked back into margin
+        _engineInternal().modifyLockedMargin(marketKey, account, -int(refund), burn);
 
-        Position storage position = positions[account];
-        uint currentPrice = _assetPriceRequireSystemChecks();
-        uint fundingIndex = _recomputeFunding(currentPrice);
-        // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
-        // if the order later fails this is reverted of course
-        _updatePositionMargin(position, currentPrice, int(toRefund));
-        // emit event for modifying the position (refunding fee/s)
-        emit PositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
-
-        // the correct price for the past round
-        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.targetRoundId);
-        // execute or revert
-        _trade(
-            account,
-            TradeParams({
-                sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: pastPrice, // the funding is applied only from order confirmation time
-                baseFee: _baseFeeNextPrice(marketKey),
-                trackingCode: order.trackingCode
-            })
-        );
+        uint feeRate = _baseFeeNextPrice(marketKey);
+        _engineInternal().trade(marketKey, account, order.sizeDelta, feeRate, order.trackingCode);
 
         // remove stored order
-        delete nextPriceOrders[account];
+        delete nextPriceOrders[marketKey][account];
         // emit event
         emit NextPriceOrderRemoved(
+            marketKey,
             account,
-            currentRoundId,
+            curRoundId,
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
@@ -227,30 +226,28 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
 
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
     // rounds after target roundId
-    function _confirmationWindowOver(uint currentRoundId, uint targetRoundId) internal view returns (bool) {
-        return (currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey)); // don't underflow
-    }
-
-    // convenience view to access exchangeRates contract for methods that are not exposed
-    // via _exchangeCircuitBreaker() contract
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(_exchangeCircuitBreaker().exchangeRates());
+    function _confirmationWindowOver(
+        bytes32 marketKey,
+        uint curRoundId,
+        uint targetRoundId
+    ) internal view returns (bool) {
+        return (curRoundId > targetRoundId) && (curRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey)); // don't underflow
     }
 
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
-    function _nextPriceCommitDeposit(TradeParams memory params) internal view returns (uint) {
-        // modify params to spot fee
-        params.baseFee = _baseFee(marketKey);
+    function _nextPriceCommitDeposit(bytes32 marketKey, int sizeDelta) internal view returns (uint) {
         // Commit fee is equal to the spot fee that would be paid.
         // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
         // it is not important since at the time of order execution it will be refunded and the correct
         // dynamic fee will be charged.
-        return _orderFee(params, 0);
+        (uint fee, ) = engineContract().orderFee(marketKey, sizeDelta, _baseFee(marketKey));
+        return fee;
     }
 
     ///// Events
     event NextPriceOrderSubmitted(
+        bytes32 indexed marketKey,
         address indexed account,
         int sizeDelta,
         uint targetRoundId,
@@ -260,8 +257,9 @@ contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
     );
 
     event NextPriceOrderRemoved(
+        bytes32 indexed marketKey,
         address indexed account,
-        uint currentRoundId,
+        uint curRoundId,
         int sizeDelta,
         uint targetRoundId,
         uint commitDeposit,

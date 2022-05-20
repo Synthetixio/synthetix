@@ -1,11 +1,12 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 import "./MixinResolver.sol";
 
 // types
 import "./interfaces/IPerpsV2Market.sol";
 
-contract PerpsV2Storage is IPerpsV2Storage, IPerpsV2BaseTypes, MixinResolver {
+contract PerpsV2Storage is IPerpsV2StorageExternal, IPerpsV2StorageInternal, IPerpsV2Types, MixinResolver {
     bytes32 internal constant PERPSV2_ENGINE_CONTRACT_NAME = "PerpsV2Engine";
 
     /* ========== PUBLIC STATE ========== */
@@ -130,7 +131,7 @@ contract PerpsV2Storage is IPerpsV2Storage, IPerpsV2BaseTypes, MixinResolver {
         int marketSkew,
         int entryDebtCorrection
     ) external onlyEngine requireInit(marketKey) {
-        MarketScalars storage market = MarketScalars[marketKey];
+        MarketScalars storage market = marketScalars[marketKey];
         market.marketSize = marketSize;
         market.marketSkew = marketSkew;
         market.entryDebtCorrection = entryDebtCorrection;

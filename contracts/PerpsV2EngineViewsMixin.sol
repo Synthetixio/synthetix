@@ -12,7 +12,7 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
-    function marketSizes(bytes32 marketKey) public view returns (uint long, uint short) {
+    function marketSizes(bytes32 marketKey) external view returns (uint long, uint short) {
         MarketScalars memory market = _marketScalars(marketKey);
         int size = int(market.marketSize);
         int skew = market.marketSkew;
@@ -46,17 +46,6 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
         return (_unrecordedFunding(marketKey, price), isInvalid);
     }
 
-    struct PositionStatus {
-        int profitLoss;
-        int accruedFunding;
-        uint remainingMargin;
-        uint accessibleMargin;
-        bool liquidatable;
-        uint approxLiquidationPrice;
-        uint approxLiquidationFee;
-        bool priceInvalid;
-    }
-
     /*
      * The price at which a position is subject to liquidation, and the expected liquidation fees at that price; o
      * When they have just enough margin left to pay a liquidator, then they are liquidated.
@@ -70,7 +59,7 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
         returns (Position memory position, PositionStatus memory positionStatus)
     {
         (uint price, bool isInvalid) = assetPrice(marketKey);
-        Position memory position = _storage().positions(marketKey, account);
+        position = _storageViews().positions(marketKey, account);
         uint liqPrice = _approxLiquidationPrice(position, price);
         // if position cannot be liquidated at any price (no leverage), return 0 as possible fee
         uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
@@ -81,7 +70,7 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
                 accruedFunding: _accruedFunding(position, price),
                 remainingMargin: _remainingMargin(position, price),
                 accessibleMargin: _accessibleMargin(position, price),
-                liquidatable: _canLiquidate(position, price),
+                canLiquidate: _canLiquidate(position, price),
                 approxLiquidationPrice: liqPrice,
                 approxLiquidationFee: liqFee,
                 priceInvalid: isInvalid
@@ -89,8 +78,8 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
         );
     }
 
-    function storageContract() external view returns (IPerpsV2Storage) {
-        return _storage();
+    function storageContract() external view returns (IPerpsV2StorageExternal) {
+        return _storageViews();
     }
 
     /*
@@ -101,11 +90,15 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
      * @return fee in sUSD decimal, and invalid boolean flag for invalid rates or dynamic fee that is
      * too high due to recent volatility.
      */
-    function orderFee(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
+    function orderFee(
+        bytes32 marketKey,
+        int sizeDelta,
+        uint feeRate
+    ) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = assetPrice(marketKey);
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate(marketKey);
         TradeParams memory params =
-            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: _baseFee(marketKey), trackingCode: bytes32(0)});
+            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: bytes32(0)});
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
     }
 
@@ -115,7 +108,8 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
     function postTradeDetails(
         bytes32 marketKey,
         address account,
-        int sizeDelta
+        int sizeDelta,
+        uint feeRate
     )
         external
         view
@@ -131,10 +125,10 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
             return (0, 0, 0, Status.InvalidPrice);
         }
 
-        Position memory position = _storage().positions(marketKey, account);
+        Position memory position = _storageViews().positions(marketKey, account);
 
         TradeParams memory params =
-            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: _baseFee(marketKey), trackingCode: bytes32(0)});
+            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: bytes32(0)});
         return _postTradeDetails(position, params);
     }
 

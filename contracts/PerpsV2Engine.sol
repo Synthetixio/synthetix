@@ -10,6 +10,6 @@ import "./PerpsV2EngineViewsMixin.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2Market
-contract PerpsV2Engine is PerpsV2EngineBase, PerpsV2EngineViewsMixin {
+contract PerpsV2Engine is IPerpsV2EngineExternal, IPerpsV2EngineInternal, PerpsV2EngineBase, PerpsV2EngineViewsMixin {
     constructor(address _resolver) public PerpsV2EngineBase(_resolver) {}
 }
