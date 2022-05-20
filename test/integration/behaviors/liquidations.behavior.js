@@ -13,7 +13,7 @@ const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanLiquidate({ ctx }) {
-	describe.only('liquidating', () => {
+	describe('liquidating', () => {
 		let user7, user8;
 		let owner;
 		let someUser;
