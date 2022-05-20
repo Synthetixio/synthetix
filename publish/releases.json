@@ -639,6 +639,12 @@
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
+		},
+		{
+			"sip": 240,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [

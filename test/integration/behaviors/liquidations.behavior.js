@@ -6,9 +6,14 @@ const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 const { skipLiquidationDelay } = require('../utils/skip');
 
+// convenience methods
+const toUnit = v => ethers.utils.parseUnits(v.toString());
+const unit = toUnit(1);
+const multiplyDecimal = (a, b) => a.mul(b).div(unit);
+
 function itCanLiquidate({ ctx }) {
 	describe('liquidating', () => {
-		let user7;
+		let user7, user8;
 		let owner;
 		let someUser;
 		let liquidatedUser;
@@ -26,7 +31,7 @@ function itCanLiquidate({ ctx }) {
 				SystemSettings,
 			} = ctx.contracts);
 
-			({ owner, someUser, liquidatedUser, flaggerUser, liquidatorUser, user7 } = ctx.users);
+			({ owner, someUser, liquidatedUser, flaggerUser, liquidatorUser, user7, user8 } = ctx.users);
 
 			SystemSettings = SystemSettings.connect(owner);
 		});
@@ -74,6 +79,15 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
+		before('ensure user8 has SNX', async () => {
+			await ensureBalance({
+				ctx,
+				symbol: 'SNX',
+				user: user8,
+				balance: ethers.utils.parseEther('800'),
+			});
+		});
+
 		before('exchange rate is set', async () => {
 			exchangeRate = await getRate({ ctx, symbol: 'SNX' });
 			await addAggregatorAndSetRate({
@@ -93,6 +107,10 @@ function itCanLiquidate({ ctx }) {
 
 		before('user7 stakes their SNX', async () => {
 			await Synthetix.connect(user7).issueMaxSynths();
+		});
+
+		before('user8 stakes their SNX', async () => {
+			await Synthetix.connect(user8).issueMaxSynths();
 		});
 
 		it('cannot be liquidated at this point', async () => {
@@ -350,6 +368,99 @@ function itCanLiquidate({ ctx }) {
 						assert.bnEqual(earnedRewardAfterClaiming, '0');
 					});
 				});
+			});
+		});
+
+		describe('self liquidation', () => {
+			let tx;
+			let cratioBefore;
+			let beforeDebtBalance;
+			let beforeDebtShares, beforeSharesSupply;
+			let beforeRewardsCredittedSnx;
+
+			before('exchange rate changes to allow liquidation', async () => {
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: '300000000000000000', // $0.30
+				});
+			});
+
+			before('user8 calls liquidateSelf', async () => {
+				beforeDebtShares = await SynthetixDebtShare.balanceOf(user8.address);
+				beforeDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
+				beforeSharesSupply = await SynthetixDebtShare.totalSupply();
+				beforeRewardsCredittedSnx = await Synthetix.balanceOf(LiquidatorRewards.address);
+				cratioBefore = await Synthetix.collateralisationRatio(user8.address);
+
+				tx = await Synthetix.connect(user8).liquidateSelf();
+			});
+
+			after('restore exchange rate', async () => {
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: exchangeRate.toString(),
+				});
+			});
+
+			it('fixes the c-ratio of user8', async () => {
+				const cratio = await Synthetix.collateralisationRatio(user8.address);
+				// Check that the ratio is repaired
+				assert.bnLt(cratio, cratioBefore);
+			});
+
+			it('should liquidate the correct amount of debt', async () => {
+				const { events } = await tx.wait();
+				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
+				const amountLiquidated = liqEvent.args.amountLiquidated;
+
+				const penalty = await Liquidator.selfLiquidationPenalty();
+				const expectedLiquidatedDebtAmount = multiplyDecimal(beforeDebtBalance, unit.add(penalty));
+				assert.bnEqual(amountLiquidated, expectedLiquidatedDebtAmount);
+			});
+
+			it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
+				const afterDebtShares = await SynthetixDebtShare.balanceOf(user8.address);
+				const liquidatedDebtShares = beforeDebtShares.sub(afterDebtShares);
+				const afterSupply = beforeSharesSupply.sub(liquidatedDebtShares);
+
+				assert.bnEqual(await SynthetixDebtShare.totalSupply(), afterSupply);
+			});
+
+			it('should not be open for liquidation anymore', async () => {
+				assert.isFalse(await Liquidator.isLiquidationOpen(user8.address, false));
+				assert.bnEqual(await Liquidator.getLiquidationDeadlineForAccount(user8.address), 0);
+			});
+
+			it('transfers the redeemed SNX to LiquidatorRewards', async () => {
+				const { events } = await tx.wait();
+				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
+				const snxRedeemed = liqEvent.args.snxRedeemed;
+
+				assert.bnNotEqual(snxRedeemed, '0');
+				assert.bnEqual(
+					await Synthetix.balanceOf(LiquidatorRewards.address),
+					beforeRewardsCredittedSnx.add(snxRedeemed)
+				);
+			});
+
+			it('should allow someUser to claim their share of the liquidation rewards', async () => {
+				const earnedReward = await LiquidatorRewards.earned(someUser.address);
+
+				const tx = await LiquidatorRewards.connect(someUser).getReward(someUser.address);
+
+				const { events } = await tx.wait();
+
+				const event = events.find(l => l.event === 'RewardPaid');
+				const payee = event.args.user;
+				const reward = event.args.reward;
+
+				assert.equal(payee, someUser.address);
+				assert.bnEqual(reward, earnedReward);
+
+				const earnedRewardAfterClaiming = await LiquidatorRewards.earned(someUser.address);
+				assert.bnEqual(earnedRewardAfterClaiming, '0');
 			});
 		});
 	});
