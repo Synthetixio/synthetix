@@ -9,10 +9,11 @@ const { skipLiquidationDelay } = require('../utils/skip');
 // convenience methods
 const toUnit = v => ethers.utils.parseUnits(v.toString());
 const unit = toUnit(1);
+const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanLiquidate({ ctx }) {
-	describe('liquidating', () => {
+	describe.only('liquidating', () => {
 		let user7, user8;
 		let owner;
 		let someUser;
@@ -20,12 +21,18 @@ function itCanLiquidate({ ctx }) {
 		let liquidatorUser;
 		let flaggerUser;
 		let exchangeRate;
-		let Liquidator, LiquidatorRewards, Synthetix, SynthetixDebtShare, SystemSettings;
+		let Liquidator,
+			LiquidatorRewards,
+			RewardEscrowV2,
+			Synthetix,
+			SynthetixDebtShare,
+			SystemSettings;
 
 		before('target contracts and users', () => {
 			({
 				Liquidator,
 				LiquidatorRewards,
+				RewardEscrowV2,
 				Synthetix,
 				SynthetixDebtShare,
 				SystemSettings,
@@ -33,6 +40,7 @@ function itCanLiquidate({ ctx }) {
 
 			({ owner, someUser, liquidatedUser, flaggerUser, liquidatorUser, user7, user8 } = ctx.users);
 
+			RewardEscrowV2 = RewardEscrowV2.connect(owner);
 			SystemSettings = SystemSettings.connect(owner);
 		});
 
@@ -371,27 +379,34 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
-		describe('self liquidation', () => {
+		describe('self liquidation with a majority of collateral in escrow', () => {
 			let tx;
-			let cratioBefore;
-			let beforeDebtBalance;
+			let beforeCollateralBalance;
+			let beforeSnxBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
 			let beforeRewardsCredittedSnx;
+			const snxRate = toUnit(0.3); // $0.30
 
 			before('exchange rate changes to allow liquidation', async () => {
 				await addAggregatorAndSetRate({
 					ctx,
 					currencyKey: toBytes32('SNX'),
-					rate: '300000000000000000', // $0.30
+					rate: snxRate,
 				});
 			});
 
+			before('ensure user8 has alot of escrowed SNX', async () => {
+				await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
+				await RewardEscrowV2.createEscrowEntry(user8.address, ethers.utils.parseEther('10000'), 1);
+			});
+
 			before('user8 calls liquidateSelf', async () => {
+				beforeSnxBalance = await Synthetix.balanceOf(user8.address);
+				beforeCollateralBalance = await Synthetix.collateral(user8.address);
 				beforeDebtShares = await SynthetixDebtShare.balanceOf(user8.address);
 				beforeDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
 				beforeSharesSupply = await SynthetixDebtShare.totalSupply();
 				beforeRewardsCredittedSnx = await Synthetix.balanceOf(LiquidatorRewards.address);
-				cratioBefore = await Synthetix.collateralisationRatio(user8.address);
 
 				tx = await Synthetix.connect(user8).liquidateSelf();
 			});
@@ -404,10 +419,9 @@ function itCanLiquidate({ ctx }) {
 				});
 			});
 
-			it('fixes the c-ratio of user8', async () => {
-				const cratio = await Synthetix.collateralisationRatio(user8.address);
-				// Check that the ratio is repaired
-				assert.bnLt(cratio, cratioBefore);
+			it('should remove all transferable collateral', async () => {
+				const afterSnxBalance = await Synthetix.balanceOf(user8.address);
+				assert.bnEqual(afterSnxBalance, '0');
 			});
 
 			it('should liquidate the correct amount of debt', async () => {
@@ -416,8 +430,20 @@ function itCanLiquidate({ ctx }) {
 				const amountLiquidated = liqEvent.args.amountLiquidated;
 
 				const penalty = await Liquidator.selfLiquidationPenalty();
-				const expectedLiquidatedDebtAmount = multiplyDecimal(beforeDebtBalance, unit.add(penalty));
-				assert.bnEqual(amountLiquidated, expectedLiquidatedDebtAmount);
+				const debtToLiquidate = await Liquidator.calculateAmountToFixCollateral(
+					beforeDebtBalance,
+					multiplyDecimal(beforeCollateralBalance, snxRate),
+					penalty
+				);
+				const expectedAmountOfDebtToLiquidate = multiplyDecimal(
+					debtToLiquidate,
+					divideDecimal(beforeSnxBalance, beforeCollateralBalance)
+				);
+				assert.bnClose(
+					amountLiquidated.toString(),
+					expectedAmountOfDebtToLiquidate.toString(),
+					'2000' // due to rounding error when multiplying snxRate above
+				);
 			});
 
 			it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {

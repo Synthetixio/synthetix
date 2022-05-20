@@ -718,7 +718,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             totalRedeemed = transferableBalance;
 
             // Liquidate the account's debt based on the liquidation penalty.
-            amountToLiquidate = debtBalance.multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+            amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(collateralForAccount);
         }
 
         // Reduce debt shares by amount to liquidate.
