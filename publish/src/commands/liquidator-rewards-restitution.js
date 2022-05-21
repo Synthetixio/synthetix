@@ -22,6 +22,7 @@ const liquidatorRewardsRestitution = async ({
 	useFork,
 	providerUrl,
 	csv,
+	threshold,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -316,7 +317,10 @@ const liquidatorRewardsRestitution = async ({
 	csvObjects
 		.filter(v => v)
 		.forEach(obj => {
-			if (obj.escrow !== undefined && ethers.BigNumber.from(obj.escrow).gt(10)) {
+			if (
+				obj.escrow !== undefined &&
+				ethers.BigNumber.from(obj.escrow).gt(ethers.utils.parseEther(threshold))
+			) {
 				filteredObjects.push(obj);
 			}
 		});
@@ -327,7 +331,7 @@ const liquidatorRewardsRestitution = async ({
 		// Create escrow entries for each account using multicall
 		// Note: make sure to do token approvals before running this
 		// eslint-disable-next-line new-cap
-		const totalAmountEscrowed = new ethers.BigNumber.from(0);
+		let totalAmountEscrowed = new ethers.BigNumber.from(0);
 		await readMulticall(
 			filteredObjects,
 			a =>
@@ -337,10 +341,10 @@ const liquidatorRewardsRestitution = async ({
 					31536000 // 1 year in seconds
 				),
 			(a, r) => {
-				totalAmountEscrowed.add(ethers.BigNumber.from(a.escrow));
+				totalAmountEscrowed = totalAmountEscrowed.add(ethers.BigNumber.from(a.escrow));
 			},
 			0,
-			50
+			100
 		);
 
 		console.log(green('Completed! \n Total amount escrowed:', totalAmountEscrowed.toString()));
@@ -428,6 +432,11 @@ module.exports = {
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
+			.option(
+				'--threshold <amount>',
+				'Filter out small amounts that are not worth the gas cost',
+				'100'
 			)
 			.option('--csv <file>', 'CSV of all addresses to scan', 'snx.csv')
 			.action(liquidatorRewardsRestitution),
