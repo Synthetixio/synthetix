@@ -213,6 +213,62 @@ module.exports = async ({
 		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
 	});
 
+	if (SystemSettings.selfLiquidationPenalty) {
+		const selfLiquidationPenalty = await getDeployParameter('SELF_LIQUIDATION_PENALTY');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'selfLiquidationPenalty',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(selfLiquidationPenalty),
+			write: 'setSelfLiquidationPenalty',
+			writeArg: selfLiquidationPenalty,
+			comment: 'Set the penalty for self liquidation of an account',
+		});
+	}
+
+	if (SystemSettings.liquidationEscrowDuration) {
+		const liquidationEscrowDuration = await getDeployParameter('LIQUIDATION_ESCROW_DURATION');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'liquidationEscrowDuration',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(liquidationEscrowDuration),
+			write: 'setLiquidationEscrowDuration',
+			writeArg: liquidationEscrowDuration,
+			comment: 'Set the duration of how long liquidation rewards are escrowed for',
+		});
+	}
+
+	if (SystemSettings.flagReward) {
+		const flagReward = await getDeployParameter('FLAG_REWARD');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'flagReward',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(flagReward),
+			write: 'setFlagReward',
+			writeArg: flagReward,
+			comment: 'Set the reward amount for flagging an account for liquidation',
+		});
+	}
+
+	if (SystemSettings.liquidateReward) {
+		const liquidateReward = await getDeployParameter('LIQUIDATE_REWARD');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'liquidateReward',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(liquidateReward),
+			write: 'setLiquidateReward',
+			writeArg: liquidateReward,
+			comment: 'Set the reward amount for peforming a liquidation',
+		});
+	}
+
 	const rateStalePeriod = await getDeployParameter('RATE_STALE_PERIOD');
 	await runStep({
 		contract: 'SystemSettings',
