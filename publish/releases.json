@@ -1171,7 +1171,7 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239]
 		},
 		{
 			"name": "Rasalhague (Optimism)",
@@ -1180,7 +1180,7 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239]
 		},
 		{
 			"name": "Kochab",
