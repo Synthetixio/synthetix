@@ -639,6 +639,11 @@
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
+		},
+		{
+			"sip": 239,
+			"layer": "both",
+			"sources": ["Synthetix"]
 		}
 	],
 	"releases": [
