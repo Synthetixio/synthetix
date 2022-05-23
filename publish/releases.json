@@ -643,8 +643,7 @@
 		{
 			"sip": 240,
 			"layer": "both",
-			"sources": ["Issuer"],
-			"released": "both"
+			"sources": ["Issuer"]
 		}
 	],
 	"releases": [
