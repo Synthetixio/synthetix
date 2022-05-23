@@ -12,6 +12,22 @@
 		"value": "4200"
 	},
 	{
+		"name": "LIQUIDATION_DELAY",
+		"value": "43200"
+	},
+	{
+		"name": "LIQUIDATION_RATIO",
+		"value": "666666666666666666"
+	},
+	{
+		"name": "FLAG_REWARD",
+		"value": "1000000000000000000"
+	},
+	{
+		"name": "LIQUIDATE_REWARD",
+		"value": "2000000000000000000"
+	},
+	{
 		"name": "COLLATERAL_MANAGER",
 		"value": {
 			"SYNTHS": ["sUSD", "sBTC", "sETH", "sLINK", "sSOL", "sAVAX", "sMATIC", "sEUR"],

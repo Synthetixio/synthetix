@@ -103,6 +103,7 @@ contract('FeePool', async accounts => {
 				'FeePool',
 				'FeePoolEternalStorage',
 				'DebtCache',
+				'LiquidatorRewards',
 				'Proxy',
 				'Synthetix',
 				'SystemSettings',

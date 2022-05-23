@@ -63,6 +63,7 @@ contract('Synthetix', async accounts => {
 				'SystemStatus',
 				'DebtCache',
 				'Issuer',
+				'LiquidatorRewards',
 				'Exchanger',
 				'RewardsDistribution',
 				'CollateralManager',

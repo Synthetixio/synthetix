@@ -54,5 +54,9 @@
 	"EUR": {
 		"asset": "EUR",
 		"feed": "0x7e3786902Bf8EBC196d9a5f06Da4d1Bc0E62D432"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"feed": "0xB0924e98CAFC880ed81F6A4cA63FD61006D1f8A0"
 	}
 }

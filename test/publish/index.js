@@ -184,7 +184,7 @@ describe('publish scripts', () => {
 			let Exchanger;
 			let Issuer;
 			let SystemSettings;
-			let Liquidations;
+			let Liquidator;
 			let ExchangeRates;
 			const aggregators = {};
 
@@ -259,7 +259,7 @@ describe('publish scripts', () => {
 				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
 				SystemSettings = getContract({ target: 'SystemSettings' });
 
-				Liquidations = getContract({ target: 'Liquidations' });
+				Liquidator = getContract({ target: 'Liquidator' });
 
 				ExchangeRates = getContract({ target: 'ExchangeRates' });
 			});
@@ -283,10 +283,10 @@ describe('publish scripts', () => {
 						ethers.utils.parseEther((TARGET_THRESHOLD / 100).toString()).toString()
 					);
 
-					assert.strictEqual((await Liquidations.liquidationDelay()).toString(), LIQUIDATION_DELAY);
-					assert.strictEqual((await Liquidations.liquidationRatio()).toString(), LIQUIDATION_RATIO);
+					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
+					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await Liquidations.liquidationPenalty()).toString(),
+						(await Liquidator.liquidationPenalty()).toString(),
 						LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
@@ -443,15 +443,15 @@ describe('publish scripts', () => {
 								ethers.utils.parseEther((newTargetThreshold / 100).toString()).toString()
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationDelay()).toString(),
+								(await Liquidator.liquidationDelay()).toString(),
 								newLiquidationsDelay
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationRatio()).toString(),
+								(await Liquidator.liquidationRatio()).toString(),
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationPenalty()).toString(),
+								(await Liquidator.liquidationPenalty()).toString(),
 								newLiquidationsPenalty
 							);
 							assert.strictEqual(
@@ -1103,7 +1103,7 @@ describe('publish scripts', () => {
 									'FeePool',
 									'FeePoolEternalStorage',
 									'Issuer',
-									'Liquidations',
+									'Liquidator',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',

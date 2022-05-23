@@ -105,6 +105,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthetixEscrow',
 				'SystemSettings',
 				'Issuer',
+				'LiquidatorRewards',
 				'OneNetAggregatorIssuedSynths',
 				'OneNetAggregatorDebtRatio',
 				'DebtCache',
@@ -165,7 +166,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
 				'issueSynthsOnBehalf',
-				'liquidateDelinquentAccount',
+				'liquidateAccount',
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',
@@ -260,10 +261,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
 		});
-		it('liquidateDelinquentAccount() cannot be invoked directly by a user', async () => {
+		it('liquidateAccount() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.liquidateDelinquentAccount,
-				args: [account1, toUnit('1'), account2],
+				fnc: issuer.liquidateAccount,
+				args: [account1, false],
 				accounts,
 				reason: 'Issuer: Only the synthetix contract can perform this action',
 			});
