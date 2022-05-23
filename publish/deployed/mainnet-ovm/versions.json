@@ -88,12 +88,12 @@
 			},
 			"Liquidations": {
 				"address": "0x14E6f8e6Da00a32C069b11b64e48EA1FEF2361D4",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x571a2669ec42d397d69e7b03e4e9945065db3777fc70c09a0409e1e8c09e5223"
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x76d2de36936005A0182a1BB61dA501A8A044D477",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xdb65ca6894b3cbbd87e36f87e03a3725a1990dc2d00c2757f9e9fbfdf1a27058"
 			},
 			"FeePoolEternalStorage": {
