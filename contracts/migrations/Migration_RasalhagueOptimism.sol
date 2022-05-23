@@ -13,29 +13,29 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_RasalhagueOptimism is BaseMigration {
-    // https://kovan-explorer.optimism.io/address/0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94;
-    address public constant OWNER = 0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94;
+    // https://explorer.optimism.io/address/0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
+    address public constant OWNER = 0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://kovan-explorer.optimism.io/address/0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6
-    AddressResolver public constant addressresolver_i = AddressResolver(0xb08b62e1cdfd37eCCd69A9ACe67322CCF801b3A6);
-    // https://kovan-explorer.optimism.io/address/0x0064A673267696049938AA47595dD0B3C2e705A1
-    ProxyERC20 public constant proxysynthetix_i = ProxyERC20(0x0064A673267696049938AA47595dD0B3C2e705A1);
-    // https://kovan-explorer.optimism.io/address/0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C
-    TokenState public constant tokenstatesynthetix_i = TokenState(0x22C9624c784214D53d43BDB4Bf56B3D3Bf2e773C);
-    // https://kovan-explorer.optimism.io/address/0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB
+    // https://explorer.optimism.io/address/0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C
+    AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
+    // https://explorer.optimism.io/address/0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4
+    ProxyERC20 public constant proxysynthetix_i = ProxyERC20(0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4);
+    // https://explorer.optimism.io/address/0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE
+    TokenState public constant tokenstatesynthetix_i = TokenState(0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE);
+    // https://explorer.optimism.io/address/0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e
     RewardsDistribution public constant rewardsdistribution_i =
-        RewardsDistribution(0x9147Cb9e5ef262bd0b1d362134C40948dC00C3EB);
+        RewardsDistribution(0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://kovan-explorer.optimism.io/address/0x28CAb2c065bC0aAE84f6763e621B0b814C77922B
-    address public constant new_Synthetix_contract = 0x28CAb2c065bC0aAE84f6763e621B0b814C77922B;
+    // https://explorer.optimism.io/address/0x274D1dbe298993EaD5AC1B25624F53786d16006e
+    address public constant new_Synthetix_contract = 0x274D1dbe298993EaD5AC1B25624F53786d16006e;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -94,13 +94,13 @@ contract Migration_RasalhagueOptimism is BaseMigration {
 
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](8);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xB613d148E47525478bD8A91eF7Cf2F7F63d81858);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0xE50124A0C087EC06a273D0B9886902273B02d4D8);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xE45A27fd3ad929866CEFc6786d8360fF6665c660);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0xfff685537fdbD9CA07BD863Ac0b422863BF3114f);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x638CCdbB9A014a73FA9b112962A754673582C7e7);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xEC4075Ff2452907FCf86c8b7EA5B0B378e187373);
-        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x5b643DFC67f9701929A0b55f23e0Af61df50E75D);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x47eE58801C1AC44e54FF2651aE50525c5cfc66d0);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x68a8b098967Ae077dcFf5cC8E29B7cb15f1A3cC8);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xF4EebDD0704021eF2a6Bbe993fdf93030Cd784b4);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0xcC02F000b0aA8a0eFC2B55C9cf2305Fb3531cca1);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x939313420A85ab8F21B8c2fE15b60528f34E0d63);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x2DcAD1A019fba8301b77810Ae14007cc88ED004B);
+        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x136b1EC699c62b0606854056f02dC7Bb80482d63);
         addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(new_Synthetix_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
