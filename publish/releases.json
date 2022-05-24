@@ -643,7 +643,8 @@
 		{
 			"sip": 239,
 			"layer": "both",
-			"sources": ["Synthetix"]
+			"sources": ["Synthetix"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -1171,7 +1172,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Rasalhague (Optimism)",
@@ -1180,7 +1182,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Kochab",
