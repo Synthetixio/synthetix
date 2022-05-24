@@ -18,8 +18,7 @@ interface IPerpsTypesV2 {
         InsufficientMargin,
         NotPermitted,
         NilOrder,
-        NoPositionOpen,
-        PriceTooVolatile
+        NoPositionOpen
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
@@ -218,9 +217,15 @@ interface IPerpsOrdersV2 {
 
     function nextPriceOrders(bytes32 marketKey, address account) external view returns (IPerpsTypesV2.NextPriceOrder memory);
 
-    function baseFee(bytes32 marketKey) external view returns (uint feeRate);
+    function baseFee(bytes32 marketKey) external view returns (uint);
 
-    function baseFeeNextPrice(bytes32 marketKey) external view returns (uint feeRate);
+    function feeRate(bytes32 marketKey) external view returns (uint);
+
+    function dynamicFeeRate(bytes32 marketKey) external view returns (uint rate, bool tooVolatile);
+
+    function baseFeeNextPrice(bytes32 marketKey) external view returns (uint);
+
+    function feeRateNextPrice(bytes32 marketKey) external view returns (uint);
 
     function currentRoundId(bytes32 marketKey) external view returns (uint);
 

@@ -14,7 +14,6 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
@@ -42,7 +41,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     // Address Resolver Configuration
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
-    bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
@@ -106,21 +104,19 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         _errorMessages[uint8(Status.NotPermitted)] = "Not permitted for this address";
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
-        _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
     }
 
     /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
-        newAddresses[0] = CONTRACT_EXCHANGER;
-        newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[3] = CONTRACT_PERPSSETTINGSV2;
-        newAddresses[4] = CONTRACT_PERPSTORAGEV2;
-        newAddresses[5] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[6] = CONTRACT_EXCHANGERATES;
+        bytes32[] memory newAddresses = new bytes32[](6);
+        newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[2] = CONTRACT_PERPSSETTINGSV2;
+        newAddresses[3] = CONTRACT_PERPSTORAGEV2;
+        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[5] = CONTRACT_EXCHANGERATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -495,10 +491,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
-    function _exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
-    }
-
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
     }
@@ -811,20 +803,10 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return notionalValue.divideDecimal(int(remainingMargin_));
     }
 
-    function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal pure returns (uint fee) {
+    function _orderFee(TradeParams memory params) internal pure returns (uint fee) {
         // usd value of the difference in position
         int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
-
-        uint feeRate = params.feeRate.add(dynamicFeeRate);
-        return _abs(notionalDiff.multiplyDecimal(int(feeRate)));
-    }
-
-    /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
-    /// this assumes dynamic fee is symmetric in direction of trade.
-    /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
-    function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, _marketScalars(marketKey).baseAsset);
+        return _abs(notionalDiff.multiplyDecimal(int(params.feeRate)));
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
@@ -853,14 +835,8 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
         newSize = oldPos.size.add(params.sizeDelta);
 
-        // get the dynamic fee rate SIP-184
-        (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate(marketKey);
-        if (tooVolatile) {
-            return (oldMargin, oldSize, 0, Status.PriceTooVolatile);
-        }
-
         // calculate the total fee for exchange
-        fee = _orderFee(params, dynamicFeeRate);
+        fee = _orderFee(params);
 
         // always allow to decrease a position, otherwise a margin of minInitialMargin can never
         // decrease a position as the price goes against them.

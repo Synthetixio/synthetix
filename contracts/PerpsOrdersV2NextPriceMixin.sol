@@ -23,6 +23,10 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         return _baseFeeNextPrice(marketKey);
     }
 
+    function feeRateNextPrice(bytes32 marketKey) external view returns (uint) {
+        return _feeRateNextPrice(marketKey);
+    }
+
     function currentRoundId(bytes32 marketKey) public view returns (uint) {
         bytes32 baseAsset = storageContract().marketScalars(marketKey).baseAsset;
         return _exchangeRates().getCurrentRoundId(baseAsset);
@@ -204,7 +208,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // lockAmount = -refund because refund is unlocked back into margin
         _engineInternal().modifyLockedMargin(marketKey, account, -int(refund), burn);
 
-        uint feeRate = _baseFeeNextPrice(marketKey);
+        uint feeRate = _feeRateNextPrice(marketKey);
         _engineInternal().trade(marketKey, account, order.sizeDelta, feeRate, order.trackingCode);
 
         // remove stored order
@@ -243,6 +247,11 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // dynamic fee will be charged.
         (uint fee, ) = engineContract().orderFee(marketKey, sizeDelta, _baseFee(marketKey));
         return fee;
+    }
+
+    function _feeRateNextPrice(bytes32 marketKey) internal view returns (uint feeRate) {
+        // add to base fee
+        return _baseFeeNextPrice(marketKey).add(_dynamicFeeRateChecked(marketKey));
     }
 
     ///// Events

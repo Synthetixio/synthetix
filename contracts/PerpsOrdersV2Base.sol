@@ -19,6 +19,8 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
+    using SafeMath for uint;
+
     /* ========== CONSTANTS ========== */
 
     // This is the same unit as used inside `SignedSafeDecimalMath`.
@@ -38,6 +40,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
+    bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -49,12 +52,13 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[1] = CONTRACT_PERPSSETTINGSV2;
         newAddresses[2] = CONTRACT_PERPSENGINEV2;
         newAddresses[3] = CONTRACT_PERPSTORAGEV2;
         newAddresses[4] = CONTRACT_EXCHANGERATES;
+        newAddresses[5] = CONTRACT_EXCHANGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -66,8 +70,16 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
-    function baseFee(bytes32 marketKey) external view returns (uint feeRate) {
+    function baseFee(bytes32 marketKey) external view returns (uint) {
         return _baseFee(marketKey);
+    }
+
+    function feeRate(bytes32 marketKey) external view returns (uint) {
+        return _feeRate(marketKey);
+    }
+
+    function dynamicFeeRate(bytes32 marketKey) external view returns (uint rate, bool tooVolatile) {
+        return _dynamicFeeRate(marketKey);
     }
 
     // INTERNAL
@@ -82,6 +94,32 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
+    }
+
+    function _exchanger() internal view returns (IExchanger) {
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
+    }
+
+    /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
+    /// this assumes dynamic fee is symmetric in direction of trade.
+    /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
+    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
+    function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint feeRate, bool tooVolatile) {
+        bytes32 baseAsset = storageContract().marketScalars(marketKey).baseAsset;
+        return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
+    }
+
+    function _dynamicFeeRateChecked(bytes32 marketKey) internal view returns (uint) {
+        // get the dynamic fee rate SIP-184
+        (uint _rate, bool tooVolatile) = _dynamicFeeRate(marketKey);
+        // revert if too volatile
+        require(!tooVolatile, "Price too volatile");
+        return _rate;
+    }
+
+    function _feeRate(bytes32 marketKey) internal view returns (uint feeRate) {
+        // add to base fee
+        return _baseFee(marketKey).add(_dynamicFeeRateChecked(marketKey));
     }
 
     // EXTERNAL MUTATIVE
@@ -117,7 +155,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /*
      * Same as modifyPosition, but emits an event with the passed tracking code to
-     * allow offchain calculations for fee sharing with originating integrations
+     * allow off chain calculations for fee sharing with originating integrations
      */
     function modifyPositionWithTracking(
         bytes32 marketKey,
@@ -146,7 +184,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         int sizeDelta,
         bytes32 trackingCode
     ) internal {
-        _engineInternal().trade(marketKey, msg.sender, sizeDelta, _baseFee(marketKey), trackingCode);
+        _engineInternal().trade(marketKey, msg.sender, sizeDelta, _feeRate(marketKey), trackingCode);
     }
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {

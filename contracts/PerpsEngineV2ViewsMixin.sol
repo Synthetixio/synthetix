@@ -82,13 +82,10 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return _storageViews();
     }
 
-    /*
-     * Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
-     * expensive than ones that decrease it. Dynamic fee is added according to the recent volatility
-     * according to SIP-184.
+    /**
+     * Reports the fee for submitting an order of a given size.
      * @param sizeDelta size of the order in baseAsset units (negative numbers for shorts / selling)
-     * @return fee in sUSD decimal, and invalid boolean flag for invalid rates or dynamic fee that is
-     * too high due to recent volatility.
+     * @return fee in sUSD decimal, and invalid boolean flag for invalid rates.
      */
     function orderFee(
         bytes32 marketKey,
@@ -96,10 +93,9 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         uint feeRate
     ) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = assetPrice(marketKey);
-        (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate(marketKey);
         TradeParams memory params =
             TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: bytes32(0)});
-        return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
+        return (_orderFee(params), isInvalid);
     }
 
     /*

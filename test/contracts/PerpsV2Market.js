@@ -29,7 +29,6 @@ const Status = {
 	NotPermitted: 8,
 	NilOrder: 9,
 	NoPositionOpen: 10,
-	PriceTooVolatile: 11,
 };
 
 contract('PerpsV2Market', accounts => {
