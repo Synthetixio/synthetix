@@ -22,13 +22,11 @@ contract('PerpsV2Settings', accounts => {
 	const owner = accounts[1];
 
 	const marketKey = toBytes32('pBTC');
-	const takerFee = toUnit('0.003');
-	const makerFee = toUnit('0.001');
-	const takerFeeNextPrice = toUnit('0.0005');
-	const makerFeeNextPrice = toUnit('0.0001');
+	const baseFee = toUnit('0.003');
+	const baseFeeNextPrice = toUnit('0.0005');
 	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
-	const maxMarketValueUSD = toUnit('100000');
+	const maxSingleSideValueUSD = toUnit('100000');
 
 	const maxFundingRate = toUnit('0.1');
 	const skewScaleUSD = toUnit('10000');
@@ -94,13 +92,11 @@ contract('PerpsV2Settings', accounts => {
 			abi: perpsSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'setTakerFee',
-				'setMakerFee',
-				'setTakerFeeNextPrice',
-				'setMakerFeeNextPrice',
+				'setBaseFee',
+				'setBaseFeeNextPrice',
 				'setNextPriceConfirmWindow',
 				'setMaxLeverage',
-				'setMaxMarketValueUSD',
+				'setMaxSingleSideValueUSD',
 				'setMaxFundingRate',
 				'setSkewScaleUSD',
 				'setParameters',
@@ -112,18 +108,20 @@ contract('PerpsV2Settings', accounts => {
 		});
 	});
 
+	it('contract has CONTRACT_NAME getter', async () => {
+		assert.equal(await perpsSettings.CONTRACT_NAME(), toBytes32('PerpsV2Settings'));
+	});
+
 	describe('Parameter setting', () => {
 		let params;
 
 		before('init params', async () => {
 			params = Object.entries({
-				takerFee,
-				makerFee,
-				takerFeeNextPrice,
-				makerFeeNextPrice,
+				baseFee,
+				baseFeeNextPrice,
 				nextPriceConfirmWindow,
 				maxLeverage,
-				maxMarketValueUSD,
+				maxSingleSideValueUSD,
 				maxFundingRate,
 				skewScaleUSD,
 			}).map(([key, val]) => {
@@ -133,36 +131,18 @@ contract('PerpsV2Settings', accounts => {
 		});
 
 		describe('bounds checking', async () => {
-			it('should revert if maker fee is greater than 1', async () => {
+			it('should revert if base fee is greater than 1', async () => {
 				await assert.revert(
-					perpsSettings.setMakerFee(marketKey, toUnit('1').add(new BN(1)), {
-						from: owner,
-					}),
-					'maker fee greater than 1'
-				);
-			});
-
-			it('should revert if taker fee is greater than 1', async () => {
-				await assert.revert(
-					perpsSettings.setTakerFee(marketKey, toUnit('1').add(new BN(1)), {
+					perpsSettings.setBaseFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
 				);
 			});
 
-			it('should revert if maker fee next price is greater than 1', async () => {
+			it('should revert if base fee next price is greater than 1', async () => {
 				await assert.revert(
-					perpsSettings.setMakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
-						from: owner,
-					}),
-					'maker fee greater than 1'
-				);
-			});
-
-			it('should revert if taker fee next price is greater than 1', async () => {
-				await assert.revert(
-					perpsSettings.setTakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
+					perpsSettings.setBaseFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -224,6 +204,28 @@ contract('PerpsV2Settings', accounts => {
 							assert.bnEqual(await getter(marketKey), value.toString());
 						}
 					});
+				});
+
+				it('setParameters should set the params accordingly and emit the corresponding events', async () => {
+					const tx = await perpsSettings.setParameters(marketKey, ...params.map(p => p[1]), {
+						from: owner,
+					});
+					const decodedLogs = await getDecodedLogs({
+						hash: tx.tx,
+						contracts: [perpsSettings],
+					});
+					assert.equal(
+						Object.values(decodedLogs).filter(l => l?.name === 'ParameterUpdated').length,
+						7
+					); // 7 params changes
+
+					// check values
+					for (const p of params) {
+						const value = p[1];
+						const getter = p[3];
+						// And the parameter was actually set properly
+						assert.bnEqual(await getter(marketKey), value.toString());
+					}
 				});
 			});
 		});

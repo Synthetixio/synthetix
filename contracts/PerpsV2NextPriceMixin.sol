@@ -15,7 +15,7 @@ import "./PerpsV2MarketBase.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract MixinPerpsV2MarketNextPrice is PerpsV2MarketBase {
+contract PerpsV2NextPriceMixin is PerpsV2MarketBase {
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
     mapping(address => NextPriceOrder) public nextPriceOrders;
 
@@ -53,8 +53,7 @@ contract MixinPerpsV2MarketNextPrice is PerpsV2MarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFeeNextPrice(marketKey),
-                makerFee: _makerFeeNextPrice(marketKey),
+                baseFee: _baseFeeNextPrice(marketKey),
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
@@ -131,7 +130,7 @@ contract MixinPerpsV2MarketNextPrice is PerpsV2MarketBase {
         }
 
         // pay the commitDeposit as fee to the FeePool
-        _manager().payFee(order.commitDeposit);
+        _manager().payFee(order.commitDeposit, order.trackingCode);
 
         // remove stored order
         // important!! position of the account, not the msg.sender
@@ -205,8 +204,7 @@ contract MixinPerpsV2MarketNextPrice is PerpsV2MarketBase {
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeNextPrice(marketKey),
-                makerFee: _makerFeeNextPrice(marketKey),
+                baseFee: _baseFeeNextPrice(marketKey),
                 trackingCode: order.trackingCode
             })
         );
@@ -242,8 +240,7 @@ contract MixinPerpsV2MarketNextPrice is PerpsV2MarketBase {
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
     function _nextPriceCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
-        params.takerFee = _takerFee(marketKey);
-        params.makerFee = _makerFee(marketKey);
+        params.baseFee = _baseFee(marketKey);
         // Commit fee is equal to the spot fee that would be paid.
         // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
