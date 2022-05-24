@@ -1168,8 +1168,9 @@
 			},
 			"Synthetix": {
 				"address": "0xc66a263f2C7C1Af0bD70c6cA4Bff5936F3D6Ef9F",
-				"status": "current",
-				"keccak256": "0xc7181091631b9c6b8047460f85d0920a25c23a87ddd862eca7a114859b7b3611"
+				"status": "replaced",
+				"keccak256": "0xc7181091631b9c6b8047460f85d0920a25c23a87ddd862eca7a114859b7b3611",
+				"replaced_in": "v2.70.0"
 			},
 			"Exchanger": {
 				"address": "0xcC02F000b0aA8a0eFC2B55C9cf2305Fb3531cca1",
@@ -1195,6 +1196,21 @@
 				"address": "0xF4EebDD0704021eF2a6Bbe993fdf93030Cd784b4",
 				"status": "current",
 				"keccak256": "0x621221d61543cd3356f62b60c84c1a0ba0763ab6caada6705df5db116bcab9e0"
+			}
+		}
+	},
+	"v2.70.0": {
+		"tag": "v2.70.0",
+		"fulltag": "v2.70.0",
+		"release": "Rasalhague",
+		"network": "mainnet",
+		"date": "2022-05-23T23:00:44-04:00",
+		"commit": "48d93a047b167c24d7234615ac3947d6c541246b",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x274D1dbe298993EaD5AC1B25624F53786d16006e",
+				"status": "current",
+				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362"
 			}
 		}
 	}
