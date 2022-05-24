@@ -1,22 +1,18 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
 import "./PerpsV2SettingsMixin.sol";
 
 // Internal references
-import "./interfaces/IPerpsV2Settings.sol";
 import "./interfaces/IPerpsV2Market.sol";
-
-// market manager is still the V1 one
-import "./interfaces/IFuturesMarketManager.sol";
 
 contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSV2ENGINE = "PerpsV2Engine";
 
     bytes32 public constant CONTRACT_NAME = "PerpsV2Settings";
@@ -29,14 +25,9 @@ contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](2);
-        newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
+        bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[1] = CONTRACT_PERPSV2ENGINE;
         addresses = combineArrays(existingAddresses, newAddresses);
-    }
-
-    function _futuresMarketManager() internal view returns (IFuturesMarketManager) {
-        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
     }
 
     function _engine() internal view returns (IPerpsV2EngineInternal) {
@@ -94,26 +85,17 @@ contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
         return _skewScaleUSD(marketKey);
     }
 
-    function parameters(bytes32 marketKey)
-        external
-        view
-        returns (
-            uint baseFee,
-            uint baseFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxSingleSideValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        )
-    {
-        baseFee = _baseFee(marketKey);
-        baseFeeNextPrice = _baseFeeNextPrice(marketKey);
-        nextPriceConfirmWindow = _nextPriceConfirmWindow(marketKey);
-        maxLeverage = _maxLeverage(marketKey);
-        maxSingleSideValueUSD = _maxSingleSideValueUSD(marketKey);
-        maxFundingRate = _maxFundingRate(marketKey);
-        skewScaleUSD = _skewScaleUSD(marketKey);
+    function parameters(bytes32 marketKey) external view returns (Parameters memory) {
+        return
+            Parameters({
+                baseFee: _baseFee(marketKey),
+                baseFeeNextPrice: _baseFeeNextPrice(marketKey),
+                nextPriceConfirmWindow: _nextPriceConfirmWindow(marketKey),
+                maxLeverage: _maxLeverage(marketKey),
+                maxSingleSideValueUSD: _maxSingleSideValueUSD(marketKey),
+                maxFundingRate: _maxFundingRate(marketKey),
+                skewScaleUSD: _skewScaleUSD(marketKey)
+            });
     }
 
     /*

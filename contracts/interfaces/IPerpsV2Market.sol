@@ -250,3 +250,39 @@ interface IPerpsV2Orders {
 
     function liquidatePosition(address account) external;
 }
+
+interface IPerpsV2Settings {
+    struct Parameters {
+        uint baseFee;
+        uint baseFeeNextPrice;
+        uint nextPriceConfirmWindow;
+        uint maxLeverage;
+        uint maxSingleSideValueUSD;
+        uint maxFundingRate;
+        uint skewScaleUSD;
+    }
+
+    function baseFee(bytes32 _marketKey) external view returns (uint);
+
+    function baseFeeNextPrice(bytes32 _marketKey) external view returns (uint);
+
+    function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
+
+    function maxLeverage(bytes32 _marketKey) external view returns (uint);
+
+    function maxSingleSideValueUSD(bytes32 _marketKey) external view returns (uint);
+
+    function maxFundingRate(bytes32 _marketKey) external view returns (uint);
+
+    function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
+
+    function parameters(bytes32 _marketKey) external view returns (Parameters memory);
+
+    function minKeeperFee() external view returns (uint);
+
+    function liquidationFeeRatio() external view returns (uint);
+
+    function liquidationBufferRatio() external view returns (uint);
+
+    function minInitialMargin() external view returns (uint);
+}
