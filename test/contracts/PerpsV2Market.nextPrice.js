@@ -40,7 +40,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 
 	before(async () => {
 		({
-			PerpsV2Settings: perpsSettings,
+			PerpsSettingsV2: perpsSettings,
 			PerpsV2MarketpBTC: perpsMarket,
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
@@ -54,7 +54,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			feeds: ['BTC', 'ETH'],
 			contracts: [
 				'FuturesMarketManager',
-				'PerpsV2Settings',
+				'PerpsSettingsV2',
 				'PerpsV2MarketpBTC',
 				'AddressResolver',
 				'FeePool',

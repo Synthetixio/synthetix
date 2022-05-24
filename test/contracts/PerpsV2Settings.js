@@ -14,7 +14,7 @@ const {
 
 const BN = require('bn.js');
 
-contract('PerpsV2Settings', accounts => {
+contract('PerpsSettingsV2', accounts => {
 	let futuresMarketManager, perpsSettings;
 
 	let mockPerpsV2MarketpBTC;
@@ -33,14 +33,14 @@ contract('PerpsV2Settings', accounts => {
 
 	before(async () => {
 		({
-			PerpsV2Settings: perpsSettings,
+			PerpsSettingsV2: perpsSettings,
 			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			feeds: ['BTC'],
 			contracts: [
-				'PerpsV2Settings',
+				'PerpsSettingsV2',
 				'FuturesMarketManager',
 				'AddressResolver',
 				'FeePool',
@@ -109,7 +109,7 @@ contract('PerpsV2Settings', accounts => {
 	});
 
 	it('contract has CONTRACT_NAME getter', async () => {
-		assert.equal(await perpsSettings.CONTRACT_NAME(), toBytes32('PerpsV2Settings'));
+		assert.equal(await perpsSettings.CONTRACT_NAME(), toBytes32('PerpsSettingsV2'));
 	});
 
 	describe('Parameter setting', () => {

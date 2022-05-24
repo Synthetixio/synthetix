@@ -2,8 +2,8 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsV2SettingsMixin.sol";
-import "./interfaces/IPerpsV2Market.sol";
+import "./PerpsSettingsV2Mixin.sol";
+import "./interfaces/IPerpsInterfacesV2.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -18,7 +18,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2Types {
+contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -28,7 +28,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2Types {
 
     /* ========== PUBLIC CONSTANTS ========== */
 
-    bytes32 public constant CONTRACT_NAME = "PerpsV2Engine";
+    bytes32 public constant CONTRACT_NAME = "PerpsEngineV2";
 
     /* ========== INTERNAL CONSTANTS ========== */
 
@@ -45,8 +45,8 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2Types {
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 internal constant CONTRACT_PERPSV2SETTINGS = "PerpsV2Settings";
-    bytes32 internal constant CONTRACT_PERPSV2STORAGE = "PerpsV2Storage";
+    bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
+    bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     /* ========== EVENTS ========== */
@@ -94,7 +94,7 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2Types {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public PerpsV2SettingsMixin(_resolver) {
+    constructor(address _resolver) public PerpsSettingsV2Mixin(_resolver) {
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
         _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
@@ -112,13 +112,13 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2Types {
     /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[3] = CONTRACT_PERPSV2SETTINGS;
-        newAddresses[4] = CONTRACT_PERPSV2STORAGE;
+        newAddresses[3] = CONTRACT_PERPSSETTINGSV2;
+        newAddresses[4] = CONTRACT_PERPSTORAGEV2;
         newAddresses[5] = CONTRACT_SYSTEMSTATUS;
         newAddresses[6] = CONTRACT_EXCHANGERATES;
         addresses = combineArrays(existingAddresses, newAddresses);
@@ -511,16 +511,16 @@ contract PerpsV2EngineBase is PerpsV2SettingsMixin, IPerpsV2Types {
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
-    function _storageMutative() internal view returns (IPerpsV2StorageInternal) {
-        return IPerpsV2StorageInternal(requireAndGetAddress(CONTRACT_PERPSV2STORAGE));
+    function _storageMutative() internal view returns (IPerpsStorageV2Internal) {
+        return IPerpsStorageV2Internal(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
-    function _storageViews() internal view returns (IPerpsV2StorageExternal) {
-        return IPerpsV2StorageExternal(requireAndGetAddress(CONTRACT_PERPSV2STORAGE));
+    function _storageViews() internal view returns (IPerpsStorageV2External) {
+        return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
     function _settings() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_PERPSV2SETTINGS);
+        return requireAndGetAddress(CONTRACT_PERPSSETTINGSV2);
     }
 
     /* ========== INTERNAL LOGIC VIEWS ========== */

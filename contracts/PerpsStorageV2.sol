@@ -4,10 +4,10 @@ pragma experimental ABIEncoderV2;
 import "./MixinResolver.sol";
 
 // types
-import "./interfaces/IPerpsV2Market.sol";
+import "./interfaces/IPerpsInterfacesV2.sol";
 
-contract PerpsV2Storage is IPerpsV2StorageExternal, IPerpsV2StorageInternal, IPerpsV2Types, MixinResolver {
-    bytes32 internal constant PERPSV2_ENGINE_CONTRACT_NAME = "PerpsV2Engine";
+contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPerpsTypesV2, MixinResolver {
+    bytes32 internal constant PERPSENGINEV2_CONTRACT_NAME = "PerpsEngineV2";
 
     /* ========== PUBLIC STATE ========== */
 
@@ -23,14 +23,14 @@ contract PerpsV2Storage is IPerpsV2StorageExternal, IPerpsV2StorageInternal, IPe
     mapping(bytes32 => mapping(uint => address)) public positionIdToAccount;
     // getter positionIdToAccount(bytes32, uint) (address)
 
-    bytes32 public constant CONTRACT_NAME = "PerpsV2Storage";
+    bytes32 public constant CONTRACT_NAME = "PerpsStorageV2";
 
     /* ========== INTERNAL STATE ========== */
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyEngine() {
-        require(msg.sender == requireAndGetAddress(PERPSV2_ENGINE_CONTRACT_NAME), "only engine");
+        require(msg.sender == requireAndGetAddress(PERPSENGINEV2_CONTRACT_NAME), "only engine");
         _;
     }
 
@@ -48,7 +48,7 @@ contract PerpsV2Storage is IPerpsV2StorageExternal, IPerpsV2StorageInternal, IPe
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinResolver.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = PERPSV2_ENGINE_CONTRACT_NAME;
+        newAddresses[0] = PERPSENGINEV2_CONTRACT_NAME;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

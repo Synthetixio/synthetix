@@ -2,8 +2,8 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsV2SettingsMixin.sol";
-import "./interfaces/IPerpsV2Market.sol";
+import "./PerpsSettingsV2Mixin.sol";
+import "./interfaces/IPerpsInterfacesV2.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -18,7 +18,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract PerpsV2OrdersBase is PerpsV2SettingsMixin, IPerpsV2Types {
+contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     /* ========== CONSTANTS ========== */
 
     // This is the same unit as used inside `SignedSafeDecimalMath`.
@@ -29,41 +29,41 @@ contract PerpsV2OrdersBase is PerpsV2SettingsMixin, IPerpsV2Types {
 
     /* ========== STATE VARIABLES ========== */
 
-    bytes32 public constant CONTRACT_NAME = "PerpsV2Orders";
+    bytes32 public constant CONTRACT_NAME = "PerpsOrdersV2";
 
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 internal constant CONTRACT_PERPSV2SETTINGS = "PerpsV2Settings";
-    bytes32 internal constant CONTRACT_PERPSV2ENGINE = "PerpsV2Engine";
-    bytes32 internal constant CONTRACT_PERPSV2STORAGE = "PerpsV2Storage";
+    bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
+    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
+    bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public PerpsV2SettingsMixin(_resolver) {}
+    constructor(address _resolver) public PerpsSettingsV2Mixin(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     /* ---------- External Contracts ---------- */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[1] = CONTRACT_PERPSV2SETTINGS;
-        newAddresses[2] = CONTRACT_PERPSV2ENGINE;
-        newAddresses[3] = CONTRACT_PERPSV2STORAGE;
+        newAddresses[1] = CONTRACT_PERPSSETTINGSV2;
+        newAddresses[2] = CONTRACT_PERPSENGINEV2;
+        newAddresses[3] = CONTRACT_PERPSTORAGEV2;
         newAddresses[4] = CONTRACT_EXCHANGERATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function engineContract() public view returns (IPerpsV2EngineExternal) {
-        return IPerpsV2EngineExternal(requireAndGetAddress(CONTRACT_PERPSV2ENGINE));
+    function engineContract() public view returns (IPerpsEngineV2External) {
+        return IPerpsEngineV2External(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
-    function storageContract() public view returns (IPerpsV2StorageExternal) {
-        return IPerpsV2StorageExternal(requireAndGetAddress(CONTRACT_PERPSV2STORAGE));
+    function storageContract() public view returns (IPerpsStorageV2External) {
+        return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
     function baseFee(bytes32 marketKey) external view returns (uint feeRate) {
@@ -76,8 +76,8 @@ contract PerpsV2OrdersBase is PerpsV2SettingsMixin, IPerpsV2Types {
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
-    function _engineInternal() internal view returns (IPerpsV2EngineInternal) {
-        return IPerpsV2EngineInternal(requireAndGetAddress(CONTRACT_PERPSV2ENGINE));
+    function _engineInternal() internal view returns (IPerpsEngineV2Internal) {
+        return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {

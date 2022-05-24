@@ -1,14 +1,12 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-// a contract / interface of this name is expected
-interface IPerpsV2Market {
-    struct Empty {
-        bool empty;
-    } // no empty blocks
+// a contract / interface matching the filename is expected for compilation
+interface IPerpsInterfacesV2 {
+    function noEmptyBlocks() external; // no empty blocks (post commit checks)
 }
 
-interface IPerpsV2Types {
+interface IPerpsTypesV2 {
     enum Status {
         Ok,
         InvalidPrice,
@@ -74,11 +72,11 @@ interface IPerpsV2Types {
     }
 }
 
-interface IPerpsV2EngineExternal {
+interface IPerpsEngineV2External {
     // views
     function assetPrice(bytes32 marketKey) external view returns (uint price, bool invalid);
 
-    function storageContract() external view returns (IPerpsV2StorageExternal);
+    function storageContract() external view returns (IPerpsStorageV2External);
 
     function marketSizes(bytes32 marketKey) external view returns (uint long, uint short);
 
@@ -91,7 +89,7 @@ interface IPerpsV2EngineExternal {
     function positionDetails(bytes32 marketKey, address account)
         external
         view
-        returns (IPerpsV2Types.Position memory position, IPerpsV2Types.PositionStatus memory positionStatus);
+        returns (IPerpsTypesV2.Position memory position, IPerpsTypesV2.PositionStatus memory positionStatus);
 
     function orderFee(
         bytes32 marketKey,
@@ -111,7 +109,7 @@ interface IPerpsV2EngineExternal {
             uint margin,
             int size,
             uint fee,
-            IPerpsV2Types.Status status
+            IPerpsTypesV2.Status status
         );
 
     // mutative
@@ -122,7 +120,7 @@ interface IPerpsV2EngineExternal {
     ) external;
 }
 
-interface IPerpsV2EngineInternal {
+interface IPerpsEngineV2Internal {
     // internal mutative
 
     // only manager
@@ -156,28 +154,28 @@ interface IPerpsV2EngineInternal {
     ) external;
 }
 
-interface IPerpsV2StorageExternal {
+interface IPerpsStorageV2External {
     // views
 
-    function marketScalars(bytes32 marketKey) external view returns (IPerpsV2Types.MarketScalars memory);
+    function marketScalars(bytes32 marketKey) external view returns (IPerpsTypesV2.MarketScalars memory);
 
-    function fundingSequences(bytes32 marketKey, uint index) external view returns (IPerpsV2Types.FundingEntry memory);
+    function fundingSequences(bytes32 marketKey, uint index) external view returns (IPerpsTypesV2.FundingEntry memory);
 
     function fundingSequenceLength(bytes32 marketKey) external view returns (uint);
 
-    function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsV2Types.FundingEntry memory);
+    function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsTypesV2.FundingEntry memory);
 
-    function positions(bytes32 marketKey, address account) external view returns (IPerpsV2Types.Position memory);
+    function positions(bytes32 marketKey, address account) external view returns (IPerpsTypesV2.Position memory);
 
     function positionIdToAccount(bytes32 marketKey, uint positionId) external view returns (address account);
 }
 
-interface IPerpsV2StorageInternal {
+interface IPerpsStorageV2Internal {
     // mutative restricted to engine contract
 
     function initMarket(bytes32 marketKey, bytes32 baseAsset) external;
 
-    function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsV2Types.Position memory);
+    function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsTypesV2.Position memory);
 
     function pushFundingEntry(bytes32 marketKey, int funding) external;
 
@@ -212,13 +210,13 @@ interface IFuturesMarketManagerInternal {
     ) external returns (bool approved);
 }
 
-interface IPerpsV2Orders {
+interface IPerpsOrdersV2 {
     // VIEWS
-    function engineContract() external view returns (IPerpsV2EngineExternal);
+    function engineContract() external view returns (IPerpsEngineV2External);
 
-    function storageContract() external view returns (IPerpsV2StorageExternal);
+    function storageContract() external view returns (IPerpsStorageV2External);
 
-    function nextPriceOrders(bytes32 marketKey, address account) external view returns (IPerpsV2Types.NextPriceOrder memory);
+    function nextPriceOrders(bytes32 marketKey, address account) external view returns (IPerpsTypesV2.NextPriceOrder memory);
 
     function baseFee(bytes32 marketKey) external view returns (uint feeRate);
 
@@ -251,7 +249,7 @@ interface IPerpsV2Orders {
     function liquidatePosition(address account) external;
 }
 
-interface IPerpsV2Settings {
+interface IPerpsSettingsV2 {
     struct Parameters {
         uint baseFee;
         uint baseFeeNextPrice;

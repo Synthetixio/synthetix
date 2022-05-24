@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./PerpsV2OrdersBase.sol";
+import "./PerpsOrdersV2Base.sol";
 
 /**
  Mixin that implements NextPrice orders mechanism for the perps market.
@@ -15,7 +15,7 @@ import "./PerpsV2OrdersBase.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract PerpsV2NextPriceMixin is PerpsV2OrdersBase {
+contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /// @dev Holds a mapping of [marketKey][account] to orders. Only one order per market & account is supported
     mapping(bytes32 => mapping(address => NextPriceOrder)) public nextPriceOrders;
 

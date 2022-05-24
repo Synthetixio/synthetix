@@ -3,35 +3,35 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./PerpsV2SettingsMixin.sol";
+import "./PerpsSettingsV2Mixin.sol";
 
 // Internal references
-import "./interfaces/IPerpsV2Market.sol";
+import "./interfaces/IPerpsInterfacesV2.sol";
 
-contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
+contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_PERPSV2ENGINE = "PerpsV2Engine";
+    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
 
-    bytes32 public constant CONTRACT_NAME = "PerpsV2Settings";
+    bytes32 public constant CONTRACT_NAME = "PerpsSettingsV2";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) PerpsV2SettingsMixin(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) PerpsSettingsV2Mixin(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[1] = CONTRACT_PERPSV2ENGINE;
+        newAddresses[1] = CONTRACT_PERPSENGINEV2;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _engine() internal view returns (IPerpsV2EngineInternal) {
-        return IPerpsV2EngineInternal(requireAndGetAddress(CONTRACT_PERPSV2ENGINE));
+    function _engine() internal view returns (IPerpsEngineV2Internal) {
+        return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
     /* ---------- Getters ---------- */

@@ -2,13 +2,13 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsV2EngineBase.sol";
+import "./PerpsEngineV2Base.sol";
 
 /**
  * A mixin that implements vairous useful views that are used externally but
  * aren't used inside the core contract (so don't need to clutter the contract file)
  */
-contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
+contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
@@ -78,7 +78,7 @@ contract PerpsV2EngineViewsMixin is PerpsV2EngineBase {
         );
     }
 
-    function storageContract() external view returns (IPerpsV2StorageExternal) {
+    function storageContract() external view returns (IPerpsStorageV2External) {
         return _storageViews();
     }
 

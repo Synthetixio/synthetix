@@ -100,7 +100,7 @@ contract('PerpsV2Market', accounts => {
 
 	before(async () => {
 		({
-			PerpsV2Settings: perpsSettings,
+			PerpsSettingsV2: perpsSettings,
 			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketpBTC: perpsMarket,
 			ExchangeRates: exchangeRates,
@@ -119,7 +119,7 @@ contract('PerpsV2Market', accounts => {
 			feeds: ['BTC', 'ETH'],
 			contracts: [
 				'FuturesMarketManager',
-				'PerpsV2Settings',
+				'PerpsSettingsV2',
 				'PerpsV2MarketpBTC',
 				'AddressResolver',
 				'FeePool',
@@ -165,7 +165,7 @@ contract('PerpsV2Market', accounts => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsMarket.abi,
-				ignoreParents: ['PerpsV2SettingsMixin'],
+				ignoreParents: ['PerpsSettingsV2Mixin'],
 				expected: [
 					'transferMargin',
 					'withdrawAllMargin',
