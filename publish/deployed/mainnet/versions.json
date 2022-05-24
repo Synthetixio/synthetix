@@ -2071,7 +2071,7 @@
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x0F7c200C4d3b5570C777764884Ce6DE67F31D3Ba",
-				"status": "current"
+				"status": "deleted"
 			}
 		}
 	},
@@ -2797,7 +2797,7 @@
 			},
 			"Liquidations": {
 				"address": "0xAD95C918af576c82Df740878C3E983CBD175daB6",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x000d9a0ec698e3988b41d0ba80b2232ccd83dbdd1f065d4ff9ae43754a701bae"
 			},
 			"BinaryOptionMarketFactory": {
