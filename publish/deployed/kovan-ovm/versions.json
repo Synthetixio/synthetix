@@ -88,12 +88,12 @@
 			},
 			"Liquidations": {
 				"address": "0x20540E5EB1faff0DB6B1Dc5f0427C27f3852e2Ab",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x571a2669ec42d397d69e7b03e4e9945065db3777fc70c09a0409e1e8c09e5223"
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x38a322dB8dBa2b78B622e5224611de33b8cf6480",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xdb65ca6894b3cbbd87e36f87e03a3725a1990dc2d00c2757f9e9fbfdf1a27058"
 			},
 			"FeePoolEternalStorage": {
@@ -1774,8 +1774,9 @@
 			},
 			"Synthetix": {
 				"address": "0x01eBf544794F7f38d1e937BeA1c15F952ced7c62",
-				"status": "current",
-				"keccak256": "0xc7181091631b9c6b8047460f85d0920a25c23a87ddd862eca7a114859b7b3611"
+				"status": "replaced",
+				"keccak256": "0xc7181091631b9c6b8047460f85d0920a25c23a87ddd862eca7a114859b7b3611",
+				"replaced_in": "v2.70.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0xfff685537fdbD9CA07BD863Ac0b422863BF3114f",
@@ -1801,6 +1802,21 @@
 				"address": "0xE45A27fd3ad929866CEFc6786d8360fF6665c660",
 				"status": "current",
 				"keccak256": "0x621221d61543cd3356f62b60c84c1a0ba0763ab6caada6705df5db116bcab9e0"
+			}
+		}
+	},
+	"v2.70.0-alpha": {
+		"tag": "v2.70.0-alpha",
+		"fulltag": "v2.70.0-alpha",
+		"release": "Rasalhague",
+		"network": "kovan",
+		"date": "2022-05-23T14:05:11-04:00",
+		"commit": "0ead7516c1e6f6fe2d48ca27117c7b6f7547628e",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x28CAb2c065bC0aAE84f6763e621B0b814C77922B",
+				"status": "current",
+				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362"
 			}
 		}
 	}

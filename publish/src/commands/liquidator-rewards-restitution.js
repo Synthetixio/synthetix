@@ -65,32 +65,40 @@ const liquidatorRewardsRestitution = async ({
 
 	console.log(gray(`Using account with public key ${signer.address}`));
 
+	// Instantiate Synthetix contract
+	const { address: synthetixAddress } = deployment.targets['Synthetix'];
+	const { abi: synthetixABI } = deployment.sources[deployment.targets['Synthetix'].source];
+	const Synthetix = new ethers.Contract(synthetixAddress, synthetixABI, signer);
+
 	// Instantiate RewardEscrowV2 contract
 	const { address: rewardEscrowV2Address } = deployment.targets['RewardEscrowV2'];
 	const { abi: rewardEscrowABI } = deployment.sources[deployment.targets['RewardEscrowV2'].source];
 	const RewardEscrowV2 = new ethers.Contract(rewardEscrowV2Address, rewardEscrowABI, signer);
 
 	// Instantiate MultiCall contract
-	const multiCallAddress = '0xcA11bde05977b3631167028862bE2a173976CA11'; // L1 + L2 address
+	const multiCallAddress = ''; // address
 	const multiCallABI = [
+		{ inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
 		{
+			anonymous: false,
 			inputs: [
-				{
-					components: [
-						{ internalType: 'address', name: 'target', type: 'address' },
-						{ internalType: 'bytes', name: 'callData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Call[]',
-					name: 'calls',
-					type: 'tuple[]',
-				},
+				{ indexed: false, internalType: 'address', name: 'oldOwner', type: 'address' },
+				{ indexed: false, internalType: 'address', name: 'newOwner', type: 'address' },
 			],
-			name: 'aggregate',
-			outputs: [
-				{ internalType: 'uint256', name: 'blockNumber', type: 'uint256' },
-				{ internalType: 'bytes[]', name: 'returnData', type: 'bytes[]' },
-			],
-			stateMutability: 'payable',
+			name: 'OwnerChanged',
+			type: 'event',
+		},
+		{
+			anonymous: false,
+			inputs: [{ indexed: false, internalType: 'address', name: 'newOwner', type: 'address' }],
+			name: 'OwnerNominated',
+			type: 'event',
+		},
+		{
+			inputs: [],
+			name: 'acceptOwnership',
+			outputs: [],
+			stateMutability: 'nonpayable',
 			type: 'function',
 		},
 		{
@@ -101,7 +109,7 @@ const liquidatorRewardsRestitution = async ({
 						{ internalType: 'bool', name: 'allowFailure', type: 'bool' },
 						{ internalType: 'bytes', name: 'callData', type: 'bytes' },
 					],
-					internalType: 'struct Multicall3.Call3[]',
+					internalType: 'struct PrivateMulticall.Call3[]',
 					name: 'calls',
 					type: 'tuple[]',
 				},
@@ -113,7 +121,7 @@ const liquidatorRewardsRestitution = async ({
 						{ internalType: 'bool', name: 'success', type: 'bool' },
 						{ internalType: 'bytes', name: 'returnData', type: 'bytes' },
 					],
-					internalType: 'struct Multicall3.Result[]',
+					internalType: 'struct PrivateMulticall.Result[]',
 					name: 'returnData',
 					type: 'tuple[]',
 				},
@@ -130,7 +138,7 @@ const liquidatorRewardsRestitution = async ({
 						{ internalType: 'uint256', name: 'value', type: 'uint256' },
 						{ internalType: 'bytes', name: 'callData', type: 'bytes' },
 					],
-					internalType: 'struct Multicall3.Call3Value[]',
+					internalType: 'struct PrivateMulticall.Call3Value[]',
 					name: 'calls',
 					type: 'tuple[]',
 				},
@@ -142,48 +150,12 @@ const liquidatorRewardsRestitution = async ({
 						{ internalType: 'bool', name: 'success', type: 'bool' },
 						{ internalType: 'bytes', name: 'returnData', type: 'bytes' },
 					],
-					internalType: 'struct Multicall3.Result[]',
+					internalType: 'struct PrivateMulticall.Result[]',
 					name: 'returnData',
 					type: 'tuple[]',
 				},
 			],
 			stateMutability: 'payable',
-			type: 'function',
-		},
-		{
-			inputs: [
-				{
-					components: [
-						{ internalType: 'address', name: 'target', type: 'address' },
-						{ internalType: 'bytes', name: 'callData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Call[]',
-					name: 'calls',
-					type: 'tuple[]',
-				},
-			],
-			name: 'blockAndAggregate',
-			outputs: [
-				{ internalType: 'uint256', name: 'blockNumber', type: 'uint256' },
-				{ internalType: 'bytes32', name: 'blockHash', type: 'bytes32' },
-				{
-					components: [
-						{ internalType: 'bool', name: 'success', type: 'bool' },
-						{ internalType: 'bytes', name: 'returnData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Result[]',
-					name: 'returnData',
-					type: 'tuple[]',
-				},
-			],
-			stateMutability: 'payable',
-			type: 'function',
-		},
-		{
-			inputs: [],
-			name: 'getBasefee',
-			outputs: [{ internalType: 'uint256', name: 'basefee', type: 'uint256' }],
-			stateMutability: 'view',
 			type: 'function',
 		},
 		{
@@ -250,61 +222,24 @@ const liquidatorRewardsRestitution = async ({
 			type: 'function',
 		},
 		{
-			inputs: [
-				{ internalType: 'bool', name: 'requireSuccess', type: 'bool' },
-				{
-					components: [
-						{ internalType: 'address', name: 'target', type: 'address' },
-						{ internalType: 'bytes', name: 'callData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Call[]',
-					name: 'calls',
-					type: 'tuple[]',
-				},
-			],
-			name: 'tryAggregate',
-			outputs: [
-				{
-					components: [
-						{ internalType: 'bool', name: 'success', type: 'bool' },
-						{ internalType: 'bytes', name: 'returnData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Result[]',
-					name: 'returnData',
-					type: 'tuple[]',
-				},
-			],
-			stateMutability: 'payable',
+			inputs: [{ internalType: 'address', name: '_owner', type: 'address' }],
+			name: 'nominateNewOwner',
+			outputs: [],
+			stateMutability: 'nonpayable',
 			type: 'function',
 		},
 		{
-			inputs: [
-				{ internalType: 'bool', name: 'requireSuccess', type: 'bool' },
-				{
-					components: [
-						{ internalType: 'address', name: 'target', type: 'address' },
-						{ internalType: 'bytes', name: 'callData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Call[]',
-					name: 'calls',
-					type: 'tuple[]',
-				},
-			],
-			name: 'tryBlockAndAggregate',
-			outputs: [
-				{ internalType: 'uint256', name: 'blockNumber', type: 'uint256' },
-				{ internalType: 'bytes32', name: 'blockHash', type: 'bytes32' },
-				{
-					components: [
-						{ internalType: 'bool', name: 'success', type: 'bool' },
-						{ internalType: 'bytes', name: 'returnData', type: 'bytes' },
-					],
-					internalType: 'struct Multicall3.Result[]',
-					name: 'returnData',
-					type: 'tuple[]',
-				},
-			],
-			stateMutability: 'payable',
+			inputs: [],
+			name: 'nominatedOwner',
+			outputs: [{ internalType: 'address', name: '', type: 'address' }],
+			stateMutability: 'view',
+			type: 'function',
+		},
+		{
+			inputs: [],
+			name: 'owner',
+			outputs: [{ internalType: 'address', name: '', type: 'address' }],
+			stateMutability: 'view',
 			type: 'function',
 		},
 	];
@@ -326,10 +261,26 @@ const liquidatorRewardsRestitution = async ({
 		});
 
 	try {
+		// Note: make sure to do token approvals first
+		console.log('approving...');
+
+		const txns = [
+			Synthetix.populateTransaction.approve('', ethers.constants.MaxUint256),
+			Synthetix.populateTransaction.approve(rewardEscrowV2Address, ethers.constants.MaxUint256),
+		];
+		await readMulticall(
+			txns,
+			v => v,
+			() => {},
+			0,
+			1
+		);
+
+		console.log('approvals done.');
+
 		console.log('creating escrow entries for', filteredObjects.length, 'addresses');
 
 		// Create escrow entries for each account using multicall
-		// Note: make sure to do token approvals before running this
 		// eslint-disable-next-line new-cap
 		let totalAmountEscrowed = new ethers.BigNumber.from(0);
 		await readMulticall(
@@ -344,7 +295,7 @@ const liquidatorRewardsRestitution = async ({
 				totalAmountEscrowed = totalAmountEscrowed.add(ethers.BigNumber.from(a.escrow));
 			},
 			0,
-			100
+			50
 		);
 
 		console.log(green('Completed! \n Total amount escrowed:', totalAmountEscrowed.toString()));
@@ -382,7 +333,7 @@ const liquidatorRewardsRestitution = async ({
 			if (write && succeeded / values.length >= write) {
 				const gasUsage = await MultiCall.estimateGas.aggregate3(calls);
 				const tx = await MultiCall.aggregate3(calls, {
-					gasLimit: gasUsage,
+					gasLimit: gasUsage.add(gasUsage.div(10)),
 				});
 				console.log('submitted tx:', tx.hash);
 				await tx.wait();
