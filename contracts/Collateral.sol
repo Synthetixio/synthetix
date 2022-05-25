@@ -548,8 +548,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 7. Check that there are enough synths to burn based on how much `loan.collateral` was reduced by.
         // Note: We must burn synths from the contract itself since this is a repayment using collateral.
-        _checkSynthBalance(address(this), loan.currency, expectedAmount);
-        _synth(synthsByKey[loan.currency]).burn(address(this), expectedAmount);
+        _checkSynthBalance(address(this), "sUSD", expectedAmount);
+        _synthsUSD().burn(address(this), expectedAmount);
 
         // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
