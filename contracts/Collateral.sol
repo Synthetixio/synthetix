@@ -538,22 +538,26 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
 
         // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
-        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
+        (uint expectedAmount, , ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
 
         // 5. Reduce the collateral by the amount repaid (minus the exchange fees).
         loan.collateral = loan.collateral.sub(expectedAmount);
 
-        // 6. Process the payment and pay the exchange fees if needed.
+        // 6. Process the payment and pay fees if the loan has accrued interest.
         _processPayment(loan, payment);
-        _payFees(fee, sUSD);
 
-        // 7. Update the last interaction time.
+        // 7. Check that there are enough synths to burn based on how much `loan.collateral` was reduced by.
+        // Note: We must burn synths from the contract itself since this is a repayment using collateral.
+        _checkSynthBalance(address(this), loan.currency, expectedAmount);
+        _synth(synthsByKey[loan.currency]).burn(address(this), expectedAmount);
+
+        // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 8. Emit the event for the collateral repayment.
+        // 9. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        // 9. Return the amount repaid and the remaining collateral.
+        // 10. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
     }
 
