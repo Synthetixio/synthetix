@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "../AddressResolver.sol";
 import "../BaseMigration.sol";
-import "../ExchangeRates.sol";
 import "../Issuer.sol";
 import "../SystemStatus.sol";
 
@@ -24,8 +23,6 @@ contract Migration_KochabOptimism is BaseMigration {
     AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
     // https://explorer.optimism.io/address/0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD
     SystemStatus public constant systemstatus_i = SystemStatus(0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD);
-    // https://explorer.optimism.io/address/0x22602469d704BfFb0936c7A7cfcD18f7aA269375
-    ExchangeRates public constant exchangerates_i = ExchangeRates(0x22602469d704BfFb0936c7A7cfcD18f7aA269375);
     // https://explorer.optimism.io/address/0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139
     Issuer public constant issuer_i = Issuer(0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139);
 
@@ -39,11 +36,10 @@ contract Migration_KochabOptimism is BaseMigration {
     constructor() public BaseMigration(OWNER) {}
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
-        contracts = new address[](4);
+        contracts = new address[](3);
         contracts[0] = address(addressresolver_i);
         contracts[1] = address(systemstatus_i);
-        contracts[2] = address(exchangerates_i);
-        contracts[3] = address(issuer_i);
+        contracts[2] = address(issuer_i);
     }
 
     function migrate() external onlyOwner {
@@ -59,8 +55,6 @@ contract Migration_KochabOptimism is BaseMigration {
         addressresolver_rebuildCaches_2();
         // Ensure Issuer contract can suspend issuance - see SIP-165;
         systemstatus_i.updateAccessControl("Issuance", new_Issuer_contract, true, false);
-        // Ensure the ExchangeRates contract has the standalone feed for XAG;
-        exchangerates_i.addAggregator("XAG", 0x290dd71254874f0d4356443607cb8234958DEe49);
         // Add synths to the Issuer contract - batch 1;
         issuer_addSynths_6();
 
