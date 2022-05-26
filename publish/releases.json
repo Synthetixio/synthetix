@@ -645,6 +645,12 @@
 			"layer": "both",
 			"sources": ["Synthetix"],
 			"released": "both"
+		},
+		{
+			"sip": 243,
+			"layer": "ovm",
+			"sources": ["Issuer"],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1186,21 +1192,14 @@
 			"released": true
 		},
 		{
-			"name": "Kochab",
-			"version": {
-				"major": 2,
-				"minor": 71
-			},
-			"sips": []
-		},
-		{
 			"name": "Kochab (Optimism)",
 			"ovm": true,
 			"version": {
 				"major": 2,
 				"minor": 71
 			},
-			"sips": []
+			"sips": [243],
+			"released": true
 		},
 		{
 			"name": "Saiph",

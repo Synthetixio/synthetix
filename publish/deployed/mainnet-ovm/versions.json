@@ -1179,8 +1179,9 @@
 			},
 			"Issuer": {
 				"address": "0x939313420A85ab8F21B8c2fE15b60528f34E0d63",
-				"status": "current",
-				"keccak256": "0xff90190a275735ad9b23dffff9ab22477a1aa3f36a0cee1931965dfb26e52495"
+				"status": "replaced",
+				"keccak256": "0xff90190a275735ad9b23dffff9ab22477a1aa3f36a0cee1931965dfb26e52495",
+				"replaced_in": "v2.71.0"
 			},
 			"SystemSettingsLib": {
 				"address": "0xC818f3A73F0f4A9AfdC9835BE2682e627A04A4ff",
@@ -1211,6 +1212,21 @@
 				"address": "0x274D1dbe298993EaD5AC1B25624F53786d16006e",
 				"status": "current",
 				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362"
+			}
+		}
+	},
+	"v2.71.0": {
+		"tag": "v2.71.0",
+		"fulltag": "v2.71.0",
+		"release": "Kochab",
+		"network": "mainnet",
+		"date": "2022-05-25T23:06:46-04:00",
+		"commit": "931d76df50df9f1badf4167cb4afc271d22f63e6",
+		"contracts": {
+			"Issuer": {
+				"address": "0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139",
+				"status": "current",
+				"keccak256": "0x8f416a19c4b25638a136059b80ad498038b6a62326ab7e0cbb981694ed28dcda"
 			}
 		}
 	}
