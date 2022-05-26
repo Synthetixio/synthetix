@@ -649,7 +649,8 @@
 		{
 			"sip": 243,
 			"layer": "ovm",
-			"sources": ["Issuer"]
+			"sources": ["Issuer"],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1197,7 +1198,8 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": [243]
+			"sips": [243],
+			"released": true
 		},
 		{
 			"name": "Saiph",
