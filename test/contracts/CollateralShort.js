@@ -363,16 +363,18 @@ contract('CollateralShort', async accounts => {
 
 				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
 
-				assert.bnClose(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
-					beforeFeePoolBalance.add(fee),
-					tolerance
-				);
+				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), beforeFeePoolBalance.add(fee));
 
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
-				assert.bnClose(loan.amount, toUnit(0.5).toString(), tolerance);
-				assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
+				assert.bnEqual(loan.amount, toUnit(0.5).toString());
+				assert.bnEqual(
+					loan.collateral,
+					toUnit(950)
+						.sub(fee)
+						.toString(),
+					tolerance
+				);
 			});
 
 			it('should repay the entire loan amount', async () => {
@@ -392,11 +394,15 @@ contract('CollateralShort', async accounts => {
 					amountAfter: loan.amount,
 				});
 
+				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
+
 				assert.equal(loan.amount, toUnit(0).toString());
 
 				assert.bnEqual(
 					loan.collateral,
-					toUnit(900).toString(),
+					toUnit(900)
+						.sub(fee)
+						.toString(), // fee should be charged to the transaction
 					'loan collateral is not equal to expected'
 				);
 			});
@@ -414,9 +420,11 @@ contract('CollateralShort', async accounts => {
 				assert.equal(loan.amount, toUnit(0).toString());
 				assert.equal(loan.collateral, toUnit(0).toString());
 
+				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
+
 				assert.bnEqual(
 					await sUSDSynth.balanceOf(account1),
-					toUnit(1000),
+					toUnit(1000).sub(fee),
 					'sUSD end balance different than expected'
 				);
 			});
