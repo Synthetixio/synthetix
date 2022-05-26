@@ -531,11 +531,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 2. Repay the accrued interest.
-        payment = payment.add(loan.accruedInterest);
+        // 2. Make sure they are not overpaying.
+        require(payment <= loan.amount, "Payment too high");
 
-        // 3. Make sure they are not overpaying.
-        require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
+        // 3. Repay the accrued interest.
+        payment = payment.add(loan.accruedInterest);
 
         // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
         (uint expectedAmount, , ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
