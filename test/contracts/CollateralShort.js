@@ -320,7 +320,7 @@ contract('CollateralShort', async accounts => {
 		describe('Repaying shorts', async () => {
 			const oneETH = toUnit(1);
 			const susdCollateral = toUnit(1000);
-			const tolerance = toUnit(0.3);
+			const tolerance = toUnit(0.2);
 
 			let beforeFeePoolBalance, beforeInteractionTime;
 
@@ -393,7 +393,12 @@ contract('CollateralShort', async accounts => {
 				});
 
 				assert.equal(loan.amount, toUnit(0).toString());
-				assert.bnClose(loan.collateral, toUnit(900).toString(), tolerance);
+
+				assert.bnEqual(
+					loan.collateral,
+					toUnit(900).toString(),
+					'loan collateral is not equal to expected'
+				);
 			});
 
 			it('should repay with collateral and close the loan', async () => {
@@ -409,7 +414,11 @@ contract('CollateralShort', async accounts => {
 				assert.equal(loan.amount, toUnit(0).toString());
 				assert.equal(loan.collateral, toUnit(0).toString());
 
-				assert.bnClose(await sUSDSynth.balanceOf(account1), toUnit(1000), tolerance);
+				assert.bnEqual(
+					await sUSDSynth.balanceOf(account1),
+					toUnit(1000),
+					'sUSD end balance different than expected'
+				);
 			});
 
 			it('should only let the borrower repay with collateral', async () => {
