@@ -178,11 +178,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- SETTERS ---------- */
 
-    function setLoanClosed(uint id) external onlyOwner {
-        Loan storage loan = loans[id];
-        loan.interestIndex = 0;
-    }
-
     function setMinCollateral(uint _minCollateral) external onlyOwner {
         minCollateral = _minCollateral;
         emit MinCollateralUpdated(minCollateral);
