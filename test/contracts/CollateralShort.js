@@ -394,7 +394,7 @@ contract('CollateralShort', async accounts => {
 					amountAfter: loan.amount,
 				});
 
-				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
+				const { fee } = await exchanger.getAmountsForExchange(toUnit(1), sETH, sUSD);
 
 				assert.equal(loan.amount, toUnit(0).toString());
 
@@ -420,7 +420,7 @@ contract('CollateralShort', async accounts => {
 				assert.equal(loan.amount, toUnit(0).toString());
 				assert.equal(loan.collateral, toUnit(0).toString());
 
-				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
+				const { fee } = await exchanger.getAmountsForExchange(toUnit(1), sETH, sUSD);
 
 				assert.bnEqual(
 					await sUSDSynth.balanceOf(account1),
