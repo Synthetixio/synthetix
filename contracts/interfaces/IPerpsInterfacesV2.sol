@@ -123,7 +123,7 @@ interface IPerpsEngineV2Internal {
     // internal mutative
 
     // only manager
-    function initMarket(bytes32 marketKey, bytes32 baseAsset) external;
+    function initOrCheckMarket(bytes32 marketKey, bytes32 baseAsset) external;
 
     // only settings
     function recomputeFunding(bytes32 marketKey) external;
@@ -176,7 +176,7 @@ interface IPerpsStorageV2Internal {
 
     function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsTypesV2.Position memory);
 
-    function pushFundingEntry(bytes32 marketKey, int funding) external;
+    function addFundingEntry(bytes32 marketKey, int funding) external;
 
     function storePosition(
         bytes32 marketKey,
@@ -185,7 +185,7 @@ interface IPerpsStorageV2Internal {
         uint newLocked,
         int newSize,
         uint price
-    ) external;
+    ) external returns (IPerpsTypesV2.Position memory);
 
     function storeMarketAggregates(
         bytes32 marketKey,
@@ -202,11 +202,7 @@ interface IFuturesMarketManagerInternal {
 
     function payFee(uint amount, bytes32 trackingCode) external;
 
-    function approvedRouter(
-        address router,
-        bytes32 marketKey,
-        address account
-    ) external returns (bool approved);
+    function approvedRouterAndMarket(address router, bytes32 marketKey) external returns (bool approved);
 }
 
 interface IPerpsOrdersV2 {

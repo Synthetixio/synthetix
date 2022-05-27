@@ -196,11 +196,11 @@ contract FuturesMarketData {
     }
 
     function marketSummariesForKeys(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
-        return _marketSummaries(_futuresMarketManager().marketsForKeys(marketKeys));
+        return _marketSummaries(_futuresMarketManager().marketsV1ForKeys(marketKeys));
     }
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
-        return _marketSummaries(_futuresMarketManager().allMarkets());
+        return _marketSummaries(_futuresMarketManager().allMarketsV1());
     }
 
     function _fundingParameters(IFuturesMarketSettings.Parameters memory params)

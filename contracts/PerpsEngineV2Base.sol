@@ -78,14 +78,16 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         uint fee
     );
 
-    event FundingRecomputed(bytes32 indexed marketKey, int funding, uint timestamp);
-
     event Tracking(bytes32 indexed trackingCode, bytes32 marketKey, address account, int sizeDelta, uint fee);
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyRouters(bytes32 marketKey, address account) {
-        bool approved = _manager().approvedRouter(msg.sender, marketKey, account);
+    modifier approvedRouterAndMarket(bytes32 marketKey) {
+        // msg.sender is the calling order routers contract.
+        // both the router and the marketKey (and possibly their combination)
+        // need to be approved by the manager to ensure e.g. market was not removed, and router is
+        // authorized to perform trades on behalf of users (and passing fee rates for those trades)
+        bool approved = _manager().approvedRouterAndMarket(msg.sender, marketKey);
         _revertIfError(!approved, Status.NotPermitted);
         _;
     }
@@ -132,11 +134,20 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /* ========== EXTERNAL MUTATIVE METHODS ========== */
 
-    function initMarket(bytes32 marketKey, bytes32 baseAsset) external {
+    function initOrCheckMarket(bytes32 marketKey, bytes32 baseAsset) external {
         // only manager can call
         _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
-        // init in storage
-        _storageMutative().initMarket(marketKey, baseAsset);
+        // load current stored market
+        MarketScalars memory market = _storageViews().marketScalars(marketKey);
+        if (market.baseAsset == bytes32(0)) {
+            // market is not initialized yet, init its storage, this can only be done once in storage
+            _storageMutative().initMarket(marketKey, baseAsset);
+        } else {
+            // market was previously initialized, ensure it was initialized to the same baseAsset
+            // this behavior is important in order to allow manager to add previously removed markets
+            // or for adding markets to a new manager that will call this method.
+            require(market.baseAsset == baseAsset, "cannot init with different asset");
+        }
     }
 
     /**
@@ -175,7 +186,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         bytes32 marketKey,
         address account,
         int amount
-    ) external onlyRouters(marketKey, account) {
+    ) external approvedRouterAndMarket(marketKey) {
         // allow topping up margin if this specific market is paused.
         // will still revert on all other checks (system, exchange, futures in general)
         bool allowMarketPaused = amount > 0;
@@ -192,7 +203,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         address account,
         int lockAmount,
         uint burnAmount
-    ) external onlyRouters(marketKey, account) {
+    ) external approvedRouterAndMarket(marketKey) {
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
         _modifyMargin(marketKey, account, 0, lockAmount, burnAmount, price);
@@ -204,7 +215,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         int sizeDelta,
         uint feeRate,
         bytes32 trackingCode
-    ) external onlyRouters(marketKey, account) {
+    ) external approvedRouterAndMarket(marketKey) {
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
         _trade(
@@ -251,12 +262,11 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     ) internal {
         // get previous values
         Position memory oldPosition = _storageViews().positions(marketKey, account);
-        // update position
-        _storageMutative().storePosition(marketKey, account, newMargin, newLocked, newSize, price);
-        // load new position
-        Position memory newPosition = _storageViews().positions(marketKey, account);
+        // update position and ger the new state
+        Position memory newPosition =
+            _storageMutative().storePosition(marketKey, account, newMargin, newLocked, newSize, price);
 
-        // update aggregates
+        // load market scalars to update aggregates
         MarketScalars memory market = _marketScalars(marketKey);
 
         // update market size and skew
@@ -316,8 +326,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
         int newFundingAmount = _nextFundingAmount(marketKey, price);
-        _storageMutative().pushFundingEntry(marketKey, newFundingAmount);
-        emit FundingRecomputed(marketKey, newFundingAmount, block.timestamp);
+        _storageMutative().addFundingEntry(marketKey, newFundingAmount);
     }
 
     function _transferMargin(
