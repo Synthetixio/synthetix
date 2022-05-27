@@ -382,9 +382,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
 
         // 2. Pay the service fee for collapsing the loan.
-        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-        _payFees(serviceFee, sUSD);
-        collateral = collateral.sub(serviceFee);
+        if (collateral > 0) {
+            uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
+            _payFees(serviceFee, sUSD);
+            collateral = collateral.sub(serviceFee);
+            loan.collateral = collateral;
+            _synthsUSD().burn(address(this), serviceFee);
+        }
 
         // 3. Record loan as closed.
         _recordLoanAsClosed(loan);
@@ -534,35 +538,35 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 2. Make sure they are not overpaying.
         require(payment <= loan.amount, "Payment too high");
 
-        // 3. Repay the accrued interest.
+        // 3. Process the payment and pay fees if the loan has accrued interest.
         payment = payment.add(loan.accruedInterest);
+        _processPayment(loan, payment);
+        // Fees are paid by minting sUSD, so we need to burn later.
+        uint amountToBurn = loan.accruedInterest;
 
         // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
         (uint expectedAmount, uint exchangeFee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
 
         // 5. Reduce the collateral by the amount repaid.
         // Note: expectedAmount is payment minus the exchange fees, so we need to include it.
-        uint collateralPaid = expectedAmount.add(exchangeFee).add(exchangeFee);
+        uint collateralPaid = expectedAmount.add(exchangeFee);
         loan.collateral = loan.collateral.sub(collateralPaid);
 
         // 6. Pay the exchange fees (already converted to sUSD)
         _payFees(exchangeFee, sUSD);
+        amountToBurn = amountToBurn.add(exchangeFee);
 
-        // 7. Process the payment and pay fees if the loan has accrued interest.
-        _processPayment(loan, payment);
+        // 7. Burn all sUSD equivalent to the amount paid.
+        amountToBurn = amountToBurn.add(collateralPaid);
+        _synthsUSD().burn(address(this), amountToBurn);
 
-        // 8. Check that there are enough synths to burn based on how much `loan.collateral` was reduced by.
-        // Note: We must burn synths from the contract itself since this is a repayment using collateral.
-        require(IERC20(address(_synthsUSD())).balanceOf(address(this)) >= collateralPaid, "Not enough collateral");
-        _synthsUSD().burn(address(this), collateralPaid);
-
-        // 9. Update the last interaction time.
+        // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 10. Emit the event for the collateral repayment.
+        // 9. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        // 11. Return the amount repaid and the remaining collateral.
+        // 10. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
     }
 
