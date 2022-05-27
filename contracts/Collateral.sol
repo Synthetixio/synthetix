@@ -549,7 +549,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 5. Reduce the collateral by the amount repaid.
         // Note: expectedAmount is payment minus the exchange fees, so we need to include it.
-        uint collateralPaid = expectedAmount.add(exchangeFee);
+        uint collateralPaid = expectedAmount.add(exchangeFee).add(exchangeFee);
         loan.collateral = loan.collateral.sub(collateralPaid);
 
         // 6. Pay the exchange fees (already converted to sUSD)
