@@ -542,21 +542,19 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 5. Reduce the collateral by the amount repaid.
         // Note: expectedAmount is payment minus the exchange fees, so we need to include it.
-        loan.collateral = loan.collateral.sub(expectedAmount.add(exchangeFee).add(exchangeFee));
+        uint collateralPaid = expectedAmount.add(exchangeFee).add(exchangeFee);
+        loan.collateral = loan.collateral.sub(collateralPaid);
 
         // 6. Pay the exchange fees (already converted to sUSD)
         _payFees(exchangeFee, sUSD);
 
         // 7. Process the payment and pay fees if the loan has accrued interest.
-        uint amountPaid = _processPayment(loan, payment);
+        _processPayment(loan, payment);
 
         // 8. Check that there are enough synths to burn based on how much `loan.collateral` was reduced by.
         // Note: We must burn synths from the contract itself since this is a repayment using collateral.
-        // Note: We only need to burn the synths for the payment without the fee/interests
-        (uint expectedAmountToBurn, , ) = _exchanger().getAmountsForExchange(amountPaid, loan.currency, sUSD);
-        expectedAmountToBurn = expectedAmountToBurn.add(exchangeFee);
-        require(IERC20(address(_synthsUSD())).balanceOf(address(this)) >= expectedAmountToBurn, "Not enough collateral");
-        _synthsUSD().burn(address(this), expectedAmountToBurn);
+        require(IERC20(address(_synthsUSD())).balanceOf(address(this)) >= collateralPaid, "Not enough collateral");
+        _synthsUSD().burn(address(this), collateralPaid);
 
         // 9. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
@@ -625,7 +623,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // Works out the amount of interest and principal after a repayment is made.
-    function _processPayment(Loan storage loan, uint payment) internal returns (uint amountPaid) {
+    function _processPayment(Loan storage loan, uint payment) internal {
         require(payment > 0, "Payment must be above 0");
 
         if (loan.accruedInterest > 0) {
@@ -651,8 +649,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
                 manager.decrementLongs(loan.currency, payment);
             }
         }
-
-        return payment;
     }
 
     // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
