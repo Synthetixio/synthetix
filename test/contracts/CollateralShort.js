@@ -322,10 +322,11 @@ contract('CollateralShort', async accounts => {
 			const susdCollateral = toUnit(1000);
 			const tolerance = toUnit(0.2);
 
-			let beforeFeePoolBalance, beforeInteractionTime;
+			let beforeFeePoolBalance, beforeCollateralShortBalance, beforeInteractionTime;
 
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
+				beforeCollateralShortBalance = await sUSDSynth.balanceOf(short.address);
 
 				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
@@ -426,6 +427,12 @@ contract('CollateralShort', async accounts => {
 					await sUSDSynth.balanceOf(account1),
 					toUnit(1000).sub(fee),
 					'sUSD end balance different than expected'
+				);
+
+				assert.bnEqual(
+					await sUSDSynth.balanceOf(short.address),
+					beforeCollateralShortBalance,
+					'ShortCollateral sUSD balance changed'
 				);
 			});
 
