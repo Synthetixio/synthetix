@@ -550,6 +550,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 6. Process the payment and pay the exchange fees if needed.
         // TODO: If repay() accrues interest, shouldn't repay with collateral also accrue interest?
         _processPayment(loan, payment);
+        // TODO: Why are virtual exchange fees being paid to the protocol if there is no real exchange?
+        // If we want to pay the virtual exchange fees, shouldn't it be a regular transfer from this contract's balance, instead of a mint and burn?
+        // I.e. what is _payFees _really_ used for?
         _payFees(fee, sUSD);
 
         // 7. Update the last interaction time.
