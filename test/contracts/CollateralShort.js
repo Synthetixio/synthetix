@@ -4,7 +4,7 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { fastForward, toUnit, fromUnit } = require('../utils')();
+const { fastForward, toUnit, fromUnit, multiplyDecimal } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
@@ -43,6 +43,8 @@ contract('CollateralShort', async accounts => {
 		FEE_ADDRESS;
 
 	let tx, loan, id;
+
+	const COLLAPSE_FEE_RATE = toUnit(0);
 
 	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -139,6 +141,13 @@ contract('CollateralShort', async accounts => {
 			['SynthsBTC', 'SynthsETH'].map(toBytes32),
 			['sBTC', 'sETH'].map(toBytes32),
 			{ from: owner }
+		);
+
+		await systemSettings.setCollapseFeeRate(short.address, COLLAPSE_FEE_RATE, { from: owner });
+
+		assert.deepEqual(
+			await systemSettings.collapseFeeRate(short.address),
+			COLLAPSE_FEE_RATE
 		);
 
 		// check synths are set and currencyKeys set
@@ -396,22 +405,6 @@ contract('CollateralShort', async accounts => {
 				assert.bnClose(loan.collateral, toUnit(900).toString(), tolerance);
 			});
 
-			it('should repay with collateral and close the loan', async () => {
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
-
-				await short.closeWithCollateral(id, { from: account1 });
-
-				loan = await short.loans(id);
-
-				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
-
-				assert.equal(loan.interestIndex, toUnit(0).toString());
-				assert.equal(loan.amount, toUnit(0).toString());
-				assert.equal(loan.collateral, toUnit(0).toString());
-
-				assert.bnClose(await sUSDSynth.balanceOf(account1), toUnit(1000), tolerance);
-			});
-
 			it('should only let the borrower repay with collateral', async () => {
 				await assert.revert(
 					short.repayWithCollateral(id, toUnit(0.1), { from: account2 }),
@@ -424,6 +417,92 @@ contract('CollateralShort', async accounts => {
 					short.repayWithCollateral(id, toUnit(2000), { from: account1 }),
 					'Payment too high'
 				);
+			});
+		});
+
+		describe('Closing shorts', function () {
+			const oneETH = toUnit(1);
+			const susdCollateral = toUnit(1000);
+
+			let beforeFeePoolBalance, beforeUserBalance, beforeShortBalance;
+			let beforeInteractionTime;
+
+			async function logBalances(msg) {
+				console.log(msg);
+
+				const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+				const shortBalance = await sUSDSynth.balanceOf(short.address);
+				const userBalance = await sUSDSynth.balanceOf(account1);
+
+				console.log(`Fee pool balance: ${ethers.utils.formatEther(feePoolBalance.toString())}`);
+				console.log(`Short balance: ${ethers.utils.formatEther(shortBalance.toString())}`);
+				console.log(`User balance: ${ethers.utils.formatEther(userBalance.toString())}`);
+			}
+
+			beforeEach(async () => {
+				await issue(sUSDSynth, susdCollateral, account1);
+
+				await logBalances('>>> Before opening:');
+
+				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+
+				id = getid(tx);
+
+				loan = await short.loans(id);
+
+				beforeInteractionTime = loan.lastInteraction;
+
+				beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+				beforeShortBalance = await sUSDSynth.balanceOf(short.address);
+				beforeUserBalance = await sUSDSynth.balanceOf(account1);
+				await logBalances('>>> After opening');
+
+				await fastForwardAndUpdateRates(3600);
+			});
+
+			it.only('should repay with collateral and close the loan', async () => {
+				// Account's sUSD balance before closing the short should be 100 (1000 was put in collateral, and 100 emitted from short)
+				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
+
+				const { fee: exchangeFee } = await exchanger.getAmountsForExchange(toUnit(1), sETH, sUSD);
+
+				// Close the short and identify it
+				await short.closeWithCollateral(id, { from: account1 });
+				loan = await short.loans(id);
+
+				// Interaction time increased
+				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
+				// Short state should be zeroed out
+				assert.equal(loan.interestIndex, toUnit(0).toString());
+				assert.equal(loan.amount, toUnit(0).toString());
+				assert.equal(loan.collateral, toUnit(0).toString());
+
+				await logBalances('>>> After closing');
+
+				// Fee pool should have received fees
+				// TODO: Also consider collapse fee (set to zero in tests for now)
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					exchangeFee,
+					'Fee pool did not receive enough fees'
+				);
+
+				// User should have retrieved their collateral minus fees collapse fees, minus accrued interest
+				// TODO
+				// assert.deepEqual(
+				// 	await sUSDSynth.balanceOf(account1),
+
+				// );
+
+				// Short should no longer hold sUSD
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					toUnit(0),
+					'short sUSD balance should have been zero'
+				);
+
+				// assert.bnClose(await sUSDSynth.balanceOf(account1), toUnit(1000), tolerance);
 			});
 		});
 

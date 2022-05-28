@@ -374,25 +374,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _recordLoanAsClosed(loan);
     }
 
-    function _closeLoanByRepayment(address borrower, uint id) internal returns (uint amount, uint collateral) {
-        // 0. Get the loan.
-        Loan storage loan = loans[id];
-
-        // 1. Repay the loan with its collateral.
-        (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
-
-        // 2. Pay the service fee for collapsing the loan.
-        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-        _payFees(serviceFee, sUSD);
-        collateral = collateral.sub(serviceFee);
-
-        // 3. Record loan as closed.
-        _recordLoanAsClosed(loan);
-
-        // 4. Emit the event for the loan closed by repayment.
-        emit LoanClosedByRepayment(borrower, id, amount, collateral);
-    }
-
     function _deposit(
         address account,
         uint id,
@@ -518,6 +499,27 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 8. Return the loan amount and collateral after repaying.
         return (loan.amount, loan.collateral);
+    }
+
+    function _closeLoanByRepayment(address borrower, uint id) internal returns (uint amount, uint collateral) {
+        // 0. Get the loan.
+        Loan storage loan = loans[id];
+
+        // 1. Repay the loan with its collateral.
+        (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
+
+        // 2. Pay the service fee for collapsing the loan.
+        // TODO: Should this also be charged when repaying loan to zero?
+        // TODO: Should amount be converted to sUSD before multiplying?
+        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
+        _payFees(serviceFee, sUSD);
+        collateral = collateral.sub(serviceFee);
+
+        // 3. Record loan as closed.
+        _recordLoanAsClosed(loan);
+
+        // 4. Emit the event for the loan closed by repayment.
+        emit LoanClosedByRepayment(borrower, id, amount, collateral);
     }
 
     function _repayWithCollateral(
