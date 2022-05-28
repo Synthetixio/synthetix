@@ -509,6 +509,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
 
         // 2. Pay the service fee for collapsing the loan.
+        // TODO: This should most likely not be here, but is currently not affecting us because collapseFeeRate is set to zero
         // TODO: Should this also be charged when repaying loan to zero?
         // TODO: Should amount be converted to sUSD before multiplying?
         uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
@@ -541,21 +542,26 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
         (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
+        uint collateralUsed = expectedAmount.add(fee);
 
         // 5. Reduce the collateral by the amount repaid (minus the exchange fees).
-        loan.collateral = loan.collateral.sub(expectedAmount);
+        loan.collateral = loan.collateral.sub(collateralUsed);
 
         // 6. Process the payment and pay the exchange fees if needed.
+        // TODO: If repay() accrues interest, shouldn't repay with collateral also accrue interest?
         _processPayment(loan, payment);
         _payFees(fee, sUSD);
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 8. Emit the event for the collateral repayment.
+        // 8. Burn the contract's sUSD
+        _synthsUSD().burn(address(this), collateralUsed);
+
+        // 9. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        // 9. Return the amount repaid and the remaining collateral.
+        // 10. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
     }
 

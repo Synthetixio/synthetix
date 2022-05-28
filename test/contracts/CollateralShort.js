@@ -326,24 +326,43 @@ contract('CollateralShort', async accounts => {
 			});
 		});
 
-		describe('Repaying shorts', async () => {
-			const oneETH = toUnit(1);
-			const susdCollateral = toUnit(1000);
-			const tolerance = toUnit(0.3);
+		async function logBalances(msg) {
+			console.log(msg);
 
-			let beforeFeePoolBalance, beforeInteractionTime;
+			const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+			const shortBalance = await sUSDSynth.balanceOf(short.address);
+			const userBalance = await sUSDSynth.balanceOf(account1);
+
+			console.log(`Fee pool balance: ${ethers.utils.formatEther(feePoolBalance.toString())}`);
+			console.log(`Short balance: ${ethers.utils.formatEther(shortBalance.toString())}`);
+			console.log(`User balance: ${ethers.utils.formatEther(userBalance.toString())}`);
+		}
+
+		describe('Repaying shorts', async () => {
+			const susdCollateral = toUnit(1000);
+			const ethAmountToShort = toUnit(1);
+			const ethAmountToRepay = toUnit(0.5);
+
+			let beforeFeePoolBalance, beforeUserBalance, beforeShortBalance;
+			let beforeInteractionTime;
 
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
 
-				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+				await logBalances('>>> Before opening:');
+
+				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
 
 				id = getid(tx);
 
 				loan = await short.loans(id);
 
 				beforeInteractionTime = loan.lastInteraction;
+
 				beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+				beforeShortBalance = await sUSDSynth.balanceOf(short.address);
+				beforeUserBalance = await sUSDSynth.balanceOf(account1);
+				await logBalances('>>> After opening');
 
 				await fastForwardAndUpdateRates(3600);
 			});
@@ -351,14 +370,16 @@ contract('CollateralShort', async accounts => {
 			it('should get the short amount and collateral', async () => {
 				const { principal, collateral } = await short.getShortAndCollateral(account1, id);
 
-				assert.bnEqual(principal, oneETH);
+				assert.bnEqual(principal, ethAmountToShort);
 				assert.bnEqual(collateral, susdCollateral);
 			});
 
-			it('should repay with collateral and update the loan', async () => {
-				tx = await short.repayWithCollateral(id, toUnit(0.5), {
+			it.only('should repay with collateral and update the loan', async () => {
+				tx = await short.repayWithCollateral(id, ethAmountToRepay, {
 					from: account1,
 				});
+
+				await logBalances('>>> After repaying');
 
 				loan = await short.loans(id);
 
@@ -366,22 +387,43 @@ contract('CollateralShort', async accounts => {
 					account: account1,
 					repayer: account1,
 					id: id,
-					amountRepaid: toUnit(0.5),
+					amountRepaid: ethAmountToRepay,
 					amountAfter: loan.amount,
 				});
 
-				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
-
-				assert.bnClose(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
-					beforeFeePoolBalance.add(fee),
-					tolerance
-				);
-
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
-				assert.bnClose(loan.amount, toUnit(0.5).toString(), tolerance);
-				assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
+				const { amountReceived: susdAmountRepaidMinusFees, fee: exchangeFee } = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, sUSD);
+				console.log(`Exchange - susdAmount: ${ethers.utils.formatEther(susdAmountRepaidMinusFees.toString())}, fee: ${ethers.utils.formatEther(exchangeFee.toString())}`);
+
+				// The fee pool should have received fees
+				// TODO: what about fees paid when the loan accrues interest?
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(exchangeFee),
+					'The fee pool did not receive enough fees'
+				);
+
+				// The loan amount should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.amount,
+					ethAmountToShort.sub(ethAmountToRepay),
+					'The loan amount was not reduced correctly'
+				);
+
+				// The loan collateral should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.collateral,
+					susdCollateral.sub(susdAmountRepaidMinusFees.add(exchangeFee)),
+					'The loan collateral was not reduced correctly'
+				);
+
+				// The contract sUSD balance should have been reduced by the expected amount
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					susdCollateral.sub(susdAmountRepaidMinusFees.add(exchangeFee)),
+					'The short contracts holds excess sUSD'
+				);
 			});
 
 			it('should repay the entire loan amount', async () => {
@@ -427,18 +469,6 @@ contract('CollateralShort', async accounts => {
 			let beforeFeePoolBalance, beforeUserBalance, beforeShortBalance;
 			let beforeInteractionTime;
 
-			async function logBalances(msg) {
-				console.log(msg);
-
-				const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
-				const shortBalance = await sUSDSynth.balanceOf(short.address);
-				const userBalance = await sUSDSynth.balanceOf(account1);
-
-				console.log(`Fee pool balance: ${ethers.utils.formatEther(feePoolBalance.toString())}`);
-				console.log(`Short balance: ${ethers.utils.formatEther(shortBalance.toString())}`);
-				console.log(`User balance: ${ethers.utils.formatEther(userBalance.toString())}`);
-			}
-
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
 
@@ -460,7 +490,7 @@ contract('CollateralShort', async accounts => {
 				await fastForwardAndUpdateRates(3600);
 			});
 
-			it.only('should repay with collateral and close the loan', async () => {
+			it('should repay with collateral and close the loan', async () => {
 				// Account's sUSD balance before closing the short should be 100 (1000 was put in collateral, and 100 emitted from short)
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
 
@@ -501,8 +531,6 @@ contract('CollateralShort', async accounts => {
 					toUnit(0),
 					'short sUSD balance should have been zero'
 				);
-
-				// assert.bnClose(await sUSDSynth.balanceOf(account1), toUnit(1000), tolerance);
 			});
 		});
 
