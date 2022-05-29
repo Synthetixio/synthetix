@@ -501,28 +501,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function _closeLoanByRepayment(address borrower, uint id) internal returns (uint amount, uint collateral) {
-        // 0. Get the loan.
-        Loan storage loan = loans[id];
-
-        // 1. Repay the loan with its collateral.
-        (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
-
-        // 2. Pay the service fee for collapsing the loan.
-        // TODO: This should most likely not be here, but is currently not affecting us because collapseFeeRate is set to zero
-        // TODO: Should this also be charged when repaying loan to zero?
-        // TODO: Should amount be converted to sUSD before multiplying?
-        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-        _payFees(serviceFee, sUSD);
-        collateral = collateral.sub(serviceFee);
-
-        // 3. Record loan as closed.
-        _recordLoanAsClosed(loan);
-
-        // 4. Emit the event for the loan closed by repayment.
-        emit LoanClosedByRepayment(borrower, id, amount, collateral);
-    }
-
     function _repayWithCollateral(
         address borrower,
         uint id,
@@ -534,38 +512,60 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 2. Repay the accrued interest.
-        payment = payment.add(loan.accruedInterest);
+        // 2. Use the payment to cover accrued interest and reduce debt.
+        // The retured amount is the payment component used to reduce debt only.
+        payment = _processPayment(loan, payment);
 
-        // 3. Make sure they are not overpaying.
-        require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
-
-        // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
+        // 3. Get the equivalent payment amount in sUSD, and also distinguish
+        // the fee that would be charged if the exchange where to occur.
         (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
-        uint collateralUsed = expectedAmount.add(fee);
+        uint paymentSUSD = expectedAmount.add(fee);
 
-        // 5. Reduce the collateral by the amount repaid (minus the exchange fees).
-        loan.collateral = loan.collateral.sub(collateralUsed);
+        // 4. Reduce the collateral byt the equivalent payment amount in sUSD,
+        // but add the fee instead of deducting it.
+        uint collateralToRemove = paymentSUSD.add(fee);
+        loan.collateral = loan.collateral.sub(collateralToRemove);
 
-        // 6. Process the payment and pay the exchange fees if needed.
-        // TODO: If repay() accrues interest, shouldn't repay with collateral also accrue interest?
-        _processPayment(loan, payment);
-        // TODO: Why are virtual exchange fees being paid to the protocol if there is no real exchange?
-        // If we want to pay the virtual exchange fees, shouldn't it be a regular transfer from this contract's balance, instead of a mint and burn?
-        // I.e. what is _payFees _really_ used for?
+        // 5. Pay exchange fees.
         _payFees(fee, sUSD);
+
+        // 6. Burn sUSD held in the contract.
+        _synth(synthsByKey[loan.currency]).burn(address(this), collateralToRemove);
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 8. Burn the contract's sUSD
-        _synthsUSD().burn(address(this), collateralUsed);
-
-        // 9. Emit the event for the collateral repayment.
+        // 8. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        // 10. Return the amount repaid and the remaining collateral.
+        // 9. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
+    }
+
+    function _closeWithCollateral(address borrower, uint id) internal returns (uint amount, uint collateral) {
+        // 0. Get the loan to repay and accrue interest.
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
+
+        // 1. Repay the loan with its collateral.
+        uint amountToRepay = loan.amount.add(loan.accruedInterest);
+        (amount, collateral) = _repayWithCollateral(borrower, id, amountToRepay);
+
+        // 2. Pay the service fee for collapsing the loan.
+        uint collapseFeeRate = getCollapseFeeRate(address(this));
+        if (collapseFeeRate != 0) {
+            // TODO: Handle properly when not zero.
+            // Can easily be avoided by just calling repayWithCollateral with the total amount.
+            revert("Collapse fee rate not supported");
+            // uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
+            // _payFees(serviceFee, sUSD);
+            // collateral = collateral.sub(serviceFee);
+        }
+
+        // 3. Record loan as closed.
+        _recordLoanAsClosed(loan);
+
+        // 4. Emit the event for the loan closed by repayment.
+        emit LoanClosedByRepayment(borrower, id, amount, collateral);
     }
 
     function _draw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
@@ -625,7 +625,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // Works out the amount of interest and principal after a repayment is made.
-    function _processPayment(Loan storage loan, uint payment) internal {
+    function _processPayment(Loan storage loan, uint payment) internal returns (uint) {
         require(payment > 0, "Payment must be above 0");
 
         if (loan.accruedInterest > 0) {
@@ -651,6 +651,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
                 manager.decrementLongs(loan.currency, payment);
             }
         }
+
+        return payment;
     }
 
     // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
