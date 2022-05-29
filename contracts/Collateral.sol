@@ -514,6 +514,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 2. Use the payment to cover accrued interest and reduce debt.
         // The retured amount is the payment component used to reduce debt only.
+        require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
         payment = _processPayment(loan, payment);
 
         // 3. Get the equivalent payment amount in sUSD, and also distinguish
@@ -530,7 +531,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _payFees(fee, sUSD);
 
         // 6. Burn sUSD held in the contract.
-        _synth(synthsByKey[loan.currency]).burn(address(this), collateralToRemove);
+        _synthsUSD().burn(address(this), collateralToRemove);
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
