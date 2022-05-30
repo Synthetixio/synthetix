@@ -551,21 +551,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint amountToRepay = loan.amount.add(loan.accruedInterest);
         (amount, collateral) = _repayWithCollateral(borrower, id, amountToRepay);
 
-        // 2. Pay the service fee for collapsing the loan.
-        uint collapseFeeRate = getCollapseFeeRate(address(this));
-        if (collapseFeeRate != 0) {
-            // TODO: Handle properly when not zero.
-            // Can easily be avoided by just calling repayWithCollateral with the total amount.
-            revert("Collapse fee rate not supported");
-            // uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-            // _payFees(serviceFee, sUSD);
-            // collateral = collateral.sub(serviceFee);
-        }
-
-        // 3. Record loan as closed.
+        // 2. Record loan as closed.
         _recordLoanAsClosed(loan);
 
-        // 4. Emit the event for the loan closed by repayment.
+        // 3. Emit the event for the loan closed by repayment.
         emit LoanClosedByRepayment(borrower, id, amount, collateral);
     }
 
