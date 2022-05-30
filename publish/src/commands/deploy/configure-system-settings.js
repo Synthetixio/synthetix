@@ -621,20 +621,4 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
 		});
 	}
-
-	if (SystemSettings.collapseFeeRate) {
-		const collapseFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['COLLAPSE_FEE_RATE'];
-		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
-			read: 'collapseFeeRate',
-			readArg: addressOf(CollateralShort),
-			readTarget: previousSystemSettings,
-			expected: allowZeroOrUpdateIfNonZero(collapseFeeRate),
-			write: 'setCollapseFeeRate',
-			writeArg: [CollateralShort.address, collapseFeeRate],
-			comment:
-				'Ensure the CollateralShort contract has its service fee set for collapsing loans (SIP-135)',
-		});
-	}
 };

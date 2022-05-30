@@ -44,8 +44,6 @@ contract('CollateralShort', async accounts => {
 
 	let tx, loan, id;
 
-	const COLLAPSE_FEE_RATE = toUnit(0);
-
 	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
@@ -142,10 +140,6 @@ contract('CollateralShort', async accounts => {
 			['sBTC', 'sETH'].map(toBytes32),
 			{ from: owner }
 		);
-
-		await systemSettings.setCollapseFeeRate(short.address, COLLAPSE_FEE_RATE, { from: owner });
-
-		assert.deepEqual(await systemSettings.collapseFeeRate(short.address), COLLAPSE_FEE_RATE);
 
 		// check synths are set and currencyKeys set
 		assert.isTrue(

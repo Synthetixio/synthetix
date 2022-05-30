@@ -347,19 +347,6 @@ library SystemSettingsLib {
         );
     }
 
-    function setCollapseFeeRate(
-        IFlexibleStorage flexibleStorage,
-        bytes32 settingName,
-        address _collateral,
-        uint _collapseFeeRate
-    ) external {
-        flexibleStorage.setUIntValue(
-            SETTINGS_CONTRACT_NAME,
-            keccak256(abi.encodePacked(settingName, _collateral)),
-            _collapseFeeRate
-        );
-    }
-
     function setAtomicMaxVolumePerBlock(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
