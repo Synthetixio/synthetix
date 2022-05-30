@@ -60,7 +60,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function transfer(address to, uint value) public optionalProxy returns (bool) {
+    function transfer(address to, uint value) public onlyProxy returns (bool) {
         _ensureCanTransfer(messageSender, value);
 
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
@@ -76,7 +76,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
+    function transferAndSettle(address to, uint value) public onlyProxy returns (bool) {
         // Exchanger.settle ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
@@ -97,7 +97,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address from,
         address to,
         uint value
-    ) public optionalProxy returns (bool) {
+    ) public onlyProxy returns (bool) {
         _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
@@ -107,7 +107,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address from,
         address to,
         uint value
-    ) public optionalProxy returns (bool) {
+    ) public onlyProxy returns (bool) {
         // Exchanger.settle() ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
@@ -265,8 +265,15 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(futuresMarketManager());
     }
 
+    /// Allows calling from internal contracts directly or through proxy
+    /// by checking that either caller is internal contract, or caller is proxy and its cllaer is internal contract.
+    /// This is needed to prevent double-entry for external callers, but allow for internal ones.
+    function _isInternalContractOrViaProxy(address account) internal view returns (bool) {
+        return _isInternalContract(account) || (account == address(proxy) && _isInternalContract(messageSender));
+    }
+
     modifier onlyInternalContracts() {
-        require(_isInternalContract(msg.sender), "Only internal contracts allowed");
+        require(_isInternalContractOrViaProxy(msg.sender), "Only internal contracts allowed");
         _;
     }
 
