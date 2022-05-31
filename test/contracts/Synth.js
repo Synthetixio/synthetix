@@ -170,7 +170,7 @@ contract('Synth', async accounts => {
 		});
 
 		// SIP-238
-		describe('implementation does not allow mutative calls except approve', () => {
+		describe('implementation does not allow transfers but allows approve', () => {
 			const amount = toUnit('10000');
 			beforeEach(async () => {
 				// ensure owner has funds
@@ -202,6 +202,14 @@ contract('Synth', async accounts => {
 					sUSDImpl.transferFromAndSettle(owner, account1, amount, { from: account1 }),
 					'Only the proxy'
 				);
+			});
+
+			it('transfer does not revert from a whitelisted contract', async () => {
+				// set owner as SynthRedeemer
+				await addressResolver.importAddresses(['SynthRedeemer'].map(toBytes32), [owner], {
+					from: owner,
+				});
+				await sUSDImpl.transfer(account1, amount, { from: owner });
 			});
 		});
 	});
