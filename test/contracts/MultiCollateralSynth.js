@@ -182,15 +182,15 @@ contract('MultiCollateralSynth', accounts => {
 		});
 
 		// SIP-238
-		describe('implementation does not allow mutative calls', () => {
+		describe('implementation does not allow mutative calls except approve', () => {
 			const revertMsg = 'Only the proxy';
 			const amount = toUnit('100');
 			beforeEach(async () => {
 				// approve for transferFrom to work
 				await this.synthViaProxy.approve(account1, amount, { from: owner });
 			});
-			it('approve reverts', async () => {
-				await assert.revert(this.synth.approve(account1, amount, { from: owner }), revertMsg);
+			it('approve does not revert', async () => {
+				await this.synth.approve(account1, amount, { from: owner });
 			});
 			it('transfer reverts', async () => {
 				await assert.revert(this.synth.transfer(account1, amount, { from: owner }), revertMsg);

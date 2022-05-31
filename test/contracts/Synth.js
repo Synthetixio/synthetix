@@ -170,7 +170,7 @@ contract('Synth', async accounts => {
 		});
 
 		// SIP-238
-		describe('implementation does not allow mutative calls', () => {
+		describe('implementation does not allow mutative calls except approve', () => {
 			const amount = toUnit('10000');
 			beforeEach(async () => {
 				// ensure owner has funds
@@ -179,8 +179,8 @@ contract('Synth', async accounts => {
 				// approve for transferFrom to work
 				await sUSDProxy.approve(account1, amount, { from: owner });
 			});
-			it('approve reverts', async () => {
-				await assert.revert(sUSDImpl.approve(account1, amount, { from: owner }), 'Only the proxy');
+			it('approve does not revert', async () => {
+				await sUSDImpl.approve(account1, amount, { from: owner });
 			});
 			it('transfer reverts', async () => {
 				await assert.revert(sUSDImpl.transfer(account1, amount, { from: owner }), 'Only the proxy');
