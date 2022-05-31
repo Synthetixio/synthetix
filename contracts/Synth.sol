@@ -60,7 +60,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function transfer(address to, uint value) public onlyProxy returns (bool) {
+    function transfer(address to, uint value) public onlyProxyOrLegacy returns (bool) {
         _ensureCanTransfer(messageSender, value);
 
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
@@ -76,7 +76,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    function transferAndSettle(address to, uint value) public onlyProxy returns (bool) {
+    function transferAndSettle(address to, uint value) public onlyProxyOrLegacy returns (bool) {
         // Exchanger.settle ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
@@ -97,7 +97,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address from,
         address to,
         uint value
-    ) public onlyProxy returns (bool) {
+    ) public onlyProxyOrLegacy returns (bool) {
         _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
@@ -107,7 +107,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address from,
         address to,
         uint value
-    ) public onlyProxy returns (bool) {
+    ) public onlyProxyOrLegacy returns (bool) {
         // Exchanger.settle() ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
@@ -257,6 +257,24 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MODIFIERS ========== */
 
+    /// some legacy internal contracts use transfer method directly on implementation
+    /// which isn't supported due to  SIP-238 for other callers
+    function _isLegacyInternal(address account) internal view returns (bool) {
+        // these entries are not required or cached in order to allow them to not exist (equal address(0))
+        // e.g. due to not being available on some L2 or at some future point in time
+        // note on address collision potential: an edge case combination of governance (pdao)
+        // mistake of setting an address to an incorrect address (e.g. from another chain) + address collision
+        //  with a previous deployer is possible but very highly due to these being legacy contracts with less name collision
+        // potential (then e.g. in SIP-235)
+        return
+            account != address(0) &&
+            (account == resolver.getAddress("SynthRedeemer") ||
+                account == resolver.getAddress("CollateralShort") ||
+                account == resolver.getAddress("WrapperFactory") ||
+                account == resolver.getAddress("NativeEtherWrapper") ||
+                account == resolver.getAddress("Depot"));
+    }
+
     function _isInternalContract(address account) internal view returns (bool) {
         return
             account == address(feePool()) ||
@@ -275,6 +293,23 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     modifier onlyInternalContracts() {
         require(_isInternalContractOrViaProxy(msg.sender), "Only internal contracts allowed");
         _;
+    }
+
+    modifier onlyProxyOrLegacy {
+        _onlyProxyOrLegacy();
+        _;
+    }
+
+    function _onlyProxyOrLegacy() internal {
+        if (msg.sender == address(proxy)) {
+            // allow proxy through, messageSender should be already set correctly
+            return;
+        } else if (_isLegacyInternal(msg.sender)) {
+            // optionalProxy behaviour only for the internal legacy contracts
+            messageSender = msg.sender;
+        } else {
+            revert("Only the proxy can call");
+        }
     }
 
     /* ========== EVENTS ========== */
