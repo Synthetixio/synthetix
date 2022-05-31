@@ -513,18 +513,21 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkLoanAvailable(loan);
 
         // 2. Use the payment to cover accrued interest and reduce debt.
-        // The retured amount is the payment component used to reduce debt only.
+        // The retured amounts are the interests paid and the principal component used to reduce debt only.
         require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
-        payment = _processPayment(loan, payment);
+        (uint principal, uint interest) = _processPayment(loan, payment);
 
-        // 3. Get the equivalent payment amount in sUSD, and also distinguish
-        // the fee that would be charged if the exchange where to occur.
-        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
+        // 3. Get the equivalent interest paid in sUSD to reduce the collateral
+        uint interestSUSD = _exchangeRates().effectiveValue(loan.currency, interest, sUSD);
+
+        // 4. Get the equivalent payment amount in sUSD, and also distinguish
+        // the fee that would be charged if the exchange where to occur only applies to the principal.
+        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(principal, loan.currency, sUSD);
         uint paymentSUSD = expectedAmount.add(fee);
 
-        // 4. Reduce the collateral byt the equivalent payment amount in sUSD,
+        // 5. Reduce the collateral by the equivalent (total) payment amount in sUSD,
         // but add the fee instead of deducting it.
-        uint collateralToRemove = paymentSUSD.add(fee);
+        uint collateralToRemove = paymentSUSD.add(fee).add(interestSUSD);
         loan.collateral = loan.collateral.sub(collateralToRemove);
 
         // 5. Pay exchange fees.
@@ -537,7 +540,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
 
         // 8. Emit the event for the collateral repayment.
-        emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
+        emit LoanRepaymentMade(borrower, borrower, id, principal, loan.amount);
 
         // 9. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
@@ -615,34 +618,35 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // Works out the amount of interest and principal after a repayment is made.
-    function _processPayment(Loan storage loan, uint payment) internal returns (uint) {
+    function _processPayment(Loan storage loan, uint payment) internal returns (uint principal, uint interestPaid) {
         require(payment > 0, "Payment must be above 0");
 
         if (loan.accruedInterest > 0) {
-            uint interestPaid = payment > loan.accruedInterest ? loan.accruedInterest : payment;
+            interestPaid = payment > loan.accruedInterest ? loan.accruedInterest : payment;
             loan.accruedInterest = loan.accruedInterest.sub(interestPaid);
             payment = payment.sub(interestPaid);
 
             _payFees(interestPaid, loan.currency);
         }
 
+        // The principal is whatever is left over in the payment, after paying interests
+        principal = payment;
+
         // If there is more payment left after the interest, pay down the principal.
-        if (payment > 0) {
-            loan.amount = loan.amount.sub(payment);
+        if (principal > 0) {
+            loan.amount = loan.amount.sub(principal);
 
             // And get the manager to reduce the total long/short balance.
             if (loan.short) {
-                manager.decrementShorts(loan.currency, payment);
+                manager.decrementShorts(loan.currency, principal);
 
                 if (shortingRewards[loan.currency] != address(0)) {
-                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, payment);
+                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, principal);
                 }
             } else {
-                manager.decrementLongs(loan.currency, payment);
+                manager.decrementLongs(loan.currency, principal);
             }
         }
-
-        return payment;
     }
 
     // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
