@@ -142,7 +142,8 @@ async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
 }
 
 async function _getsUSD({ ctx, user, amount }) {
-	let { Synthetix, SynthsUSD } = ctx.contracts;
+	const { ProxysUSD, SynthsUSD } = ctx.contracts;
+	let { Synthetix } = ctx.contracts;
 
 	let tx;
 
@@ -168,9 +169,14 @@ async function _getsUSD({ ctx, user, amount }) {
 	tx = await Synthetix.issueSynths(amount);
 	await tx.wait();
 
-	SynthsUSD = SynthsUSD.connect(tmpWallet);
+	let SynthsUSDViaProxy = new ethers.Contract(
+		ProxysUSD.address,
+		SynthsUSD.interface,
+		this.provider
+	);
+	SynthsUSDViaProxy = SynthsUSDViaProxy.connect(tmpWallet);
 
-	tx = await SynthsUSD.transfer(user.address, amount);
+	tx = await SynthsUSDViaProxy.transfer(user.address, amount);
 	await tx.wait();
 }
 
