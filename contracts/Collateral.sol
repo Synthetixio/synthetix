@@ -515,23 +515,20 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 2. Use the payment to cover accrued interest and reduce debt.
         // The retured amounts are the interests paid and the principal component used to reduce debt only.
         require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
-        (uint principal, uint interest) = _processPayment(loan, payment);
+        uint principal = _processPayment(loan, payment);
 
-        // 3. Get the equivalent interest paid in sUSD to reduce the collateral
-        uint interestSUSD = _exchangeRates().effectiveValue(loan.currency, interest, sUSD);
+        // 3. Get the equivalent payment amount in sUSD, and also distinguish
+        // the fee that would be charged for both principal and itnerest.
+        (uint expectedAmount, uint exchangeFee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
+        uint paymentSUSD = expectedAmount.add(exchangeFee);
 
-        // 4. Get the equivalent payment amount in sUSD, and also distinguish
-        // the fee that would be charged if the exchange where to occur only applies to the principal.
-        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(principal, loan.currency, sUSD);
-        uint paymentSUSD = expectedAmount.add(fee);
-
-        // 5. Reduce the collateral by the equivalent (total) payment amount in sUSD,
+        // 4. Reduce the collateral by the equivalent (total) payment amount in sUSD,
         // but add the fee instead of deducting it.
-        uint collateralToRemove = paymentSUSD.add(fee).add(interestSUSD);
+        uint collateralToRemove = paymentSUSD.add(exchangeFee);
         loan.collateral = loan.collateral.sub(collateralToRemove);
 
         // 5. Pay exchange fees.
-        _payFees(fee, sUSD);
+        _payFees(exchangeFee, sUSD);
 
         // 6. Burn sUSD held in the contract.
         _synthsUSD().burn(address(this), collateralToRemove);
@@ -618,7 +615,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // Works out the amount of interest and principal after a repayment is made.
-    function _processPayment(Loan storage loan, uint payment) internal returns (uint principal, uint interestPaid) {
+    function _processPayment(Loan storage loan, uint payment) internal returns (uint principal) {
         require(payment > 0, "Payment must be above 0");
 
         if (loan.accruedInterest > 0) {

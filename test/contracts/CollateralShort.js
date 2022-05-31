@@ -415,7 +415,6 @@ contract('CollateralShort', async accounts => {
 				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
 
 				// The fee pool should have received fees
-				// TODO: what about fees paid when the loan accrues interest?
 				assert.deepEqual(
 					await sUSDSynth.balanceOf(FEE_ADDRESS),
 					beforeFeePoolBalance.add(exchangeFee),
@@ -452,6 +451,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			it('should repay the entire loan amount', async () => {
+				// In case the loan accrues interest, this option won't pay it full.
 				ethAmountToRepay = ethAmountToShort;
 
 				tx = await short.repayWithCollateral(id, ethAmountToRepay, {
@@ -479,7 +479,6 @@ contract('CollateralShort', async accounts => {
 				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
 
 				// The fee pool should have received fees
-				// TODO: what about fees paid when the loan accrues interest?
 				assert.deepEqual(
 					await sUSDSynth.balanceOf(FEE_ADDRESS),
 					beforeFeePoolBalance.add(exchangeFee),
@@ -546,13 +545,10 @@ contract('CollateralShort', async accounts => {
 				const {
 					amountReceived: susdAmountRepaidMinusFees,
 					fee: exchangeFee,
-				} = await exchanger.getAmountsForExchange(amountRepaid, sETH, sUSD); // ethAmountToRepay
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, sUSD); // ethAmountToRepay
 
 				// The collateral to use is the equivalent amount used while repaying + fees.
-				const collateralToUse = susdAmountRepaidMinusFees
-					.add(exchangeFee)
-					.add(exchangeFee)
-					.add(sUSDAccruedInterest);
+				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
 
 				// The fee pool should have received fees (exchange + accrued interest)
 				assert.deepEqual(
@@ -694,7 +690,6 @@ contract('CollateralShort', async accounts => {
 				assert.equal(loan.collateral, toUnit(0).toString());
 
 				// The fee pool should have received fees
-				// TODO: what about fees paid when the loan accrues interest?
 				assert.deepEqual(
 					await sUSDSynth.balanceOf(FEE_ADDRESS),
 					beforeFeePoolBalance.add(exchangeFee),
@@ -744,7 +739,7 @@ contract('CollateralShort', async accounts => {
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), beforeUserBalance);
 
 				const { fee: exchangeFee } = await exchanger.getAmountsForExchange(
-					ethAmountToRepay,
+					ethAmountToRepay.add(accruedInterest),
 					sETH,
 					sUSD
 				);
@@ -757,9 +752,9 @@ contract('CollateralShort', async accounts => {
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
 				// Short state should be zeroed out
-				assert.equal(loan.interestIndex, toUnit(0).toString());
-				assert.equal(loan.amount, toUnit(0).toString());
-				assert.equal(loan.collateral, toUnit(0).toString());
+				assert.deepEqual(loan.interestIndex, toUnit(0).toString());
+				assert.deepEqual(loan.amount, toUnit(0).toString());
+				assert.deepEqual(loan.collateral, toUnit(0).toString());
 
 				// The fee pool should have received fees
 				assert.deepEqual(
