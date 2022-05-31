@@ -25,8 +25,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 
 	const marketKey = toBytes32('pBTC');
 	const baseAsset = toBytes32('BTC');
-	const takerFeeNextPrice = toUnit('0.0005');
-	const makerFeeNextPrice = toUnit('0.0001');
+	const baseFeeNextPrice = toUnit('0.0005');
 	const initialPrice = toUnit('100');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
@@ -221,7 +220,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			// go to next round
 			await setPrice(baseAsset, price);
 
-			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, takerFeeNextPrice));
+			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, baseFeeNextPrice));
 
 			// excute the order
 			const tx = await perpsMarket.executeNextPriceOrder(trader, { from: trader });
@@ -615,11 +614,11 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, takerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, takerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 					});
 
@@ -634,11 +633,11 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, makerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, makerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 					});
 
@@ -677,11 +676,11 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, takerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, takerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 					});
 
@@ -695,11 +694,11 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, makerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, makerFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
 						});
 					});
 				});

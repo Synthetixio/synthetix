@@ -2,8 +2,8 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./PerpsV2MarketBase.sol";
-import "./MixinPerpsV2MarketNextPrice.sol";
-import "./MixinPerpsV2MarketViews.sol";
+import "./PerpsV2NextPriceMixin.sol";
+import "./PerpsV2ViewsMixin.sol";
 import "./interfaces/IPerpsV2Market.sol";
 
 /*
@@ -12,7 +12,7 @@ import "./interfaces/IPerpsV2Market.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2Market
-contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketBase, MixinPerpsV2MarketNextPrice, MixinPerpsV2MarketViews {
+contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketBase, PerpsV2NextPriceMixin, PerpsV2ViewsMixin {
     constructor(
         address _resolver,
         bytes32 _baseAsset,
