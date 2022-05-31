@@ -629,23 +629,24 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _payFees(interestPaid, loan.currency);
         }
 
+        // The principal is whatever is left over in the payment, after paying interests
+        principal = payment;
+
         // If there is more payment left after the interest, pay down the principal.
-        if (payment > 0) {
-            loan.amount = loan.amount.sub(payment);
+        if (principal > 0) {
+            loan.amount = loan.amount.sub(principal);
 
             // And get the manager to reduce the total long/short balance.
             if (loan.short) {
-                manager.decrementShorts(loan.currency, payment);
+                manager.decrementShorts(loan.currency, principal);
 
                 if (shortingRewards[loan.currency] != address(0)) {
-                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, payment);
+                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, principal);
                 }
             } else {
-                manager.decrementLongs(loan.currency, payment);
+                manager.decrementLongs(loan.currency, principal);
             }
         }
-
-        return (payment, interestPaid);
     }
 
     // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
