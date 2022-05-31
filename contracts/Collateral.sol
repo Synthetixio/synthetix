@@ -619,7 +619,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(payment > 0, "Payment must be above 0");
 
         if (loan.accruedInterest > 0) {
-            interestPaid = payment > loan.accruedInterest ? loan.accruedInterest : payment;
+            uint interestPaid = payment > loan.accruedInterest ? loan.accruedInterest : payment;
             loan.accruedInterest = loan.accruedInterest.sub(interestPaid);
             payment = payment.sub(interestPaid);
 
