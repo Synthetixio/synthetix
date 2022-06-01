@@ -2928,7 +2928,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe('when upgrade colllateralShort', () => {
+			describe('upgradeCollateralShort', () => {
 				const collateralShortMock = account1;
 				const wrongCollateralShort = account2;
 
@@ -2971,7 +2971,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('migrates balance', () => {
-					let beforeCachedDebt, beforeSUSDBalance;
+					let beforeCurrentDebt, beforeSUSDBalance;
 					const amountToBurn = toUnit(10);
 
 					beforeEach(async () => {
@@ -2984,7 +2984,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						// get before* values
 						beforeSUSDBalance = await sUSDContract.balanceOf(collateralShortMock);
-						beforeCachedDebt = await debtCache.cachedDebt();
+						const currentDebt = await debtCache.currentDebt();
+						beforeCurrentDebt = currentDebt['0'];
 
 						// call upgradeCollateralShort
 						await issuer.upgradeCollateralShort(collateralShortMock, amountToBurn, {
@@ -2999,8 +3000,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 						);
 					});
 
-					it('maintains debt cache', async () => {
-						assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt);
+					it('reduces currentDebt', async () => {
+						const currentDebt = await debtCache.currentDebt();
+						assert.bnEqual(currentDebt['0'], beforeCurrentDebt.sub(amountToBurn));
 					});
 				});
 			});
