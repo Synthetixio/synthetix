@@ -515,7 +515,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 2. Use the payment to cover accrued interest and reduce debt.
         // The retured amounts are the interests paid and the principal component used to reduce debt only.
         require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
-        uint principal = _processPayment(loan, payment);
+        uint principalPayment = _processPayment(loan, payment);
 
         // 3. Get the equivalent payment amount in sUSD, and also distinguish
         // the fee that would be charged for both principal and itnerest.
@@ -537,7 +537,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
 
         // 8. Emit the event for the collateral repayment.
-        emit LoanRepaymentMade(borrower, borrower, id, principal, loan.amount);
+        emit LoanRepaymentMade(borrower, borrower, id, principalPayment, loan.amount);
 
         // 9. Return the amount repaid and the remaining collateral.
         return (payment, loan.collateral);
@@ -556,6 +556,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 3. Emit the event for the loan closed by repayment.
         emit LoanClosedByRepayment(borrower, id, amount, collateral);
+
+        // 4. Explicitely return the values.
+        return (amount, collateral);
     }
 
     function _draw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
@@ -615,7 +618,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // Works out the amount of interest and principal after a repayment is made.
-    function _processPayment(Loan storage loan, uint payment) internal returns (uint principal) {
+    function _processPayment(Loan storage loan, uint payment) internal returns (uint principalPayment) {
         require(payment > 0, "Payment must be above 0");
 
         if (loan.accruedInterest > 0) {
@@ -627,21 +630,21 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
 
         // The principal is whatever is left over in the payment, after paying interests
-        principal = payment;
+        principalPayment = payment;
 
         // If there is more payment left after the interest, pay down the principal.
-        if (principal > 0) {
-            loan.amount = loan.amount.sub(principal);
+        if (principalPayment > 0) {
+            loan.amount = loan.amount.sub(principalPayment);
 
             // And get the manager to reduce the total long/short balance.
             if (loan.short) {
-                manager.decrementShorts(loan.currency, principal);
+                manager.decrementShorts(loan.currency, principalPayment);
 
                 if (shortingRewards[loan.currency] != address(0)) {
-                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, principal);
+                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, principalPayment);
                 }
             } else {
-                manager.decrementLongs(loan.currency, principal);
+                manager.decrementLongs(loan.currency, principalPayment);
             }
         }
     }
