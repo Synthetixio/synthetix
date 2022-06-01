@@ -120,7 +120,6 @@ contract ExternStateToken is Owned, Proxyable {
 
     /**
      * @notice Approves spender to transfer on the message sender's behalf.
-     *
      */
     function approve(address spender, uint value) public optionalProxy returns (bool) {
         address sender = messageSender;

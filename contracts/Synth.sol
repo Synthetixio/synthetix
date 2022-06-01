@@ -257,24 +257,6 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MODIFIERS ========== */
 
-    /// some legacy internal contracts use transfer method directly on implementation
-    /// which isn't supported due to  SIP-238 for other callers
-    function _isLegacyInternal(address account) internal view returns (bool) {
-        // these entries are not required or cached in order to allow them to not exist (equal address(0))
-        // e.g. due to not being available on some L2 or at some future point in time
-        // note on address collision potential: an edge case combination of governance (pdao)
-        // mistake of setting an address to an incorrect address (e.g. from another chain) + address collision
-        //  with a previous deployer is possible but very highly due to these being legacy contracts with less name collision
-        // potential (then e.g. in SIP-235)
-        return
-            account != address(0) &&
-            (account == resolver.getAddress("SynthRedeemer") ||
-                account == resolver.getAddress("CollateralShort") ||
-                account == resolver.getAddress("WrapperFactory") ||
-                account == resolver.getAddress("NativeEtherWrapper") ||
-                account == resolver.getAddress("Depot"));
-    }
-
     function _isInternalContract(address account) internal view returns (bool) {
         return
             account == address(feePool()) ||
@@ -310,6 +292,24 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         } else {
             revert("Only the proxy can call");
         }
+    }
+
+    /// some legacy internal contracts use transfer methods directly on implementation
+    /// which isn't supported due to SIP-238 for other callers
+    function _isLegacyInternal(address account) internal view returns (bool) {
+        // These entries are not required or cached in order to allow them to not exist (==address(0))
+        // e.g. due to not being available on L2 or at some future point in time.
+        // Note on address collision potential: an edge case combination of governance (pdao)
+        // mistake of setting an address to an incorrect address (e.g. from another chain) + address collision
+        // with a previous deployer is possible but unlikely due to these being legacy contracts with
+        // less name collision potential (then e.g. in SIP-235)
+        return
+            account != address(0) &&
+            (account == resolver.getAddress("SynthRedeemer") ||
+                account == resolver.getAddress("CollateralShort") ||
+                account == resolver.getAddress("WrapperFactory") ||
+                account == resolver.getAddress("NativeEtherWrapper") ||
+                account == resolver.getAddress("Depot"));
     }
 
     /* ========== EVENTS ========== */
