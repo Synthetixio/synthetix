@@ -624,6 +624,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      * @param amount The amount of sUSD collateral to be burnt
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
+        require(short != address(0), "Issuer: invalid address");
         require(short == resolver.getAddress("CollateralShortLegacy"), "Issuer: wrong short address");
         require(address(synths[sUSD]) != address(0), "Issuer: synth doesn't exist");
         require(amount > 0, "Issuer: cannot burn 0 synths");
