@@ -265,16 +265,8 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(futuresMarketManager());
     }
 
-    /// Allows calling from internal contracts directly or through proxy
-    /// by checking that either caller is internal contract, or caller is proxy and its caller is internal contract.
-    /// This is needed to to allow for internal contracts to make these restricted calls through implementation
-    /// or proxies
-    function _isInternalContractOrViaProxy(address account) internal view returns (bool) {
-        return _isInternalContract(account) || (account == address(proxy) && _isInternalContract(messageSender));
-    }
-
     modifier onlyInternalContracts() {
-        require(_isInternalContractOrViaProxy(msg.sender), "Only internal contracts allowed");
+        require(_isInternalContract(msg.sender), "Only internal contracts allowed");
         _;
     }
 

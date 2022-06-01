@@ -407,7 +407,7 @@ contract('Synth', async accounts => {
 			await sUSDProxy.rebuildCache();
 		});
 		it('should issue successfully when called by Issuer', async () => {
-			const transaction = await sUSDProxy.issue(account1, toUnit('10000'), {
+			const transaction = await sUSDImpl.issue(account1, toUnit('10000'), {
 				from: owner,
 			});
 			assert.eventsEqual(
@@ -426,18 +426,14 @@ contract('Synth', async accounts => {
 			);
 		});
 
-		it('should issue successfully when called by Issuer through implementation', async () => {
-			await sUSDImpl.issue(account1, toUnit('10000'), { from: owner });
-		});
-
 		it('should burn successfully when called by Issuer', async () => {
 			// Issue a bunch of synths so we can play with them.
-			await sUSDProxy.issue(owner, toUnit('10000'), {
+			await sUSDImpl.issue(owner, toUnit('10000'), {
 				from: owner,
 			});
 			// await synthetix.issueSynths(toUnit('10000'), { from: owner });
 
-			const transaction = await sUSDProxy.burn(owner, toUnit('10000'), { from: owner });
+			const transaction = await sUSDImpl.burn(owner, toUnit('10000'), { from: owner });
 
 			assert.eventsEqual(
 				transaction,
@@ -446,11 +442,6 @@ contract('Synth', async accounts => {
 				'Burned',
 				{ account: owner, value: toUnit('10000') }
 			);
-		});
-
-		it('should burn successfully when called by Issuer through implementation', async () => {
-			await sUSDImpl.issue(owner, toUnit('10000'), { from: owner });
-			await sUSDImpl.burn(owner, toUnit('10000'), { from: owner });
 		});
 	});
 
@@ -784,13 +775,13 @@ contract('Synth', async accounts => {
 		});
 
 		describe('when a non-USD synth exists', () => {
-			let sEURProxy;
+			let sEURImpl, sEURProxy;
 
 			beforeEach(async () => {
 				const sEUR = toBytes32('sEUR');
 
 				// create a new sEUR synth
-				({ ProxyERC20Synth: sEURProxy } = await setupAllContracts({
+				({ Synth: sEURImpl, ProxyERC20Synth: sEURProxy } = await setupAllContracts({
 					accounts,
 					existing: {
 						ExchangeRates: exchangeRates,
@@ -819,7 +810,7 @@ contract('Synth', async accounts => {
 					owner,
 					issuer,
 					addressResolver,
-					synthContract: sEURProxy,
+					synthContract: sEURImpl,
 					user: owner,
 					amount,
 					synth: sEUR,
@@ -829,7 +820,7 @@ contract('Synth', async accounts => {
 				const feeBalanceBefore = await sUSDProxy.balanceOf(FEE_ADDRESS);
 
 				// balance of sEUR after exchange fees
-				const balanceOf = await sEURProxy.balanceOf(owner);
+				const balanceOf = await sEURImpl.balanceOf(owner);
 
 				const amountInUSD = await exchangeRates.effectiveValue(sEUR, balanceOf, sUSD);
 
