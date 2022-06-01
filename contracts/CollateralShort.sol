@@ -6,10 +6,6 @@ pragma experimental ABIEncoderV2;
 import "./Collateral.sol";
 
 contract CollateralShort is Collateral {
-    /* ========== CONSTANTS ========== */
-
-    bytes32 private constant sUSD = "sUSD";
-
     constructor(
         address _owner,
         ICollateralManager _manager,

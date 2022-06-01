@@ -31,7 +31,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ========== CONSTANTS ========== */
 
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 internal constant sUSD = "sUSD";
 
     // ========== STATE VARIABLES ==========
 
