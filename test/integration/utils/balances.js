@@ -87,7 +87,11 @@ async function _getWETH({ ctx, user, amount }) {
 }
 
 async function _getSNX({ ctx, user, amount }) {
+	const { ProxySynthetix } = ctx.contracts;
 	let { Synthetix } = ctx.contracts;
+
+	// connect via proxy
+	Synthetix = new ethers.Contract(ProxySynthetix.address, Synthetix.interface, ctx.provider);
 
 	const ownerTransferable = await Synthetix.transferableSynthetix(ctx.users.owner.address);
 	if (ownerTransferable.lt(amount)) {
@@ -142,8 +146,12 @@ async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
 }
 
 async function _getsUSD({ ctx, user, amount }) {
-	const { ProxysUSD, SynthsUSD } = ctx.contracts;
-	let { Synthetix } = ctx.contracts;
+	const { ProxySynthetix, ProxysUSD } = ctx.contracts;
+	let { Synthetix, SynthsUSD } = ctx.contracts;
+
+	// connect via proxy
+	Synthetix = new ethers.Contract(ProxySynthetix.address, Synthetix.interface, ctx.provider);
+	SynthsUSD = new ethers.Contract(ProxysUSD.address, SynthsUSD.interface, ctx.provider);
 
 	let tx;
 
@@ -164,19 +172,10 @@ async function _getsUSD({ ctx, user, amount }) {
 	tx = await Synthetix.transfer(tmpWallet.address, requiredSNX.mul(2));
 	await tx.wait();
 
-	Synthetix = Synthetix.connect(tmpWallet);
-
-	tx = await Synthetix.issueSynths(amount);
+	tx = await Synthetix.connect(tmpWallet).issueSynths(amount);
 	await tx.wait();
 
-	let SynthsUSDViaProxy = new ethers.Contract(
-		ProxysUSD.address,
-		SynthsUSD.interface,
-		this.provider
-	);
-	SynthsUSDViaProxy = SynthsUSDViaProxy.connect(tmpWallet);
-
-	tx = await SynthsUSDViaProxy.transfer(user.address, amount);
+	tx = await SynthsUSD.connect(tmpWallet).transfer(user.address, amount);
 	await tx.wait();
 }
 

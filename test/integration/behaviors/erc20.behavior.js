@@ -65,33 +65,33 @@ function itBehavesLikeAnERC20({ ctx, contract }) {
 			});
 		});
 
-		// // TODO!!: implement SIP-238 for SNX
-		// describe('transfers calling implementation revert', async () => {
-		// 	before('transfer', async () => {
-		// 		TokenViaProxy = TokenViaProxy.connect(owner);
+		// IP-238
+		describe('transfers calling implementation revert', async () => {
+			before('transfer', async () => {
+				TokenViaProxy = TokenViaProxy.connect(owner);
 
-		// 		const tx = await TokenViaProxy.approve(user.address, amountToTransfer);
-		// 		await tx.wait();
-		// 	});
+				const tx = await TokenViaProxy.approve(user.address, amountToTransfer);
+				await tx.wait();
+			});
 
-		// 	it('approve using implementation succeeds', async () => {
-		// 		await TokenImpl.connect(user).approve(user.address, amountToTransfer);
-		// 	});
+			it('approve using implementation succeeds', async () => {
+				await TokenImpl.connect(user).approve(user.address, amountToTransfer);
+			});
 
-		// 	it('transfer', async () => {
-		// 		await assert.revert(
-		// 			TokenImpl.connect(user).transfer(owner.address, amountToTransfer),
-		// 			'Only the proxy'
-		// 		);
-		// 	});
+			it('transfer', async () => {
+				await assert.revert(
+					TokenImpl.connect(user).transfer(owner.address, amountToTransfer),
+					'Only the proxy'
+				);
+			});
 
-		// 	it('transferFrom', async () => {
-		// 		await assert.revert(
-		// 			TokenImpl.connect(user).transferFrom(owner.address, user.address, amountToTransfer),
-		// 			'Only the proxy'
-		// 		);
-		// 	});
-		// });
+			it('transferFrom', async () => {
+				await assert.revert(
+					TokenImpl.connect(user).transferFrom(owner.address, user.address, amountToTransfer),
+					'Only the proxy'
+				);
+			});
+		});
 	});
 }
 
