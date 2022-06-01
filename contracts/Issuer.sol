@@ -732,12 +732,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
         if (totalRedeemed > transferableBalance) {
+            // Liquidate the account's debt based on the liquidation penalty.
+            amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(totalRedeemed);
+        
             // Set totalRedeemed to all transferable collateral.
             // i.e. the value of the account's staking position relative to balanceOf will be unwound.
             totalRedeemed = transferableBalance;
-
-            // Liquidate the account's debt based on the liquidation penalty.
-            amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(collateralForAccount);
         }
 
         // Reduce debt shares by amount to liquidate.
