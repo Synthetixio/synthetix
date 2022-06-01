@@ -191,7 +191,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [sUSD, owner, toUnit(100)],
 				accounts,
 				address: synthetixBridgeToOptimism,
-				reason: 'Issuer: Only trusted minters can perform this action',
+				reason: 'Issuer: only trusted minters',
 			});
 		});
 
@@ -202,7 +202,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// full functionality of this method requires issuing synths,
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
-				reason: 'Issuer: Only trusted minters can perform this action',
+				reason: 'Issuer: only trusted minters',
 			});
 		});
 
@@ -310,7 +310,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					issuer.issueSynthsWithoutDebt(sUSD, owner, toUnit(100), {
 						from: synthetixBridgeToOptimism,
 					}),
-					'One of the trusted minters is not 0'
+					'Issuer: one minter must be 0x0'
 				);
 			});
 		});
