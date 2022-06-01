@@ -36,7 +36,7 @@ contract TestablePerpsV2Market is PerpsV2Market {
     {
         uint price;
         (price, invalid) = assetPrice();
-        int sizeLimit = int(_maxMarketValueUSD(marketKey)).divideDecimal(int(price));
+        int sizeLimit = int(_maxSingleSideValueUSD(marketKey)).divideDecimal(int(price));
         (uint longSize, uint shortSize) = marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));

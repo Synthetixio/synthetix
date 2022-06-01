@@ -171,6 +171,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'removeSynths',
 				'setCurrentPeriodId',
 				'setLastDebtRatio',
+				'upgradeCollateralShort',
 			],
 		});
 	});

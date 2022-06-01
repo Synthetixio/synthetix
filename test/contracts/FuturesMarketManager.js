@@ -95,8 +95,13 @@ contract('FuturesMarketManager', accounts => {
 					'issueSUSD',
 					'burnSUSD',
 					'payFee',
+					'payFee',
 				],
 			});
+		});
+
+		it('contract has CONTRACT_NAME getter', async () => {
+			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('FuturesMarketManager'));
 		});
 	});
 
