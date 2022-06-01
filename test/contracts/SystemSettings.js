@@ -377,6 +377,29 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	describe('setCollapseFeeRate', async () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setCollapseFeeRate(short.address, toUnit(1), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setCollapseFeeRate(short.address, toUnit(0.15), { from: owner });
+			});
+			it('should update the collapse service fee', async () => {
+				assert.bnEqual(await systemSettings.collapseFeeRate(short.address), toUnit(0.15));
+			});
+			it('should allow the collapse fee rate to be 0', async () => {
+				await systemSettings.setCollapseFeeRate(short.address, toUnit(0), { from: owner });
+				assert.bnEqual(await systemSettings.collapseFeeRate(short.address), toUnit(0));
+			});
+		});
+	});
+
 	describe('setInteractionDelay', async () => {
 		describe('revert condtions', async () => {
 			it('should fail if not called by the owner', async () => {
