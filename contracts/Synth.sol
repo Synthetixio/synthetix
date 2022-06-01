@@ -266,8 +266,9 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     /// Allows calling from internal contracts directly or through proxy
-    /// by checking that either caller is internal contract, or caller is proxy and its cllaer is internal contract.
-    /// This is needed to prevent double-entry for external callers, but allow for internal ones.
+    /// by checking that either caller is internal contract, or caller is proxy and its caller is internal contract.
+    /// This is needed to to allow for internal contracts to make these restricted calls through implementation
+    /// or proxies
     function _isInternalContractOrViaProxy(address account) internal view returns (bool) {
         return _isInternalContract(account) || (account == address(proxy) && _isInternalContract(messageSender));
     }
@@ -302,7 +303,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         // Note on address collision potential: an edge case combination of governance (pdao)
         // mistake of setting an address to an incorrect address (e.g. from another chain) + address collision
         // with a previous deployer is possible but unlikely due to these being legacy contracts with
-        // less name collision potential (then e.g. in SIP-235)
+        // less name collision potential (than e.g. in SIP-235)
         return
             account != address(0) &&
             (account == resolver.getAddress("SynthRedeemer") ||

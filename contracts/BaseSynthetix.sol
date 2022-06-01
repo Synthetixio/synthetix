@@ -500,7 +500,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // Note on address collision potential: an edge case combination of governance (pdao)
         // mistake of setting an address to an incorrect address (e.g. from another chain) + address collision
         // with a previous deployer is possible but unlikely due to these being legacy contracts with
-        // less name collision potential (then e.g. in SIP-235)
+        // less name collision potential (than e.g. in SIP-235)
         return
             account != address(0) &&
             (account == resolver.getAddress("RewardEscrowV2") ||

@@ -641,6 +641,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Synthetix", "Synths.*"]
+		},
+		{
 			"sip": 239,
 			"layer": "both",
 			"sources": ["Synthetix"],

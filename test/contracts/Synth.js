@@ -172,6 +172,7 @@ contract('Synth', async accounts => {
 		// SIP-238
 		describe('implementation does not allow transfers but allows approve', () => {
 			const amount = toUnit('10000');
+			const revertMsg = 'Only the proxy';
 			beforeEach(async () => {
 				// ensure owner has funds
 				await synthetix.issueSynths(amount, { from: owner });
@@ -183,24 +184,24 @@ contract('Synth', async accounts => {
 				await sUSDImpl.approve(account1, amount, { from: owner });
 			});
 			it('transfer reverts', async () => {
-				await assert.revert(sUSDImpl.transfer(account1, amount, { from: owner }), 'Only the proxy');
+				await assert.revert(sUSDImpl.transfer(account1, amount, { from: owner }), revertMsg);
 			});
 			it('transferFrom reverts', async () => {
 				await assert.revert(
 					sUSDImpl.transferFrom(owner, account1, amount, { from: account1 }),
-					'Only the proxy'
+					revertMsg
 				);
 			});
 			it('transferAndSettle reverts', async () => {
 				await assert.revert(
 					sUSDImpl.transferAndSettle(account1, amount, { from: account1 }),
-					'Only the proxy'
+					revertMsg
 				);
 			});
 			it('transferFromAndSettle reverts', async () => {
 				await assert.revert(
 					sUSDImpl.transferFromAndSettle(owner, account1, amount, { from: account1 }),
-					'Only the proxy'
+					revertMsg
 				);
 			});
 
