@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinPerpsV2MarketSettings.sol";
+import "./PerpsV2SettingsMixin.sol";
 
 // Internal references
 import "./interfaces/IPerpsV2Settings.sol";
@@ -11,21 +11,23 @@ import "./interfaces/IPerpsV2Market.sol";
 // market manager is still the V1 one
 import "./interfaces/IFuturesMarketManager.sol";
 
-contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings {
+contract PerpsV2Settings is Owned, PerpsV2SettingsMixin, IPerpsV2Settings {
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
+    bytes32 public constant CONTRACT_NAME = "PerpsV2Settings";
+
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) PerpsV2SettingsMixin(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
@@ -40,29 +42,15 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
     /*
      * The fee charged when opening a position on the heavy side of a market.
      */
-    function takerFee(bytes32 _marketKey) external view returns (uint) {
-        return _takerFee(_marketKey);
-    }
-
-    /*
-     * The fee charged when opening a position on the light side of a market.
-     */
-    function makerFee(bytes32 _marketKey) public view returns (uint) {
-        return _makerFee(_marketKey);
+    function baseFee(bytes32 _marketKey) external view returns (uint) {
+        return _baseFee(_marketKey);
     }
 
     /*
      * The fee charged when opening a position on the heavy side of a market using next price mechanism.
      */
-    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint) {
-        return _takerFeeNextPrice(_marketKey);
-    }
-
-    /*
-     * The fee charged when opening a position on the light side of a market using next price mechanism.
-     */
-    function makerFeeNextPrice(bytes32 _marketKey) public view returns (uint) {
-        return _makerFeeNextPrice(_marketKey);
+    function baseFeeNextPrice(bytes32 _marketKey) external view returns (uint) {
+        return _baseFeeNextPrice(_marketKey);
     }
 
     /*
@@ -82,8 +70,8 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
     /*
      * The maximum allowable notional value on each side of a market.
      */
-    function maxMarketValueUSD(bytes32 _marketKey) public view returns (uint) {
-        return _maxMarketValueUSD(_marketKey);
+    function maxSingleSideValueUSD(bytes32 _marketKey) public view returns (uint) {
+        return _maxSingleSideValueUSD(_marketKey);
     }
 
     /*
@@ -104,24 +92,20 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         external
         view
         returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
+            uint baseFee,
+            uint baseFeeNextPrice,
             uint nextPriceConfirmWindow,
             uint maxLeverage,
-            uint maxMarketValueUSD,
+            uint maxSingleSideValueUSD,
             uint maxFundingRate,
             uint skewScaleUSD
         )
     {
-        takerFee = _takerFee(_marketKey);
-        makerFee = _makerFee(_marketKey);
-        takerFeeNextPrice = _takerFeeNextPrice(_marketKey);
-        makerFeeNextPrice = _makerFeeNextPrice(_marketKey);
+        baseFee = _baseFee(_marketKey);
+        baseFeeNextPrice = _baseFeeNextPrice(_marketKey);
         nextPriceConfirmWindow = _nextPriceConfirmWindow(_marketKey);
         maxLeverage = _maxLeverage(_marketKey);
-        maxMarketValueUSD = _maxMarketValueUSD(_marketKey);
+        maxSingleSideValueUSD = _maxSingleSideValueUSD(_marketKey);
         maxFundingRate = _maxFundingRate(_marketKey);
         skewScaleUSD = _skewScaleUSD(_marketKey);
     }
@@ -170,24 +154,14 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         emit ParameterUpdated(_marketKey, key, value);
     }
 
-    function setTakerFee(bytes32 _marketKey, uint _takerFee) public onlyOwner {
-        require(_takerFee <= 1e18, "taker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_TAKER_FEE, _takerFee);
+    function setBaseFee(bytes32 _marketKey, uint _baseFee) public onlyOwner {
+        require(_baseFee <= 1e18, "taker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_BASE_FEE, _baseFee);
     }
 
-    function setMakerFee(bytes32 _marketKey, uint _makerFee) public onlyOwner {
-        require(_makerFee <= 1e18, "maker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_MAKER_FEE, _makerFee);
-    }
-
-    function setTakerFeeNextPrice(bytes32 _marketKey, uint _takerFeeNextPrice) public onlyOwner {
-        require(_takerFeeNextPrice <= 1e18, "taker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
-    }
-
-    function setMakerFeeNextPrice(bytes32 _marketKey, uint _makerFeeNextPrice) public onlyOwner {
-        require(_makerFeeNextPrice <= 1e18, "maker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
+    function setBaseFeeNextPrice(bytes32 _marketKey, uint _baseFeeNextPrice) public onlyOwner {
+        require(_baseFeeNextPrice <= 1e18, "taker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_BASE_FEE_NEXT_PRICE, _baseFeeNextPrice);
     }
 
     function setNextPriceConfirmWindow(bytes32 _marketKey, uint _nextPriceConfirmWindow) public onlyOwner {
@@ -198,8 +172,8 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
         _setParameter(_marketKey, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValueUSD(bytes32 _marketKey, uint _maxMarketValueUSD) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
+    function setMaxSingleSideValueUSD(bytes32 _marketKey, uint _maxSingleSideValueUSD) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_SINGLE_SIDE_VALUE, _maxSingleSideValueUSD);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
@@ -226,24 +200,20 @@ contract PerpsV2Settings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Settings 
 
     function setParameters(
         bytes32 _marketKey,
-        uint _takerFee,
-        uint _makerFee,
-        uint _takerFeeNextPrice,
-        uint _makerFeeNextPrice,
+        uint _baseFee,
+        uint _baseFeeNextPrice,
         uint _nextPriceConfirmWindow,
         uint _maxLeverage,
-        uint _maxMarketValueUSD,
+        uint _maxSingleSideValueUSD,
         uint _maxFundingRate,
         uint _skewScaleUSD
     ) external onlyOwner {
         _recomputeFunding(_marketKey);
-        setTakerFee(_marketKey, _takerFee);
-        setMakerFee(_marketKey, _makerFee);
-        setTakerFeeNextPrice(_marketKey, _takerFeeNextPrice);
-        setMakerFeeNextPrice(_marketKey, _makerFeeNextPrice);
+        setBaseFee(_marketKey, _baseFee);
+        setBaseFeeNextPrice(_marketKey, _baseFeeNextPrice);
         setNextPriceConfirmWindow(_marketKey, _nextPriceConfirmWindow);
         setMaxLeverage(_marketKey, _maxLeverage);
-        setMaxMarketValueUSD(_marketKey, _maxMarketValueUSD);
+        setMaxSingleSideValueUSD(_marketKey, _maxSingleSideValueUSD);
         setMaxFundingRate(_marketKey, _maxFundingRate);
         setSkewScaleUSD(_marketKey, _skewScaleUSD);
     }

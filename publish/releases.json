@@ -644,6 +644,18 @@
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
+		},
+		{
+			"sip": 239,
+			"layer": "both",
+			"sources": ["Synthetix"],
+			"released": "both"
+		},
+		{
+			"sip": 243,
+			"layer": "ovm",
+			"sources": ["Issuer"],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1171,7 +1183,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Rasalhague (Optimism)",
@@ -1180,15 +1193,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
-		},
-		{
-			"name": "Kochab",
-			"version": {
-				"major": 2,
-				"minor": 71
-			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Kochab (Optimism)",
@@ -1197,7 +1203,8 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": []
+			"sips": [243],
+			"released": true
 		},
 		{
 			"name": "Saiph",
