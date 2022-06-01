@@ -647,10 +647,9 @@
 			"released": "both"
 		},
 		{
-			"sip": 243,
+			"sip": 246,
 			"layer": "ovm",
-			"sources": ["Issuer"],
-			"released": "ovm"
+			"sources": ["CollateralShort, Issuer"]
 		}
 	],
 	"releases": [
@@ -1198,8 +1197,7 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": [243],
-			"released": true
+			"sips": [246]
 		},
 		{
 			"name": "Saiph",
