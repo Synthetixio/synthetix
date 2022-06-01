@@ -2927,6 +2927,85 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 				});
 			});
+
+			describe('upgradeCollateralShort', () => {
+				const collateralShortMock = account1;
+				const wrongCollateralShort = account2;
+
+				beforeEach(async () => {
+					// Import CollateralShortLegacy address (mocked)
+					await addressResolver.importAddresses(
+						[toBytes32('CollateralShortLegacy')],
+						[collateralShortMock],
+						{
+							from: owner,
+						}
+					);
+
+					await exchanger.rebuildCache();
+				});
+
+				describe('basic protection', () => {
+					it('should not allow address(0) for the CollateralShortLegacy', async () => {
+						await assert.revert(
+							issuer.upgradeCollateralShort(ZERO_ADDRESS, toUnit(0.1), { from: owner }),
+							'Issuer: invalid address'
+						);
+					});
+
+					it('should not allow an invalid address for the CollateralShortLegacy', async () => {
+						await assert.revert(
+							issuer.upgradeCollateralShort(wrongCollateralShort, toUnit(0.1), { from: owner }),
+							'Issuer: wrong short address'
+						);
+					});
+
+					it('should not allow 0 as amount', async () => {
+						await assert.revert(
+							issuer.upgradeCollateralShort(collateralShortMock, toUnit(0), {
+								from: owner,
+							}),
+							'Issuer: cannot burn 0 synths'
+						);
+					});
+				});
+
+				describe('migrates balance', () => {
+					let beforeCurrentDebt, beforeSUSDBalance;
+					const amountToBurn = toUnit(10);
+
+					beforeEach(async () => {
+						// Give some SNX to collateralShortMock
+						await synthetix.transfer(collateralShortMock, toUnit('1000'), { from: owner });
+
+						// issue max sUSD
+						const maxSynths = await synthetix.maxIssuableSynths(collateralShortMock);
+						await synthetix.issueSynths(maxSynths, { from: collateralShortMock });
+
+						// get before* values
+						beforeSUSDBalance = await sUSDContract.balanceOf(collateralShortMock);
+						const currentDebt = await debtCache.currentDebt();
+						beforeCurrentDebt = currentDebt['0'];
+
+						// call upgradeCollateralShort
+						await issuer.upgradeCollateralShort(collateralShortMock, amountToBurn, {
+							from: owner,
+						});
+					});
+
+					it('burns synths', async () => {
+						assert.bnEqual(
+							await sUSDContract.balanceOf(collateralShortMock),
+							beforeSUSDBalance.sub(amountToBurn)
+						);
+					});
+
+					it('reduces currentDebt', async () => {
+						const currentDebt = await debtCache.currentDebt();
+						assert.bnEqual(currentDebt['0'], beforeCurrentDebt.sub(amountToBurn));
+					});
+				});
+			});
 		});
 	});
 });
