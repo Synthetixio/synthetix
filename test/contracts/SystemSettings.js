@@ -63,6 +63,7 @@ contract('SystemSettings', async accounts => {
 				'setAtomicTwapWindow',
 				'setAtomicVolatilityConsiderationWindow',
 				'setAtomicVolatilityUpdateThreshold',
+				'setCollapseFeeRate',
 				'setCrossChainSynthTransferEnabled',
 				'setCrossDomainMessageGasLimit',
 				'setDebtSnapshotStaleTime',

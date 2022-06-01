@@ -47,6 +47,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_WRAPPER_MINT_FEE_RATE = "wrapperMintFeeRate";
     bytes32 internal constant SETTING_WRAPPER_BURN_FEE_RATE = "wrapperBurnFeeRate";
     bytes32 internal constant SETTING_INTERACTION_DELAY = "interactionDelay";
+    bytes32 internal constant SETTING_COLLAPSE_FEE_RATE = "collapseFeeRate";
     bytes32 internal constant SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK = "atomicMaxVolumePerBlock";
     bytes32 internal constant SETTING_ATOMIC_TWAP_WINDOW = "atomicTwapWindow";
     bytes32 internal constant SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING = "atomicEquivalentForDexPricing";
@@ -235,6 +236,14 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, collateral))
+            );
+    }
+
+    function getCollapseFeeRate(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, collateral))
             );
     }
 

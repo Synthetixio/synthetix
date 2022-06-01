@@ -205,6 +205,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getInteractionDelay(collateral);
     }
 
+    function collapseFeeRate(address collateral) external view returns (uint) {
+        return getCollapseFeeRate(collateral);
+    }
+
     // SIP-120 Atomic exchanges
     // max allowed volume per block for atomic exchanges
     function atomicMaxVolumePerBlock() external view returns (uint) {
@@ -451,6 +455,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
         flexibleStorage().setInteractionDelay(SETTING_INTERACTION_DELAY, _collateral, _interactionDelay);
         emit InteractionDelayUpdated(_interactionDelay);
+    }
+
+    function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
+        flexibleStorage().setCollapseFeeRate(SETTING_COLLAPSE_FEE_RATE, _collateral, _collapseFeeRate);
+        emit CollapseFeeRateUpdated(_collapseFeeRate);
     }
 
     function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
