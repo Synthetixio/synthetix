@@ -551,6 +551,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event WrapperMintFeeRateUpdated(address wrapper, int rate);
     event WrapperBurnFeeRateUpdated(address wrapper, int rate);
     event InteractionDelayUpdated(uint interactionDelay);
+    event CollapseFeeRateUpdated(uint collapseFeeRate);
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
     event AtomicTwapWindowUpdated(uint newWindow);
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
