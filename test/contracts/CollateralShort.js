@@ -514,7 +514,7 @@ contract('CollateralShort', async accounts => {
 				);
 			});
 
-			it('should repay with collateral and update the loan considering interest accreud', async () => {
+			it('should repay with collateral and update the loan considering interest accrued', async () => {
 				const accruedInterest = await accrueInterest();
 
 				ethAmountToRepay = toUnit(0.5);
@@ -536,7 +536,7 @@ contract('CollateralShort', async accounts => {
 					account: account1,
 					repayer: account1,
 					id: id,
-					amountRepaid: amountRepaid,
+					amountRepaid: ethAmountToRepay,
 					amountAfter: loan.amount,
 				});
 
@@ -725,7 +725,7 @@ contract('CollateralShort', async accounts => {
 				);
 			});
 
-			it('should repay with collateral and close the loan considering interest accreud', async () => {
+			it('should repay with collateral and close the loan considering interest accrued', async () => {
 				const accruedInterest = await accrueInterest();
 
 				const sUSDAccruedInterest = await exchangeRates.effectiveValue(
