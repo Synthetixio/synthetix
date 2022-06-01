@@ -256,7 +256,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         );
     }
 
-    function transfer(address to, uint value) external onlyProxyOrLegacy systemActive returns (bool) {
+    function transfer(address to, uint value) external onlyProxyOrInternal systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
 
@@ -270,7 +270,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address from,
         address to,
         uint value
-    ) external onlyProxyOrLegacy systemActive returns (bool) {
+    ) external onlyProxyOrInternal systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(from, value);
 
@@ -475,16 +475,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
     }
 
-    modifier onlyProxyOrLegacy {
-        _onlyProxyOrLegacy();
+    modifier onlyProxyOrInternal {
+        _onlyProxyOrInternal();
         _;
     }
 
-    function _onlyProxyOrLegacy() internal {
+    function _onlyProxyOrInternal() internal {
         if (msg.sender == address(proxy)) {
             // allow proxy through, messageSender should be already set correctly
             return;
-        } else if (_isLegacyInternal(msg.sender)) {
+        } else if (_isInternalTransferCaller(msg.sender)) {
             // optionalProxy behaviour only for the internal legacy contracts
             messageSender = msg.sender;
         } else {
@@ -494,20 +494,15 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// some legacy internal contracts use transfer methods directly on implementation
     /// which isn't supported due to SIP-238 for other callers
-    function _isLegacyInternal(address account) internal view returns (bool) {
+    function _isInternalTransferCaller(address caller) internal view returns (bool) {
         // These entries are not required or cached in order to allow them to not exist (==address(0))
         // e.g. due to not being available on L2 or at some future point in time.
-        // Note on address collision potential: an edge case combination of governance (pdao)
-        // mistake of setting an address to an incorrect address (e.g. from another chain) + address collision
-        // with a previous deployer is possible but unlikely due to these being legacy contracts with
-        // less name collision potential (than e.g. in SIP-235)
         return
-            account != address(0) &&
-            (account == resolver.getAddress("RewardEscrowV2") ||
-                account == resolver.getAddress("RewardEscrow") ||
-                account == resolver.getAddress("SynthetixEscrow") ||
-                account == resolver.getAddress("SynthetixBridgeToOptimism") ||
-                account == resolver.getAddress("Depot"));
+            caller == resolver.getAddress("RewardEscrowV2") ||
+            caller == resolver.getAddress("RewardEscrow") ||
+            caller == resolver.getAddress("SynthetixEscrow") ||
+            caller == resolver.getAddress("SynthetixBridgeToOptimism") ||
+            caller == resolver.getAddress("Depot");
     }
 
     // ========== EVENTS ==========
