@@ -182,7 +182,7 @@ contract('MultiCollateralSynth', accounts => {
 		});
 
 		// SIP-238
-		describe('implementation does not allow mutative calls except approve', () => {
+		describe('implementation does not allow transfer calls (but allows approve)', () => {
 			const revertMsg = 'Only the proxy';
 			const amount = toUnit('100');
 			beforeEach(async () => {
@@ -294,24 +294,11 @@ contract('MultiCollateralSynth', accounts => {
 					await this.synth.rebuildCache();
 				});
 
-				it('then it can issue new synths as account1 via implementation directly', async () => {
+				it('then it can issue new synths as account1', async () => {
 					const totalSupplyBefore = await this.synth.totalSupply();
 					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
 
 					await this.synth.issue(accountToIssue, issueAmount, { from: accountToIssue });
-
-					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
-					assert.bnEqual(
-						await this.synth.balanceOf(accountToIssue),
-						balanceOfBefore.add(issueAmount)
-					);
-				});
-
-				it('then it can issue new synths as account1 via proxy', async () => {
-					const totalSupplyBefore = await this.synth.totalSupply();
-					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
-
-					await this.synthViaProxy.issue(accountToIssue, issueAmount, { from: accountToIssue });
 
 					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
 					assert.bnEqual(

@@ -65,7 +65,7 @@ function itBehavesLikeAnERC20({ ctx, contract }) {
 			});
 		});
 
-		// IP-238
+		// SIP-238
 		describe('transfers calling implementation revert', async () => {
 			before('transfer', async () => {
 				TokenViaProxy = TokenViaProxy.connect(owner);
