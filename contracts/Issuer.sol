@@ -734,7 +734,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (totalRedeemed > transferableBalance) {
             // Liquidate the account's debt based on the liquidation penalty.
             amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(totalRedeemed);
-        
+
             // Set totalRedeemed to all transferable collateral.
             // i.e. the value of the account's staking position relative to balanceOf will be unwound.
             totalRedeemed = transferableBalance;
