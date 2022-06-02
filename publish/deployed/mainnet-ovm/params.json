@@ -30,8 +30,27 @@
 	{
 		"name": "COLLATERAL_MANAGER",
 		"value": {
-			"SYNTHS": ["sUSD", "sBTC", "sETH", "sLINK", "sSOL", "sAVAX", "sMATIC"],
-			"SHORTS": ["sBTC", "sETH", "sLINK", "sSOL", "sAVAX", "sMATIC"],
+			"SYNTHS": [
+				"sUSD",
+				"sBTC",
+				"sETH",
+				"sLINK",
+				"sSOL",
+				"sAVAX",
+				"sMATIC",
+				"sUNI",
+				"sAAVE"
+			],
+			"SHORTS": [
+				"sBTC",
+				"sETH",
+				"sLINK",
+				"sSOL",
+				"sAVAX",
+				"sMATIC",
+				"sUNI",
+				"sAAVE"
+			],
 			"MAX_DEBT": "75000000000000000000000000",
 			"MAX_SKEW_RATE": "200000000000000000",
 			"BASE_BORROW_RATE": "950662938",
