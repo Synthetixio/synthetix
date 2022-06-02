@@ -464,8 +464,8 @@
 			"address": "0xeb4b5ABcE7310855319440d936cd3aDd77DFA193",
 			"source": "CollateralShort",
 			"link": "https://explorer.optimism.io/address/0xeb4b5ABcE7310855319440d936cd3aDd77DFA193",
-			"timestamp": "2022-06-02T21:14:53.620Z",
-			"txn": "",
+			"timestamp": "2022-06-02T21:14:38.000Z",
+			"txn": "https://explorer.optimism.io/tx/0xaa088cb79b36320f883bd9e802737a099b33dafcf47f5ba9fbf1d5cec1eb5d40",
 			"network": "mainnet"
 		},
 		"WrapperFactory": {
