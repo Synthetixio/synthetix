@@ -293,9 +293,12 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         // These entries are not required or cached in order to allow them to not exist (==address(0))
         // e.g. due to not being available on L2 or at some future point in time.
         return
-            caller == resolver.getAddress("SynthRedeemer") ||
+            // ordered to reduce gas for more frequent calls
             caller == resolver.getAddress("CollateralShort") ||
-            caller == resolver.getAddress("WrapperFactory") ||
+            // not used frequently
+            caller == resolver.getAddress("SynthRedeemer") ||
+            caller == resolver.getAddress("WrapperFactory") || // transfer not used by users
+            // legacy
             caller == resolver.getAddress("NativeEtherWrapper") ||
             caller == resolver.getAddress("Depot");
     }
