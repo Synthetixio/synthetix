@@ -50,7 +50,16 @@
 	{
 		"name": "COLLATERAL_SHORT",
 		"value": {
-			"SYNTHS": ["sBTC", "sETH", "sLINK", "sSOL", "sAVAX", "sMATIC", "sEUR"],
+			"SYNTHS": [
+				"sBTC",
+				"sETH",
+				"sLINK",
+				"sSOL",
+				"sAVAX",
+				"sMATIC",
+				"sUNI",
+				"sAAVE"
+			],
 			"MIN_CRATIO": "1200000000000000000",
 			"MIN_COLLATERAL": "100000000000000000000",
 			"ISSUE_FEE_RATE": "4000000000000000",

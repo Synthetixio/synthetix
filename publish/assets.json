@@ -452,5 +452,11 @@
 		"category": "forex",
 		"sign": "₹",
 		"description": "Indian Rupee"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"category": "crypto",
+		"sign": "",
+		"description": "Axie Infinity"
 	}
 }

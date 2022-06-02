@@ -145,19 +145,23 @@ module.exports = async ({
 		});
 
 		const CollateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
-		for (const synth of CollateralShortSynths) {
-			await runStep({
-				contract: 'CollateralShort',
-				gasLimit: 1e6,
-				target: CollateralShort,
-				read: 'synthsByKey',
-				readArg: toBytes32(synth),
-				expected: input => input,
-				write: 'addSynths',
-				writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
-				comment: `Ensure the CollateralShort contract has associated ${synth} added`,
-			});
-		}
+		await runStep({
+			contract: 'CollateralShort',
+			gasLimit: 1e6,
+			target: CollateralShort,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				CollateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				CollateralShortSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				CollateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				CollateralShortSynths.map(toBytes32),
+			],
+			comment: 'Ensure the CollateralShort contract has all associated synths added',
+		});
 
 		const issueFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'];
 		await runStep({

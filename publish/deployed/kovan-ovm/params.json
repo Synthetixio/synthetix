@@ -60,7 +60,8 @@
 				"sAAVE",
 				"sSOL",
 				"sAVAX",
-				"sMATIC"
+				"sMATIC",
+				"sEUR"
 			],
 			"MIN_CRATIO": "1200000000000000000",
 			"MIN_COLLATERAL": "100000000000000000000",

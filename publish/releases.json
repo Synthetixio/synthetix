@@ -649,7 +649,7 @@
 		{
 			"sip": 246,
 			"layer": "ovm",
-			"sources": ["CollateralShort, Issuer"]
+			"sources": ["CollateralShort", "Issuer"]
 		}
 	],
 	"releases": [
