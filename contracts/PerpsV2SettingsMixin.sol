@@ -5,8 +5,8 @@ import "./MixinResolver.sol";
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/MixinPerpsV2MarketSettings
-contract MixinPerpsV2MarketSettings is MixinResolver {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2SettingsMixin
+contract PerpsV2SettingsMixin is MixinResolver {
     /* ========== CONSTANTS ========== */
 
     bytes32 internal constant SETTING_CONTRACT_NAME = "PerpsV2Settings";
@@ -14,13 +14,11 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     /* ---------- Parameter Names ---------- */
 
     // Per-market settings
-    bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
-    bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
-    bytes32 internal constant PARAMETER_TAKER_FEE_NEXT_PRICE = "takerFeeNextPrice";
-    bytes32 internal constant PARAMETER_MAKER_FEE_NEXT_PRICE = "makerFeeNextPrice";
+    bytes32 internal constant PARAMETER_BASE_FEE = "baseFee";
+    bytes32 internal constant PARAMETER_BASE_FEE_NEXT_PRICE = "baseFeeNextPrice";
     bytes32 internal constant PARAMETER_NEXT_PRICE_CONFIRM_WINDOW = "nextPriceConfirmWindow";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
+    bytes32 internal constant PARAMETER_MAX_SINGLE_SIDE_VALUE = "maxSingleSideValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
 
@@ -58,20 +56,12 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_marketKey, key)));
     }
 
-    function _takerFee(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_TAKER_FEE);
+    function _baseFee(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_BASE_FEE);
     }
 
-    function _makerFee(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAKER_FEE);
-    }
-
-    function _takerFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE);
-    }
-
-    function _makerFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE);
+    function _baseFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_BASE_FEE_NEXT_PRICE);
     }
 
     function _nextPriceConfirmWindow(bytes32 _marketKey) internal view returns (uint) {
@@ -82,8 +72,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAX_LEVERAGE);
     }
 
-    function _maxMarketValueUSD(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAX_MARKET_VALUE);
+    function _maxSingleSideValueUSD(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_SINGLE_SIDE_VALUE);
     }
 
     function _skewScaleUSD(bytes32 _marketKey) internal view returns (uint) {
