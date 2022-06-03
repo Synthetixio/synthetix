@@ -649,7 +649,8 @@
 		{
 			"sip": 246,
 			"layer": "ovm",
-			"sources": ["CollateralShort", "Issuer"]
+			"sources": ["CollateralShort", "Issuer"],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1197,7 +1198,8 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": [246]
+			"sips": [246],
+			"released": true
 		},
 		{
 			"name": "Saiph",

@@ -464,8 +464,9 @@
 			},
 			"CollateralShort": {
 				"address": "0xEbCe9728E2fDdC26C9f4B00df5180BdC5e184953",
-				"status": "current",
-				"keccak256": "0xf6898428342fd57d2e05289492e64a8f43df82f663522718b5b32afe831795d9"
+				"status": "replaced",
+				"keccak256": "0xf6898428342fd57d2e05289492e64a8f43df82f663522718b5b32afe831795d9",
+				"replaced_in": "v2.71.2"
 			}
 		}
 	},
@@ -1225,8 +1226,29 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139",
+				"status": "replaced",
+				"keccak256": "0x8f416a19c4b25638a136059b80ad498038b6a62326ab7e0cbb981694ed28dcda",
+				"replaced_in": "v2.71.2"
+			}
+		}
+	},
+	"v2.71.2": {
+		"tag": "v2.71.2",
+		"fulltag": "v2.71.2",
+		"release": "Kochab",
+		"network": "mainnet",
+		"date": "2022-06-02T20:35:21-04:00",
+		"commit": "420e7a969038bf16acbcff5182babe590e8fcd9f",
+		"contracts": {
+			"Issuer": {
+				"address": "0x84Ec90f9CD4D00Ad95002d88D35f99cd9F66E393",
 				"status": "current",
-				"keccak256": "0x8f416a19c4b25638a136059b80ad498038b6a62326ab7e0cbb981694ed28dcda"
+				"keccak256": "0x308bed12a57fc1a4dea0c76ce2cb9060af89840d73e5ff1f8bbd7af35e56062b"
+			},
+			"CollateralShort": {
+				"address": "0xeb4b5ABcE7310855319440d936cd3aDd77DFA193",
+				"status": "current",
+				"keccak256": "0x245135b67168b129937d6e9526846712ff4ff9739077f2fabab67315a3cf3a45"
 			}
 		}
 	}
