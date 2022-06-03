@@ -1,9 +1,11 @@
 pragma solidity ^0.5.16;
 
-import "../AddressResolver.sol";
 import "../BaseMigration.sol";
-import "../Issuer.sol";
+import "../AddressResolver.sol";
 import "../SystemStatus.sol";
+import "../interfaces/IIssuer.sol";
+import "../interfaces/ICollateralManager.sol";
+import "../CollateralShort.sol";
 
 interface ISynthetixNamedContract {
     // solhint-disable func-name-mixedcase
@@ -23,23 +25,31 @@ contract Migration_KochabOptimism is BaseMigration {
     AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
     // https://explorer.optimism.io/address/0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD
     SystemStatus public constant systemstatus_i = SystemStatus(0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD);
-    // https://explorer.optimism.io/address/0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139
-    Issuer public constant issuer_i = Issuer(0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139);
+    // https://explorer.optimism.io/address/0x84Ec90f9CD4D00Ad95002d88D35f99cd9F66E393
+    IIssuer public constant issuer_i = IIssuer(0x84Ec90f9CD4D00Ad95002d88D35f99cd9F66E393);
+    // https://explorer.optimism.io/address/0x15E7D4972a3E477878A5867A47617122BE2d1fF0
+    ICollateralManager public constant collateralmanager_i = ICollateralManager(0x15E7D4972a3E477878A5867A47617122BE2d1fF0);
+    // https://explorer.optimism.io/address/0xeb4b5ABcE7310855319440d936cd3aDd77DFA193
+    CollateralShort public constant collateralshort_i = CollateralShort(0xeb4b5ABcE7310855319440d936cd3aDd77DFA193);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://explorer.optimism.io/address/0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139
-    address public constant new_Issuer_contract = 0x0333BD82e1F5FF89c19EC44Ab5302A0041b33139;
+    // https://explorer.optimism.io/address/0x84Ec90f9CD4D00Ad95002d88D35f99cd9F66E393
+    address public constant new_Issuer_contract = 0x84Ec90f9CD4D00Ad95002d88D35f99cd9F66E393;
+    // https://explorer.optimism.io/address/0xeb4b5ABcE7310855319440d936cd3aDd77DFA193
+    address public constant new_CollateralShort_contract = 0xeb4b5ABcE7310855319440d936cd3aDd77DFA193;
 
     constructor() public BaseMigration(OWNER) {}
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
-        contracts = new address[](3);
+        contracts = new address[](5);
         contracts[0] = address(addressresolver_i);
         contracts[1] = address(systemstatus_i);
         contracts[2] = address(issuer_i);
+        contracts[3] = address(collateralmanager_i);
+        contracts[4] = address(collateralshort_i);
     }
 
     function migrate() external onlyOwner {
@@ -57,6 +67,12 @@ contract Migration_KochabOptimism is BaseMigration {
         systemstatus_i.updateAccessControl("Issuance", new_Issuer_contract, true, false);
         // Add synths to the Issuer contract - batch 1;
         issuer_addSynths_6();
+        // Ensure the CollateralManager has all Collateral contracts added;
+        collateralmanager_addCollaterals_8();
+        // Ensure the CollateralShort contract has all associated synths added;
+        collateralshort_addSynths_9();
+        // Ensure the CollateralShort contract has its issue fee rate set;
+        collateralshort_i.setIssueFeeRate(4000000000000000);
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         nominateAll();
@@ -77,10 +93,12 @@ contract Migration_KochabOptimism is BaseMigration {
     }
 
     function addressresolver_importAddresses_0() internal {
-        bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](1);
+        bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](2);
         addressresolver_importAddresses_names_0_0[0] = bytes32("Issuer");
-        address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](1);
+        addressresolver_importAddresses_names_0_0[1] = bytes32("CollateralShort");
+        address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](2);
         addressresolver_importAddresses_destinations_0_1[0] = address(new_Issuer_contract);
+        addressresolver_importAddresses_destinations_0_1[1] = address(new_CollateralShort_contract);
         addressresolver_i.importAddresses(
             addressresolver_importAddresses_names_0_0,
             addressresolver_importAddresses_destinations_0_1
@@ -113,11 +131,12 @@ contract Migration_KochabOptimism is BaseMigration {
     }
 
     function addressresolver_rebuildCaches_2() internal {
-        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](4);
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](5);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xC19d27d1dA572d582723C1745650E51AC4Fc877F);
         addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0xc66499aCe3B6c6a30c784bE5511E8d338d543913);
         addressresolver_rebuildCaches_destinations_2_0[2] = MixinResolver(0x15E7D4972a3E477878A5867A47617122BE2d1fF0);
         addressresolver_rebuildCaches_destinations_2_0[3] = MixinResolver(new_Issuer_contract);
+        addressresolver_rebuildCaches_destinations_2_0[4] = MixinResolver(new_CollateralShort_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
@@ -135,5 +154,36 @@ contract Migration_KochabOptimism is BaseMigration {
         issuer_addSynths_synthsToAdd_6_0[9] = ISynth(0xC19d27d1dA572d582723C1745650E51AC4Fc877F);
         issuer_addSynths_synthsToAdd_6_0[10] = ISynth(0xc66499aCe3B6c6a30c784bE5511E8d338d543913);
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_6_0);
+    }
+
+    function collateralmanager_addCollaterals_8() internal {
+        address[] memory collateralmanager_addCollaterals_collaterals_8_0 = new address[](1);
+        collateralmanager_addCollaterals_collaterals_8_0[0] = address(new_CollateralShort_contract);
+        collateralmanager_i.addCollaterals(collateralmanager_addCollaterals_collaterals_8_0);
+    }
+
+    function collateralshort_addSynths_9() internal {
+        bytes32[] memory collateralshort_addSynths__synthNamesInResolver_9_0 = new bytes32[](8);
+        collateralshort_addSynths__synthNamesInResolver_9_0[0] = bytes32("SynthsBTC");
+        collateralshort_addSynths__synthNamesInResolver_9_0[1] = bytes32("SynthsETH");
+        collateralshort_addSynths__synthNamesInResolver_9_0[2] = bytes32("SynthsLINK");
+        collateralshort_addSynths__synthNamesInResolver_9_0[3] = bytes32("SynthsSOL");
+        collateralshort_addSynths__synthNamesInResolver_9_0[4] = bytes32("SynthsAVAX");
+        collateralshort_addSynths__synthNamesInResolver_9_0[5] = bytes32("SynthsMATIC");
+        collateralshort_addSynths__synthNamesInResolver_9_0[6] = bytes32("SynthsUNI");
+        collateralshort_addSynths__synthNamesInResolver_9_0[7] = bytes32("SynthsAAVE");
+        bytes32[] memory collateralshort_addSynths__synthKeys_9_1 = new bytes32[](8);
+        collateralshort_addSynths__synthKeys_9_1[0] = bytes32("sBTC");
+        collateralshort_addSynths__synthKeys_9_1[1] = bytes32("sETH");
+        collateralshort_addSynths__synthKeys_9_1[2] = bytes32("sLINK");
+        collateralshort_addSynths__synthKeys_9_1[3] = bytes32("sSOL");
+        collateralshort_addSynths__synthKeys_9_1[4] = bytes32("sAVAX");
+        collateralshort_addSynths__synthKeys_9_1[5] = bytes32("sMATIC");
+        collateralshort_addSynths__synthKeys_9_1[6] = bytes32("sUNI");
+        collateralshort_addSynths__synthKeys_9_1[7] = bytes32("sAAVE");
+        collateralshort_i.addSynths(
+            collateralshort_addSynths__synthNamesInResolver_9_0,
+            collateralshort_addSynths__synthKeys_9_1
+        );
     }
 }
