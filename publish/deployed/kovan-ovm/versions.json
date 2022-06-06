@@ -850,8 +850,9 @@
 			},
 			"CollateralShort": {
 				"address": "0xD170549da4115c39EC42D6101eAAE5604F26150d",
-				"status": "current",
-				"keccak256": "0xf6898428342fd57d2e05289492e64a8f43df82f663522718b5b32afe831795d9"
+				"status": "replaced",
+				"keccak256": "0xf6898428342fd57d2e05289492e64a8f43df82f663522718b5b32afe831795d9",
+				"replaced_in": "v2.71.1-alpha"
 			}
 		}
 	},
@@ -1785,8 +1786,9 @@
 			},
 			"Issuer": {
 				"address": "0x638CCdbB9A014a73FA9b112962A754673582C7e7",
-				"status": "current",
-				"keccak256": "0xff90190a275735ad9b23dffff9ab22477a1aa3f36a0cee1931965dfb26e52495"
+				"status": "replaced",
+				"keccak256": "0xff90190a275735ad9b23dffff9ab22477a1aa3f36a0cee1931965dfb26e52495",
+				"replaced_in": "v2.71.1-alpha"
 			},
 			"SystemSettingsLib": {
 				"address": "0x6BB4D7603eAE01c5537D46084C675ae19740f41c",
@@ -1817,6 +1819,26 @@
 				"address": "0x28CAb2c065bC0aAE84f6763e621B0b814C77922B",
 				"status": "current",
 				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362"
+			}
+		}
+	},
+	"v2.71.1-alpha": {
+		"tag": "v2.71.1-alpha",
+		"fulltag": "v2.71.1-alpha",
+		"release": "Kochab",
+		"network": "kovan",
+		"date": "2022-06-02T16:35:51-04:00",
+		"commit": "477adae91cc6aea05eb647738acf1ec3f4310519",
+		"contracts": {
+			"Issuer": {
+				"address": "0x0E758fb217AFd27D282594f5bca1828985906f03",
+				"status": "current",
+				"keccak256": "0x2a016421379721a03fc0cc08d1f6b4f0b90ea713a007b516a9b78bd335fb555c"
+			},
+			"CollateralShort": {
+				"address": "0x65d3c950A30524D9f882cFf826040F3941D1ADAA",
+				"status": "current",
+				"keccak256": "0xe60ff4b2b1f5b39a328b8a9f8e34d54fc4a3d9c33729ef41323f14ffae099f2b"
 			}
 		}
 	}

@@ -67,6 +67,8 @@ interface IIssuer {
         returns (uint transferable, bool anyRateIsInvalid);
 
     // Restricted: used internally to Synthetix
+    function addSynths(ISynth[] calldata synthsToAdd) external;
+
     function issueSynths(address from, uint amount) external;
 
     function issueSynthsOnBehalf(

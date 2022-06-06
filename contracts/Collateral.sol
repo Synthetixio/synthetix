@@ -31,7 +31,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ========== CONSTANTS ========== */
 
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 internal constant sUSD = "sUSD";
 
     // ========== STATE VARIABLES ==========
 
@@ -374,25 +374,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _recordLoanAsClosed(loan);
     }
 
-    function _closeLoanByRepayment(address borrower, uint id) internal returns (uint amount, uint collateral) {
-        // 0. Get the loan.
-        Loan storage loan = loans[id];
-
-        // 1. Repay the loan with its collateral.
-        (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
-
-        // 2. Pay the service fee for collapsing the loan.
-        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
-        _payFees(serviceFee, sUSD);
-        collateral = collateral.sub(serviceFee);
-
-        // 3. Record loan as closed.
-        _recordLoanAsClosed(loan);
-
-        // 4. Emit the event for the loan closed by repayment.
-        emit LoanClosedByRepayment(borrower, id, amount, collateral);
-    }
-
     function _deposit(
         address account,
         uint id,
@@ -518,43 +499,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 8. Return the loan amount and collateral after repaying.
         return (loan.amount, loan.collateral);
-    }
-
-    function _repayWithCollateral(
-        address borrower,
-        uint id,
-        uint payment
-    ) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
-        // 0. Get the loan to repay and accrue interest.
-        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
-
-        // 1. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 2. Repay the accrued interest.
-        payment = payment.add(loan.accruedInterest);
-
-        // 3. Make sure they are not overpaying.
-        require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
-
-        // 4. Get the expected amount for the exchange from borrowed synth -> sUSD.
-        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
-
-        // 5. Reduce the collateral by the amount repaid (minus the exchange fees).
-        loan.collateral = loan.collateral.sub(expectedAmount);
-
-        // 6. Process the payment and pay the exchange fees if needed.
-        _processPayment(loan, payment);
-        _payFees(fee, sUSD);
-
-        // 7. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
-
-        // 8. Emit the event for the collateral repayment.
-        emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
-
-        // 9. Return the amount repaid and the remaining collateral.
-        return (payment, loan.collateral);
     }
 
     function _draw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
