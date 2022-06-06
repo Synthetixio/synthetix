@@ -1,8 +1,9 @@
 name = "chainlink"
-version = "0.8-mock"
+version = "0.9-mock"
 description = "Deploys a testing aggregator with a given rate dated into the future"
 
 [setting.rate]
+defaultValue = "1000000000000000000"
 
 [setting.timestamp]
 # by default, its dated into the future
@@ -16,8 +17,7 @@ artifact = "MockAggregatorV2V3"
 salt = "<%= settings.salt %>"
 
 [invoke.set_answer]
-addresses = ["<%= outputs.self.contracts.aggregator.address %>"]
-abi = ["<%= outputs.self.contracts.aggregator.abi %>"]
+on = ["aggregator"]
 
 func = "setLatestAnswer"
 args = ["<%= settings.rate %>", "<%= settings.timestamp %>"]
