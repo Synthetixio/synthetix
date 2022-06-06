@@ -97,7 +97,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					before('add the shortable synths if needed', async () => {
 						const synthToTest = await CollateralShort.synthsByKey(shortableSynth);
 
-						if (synthToTest === ZERO_BYTES32) {
+						if (synthToTest !== ZERO_BYTES32) {
 							await CollateralShort.connect(owner).addSynths(
 								[toBytes32(`SynthsETH`)],
 								[shortableSynth]
