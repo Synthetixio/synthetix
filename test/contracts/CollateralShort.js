@@ -4,7 +4,7 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { fastForward, toUnit, fromUnit } = require('../utils')();
+const { fastForward, toUnit, fromUnit, toBN } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
@@ -59,8 +59,6 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		const sBTC = toBytes32('sBTC');
-
 		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
@@ -318,23 +316,66 @@ contract('CollateralShort', async accounts => {
 		});
 
 		describe('Repaying shorts', async () => {
-			const oneETH = toUnit(1);
 			const susdCollateral = toUnit(1000);
-			const tolerance = toUnit(0.3);
+			const ethAmountToShort = toUnit(1);
 
-			let beforeFeePoolBalance, beforeInteractionTime;
+			let ethAmountToRepay;
+
+			let beforeFeePoolBalance, beforeUserBalance, beforeShortBalance, beforeLoanCollateral;
+			let beforeInteractionTime;
+
+			const accrueInterest = async () => {
+				const interestIncreaseInTick = toBN(2112584307); // Value from tests
+
+				// create the conditions to get some accruedInterest
+				await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
+				await issue(sUSDSynth, susdCollateral, account1);
+
+				// open another short to set a long/short skew
+				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+
+				// Adjust before* balances
+				beforeShortBalance = beforeShortBalance.add(susdCollateral);
+				beforeUserBalance = beforeUserBalance.add(toUnit(100));
+
+				// after a year we should have accrued 6.67%.
+				await fastForwardAndUpdateRates(YEAR);
+
+				// deposit some collateral to trigger the interest accrual.
+				tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
+
+				// Adjust before* balances
+				beforeLoanCollateral = susdCollateral.add(toUnit(1));
+				beforeShortBalance = beforeShortBalance.add(toUnit(1));
+				beforeUserBalance = beforeUserBalance.sub(toUnit(1));
+
+				loan = await short.loans(id);
+
+				const accruedInterest = loan.accruedInterest;
+
+				const interest = Math.round(parseFloat(fromUnit(accruedInterest)) * 10000) / 10000;
+
+				// check we have interest accrued
+				assert.equal(interest, 0.0667);
+
+				return accruedInterest.add(interestIncreaseInTick);
+			};
 
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
 
-				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
 
 				id = getid(tx);
 
 				loan = await short.loans(id);
 
 				beforeInteractionTime = loan.lastInteraction;
+
 				beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+				beforeShortBalance = await sUSDSynth.balanceOf(short.address);
+				beforeUserBalance = await sUSDSynth.balanceOf(account1);
+				beforeLoanCollateral = 0;
 
 				await fastForwardAndUpdateRates(3600);
 			});
@@ -342,12 +383,14 @@ contract('CollateralShort', async accounts => {
 			it('should get the short amount and collateral', async () => {
 				const { principal, collateral } = await short.getShortAndCollateral(account1, id);
 
-				assert.bnEqual(principal, oneETH);
+				assert.bnEqual(principal, ethAmountToShort);
 				assert.bnEqual(collateral, susdCollateral);
 			});
 
 			it('should repay with collateral and update the loan', async () => {
-				tx = await short.repayWithCollateral(id, toUnit(0.5), {
+				ethAmountToRepay = toUnit(0.5);
+
+				tx = await short.repayWithCollateral(id, ethAmountToRepay, {
 					from: account1,
 				});
 
@@ -357,26 +400,61 @@ contract('CollateralShort', async accounts => {
 					account: account1,
 					repayer: account1,
 					id: id,
-					amountRepaid: toUnit(0.5),
+					amountRepaid: ethAmountToRepay,
 					amountAfter: loan.amount,
 				});
 
-				const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
-
-				assert.bnClose(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
-					beforeFeePoolBalance.add(fee),
-					tolerance
-				);
-
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
-				assert.bnClose(loan.amount, toUnit(0.5).toString(), tolerance);
-				assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
+				const {
+					amountReceived: susdAmountRepaidMinusFees,
+					fee: exchangeFee,
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, sUSD);
+
+				// The collateral to use is the equivalent amount used while repaying + fees.
+				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
+
+				// The fee pool should have received fees
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(exchangeFee),
+					'The fee pool did not receive enough fees'
+				);
+
+				// The loan amount should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.amount,
+					ethAmountToShort.sub(ethAmountToRepay),
+					'The loan amount was not reduced correctly'
+				);
+
+				// The loan collateral should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.collateral,
+					susdCollateral.sub(collateralToUse),
+					'The loan collateral was not reduced correctly'
+				);
+
+				// The contract sUSD balance should have been reduced by the expected amount
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					beforeShortBalance.sub(collateralToUse),
+					'The short contracts holds excess sUSD'
+				);
+
+				// The user sUSD balance should remain unchanged
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(account1),
+					beforeUserBalance,
+					'The user sUSD balance is unexpected'
+				);
 			});
 
 			it('should repay the entire loan amount', async () => {
-				tx = await short.repayWithCollateral(id, toUnit(1), {
+				// In case the loan accrues interest, this option won't pay it full.
+				ethAmountToRepay = ethAmountToShort;
+
+				tx = await short.repayWithCollateral(id, ethAmountToRepay, {
 					from: account1,
 				});
 
@@ -392,24 +470,121 @@ contract('CollateralShort', async accounts => {
 					amountAfter: loan.amount,
 				});
 
-				assert.equal(loan.amount, toUnit(0).toString());
-				assert.bnClose(loan.collateral, toUnit(900).toString(), tolerance);
+				const {
+					amountReceived: susdAmountRepaidMinusFees,
+					fee: exchangeFee,
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, sUSD);
+
+				// The collateral to use is the equivalent amount used while repaying + fees.
+				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
+
+				// The fee pool should have received fees
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(exchangeFee),
+					'The fee pool did not receive enough fees'
+				);
+
+				// The loan amount should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.amount,
+					ethAmountToShort.sub(ethAmountToRepay),
+					'The loan amount was not reduced correctly'
+				);
+
+				// The loan collateral should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.collateral,
+					susdCollateral.sub(collateralToUse),
+					'The loan collateral was not reduced correctly'
+				);
+
+				// The contract sUSD balance should have been reduced by the expected amount
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					susdCollateral.sub(collateralToUse),
+					'The short contracts holds excess sUSD'
+				);
+
+				// The user sUSD balance should remain unchanged
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(account1),
+					beforeUserBalance,
+					'The user sUSD balance is unexpected'
+				);
 			});
 
-			it('should repay with collateral and close the loan', async () => {
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
+			it('should repay with collateral and update the loan considering interest accrued', async () => {
+				const accruedInterest = await accrueInterest();
 
-				await short.closeWithCollateral(id, { from: account1 });
+				ethAmountToRepay = toUnit(0.5);
+
+				tx = await short.repayWithCollateral(id, ethAmountToRepay, {
+					from: account1,
+				});
 
 				loan = await short.loans(id);
 
+				const sUSDAccruedInterest = await exchangeRates.effectiveValue(
+					loan.currency,
+					accruedInterest,
+					sUSD
+				);
+				const amountRepaid = ethAmountToRepay.sub(accruedInterest);
+
+				assert.eventEqual(tx, 'LoanRepaymentMade', {
+					account: account1,
+					repayer: account1,
+					id: id,
+					amountRepaid: ethAmountToRepay,
+					amountAfter: loan.amount,
+				});
+
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
-				assert.equal(loan.interestIndex, toUnit(0).toString());
-				assert.equal(loan.amount, toUnit(0).toString());
-				assert.equal(loan.collateral, toUnit(0).toString());
+				const {
+					amountReceived: susdAmountRepaidMinusFees,
+					fee: exchangeFee,
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, sUSD); // ethAmountToRepay
 
-				assert.bnClose(await sUSDSynth.balanceOf(account1), toUnit(1000), tolerance);
+				// The collateral to use is the equivalent amount used while repaying + fees.
+				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
+
+				// The fee pool should have received fees (exchange + accrued interest)
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(sUSDAccruedInterest).add(exchangeFee),
+					'The fee pool did not receive enough fees'
+				);
+
+				// The loan amount should have been reduced by the expected amount
+				// amountRepaid might be less than ethAmountToRepay if there's accrued interest
+				assert.deepEqual(
+					loan.amount,
+					ethAmountToShort.sub(amountRepaid),
+					'The loan amount was not reduced correctly'
+				);
+
+				// The loan collateral should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.collateral,
+					beforeLoanCollateral.sub(collateralToUse),
+					'The loan collateral was not reduced correctly'
+				);
+
+				// The contract sUSD balance should have been reduced by the expected amount
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					beforeShortBalance.sub(collateralToUse),
+					'The short contracts holds excess sUSD'
+				);
+
+				// The user sUSD balance should remain unchanged
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(account1),
+					beforeUserBalance,
+					'The user sUSD balance is unexpected'
+				);
 			});
 
 			it('should only let the borrower repay with collateral', async () => {
@@ -423,6 +598,197 @@ contract('CollateralShort', async accounts => {
 				await assert.revert(
 					short.repayWithCollateral(id, toUnit(2000), { from: account1 }),
 					'Payment too high'
+				);
+			});
+		});
+
+		describe('Closing shorts', () => {
+			const susdCollateral = toUnit(1000);
+			const ethAmountToShort = toUnit(1);
+
+			let ethAmountToRepay;
+
+			let beforeFeePoolBalance, beforeShortBalance, beforeUserBalance, beforeUserShortBalance;
+			let beforeInteractionTime;
+
+			const accrueInterest = async () => {
+				const interestIncreaseInTick = toBN(2112584307); // Value from tests
+
+				// create the conditions to get some accruedInterest
+				await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
+				await issue(sUSDSynth, susdCollateral, account1);
+
+				// open another short to set a long/short skew
+				await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+
+				// Adjust before* balances
+				beforeUserBalance = beforeUserBalance.add(toUnit(100));
+				beforeUserShortBalance = beforeUserShortBalance.add(toUnit(100));
+				beforeShortBalance = beforeShortBalance.add(susdCollateral);
+
+				// after a year we should have accrued 6.67%.
+				await fastForwardAndUpdateRates(YEAR);
+
+				// deposit some collateral to trigger the interest accrual.
+				await short.deposit(account1, id, toUnit(1), { from: account1 });
+
+				// Adjust before* balances
+				beforeUserBalance = beforeUserBalance.sub(toUnit(1));
+
+				loan = await short.loans(id);
+
+				const accruedInterest = loan.accruedInterest;
+
+				const interest = Math.round(parseFloat(fromUnit(accruedInterest)) * 10000) / 10000;
+
+				// check we have interest accrued
+				assert.equal(interest, 0.0667);
+
+				return accruedInterest.add(interestIncreaseInTick);
+			};
+
+			beforeEach(async () => {
+				await issue(sUSDSynth, susdCollateral, account1);
+
+				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+
+				id = getid(tx);
+
+				loan = await short.loans(id);
+
+				beforeInteractionTime = loan.lastInteraction;
+
+				beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+				beforeShortBalance = await sUSDSynth.balanceOf(short.address);
+				beforeUserBalance = await sUSDSynth.balanceOf(account1);
+				beforeUserShortBalance = susdCollateral;
+
+				await fastForwardAndUpdateRates(3600);
+			});
+
+			it('should repay with collateral and close the loan', async () => {
+				ethAmountToRepay = ethAmountToShort;
+
+				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
+
+				const { fee: exchangeFee } = await exchanger.getAmountsForExchange(
+					ethAmountToRepay,
+					sETH,
+					sUSD
+				);
+
+				// Close the short and identify it
+				await short.closeWithCollateral(id, { from: account1 });
+				loan = await short.loans(id);
+
+				// Interaction time increased
+				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
+				// Short state should be zeroed out
+				assert.equal(loan.interestIndex, toUnit(0).toString());
+				assert.equal(loan.amount, toUnit(0).toString());
+				assert.equal(loan.collateral, toUnit(0).toString());
+
+				// The fee pool should have received fees
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(exchangeFee),
+					'The fee pool did not receive enough fees'
+				);
+
+				// The loan amount should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.amount,
+					ethAmountToShort.sub(ethAmountToRepay),
+					'The loan amount was not reduced correctly'
+				);
+
+				// The loan collateral should have been reduced to zero
+				assert.deepEqual(
+					loan.collateral,
+					toUnit(0),
+					'The loan collateral was not reduced correctly'
+				);
+
+				// The contract sUSD balance should have been reduced by the expected amount
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					beforeShortBalance.sub(susdCollateral),
+					'The short contracts holds excess sUSD'
+				);
+
+				// The user sUSD balance should increase
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(account1),
+					susdCollateral.sub(exchangeFee),
+					'The user sUSD balance is unexpected'
+				);
+			});
+
+			it('should repay with collateral and close the loan considering interest accrued', async () => {
+				const accruedInterest = await accrueInterest();
+
+				const sUSDAccruedInterest = await exchangeRates.effectiveValue(
+					loan.currency,
+					accruedInterest,
+					sUSD
+				);
+
+				ethAmountToRepay = ethAmountToShort;
+
+				assert.bnEqual(await sUSDSynth.balanceOf(account1), beforeUserBalance);
+
+				const { fee: exchangeFee } = await exchanger.getAmountsForExchange(
+					ethAmountToRepay.add(accruedInterest),
+					sETH,
+					sUSD
+				);
+
+				// Close the short and identify it
+				await short.closeWithCollateral(id, { from: account1 });
+				loan = await short.loans(id);
+
+				// Interaction time increased
+				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
+				// Short state should be zeroed out
+				assert.deepEqual(loan.interestIndex, toUnit(0).toString());
+				assert.deepEqual(loan.amount, toUnit(0).toString());
+				assert.deepEqual(loan.collateral, toUnit(0).toString());
+
+				// The fee pool should have received fees
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(exchangeFee).add(sUSDAccruedInterest),
+					'The fee pool did not receive enough fees'
+				);
+
+				// The loan amount should have been reduced by the expected amount
+				assert.deepEqual(
+					loan.amount,
+					ethAmountToShort.sub(ethAmountToRepay),
+					'The loan amount was not reduced correctly'
+				);
+
+				// The loan collateral should have been reduced to zero
+				assert.deepEqual(
+					loan.collateral,
+					toUnit(0),
+					'The loan collateral was not reduced correctly'
+				);
+
+				// The contract sUSD balance should have been reduced by the expected amount
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(short.address),
+					beforeShortBalance.sub(susdCollateral),
+					'The short contracts holds excess sUSD'
+				);
+
+				// The user sUSD balance should reduce by the fees paid
+				assert.deepEqual(
+					await sUSDSynth.balanceOf(account1),
+					beforeUserShortBalance.sub(exchangeFee).sub(sUSDAccruedInterest),
+					'The user sUSD balance is unexpected'
 				);
 			});
 		});

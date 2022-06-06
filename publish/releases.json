@@ -652,9 +652,9 @@
 			"sources": ["Issuer"]
 		},
 		{
-			"sip": 243,
+			"sip": 246,
 			"layer": "ovm",
-			"sources": ["Issuer"],
+			"sources": ["CollateralShort", "Issuer"],
 			"released": "ovm"
 		}
 	],
@@ -1203,7 +1203,7 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": [243],
+			"sips": [246],
 			"released": true
 		},
 		{
