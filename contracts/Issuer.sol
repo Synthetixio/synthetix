@@ -952,11 +952,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     modifier onlyTrustedMinters() {
-        require(
-            msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM) ||
-                msg.sender == resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE),
-            "Issuer: Only trusted minters can perform this action"
-        );
+        address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
+        address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
+        require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "Issuer: only trusted minters");
+        require(bridgeL1 == address(0) || bridgeL2 == address(0), "Issuer: one minter must be 0x0");
         _;
     }
 
