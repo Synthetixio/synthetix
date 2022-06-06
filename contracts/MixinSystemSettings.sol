@@ -17,7 +17,11 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_TARGET_THRESHOLD = "targetThreshold";
     bytes32 internal constant SETTING_LIQUIDATION_DELAY = "liquidationDelay";
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
+    bytes32 internal constant SETTING_LIQUIDATION_ESCROW_DURATION = "liquidationEscrowDuration";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
+    bytes32 internal constant SETTING_SELF_LIQUIDATION_PENALTY = "selfLiquidationPenalty";
+    bytes32 internal constant SETTING_FLAG_REWARD = "flagReward";
+    bytes32 internal constant SETTING_LIQUIDATE_REWARD = "liquidateReward";
     bytes32 internal constant SETTING_RATE_STALE_PERIOD = "rateStalePeriod";
     /* ========== Exchange Fees Related ========== */
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
@@ -48,10 +52,10 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ATOMIC_TWAP_WINDOW = "atomicTwapWindow";
     bytes32 internal constant SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING = "atomicEquivalentForDexPricing";
     bytes32 internal constant SETTING_ATOMIC_EXCHANGE_FEE_RATE = "atomicExchangeFeeRate";
-    bytes32 internal constant SETTING_ATOMIC_PRICE_BUFFER = "atomicPriceBuffer";
     bytes32 internal constant SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = "atomicVolConsiderationWindow";
     bytes32 internal constant SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD = "atomicVolUpdateThreshold";
     bytes32 internal constant SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED = "pureChainlinkForAtomicsEnabled";
+    bytes32 internal constant SETTING_CROSS_SYNTH_TRANSFER_ENABLED = "crossChainSynthTransferEnabled";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -132,8 +136,24 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO);
     }
 
+    function getLiquidationEscrowDuration() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_ESCROW_DURATION);
+    }
+
     function getLiquidationPenalty() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY);
+    }
+
+    function getSelfLiquidationPenalty() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_SELF_LIQUIDATION_PENALTY);
+    }
+
+    function getFlagReward() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD);
+    }
+
+    function getLiquidateReward() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD);
     }
 
     function getRateStalePeriod() internal view returns (uint) {
@@ -251,14 +271,6 @@ contract MixinSystemSettings is MixinResolver {
             );
     }
 
-    function getAtomicPriceBuffer(bytes32 currencyKey) internal view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, currencyKey))
-            );
-    }
-
     function getAtomicVolatilityConsiderationWindow(bytes32 currencyKey) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
@@ -280,6 +292,14 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getBoolValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED, currencyKey))
+            );
+    }
+
+    function getCrossChainSynthTransferEnabled(bytes32 currencyKey) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, currencyKey))
             );
     }
 }

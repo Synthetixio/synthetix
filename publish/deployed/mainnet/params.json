@@ -36,13 +36,6 @@
 		}
 	},
 	{
-		"name": "ATOMIC_PRICE_BUFFER",
-		"value": {
-			"sETH": "1500000000000000",
-			"sBTC": "1500000000000000"
-		}
-	},
-	{
 		"name": "ATOMIC_VOLATILITY_CONSIDERATION_WINDOW",
 		"value": {
 			"sETH": "600",
@@ -55,5 +48,13 @@
 			"sETH": "3",
 			"sBTC": "3"
 		}
+	},
+	{
+		"name": "LIQUIDATION_DELAY",
+		"value": "43200"
+	},
+	{
+		"name": "LIQUIDATION_RATIO",
+		"value": "666666666666666666"
 	}
 ]

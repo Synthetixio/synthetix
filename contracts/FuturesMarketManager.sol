@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -11,11 +12,27 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./AddressSetLib.sol";
 
 // Internal references
-import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
+
+// basic views that are expected to be supported by v1 (IFuturesMarket) and v2 markets (IPerpsV2Market)
+interface IMarketViews {
+    function marketKey() external view returns (bytes32);
+
+    function baseAsset() external view returns (bytes32);
+
+    function marketSize() external view returns (uint128);
+
+    function marketSkew() external view returns (int128);
+
+    function assetPrice() external view returns (uint price, bool invalid);
+
+    function marketDebt() external view returns (uint debt, bool isInvalid);
+
+    function currentFundingRate() external view returns (int fundingRate);
+}
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketManager
 contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
@@ -78,7 +95,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     /*
      * The list of all markets.
      */
-    function allMarkets() external view returns (address[] memory) {
+    function allMarkets() public view returns (address[] memory) {
         return _markets.getPage(0, _markets.elements.length);
     }
 
@@ -105,12 +122,63 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         uint total;
         bool anyIsInvalid;
         uint numOfMarkets = _markets.elements.length;
-        for (uint i; i < numOfMarkets; i++) {
-            (uint marketDebt, bool invalid) = IFuturesMarket(_markets.elements[i]).marketDebt();
+        for (uint i = 0; i < numOfMarkets; i++) {
+            (uint marketDebt, bool invalid) = IMarketViews(_markets.elements[i]).marketDebt();
             total = total.add(marketDebt);
             anyIsInvalid = anyIsInvalid || invalid;
         }
         return (total, anyIsInvalid);
+    }
+
+    struct MarketSummary {
+        address market;
+        bytes32 asset;
+        bytes32 marketKey;
+        uint price;
+        uint marketSize;
+        int marketSkew;
+        uint marketDebt;
+        int currentFundingRate;
+        bool priceInvalid;
+    }
+
+    function _marketSummaries(address[] memory addresses) internal view returns (MarketSummary[] memory) {
+        uint nMarkets = addresses.length;
+        MarketSummary[] memory summaries = new MarketSummary[](nMarkets);
+        for (uint i; i < nMarkets; i++) {
+            IMarketViews market = IMarketViews(addresses[i]);
+            bytes32 marketKey = market.marketKey();
+            bytes32 baseAsset = market.baseAsset();
+
+            (uint price, bool invalid) = market.assetPrice();
+            (uint debt, ) = market.marketDebt();
+
+            summaries[i] = MarketSummary({
+                market: address(market),
+                asset: baseAsset,
+                marketKey: marketKey,
+                price: price,
+                marketSize: market.marketSize(),
+                marketSkew: market.marketSkew(),
+                marketDebt: debt,
+                currentFundingRate: market.currentFundingRate(),
+                priceInvalid: invalid
+            });
+        }
+
+        return summaries;
+    }
+
+    function marketSummaries(address[] calldata addresses) external view returns (MarketSummary[] memory) {
+        return _marketSummaries(addresses);
+    }
+
+    function marketSummariesForKeys(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
+        return _marketSummaries(_marketsForKeys(marketKeys));
+    }
+
+    function allMarketSummaries() external view returns (MarketSummary[] memory) {
+        return _marketSummaries(allMarkets());
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -124,8 +192,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             address market = marketsToAdd[i];
             require(!_markets.contains(market), "Market already exists");
 
-            bytes32 key = IFuturesMarket(market).marketKey();
-            bytes32 baseAsset = IFuturesMarket(market).baseAsset();
+            bytes32 key = IMarketViews(market).marketKey();
+            bytes32 baseAsset = IMarketViews(market).baseAsset();
 
             require(marketForKey[key] == address(0), "Market already exists for key");
             marketForKey[key] = market;
@@ -140,8 +208,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             address market = marketsToRemove[i];
             require(market != address(0), "Unknown market");
 
-            bytes32 key = IFuturesMarket(market).marketKey();
-            bytes32 baseAsset = IFuturesMarket(market).baseAsset();
+            bytes32 key = IMarketViews(market).marketKey();
+            bytes32 baseAsset = IMarketViews(market).baseAsset();
 
             require(marketForKey[key] != address(0), "Unknown market");
             delete marketForKey[key];
@@ -201,12 +269,22 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         return amount;
     }
 
-    /*
+    /**
      * Allows markets to issue exchange fees into the fee pool and notify it that this occurred.
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
+    function payFee(uint amount, bytes32 trackingCode) external onlyMarkets {
+        _payFee(amount, trackingCode);
+    }
+
+    // backwards compatibility with futures v1
     function payFee(uint amount) external onlyMarkets {
+        _payFee(amount, bytes32(0));
+    }
+
+    function _payFee(uint amount, bytes32 trackingCode) internal {
+        delete trackingCode; // unused for now, will be used SIP 203
         IFeePool pool = _feePool();
         _sUSD().issue(pool.FEE_ADDRESS(), amount);
         pool.recordFeePaid(amount);

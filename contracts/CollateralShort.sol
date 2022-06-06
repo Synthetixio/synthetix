@@ -59,7 +59,7 @@ contract CollateralShort is Collateral {
     }
 
     function closeWithCollateral(uint id) external returns (uint amount, uint collateral) {
-        (amount, collateral) = _closeLoanByRepayment(msg.sender, id);
+        (amount, collateral) = _closeWithCollateral(msg.sender, id);
 
         if (collateral > 0) {
             IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
@@ -91,5 +91,65 @@ contract CollateralShort is Collateral {
         uint collateralLiquidated = _liquidate(borrower, id, amount);
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateralLiquidated);
+    }
+
+    function _repayWithCollateral(
+        address borrower,
+        uint id,
+        uint payment
+    ) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
+        // 0. Get the loan to repay and accrue interest.
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
+
+        // 1. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
+        // 2. Use the payment to cover accrued interest and reduce debt.
+        // The returned amounts are the interests paid and the principal component used to reduce debt only.
+        require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
+        _processPayment(loan, payment);
+
+        // 3. Get the equivalent payment amount in sUSD, and also distinguish
+        // the fee that would be charged for both principal and interest.
+        (uint expectedAmount, uint exchangeFee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
+        uint paymentSUSD = expectedAmount.add(exchangeFee);
+
+        // 4. Reduce the collateral by the equivalent (total) payment amount in sUSD,
+        // but add the fee instead of deducting it.
+        uint collateralToRemove = paymentSUSD.add(exchangeFee);
+        loan.collateral = loan.collateral.sub(collateralToRemove);
+
+        // 5. Pay exchange fees.
+        _payFees(exchangeFee, sUSD);
+
+        // 6. Burn sUSD held in the contract.
+        _synthsUSD().burn(address(this), collateralToRemove);
+
+        // 7. Update the last interaction time.
+        loan.lastInteraction = block.timestamp;
+
+        // 8. Emit the event for the collateral repayment.
+        emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
+
+        // 9. Return the amount repaid and the remaining collateral.
+        return (payment, loan.collateral);
+    }
+
+    function _closeWithCollateral(address borrower, uint id) internal returns (uint amount, uint collateral) {
+        // 0. Get the loan to repay and accrue interest.
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
+
+        // 1. Repay the loan with its collateral.
+        uint amountToRepay = loan.amount.add(loan.accruedInterest);
+        (amount, collateral) = _repayWithCollateral(borrower, id, amountToRepay);
+
+        // 2. Record loan as closed.
+        _recordLoanAsClosed(loan);
+
+        // 3. Emit the event for the loan closed by repayment.
+        emit LoanClosedByRepayment(borrower, id, amount, collateral);
+
+        // 4. Explicitely return the values.
+        return (amount, collateral);
     }
 }

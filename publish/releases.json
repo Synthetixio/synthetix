@@ -394,6 +394,19 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 148,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"LiquidatorRewards",
+				"Synthetix",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
 			"sip": 167,
 			"layer": "both",
 			"sources": {
@@ -516,7 +529,14 @@
 		{
 			"sip": 198,
 			"layer": "both",
-			"sources": ["Synthetix", "Exchanger", "ExchangeRates", "SystemSettings", "SystemSettingsLib"]
+			"sources": [
+				"Synthetix",
+				"Exchanger",
+				"ExchangeRates",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
 		},
 		{
 			"sip": 199,
@@ -560,10 +580,22 @@
 			"released": "both"
 		},
 		{
+			"sip": 216,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
 			"sip": 217,
 			"layer": "ovm",
 			"sources": [],
-			"released": "ovm"
+			"released": "both"
+		},
+		{
+			"sip": 219,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 220,
@@ -574,7 +606,51 @@
 		{
 			"sip": 222,
 			"layer": "both",
-			"sources": ["Exchanger"]
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 223,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 229,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"SynthetixBridgeToOptimism",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				],
+				"ovm": [
+					"SynthetixBridgeToBase",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 236,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 239,
+			"layer": "both",
+			"sources": ["Synthetix"],
+			"released": "both"
+		},
+		{
+			"sip": 246,
+			"layer": "ovm",
+			"sources": ["CollateralShort", "Issuer"],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1059,29 +1135,13 @@
 			"sips": [217]
 		},
 		{
-			"name": "Menkent",
-			"version": {
-				"major": 2,
-				"minor": 67
-			},
-			"sips": []
-		},
-		{
-			"name": "Menkent (Optimism)",
-			"ovm": true,
-			"version": {
-				"major": 2,
-				"minor": 67
-			},
-			"sips": []
-		},
-		{
 			"name": "Mirach",
 			"version": {
 				"major": 2,
 				"minor": 68
 			},
-			"sips": []
+			"sips": [198, 222, 229],
+			"released": true
 		},
 		{
 			"name": "Mirach (Optimism)",
@@ -1090,7 +1150,8 @@
 				"major": 2,
 				"minor": 68
 			},
-			"sips": []
+			"sips": [198, 216, 219, 222, 223, 229],
+			"released": true
 		},
 		{
 			"name": "Alpheratz",
@@ -1098,7 +1159,8 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236],
+			"released": true
 		},
 		{
 			"name": "Alpheratz (Optimism)",
@@ -1107,7 +1169,8 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236],
+			"released": true
 		},
 		{
 			"name": "Rasalhague",
@@ -1115,7 +1178,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Rasalhague (Optimism)",
@@ -1124,15 +1188,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
-		},
-		{
-			"name": "Kochab",
-			"version": {
-				"major": 2,
-				"minor": 71
-			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Kochab (Optimism)",
@@ -1141,7 +1198,8 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": []
+			"sips": [246],
+			"released": true
 		},
 		{
 			"name": "Saiph",

@@ -11,9 +11,11 @@ import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
 contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, iOVM_L2DepositedToken {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 public constant CONTRACT_NAME = "SynthetixBridgeToBase";
-
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
+
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "SynthetixBridgeToBase";
+    }
 
     // ========== CONSTRUCTOR ==========
 
@@ -25,16 +27,8 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         return requireAndGetAddress(CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM);
     }
 
-    function onlyAllowFromOptimism() internal view {
-        // ensure function only callable from the L2 bridge via messenger (aka relayer)
-        iAbs_BaseCrossDomainMessenger _messenger = messenger();
-        require(msg.sender == address(_messenger), "Only the relayer can call this");
-        require(_messenger.xDomainMessageSender() == synthetixBridgeToOptimism(), "Only the L1 bridge can invoke");
-    }
-
-    modifier onlyOptimismBridge() {
-        onlyAllowFromOptimism();
-        _;
+    function counterpart() internal view returns (address) {
+        return synthetixBridgeToOptimism();
     }
 
     // ========== VIEWS ==========
@@ -83,7 +77,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
-    ) external onlyOptimismBridge {
+    ) external onlyCounterpart {
         IRewardEscrowV2 rewardEscrow = rewardEscrowV2();
         // First, mint the escrowed SNX that are being migrated
         synthetix().mintSecondary(address(rewardEscrow), escrowedAmount);
@@ -93,7 +87,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     // invoked by Messenger on L2
-    function finalizeDeposit(address to, uint256 amount) external onlyOptimismBridge {
+    function finalizeDeposit(address to, uint256 amount) external onlyCounterpart {
         // now tell Synthetix to mint these tokens, deposited in L1, into the specified account for L2
         synthetix().mintSecondary(to, amount);
 
@@ -101,7 +95,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     // invoked by Messenger on L2
-    function finalizeRewardDeposit(address from, uint256 amount) external onlyOptimismBridge {
+    function finalizeRewardDeposit(address from, uint256 amount) external onlyCounterpart {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
@@ -109,7 +103,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     // invoked by Messenger on L2
-    function finalizeFeePeriodClose(uint256 snxBackedAmount, uint256 totalDebtShares) external onlyOptimismBridge {
+    function finalizeFeePeriodClose(uint256 snxBackedAmount, uint256 totalDebtShares) external onlyCounterpart {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         feePool().closeSecondary(snxBackedAmount, totalDebtShares);
 

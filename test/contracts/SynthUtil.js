@@ -41,6 +41,7 @@ contract('SynthUtil', accounts => {
 				'SystemSettings',
 				'DebtCache',
 				'Issuer',
+				'LiquidatorRewards',
 				'CollateralManager',
 				'RewardEscrowV2', // required for issuer._collateral to read collateral
 			],

@@ -17,7 +17,15 @@ interface ISystemSettings {
 
     function liquidationRatio() external view returns (uint);
 
+    function liquidationEscrowDuration() external view returns (uint);
+
     function liquidationPenalty() external view returns (uint);
+
+    function selfLiquidationPenalty() external view returns (uint);
+
+    function flagReward() external view returns (uint);
+
+    function liquidateReward() external view returns (uint);
 
     function rateStalePeriod() external view returns (uint);
 
@@ -52,8 +60,6 @@ interface ISystemSettings {
     function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address);
 
     function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint);
-
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint);
 
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint);
 
