@@ -78,11 +78,10 @@ contract MultiCollateralSynth is Synth {
 
     // overriding modifier from super to add more internal contracts and checks
     function _isInternalContract(address account) internal view returns (bool) {
-        bool isInternal = super._isInternalContract(account);
-        bool isEtherWrapper = account == address(etherWrapper());
-        bool isWrapper = wrapperFactory().isWrapper(account);
-        bool isMultiCollateral = collateralManager().hasCollateral(account);
-
-        return isInternal || isEtherWrapper || isWrapper || isMultiCollateral;
+        return
+            super._isInternalContract(account) ||
+            collateralManager().hasCollateral(account) ||
+            wrapperFactory().isWrapper(account) ||
+            (account == address(etherWrapper()));
     }
 }
