@@ -66,6 +66,7 @@ contract('FeePool', async accounts => {
 		feePoolProxy,
 		FEE_ADDRESS,
 		synthetix,
+		synthetixProxy,
 		systemStatus,
 		systemSettings,
 		exchangeRates,
@@ -89,6 +90,7 @@ contract('FeePool', async accounts => {
 			ProxyFeePool: feePoolProxy,
 			RewardsDistribution: rewardsDistribution,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SystemSettings: systemSettings,
 			SynthsUSD: sUSDContract,
 			SystemStatus: systemStatus,
@@ -117,6 +119,9 @@ contract('FeePool', async accounts => {
 				'WrapperFactory',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD]);
 

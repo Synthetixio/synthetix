@@ -43,6 +43,7 @@ contract('Liquidator', accounts => {
 		liquidator,
 		liquidatorRewards,
 		synthetix,
+		synthetixProxy,
 		synthetixDebtShare,
 		systemSettings,
 		systemStatus,
@@ -58,6 +59,7 @@ contract('Liquidator', accounts => {
 			Liquidator: liquidator,
 			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SynthetixDebtShare: synthetixDebtShare,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
@@ -83,6 +85,9 @@ contract('Liquidator', accounts => {
 				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
