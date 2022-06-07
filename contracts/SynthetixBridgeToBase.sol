@@ -54,11 +54,11 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     // Overloaded function name to conform with Optimism's standard bridge interface which can be found here:
     //     - import "@eth-optimism/contracts/L2/messaging/IL2ERC20Bridge.sol"
     function withdrawTo(
-        address _,
+        address _l2Token,
         address to,
         uint amount,
-        uint32 _,
-        bytes calldata _
+        uint32 _l1Gas,
+        bytes calldata _data
     ) external requireInitiationActive {
         _initiateWithdraw(to, amount);
     }
