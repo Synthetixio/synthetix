@@ -90,6 +90,19 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         _initiateDeposit(to, amount);
     }
 
+    // Overloaded function name to conform with Optimism's standard bridge interface which can be found here:
+    //     - import "@eth-optimism/contracts/L1/messaging/IL1StandardBridge.sol";
+    function depositERC20To(
+        address _,
+        address _,
+        address to,
+        uint256 amount,
+        uint32 _,
+        bytes calldata _
+    ) external requireInitiationActive {
+        _initiateDeposit(to, amount);
+    }
+
     function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive requireZeroDebt {
         _migrateEscrow(entryIDs);
     }

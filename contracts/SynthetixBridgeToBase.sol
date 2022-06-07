@@ -51,6 +51,18 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         _initiateWithdraw(to, amount);
     }
 
+    // Overloaded function name to conform with Optimism's standard bridge interface which can be found here:
+    //     - import "@eth-optimism/contracts/L2/messaging/IL2ERC20Bridge.sol"
+    function withdrawTo(
+        address _,
+        address to,
+        uint amount,
+        uint32 _,
+        bytes calldata _
+    ) external requireInitiationActive {
+        _initiateWithdraw(to, amount);
+    }
+
     function _initiateWithdraw(address to, uint amount) private {
         require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable SNX");
 
