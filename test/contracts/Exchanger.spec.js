@@ -3449,19 +3449,21 @@ contract('Exchanger (spec tests)', async accounts => {
 				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 			});
 
-			const updateRate = ({ target, rate }) => {
+			const updateRate = ({ target, rate, resetCircuitBreaker }) => {
 				beforeEach(async () => {
 					await fastForward(10);
 					// this function will not update `circuitBreaker`, which is behavior we want for tests below
-					await updateAggregatorRates(exchangeRates, null, [target], [rate]);
+					await updateAggregatorRates(
+						exchangeRates,
+						resetCircuitBreaker ? circuitBreaker : null,
+						[target],
+						[toUnit(rate)]
+					);
 				});
 			};
 
 			describe(`when the price of sETH is ${baseRate}`, () => {
-				beforeEach(' set initial eth rate', async () => {
-					// we want circuit breaker updated here, so we use `updateRates`
-					await updateRates([sETH], [baseRate]);
-				});
+				updateRate({ target: sETH, rate: baseRate, resetCircuitBreaker: true });
 
 				describe('when price spike deviation is set to a factor of 2', () => {
 					const baseFactor = 2;
@@ -3471,99 +3473,13 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 					});
 
-					// lastExchangeRate, used for price deviations (SIP-65)
-					describe('lastExchangeRate is persisted during exchanges', () => {
-						it('initially has no entries', async () => {
-							assert.equal(await exchanger.lastExchangeRate(sETH), '0');
-							assert.equal(await exchanger.lastExchangeRate(sEUR), '0');
-						});
-						describe('when a user exchanges into sETH from sUSD', () => {
-							beforeEach(async () => {
-								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
-							});
-							it('and the dest side has a rate persisted', async () => {
-								assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate.toString()));
-							});
-						});
-						describe('when a user exchanges from sETH into another synth', () => {
-							beforeEach(async () => {
-								await sETHContract.issue(account1, toUnit('1'));
-								await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account1 });
-							});
-							it('then the source side has a rate persisted', async () => {
-								assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate.toString()));
-							});
-							it('and the dest side has a rate persisted', async () => {
-								// Rate of 2 from shared setup code above
-								assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
-							});
-							describe('when the price of sETH changes slightly', () => {
-								updateRate({ target: sETH, rate: baseRate * 1.1 });
-								describe('and another user exchanges sETH to sUSD', () => {
-									beforeEach(async () => {
-										await sETHContract.issue(account2, toUnit('1'));
-										await synthetix.exchange(sETH, toUnit('1'), sUSD, { from: account2 });
-									});
-									it('then the source side has a new rate persisted', async () => {
-										assert.bnEqual(
-											await exchanger.lastExchangeRate(sETH),
-											toUnit((baseRate * 1.1).toString())
-										);
-									});
-								});
-							});
-							describe('when the price of sETH is over a deviation', () => {
-								beforeEach(async () => {
-									// sETH over deviation and sEUR slight change
-									await fastForward(10);
-									await updateAggregatorRates(
-										exchangeRates,
-										circuitBreaker,
-										[sETH, sEUR],
-										[toUnit(baseRate * 3).toString(), toUnit('1.9')]
-									);
-								});
-								describe('and another user exchanges sETH to sEUR', () => {
-									beforeEach(async () => {
-										await sETHContract.issue(account2, toUnit('1'));
-										await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account2 });
-									});
-									it('then the source side persisted the rate', async () => {
-										assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate * 3));
-									});
-									it('then the dest side has persisted the rate', async () => {
-										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('1.9'));
-									});
-								});
-							});
-							describe('when the price of sEUR is over a deviation', () => {
-								beforeEach(async () => {
-									// sEUR over deviation and sETH slight change
-									await fastForward(10);
-									await updateAggregatorRates(
-										exchangeRates,
-										null,
-										[sETH, sEUR],
-										[toUnit(baseRate * 1.1).toString(), toUnit('10')]
-									);
-								});
-								describe('and another user exchanges sEUR to sETH', () => {
-									beforeEach(async () => {
-										await sETHContract.issue(account2, toUnit('1'));
-										await synthetix.exchange(sETH, toUnit('1'), sEUR, { from: account2 });
-									});
-									it('then the source side has persisted the rate', async () => {
-										assert.bnEqual(
-											await exchanger.lastExchangeRate(sETH),
-											toUnit((baseRate * 1.1).toString())
-										);
-									});
-									it('and the dest side has persisted the rate', async () => {
-										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
-									});
-								});
-							});
-						});
+					it('lastExchangeRate returns the same thing as CircuitBreaker.lastValue', async () => {
+						const lastExchangeRate = await exchanger.lastExchangeRate(sETH);
+						assert.bnNotEqual(lastExchangeRate, '0');
+						assert.bnEqual(
+							lastExchangeRate,
+							await circuitBreaker.lastValue(await exchangeRates.aggregators(sETH))
+						);
 					});
 
 					describe('the isSynthRateInvalid() view correctly returns status', () => {
@@ -3583,37 +3499,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							describe('when the synth rate changes back into the range', () => {
 								updateRate({ target: sETH, rate: baseRate });
 
-								it('then when called with the target, still returns true', async () => {
-									assert.equal(await exchanger.isSynthRateInvalid(sETH), true);
-								});
-							});
-						});
-						describe('when there is a last rate into sETH via an exchange', () => {
-							beforeEach(async () => {
-								await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account2 });
-							});
-
-							describe('when a synth rate changes outside of the range and then returns to the range', () => {
-								updateRate({ target: sETH, rate: baseRate * 2 });
-								updateRate({ target: sETH, rate: baseRate * 1.2 });
-
-								it('then when called with the target, returns false', async () => {
-									assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
-								});
-							});
-						});
-
-						describe('when there is a last price out of sETH via an exchange', () => {
-							beforeEach(async () => {
-								await sETHContract.issue(account2, toUnit('1'));
-								await synthetix.exchange(sETH, toUnit('0.001'), sUSD, { from: account2 });
-							});
-
-							describe('when a synth price changes outside of the range and then returns to the range', () => {
-								updateRate({ target: sETH, rate: baseRate * 2 });
-								updateRate({ target: sETH, rate: baseRate * 1.2 });
-
-								it('then when called with the target, returns false', async () => {
+								it('then when called with the target, rate is valid again', async () => {
 									assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
 								});
 							});
@@ -3746,55 +3632,63 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('suspension invoked by anyone via suspendSynthWithInvalidRate()', () => {
 						// sTRX relies on the fact that sTRX is a valid synth but never given a rate in the setup code
 						// above
-						const synthWithNoRate = toBytes32('sTRX');
+						const synth = toBytes32('sETH');
 						it('when called with invalid synth, then reverts', async () => {
 							await assert.revert(
 								exchanger.suspendSynthWithInvalidRate(toBytes32('XYZ')),
 								'No such synth'
 							);
 						});
-						describe('when called with a synth with no price', () => {
-							let logs;
-							beforeEach(async () => {
-								const { tx: hash } = await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
-								logs = await getDecodedLogs({
-									hash,
-									contracts: [synthetix, exchanger, systemStatus],
-								});
-							});
-							it('then suspension works as expected', async () => {
-								const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
-								assert.ok(suspended);
-								assert.equal(reason, '65');
-								assert.ok(logs.some(({ name }) => name === 'SynthSuspended'));
-							});
-						});
 
-						describe('when the system is suspended', () => {
+						describe('when aggregator price for synth becomes invalid', () => {
 							beforeEach(async () => {
-								await setStatus({ owner, systemStatus, section: 'System', suspend: true });
+								await updateAggregatorRates(exchangeRates, null, [synth], [0]);
+								await fastForward(5);
 							});
-							it('then suspended a synth fails', async () => {
-								await assert.revert(
-									exchanger.suspendSynthWithInvalidRate(synthWithNoRate),
-									'Operation prohibited'
-								);
-							});
-							describe(`when system is resumed`, () => {
+
+							describe('when called with a synth with price tank', () => {
 								beforeEach(async () => {
-									await setStatus({ owner, systemStatus, section: 'System', suspend: false });
+									const { tx: hash } = await exchanger.suspendSynthWithInvalidRate(synth);
+									await getDecodedLogs({
+										hash,
+										contracts: [synthetix, exchanger, systemStatus],
+									});
 								});
 								it('then suspension works as expected', async () => {
-									await exchanger.suspendSynthWithInvalidRate(synthWithNoRate);
-									const { suspended, reason } = await systemStatus.synthSuspension(synthWithNoRate);
-									assert.ok(suspended);
-									assert.equal(reason, '65');
+									const broken = await circuitBreaker.circuitBroken(
+										await exchangeRates.aggregators(synth)
+									);
+									assert.ok(broken);
+								});
+							});
+
+							describe('when the system is suspended', () => {
+								beforeEach(async () => {
+									await setStatus({ owner, systemStatus, section: 'System', suspend: true });
+								});
+								it('then suspended a synth fails', async () => {
+									await assert.revert(
+										exchanger.suspendSynthWithInvalidRate(synth),
+										'Operation prohibited'
+									);
+								});
+								describe(`when system is resumed`, () => {
+									beforeEach(async () => {
+										await setStatus({ owner, systemStatus, section: 'System', suspend: false });
+									});
+									it('then suspension works as expected', async () => {
+										await exchanger.suspendSynthWithInvalidRate(synth);
+										const suspended = await systemStatus.synthSuspension(synth);
+										assert.ok(suspended);
+									});
 								});
 							});
 						});
 					});
 
 					describe('settlement ignores deviations', () => {
+						updateRate({ target: sETH, rate: baseRate, resetCircuitBreaker: true });
+
 						describe('when a user exchange 100 sUSD into sETH', () => {
 							beforeEach(async () => {
 								// Disable Dynamic Fee in settlement by setting rounds to 0
@@ -3818,7 +3712,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							describe('multiple entries to settle', () => {
 								describe('when the sETH rate moves down by 20%', () => {
-									updateRate({ target: sETH, rate: baseRate * 0.8 });
+									updateRate({ target: sETH, rate: baseRate * 0.8, resetCircuitBreaker: true });
 
 									describe('and the waiting period expires', () => {
 										beforeEach(async () => {
@@ -3843,7 +3737,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
 											});
 											describe('and the sETH rate moves up by a factor of 2 to 200, causing the second entry to be skipped', () => {
-												updateRate({ target: sETH, rate: baseRate * 2 });
+												updateRate({ target: sETH, rate: baseRate * 2, resetCircuitBreaker: true });
 
 												it('then settlementOwing is existing rebate with 0 reclaim, with 2 entries', async () => {
 													const {
@@ -3858,7 +3752,7 @@ contract('Exchanger (spec tests)', async accounts => {
 											});
 
 											describe('and the sETH rate goes back up 25% (from 80 to 100)', () => {
-												updateRate({ target: sETH, rate: baseRate });
+												updateRate({ target: sETH, rate: baseRate, resetCircuitBreaker: true });
 												describe('and the waiting period expires', () => {
 													beforeEach(async () => {
 														// end waiting period
@@ -3881,7 +3775,11 @@ contract('Exchanger (spec tests)', async accounts => {
 															});
 														});
 														describe('and the sETH rate moves down by a factor of 2 to 50, causing the third entry to be skipped', () => {
-															updateRate({ target: sETH, rate: baseRate * 0.5 });
+															updateRate({
+																target: sETH,
+																rate: baseRate * 0.5,
+																resetCircuitBreaker: true,
+															});
 
 															it('then settlementOwing is existing rebate and reclaim, with 3 entries', async () => {
 																const {

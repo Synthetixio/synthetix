@@ -411,11 +411,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
-						it('then should have recorded debt and not debt shares', async () => {
+						it('then should have recorded debt and debt shares even though there are none', async () => {
 							const debtInfo = await issuer.allNetworksDebtInfo();
 
 							assert.bnEqual(debtInfo.debt, toUnit('2200'));
-							assert.bnEqual(debtInfo.sharesSupply, toUnit('0')); // stays 0 if no debt shares are minted
+							assert.bnEqual(debtInfo.sharesSupply, toUnit('2200')); // stays 0 if no debt shares are minted
 							assert.isFalse(debtInfo.isStale);
 						});
 					});

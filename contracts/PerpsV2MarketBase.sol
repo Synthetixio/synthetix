@@ -11,7 +11,6 @@ import "./SignedSafeDecimalMath.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -100,7 +99,7 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 internal constant CONTRACT_EXCHANGE_RATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSV2SETTINGS = "PerpsV2Settings";
@@ -149,15 +148,15 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         bytes32[] memory existingAddresses = PerpsV2SettingsMixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[1] = CONTRACT_EXCHANGE_RATES;
         newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[3] = CONTRACT_PERPSV2SETTINGS;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGE_RATES));
     }
 
     function _exchanger() internal view returns (IExchanger) {
@@ -571,7 +570,7 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
      * Public because used both externally and internally
      */
     function assetPrice() public view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
+        (price, invalid) = _exchangeRates().rateAndInvalid(baseAsset);
         return (price, invalid);
     }
 
@@ -599,17 +598,9 @@ contract PerpsV2MarketBase is PerpsV2SettingsMixin, IPerpsV2BaseTypes {
         // synth exists, and for perps - the there is no synth, so in case of attempting to suspend
         // the suspension fails (reverts due to "No such synth")
 
-        // check the view first and revert if price is invalid or out deviation range
-        (uint price, bool invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
-        _revertIfError(invalid, Status.InvalidPrice);
-        // note: rateWithBreakCircuit (mutative) is used here in addition to rateWithInvalid (view).
-        //  This is despite reverting immediately after if circuit is broken, which may seem silly.
-        //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
-        //  because last-rate is what used for measuring the deviation for subsequent trades.
-        // This also means that the circuit will not be broken in unhappy case (synth suspended)
-        // because this method will revert above. The reason it has to revert is that perps
-        // don't support no-op actions.
-        _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset); // persist rate for next checks
+        (uint price, bool broken, bool staleOrInvalid) = _exchangeRates().rateWithSafetyChecks(baseAsset);
+
+        _revertIfError(broken || staleOrInvalid, Status.InvalidPrice);
 
         return price;
     }

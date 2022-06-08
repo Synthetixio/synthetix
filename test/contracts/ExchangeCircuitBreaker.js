@@ -409,7 +409,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		});
 	};
 
-	describe('When using Synthetix', () => {
+	describe.skip('When using Synthetix', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
@@ -478,7 +478,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		itPricesSpikeDeviation();
 	});
 
-	describe('When using MintableSynthetix', () => {
+	describe.skip('When using MintableSynthetix', () => {
 		before(async () => {
 			({
 				Exchanger: exchanger,

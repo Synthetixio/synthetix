@@ -18,8 +18,6 @@ import "./Proxyable.sol";
 // Chainlink
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 /**
  * Compares current exchange rate to previous, and suspends a synth if the
  * difference is outside of deviation bounds.
@@ -100,8 +98,11 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      */
     function probeCircuitBreaker(address oracleAddress, uint value) external returns (bool circuitBroken) {
         // check system status
-        if (!systemStatus().systemSuspended() && _isRateOutOfBounds(oracleAddress, value)) {
-            _circuitBroken[oracleAddress] = _lastValue[oracleAddress] != 0;
+        if (
+            !systemStatus().systemSuspended() && _isRateOutOfBounds(oracleAddress, value) && _lastValue[oracleAddress] != 0
+        ) {
+            _circuitBroken[oracleAddress] = true;
+            emit CircuitBroken(oracleAddress);
         }
 
         _lastValue[oracleAddress] = value;
@@ -148,8 +149,6 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      * if rate is outside of deviation w.r.t any of the 3 previous ones (excluding the last one).
      */
     function _isRateOutOfBounds(address oracleAddress, uint current) internal view returns (bool) {
-        console.log("probed", current);
-        console.log("vs old", _lastValue[oracleAddress]);
         uint last = _lastValue[oracleAddress];
 
         if (last > 0) {
@@ -164,4 +163,5 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     // @notice signals that a the "last rate" was overriden by one of the admin methods
     //   with a value that didn't come direclty from the ExchangeRates.getRates methods
     event LastValueOverriden(address indexed oracleAddress, uint256 previousRate, uint256 newRate);
+    event CircuitBroken(address indexed oracleAddress);
 }

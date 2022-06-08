@@ -24,7 +24,9 @@ contract OneNetAggregatorDebtRatio is BaseOneNetAggregator {
             ISynthetixDebtShare(resolver.requireAndGetAddress("SynthetixDebtShare", "aggregate debt info")).totalSupply();
 
         uint result =
-            totalDebtShares == 0 ? 0 : totalIssuedSynths.decimalToPreciseDecimal().divideDecimalRound(totalDebtShares);
+            totalDebtShares == 0
+                ? 1000000000000000000000000000
+                : totalIssuedSynths.decimalToPreciseDecimal().divideDecimalRound(totalDebtShares);
 
         uint dataTimestamp = now;
 

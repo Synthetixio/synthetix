@@ -31,6 +31,8 @@ import "./Proxyable.sol";
 
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
+import "hardhat/console.sol";
+
 interface IProxy {
     function target() external view returns (address);
 }
@@ -110,7 +112,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](15);
+        bytes32[] memory newAddresses = new bytes32[](16);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -785,6 +787,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     ) internal {
         // check breaker
         if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
+            console.log("BREAKER TRIGGER");
             return;
         }
 

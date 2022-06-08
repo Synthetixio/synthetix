@@ -46,6 +46,7 @@ contract('DebtCache', async accounts => {
 		systemStatus,
 		systemSettings,
 		exchangeRates,
+		circuitBreaker,
 		feePool,
 		sUSDContract,
 		sETHContract,
@@ -63,7 +64,10 @@ contract('DebtCache', async accounts => {
 		// MultiCollateral tests.
 		ceth,
 		// Short tests.
-		short;
+		short,
+		// aggregators
+		aggregatorDebtRatio,
+		aggregatorIssuedSynths;
 
 	const deployCollateral = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
@@ -247,6 +251,7 @@ contract('DebtCache', async accounts => {
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
+			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSDContract,
 			SynthsETH: sETHContract,
 			SynthsAUD: sAUDContract,
@@ -259,12 +264,15 @@ contract('DebtCache', async accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			WrapperFactory: wrapperFactory,
 			WETH: weth,
+			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
+			'ext:AggregatorIssuedSynths': aggregatorIssuedSynths,
 		} = await setupAllContracts({
 			accounts,
 			synths,
 			contracts: [
 				'Synthetix',
 				'ExchangeRates',
+				'CircuitBreaker',
 				'FeePool',
 				'FeePoolEternalStorage',
 				'AddressResolver',
@@ -294,7 +302,7 @@ contract('DebtCache', async accounts => {
 	beforeEach(async () => {
 		await updateAggregatorRates(
 			exchangeRates,
-			null,
+			circuitBreaker,
 			[sAUD, sEUR, SNX, sETH, ETH, iETH],
 			['0.5', '1.25', '10', '200', '200', '200'].map(toUnit)
 		);
@@ -414,7 +422,7 @@ contract('DebtCache', async accounts => {
 			// set up initial prices
 			await updateAggregatorRates(
 				exchangeRates,
-				null,
+				circuitBreaker,
 				[sAUD, sEUR, sETH],
 				['0.5', '2', '100'].map(toUnit)
 			);
@@ -468,7 +476,12 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(result[0], toUnit(550));
 				assert.isFalse(result[1]);
 
-				await updateAggregatorRates(exchangeRates, null, [sAUD, sEUR], ['1', '3'].map(toUnit));
+				await updateAggregatorRates(
+					exchangeRates,
+					circuitBreaker,
+					[sAUD, sEUR],
+					['1', '3'].map(toUnit)
+				);
 				await debtCache.takeDebtSnapshot();
 				assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(700));
 				result = await debtCache.currentDebt();
@@ -492,7 +505,7 @@ contract('DebtCache', async accounts => {
 			it('updates the cached values for all individual synths', async () => {
 				await updateAggregatorRates(
 					exchangeRates,
-					null,
+					circuitBreaker,
 					[sAUD, sEUR, sETH],
 					['1', '3', '200'].map(toUnit)
 				);
@@ -524,7 +537,7 @@ contract('DebtCache', async accounts => {
 				// Revalidate the cache once rates are no longer stale
 				await updateAggregatorRates(
 					exchangeRates,
-					null,
+					circuitBreaker,
 					[sAUD, sEUR, SNX, sETH, ETH, iETH],
 					['0.5', '2', '100', '200', '200', '200'].map(toUnit)
 				);
@@ -658,7 +671,7 @@ contract('DebtCache', async accounts => {
 
 				await updateAggregatorRates(
 					exchangeRates,
-					null,
+					circuitBreaker,
 					[sAUD, sEUR, sETH],
 					['1', '3', '200'].map(toUnit)
 				);
@@ -696,7 +709,7 @@ contract('DebtCache', async accounts => {
 				// But even if we update all rates, we can't revalidate the cache using the partial update function
 				await updateAggregatorRates(
 					exchangeRates,
-					null,
+					circuitBreaker,
 					[sAUD, sEUR, sETH],
 					['0.5', '2', '100'].map(toUnit)
 				);
@@ -711,6 +724,7 @@ contract('DebtCache', async accounts => {
 
 				await updateAggregatorRates(
 					exchangeRates,
+					circuitBreaker,
 					[sAUD, sEUR, sETH],
 					['1', '3', '200'].map(toUnit)
 				);
@@ -928,6 +942,16 @@ contract('DebtCache', async accounts => {
 				const synthsToIssue = toUnit('10');
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 				await synthetix.issueSynths(synthsToIssue, { from: account1 });
+
+				await circuitBreaker.resetLastValue(
+					[aggregatorIssuedSynths.address, aggregatorDebtRatio.address],
+					[
+						(await aggregatorIssuedSynths.latestRoundData())[1],
+						(await aggregatorDebtRatio.latestRoundData())[1],
+					],
+					{ from: owner }
+				);
+
 				const issued = (await debtCache.cacheInfo())[0];
 
 				const synthsToBurn = toUnit('5');
@@ -1075,7 +1099,12 @@ contract('DebtCache', async accounts => {
 
 				const debts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
 
-				await updateAggregatorRates(exchangeRates, null, [sAUD, sEUR], ['1', '1'].map(toUnit));
+				await updateAggregatorRates(
+					exchangeRates,
+					circuitBreaker,
+					[sAUD, sEUR],
+					['1', '1'].map(toUnit)
+				);
 
 				await synthetix.exchange(sEUR, toUnit(10), sAUD, { from: account1 });
 				const postDebts = await debtCache.cachedSynthDebts([sAUD, sEUR]);
@@ -1110,7 +1139,12 @@ contract('DebtCache', async accounts => {
 				// set a high price deviation threshold factor to be sure it doesn't trigger here
 				await systemSettings.setPriceDeviationThresholdFactor(toUnit('99'), { from: owner });
 
-				await updateAggregatorRates(exchangeRates, null, [sAUD, sEUR], ['2', '1'].map(toUnit));
+				await updateAggregatorRates(
+					exchangeRates,
+					circuitBreaker,
+					[sAUD, sEUR],
+					['2', '1'].map(toUnit)
+				);
 
 				await fastForward(100);
 

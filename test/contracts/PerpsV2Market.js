@@ -38,7 +38,7 @@ contract('PerpsV2Market', accounts => {
 		perpsMarket,
 		exchangeRates,
 		exchanger,
-		exchangeCircuitBreaker,
+		circuitBreaker,
 		addressResolver,
 		sUSD,
 		synthetix,
@@ -46,6 +46,8 @@ contract('PerpsV2Market', accounts => {
 		debtCache,
 		systemSettings,
 		systemStatus;
+
+	let baseAssetAggregatorAddress;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -69,13 +71,12 @@ contract('PerpsV2Market', accounts => {
 	const initialFundingIndex = toBN(0);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(exchangeRates, [asset], [price]);
-		// reset the last price to the new price, so that we don't trip the breaker
-		// on various tests that change prices beyond the allowed deviation
-		if (resetCircuitBreaker) {
-			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			resetCircuitBreaker ? circuitBreaker : null,
+			[asset],
+			[price]
+		);
 	}
 
 	async function transferMarginAndModifyPosition({
@@ -105,7 +106,7 @@ contract('PerpsV2Market', accounts => {
 			PerpsV2MarketpBTC: perpsMarket,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			ExchangeCircuitBreaker: exchangeCircuitBreaker,
+			CircuitBreaker: circuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
 			Synthetix: synthetix,
@@ -125,7 +126,7 @@ contract('PerpsV2Market', accounts => {
 				'FeePool',
 				'ExchangeRates',
 				'Exchanger',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
@@ -157,6 +158,9 @@ contract('PerpsV2Market', accounts => {
 			[true, true],
 			{ from: owner }
 		);
+
+		// Need base aggregator address to verify calculations on circuit breaker
+		baseAssetAggregatorAddress = await exchangeRates.aggregators(baseAsset);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -3448,22 +3452,22 @@ contract('PerpsV2Market', accounts => {
 
 			it('after transferMargin', async () => {
 				await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(baseAssetAggregatorAddress), newPrice);
 			});
 
 			it('after withdrawAllMargin', async () => {
 				await perpsMarket.withdrawAllMargin({ from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(baseAssetAggregatorAddress), newPrice);
 			});
 
 			it('after modifyPosition', async () => {
 				await perpsMarket.modifyPosition(toUnit('1'), { from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(baseAssetAggregatorAddress), newPrice);
 			});
 
 			it('after closePosition', async () => {
 				await perpsMarket.closePosition({ from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(baseAssetAggregatorAddress), newPrice);
 			});
 		});
 	});

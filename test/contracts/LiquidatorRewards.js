@@ -18,6 +18,7 @@ contract('LiquidatorRewards', accounts => {
 
 	let addressResolver,
 		debtCache,
+		circuitBreaker,
 		exchangeRates,
 		liquidatorRewards,
 		synths,
@@ -61,6 +62,7 @@ contract('LiquidatorRewards', accounts => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
 		({
 			AddressResolver: addressResolver,
+			CircuitBreaker: circuitBreaker,
 			DebtCache: debtCache,
 			ExchangeRates: exchangeRates,
 			LiquidatorRewards: liquidatorRewards,
@@ -73,6 +75,7 @@ contract('LiquidatorRewards', accounts => {
 			contracts: [
 				'AddressResolver',
 				'CollateralManager',
+				'CircuitBreaker',
 				'DebtCache',
 				'Exchanger',
 				'ExchangeRates',
@@ -95,6 +98,7 @@ contract('LiquidatorRewards', accounts => {
 		// update the rates and take a snapshot
 		await updateAggregatorRates(
 			exchangeRates,
+			circuitBreaker,
 			[sAUD, sEUR, SNX, sETH],
 			['0.5', '1.25', '0.1', '200'].map(toUnit)
 		);

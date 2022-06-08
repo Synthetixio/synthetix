@@ -30,6 +30,7 @@ module.exports = function({ accounts }) {
 
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			contracts: [
+				'CircuitBreaker',
 				'DebtCache',
 				'DelegateApprovals',
 				'ExchangeRates',

@@ -729,8 +729,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['CircuitBreaker'],
+			deps: ['AddressResolver', 'SystemSettings', 'CircuitBreaker'],
 		},
 		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
@@ -855,12 +854,19 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRatesWithDexPricing',
 			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
+			deps: ['AddressResolver', 'CircuitBreaker', 'SystemSettings'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
 			resolverAlias: 'Exchanger',
-			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
+			mocks: [
+				'Synthetix',
+				'CircuitBreaker',
+				'ExchangeRates',
+				'FeePool',
+				'DelegateApprovals',
+				'VirtualSynthMastercopy',
+			],
 			deps: [
 				'AddressResolver',
 				'TradingRewards',
@@ -1411,7 +1417,12 @@ const setupAllContracts = async ({
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
-				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await updateAggregatorRates(
+					returnObj['ExchangeRates'],
+					returnObj['CircuitBreaker'],
+					[assetKey],
+					[toUnit('1')]
+				);
 				await Promise.all([
 					returnObj['PerpsV2Settings'].setParameters(
 						marketKey,
