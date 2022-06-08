@@ -41,7 +41,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     // Address Resolver Configuration
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
-    bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
@@ -112,13 +111,12 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[2] = CONTRACT_PERPSSETTINGSV2;
         newAddresses[3] = CONTRACT_PERPSTORAGEV2;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[5] = CONTRACT_EXCHANGERATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -498,10 +496,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
         return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
-    }
-
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
     }
 
     function _systemStatus() internal view returns (ISystemStatus) {
