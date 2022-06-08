@@ -69,7 +69,7 @@ contract('CircuitBreaker (contract)', async accounts => {
 		});
 	});
 
-	describe('probeCircuitBreaker', async () => {
+	describe('probeCircuitBreaker()', async () => {
 		it('only authorized callers can invoke', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: circuitBreaker.probeCircuitBreaker,
@@ -77,6 +77,20 @@ contract('CircuitBreaker (contract)', async accounts => {
 				accounts,
 				address: issuer,
 				reason: 'Only internal contracts',
+			});
+		});
+
+		it('isInvalid() returns false for new feed', async () => {
+			assert.equal(await circuitBreaker.isInvalid(fakeAggregator, toUnit(1)), false);
+		});
+
+		describe('when invoke new feed with starting price of 0', () => {
+			beforeEach(async () => {
+				await circuitBreaker.probeCircuitBreaker(fakeAggregator, toUnit(0), { from: issuer });
+			});
+
+			it('circuit is broken', async () => {
+				assert.equal(await circuitBreaker.circuitBroken(fakeAggregator), true);
 			});
 		});
 
@@ -91,12 +105,20 @@ contract('CircuitBreaker (contract)', async accounts => {
 			});
 
 			it('circuit is unbroken', async () => {
-				assert.bnEqual(await circuitBreaker.circuitBroken(fakeAggregator), false);
+				assert.equal(await circuitBreaker.circuitBroken(fakeAggregator), false);
 			});
 
 			it('does not emit circuit broken event', async () => {
 				const e = txn.logs.find(log => log.event === 'CircuitBroken');
 				assert.notOk(e);
+			});
+
+			it('isInvalid() returns false for valid change', async () => {
+				assert.equal(await circuitBreaker.isInvalid(fakeAggregator, toUnit(1.5)), false);
+			});
+
+			it('isInvalid() returns false for invalid change', async () => {
+				assert.equal(await circuitBreaker.isInvalid(fakeAggregator, toUnit(2.5)), true);
 			});
 
 			describe('when successfully invoked and feed is within recent price range', () => {
@@ -251,6 +273,11 @@ contract('CircuitBreaker (contract)', async accounts => {
 	});
 
 	describe('isDeviationAboveThreshold()', () => {
+		it('works at 0', async () => {
+			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(0), toUnit(0)), true);
+			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(0), toUnit(1)), true);
+		});
+
 		it('works below threshold', async () => {
 			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(1)), false);
 			assert.bnEqual(
@@ -258,16 +285,29 @@ contract('CircuitBreaker (contract)', async accounts => {
 				false
 			);
 			assert.bnEqual(
+				await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(0.99)),
+				false
+			);
+			assert.bnEqual(
 				await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(1.99)),
+				false
+			);
+			assert.bnEqual(
+				await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(0.51)),
 				false
 			);
 		});
 		it('works at threshold', async () => {
 			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(2)), true);
+			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(0.5)), true);
 		});
 		it('works above threshold', async () => {
 			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(2.01)), true);
 			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(2000)), true);
+
+			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(0)), true);
+			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(0.1)), true);
+			assert.bnEqual(await circuitBreaker.isDeviationAboveThreshold(toUnit(1), toUnit(0.49)), true);
 		});
 	});
 });

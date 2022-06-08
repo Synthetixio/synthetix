@@ -59,8 +59,8 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    // Returns rate and its "invalid" state.
-    // Rate can be invalid due to range out of bounds.
+    // Returns whether or not a rate would be come invalid
+    // ignores systemStatus check
     function isInvalid(address oracleAddress, uint value) external view returns (bool) {
         return _circuitBroken[oracleAddress] || _isRateOutOfBounds(oracleAddress, value) || value == 0;
     }
@@ -91,17 +91,17 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
 
     /**
      * Checks rate deviation from previous and its "invalid" oracle state (stale rate, of flagged by oracle).
-     * if it's valid and within deviation bounds, stores it and returns it and "false" (circuit not broken).
-     * If rate is invalid or outside of deviation bounds - doesn't store it, suspends the the synth, and returns
-     * last rate and "true" (circuit broken).
+     * If its valid, set the `circuitBoken` flag and return false. Continue storing price updates as normal.
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
-     * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
+     * returns last rate and the current broken state, to prevent synths suspensions during maintenance.
      */
     function probeCircuitBreaker(address oracleAddress, uint value) external onlyProbers returns (bool circuitBroken) {
-        // check system status
+        // these conditional statements are ordered for short circuit (heh) efficiency to reduce gas usage
+        // in the usual case of no circuit broken.
         if (
-            _isRateOutOfBounds(oracleAddress, value) && 
-            _lastValue[oracleAddress] != 0 &&
+            // cases where the new price should be triggering a circuit break
+            (value == 0 || _isRateOutOfBounds(oracleAddress, value)) &&
+            // other necessary states in order to break
             !_circuitBroken[oracleAddress] &&
             !systemStatus().systemSuspended()
         ) {
@@ -111,13 +111,13 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
 
         _lastValue[oracleAddress] = value;
 
-        return _circuitBroken[oracleAddress] || value == 0;
+        return _circuitBroken[oracleAddress];
     }
 
     /**
      * SIP-139
      * resets the stored value for _lastValue for multiple currencies to the latest rate
-     * can be used to un-suspend synths after a suspension happenned
+     * can be used to enable synths after a broken circuit happenned
      * doesn't check deviations here, so believes that owner knows better
      * emits LastRateOverridden
      */
@@ -147,10 +147,7 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     }
 
     /**
-     * Rate is invalid if:
-     * - is outside of deviation bounds relative to previous non-zero rate
-     * - (warm up case) if previous rate was 0 (init), gets last 4 rates from oracle, and checks
-     * if rate is outside of deviation w.r.t any of the 3 previous ones (excluding the last one).
+     * Rate is invalid if it is outside of deviation bounds relative to previous non-zero rate
      */
     function _isRateOutOfBounds(address oracleAddress, uint current) internal view returns (bool) {
         uint last = _lastValue[oracleAddress];
@@ -166,8 +163,7 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
 
     modifier onlyProbers() {
         require(
-            msg.sender == requireAndGetAddress(CONTRACT_ISSUER) ||
-            msg.sender == requireAndGetAddress(CONTRACT_EXRATES),
+            msg.sender == requireAndGetAddress(CONTRACT_ISSUER) || msg.sender == requireAndGetAddress(CONTRACT_EXRATES),
             "Only internal contracts can call this function"
         );
 
