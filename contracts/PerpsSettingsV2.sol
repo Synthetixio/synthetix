@@ -26,7 +26,7 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[1] = CONTRACT_PERPSENGINEV2;
+        newAddresses[0] = CONTRACT_PERPSENGINEV2;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

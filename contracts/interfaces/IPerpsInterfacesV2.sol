@@ -227,27 +227,33 @@ interface IPerpsOrdersV2 {
 
     // MUTATIVE
 
-    function transferMargin(int marginDelta) external;
+    function transferMargin(bytes32 marketKey, int marginDelta) external;
 
-    function withdrawAllMargin() external;
+    function withdrawAllMargin(bytes32 marketKey) external;
 
-    function modifyPosition(int sizeDelta) external;
+    function modifyPosition(bytes32 marketKey, int sizeDelta) external;
 
-    function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external;
+    function modifyPositionWithTracking(
+        bytes32 marketKey,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external;
 
-    function submitNextPriceOrder(int sizeDelta) external;
+    function submitNextPriceOrder(bytes32 marketKey, int sizeDelta) external;
 
-    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external;
+    function submitNextPriceOrderWithTracking(
+        bytes32 marketKey,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external;
 
-    function cancelNextPriceOrder(address account) external;
+    function cancelNextPriceOrder(bytes32 marketKey, address account) external;
 
-    function executeNextPriceOrder(address account) external;
+    function executeNextPriceOrder(bytes32 marketKey, address account) external;
 
-    function closePosition() external;
+    function closePosition(bytes32 marketKey) external;
 
-    function closePositionWithTracking(bytes32 trackingCode) external;
-
-    function liquidatePosition(address account) external;
+    function closePositionWithTracking(bytes32 marketKey, bytes32 trackingCode) external;
 }
 
 interface IPerpsSettingsV2 {

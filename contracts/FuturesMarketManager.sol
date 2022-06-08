@@ -69,8 +69,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
     function _requireIsMarketOrRouter() internal view {
         // v1 markets or v2 engine only
         require(
-            msg.sender == address(_perpsOrdersV2()) || // V2 engine
-                msg.sender == address(_perpsEngineV2()) || // V2 orders router
+            msg.sender == address(_perpsOrdersV2()) || // V2 orders router
+                msg.sender == address(_perpsEngineV2()) || // V2 engine
                 _marketsV1.contains(msg.sender), // V1 markets
             "Only markets or routers"
         );
@@ -162,7 +162,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
     /*
      * The market addresses for a given set of market key strings.
      */
-    function marketsForKeysV1(bytes32[] calldata marketKeys) external view returns (address[] memory) {
+    function marketsV1ForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory) {
         return _addressesForKeysV1(marketKeys);
     }
 
