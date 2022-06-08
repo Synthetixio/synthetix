@@ -295,7 +295,9 @@ const setupContract = async ({
 		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
+		// futures manager is manages both v1 & v2
 		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
+		// legacy futures (V1)
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
 			tryGetAddressOf('AddressResolver'),
@@ -309,17 +311,10 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
-		PerpsV2Settings: [owner, tryGetAddressOf('AddressResolver')],
-		PerpsV2MarketpBTC: [
-			tryGetAddressOf('AddressResolver'),
-			toBytes32('BTC'), // base asset
-			toBytes32('pBTC'), // market key
-		],
-		PerpsV2MarketpETH: [
-			tryGetAddressOf('AddressResolver'),
-			toBytes32('ETH'), // base asset
-			toBytes32('pETH'), // market key
-		],
+		PerpsSettingsV2: [owner, tryGetAddressOf('AddressResolver')],
+		PerpsStorageV2: [tryGetAddressOf('AddressResolver')],
+		PerpsEngineV2: [tryGetAddressOf('AddressResolver')],
+		PerpsOrdersV2: [tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -572,22 +567,12 @@ const setupContract = async ({
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
-				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['FuturesMarketManager'].addMarketsV1([instance.address], { from: owner }),
 			]);
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
-				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
-			]);
-		},
-		async PerpsV2MarketpBTC() {
-			await Promise.all([
-				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
-			]);
-		},
-		async PerpsV2MarketpETH() {
-			await Promise.all([
-				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['FuturesMarketManager'].addMarketsV1([instance.address], { from: owner }),
 			]);
 		},
 		async GenericMock() {
@@ -697,6 +682,7 @@ const setupAllContracts = async ({
 	contracts = [],
 	synths = [],
 	feeds = [],
+	perps = [], // [{marketKey: str, assetKey: str}]
 }) => {
 	const [, owner] = accounts;
 
@@ -1004,15 +990,23 @@ const setupAllContracts = async ({
 			contract: 'CollateralShort',
 			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
+		// "futures" & v2 "perps"
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
+			deps: [
+				'AddressResolver',
+				'Exchanger',
+				'FuturesMarketSettings',
+				'PerpsEngineV2',
+				'PerpsOrdersV2',
+				'FeePool',
+			],
 		},
+		// perps v1 - "futures"
 		{
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
-		// perps v1 - "futures"
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
@@ -1037,32 +1031,36 @@ const setupAllContracts = async ({
 			],
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
-
 		// perps v2
 		{
-			contract: 'PerpsV2Settings',
+			contract: 'PerpsSettingsV2',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
 		{
-			contract: 'PerpsV2MarketpBTC',
-			source: 'TestablePerpsV2Market',
+			contract: 'PerpsStorageV2',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'PerpsEngineV2',
+			// source: 'TestablePerpsV2Market',
 			deps: [
 				'AddressResolver',
-				'FuturesMarketManager',
-				'PerpsV2Settings',
+				// 'FuturesMarketManager', // is also required, but creates a circular dependence, since both need each other
+				'PerpsSettingsV2',
+				'PerpsStorageV2',
 				'SystemStatus',
-				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
 		},
 		{
-			contract: 'PerpsV2MarketpETH',
-			source: 'TestablePerpsV2Market',
+			contract: 'PerpsOrdersV2',
 			deps: [
 				'AddressResolver',
-				'FuturesMarketManager',
-				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				// 'FuturesMarketManager', // is also required, but creates a circular dependence, since both need each other
+				'PerpsSettingsV2',
+				'PerpsEngineV2',
+				'Exchanger',
+				'ExchangeRates',
 			],
 		},
 	];
@@ -1351,7 +1349,6 @@ const setupAllContracts = async ({
 				),
 			];
 
-			// TODO: fetch settings per-market programmatically
 			const setupFuturesMarket = async market => {
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
@@ -1385,29 +1382,36 @@ const setupAllContracts = async ({
 		}
 
 		// perps V2
-		if (returnObj['PerpsV2Settings']) {
+		if (returnObj['PerpsSettingsV2'] && returnObj['FuturesMarketManager']) {
 			const promises = [
-				returnObj['PerpsV2Settings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+				returnObj['PerpsSettingsV2'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['PerpsV2Settings'].setMinKeeperFee(constantsOverrides.FUTURES_MIN_KEEPER_FEE, {
+				returnObj['PerpsSettingsV2'].setMinKeeperFee(constantsOverrides.FUTURES_MIN_KEEPER_FEE, {
 					from: owner,
 				}),
-				returnObj['PerpsV2Settings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+				returnObj['PerpsSettingsV2'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
-				returnObj['PerpsV2Settings'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
+				returnObj['PerpsSettingsV2'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
 					from: owner,
 				}),
 			];
+			await Promise.all(promises);
 
-			const setupPerpsV2Market = async market => {
-				const assetKey = await market.baseAsset();
-				const marketKey = await market.marketKey();
+			// set up
+			for (const { marketKey, assetKey } of perps) {
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+
+				// add the market
+				await returnObj['FuturesMarketManager'].addMarketsV2([marketKey], [assetKey], {
+					from: owner,
+				});
+
+				// set its settings (can only be done after the market is added and initialized)
 				await Promise.all([
-					returnObj['PerpsV2Settings'].setParameters(
+					returnObj['PerpsSettingsV2'].setParameters(
 						marketKey,
 						toWei('0.003'), // 0.3% base fee
 						toWei('0.0005'), // 0.05% base fee next price
@@ -1419,16 +1423,7 @@ const setupAllContracts = async ({
 						{ from: owner }
 					),
 				]);
-			};
-
-			if (returnObj['PerpsV2MarketpBTC']) {
-				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpBTC']));
 			}
-			if (returnObj['PerpsV2MarketpETH']) {
-				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpETH']));
-			}
-
-			await Promise.all(promises);
 		}
 	}
 

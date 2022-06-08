@@ -17,8 +17,13 @@ const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesMarketManager', accounts => {
 	let futuresMarketManager,
+		// v1
 		futuresMarketSettings,
+		// v2
 		// perpsSettings,
+		// perpsStorage,
+		// perpsEngine,
+		// perpsOrders,
 		systemSettings,
 		exchangeRates,
 		exchangeCircuitBreaker,
@@ -44,7 +49,10 @@ contract('FuturesMarketManager', accounts => {
 		({
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketSettings: futuresMarketSettings,
-			// PerpsV2Settings: perpsSettings,
+			// PerpsSettingsV2: perpsSettings,
+			// PerpsStorageV2: perpsStorage,
+			// PerpsEngineV2: perpsEngine,
+			// PerpsOrdersV2: perpsOrders,
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
@@ -59,7 +67,10 @@ contract('FuturesMarketManager', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
-				'PerpsV2Settings',
+				'PerpsSettingsV2',
+				'PerpsStorageV2',
+				'PerpsEngineV2',
+				'PerpsOrdersV2',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',

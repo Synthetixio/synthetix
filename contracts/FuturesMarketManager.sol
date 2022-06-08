@@ -433,7 +433,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
             bytes32 baseAsset = assets[i];
 
             // check doesn't exist in v1
-            require(marketV1ForKey[marketKey] != address(0), "Market key exists in V1");
+            require(marketV1ForKey[marketKey] == address(0), "Market key exists in V1");
 
             // check doesn't exist in v2
             require(!_marketsV2.contains(marketKey), "Market key exists");
