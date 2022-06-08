@@ -24,7 +24,7 @@ interface IFuturesMarketManager {
 
     function isMarket(bytes32 marketKey) external view returns (bool);
 
-    // V1 backwards compatibility
+    // V1 backwards compatibility for FuturesMarketData
     function marketForKey(bytes32 marketKey) external view returns (address); // backwards compatibility
 
     // V1
@@ -44,6 +44,10 @@ interface IFuturesMarketManager {
 
     function allMarketSummariesV1() external view returns (MarketSummary[] memory);
 
+    function marketSummariesV1(address[] calldata addresses) external view returns (MarketSummary[] memory);
+
+    function marketSummariesForKeysV1(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory);
+
     // V2
     function numMarketsV2() external view returns (uint);
 
@@ -57,9 +61,9 @@ interface IFuturesMarketManager {
 
     function allMarketSummariesV2() external view returns (MarketSummary[] memory);
 
-    function approvedRouterAndMarket(address router, bytes32 marketKey) external returns (bool approved);
+    function approvedRouterAndMarket(address router, bytes32 marketKey) external view returns (bool approved);
 
-    // Mutative V1 backwards compatibility
+    // Mutative V1 backwards compatibility in migration contracts
     function addMarkets(address[] calldata marketsToAdd) external;
 
     // Mutative V1 owner actions

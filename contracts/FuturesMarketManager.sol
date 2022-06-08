@@ -220,7 +220,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
         return _marketSummariesV2(allMarketsV2());
     }
 
-    function approvedRouterAndMarket(address router, bytes32 marketKey) external returns (bool approved) {
+    function approvedRouterAndMarket(address router, bytes32 marketKey) external view returns (bool approved) {
         // currently only the default orders router (PerpsOrdersV2) is approved
         // for any V2 market, in future upgrades additional order routers might be supported
         return router == _perpsOrdersV2() && _marketsV2.contains(marketKey);
