@@ -1072,12 +1072,8 @@ contract('Liquidator', accounts => {
 							from: bob,
 						});
 					});
-					it('then David should have 0 collateral', async () => {
-						assert.bnEqual(await synthetix.collateral(david), toUnit('0'));
-					});
-					it('then David should have a collateral ratio of 0', async () => {
-						const davidCRatioAfter = await synthetix.collateralisationRatio(david);
-						assert.bnEqual(davidCRatioAfter, 0);
+					it('then David should have 0 transferable collateral', async () => {
+						assert.bnEqual(await synthetix.balanceOf(david), toUnit('0'));
 					});
 					it('then David should still have debt owing', async () => {
 						const davidDebt = await synthetixDebtShare.balanceOf(david);
