@@ -451,7 +451,7 @@ function itCanLiquidate({ ctx }) {
 				);
 
 				assert.bnEqual(snxRedeemed, beforeSnxBalance);
-				assert.bnClose(amountLiquidated.toString(), expectedAmountToLiquidate.toString(), '100'); // the variance is due to a rounding error as a result of multiplication of the SNX rate
+				assert.bnClose(amountLiquidated.toString(), expectedAmountToLiquidate.toString(), '1000'); // the variance is due to a rounding error as a result of multiplication of the SNX rate
 			});
 
 			it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
