@@ -437,7 +437,8 @@ module.exports = ({ web3 } = {}) => {
 		// Otherwise dig through the deeper object and recurse
 		else if (Array.isArray(expected)) {
 			// check lengths
-			assert.strictEqual(actual.length, expected.length, `array length`);
+			const len = actual.length || actual.__length__; // __length__ is an event attribute
+			assert.strictEqual(len, expected.length, `array length`);
 			// check elements
 			for (let i = 0; i < expected.length; i++) {
 				assertDeepEqual(actual[i], expected[i], `(array index: ${i}) `);
