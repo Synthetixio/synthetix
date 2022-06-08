@@ -177,6 +177,7 @@ contract('MultiCollateralSynth', accounts => {
 					'FuturesMarketManager',
 					'CollateralManager',
 					'EtherWrapper',
+					'WrapperFactory',
 				].map(toBytes32)
 			);
 		});
