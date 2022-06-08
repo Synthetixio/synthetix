@@ -1222,7 +1222,7 @@
 				"major": 2,
 				"minor": 72
 			},
-			"sips": []
+			"sips": [235, 238, 240]
 		},
 		{
 			"name": "Saiph (Optimism)",
@@ -1231,7 +1231,7 @@
 				"major": 2,
 				"minor": 72
 			},
-			"sips": []
+			"sips": [235, 238, 240]
 		}
 	]
 }
