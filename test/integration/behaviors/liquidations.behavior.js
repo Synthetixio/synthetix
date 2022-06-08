@@ -13,7 +13,7 @@ const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanLiquidate({ ctx }) {
-	describe('liquidating', () => {
+	describe.only('liquidating', () => {
 		let user7, user8;
 		let owner;
 		let someUser;
@@ -130,7 +130,7 @@ function itCanLiquidate({ ctx }) {
 				await addAggregatorAndSetRate({
 					ctx,
 					currencyKey: toBytes32('SNX'),
-					rate: '200000000000000', // $0.02
+					rate: '1000000000000000000', // $1.00
 				});
 			});
 
@@ -161,12 +161,14 @@ function itCanLiquidate({ ctx }) {
 
 				describe('getting liquidated', () => {
 					let tx;
+					let collateralBefore;
 					let beforeDebtShares, beforeSharesSupply;
 					let beforeFlagRewardCredittedSnx,
 						beforeLiquidateRewardCredittedSnx,
 						beforeRemainingRewardCredittedSnx;
 
 					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
+						collateralBefore = await Synthetix.collateral(user7.address);
 						beforeDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
 						beforeSharesSupply = await SynthetixDebtShare.totalSupply();
 						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
@@ -178,8 +180,10 @@ function itCanLiquidate({ ctx }) {
 						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user7.address);
 					});
 
-					it('fixes the c-ratio of the completely liquidated user7', async () => {
-						assert.bnEqual(await SynthetixDebtShare.balanceOf(user7.address), '0');
+					it('removes all transferable collateral from the liquidated user', async () => {
+						const collateralAfter = await Synthetix.collateral(user7.address);
+						assert.bnLt(collateralAfter, collateralBefore);
+						assert.bnEqual(await Synthetix.balanceOf(user7.address), '0');
 					});
 
 					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
@@ -381,10 +385,8 @@ function itCanLiquidate({ ctx }) {
 
 		describe('self liquidation with a majority of collateral in escrow', () => {
 			let tx;
-			let beforeCollateralBalance;
-			let beforeSnxBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
-			let beforeRewardsCredittedSnx;
+			let beforeSnxBalance, beforeRewardsCredittedSnx;
 			const snxRate = toUnit(0.3); // $0.30
 
 			before('exchange rate changes to allow liquidation', async () => {
@@ -402,9 +404,7 @@ function itCanLiquidate({ ctx }) {
 
 			before('user8 calls liquidateSelf', async () => {
 				beforeSnxBalance = await Synthetix.balanceOf(user8.address);
-				beforeCollateralBalance = await Synthetix.collateral(user8.address);
 				beforeDebtShares = await SynthetixDebtShare.balanceOf(user8.address);
-				beforeDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
 				beforeSharesSupply = await SynthetixDebtShare.totalSupply();
 				beforeRewardsCredittedSnx = await Synthetix.balanceOf(LiquidatorRewards.address);
 
@@ -424,26 +424,19 @@ function itCanLiquidate({ ctx }) {
 				assert.bnEqual(afterSnxBalance, '0');
 			});
 
-			it('should liquidate the correct amount of debt', async () => {
+			it('should liquidate the correct amount of debt and redeem all transferable SNX', async () => {
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 				const amountLiquidated = liqEvent.args.amountLiquidated;
+				const snxRedeemed = liqEvent.args.snxRedeemed;
 
-				const penalty = await Liquidator.selfLiquidationPenalty();
-				const debtToLiquidate = await Liquidator.calculateAmountToFixCollateral(
-					beforeDebtBalance,
-					multiplyDecimal(beforeCollateralBalance, snxRate),
-					penalty
+				const expectedAmountToLiquidate = multiplyDecimal(
+					snxRedeemed,
+					await Liquidator.issuanceRatio()
 				);
-				const expectedAmountOfDebtToLiquidate = multiplyDecimal(
-					debtToLiquidate,
-					divideDecimal(beforeSnxBalance, beforeCollateralBalance)
-				);
-				assert.bnClose(
-					amountLiquidated.toString(),
-					expectedAmountOfDebtToLiquidate.toString(),
-					'2000' // due to rounding error when multiplying snxRate above
-				);
+
+				assert.bnEqual(snxRedeemed, beforeSnxBalance);
+				assert.bnEqual(amountLiquidated.toString(), expectedAmountToLiquidate.toString());
 			});
 
 			it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
