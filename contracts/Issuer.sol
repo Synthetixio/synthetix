@@ -66,15 +66,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     bytes32 public constant CONTRACT_NAME = "Issuer";
 
-    // SIP-165: Circuit breaker for Debt Synthesis
-    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 165;
-
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
     mapping(address => bytes32) public synthsByAddress;
-
-    uint public lastDebtRatio;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -762,10 +757,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function setLastDebtRatio(uint256 ratio) external onlyOwner {
-        lastDebtRatio = ratio;
-    }
-
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireRatesNotInvalid(bool anyRateIsInvalid) internal pure {
@@ -786,7 +777,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool issueMax
     ) internal {
         // check breaker
-        if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
+        if (!_verifyCircuitBreakers()) {
             console.log("BREAKER TRIGGER");
             return;
         }
@@ -820,7 +811,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint existingDebt
     ) internal returns (uint amountBurnt) {
         // check breaker
-        if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
+        if (!_verifyCircuitBreakers()) {
             return 0;
         }
 
@@ -849,7 +840,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool burnToTarget
     ) internal {
         // check breaker
-        if (!_verifyDebtRatioCircuitBreaker() || !_verifySynthetixCircuitBreaker()) {
+        if (!_verifyCircuitBreakers()) {
             return;
         }
 
@@ -928,17 +919,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     // trips the breaker and returns boolean, where true means the rate is healthy
-    function _verifyDebtRatioCircuitBreaker() internal returns (bool) {
+    function _verifyCircuitBreakers() internal returns (bool) {
         address debtRatioAggregator = requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO);
         (, int256 rawRatio, , , ) = AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
-
-        return !circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio));
-    }
-
-    // trips the breaker and returns boolean, where true means the rate is healthy
-    function _verifySynthetixCircuitBreaker() internal returns (bool) {
         (, bool broken, ) = exchangeRates().rateWithSafetyChecks(SNX);
-        return !broken;
+
+        return !circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio)) || !broken;
     }
 
     /* ========== MODIFIERS ========== */
