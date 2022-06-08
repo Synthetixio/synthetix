@@ -635,16 +635,31 @@
 			"released": "both"
 		},
 		{
+			"sip": 235,
+			"layer": "both",
+			"sources": ["Issuer"]
+		},
+		{
 			"sip": 236,
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
 		},
 		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Synthetix", "Synths.*", "Issuer"]
+		},
+		{
 			"sip": 239,
 			"layer": "both",
 			"sources": ["Synthetix"],
 			"released": "both"
+		},
+		{
+			"sip": 240,
+			"layer": "both",
+			"sources": ["Issuer"]
 		},
 		{
 			"sip": 246,
@@ -1207,7 +1222,7 @@
 				"major": 2,
 				"minor": 72
 			},
-			"sips": []
+			"sips": [235, 238, 240]
 		},
 		{
 			"name": "Saiph (Optimism)",
@@ -1216,7 +1231,7 @@
 				"major": 2,
 				"minor": 72
 			},
-			"sips": []
+			"sips": [235, 238, 240]
 		}
 	]
 }

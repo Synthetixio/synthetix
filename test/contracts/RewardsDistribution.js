@@ -28,17 +28,21 @@ contract('RewardsDistribution', async accounts => {
 		account5,
 	] = accounts;
 
-	let rewardsDistribution, synthetix, feePool, mockRewardsRecipient;
+	let rewardsDistribution, synthetix, synthetixProxy, feePool, mockRewardsRecipient;
 
 	before(async () => {
 		({
 			RewardsDistribution: rewardsDistribution,
 			FeePool: feePool,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 		} = await setupAllContracts({
 			accounts,
 			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool', 'Issuer'],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		mockRewardsRecipient = await MockRewardsRecipient.new(owner, { from: owner });
 		await mockRewardsRecipient.setRewardsDistribution(rewardsDistribution.address, { from: owner });

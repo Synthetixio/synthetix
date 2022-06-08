@@ -43,6 +43,7 @@ contract('DebtCache', async accounts => {
 	const twoETH = toUnit('2.0');
 
 	let synthetix,
+		synthetixProxy,
 		systemStatus,
 		systemSettings,
 		exchangeRates,
@@ -244,6 +245,7 @@ contract('DebtCache', async accounts => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH', 'iETH'];
 		({
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
@@ -285,6 +287,9 @@ contract('DebtCache', async accounts => {
 				'WETH',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH, iETH]);
 	});
