@@ -829,7 +829,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'CircuitBreaker',
-			mocks: [],
+			mocks: ['Issuer', 'ExchangeRates'],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
 		},
 		{

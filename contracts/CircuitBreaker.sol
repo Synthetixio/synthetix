@@ -34,9 +34,6 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
 
     bytes32 public constant CONTRACT_NAME = "CircuitBreaker";
 
-    // SIP-65: Decentralized circuit breaker
-    uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
-
     // is internal to have lastValue getter in interface in solidity v0.5
     // TODO: after upgrading solidity, switch to just public lastValue instead
     //  of maintaining this internal one
@@ -46,6 +43,8 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -53,8 +52,10 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
+        bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_ISSUER;
+        newAddresses[2] = CONTRACT_EXRATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -96,13 +97,16 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
      * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
      */
-    function probeCircuitBreaker(address oracleAddress, uint value) external returns (bool circuitBroken) {
+    function probeCircuitBreaker(address oracleAddress, uint value) external onlyProbers returns (bool circuitBroken) {
         // check system status
         if (
-            !systemStatus().systemSuspended() && _isRateOutOfBounds(oracleAddress, value) && _lastValue[oracleAddress] != 0
+            _isRateOutOfBounds(oracleAddress, value) && 
+            _lastValue[oracleAddress] != 0 &&
+            !_circuitBroken[oracleAddress] &&
+            !systemStatus().systemSuspended()
         ) {
             _circuitBroken[oracleAddress] = true;
-            emit CircuitBroken(oracleAddress);
+            emit CircuitBroken(oracleAddress, _lastValue[oracleAddress], value);
         }
 
         _lastValue[oracleAddress] = value;
@@ -115,11 +119,11 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      * resets the stored value for _lastValue for multiple currencies to the latest rate
      * can be used to un-suspend synths after a suspension happenned
      * doesn't check deviations here, so believes that owner knows better
-     * emits LastRateOverriden
+     * emits LastRateOverridden
      */
     function resetLastValue(address[] calldata oracleAddresses, uint[] calldata values) external onlyOwner {
         for (uint i = 0; i < oracleAddresses.length; i++) {
-            emit LastValueOverriden(oracleAddresses[i], _lastValue[oracleAddresses[i]], values[i]);
+            emit LastValueOverridden(oracleAddresses[i], _lastValue[oracleAddresses[i]], values[i]);
             _lastValue[oracleAddresses[i]] = values[i];
             _circuitBroken[oracleAddresses[i]] = false;
         }
@@ -158,10 +162,24 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
         return false;
     }
 
+    // ========== MODIFIERS =======
+
+    modifier onlyProbers() {
+        require(
+            msg.sender == requireAndGetAddress(CONTRACT_ISSUER) ||
+            msg.sender == requireAndGetAddress(CONTRACT_EXRATES),
+            "Only internal contracts can call this function"
+        );
+
+        _;
+    }
+
     // ========== EVENTS ==========
 
-    // @notice signals that a the "last rate" was overriden by one of the admin methods
-    //   with a value that didn't come direclty from the ExchangeRates.getRates methods
-    event LastValueOverriden(address indexed oracleAddress, uint256 previousRate, uint256 newRate);
-    event CircuitBroken(address indexed oracleAddress);
+    // @notice signals that a the "last value" was overridden by one of the admin methods
+    //   with a value that didn't come directly from the ExchangeRates.getRates methods
+    event LastValueOverridden(address indexed oracleAddress, uint256 previousValue, uint256 newValue);
+
+    // @notice signals that the circuit was broken
+    event CircuitBroken(address indexed oracleAddress, uint256 previousValue, uint256 newValue);
 }

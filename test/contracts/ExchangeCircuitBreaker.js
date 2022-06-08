@@ -52,7 +52,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 
 	// utility function update rates for aggregators that are already set up
 	async function updateRates(keys, rates) {
-		await updateAggregatorRates(exchangeRates, keys, rates);
+		await updateAggregatorRates(exchangeRates, null, keys, rates);
 	}
 
 	const itDeviatesCorrectly = () => {
@@ -409,7 +409,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		});
 	};
 
-	describe.skip('When using Synthetix', () => {
+	describe('When using Synthetix', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
@@ -478,7 +478,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		itPricesSpikeDeviation();
 	});
 
-	describe.skip('When using MintableSynthetix', () => {
+	describe('When using MintableSynthetix', () => {
 		before(async () => {
 			({
 				Exchanger: exchanger,
