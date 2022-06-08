@@ -723,6 +723,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
+        // Note: While amountToLiquidate takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
+        // Therefore, it is correct to add the penalty modification below to the totalRedeemed.
         totalRedeemed = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
         // The balanceOf here can be considered "transferable" since it's not escrowed,
