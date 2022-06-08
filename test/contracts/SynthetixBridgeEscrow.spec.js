@@ -1,22 +1,27 @@
 const { contract, web3 } = require('hardhat');
 const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
+const { artifacts } = require('hardhat');
 const { toBN } = web3.utils;
 
 contract('SynthetixBridgeEscrow (spec tests) @ovm-skip', accounts => {
 	const [, owner, snxBridgeToOptimism, user] = accounts;
 
-	let synthetix, synthetixBridgeEscrow;
+	let synthetix, synthetixProxy, synthetixBridgeEscrow;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
+				ProxyERC20Synthetix: synthetixProxy,
 				SynthetixBridgeEscrow: synthetixBridgeEscrow,
 			} = await setupAllContracts({
 				accounts,
 				contracts: ['Synthetix', 'SynthetixBridgeEscrow'],
 			}));
+
+			// use implementation ABI on the proxy address to simplify calling
+			synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 		});
 
 		describe('approveBridge', () => {

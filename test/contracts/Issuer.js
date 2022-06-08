@@ -48,6 +48,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	const [, owner, account1, account2, account3, account6, synthetixBridgeToOptimism] = accounts;
 
 	let synthetix,
+		synthetixProxy,
 		systemStatus,
 		systemSettings,
 		delegateApprovals,
@@ -74,6 +75,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
 		({
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
@@ -117,6 +119,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthetixDebtShare',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		// mocks for bridge
 		await addressResolver.importAddresses(
