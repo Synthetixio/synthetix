@@ -635,10 +635,20 @@
 			"released": "both"
 		},
 		{
+			"sip": 235,
+			"layer": "both",
+			"sources": ["Issuer"]
+		},
+		{
 			"sip": 236,
 			"layer": "both",
 			"sources": ["Exchanger"],
 			"released": "both"
+		},
+		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Synthetix", "Synths.*", "Issuer"]
 		},
 		{
 			"sip": 239,

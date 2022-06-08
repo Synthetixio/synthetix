@@ -10,6 +10,7 @@ const {
 } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts } = require('./setup');
+const { artifacts } = require('hardhat');
 const { toUnit, fastForward } = require('../utils')();
 
 contract('LiquidatorRewards', accounts => {
@@ -23,6 +24,7 @@ contract('LiquidatorRewards', accounts => {
 		liquidatorRewards,
 		synths,
 		synthetix,
+		synthetixProxy,
 		synthetixDebtShare,
 		systemSettings;
 
@@ -67,6 +69,7 @@ contract('LiquidatorRewards', accounts => {
 			ExchangeRates: exchangeRates,
 			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SynthetixDebtShare: synthetixDebtShare,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
@@ -88,6 +91,9 @@ contract('LiquidatorRewards', accounts => {
 				'SystemSettings',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
 	});

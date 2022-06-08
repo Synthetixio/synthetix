@@ -256,7 +256,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         );
     }
 
-    function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
+    function transfer(address to, uint value) external onlyProxyOrInternal systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
 
@@ -270,7 +270,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address from,
         address to,
         uint value
-    ) external optionalProxy systemActive returns (bool) {
+    ) external onlyProxyOrInternal systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(from, value);
 
@@ -473,6 +473,39 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function _onlyExchanger() private view {
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
+    }
+
+    modifier onlyProxyOrInternal {
+        _onlyProxyOrInternal();
+        _;
+    }
+
+    function _onlyProxyOrInternal() internal {
+        if (msg.sender == address(proxy)) {
+            // allow proxy through, messageSender should be already set correctly
+            return;
+        } else if (_isInternalTransferCaller(msg.sender)) {
+            // optionalProxy behaviour only for the internal legacy contracts
+            messageSender = msg.sender;
+        } else {
+            revert("Only the proxy can call");
+        }
+    }
+
+    /// some legacy internal contracts use transfer methods directly on implementation
+    /// which isn't supported due to SIP-238 for other callers
+    function _isInternalTransferCaller(address caller) internal view returns (bool) {
+        // These entries are not required or cached in order to allow them to not exist (==address(0))
+        // e.g. due to not being available on L2 or at some future point in time.
+        return
+            // ordered to reduce gas for more frequent calls, bridge first, vesting after, legacy last
+            caller == resolver.getAddress("SynthetixBridgeToOptimism") ||
+            caller == resolver.getAddress("RewardEscrowV2") ||
+            // legacy contracts
+            caller == resolver.getAddress("RewardEscrow") ||
+            caller == resolver.getAddress("SynthetixEscrow") ||
+            caller == resolver.getAddress("TradingRewards") ||
+            caller == resolver.getAddress("Depot");
     }
 
     // ========== EVENTS ==========

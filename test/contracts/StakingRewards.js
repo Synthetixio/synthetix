@@ -10,6 +10,7 @@ const {
 } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { mockToken, setupAllContracts, setupContract } = require('./setup');
+const { artifacts } = require('hardhat');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
 contract('StakingRewards', accounts => {
@@ -25,6 +26,7 @@ contract('StakingRewards', accounts => {
 
 	// Synthetix is the rewardsToken
 	let rewardsToken,
+		rewardsTokenProxy,
 		stakingToken,
 		externalRewardsToken,
 		exchangeRates,
@@ -65,12 +67,16 @@ contract('StakingRewards', accounts => {
 			RewardsDistribution: rewardsDistribution,
 			FeePool: feePool,
 			Synthetix: rewardsToken,
+			ProxyERC20Synthetix: rewardsTokenProxy,
 			ExchangeRates: exchangeRates,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			contracts: ['RewardsDistribution', 'Synthetix', 'FeePool', 'SystemSettings'],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		rewardsToken = await artifacts.require('Synthetix').at(rewardsTokenProxy.address);
 
 		stakingRewards = await setupContract({
 			accounts,

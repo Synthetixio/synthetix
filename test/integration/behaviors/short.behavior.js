@@ -5,10 +5,7 @@ const {
 } = ethers;
 const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
-const {
-	toBytes32,
-	constants: { ZERO_BYTES32 },
-} = require('../../../index');
+const { toBytes32 } = require('../../../index');
 const { getLoan, getShortInteractionDelay, setShortInteractionDelay } = require('../utils/loans');
 const { ensureBalance } = require('../utils/balances');
 const { exchangeSynths } = require('../utils/exchanging');
@@ -95,21 +92,14 @@ function itCanOpenAndCloseShort({ ctx }) {
 					});
 
 					before('add the shortable synths if needed', async () => {
-						const synthToTest = await CollateralShort.synthsByKey(shortableSynth);
+						await CollateralShort.connect(owner).addSynths(
+							[toBytes32(`SynthsETH`)],
+							[shortableSynth]
+						);
 
-						if (synthToTest !== ZERO_BYTES32) {
-							await CollateralShort.connect(owner).addSynths(
-								[toBytes32(`SynthsETH`)],
-								[shortableSynth]
-							);
+						await CollateralManager.addSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
 
-							await CollateralManager.addSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
-
-							await CollateralManager.addShortableSynths(
-								[toBytes32(`SynthsETH`)],
-								[shortableSynth]
-							);
-						}
+						await CollateralManager.addShortableSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
 					});
 
 					before('approve the synths for collateral short', async () => {
