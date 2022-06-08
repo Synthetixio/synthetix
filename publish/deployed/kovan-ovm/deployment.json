@@ -185,8 +185,8 @@
 			"address": "0x75d83253021b7874DF52B1f954Eb70AcA918a537",
 			"source": "MintableSynthetix",
 			"link": "https://kovan-explorer.optimism.io/address/0x75d83253021b7874DF52B1f954Eb70AcA918a537",
-			"timestamp": "2022-06-08T19:02:53.131Z",
-			"txn": "",
+			"timestamp": "2022-06-08T19:02:39.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0xeab4a37c769725bae9c1519c6861abcc7027581ad11daf6e4f529acb8054ebdd",
 			"network": "kovan"
 		},
 		"ProxySynthetix": {
@@ -230,8 +230,8 @@
 			"address": "0x1433512539954651cB95A73D4C551943fB723b48",
 			"source": "Issuer",
 			"link": "https://kovan-explorer.optimism.io/address/0x1433512539954651cB95A73D4C551943fB723b48",
-			"timestamp": "2022-06-08T19:03:00.156Z",
-			"txn": "",
+			"timestamp": "2022-06-08T19:02:54.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0x0d9753973c94433779082a9d87c82ffe25de5fc40ed955e0a554fbaa4478fcc2",
 			"network": "kovan"
 		},
 		"TradingRewards": {
@@ -365,8 +365,8 @@
 			"address": "0xCB2A226c20f404d7fcFC3eC95B38D06877284527",
 			"source": "MultiCollateralSynth",
 			"link": "https://kovan-explorer.optimism.io/address/0xCB2A226c20f404d7fcFC3eC95B38D06877284527",
-			"timestamp": "2022-06-08T19:03:35.582Z",
-			"txn": "",
+			"timestamp": "2022-06-08T19:03:21.000Z",
+			"txn": "https://kovan-explorer.optimism.io/tx/0x89c258b4bd470f4c42153935ff81b13155df9197ddf132b13cb702ee0c811e9d",
 			"network": "kovan"
 		},
 		"TokenStatesBTC": {
