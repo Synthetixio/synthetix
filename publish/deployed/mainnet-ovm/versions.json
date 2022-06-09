@@ -871,8 +871,9 @@
 			},
 			"SynthsUSD": {
 				"address": "0xD1599E478cC818AFa42A4839a6C665D9279C3E50",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthetixBridgeToBase": {
 				"address": "0x8F7b21BF5f8490FAa63386f6f6434C6Ae8D8A120",
@@ -882,38 +883,45 @@
 			},
 			"SynthsETH": {
 				"address": "0x0681883084b5De1564FE2706C87affD77F1677D5",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthsBTC": {
 				"address": "0xC4Be4583bc0307C56CF301975b2B2B1E5f95fcB2",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthsLINK": {
 				"address": "0x2302D7F7783e2712C48aA684451b9d706e74F299",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthsSOL": {
 				"address": "0x91DBC6f587D043FEfbaAD050AB48696B30F13d89",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthsAVAX": {
 				"address": "0x5D7569CD81dc7c8E7FA201e66266C9D0c8a3712D",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthsMATIC": {
 				"address": "0xF5d0BFBc617d3969C1AcE93490A76cE80Db1Ed0e",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SynthsEUR": {
 				"address": "0xB16ef128b11e457afA07B09FCE52A01f5B05a937",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"SignedSafeDecimalMath": {
 				"address": "0x253914cf059f4c3E277c28060C404acFc38FB6e2",
@@ -947,8 +955,9 @@
 			},
 			"SynthsAAVE": {
 				"address": "0x5eA2544551448cF6DcC1D853aDdd663D480fd8d3",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"TokenStatesUNI": {
 				"address": "0xf32b995Fe4dDf540C848236dB9638d137Aa9b6ff",
@@ -962,8 +971,9 @@
 			},
 			"SynthsUNI": {
 				"address": "0xC19d27d1dA572d582723C1745650E51AC4Fc877F",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.1"
 			},
 			"FuturesMarketManager": {
 				"address": "0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B",
@@ -1139,8 +1149,9 @@
 			},
 			"SynthsINR": {
 				"address": "0xc66499aCe3B6c6a30c784bE5511E8d338d543913",
-				"status": "current",
-				"keccak256": "0x5aa9b13db62a3e7e5f5009c03f464ad36a50f22d32de6c36028a192d7366830d"
+				"status": "replaced",
+				"keccak256": "0x5aa9b13db62a3e7e5f5009c03f464ad36a50f22d32de6c36028a192d7366830d",
+				"replaced_in": "v2.72.1"
 			},
 			"FuturesMarketAPE": {
 				"address": "0xFe00395ec846240dc693e92AB2Dd720F94765Aa3",
@@ -1211,8 +1222,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x274D1dbe298993EaD5AC1B25624F53786d16006e",
-				"status": "current",
-				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362"
+				"status": "replaced",
+				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362",
+				"replaced_in": "v2.72.1"
 			}
 		}
 	},
@@ -1242,13 +1254,89 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0x84Ec90f9CD4D00Ad95002d88D35f99cd9F66E393",
-				"status": "current",
-				"keccak256": "0x308bed12a57fc1a4dea0c76ce2cb9060af89840d73e5ff1f8bbd7af35e56062b"
+				"status": "replaced",
+				"keccak256": "0x308bed12a57fc1a4dea0c76ce2cb9060af89840d73e5ff1f8bbd7af35e56062b",
+				"replaced_in": "v2.72.1"
 			},
 			"CollateralShort": {
 				"address": "0xeb4b5ABcE7310855319440d936cd3aDd77DFA193",
 				"status": "current",
 				"keccak256": "0x245135b67168b129937d6e9526846712ff4ff9739077f2fabab67315a3cf3a45"
+			}
+		}
+	},
+	"v2.72.1": {
+		"tag": "v2.72.1",
+		"fulltag": "v2.72.1",
+		"release": "Saiph",
+		"network": "mainnet",
+		"date": "2022-06-09T17:30:33-04:00",
+		"commit": "0a105ae7a7ef95c2f7516d7854ffade71b6ad3b7",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xFE8E48Bf36ccC3254081eC8C65965D1c8b2E744D",
+				"status": "current",
+				"keccak256": "0xe5dd48f48970597d6808bffeeb3b787580800e99158506d0d726f1ecd86d4b57"
+			},
+			"Issuer": {
+				"address": "0xc5Ae1Eca0AFC915F88C0135cdaaf270d710f03FF",
+				"status": "current",
+				"keccak256": "0x34e363bf253f754b3a5cd444df9ce0aa3d4079419d362c6bbc281d1df8128923"
+			},
+			"SynthsUSD": {
+				"address": "0xDfA2d3a0d32F870D87f8A0d7AA6b9CdEB7bc5AdB",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsETH": {
+				"address": "0xe9dceA0136FEFC76c4E639Ec60CCE70482E2aCF7",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsBTC": {
+				"address": "0x421DEF861D623F7123dfE0878D86E9576cbb3975",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsLINK": {
+				"address": "0x0F6877e0Bb54a0739C6173A814B39D5127804123",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsSOL": {
+				"address": "0x04B50a5992Ea2281E14d43494d656698EA9C24dD",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsAVAX": {
+				"address": "0x368A5126fF8e659004b6f9C9F723E15632e2B428",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsMATIC": {
+				"address": "0xf49C194954b6B91855aC06D6C88Be316da60eD96",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsEUR": {
+				"address": "0xdEdb0b04AFF1525bb4B6167F00e61601690c1fF2",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsAAVE": {
+				"address": "0x34783A738DdC355cD7c737D4101b20622681332a",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsUNI": {
+				"address": "0xcF2E165D2359E3C4dFF1E10eC40dBB5a745223A9",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsINR": {
+				"address": "0x34c2360ffe5D21542f76e991FFD104f281D4B3fb",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
 			}
 		}
 	}
