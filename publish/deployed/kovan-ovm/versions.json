@@ -1373,8 +1373,9 @@
 			},
 			"SynthsUSD": {
 				"address": "0x360bc0503362130aBE0b3393aC078B03d73a9EcA",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthetixBridgeToBase": {
 				"address": "0xED4f0C6DfE3235e9A93B808a60994C8697cC2236",
@@ -1384,43 +1385,51 @@
 			},
 			"SynthsETH": {
 				"address": "0x9745E33Fa3151065568385f915C48d9E538B42a2",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsBTC": {
 				"address": "0x32FebC59E02FA5DaFb0A5e6D603a0693c53A0F34",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsLINK": {
 				"address": "0x5e719d22C6ad679B28FE17E9cf56d3ad613a6723",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsUNI": {
 				"address": "0x99Fd0EbBE8144591F75A12E3E0edcF6d51DfF877",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsAAVE": {
 				"address": "0xcDcD73dE9cc2B0A7285B75765Ef7b957963E57aa",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsSOL": {
 				"address": "0xBA097Fa1ABF647995154c8e9D77CEd04123b593f",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsAVAX": {
 				"address": "0xdA730bF21BA6360af34cF065B042978017f2bf49",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SynthsMATIC": {
 				"address": "0xDbcfd6F265528d08FB7faA0934e18cf49A03AD65",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"SignedSafeDecimalMath": {
 				"address": "0xAF5347b97159B3b8c9e0D98F0E1E9B80eB12EBd7",
@@ -1526,8 +1535,9 @@
 			},
 			"SynthsWTI": {
 				"address": "0x8e08BF90B979698AdB6d722E9e27263f36366414",
-				"status": "current",
-				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb"
+				"status": "replaced",
+				"keccak256": "0x55a9f9b2712418624d2d19336d7a2940d79491ddbbf3b61101c6090d73289feb",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"FuturesMarketSOL": {
 				"address": "0x1991bEA1eB08a78701F3330934B2301Fc6520AbA",
@@ -1660,8 +1670,9 @@
 			},
 			"SynthsXAU": {
 				"address": "0x8B1CC80c79025477Ab1665284ff08d731FcbC3cF",
-				"status": "current",
-				"keccak256": "0x0d621365078c5730c4cf0d6d60be61da727f4981af48a23bd14332f73d4f0b1f"
+				"status": "replaced",
+				"keccak256": "0x0d621365078c5730c4cf0d6d60be61da727f4981af48a23bd14332f73d4f0b1f",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"TokenStatesXAG": {
 				"address": "0x32bB37418b682aEC849fdb86e9947847BEe392e7",
@@ -1675,8 +1686,9 @@
 			},
 			"SynthsXAG": {
 				"address": "0xf94f90B6BeEEb67327581Fe104a1A078B7AC8F89",
-				"status": "current",
-				"keccak256": "0x0d621365078c5730c4cf0d6d60be61da727f4981af48a23bd14332f73d4f0b1f"
+				"status": "replaced",
+				"keccak256": "0x0d621365078c5730c4cf0d6d60be61da727f4981af48a23bd14332f73d4f0b1f",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"FuturesMarketXAU": {
 				"address": "0x86BE944F673D77B93dc5F19655C915b002d42beb",
@@ -1750,8 +1762,9 @@
 			},
 			"SynthsEUR": {
 				"address": "0x2eC164E5b91f9627193C0268F1462327e3D7EC68",
-				"status": "current",
-				"keccak256": "0x5aa9b13db62a3e7e5f5009c03f464ad36a50f22d32de6c36028a192d7366830d"
+				"status": "replaced",
+				"keccak256": "0x5aa9b13db62a3e7e5f5009c03f464ad36a50f22d32de6c36028a192d7366830d",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"FuturesMarketEUR": {
 				"address": "0xd33773480c9b05FDC22359d51992DCE704bDa1d2",
@@ -1817,8 +1830,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x28CAb2c065bC0aAE84f6763e621B0b814C77922B",
-				"status": "current",
-				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362"
+				"status": "replaced",
+				"keccak256": "0xa3693319984f9dfdc43ef60dee3316c2ad593abfa3113b62ff79b72c2309d362",
+				"replaced_in": "v2.72.0-alpha"
 			}
 		}
 	},
@@ -1832,13 +1846,99 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0x0E758fb217AFd27D282594f5bca1828985906f03",
-				"status": "current",
-				"keccak256": "0x2a016421379721a03fc0cc08d1f6b4f0b90ea713a007b516a9b78bd335fb555c"
+				"status": "replaced",
+				"keccak256": "0x2a016421379721a03fc0cc08d1f6b4f0b90ea713a007b516a9b78bd335fb555c",
+				"replaced_in": "v2.72.0-alpha"
 			},
 			"CollateralShort": {
 				"address": "0x65d3c950A30524D9f882cFf826040F3941D1ADAA",
 				"status": "current",
 				"keccak256": "0xe60ff4b2b1f5b39a328b8a9f8e34d54fc4a3d9c33729ef41323f14ffae099f2b"
+			}
+		}
+	},
+	"v2.72.0-alpha": {
+		"tag": "v2.72.0-alpha",
+		"fulltag": "v2.72.0-alpha",
+		"release": "Saiph",
+		"network": "kovan",
+		"date": "2022-06-08T17:25:53-04:00",
+		"commit": "be24baf205fbc2678da47705e7b2fcd52b6a534e",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x75d83253021b7874DF52B1f954Eb70AcA918a537",
+				"status": "current",
+				"keccak256": "0xe5dd48f48970597d6808bffeeb3b787580800e99158506d0d726f1ecd86d4b57"
+			},
+			"Issuer": {
+				"address": "0x1433512539954651cB95A73D4C551943fB723b48",
+				"status": "current",
+				"keccak256": "0x34e363bf253f754b3a5cd444df9ce0aa3d4079419d362c6bbc281d1df8128923"
+			},
+			"SynthsUSD": {
+				"address": "0xbdb2Bf553b5f9Ca3327809F3748b86C106719C95",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsETH": {
+				"address": "0xCB2A226c20f404d7fcFC3eC95B38D06877284527",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsBTC": {
+				"address": "0x9C570575586ba29ed8a2523639865fF131F59411",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsLINK": {
+				"address": "0x1f42bE0572fccf74356C8e28A68A2dd60E7c6454",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsUNI": {
+				"address": "0x2269411619c1FF9C02F251167d583450EB1E4847",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsAAVE": {
+				"address": "0x7EFfe4DF5961471B48Bb3c65456ff97A594b0958",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsSOL": {
+				"address": "0x1a77afdFa733292C17975e83b08091674A8FF3B4",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsAVAX": {
+				"address": "0xDe64a263c044e193B50d5eafd5EDD330997EA39e",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsMATIC": {
+				"address": "0x042c26bBa8741B9b277695426861c09dD1c41366",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsWTI": {
+				"address": "0xc696eB9b1726256bd2039a322aBBd48bD389dEF4",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsXAU": {
+				"address": "0xce57Aa68D326f75eB815FD3c0b18D093775Bc86B",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsXAG": {
+				"address": "0xe97b8152CB74ED9935d2f8b2C09331415A6ba856",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			},
+			"SynthsEUR": {
+				"address": "0x92d4e5CAfbf3219E81f1c904068Fe7CD2d440F57",
+				"status": "current",
+				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
 			}
 		}
 	}
