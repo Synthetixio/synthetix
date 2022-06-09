@@ -154,6 +154,7 @@ contract('MultiCollateralSynth', accounts => {
 			await proxy.setTarget(synth.address, { from: owner });
 			await issuer.addSynth(synth.address, { from: owner });
 			this.synth = synth;
+			this.synthViaProxy = await MultiCollateralSynth.at(proxy.address);
 		});
 
 		it('ensure only known functions are mutative', () => {
@@ -178,6 +179,40 @@ contract('MultiCollateralSynth', accounts => {
 					'EtherWrapper',
 				].map(toBytes32)
 			);
+		});
+
+		// SIP-238
+		describe('implementation does not allow transfer calls (but allows approve)', () => {
+			const revertMsg = 'Only the proxy';
+			const amount = toUnit('100');
+			beforeEach(async () => {
+				// approve for transferFrom to work
+				await this.synthViaProxy.approve(account1, amount, { from: owner });
+			});
+			it('approve does not revert', async () => {
+				await this.synth.approve(account1, amount, { from: owner });
+			});
+			it('transfer reverts', async () => {
+				await assert.revert(this.synth.transfer(account1, amount, { from: owner }), revertMsg);
+			});
+			it('transferFrom reverts', async () => {
+				await assert.revert(
+					this.synth.transferFrom(owner, account1, amount, { from: account1 }),
+					revertMsg
+				);
+			});
+			it('transferAndSettle reverts', async () => {
+				await assert.revert(
+					this.synth.transferAndSettle(account1, amount, { from: account1 }),
+					revertMsg
+				);
+			});
+			it('transferFromAndSettle reverts', async () => {
+				await assert.revert(
+					this.synth.transferFromAndSettle(owner, account1, amount, { from: account1 }),
+					revertMsg
+				);
+			});
 		});
 
 		describe('when non-multiCollateral tries to issue', () => {
@@ -249,19 +284,21 @@ contract('MultiCollateralSynth', accounts => {
 			});
 
 			describe('when synthetix set to account1', () => {
+				const accountToIssue = account1;
+				const issueAmount = toUnit('1');
+
 				beforeEach(async () => {
 					// have account1 simulate being Issuer so we can invoke issue and burn
-					await resolver.importAddresses([toBytes32('Issuer')], [account1], { from: owner });
+					await resolver.importAddresses([toBytes32('Issuer')], [accountToIssue], { from: owner });
 					// now have the synth resync its cache
 					await this.synth.rebuildCache();
 				});
+
 				it('then it can issue new synths as account1', async () => {
-					const accountToIssue = account1;
-					const issueAmount = toUnit('1');
 					const totalSupplyBefore = await this.synth.totalSupply();
 					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
 
-					await this.synth.issue(accountToIssue, issueAmount, { from: account1 });
+					await this.synth.issue(accountToIssue, issueAmount, { from: accountToIssue });
 
 					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
 					assert.bnEqual(

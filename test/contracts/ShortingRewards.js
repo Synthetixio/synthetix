@@ -38,6 +38,7 @@ contract('ShortingRewards', accounts => {
 
 	// Synthetix is the rewardsToken
 	let rewardsToken,
+		rewardsTokenProxy,
 		exchangeRates,
 		shortingRewards,
 		rewardsDistribution,
@@ -115,6 +116,7 @@ contract('ShortingRewards', accounts => {
 			DebtCache: debtCache,
 			RewardsDistribution: rewardsDistribution,
 			Synthetix: rewardsToken,
+			ProxyERC20Synthetix: rewardsTokenProxy,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
@@ -134,6 +136,9 @@ contract('ShortingRewards', accounts => {
 				'CollateralUtil',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		rewardsToken = await artifacts.require('Synthetix').at(rewardsTokenProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sBTC, iBTC, sETH, iETH]);
 

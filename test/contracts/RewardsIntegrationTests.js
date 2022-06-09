@@ -16,6 +16,7 @@ const {
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
+const { artifacts } = require('hardhat');
 
 contract('Rewards Integration Tests', accounts => {
 	// These functions are for manual debugging:
@@ -126,6 +127,7 @@ contract('Rewards Integration Tests', accounts => {
 	// VARIABLES
 	let feePool,
 		synthetix,
+		synthetixProxy,
 		exchangeRates,
 		exchanger,
 		debtCache,
@@ -150,6 +152,7 @@ contract('Rewards Integration Tests', accounts => {
 			RewardEscrowV2: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SynthsUSD: sUSDContract,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
@@ -171,6 +174,9 @@ contract('Rewards Integration Tests', accounts => {
 				'LiquidatorRewards',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sBTC, iBTC, sETH, ETH]);
 

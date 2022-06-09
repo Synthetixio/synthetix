@@ -10,11 +10,13 @@ const {
 		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
 	},
 } = require('../../');
+const { artifacts } = require('hardhat');
 
 contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 	const [, owner, randomAddress] = accounts;
 
 	let synthetix,
+		synthetixProxy,
 		synthetixBridgeToOptimism,
 		synthetixBridgeEscrow,
 		systemSettings,
@@ -24,6 +26,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
+				ProxyERC20Synthetix: synthetixProxy,
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 				SystemSettings: systemSettings,
 				SynthetixBridgeEscrow: synthetixBridgeEscrow,
@@ -37,6 +40,9 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 					'RewardsDistribution',
 				],
 			}));
+
+			// use implementation ABI on the proxy address to simplify calling
+			synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 		});
 
 		it('returns the expected cross domain message gas limit', async () => {
