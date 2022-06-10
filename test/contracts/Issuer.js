@@ -48,6 +48,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	const [, owner, account1, account2, account3, account6, synthetixBridgeToOptimism] = accounts;
 
 	let synthetix,
+		synthetixProxy,
 		systemStatus,
 		systemSettings,
 		delegateApprovals,
@@ -74,6 +75,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
 		({
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
@@ -117,6 +119,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'SynthetixDebtShare',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		// mocks for bridge
 		await addressResolver.importAddresses(
@@ -171,6 +176,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'removeSynths',
 				'setCurrentPeriodId',
 				'setLastDebtRatio',
+				'upgradeCollateralShort',
 			],
 		});
 	});
@@ -190,7 +196,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [sUSD, owner, toUnit(100)],
 				accounts,
 				address: synthetixBridgeToOptimism,
-				reason: 'Issuer: Only trusted minters can perform this action',
+				reason: 'Issuer: only trusted minters',
 			});
 		});
 
@@ -201,7 +207,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// full functionality of this method requires issuing synths,
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
-				reason: 'Issuer: Only trusted minters can perform this action',
+				reason: 'Issuer: only trusted minters',
 			});
 		});
 
@@ -292,6 +298,25 @@ contract('Issuer (via Synthetix)', async accounts => {
 				accounts,
 				address: owner,
 				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('fails if both networks addresses set for trusted minters', () => {
+			beforeEach(async () => {
+				await addressResolver.importAddresses(
+					[toBytes32('SynthetixBridgeToBase')],
+					[issuer.address],
+					{ from: owner }
+				);
+			});
+
+			it('reverts', async () => {
+				await assert.revert(
+					issuer.issueSynthsWithoutDebt(sUSD, owner, toUnit(100), {
+						from: synthetixBridgeToOptimism,
+					}),
+					'Issuer: one minter must be 0x0'
+				);
 			});
 		});
 	});
@@ -2923,6 +2948,85 @@ contract('Issuer (via Synthetix)', async accounts => {
 						await synthetix.burnSynths(toUnit('30'), { from: account1 });
 						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // 750 - 75 sds
 						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), toUnit('270')); // 300 - 30 susd
+					});
+				});
+			});
+
+			describe('upgradeCollateralShort', () => {
+				const collateralShortMock = account1;
+				const wrongCollateralShort = account2;
+
+				beforeEach(async () => {
+					// Import CollateralShortLegacy address (mocked)
+					await addressResolver.importAddresses(
+						[toBytes32('CollateralShortLegacy')],
+						[collateralShortMock],
+						{
+							from: owner,
+						}
+					);
+
+					await exchanger.rebuildCache();
+				});
+
+				describe('basic protection', () => {
+					it('should not allow address(0) for the CollateralShortLegacy', async () => {
+						await assert.revert(
+							issuer.upgradeCollateralShort(ZERO_ADDRESS, toUnit(0.1), { from: owner }),
+							'Issuer: invalid address'
+						);
+					});
+
+					it('should not allow an invalid address for the CollateralShortLegacy', async () => {
+						await assert.revert(
+							issuer.upgradeCollateralShort(wrongCollateralShort, toUnit(0.1), { from: owner }),
+							'Issuer: wrong short address'
+						);
+					});
+
+					it('should not allow 0 as amount', async () => {
+						await assert.revert(
+							issuer.upgradeCollateralShort(collateralShortMock, toUnit(0), {
+								from: owner,
+							}),
+							'Issuer: cannot burn 0 synths'
+						);
+					});
+				});
+
+				describe('migrates balance', () => {
+					let beforeCurrentDebt, beforeSUSDBalance;
+					const amountToBurn = toUnit(10);
+
+					beforeEach(async () => {
+						// Give some SNX to collateralShortMock
+						await synthetix.transfer(collateralShortMock, toUnit('1000'), { from: owner });
+
+						// issue max sUSD
+						const maxSynths = await synthetix.maxIssuableSynths(collateralShortMock);
+						await synthetix.issueSynths(maxSynths, { from: collateralShortMock });
+
+						// get before* values
+						beforeSUSDBalance = await sUSDContract.balanceOf(collateralShortMock);
+						const currentDebt = await debtCache.currentDebt();
+						beforeCurrentDebt = currentDebt['0'];
+
+						// call upgradeCollateralShort
+						await issuer.upgradeCollateralShort(collateralShortMock, amountToBurn, {
+							from: owner,
+						});
+					});
+
+					it('burns synths', async () => {
+						assert.bnEqual(
+							await sUSDContract.balanceOf(collateralShortMock),
+							beforeSUSDBalance.sub(amountToBurn)
+						);
+					});
+
+					it('reduces currentDebt', async () => {
+						const currentDebt = await debtCache.currentDebt();
+						assert.bnEqual(currentDebt['0'], beforeCurrentDebt.sub(amountToBurn));
 					});
 				});
 			});

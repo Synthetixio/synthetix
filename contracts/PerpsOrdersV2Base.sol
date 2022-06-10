@@ -104,7 +104,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
-    function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint feeRate, bool tooVolatile) {
+    function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint rate, bool tooVolatile) {
         bytes32 baseAsset = storageContract().marketScalars(marketKey).baseAsset;
         return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
     }
@@ -117,7 +117,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return _rate;
     }
 
-    function _feeRate(bytes32 marketKey) internal view returns (uint feeRate) {
+    function _feeRate(bytes32 marketKey) internal view returns (uint rate) {
         // add to base fee
         return _baseFee(marketKey).add(_dynamicFeeRateChecked(marketKey));
     }
