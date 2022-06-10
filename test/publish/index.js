@@ -849,7 +849,9 @@ describe('publish scripts', () => {
 											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
 										);
 
-										const suspended = await CircuitBreaker.circuitBroken(aggregators['ETH'].address);
+										const suspended = await CircuitBreaker.circuitBroken(
+											aggregators['ETH'].address
+										);
 										assert.strictEqual(suspended, true);
 									});
 								});

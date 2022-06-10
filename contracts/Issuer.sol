@@ -31,8 +31,6 @@ import "./Proxyable.sol";
 
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 interface IProxy {
     function target() external view returns (address);
 }
@@ -777,8 +775,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool issueMax
     ) internal {
         // check breaker
-        if (!_verifyCircuitBreakers()) {
-            console.log("BREAKER TRIGGER");
+        if (_verifyCircuitBreakers()) {
             return;
         }
 
@@ -811,7 +808,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint existingDebt
     ) internal returns (uint amountBurnt) {
         // check breaker
-        if (!_verifyCircuitBreakers()) {
+        if (_verifyCircuitBreakers()) {
             return 0;
         }
 
@@ -840,7 +837,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool burnToTarget
     ) internal {
         // check breaker
-        if (!_verifyCircuitBreakers()) {
+        if (_verifyCircuitBreakers()) {
             return;
         }
 
@@ -918,13 +915,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    // trips the breaker and returns boolean, where true means the rate is healthy
+    // trips the breaker and returns boolean, where true means the breaker has tripped state
     function _verifyCircuitBreakers() internal returns (bool) {
         address debtRatioAggregator = requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO);
         (, int256 rawRatio, , , ) = AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
         (, bool broken, ) = exchangeRates().rateWithSafetyChecks(SNX);
 
-        return !circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio)) || !broken;
+        return circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio)) || broken;
     }
 
     /* ========== MODIFIERS ========== */

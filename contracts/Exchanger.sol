@@ -23,8 +23,6 @@ import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
 
-import "hardhat/console.sol";
-
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
     function emitExchangeTracking(
