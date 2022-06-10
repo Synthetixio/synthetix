@@ -81,7 +81,7 @@ contract('FuturesMarketManager', accounts => {
 	describe('Basic parameters', () => {
 		it('Requires sUSD contract', async () => {
 			const required = await futuresMarketManager.resolverAddressesRequired();
-			assert.deepEqual(required, [toBytes32('SynthsUSD')]);
+			assert.deepEqual(required, ['SynthsUSD', 'FeePool', 'Exchanger'].map(toBytes32));
 		});
 
 		it('only expected functions are mutable', () => {
