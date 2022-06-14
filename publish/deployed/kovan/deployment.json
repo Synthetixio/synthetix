@@ -414,33 +414,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStatesDEFI": {
-			"name": "TokenStatesDEFI",
-			"address": "0xa8eE3730031f28a4a4a3Ed28A3308d83cabd9Ce1",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xa8eE3730031f28a4a4a3Ed28A3308d83cabd9Ce1",
-			"timestamp": "2019-11-19T04:27:22.908Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysDEFI": {
-			"name": "ProxysDEFI",
-			"address": "0xf91b2d345838922b26c8899483be3f867eeaFAb5",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xf91b2d345838922b26c8899483be3f867eeaFAb5",
-			"timestamp": "2019-11-19T04:27:28.960Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsDEFI": {
-			"name": "SynthsDEFI",
-			"address": "0x944E3E0cDE5daB927AB174bc22C4c0dA013436B6",
-			"source": "MultiCollateralSynth",
-			"link": "https://kovan.etherscan.io/address/0x944E3E0cDE5daB927AB174bc22C4c0dA013436B6",
-			"timestamp": "2022-06-08T18:53:07.728Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"Math": {
 			"name": "Math",
 			"address": "0x2cAaB90c2D4328E32baB3e2fAdf84cEd1DD229F6",
