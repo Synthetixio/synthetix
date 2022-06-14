@@ -84,4 +84,12 @@ interface IRewardEscrowV2 {
     function burnForMigration(address account, uint256[] calldata entryIDs)
         external
         returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries);
+
+    // revoke entries for liquidations (access controlled to Synthetix)
+    function revokeFrom(
+        address account,
+        address recipient,
+        uint targetAmount,
+        uint startIndex
+    ) external;
 }

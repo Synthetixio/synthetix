@@ -231,6 +231,55 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         }
     }
 
+    /// method for revoking vesting entries regardless of schedule to be used for liquidations
+    /// access controlled to only Synthetix contract
+    /// @param account: account
+    /// @param recipient: account to transfer the revoked tokens to
+    /// @param targetAmount: amount of SNX to revoke, when this amount is reached, not more entries are revoked
+    /// @param startIndex: index into accountVestingEntryIDs[account] to start iterating from
+    function revokeFrom(
+        address account,
+        address recipient,
+        uint targetAmount,
+        uint startIndex
+    ) external onlySynthetix {
+        require(account != address(0), "account not set");
+        require(recipient != address(0), "recipient not set");
+        require(targetAmount > 0, "targetAmount is zero");
+
+        uint numIds = accountVestingEntryIDs[account].length;
+        require(startIndex < numIds, "start id too high");
+
+        uint total;
+        uint entryID;
+        uint amount;
+        for (uint i = startIndex; i < numIds; i++) {
+            entryID = accountVestingEntryIDs[account][i];
+            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryID];
+
+            // skip vested
+            if (entry.escrowAmount > 0) {
+                amount = entry.escrowAmount;
+
+                // add to total
+                total = total.add(amount);
+                emit Revoked(account, entryID, amount);
+                entry.escrowAmount = 0;
+
+                if (total >= targetAmount) {
+                    if (total > targetAmount) {
+                        // only take the precise amount needed
+                        entry.escrowAmount = total.sub(targetAmount);
+                    }
+                    // exit the loop
+                    break;
+                }
+            }
+        }
+
+        _transferTokens(account, recipient, targetAmount);
+    }
+
     /**
      * @notice Create an escrow entry to lock SNX for a given duration in seconds
      * @dev This call expects that the depositor (msg.sender) has already approved the Reward escrow contract
@@ -268,10 +317,19 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* Transfer vested tokens and update totalEscrowedAccountBalance, totalVestedAccountBalance */
     function _transferVestedTokens(address _account, uint256 _amount) internal {
-        _reduceAccountEscrowBalances(_account, _amount);
-        totalVestedAccountBalance[_account] = totalVestedAccountBalance[_account].add(_amount);
-        IERC20(address(synthetix())).transfer(_account, _amount);
+        _transferTokens(_account, _account, _amount);
         emit Vested(_account, block.timestamp, _amount);
+    }
+
+    /// remove tokens from vesting aggregates and transfer them to recipient
+    function _transferTokens(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal {
+        _reduceAccountEscrowBalances(_from, _amount);
+        totalVestedAccountBalance[_from] = totalVestedAccountBalance[_from].add(_amount);
+        IERC20(address(synthetix())).transfer(_to, _amount);
     }
 
     function _reduceAccountEscrowBalances(address _account, uint256 _amount) internal {
@@ -435,6 +493,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         _;
     }
 
+    modifier onlySynthetix() {
+        require(msg.sender == address(synthetix()), "Only Synthetix");
+        _;
+    }
+
     /* ========== EVENTS ========== */
     event Vested(address indexed beneficiary, uint time, uint value);
     event VestingEntryCreated(address indexed beneficiary, uint time, uint value, uint duration, uint entryID);
@@ -450,4 +513,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
+    event Revoked(address indexed account, uint entryID, uint escrowAmount);
 }

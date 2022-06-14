@@ -103,7 +103,11 @@ interface IIssuer {
 
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
-        returns (uint totalRedeemed, uint amountToLiquidate);
+        returns (
+            uint totalRedeemed,
+            uint debtRemoved,
+            uint escrowToLiquidate
+        );
 
     function issueSynthsWithoutDebt(
         bytes32 currencyKey,

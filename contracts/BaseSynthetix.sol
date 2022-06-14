@@ -16,6 +16,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -33,6 +34,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
+    bytes32 private constant CONTRACT_REWARDESCROWV2 = "RewardEscrowV2";
 
     // ========== CONSTRUCTOR ==========
 
@@ -52,13 +54,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](6);
+        addresses = new bytes32[](7);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
         addresses[4] = CONTRACT_LIQUIDATORREWARDS;
         addresses[5] = CONTRACT_LIQUIDATOR;
+        addresses[6] = CONTRACT_REWARDESCROWV2;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -79,6 +82,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function liquidatorRewards() internal view returns (ILiquidatorRewards) {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROWV2));
     }
 
     function liquidator() internal view returns (ILiquidator) {
@@ -314,9 +321,18 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, false);
+        (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
 
-        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+        // This vests the to-be-liquidated part of escrow to the account (!) as liquid SNX.
+        // It is transferred to the account instead of to the rewards because of the liquidator / flagger
+        // rewards that may need to be paid (so need to be transferrable, to avoid edge cases)
+        if (escrowToLiquidate > 0) {
+            // if startIndex greater than 0 is needed for some accounts due to gas limits, it can be passed from
+            // the input by refactoring this method to have an alternative which accepts startIndex
+            rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate, 0);
+        }
+
+        emitAccountLiquidated(account, totalRedeemed, debtToRemove, messageSender);
 
         if (totalRedeemed > 0) {
             uint stakerRewards; // The amount of rewards to be sent to the LiquidatorRewards contract.
@@ -358,9 +374,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(messageSender, true);
+        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(messageSender, true);
 
-        emitAccountLiquidated(messageSender, totalRedeemed, amountLiquidated, messageSender);
+        emitAccountLiquidated(messageSender, totalRedeemed, debtRemoved, messageSender);
+
+        // transfer the part of escrow that needs to be liquidated to the liquidatorRewards
+        if (escrowToLiquidate > 0) {
+            // if startIndex greater than 0 is needed for some accounts due to gas limits, it can be passed from
+            // the input by refactoring this method to have an alternative which accepts startIndex
+            rewardEscrowV2().revokeFrom(messageSender, address(liquidatorRewards()), escrowToLiquidate, 0);
+        }
 
         // Transfer the redeemed SNX to the LiquidatorRewards contract.
         // Reverts if amount to redeem is more than balanceOf account (i.e. due to escrowed balance).

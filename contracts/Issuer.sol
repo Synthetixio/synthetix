@@ -360,10 +360,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             balance = balance.add(rewardEscrowV2().balanceOf(account));
         }
 
-        if (address(liquidatorRewards()) != address(0)) {
-            balance = balance.add(liquidatorRewards().earned(account));
-        }
-
         return balance;
     }
 
@@ -697,7 +693,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
         onlySynthetix
-        returns (uint totalRedeemed, uint amountToLiquidate)
+        returns (
+            uint totalRedeemed,
+            uint debtRemoved,
+            uint escrowToLiquidate
+        )
     {
         require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
@@ -716,7 +716,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint collateralForAccount = _collateral(account);
 
         // Calculate the amount of debt to liquidate to fix c-ratio
-        amountToLiquidate = liquidator().calculateAmountToFixCollateral(
+        debtRemoved = liquidator().calculateAmountToFixCollateral(
             debtBalance,
             _snxToUSD(collateralForAccount, snxRate),
             penalty
@@ -725,22 +725,39 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Get the equivalent amount of SNX for the amount to liquidate
         // Note: While amountToLiquidate takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
         // Therefore, it is correct to add the penalty modification below to the totalRedeemed.
-        totalRedeemed = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+        totalRedeemed = _usdToSnx(debtRemoved, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+
+        escrowToLiquidate = 0;
 
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
         if (totalRedeemed > transferableBalance) {
-            // Liquidate the account's debt based on the liquidation penalty.
-            amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(totalRedeemed);
+            // transferrable is not enough
+            uint escrowBalance = rewardEscrowV2().balanceOf(account);
+            uint redeemable = transferableBalance.add(escrowBalance);
 
-            // Set totalRedeemed to all transferable collateral.
-            // i.e. the value of the account's staking position relative to balanceOf will be unwound.
-            totalRedeemed = transferableBalance;
+            if (totalRedeemed > redeemable) {
+                // escrow is not enough (other _collateral sources can't be touched)
+                // liquidate all of escrow as well
+                escrowToLiquidate = escrowBalance;
+
+                // Liquidate the account's debt based on the liquidation penalty.
+                debtRemoved = debtRemoved.multiplyDecimal(redeemable).divideDecimal(totalRedeemed);
+
+                // Set totalRedeemed to all transferable collateral + escrow.
+                // i.e. the value of the account's staking position relative to balanceOf will be unwound.
+                totalRedeemed = redeemable;
+            } else {
+                // escrow is enough
+                // liquidate missing part from escrow (total - transferrable)
+                escrowToLiquidate = totalRedeemed.sub(transferableBalance);
+                // totalRedeemed is unchanged
+            }
         }
 
         // Reduce debt shares by amount to liquidate.
-        _removeFromDebtRegister(account, amountToLiquidate, debtBalance);
+        _removeFromDebtRegister(account, debtRemoved, debtBalance);
 
         // Remove liquidation flag
         liquidator().removeAccountInLiquidation(account);
