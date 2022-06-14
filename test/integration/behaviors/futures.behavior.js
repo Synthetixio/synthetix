@@ -59,7 +59,6 @@ function itCanTrade({ ctx }) {
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
-				({ debt } = await FuturesMarketManager.totalDebt());
 			});
 
 			it('user can transferMargin and withdraw it', async () => {
@@ -75,15 +74,19 @@ function itCanTrade({ ctx }) {
 
 			describe('with funded margin', () => {
 				before('fund margin', async () => {
+					({ debt } = await FuturesMarketManager.totalDebt());
 					(await market.transferMargin(margin)).wait();
 				});
 
-				it('futures debt increases by the margin deposit', async () => {
+				it('futures debt increases roughly by the margin deposit', async () => {
 					const res = await FuturesMarketManager.totalDebt();
 					assert.bnClose(
 						res.debt.toString(),
 						debt.add(margin).toString(),
-						toUnit(1).toString() // time passage causes funding changes
+						// time passage causes funding changes which can amount to several $ per second, depending
+						// on market conditions at the time (for fork tests)
+						// since the deposit is 1000$, change within 10$ is a sufficient test of the debt being updated
+						toUnit(20).toString()
 					);
 				});
 
