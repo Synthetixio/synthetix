@@ -30,6 +30,8 @@ import "./Proxyable.sol";
 
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
+import "hardhat/console.sol";
+
 interface IProxy {
     function target() external view returns (address);
 }
@@ -733,22 +735,23 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
         if (totalRedeemed > transferableBalance) {
+            console.log("total redeemed", totalRedeemed);
             // transferrable is not enough
             uint escrowBalance = rewardEscrowV2().balanceOf(account);
-            uint redeemable = transferableBalance.add(escrowBalance);
-
-            if (totalRedeemed > redeemable) {
+            if (totalRedeemed > transferableBalance.add(escrowBalance)) {
+                console.log("its never enough");
                 // escrow is not enough (other _collateral sources can't be touched)
                 // liquidate all of escrow as well
                 escrowToLiquidate = escrowBalance;
 
-                // Liquidate the account's debt based on the liquidation penalty.
-                debtRemoved = debtRemoved.multiplyDecimal(redeemable).divideDecimal(totalRedeemed);
+                // When this is over the account will have 0 SNX to back anything. So remove all debt as well
+                debtRemoved = debtBalance;
 
                 // Set totalRedeemed to all transferable collateral + escrow.
                 // i.e. the value of the account's staking position relative to balanceOf will be unwound.
-                totalRedeemed = redeemable;
+                totalRedeemed = transferableBalance.add(escrowBalance);
             } else {
+                console.log("its always enough");
                 // escrow is enough
                 // liquidate missing part from escrow (total - transferrable)
                 escrowToLiquidate = totalRedeemed.sub(transferableBalance);

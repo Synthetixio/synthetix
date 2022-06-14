@@ -9,11 +9,9 @@ const { skipLiquidationDelay } = require('../utils/skip');
 // convenience methods
 const toUnit = v => ethers.utils.parseUnits(v.toString());
 const unit = toUnit(1);
-const divideDecimal = (a, b) => a.mul(unit).div(b);
-const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanLiquidate({ ctx }) {
-	describe('liquidating', () => {
+	describe.only('liquidating', () => {
 		let user7, user8;
 		let owner;
 		let someUser;
@@ -383,12 +381,30 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
-		describe('self liquidation with a majority of collateral in escrow', () => {
+		describe('full self liquidation with a majority of collateral in escrow', () => {
 			let tx;
-			let beforeCollateralBalance, beforeDebtBalance;
+			let beforeEscrowBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
 			let beforeSnxBalance, beforeRewardsCredittedSnx;
-			const snxRate = toUnit(0.3); // $0.30
+			const snxRate = toUnit(0.3); // 30 cents
+
+			before('ensure user8 has alot of escrowed SNX', async () => {
+				await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
+
+				// 100 entries is a somewhat realistic estimate for an account which as been escrowing for a while and
+				// hasnt claimed
+				for (let i = 0; i < 100; i++) {
+					await RewardEscrowV2.createEscrowEntry(
+						user8.address,
+						ethers.utils.parseEther('100'), // total 10000
+						86400 * 365
+					);
+				}
+			});
+
+			before('user mints max again', async () => {
+				await Synthetix.connect(user8).issueMaxSynths();
+			});
 
 			before('exchange rate changes to allow liquidation', async () => {
 				await addAggregatorAndSetRate({
@@ -398,20 +414,22 @@ function itCanLiquidate({ ctx }) {
 				});
 			});
 
-			before('ensure user8 has alot of escrowed SNX', async () => {
-				await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
-				await RewardEscrowV2.createEscrowEntry(user8.address, ethers.utils.parseEther('10000'), 1);
-			});
-
 			before('user8 calls liquidateSelf', async () => {
 				beforeSnxBalance = await Synthetix.balanceOf(user8.address);
+				beforeEscrowBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user8.address);
 				beforeDebtShares = await SynthetixDebtShare.balanceOf(user8.address);
 				beforeSharesSupply = await SynthetixDebtShare.totalSupply();
-				beforeCollateralBalance = await Synthetix.collateral(user8.address);
 				beforeDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
 				beforeRewardsCredittedSnx = await Synthetix.balanceOf(LiquidatorRewards.address);
 
 				tx = await Synthetix.connect(user8).liquidateSelf();
+
+				const { gasUsed } = await tx.wait();
+				console.log(
+					`liquidateSelf() with 100 escrow entries gas used: ${Math.round(
+						gasUsed / 1000
+					).toString()}k`
+				);
 			});
 
 			after('restore exchange rate', async () => {
@@ -427,31 +445,25 @@ function itCanLiquidate({ ctx }) {
 				assert.bnEqual(afterSnxBalance, '0');
 			});
 
-			it('should liquidate the correct amount of debt and redeem all transferable SNX', async () => {
+			it('should remove all escrow', async () => {
+				const afterEscrowBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user8.address);
+				assert.bnEqual(afterEscrowBalance, '0');
+			});
+
+			it('should remove all debt', async () => {
+				const afterDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
+				assert.bnEqual(afterDebtBalance, '0');
+			});
+
+			it('should liquidate all debt and redeem all SNX', async () => {
 				// Get event data.
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 				const amountLiquidated = liqEvent.args.amountLiquidated;
 				const snxRedeemed = liqEvent.args.snxRedeemed;
 
-				// Calculate the expected amount of debt to liquidate.
-				const penalty = await Liquidator.selfLiquidationPenalty();
-				const debtToLiquidate = await Liquidator.calculateAmountToFixCollateral(
-					beforeDebtBalance,
-					multiplyDecimal(beforeCollateralBalance, snxRate),
-					penalty
-				);
-				const totalRedeemed = multiplyDecimal(
-					divideDecimal(debtToLiquidate, snxRate),
-					unit.add(penalty)
-				);
-				const expectedAmountToLiquidate = multiplyDecimal(
-					debtToLiquidate,
-					divideDecimal(beforeSnxBalance, totalRedeemed)
-				);
-
-				assert.bnEqual(snxRedeemed, beforeSnxBalance);
-				assert.bnClose(amountLiquidated.toString(), expectedAmountToLiquidate.toString(), '1000'); // the variance is due to a rounding error as a result of multiplication of the SNX rate
+				assert.bnEqual(snxRedeemed, beforeSnxBalance.add(beforeEscrowBalance));
+				assert.bnEqual(amountLiquidated.toString(), beforeDebtBalance.toString()); // the variance is due to a rounding error as a result of multiplication of the SNX rate
 			});
 
 			it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
@@ -467,7 +479,7 @@ function itCanLiquidate({ ctx }) {
 				assert.bnEqual(await Liquidator.getLiquidationDeadlineForAccount(user8.address), 0);
 			});
 
-			it('transfers the redeemed SNX to LiquidatorRewards', async () => {
+			it('transfers the redeemed SNX + escrow to LiquidatorRewards', async () => {
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 				const snxRedeemed = liqEvent.args.snxRedeemed;

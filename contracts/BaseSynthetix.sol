@@ -18,6 +18,8 @@ import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
+import "hardhat/console.sol";
+
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
@@ -264,6 +266,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function transfer(address to, uint value) external onlyProxyOrInternal systemActive returns (bool) {
+        console.log("TRANSFER", to);
+        console.log("AMT", value);
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
 
@@ -278,6 +282,9 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address to,
         uint value
     ) external onlyProxyOrInternal systemActive returns (bool) {
+        console.log("FROM", from);
+        console.log("TRANSFER", to);
+        console.log("AMT", value);
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(from, value);
 
@@ -321,6 +328,9 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+        // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
+        //liquidatorRewards().getReward(account);
+
         (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
 
         // This vests the to-be-liquidated part of escrow to the account (!) as liquid SNX.
@@ -373,21 +383,34 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
-        // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(messageSender, true);
 
-        emitAccountLiquidated(messageSender, totalRedeemed, debtRemoved, messageSender);
+        // must store liquidated account address because below functions may attempt to transfer SNX
+        address liquidatedAccount = messageSender;
+
+        // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
+        //liquidatorRewards().getReward(liquidatedAccount);
+
+        // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
+        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
+        console.log("escrowToLiquidate", escrowToLiquidate);
+
+        emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
+
+        console.log("balanceOfBefore", tokenState.balanceOf(liquidatedAccount));
 
         // transfer the part of escrow that needs to be liquidated to the liquidatorRewards
         if (escrowToLiquidate > 0) {
             // if startIndex greater than 0 is needed for some accounts due to gas limits, it can be passed from
             // the input by refactoring this method to have an alternative which accepts startIndex
-            rewardEscrowV2().revokeFrom(messageSender, address(liquidatorRewards()), escrowToLiquidate, 0);
+            rewardEscrowV2().revokeFrom(liquidatedAccount, liquidatedAccount, escrowToLiquidate, 0);
         }
+
+        console.log("totalRedeemed", totalRedeemed);
+        console.log("balanceOf", tokenState.balanceOf(liquidatedAccount));
 
         // Transfer the redeemed SNX to the LiquidatorRewards contract.
         // Reverts if amount to redeem is more than balanceOf account (i.e. due to escrowed balance).
-        bool success = _transferByProxy(messageSender, address(liquidatorRewards()), totalRedeemed);
+        bool success = _transferByProxy(liquidatedAccount, address(liquidatorRewards()), totalRedeemed);
         require(success, "Transfer to LiquidatorRewards failed");
 
         // Inform the LiquidatorRewards contract about the incoming SNX rewards.
