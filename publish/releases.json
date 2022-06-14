@@ -667,7 +667,7 @@
 		{
 			"sip": 243,
 			"layer": "base",
-			"sources": []
+			"sources": ["OneNetAggregatorsDEFI"]
 		},
 		{
 			"sip": 246,

@@ -274,5 +274,8 @@
 	},
 	"LiquidatorRewards": {
 		"deploy": false
+	},
+	"OneNetAggregatorsDEFI": {
+		"deploy": false
 	}
 }
