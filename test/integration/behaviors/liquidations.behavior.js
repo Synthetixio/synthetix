@@ -111,142 +111,8 @@ function itCanLiquidate({ ctx }) {
 			await Synthetix.connect(someUser).issueMaxSynths();
 		});
 
-		before('user7 stakes their SNX', async () => {
-			await Synthetix.connect(user7).issueMaxSynths();
-		});
-
-		before('user8 stakes their SNX', async () => {
-			await Synthetix.connect(user8).issueMaxSynths();
-		});
-
 		it('cannot be liquidated at this point', async () => {
 			assert.equal(await Liquidator.isLiquidationOpen(liquidatedUser.address, false), false);
-		});
-
-		describe('getting marked and completely liquidated', () => {
-			before('exchange rate changes to allow liquidation', async () => {
-				await addAggregatorAndSetRate({
-					ctx,
-					currencyKey: toBytes32('SNX'),
-					rate: '1000000000000000000', // $1.00
-				});
-			});
-
-			before('liquidation is marked', async () => {
-				await Liquidator.connect(flaggerUser).flagAccountForLiquidation(user7.address);
-			});
-
-			after('restore exchange rate', async () => {
-				await addAggregatorAndSetRate({
-					ctx,
-					currencyKey: toBytes32('SNX'),
-					rate: exchangeRate.toString(),
-				});
-			});
-
-			it('still not open for liquidation', async () => {
-				assert.equal(await Liquidator.isLiquidationOpen(user7.address, false), false);
-			});
-
-			it('deadline has not passed yet', async () => {
-				assert.equal(await Liquidator.isLiquidationDeadlinePassed(user7.address), false);
-			});
-
-			describe('when the liquidation delay passes', () => {
-				before(async () => {
-					await skipLiquidationDelay({ ctx });
-				});
-
-				describe('getting liquidated', () => {
-					let tx;
-					let collateralBefore;
-					let beforeDebtShares, beforeSharesSupply;
-					let beforeFlagRewardCredittedSnx,
-						beforeLiquidateRewardCredittedSnx,
-						beforeRemainingRewardCredittedSnx;
-
-					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
-						collateralBefore = await Synthetix.collateral(user7.address);
-						beforeDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
-						beforeSharesSupply = await SynthetixDebtShare.totalSupply();
-						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
-						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(liquidatorUser.address);
-						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
-							LiquidatorRewards.address
-						);
-
-						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user7.address);
-					});
-
-					it('removes all transferable collateral from the liquidated user', async () => {
-						const collateralAfter = await Synthetix.collateral(user7.address);
-						assert.bnLt(collateralAfter, collateralBefore);
-						assert.bnEqual(await Synthetix.balanceOf(user7.address), '0');
-					});
-
-					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
-						const afterDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
-						const liquidatedDebtShares = beforeDebtShares.sub(afterDebtShares);
-						const afterSupply = beforeSharesSupply.sub(liquidatedDebtShares);
-
-						assert.bnEqual(await SynthetixDebtShare.totalSupply(), afterSupply);
-					});
-
-					it('should remove the liquidation entry for the user7', async () => {
-						assert.isFalse(await Liquidator.isLiquidationOpen(user7.address, false));
-						assert.bnEqual(await Liquidator.getLiquidationDeadlineForAccount(user7.address), 0);
-					});
-
-					it('transfers the flag reward to flaggerUser', async () => {
-						const flagReward = await Liquidator.flagReward();
-						assert.bnEqual(
-							await Synthetix.balanceOf(flaggerUser.address),
-							beforeFlagRewardCredittedSnx.add(flagReward)
-						);
-					});
-
-					it('transfers the liquidate reward to liquidatorUser', async () => {
-						const liquidateReward = await Liquidator.liquidateReward();
-						assert.bnEqual(
-							await Synthetix.balanceOf(liquidatorUser.address),
-							beforeLiquidateRewardCredittedSnx.add(liquidateReward)
-						);
-					});
-
-					it('transfers the remaining SNX to LiquidatorRewards', async () => {
-						const { events } = await tx.wait();
-						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
-						const snxRedeemed = liqEvent.args.snxRedeemed;
-
-						const flagReward = await Liquidator.flagReward();
-						const liquidateReward = await Liquidator.liquidateReward();
-						const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
-						assert.bnNotEqual(remainingReward, '0');
-						assert.bnEqual(
-							await Synthetix.balanceOf(LiquidatorRewards.address),
-							beforeRemainingRewardCredittedSnx.add(remainingReward)
-						);
-					});
-
-					it('should allow someUser to claim their share of the liquidation rewards', async () => {
-						const earnedReward = await LiquidatorRewards.earned(someUser.address);
-
-						const tx = await LiquidatorRewards.connect(someUser).getReward(someUser.address);
-
-						const { events } = await tx.wait();
-
-						const event = events.find(l => l.event === 'RewardPaid');
-						const payee = event.args.user;
-						const reward = event.args.reward;
-
-						assert.equal(payee, someUser.address);
-						assert.bnEqual(reward, earnedReward);
-
-						const earnedRewardAfterClaiming = await LiquidatorRewards.earned(someUser.address);
-						assert.bnEqual(earnedRewardAfterClaiming, '0');
-					});
-				});
-			});
 		});
 
 		describe('getting marked and partially liquidated', () => {
@@ -381,6 +247,136 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
+		describe('getting marked and completely liquidated', () => {
+			before('user7 stakes their SNX', async () => {
+				await Synthetix.connect(user7).issueMaxSynths();
+			});
+
+			before('exchange rate changes to allow liquidation', async () => {
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: '1000000000000000000', // $1.00
+				});
+			});
+
+			before('liquidation is marked', async () => {
+				await Liquidator.connect(flaggerUser).flagAccountForLiquidation(user7.address);
+			});
+
+			after('restore exchange rate', async () => {
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: exchangeRate.toString(),
+				});
+			});
+
+			it('still not open for liquidation', async () => {
+				assert.equal(await Liquidator.isLiquidationOpen(user7.address, false), false);
+			});
+
+			it('deadline has not passed yet', async () => {
+				assert.equal(await Liquidator.isLiquidationDeadlinePassed(user7.address), false);
+			});
+
+			describe('when the liquidation delay passes', () => {
+				before(async () => {
+					await skipLiquidationDelay({ ctx });
+				});
+
+				describe('getting liquidated', () => {
+					let tx;
+					let collateralBefore;
+					let beforeDebtShares, beforeSharesSupply;
+					let beforeFlagRewardCredittedSnx,
+						beforeLiquidateRewardCredittedSnx,
+						beforeRemainingRewardCredittedSnx;
+
+					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
+						collateralBefore = await Synthetix.collateral(user7.address);
+						beforeDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
+						beforeSharesSupply = await SynthetixDebtShare.totalSupply();
+						beforeFlagRewardCredittedSnx = await Synthetix.balanceOf(flaggerUser.address);
+						beforeLiquidateRewardCredittedSnx = await Synthetix.balanceOf(liquidatorUser.address);
+						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
+							LiquidatorRewards.address
+						);
+
+						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user7.address);
+					});
+
+					it('removes all transferable collateral from the liquidated user', async () => {
+						const collateralAfter = await Synthetix.collateral(user7.address);
+						assert.bnLt(collateralAfter, collateralBefore);
+						assert.bnEqual(await Synthetix.balanceOf(user7.address), '0');
+					});
+
+					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
+						const afterDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
+						const liquidatedDebtShares = beforeDebtShares.sub(afterDebtShares);
+						const afterSupply = beforeSharesSupply.sub(liquidatedDebtShares);
+
+						assert.bnEqual(await SynthetixDebtShare.totalSupply(), afterSupply);
+					});
+
+					it('should remove the liquidation entry for the user7', async () => {
+						assert.isFalse(await Liquidator.isLiquidationOpen(user7.address, false));
+						assert.bnEqual(await Liquidator.getLiquidationDeadlineForAccount(user7.address), 0);
+					});
+
+					it('transfers the flag reward to flaggerUser', async () => {
+						const flagReward = await Liquidator.flagReward();
+						assert.bnEqual(
+							await Synthetix.balanceOf(flaggerUser.address),
+							beforeFlagRewardCredittedSnx.add(flagReward)
+						);
+					});
+
+					it('transfers the liquidate reward to liquidatorUser', async () => {
+						const liquidateReward = await Liquidator.liquidateReward();
+						assert.bnEqual(
+							await Synthetix.balanceOf(liquidatorUser.address),
+							beforeLiquidateRewardCredittedSnx.add(liquidateReward)
+						);
+					});
+
+					it('transfers the remaining SNX to LiquidatorRewards', async () => {
+						const { events } = await tx.wait();
+						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
+						const snxRedeemed = liqEvent.args.snxRedeemed;
+
+						const flagReward = await Liquidator.flagReward();
+						const liquidateReward = await Liquidator.liquidateReward();
+						const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
+						assert.bnNotEqual(remainingReward, '0');
+						assert.bnEqual(
+							await Synthetix.balanceOf(LiquidatorRewards.address),
+							beforeRemainingRewardCredittedSnx.add(remainingReward)
+						);
+					});
+
+					it('should allow someUser to claim their share of the liquidation rewards', async () => {
+						const earnedReward = await LiquidatorRewards.earned(someUser.address);
+
+						const tx = await LiquidatorRewards.connect(someUser).getReward(someUser.address);
+
+						const { events } = await tx.wait();
+
+						const event = events.find(l => l.event === 'RewardPaid');
+						const payee = event.args.user;
+						const reward = event.args.reward;
+
+						assert.equal(payee, someUser.address);
+						assert.bnEqual(reward, earnedReward);
+
+						const earnedRewardAfterClaiming = await LiquidatorRewards.earned(someUser.address);
+						assert.bnEqual(earnedRewardAfterClaiming, '0');
+					});
+				});
+			});
+		});
+
 		describe('full self liquidation with a majority of collateral in escrow', () => {
 			let tx;
 			let beforeEscrowBalance, beforeDebtBalance;
@@ -402,7 +398,7 @@ function itCanLiquidate({ ctx }) {
 				}
 			});
 
-			before('user mints max again', async () => {
+			before('user8 stakes their SNX', async () => {
 				await Synthetix.connect(user8).issueMaxSynths();
 			});
 

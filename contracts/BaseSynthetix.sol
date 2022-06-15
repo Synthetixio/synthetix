@@ -328,8 +328,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+
+        // must store liquidator account address because below functions may attempt to transfer SNX which changes messageSender
+        address liquidatorAccount = messageSender;
+
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
-        //liquidatorRewards().getReward(account);
+        liquidatorRewards().getReward(account);
 
         (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
 
@@ -342,7 +346,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate, 0);
         }
 
-        emitAccountLiquidated(account, totalRedeemed, debtToRemove, messageSender);
+        emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
 
         if (totalRedeemed > 0) {
             uint stakerRewards; // The amount of rewards to be sent to the LiquidatorRewards contract.
@@ -356,7 +360,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
 
                 // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
-                bool liquidateRewardTransferSucceeded = _transferByProxy(account, messageSender, liquidateReward);
+                bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
                 require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
                 // The remaining SNX to be sent to the LiquidatorRewards contract.
@@ -384,11 +388,11 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
 
-        // must store liquidated account address because below functions may attempt to transfer SNX
+        // must store liquidated account address because below functions may attempt to transfer SNX which changes messageSender
         address liquidatedAccount = messageSender;
 
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
-        //liquidatorRewards().getReward(liquidatedAccount);
+        liquidatorRewards().getReward(liquidatedAccount);
 
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
         (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
