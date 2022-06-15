@@ -113,9 +113,9 @@ contract('BaseSynthetix', async accounts => {
 				'transfer',
 				'transferFrom',
 				'liquidateSelf',
-				'liquidateSelf',
+				'liquidateSelfEscrowIndex',
 				'liquidateDelinquentAccount',
-				'liquidateDelinquentAccount',
+				'liquidateDelinquentAccountEscrowIndex',
 				'initializeLiquidatorRewardsRestitution',
 			],
 		});

@@ -326,7 +326,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
     /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateDelinquentAccount(address account, uint escrowStartIndex)
+    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
         external
         systemActive
         optionalProxy
@@ -399,7 +399,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
     /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateSelf(uint escrowStartIndex) external systemActive optionalProxy returns (bool) {
+    function liquidateSelfEscrowIndex(uint escrowStartIndex) external systemActive optionalProxy returns (bool) {
         return _liquidateSelf(escrowStartIndex);
     }
 
