@@ -665,6 +665,12 @@
 			"released": "both"
 		},
 		{
+			"sip": 243,
+			"layer": "base",
+			"sources": ["OneNetAggregatorsDEFI"],
+			"released": "base"
+		},
+		{
 			"sip": 246,
 			"layer": "ovm",
 			"sources": ["CollateralShort", "Issuer"],
@@ -1236,6 +1242,15 @@
 				"minor": 72
 			},
 			"sips": [235, 238, 240],
+			"released": true
+		},
+		{
+			"name": "Denebola",
+			"version": {
+				"major": 2,
+				"minor": 73
+			},
+			"sips": [243],
 			"released": true
 		}
 	]
