@@ -76,6 +76,7 @@ contract('SystemSettings', async accounts => {
 				'setIssuanceRatio',
 				'setLiquidationDelay',
 				'setLiquidationPenalty',
+				'setSnxLiquidationPenalty',
 				'setLiquidationRatio',
 				'setLiquidationEscrowDuration',
 				'setSelfLiquidationPenalty',
@@ -640,6 +641,44 @@ contract('SystemSettings', async accounts => {
 		it('owner can set liquidationPenalty to 0%', async () => {
 			await systemSettings.setLiquidationPenalty(toUnit('0'), { from: owner });
 			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('0'));
+		});
+	});
+
+	describe('setSnxLiquidationPenalty()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setSnxLiquidationPenalty,
+				args: [toUnit('.1')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('when setSnxLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
+			const newSnxLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
+			await assert.revert(
+				systemSettings.setSnxLiquidationPenalty(newSnxLiquidationPenalty, {
+					from: owner,
+				}),
+				'penalty > MAX_LIQUIDATION_PENALTY'
+			);
+		});
+
+		it('owner can set snxLiquidationPenalty to 25%', async () => {
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.25'), { from: owner });
+			assert.bnEqual(await systemSettings.snxLiquidationPenalty(), toUnit('.25'));
+		});
+		it('owner can set snxLiquidationPenalty to 1%', async () => {
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.01'), { from: owner });
+			assert.bnEqual(await systemSettings.snxLiquidationPenalty(), toUnit('.01'));
+		});
+		it('owner can set snxLiquidationPenalty to 0%', async () => {
+			await systemSettings.setSnxLiquidationPenalty(toUnit('0'), { from: owner });
+			assert.bnEqual(await systemSettings.snxLiquidationPenalty(), toUnit('0'));
 		});
 	});
 

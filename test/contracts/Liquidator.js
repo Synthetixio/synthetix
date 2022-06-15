@@ -24,6 +24,7 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_ESCROW_DURATION,
 		LIQUIDATION_PENALTY,
+		SNX_LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
 		LIQUIDATE_REWARD,
@@ -146,6 +147,10 @@ contract('Liquidator', accounts => {
 		it('liquidation penalty ', async () => {
 			const liquidationPenalty = await liquidator.liquidationPenalty();
 			assert.bnEqual(liquidationPenalty, LIQUIDATION_PENALTY);
+		});
+		it('snx liquidation penalty ', async () => {
+			const snxLiquidationPenalty = await liquidator.snxLiquidationPenalty();
+			assert.bnEqual(snxLiquidationPenalty, SNX_LIQUIDATION_PENALTY);
 		});
 		it('self liquidation penalty ', async () => {
 			const selfLiquidationPenalty = await liquidator.selfLiquidationPenalty();
@@ -295,7 +300,7 @@ contract('Liquidator', accounts => {
 				describe('given liquidation penalty is 10%', () => {
 					beforeEach(async () => {
 						penalty = toUnit('0.1');
-						await systemSettings.setLiquidationPenalty(penalty, { from: owner });
+						await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
 					});
 					it('calculates sUSD to fix ratio from 200%, with $600 SNX collateral and $300 debt', async () => {
 						const expectedAmount = toUnit('260.869565217391304347');
@@ -568,8 +573,8 @@ contract('Liquidator', accounts => {
 				it('and liquidation Collateral Ratio is 150%', async () => {
 					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
 				});
-				it('and liquidation penalty is 10%', async () => {
-					assert.bnEqual(await liquidator.liquidationPenalty(), LIQUIDATION_PENALTY);
+				it('and snx liquidation penalty is 10%', async () => {
+					assert.bnEqual(await liquidator.snxLiquidationPenalty(), SNX_LIQUIDATION_PENALTY);
 				});
 				it('and liquidation delay is 3 days', async () => {
 					assert.bnEqual(await liquidator.liquidationDelay(), LIQUIDATION_DELAY);
@@ -903,7 +908,7 @@ contract('Liquidator', accounts => {
 
 										// And liquidation penalty is 30%
 										penalty = toUnit('0.3');
-										await systemSettings.setLiquidationPenalty(penalty, { from: owner });
+										await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
 
 										// Record Alices state
 										aliceCollateralBefore = await synthetix.collateral(alice);

@@ -78,6 +78,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationPenalty();
     }
 
+    // penalty taken away from target of liquidation specific of SNX (with 18 decimals). E.g. 10% is 0.1e18
+    function snxLiquidationPenalty() external view returns (uint) {
+        return getSnxLiquidationPenalty();
+    }
+
     /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
 
     /// @notice Get the escrow duration for liquidation rewards
@@ -327,6 +332,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit LiquidationPenaltyUpdated(penalty);
     }
 
+    function setSnxLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSnxLiquidationPenalty(SETTING_SNX_LIQUIDATION_PENALTY, penalty);
+        emit SnxLiquidationPenaltyUpdated(penalty);
+    }
+
     function setSelfLiquidationPenalty(uint penalty) external onlyOwner {
         flexibleStorage().setSelfLiquidationPenalty(SETTING_SELF_LIQUIDATION_PENALTY, penalty);
         emit SelfLiquidationPenaltyUpdated(penalty);
@@ -530,6 +540,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationEscrowDurationUpdated(uint newDuration);
     event LiquidationPenaltyUpdated(uint newPenalty);
+    event SnxLiquidationPenaltyUpdated(uint newPenalty);
     event SelfLiquidationPenaltyUpdated(uint newPenalty);
     event FlagRewardUpdated(uint newReward);
     event LiquidateRewardUpdated(uint newReward);

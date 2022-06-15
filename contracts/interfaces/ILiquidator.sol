@@ -12,6 +12,8 @@ interface ILiquidator {
 
     function liquidationPenalty() external view returns (uint);
 
+    function snxLiquidationPenalty() external view returns (uint);
+
     function selfLiquidationPenalty() external view returns (uint);
 
     function liquidateReward() external view returns (uint);
