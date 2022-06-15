@@ -27,10 +27,6 @@
 		"asset": "ADA",
 		"feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55"
 	},
-	"DEFI": {
-		"asset": "DEFI",
-		"feed": "0xa8E875F94138B0C5b51d1e1d5dE35bbDdd28EA87"
-	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
 		"feed": "0xAc559F25B1619171CbC396a50854A3240b6A4e99"

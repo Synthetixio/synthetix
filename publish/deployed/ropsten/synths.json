@@ -128,49 +128,6 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sDEFI",
-		"asset": "DEFI",
-		"index": [
-			{
-				"asset": "LINK",
-				"units": 92.583
-			},
-			{
-				"asset": "MKR",
-				"units": 0.432
-			},
-			{
-				"asset": "ZRX",
-				"units": 502.718
-			},
-			{
-				"asset": "SNX",
-				"units": 107.686
-			},
-			{
-				"asset": "REN",
-				"units": 1222.393
-			},
-			{
-				"asset": "LRC",
-				"units": 2164.709
-			},
-			{
-				"asset": "KNC",
-				"units": 357.085
-			},
-			{
-				"asset": "BNT",
-				"units": 119.197
-			},
-			{
-				"asset": "MLN",
-				"units": 6.495
-			}
-		],
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "iBTC",
 		"asset": "BTC",
 		"subclass": "PurgeableSynth",
@@ -319,17 +276,6 @@
 			"entryPoint": 943.4772,
 			"upperLimit": 1415.2158,
 			"lowerLimit": 471.7386
-		}
-	},
-	{
-		"name": "iDEFI",
-		"asset": "DEFI",
-		"index": "sDEFI",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 4249.0685,
-			"upperLimit": 6373.60275,
-			"lowerLimit": 2124.53425
 		}
 	}
 ]
