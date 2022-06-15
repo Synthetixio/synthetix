@@ -7566,13 +7566,13 @@
 			}
 		}
 	},
-	"v2.73.0-alpha": {
-		"tag": "v2.73.0-alpha",
-		"fulltag": "v2.73.0-alpha",
+	"v2.73.1": {
+		"tag": "v2.73.1",
+		"fulltag": "v2.73.1",
 		"release": "Denebola",
 		"network": "kovan",
-		"date": "2022-06-14T17:07:31-04:00",
-		"commit": "5e8d329bd67c9cd09904cbe610974ee6c6750ea4",
+		"date": "2022-06-14T21:02:22-04:00",
+		"commit": "ec573539aa1a78bb4443971aa45ef22a6c13d13b",
 		"contracts": {
 			"OneNetAggregatorsDEFI": {
 				"address": "0xC3bbc96EC3Fe83A279Ca369E51Ba5608F007dB30",

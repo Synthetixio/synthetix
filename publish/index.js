@@ -14,6 +14,7 @@ require('./src/commands/deploy').cmd(program);
 require('./src/commands/extract-staking-balances').cmd(program);
 require('./src/commands/finalize-release').cmd(program);
 require('./src/commands/migrate-debt-shares').cmd(program);
+require('./src/commands/check-settlement-owing').cmd(program);
 require('./src/commands/initiate-liquidator-rewards').cmd(program);
 require('./src/commands/liquidator-rewards-restitution').cmd(program);
 require('./src/commands/nominate').cmd(program);

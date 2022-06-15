@@ -667,7 +667,8 @@
 		{
 			"sip": 243,
 			"layer": "base",
-			"sources": ["OneNetAggregatorsDEFI"]
+			"sources": ["OneNetAggregatorsDEFI"],
+			"released": "base"
 		},
 		{
 			"sip": 246,
@@ -1249,7 +1250,8 @@
 				"major": 2,
 				"minor": 73
 			},
-			"sips": [243]
+			"sips": [243],
+			"released": true
 		}
 	]
 }

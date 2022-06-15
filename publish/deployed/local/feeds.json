@@ -18,7 +18,6 @@
 	"XMR": { "asset": "XMR", "feed": "0x0" },
 	"ADA": { "asset": "ADA", "feed": "0x0" },
 	"CEX": { "asset": "CEX", "feed": "0x0" },
-	"DEFI": { "asset": "DEFI", "feed": "0x0" },
 	"EUR": { "asset": "EUR", "feed": "0x0" },
 	"JPY": { "asset": "JPY", "feed": "0x0" },
 	"AUD": { "asset": "AUD", "feed": "0x0" },
