@@ -12,8 +12,6 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
@@ -22,8 +20,6 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
-import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./Proxyable.sol";
@@ -128,8 +124,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return combineArrays(existingAddresses, newAddresses);
     }
 
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {
@@ -144,10 +140,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIXDEBTSHARE));
     }
 
-    function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
-    }
-
     function liquidator() internal view returns (ILiquidator) {
         return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
@@ -160,8 +152,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
+    function rewardEscrowV2() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function synthetixEscrow() internal view returns (IHasBalance) {
@@ -192,32 +184,33 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
 
-        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        (uint rawRatio, uint ratioUpdatedAt) = _rawDebtRatioAndUpdatedAt();
 
         debt = uint(rawIssuedSynths);
-        sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
-        isStale =
-            block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
-            block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
+        sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(rawRatio);
+
+        uint staleCutoff = block.timestamp - getRateStalePeriod();
+        isStale = staleCutoff > issuedSynthsUpdatedAt || staleCutoff > ratioUpdatedAt;
     }
 
     function issuanceRatio() external view returns (uint) {
         return getIssuanceRatio();
     }
 
-    function _sharesForDebt(uint debtAmount) internal view returns (uint) {
-        (, int256 rawRatio, , , ) =
+    function _rawDebtRatioAndUpdatedAt() internal view returns (uint, uint) {
+        (, int256 rawRatioInt, , uint ratioUpdatedAt, ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        return (uint(rawRatioInt), ratioUpdatedAt);
+    }
 
-        return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
+    function _sharesForDebt(uint debtAmount) internal view returns (uint) {
+        (uint rawRatio, ) = _rawDebtRatioAndUpdatedAt();
+        return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(rawRatio);
     }
 
     function _debtForShares(uint sharesAmount) internal view returns (uint) {
-        (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
-
-        return sharesAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
+        (uint rawRatio, ) = _rawDebtRatioAndUpdatedAt();
+        return sharesAmount.multiplyDecimalRoundPrecise(rawRatio);
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -350,21 +343,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _collateral(address account) internal view returns (uint) {
-        uint balance = IERC20(address(synthetix())).balanceOf(account);
-
-        if (address(synthetixEscrow()) != address(0)) {
-            balance = balance.add(synthetixEscrow().balanceOf(account));
-        }
-
-        if (address(rewardEscrowV2()) != address(0)) {
-            balance = balance.add(rewardEscrowV2().balanceOf(account));
-        }
-
-        if (address(liquidatorRewards()) != address(0)) {
-            balance = balance.add(liquidatorRewards().earned(account));
-        }
-
-        return balance;
+        return
+            synthetixERC20()
+                .balanceOf(account)
+                .add(synthetixEscrow().balanceOf(account))
+                .add(rewardEscrowV2().balanceOf(account))
+                .add(liquidatorRewards().earned(account));
     }
 
     function minimumStakeTime() external view returns (uint) {
@@ -518,12 +502,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (synthSupply > 0) {
             (uint amountOfsUSD, uint rateToRedeem, ) =
                 exchangeRates().effectiveValueAndRates(currencyKey, synthSupply, "sUSD");
-            require(rateToRedeem > 0, "Cannot remove synth to redeem without rate");
+            require(rateToRedeem > 0, "Cannot remove without rate");
             ISynthRedeemer _synthRedeemer = synthRedeemer();
             synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
             // ensure the debt cache is aware of the new sUSD issued
             debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amountOfsUSD));
-            _synthRedeemer.deprecate(IERC20(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem);
+            _synthRedeemer.deprecate(IERC20(address(Proxyable(synthToRemove).proxy())), rateToRedeem);
         }
 
         // Remove the synth from the availableSynths array.
@@ -735,7 +719,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.
-        uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
+        uint transferableBalance = synthetixERC20().balanceOf(account);
         if (totalRedeemed > transferableBalance) {
             // transferrable is not enough
             uint escrowBalance = rewardEscrowV2().balanceOf(account);
@@ -766,7 +750,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function setCurrentPeriodId(uint128 periodId) external {
-        require(msg.sender == address(feePool()), "Must be fee pool");
+        require(msg.sender == requireAndGetAddress(CONTRACT_FEEPOOL), "Must be fee pool");
 
         ISynthetixDebtShare sds = synthetixDebtShare();
 
@@ -968,7 +952,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== MODIFIERS ========== */
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetixERC20()), "Issuer: Only Synthetix");
         _;
     }
 
@@ -981,7 +965,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Issuer: Only the SynthRedeemer contract can perform this action");
+        require(msg.sender == address(synthRedeemer()), "Issuer: Only SynthRedeemer");
     }
 
     modifier onlySynthRedeemer() {
