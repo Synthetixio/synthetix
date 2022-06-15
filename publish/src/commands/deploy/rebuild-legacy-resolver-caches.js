@@ -69,6 +69,9 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 				SynthsXRP: '0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5',
 				SynthsXTZ: '0x6F927644d55E32318629198081923894FbFe5c07',
 				SynthsYFI: '0x0F393ce493d8FB0b83915248a21a3104932ed97c',
+
+				// Synths deprecated during Denebola (v2.73)
+				SynthsDEFI: '0x918b1dbf0917FdD74D03fB9434915E2ECEc89286',
 			};
 		} else if (useOvm) {
 			// Get legacy contracts for L2.
