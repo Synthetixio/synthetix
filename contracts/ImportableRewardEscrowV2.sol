@@ -11,7 +11,7 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {}
+    constructor(address _owner, address _resolver, IRewardEscrowV2 _previousEscrow) public BaseRewardEscrowV2(_owner, _resolver, _previousEscrow) {}
 
     /* ========== VIEWS ======================= */
 
@@ -41,7 +41,7 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         );
 
         /* Add escrowedAmount to account's escrowed balance */
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+        _totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance(account).add(escrowedAmount);
 
         for (uint i = 0; i < vestingEntries.length; i++) {
             _importVestingEntry(account, vestingEntries[i]);
@@ -50,10 +50,10 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
 
     function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
         uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = entry;
+        _vestingSchedules[account][entryID] = entry;
 
         /* append entryID to list of entries for account */
-        accountVestingEntryIDs[account].push(entryID);
+        _accountVestingEntryIDs[account].push(entryID);
 
         /* Increment the next entry id. */
         nextEntryId = nextEntryId.add(1);

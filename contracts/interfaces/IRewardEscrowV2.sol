@@ -92,4 +92,19 @@ interface IRewardEscrowV2 {
         uint targetAmount,
         uint startIndex
     ) external;
+
+    function nextEntryId() external view returns (uint);
+
+    function vestingSchedules(
+        address account,
+        uint256 index
+    ) external view returns (VestingEntries.VestingEntry memory);
+
+    function accountVestingEntryIDs(
+        address account,
+        uint256 index
+    ) external view returns (uint);
+
+    //function totalEscrowedAccountBalance(address account) external view returns (uint);
+    //function totalVestedAccountBalance(address account) external view returns (uint);
 }

@@ -22,7 +22,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {}
+    constructor(address _owner, address _resolver, IRewardEscrowV2 _previousRewardEscrow) public BaseRewardEscrowV2(_owner, _resolver, _previousRewardEscrow) {}
 
     /* ========== VIEWS ======================= */
 
@@ -65,7 +65,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         /* Ensure account escrow balance pending migration is not zero */
         /* Ensure account escrowed balance is not zero - should have been migrated */
         require(totalBalancePendingMigration[addressToMigrate] > 0, "No escrow migration pending");
-        require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
+        require(totalEscrowedAccountBalance(addressToMigrate) > 0, "Address escrow balance is 0");
 
         /* Add a vestable entry for addresses with totalBalancePendingMigration <= migrateEntriesThreshold amount of SNX */
         if (totalBalancePendingMigration[addressToMigrate] <= migrateEntriesThresholdAmount) {
@@ -125,7 +125,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             uint256 escrowAmount = escrowAmounts[i];
 
             // ensure account have escrow migration pending
-            require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
+            require(totalEscrowedAccountBalance(addressToMigrate) > 0, "Address escrow balance is 0");
             require(totalBalancePendingMigration[addressToMigrate] > 0, "No escrow migration pending");
 
             /* Import vesting entry with endTime as block.timestamp and escrowAmount */
@@ -167,8 +167,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
 
             /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
-            totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
-            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(vestedAmount);
+            _totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance(account).add(escrowedAmount);
+            _totalVestedAccountBalance[account] = totalVestedAccountBalance(account).add(vestedAmount);
 
             /* update totalBalancePendingMigration for account */
             totalBalancePendingMigration[account] = escrowedAmount;
@@ -197,7 +197,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);
 
         for (uint i = 0; i < entryIDs.length; i++) {
-            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+            VestingEntries.VestingEntry memory entry = vestingSchedules(account, entryIDs[i]);
 
             if (entry.escrowAmount > 0) {
                 vestingEntries[i] = entry;
@@ -206,7 +206,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                 escrowedAccountBalance = escrowedAccountBalance.add(entry.escrowAmount);
 
                 /* Delete the vesting entry being migrated */
-                delete vestingSchedules[account][entryIDs[i]];
+                delete _vestingSchedules[account][entryIDs[i]];
             }
         }
 
