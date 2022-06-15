@@ -416,12 +416,20 @@ contract('Liquidator', accounts => {
 						// check Alice ratio is above target issuance ratio
 						assert.isTrue(ratio.gt(targetIssuanceRatio));
 					});
-					it('then isLiquidationOpen returns true', async () => {
+					it('then isLiquidationOpen returns false if not flagged', async () => {
+						assert.isFalse(await liquidator.isLiquidationOpen(alice, true));
+					});
+					it('then isLiquidationOpen returns true when flagged', async () => {
+						await liquidator.flagAccountForLiquidation(alice);
 						assert.isTrue(await liquidator.isLiquidationOpen(alice, true));
 					});
 				});
 				describe('when Alice c-ratio is above the liquidation ratio and attempts to self liquidate', () => {
 					beforeEach(async () => {
+						// flag
+						await liquidator.flagAccountForLiquidation(alice);
+
+						// increase price
 						await updateSNXPrice('10');
 
 						await assert.revert(
@@ -465,6 +473,9 @@ contract('Liquidator', accounts => {
 							// Record Bobs state
 							bobDebtValueBefore = await synthetix.debtBalanceOf(bob, sUSD);
 							bobRewardsBalanceBefore = await liquidatorRewards.earned(bob);
+
+							// flag
+							await liquidator.flagAccountForLiquidation(alice);
 
 							txn = await synthetix.liquidateSelf({
 								from: alice,

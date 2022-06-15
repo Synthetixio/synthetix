@@ -410,6 +410,14 @@ function itCanLiquidate({ ctx }) {
 				});
 			});
 
+			it('still not open for self liquidation because not flagged', async () => {
+				assert.equal(await Liquidator.isLiquidationOpen(user8.address, true), false);
+			});
+
+			before('user8 flags themself', async () => {
+				await Liquidator.connect(user8).flagAccountForLiquidation(user8.address);
+			});
+
 			before('user8 calls liquidateSelf', async () => {
 				beforeSnxBalance = await Synthetix.balanceOf(user8.address);
 				beforeEscrowBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user8.address);
