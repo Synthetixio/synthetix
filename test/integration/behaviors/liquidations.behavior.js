@@ -1,5 +1,4 @@
 const ethers = require('ethers');
-const chalk = require('chalk');
 const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
@@ -8,10 +7,9 @@ const { skipLiquidationDelay } = require('../utils/skip');
 
 // convenience methods
 const toUnit = v => ethers.utils.parseUnits(v.toString());
-const unit = toUnit(1);
 
 function itCanLiquidate({ ctx }) {
-	describe.only('liquidating', () => {
+	describe('liquidating', () => {
 		let user7, user8;
 		let owner;
 		let someUser;
@@ -40,13 +38,6 @@ function itCanLiquidate({ ctx }) {
 
 			RewardEscrowV2 = RewardEscrowV2.connect(owner);
 			SystemSettings = SystemSettings.connect(owner);
-		});
-
-		before(async function() {
-			if (!SystemSettings.flagReward) {
-				console.log(chalk.yellow('> Skipping since SIP-148 is not implemented'));
-				this.skip();
-			}
 		});
 
 		before('system settings are set', async () => {
@@ -248,6 +239,15 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		describe('getting marked and completely liquidated', () => {
+			before('exchange rate is set', async () => {
+				exchangeRate = await getRate({ ctx, symbol: 'SNX' });
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: '6000000000000000000', // $6
+				});
+			});
+
 			before('user7 stakes their SNX', async () => {
 				await Synthetix.connect(user7).issueMaxSynths();
 			});
