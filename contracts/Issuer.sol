@@ -30,8 +30,6 @@ import "./Proxyable.sol";
 
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 interface IProxy {
     function target() external view returns (address);
 }
@@ -739,11 +737,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
         if (totalRedeemed > transferableBalance) {
-            console.log("total redeemed", totalRedeemed);
             // transferrable is not enough
             uint escrowBalance = rewardEscrowV2().balanceOf(account);
             if (totalRedeemed > transferableBalance.add(escrowBalance)) {
-                console.log("its never enough");
                 // escrow is not enough (other _collateral sources can't be touched)
                 // liquidate all of escrow as well
                 escrowToLiquidate = escrowBalance;
@@ -755,7 +751,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
                 // i.e. the value of the account's staking position relative to balanceOf will be unwound.
                 totalRedeemed = transferableBalance.add(escrowBalance);
             } else {
-                console.log("its always enough");
                 // escrow is enough
                 // liquidate missing part from escrow (total - transferrable)
                 escrowToLiquidate = totalRedeemed.sub(transferableBalance);
