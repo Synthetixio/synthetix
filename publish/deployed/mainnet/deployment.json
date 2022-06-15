@@ -387,33 +387,6 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"TokenStatesDEFI": {
-			"name": "TokenStatesDEFI",
-			"address": "0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB",
-			"source": "TokenState",
-			"link": "https://etherscan.io/address/0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB",
-			"timestamp": "2019-11-21T01:06:29.909Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"ProxysDEFI": {
-			"name": "ProxysDEFI",
-			"address": "0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B",
-			"source": "ProxyERC20",
-			"link": "https://etherscan.io/address/0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B",
-			"timestamp": "2019-11-21T01:06:47.305Z",
-			"txn": "",
-			"network": "mainnet"
-		},
-		"SynthsDEFI": {
-			"name": "SynthsDEFI",
-			"address": "0x918b1dbf0917FdD74D03fB9434915E2ECEc89286",
-			"source": "MultiCollateralSynth",
-			"link": "https://etherscan.io/address/0x918b1dbf0917FdD74D03fB9434915E2ECEc89286",
-			"timestamp": "2022-06-09T17:46:18.827Z",
-			"txn": "",
-			"network": "mainnet"
-		},
 		"Math": {
 			"name": "Math",
 			"address": "0x385e1Eb2FF28F4A637DA2C9971F8CAF5F5b1E77c",
@@ -1078,6 +1051,15 @@
 			"link": "https://etherscan.io/address/0xf79603a71144e415730C1A6f57F366E4Ea962C00",
 			"timestamp": "2022-05-14T03:46:43.000Z",
 			"txn": "https://etherscan.io/tx/0xf3d6a0eb6d89c111abcfac7ec969301015c26881fab98c48d5a82c0da32b5831",
+			"network": "mainnet"
+		},
+		"OneNetAggregatorsDEFI": {
+			"name": "OneNetAggregatorsDEFI",
+			"address": "0x646F23085281Dbd006FBFD211FD38d0743884864",
+			"source": "OneNetAggregatorsDEFI",
+			"link": "https://etherscan.io/address/0x646F23085281Dbd006FBFD211FD38d0743884864",
+			"timestamp": "2022-06-14T22:18:36.000Z",
+			"txn": "https://etherscan.io/tx/0x63dc092c2a9d752c794c72d4633229041c4222a530bf15307118e13c381b54cf",
 			"network": "mainnet"
 		}
 	},
@@ -47985,6 +47967,365 @@
 						"urls": [
 							"bzz-raw://f440aba73c6f10efa0d7a57890ccc51a2ebc7db360513d8acd11060e3b80cf67",
 							"dweb:/ipfs/QmSZ9FgbQZayzNXn5fSZunmXzWkeHcc4NsNXfbTAvRc6ej"
+						]
+					}
+				},
+				"version": 1
+			}
+		},
+		"OneNetAggregatorsDEFI": {
+			"bytecode": "608060405234801561001057600080fd5b506040516106743803806106748339818101604052602081101561003357600080fd5b5051803380610089576040805162461bcd60e51b815260206004820152601960248201527f4f776e657220616464726573732063616e6e6f74206265203000000000000000604482015290519081900360640190fd5b600080546001600160a01b0319166001600160a01b038316908117825560408051928352602083019190915280517fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c9281900390910190a150600280546001600160a01b0319166001600160a01b039290921691909117905550610562806101126000396000f3fe608060405234801561001057600080fd5b50600436106100ea5760003560e01c80638da5cb5b1161008c578063b5ab58dc11610066578063b5ab58dc14610218578063b633620c14610235578063ec5c889d14610252578063feaf968c1461025a576100ea565b80638da5cb5b1461018b5780639a6fc8f514610193578063b00a84c9146101fb576100ea565b806353a47bb7116100c857806353a47bb714610159578063614d08f814610161578063668a0f021461017b57806379ba509714610183576100ea565b806304f3bcec146100ef5780631627540c14610113578063313ce5671461013b575b600080fd5b6100f7610262565b604080516001600160a01b039092168252519081900360200190f35b6101396004803603602081101561012957600080fd5b50356001600160a01b0316610271565b005b6101436102cd565b6040805160ff9092168252519081900360200190f35b6100f76102d2565b6101696102e1565b60408051918252519081900360200190f35b6101696102fd565b610139610302565b6100f76103be565b6101bc600480360360208110156101a957600080fd5b503569ffffffffffffffffffff166103cd565b6040805169ffffffffffffffffffff96871681526020810195909552848101939093526060840191909152909216608082015290519081900360a00190f35b6101396004803603602081101561021157600080fd5b50356103e0565b6101696004803603602081101561022e57600080fd5b5035610423565b6101696004803603602081101561024b57600080fd5b5035610439565b61016961044f565b6101bc610455565b6002546001600160a01b031681565b61027961047e565b600180546001600160a01b0383166001600160a01b0319909116811790915560408051918252517f906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce229181900360200190a150565b600890565b6001546001600160a01b031681565b744f6e654e657441676772656761746f72734445464960581b81565b600190565b6001546001600160a01b0316331461034b5760405162461bcd60e51b81526004018080602001828103825260358152602001806104ca6035913960400191505060405180910390fd5b600054600154604080516001600160a01b03938416815292909116602083015280517fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c9281900390910190a160018054600080546001600160a01b03199081166001600160a01b03841617909155169055565b6000546001600160a01b031681565b50600190644a63af1b0090429081908490565b6103e861047e565b60038190556040805182815290517f0c353e7b16d02337ff57a02fe5b0a5506fa6f85187948be32d182e393b99a8f29181900360200190a150565b600061042e826103cd565b509195945050505050565b6000610444826103cd565b509095945050505050565b60035481565b600080600080600061046d6104686102fd565b6103cd565b945094509450945094509091929394565b6000546001600160a01b031633146104c75760405162461bcd60e51b815260040180806020018281038252602f8152602001806104ff602f913960400191505060405180910390fd5b56fe596f75206d757374206265206e6f6d696e61746564206265666f726520796f752063616e20616363657074206f776e6572736869704f6e6c792074686520636f6e7472616374206f776e6572206d617920706572666f726d207468697320616374696f6ea265627a7a72315820d79bf8d4c3e563bd2a93d5f497880761f8c0de381a5b1d35884e3189a76436ec64736f6c63430005100032",
+			"abi": [
+				{
+					"inputs": [
+						{
+							"internalType": "contract AddressResolver",
+							"name": "_resolver",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "constructor"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"internalType": "address",
+							"name": "oldOwner",
+							"type": "address"
+						},
+						{
+							"indexed": false,
+							"internalType": "address",
+							"name": "newOwner",
+							"type": "address"
+						}
+					],
+					"name": "OwnerChanged",
+					"type": "event"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"internalType": "address",
+							"name": "newOwner",
+							"type": "address"
+						}
+					],
+					"name": "OwnerNominated",
+					"type": "event"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"internalType": "uint256",
+							"name": "timestamp",
+							"type": "uint256"
+						}
+					],
+					"name": "SetOverrideTimestamp",
+					"type": "event"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "CONTRACT_NAME",
+					"outputs": [
+						{
+							"internalType": "bytes32",
+							"name": "",
+							"type": "bytes32"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": false,
+					"inputs": [],
+					"name": "acceptOwnership",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "decimals",
+					"outputs": [
+						{
+							"internalType": "uint8",
+							"name": "",
+							"type": "uint8"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "uint256",
+							"name": "_roundId",
+							"type": "uint256"
+						}
+					],
+					"name": "getAnswer",
+					"outputs": [
+						{
+							"internalType": "int256",
+							"name": "answer",
+							"type": "int256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "uint80",
+							"name": "",
+							"type": "uint80"
+						}
+					],
+					"name": "getRoundData",
+					"outputs": [
+						{
+							"internalType": "uint80",
+							"name": "",
+							"type": "uint80"
+						},
+						{
+							"internalType": "int256",
+							"name": "",
+							"type": "int256"
+						},
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						},
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						},
+						{
+							"internalType": "uint80",
+							"name": "",
+							"type": "uint80"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "uint256",
+							"name": "_roundId",
+							"type": "uint256"
+						}
+					],
+					"name": "getTimestamp",
+					"outputs": [
+						{
+							"internalType": "uint256",
+							"name": "timestamp",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "latestRound",
+					"outputs": [
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "latestRoundData",
+					"outputs": [
+						{
+							"internalType": "uint80",
+							"name": "",
+							"type": "uint80"
+						},
+						{
+							"internalType": "int256",
+							"name": "",
+							"type": "int256"
+						},
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						},
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						},
+						{
+							"internalType": "uint80",
+							"name": "",
+							"type": "uint80"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"internalType": "address",
+							"name": "_owner",
+							"type": "address"
+						}
+					],
+					"name": "nominateNewOwner",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "nominatedOwner",
+					"outputs": [
+						{
+							"internalType": "address",
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "overrideTimestamp",
+					"outputs": [
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "owner",
+					"outputs": [
+						{
+							"internalType": "address",
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "resolver",
+					"outputs": [
+						{
+							"internalType": "contract AddressResolver",
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"internalType": "uint256",
+							"name": "timestamp",
+							"type": "uint256"
+						}
+					],
+					"name": "setOverrideTimestamp",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function"
+				}
+			],
+			"source": {
+				"keccak256": "0x5b5d345731005a6932760cc76f2a390544cae09c21f7141f4ebeca21f9248692",
+				"urls": [
+					"bzz-raw://22fa50edf05ee7c60343a4425df992e2dd334c8591b1baf9e9974346109ee7e9",
+					"dweb:/ipfs/QmWQYxMiBfMP5Y3473fds9JkLYWp5M2DtB672qKcoaAVUj"
+				]
+			},
+			"metadata": {
+				"compiler": {
+					"version": "0.5.16+commit.9c3226ce"
+				},
+				"language": "Solidity",
+				"settings": {
+					"compilationTarget": {
+						"OneNetAggregatorsDEFI.sol": "OneNetAggregatorsDEFI"
+					},
+					"evmVersion": "istanbul",
+					"libraries": {},
+					"optimizer": {
+						"enabled": true,
+						"runs": 200
+					},
+					"remappings": []
+				},
+				"sources": {
+					"OneNetAggregatorsDEFI.sol": {
+						"keccak256": "0x5b5d345731005a6932760cc76f2a390544cae09c21f7141f4ebeca21f9248692",
+						"urls": [
+							"bzz-raw://22fa50edf05ee7c60343a4425df992e2dd334c8591b1baf9e9974346109ee7e9",
+							"dweb:/ipfs/QmWQYxMiBfMP5Y3473fds9JkLYWp5M2DtB672qKcoaAVUj"
 						]
 					}
 				},

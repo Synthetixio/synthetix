@@ -792,33 +792,6 @@
 			"txn": "",
 			"network": "ropsten"
 		},
-		"TokenStatesDEFI": {
-			"name": "TokenStatesDEFI",
-			"address": "0x3347575f35De7bD8900012AE68Fb3f9189C4D6b0",
-			"source": "TokenState",
-			"link": "https://ropsten.etherscan.io/address/0x3347575f35De7bD8900012AE68Fb3f9189C4D6b0",
-			"timestamp": "2019-11-20T12:58:35.939Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"ProxysDEFI": {
-			"name": "ProxysDEFI",
-			"address": "0xfc107409aA984e300D5f10530Eef41221FC65B15",
-			"source": "ProxyERC20",
-			"link": "https://ropsten.etherscan.io/address/0xfc107409aA984e300D5f10530Eef41221FC65B15",
-			"timestamp": "2019-11-20T12:58:40.447Z",
-			"txn": "",
-			"network": "ropsten"
-		},
-		"SynthsDEFI": {
-			"name": "SynthsDEFI",
-			"address": "0x321cD2b3597c1a27ecE3c7BA1B0F0B492f86Ac39",
-			"source": "PurgeableSynth",
-			"link": "https://ropsten.etherscan.io/address/0x321cD2b3597c1a27ecE3c7BA1B0F0B492f86Ac39",
-			"timestamp": "2020-03-30T22:10:56.466Z",
-			"txn": "",
-			"network": "ropsten"
-		},
 		"TokenStateiXRP": {
 			"name": "TokenStateiXRP",
 			"address": "0xEA68d580BDFF34FD733d468af9df9aD2F50A5d92",
