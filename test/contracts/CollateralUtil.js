@@ -98,7 +98,7 @@ contract('CollateralUtil', async accounts => {
 			DebtCache: debtCache,
 			CollateralManager: manager,
 			CollateralManagerState: managerState,
-			SystemSettings: systemSettings
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -262,7 +262,6 @@ contract('CollateralUtil', async accounts => {
 
 			assert.bnClose(amountToLiquidate, toUnit(2500), '100000');
 		});
-
 	});
 
 	describe('collateral redeemed test', async () => {
