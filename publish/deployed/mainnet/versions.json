@@ -1098,11 +1098,11 @@
 			},
 			"TokenStatesDEFI": {
 				"address": "0x7Ac2D37098a65B0f711CFfA3be635F1E6aCacFaB",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysDEFI": {
 				"address": "0xe1aFe1Fd76Fd88f78cBf599ea1846231B8bA3B6B",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsDEFI": {
 				"address": "0x4917E9Ef69E3a1C82651c9158cA2c25b3A564760",
@@ -4430,7 +4430,7 @@
 			},
 			"SynthsDEFI": {
 				"address": "0x918b1dbf0917FdD74D03fB9434915E2ECEc89286",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
 			},
 			"Issuer": {
@@ -4462,6 +4462,21 @@
 				"address": "0x07C1E81C345A7c58d7c24072EFc5D929BD0647AD",
 				"status": "current",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			}
+		}
+	},
+	"v2.73.1": {
+		"tag": "v2.73.1",
+		"fulltag": "v2.73.1",
+		"release": "Denebola",
+		"network": "mainnet",
+		"date": "2022-06-14T21:02:22-04:00",
+		"commit": "ec573539aa1a78bb4443971aa45ef22a6c13d13b",
+		"contracts": {
+			"OneNetAggregatorsDEFI": {
+				"address": "0x646F23085281Dbd006FBFD211FD38d0743884864",
+				"status": "current",
+				"keccak256": "0x5b5d345731005a6932760cc76f2a390544cae09c21f7141f4ebeca21f9248692"
 			}
 		}
 	}
