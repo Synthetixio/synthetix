@@ -248,7 +248,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(targetAmount > 0, "targetAmount is zero");
 
         uint numIds = accountVestingEntryIDs[account].length;
-        require(startIndex < numIds, "start id too high");
+        require(startIndex < numIds, "startIndex too high");
 
         uint total;
         uint entryID;

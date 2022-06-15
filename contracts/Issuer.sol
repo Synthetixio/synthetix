@@ -362,6 +362,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             balance = balance.add(rewardEscrowV2().balanceOf(account));
         }
 
+        if (address(liquidatorRewards()) != address(0)) {
+            balance = balance.add(liquidatorRewards().earned(account));
+        }
+
         return balance;
     }
 
