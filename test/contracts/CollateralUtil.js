@@ -45,7 +45,8 @@ contract('CollateralUtil', async accounts => {
 		manager,
 		issuer,
 		util,
-		debtCache;
+		debtCache,
+		systemSettings;
 
 	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -97,6 +98,7 @@ contract('CollateralUtil', async accounts => {
 			DebtCache: debtCache,
 			CollateralManager: manager,
 			CollateralManagerState: managerState,
+			SystemSettings: systemSettings
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -112,6 +114,7 @@ contract('CollateralUtil', async accounts => {
 				'CollateralUtil',
 				'CollateralManager',
 				'CollateralManagerState',
+				'SystemSettings',
 			],
 		}));
 
@@ -245,6 +248,21 @@ contract('CollateralUtil', async accounts => {
 
 			assert.bnClose(amountToLiquidate, toUnit(10000), '100000');
 		});
+
+		it('ignores snxLiquidationPenalty when calculating the liquidation amount', async () => {
+			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
+
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.2'), { from: owner });
+			amountToLiquidate = await cerc20.liquidationAmount(id);
+
+			assert.bnClose(amountToLiquidate, toUnit(2500), '100000');
+
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.1'), { from: owner });
+			amountToLiquidate = await cerc20.liquidationAmount(id);
+
+			assert.bnClose(amountToLiquidate, toUnit(2500), '100000');
+		});
+
 	});
 
 	describe('collateral redeemed test', async () => {

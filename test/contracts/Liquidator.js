@@ -906,9 +906,12 @@ contract('Liquidator', accounts => {
 										// Given issuance ratio is 800%
 										ratio = toUnit('0.125');
 
-										// And liquidation penalty is 30%
+										// And snx liquidation penalty is 30%
 										penalty = toUnit('0.3');
 										await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
+
+										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on liquidations here.)
+										await systemSettings.setLiquidationPenalty(toUnit('0.2'), { from: owner });
 
 										// Record Alices state
 										aliceCollateralBefore = await synthetix.collateral(alice);
