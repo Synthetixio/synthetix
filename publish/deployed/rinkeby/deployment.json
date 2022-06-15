@@ -792,33 +792,6 @@
 			"txn": "",
 			"network": "rinkeby"
 		},
-		"TokenStatesDEFI": {
-			"name": "TokenStatesDEFI",
-			"address": "0x6A191c7cb66Ed19944dF38db2800E1e256732375",
-			"source": "TokenState",
-			"link": "https://rinkeby.etherscan.io/address/0x6A191c7cb66Ed19944dF38db2800E1e256732375",
-			"timestamp": "2019-11-20T05:13:05.243Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"ProxysDEFI": {
-			"name": "ProxysDEFI",
-			"address": "0x3A81E343ff76d354DA567cFC54eb36FfB724b3cB",
-			"source": "ProxyERC20",
-			"link": "https://rinkeby.etherscan.io/address/0x3A81E343ff76d354DA567cFC54eb36FfB724b3cB",
-			"timestamp": "2019-11-20T05:13:21.080Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
-		"SynthsDEFI": {
-			"name": "SynthsDEFI",
-			"address": "0x243e08684E35BC96Fe2768e9B078B6c07A890009",
-			"source": "PurgeableSynth",
-			"link": "https://rinkeby.etherscan.io/address/0x243e08684E35BC96Fe2768e9B078B6c07A890009",
-			"timestamp": "2020-12-22T21:02:40.343Z",
-			"txn": "",
-			"network": "rinkeby"
-		},
 		"TokenStateiXRP": {
 			"name": "TokenStateiXRP",
 			"address": "0xE9D673875C2Ed7A97650242613Fb740f934249BC",
