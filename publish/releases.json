@@ -675,6 +675,17 @@
 			"layer": "ovm",
 			"sources": ["CollateralShort", "Issuer"],
 			"released": "ovm"
+		},
+		{
+			"sip": 247,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"MixinSystemSettings",
+				"SystemSettings",
+				"SystemSettingsLib"
+			]
 		}
 	],
 	"releases": [

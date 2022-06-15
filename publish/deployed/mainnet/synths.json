@@ -1,72 +1,152 @@
 [
 	{
-		"name": "sUSD",
 		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sUSD",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sEUR",
+		"feed": "0xb49f677943BC038e9857d61E7d053CaA2C1734C1",
 		"asset": "EUR",
+		"category": "forex",
+		"sign": "€",
+		"description": "Euros",
+		"name": "sEUR",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sJPY",
+		"feed": "0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3",
 		"asset": "JPY",
+		"category": "forex",
+		"sign": "¥",
+		"description": "Japanese Yen",
+		"name": "sJPY",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sAUD",
+		"feed": "0x77F9710E7d0A19669A13c055F62cd80d313dF022",
 		"asset": "AUD",
+		"category": "forex",
+		"sign": "$",
+		"description": "Australian Dollars",
+		"name": "sAUD",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sGBP",
+		"feed": "0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5",
 		"asset": "GBP",
+		"category": "forex",
+		"sign": "£",
+		"description": "Pound Sterling",
+		"name": "sGBP",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sCHF",
+		"feed": "0x449d117117838fFA61263B61dA6301AA2a88B13A",
 		"asset": "CHF",
+		"category": "forex",
+		"sign": "Fr",
+		"description": "Swiss Franc",
+		"name": "sCHF",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sKRW",
+		"feed": "0x01435677FB11763550905594A16B645847C1d0F3",
 		"asset": "KRW",
+		"category": "forex",
+		"sign": "₩",
+		"description": "South Korean Won",
+		"name": "sKRW",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sBTC",
+		"feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
 		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"description": "Bitcoin",
+		"name": "sBTC",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETH",
+		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
 		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"description": "Ether",
+		"name": "sETH",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sLINK",
+		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c",
 		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Chainlink",
+		"name": "sLINK",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sADA",
+		"feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55",
 		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Cardano",
+		"name": "sADA",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sAAVE",
+		"feed": "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9",
 		"asset": "AAVE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Aave",
+		"name": "sAAVE",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sDOT",
+		"feed": "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
 		"asset": "DOT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Polkadot",
+		"name": "sDOT",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETHBTC",
+		"feed": "0xAc559F25B1619171CbC396a50854A3240b6A4e99",
 		"asset": "ETHBTC",
+		"category": "crypto",
+		"sign": "",
+		"description": "ETH / BTC",
+		"name": "sETHBTC",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"name": "sREDEEMER",
+		"asset": "USD"
 	}
 ]
