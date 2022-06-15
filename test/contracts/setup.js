@@ -918,6 +918,7 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
+				'RewardEscrowV2',
 			],
 		},
 		{
