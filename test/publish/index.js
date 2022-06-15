@@ -291,7 +291,7 @@ describe('publish scripts', () => {
 						LIQUIDATION_PENALTY
 					);
 					assert.strictEqual(
-						(await Liquidator.SnxLiquidationPenalty()).toString(),
+						(await Liquidator.snxLiquidationPenalty()).toString(),
 						SNX_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
