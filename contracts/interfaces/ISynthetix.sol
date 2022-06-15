@@ -126,7 +126,11 @@ interface ISynthetix {
     // Liquidations
     function liquidateDelinquentAccount(address account) external returns (bool);
 
+    function liquidateDelinquentAccount(address account, uint escrowStartIndex) external returns (bool);
+
     function liquidateSelf() external returns (bool);
+
+    function liquidateSelf(uint escrowStartIndex) external returns (bool);
 
     // Restricted Functions
 

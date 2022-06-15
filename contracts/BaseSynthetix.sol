@@ -321,6 +321,23 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+        return _liquidateDelinquentAccount(account, 0);
+    }
+
+    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
+    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
+    function liquidateDelinquentAccount(address account, uint escrowStartIndex)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        return _liquidateDelinquentAccount(account, escrowStartIndex);
+    }
+
+    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
+    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
+    function _liquidateDelinquentAccount(address account, uint escrowStartIndex) internal returns (bool) {
         // must store liquidator account address because below functions may attempt to transfer SNX which changes messageSender
         address liquidatorAccount = messageSender;
 
@@ -333,9 +350,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger
         // rewards that may need to be paid (so need to be transferrable, to avoid edge cases)
         if (escrowToLiquidate > 0) {
-            // if startIndex greater than 0 is needed for some accounts due to gas limits, it can be passed from
-            // the input by refactoring this method to have an alternative which accepts startIndex
-            rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate, 0);
+            rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate, escrowStartIndex);
         }
 
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
@@ -379,6 +394,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
+        return _liquidateSelf(0);
+    }
+
+    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
+    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
+    function liquidateSelf(uint escrowStartIndex) external systemActive optionalProxy returns (bool) {
+        return _liquidateSelf(escrowStartIndex);
+    }
+
+    /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
+    function _liquidateSelf(uint escrowStartIndex) internal returns (bool) {
         // must store liquidated account address because below functions may attempt to transfer SNX which changes messageSender
         address liquidatedAccount = messageSender;
 
@@ -394,9 +420,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // It is transferred to the account instead of to the rewards directly to avoid making the following transfer
         // to liquidatorRewards aware of how much needs to be transferred from which part
         if (escrowToLiquidate > 0) {
-            // if startIndex greater than 0 is needed for some accounts due to gas limits, it can be passed from
-            // the input by refactoring this method to have an alternative which accepts startIndex
-            rewardEscrowV2().revokeFrom(liquidatedAccount, liquidatedAccount, escrowToLiquidate, 0);
+            rewardEscrowV2().revokeFrom(liquidatedAccount, liquidatedAccount, escrowToLiquidate, escrowStartIndex);
         }
 
         // Transfer the redeemed SNX to the LiquidatorRewards contract.
