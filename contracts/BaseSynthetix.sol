@@ -402,7 +402,9 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         console.log("balanceOfBefore", tokenState.balanceOf(liquidatedAccount));
 
-        // transfer the part of escrow that needs to be liquidated to the liquidatorRewards
+        // This vests the to-be-liquidated part of escrow to the account (!) as liquid SNX.
+        // It is transferred to the account instead of to the rewards directly to avoid making the following transfer
+        // to liquidatorRewards aware of how much needs to be transferred from which part
         if (escrowToLiquidate > 0) {
             // if startIndex greater than 0 is needed for some accounts due to gas limits, it can be passed from
             // the input by refactoring this method to have an alternative which accepts startIndex
