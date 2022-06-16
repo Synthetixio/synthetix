@@ -24,7 +24,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 	const YEAR = 31556926;
 
 	const [, owner, account1, account2] = accounts;
-	let baseRewardEscrowV2, baseRewardEscrowV2Origin, mocks, feePoolAccount, resolver;
+	let baseRewardEscrowV2, baseRewardEscrowV2Frozen, mocks, feePoolAccount, resolver;
 
 	addSnapshotBeforeRestoreAfterEach();
 
@@ -38,15 +38,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 		// set feePool address
 		feePoolAccount = mocks['FeePool'].address;
 
-		// initiate origin escrow contract
-		baseRewardEscrowV2Origin = await artifacts
-			.require('BaseRewardEscrowV2Origin')
+		// initiate frozen escrow contract
+		baseRewardEscrowV2Frozen = await artifacts
+			.require('BaseRewardEscrowV2Frozen')
 			.new(owner, resolver.address);
 
 		// initialise escrow contract
 		baseRewardEscrowV2 = await artifacts
 			.require('BaseRewardEscrowV2')
-			.new(owner, resolver.address, baseRewardEscrowV2Origin.address);
+			.new(owner, resolver.address, baseRewardEscrowV2Frozen.address);
 
 		// update the resolver for baseRewardEscrowV2
 		await baseRewardEscrowV2.rebuildCache({ from: owner });
@@ -347,7 +347,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// update a new baseRewardEscrowV2 with new resolver
 			baseRewardEscrowV2 = await artifacts
 				.require('BaseRewardEscrowV2')
-				.new(owner, newResolver.address, baseRewardEscrowV2Origin.address);
+				.new(owner, newResolver.address, baseRewardEscrowV2Frozen.address);
 
 			// rebuild cache
 			await baseRewardEscrowV2.rebuildCache({ from: owner });

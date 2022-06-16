@@ -233,21 +233,21 @@ const setupContract = async ({
 			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
-		BaseRewardEscrowV2Origin: [owner, tryGetAddressOf('AddressResolver')],
+		BaseRewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
 		BaseRewardEscrowV2: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			tryGetAddressOf('BaseRewardEscrowV2Origin'),
+			tryGetAddressOf('BaseRewardEscrowV2Frozen'),
 		],
 		RewardEscrowV2: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			tryGetAddressOf('BaseRewardEscrowV2Origin'),
+			tryGetAddressOf('BaseRewardEscrowV2Frozen'),
 		],
 		ImportableRewardEscrowV2: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			tryGetAddressOf('BaseRewardEscrowV2Origin'),
+			tryGetAddressOf('BaseRewardEscrowV2Frozen'),
 		],
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
@@ -760,23 +760,23 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{
-			contract: 'BaseRewardEscrowV2Origin',
+			contract: 'BaseRewardEscrowV2Frozen',
 			deps: ['AddressResolver'],
 			mocks: ['Synthetix', 'FeePool'],
 		},
 		{
 			contract: 'BaseRewardEscrowV2',
-			deps: ['AddressResolver', 'BaseRewardEscrowV2Origin'],
+			deps: ['AddressResolver', 'BaseRewardEscrowV2Frozen'],
 			mocks: ['Synthetix', 'FeePool'],
 		},
 		{
 			contract: 'RewardEscrowV2',
-			deps: ['AddressResolver', 'SystemStatus', 'BaseRewardEscrowV2Origin'],
+			deps: ['AddressResolver', 'SystemStatus', 'BaseRewardEscrowV2Frozen'],
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
 		},
 		{
 			contract: 'ImportableRewardEscrowV2',
-			deps: ['AddressResolver', 'BaseRewardEscrowV2Origin'],
+			deps: ['AddressResolver', 'BaseRewardEscrowV2Frozen'],
 			mocks: ['Synthetix', 'FeePool', 'SynthetixBridgeToBase', 'Issuer'],
 		},
 		{ contract: 'SynthetixEscrow' },
