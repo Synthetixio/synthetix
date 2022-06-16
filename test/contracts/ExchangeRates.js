@@ -612,6 +612,11 @@ contract('Exchange Rates', async accounts => {
 						it('and currenciesUsingAggregator for that aggregator returns sXTZ', async () => {
 							assert.deepEqual(await instance.currenciesUsingAggregator(aggregatorXTZ.address), [
 								sXTZ,
+								toBytes32(''),
+								// the length of returned array of this view is as the length of the full aggregatorKeys,
+								// and the last entries in the array are 0x0 (not initialized).
+								// In this case there are two keys in the contract (sXTZ and sJPY), so the length of
+								// the returned array is 2.
 							]);
 						});
 

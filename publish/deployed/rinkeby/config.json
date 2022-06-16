@@ -332,15 +332,6 @@
 	"SynthsLINK": {
 		"deploy": false
 	},
-	"TokenStatesDEFI": {
-		"deploy": false
-	},
-	"ProxysDEFI": {
-		"deploy": false
-	},
-	"SynthsDEFI": {
-		"deploy": false
-	},
 	"TokenStateiXRP": {
 		"deploy": false
 	},

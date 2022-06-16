@@ -233,12 +233,6 @@
 		"sign": "",
 		"description": "Centralised Exchange Index"
 	},
-	"DEFI": {
-		"asset": "DEFI",
-		"category": "index",
-		"sign": "",
-		"description": "DeFi Index"
-	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
 		"category": "crypto",

@@ -723,18 +723,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
+        // Note: While amountToLiquidate takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
+        // Therefore, it is correct to add the penalty modification below to the totalRedeemed.
         totalRedeemed = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
         if (totalRedeemed > transferableBalance) {
+            // Liquidate the account's debt based on the liquidation penalty.
+            amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(totalRedeemed);
+
             // Set totalRedeemed to all transferable collateral.
             // i.e. the value of the account's staking position relative to balanceOf will be unwound.
             totalRedeemed = transferableBalance;
-
-            // Liquidate their debt based on the ratio of their transferable collateral.
-            amountToLiquidate = debtBalance.multiplyDecimal(transferableBalance).divideDecimal(collateralForAccount);
         }
 
         // Reduce debt shares by amount to liquidate.
