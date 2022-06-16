@@ -221,7 +221,7 @@ module.exports = async ({
 		read: 'snxLiquidationPenalty',
 		readTarget: previousSystemSettings,
 		expected: allowZeroOrUpdateIfNonZero(snxLiquidationPenalty),
-		write: 'setLiquidationPenalty',
+		write: 'setSnxLiquidationPenalty',
 		writeArg: snxLiquidationPenalty,
 		comment: 'Set the penalty amount a liquidator receives of SNX from a liquidated account',
 	});
