@@ -679,13 +679,7 @@
 		{
 			"sip": 247,
 			"layer": "both",
-			"sources": [
-				"Issuer",
-				"Liquidator",
-				"MixinSystemSettings",
-				"SystemSettings",
-				"SystemSettingsLib"
-			]
+			"sources": ["Issuer", "Liquidator", "SystemSettings", "SystemSettingsLib"]
 		}
 	],
 	"releases": [
