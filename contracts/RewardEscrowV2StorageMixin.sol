@@ -8,24 +8,30 @@ import "./interfaces/IRewardEscrowV2Frozen.sol";
 /// previous RewardEscrowV2 contract.
 /// Ideally this should be its own contract so that logic on top of this can be upgraded more easily
 contract RewardEscrowV2StorageMixin {
-    mapping(address => mapping(uint256 => VestingEntries.VestingEntry)) internal _vestingSchedules;
+    // cheaper storage for L1
+    struct StorageEntry {
+        uint32 endTime;
+        uint224 escrowAmount;
+    }
 
-    mapping(address => uint256[]) internal _accountVestingEntryIDs;
+    mapping(address => mapping(uint => StorageEntry)) internal _vestingSchedules;
+
+    mapping(address => uint[]) internal _accountVestingEntryIDs;
 
     /*Counter for new vesting entry ids. */
-    uint256 public nextEntryId;
+    uint public nextEntryId;
 
     /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
-    mapping(address => uint256) internal _totalEscrowedAccountBalance;
+    mapping(address => uint) internal _totalEscrowedAccountBalance;
 
     /* An account's total vested reward synthetix. */
-    mapping(address => uint256) internal _totalVestedAccountBalance;
+    mapping(address => uint) internal _totalVestedAccountBalance;
 
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
-    uint256 internal _totalEscrowedBalance;
+    uint internal _totalEscrowedBalance;
 
     // id starting from which the new entries are stored in this contact only (and don't need to be read from fallback)
-    uint256 public fallbackId;
+    uint public fallbackId;
 
     // 1 wei is a zero value placeholder in the read-through storage.
     // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
@@ -50,7 +56,8 @@ contract RewardEscrowV2StorageMixin {
 
     function vestingSchedules(address account, uint entryId) public view returns (VestingEntries.VestingEntry memory entry) {
         // read stored entry
-        entry = _vestingSchedules[account][entryId];
+        StorageEntry storage stored = _vestingSchedules[account][entryId];
+        entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
         // read from fallback if this entryID was created in the old contract and wasn't written locally
         // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
         if (entryId < fallbackId && entry.endTime == 0) {
@@ -114,14 +121,14 @@ contract RewardEscrowV2StorageMixin {
         // read the current value (possibly from fallback)
         VestingEntries.VestingEntry memory prevEntry = vestingSchedules(account, entryID);
         // load storage entry
-        VestingEntries.VestingEntry storage storedEntry = _vestingSchedules[account][entryID];
+        StorageEntry storage storedEntry = _vestingSchedules[account][entryID];
         // update endTime from fallback if this is first time this entry is written in this contract
-        if (storedEntry.endTime != prevEntry.endTime) {
-            storedEntry.endTime = prevEntry.endTime;
+        if (storedEntry.endTime != uint32(prevEntry.endTime)) {
+            storedEntry.endTime = uint32(prevEntry.endTime);
         }
         // update amount if needed
-        if (storedEntry.escrowAmount != amount) {
-            storedEntry.escrowAmount = amount;
+        if (storedEntry.escrowAmount != uint224(amount)) {
+            storedEntry.escrowAmount = uint224(amount);
         }
         // TODO: consider improving gas usage of revoking / vesting by using boolean / binary arrays as 0 marks
     }
@@ -156,7 +163,10 @@ contract RewardEscrowV2StorageMixin {
     function _storeVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal returns (uint) {
         uint entryID = nextEntryId;
         // since this is a completely new entry, it's safe to write it directly without checking fallback data
-        _vestingSchedules[account][entryID] = entry;
+        _vestingSchedules[account][entryID] = StorageEntry({
+            endTime: uint32(entry.endTime),
+            escrowAmount: uint224(entry.escrowAmount)
+        });
 
         // append entryID to list of entries for account
         _accountVestingEntryIDs[account].push(entryID);
