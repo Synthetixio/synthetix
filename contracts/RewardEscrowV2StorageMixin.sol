@@ -18,6 +18,8 @@ contract RewardEscrowV2StorageMixin {
 
     mapping(address => uint[]) internal _accountVestingEntryIds;
 
+    mapping(address => uint) internal _fallbackCounts;
+
     /*Counter for new vesting entry ids. */
     uint public nextEntryId;
 
@@ -67,7 +69,11 @@ contract RewardEscrowV2StorageMixin {
     }
 
     function accountVestingEntryIDs(address account, uint index) public view returns (uint) {
-        uint fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
+        uint fallbackCount = _fallbackCounts[account];
+        if (fallbackCount == 0) {
+            // uninitialized
+            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
+        }
 
         // this assumes no new entries can be created in the old contract
         if (index < fallbackCount) {
@@ -113,18 +119,25 @@ contract RewardEscrowV2StorageMixin {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// this method "revokes" a single entry
+    function _storeFallbackIDCount(address account) internal {
+        uint fallbackCount = _fallbackCounts[account];
+        if (fallbackCount == 0) {
+            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
+            // store to reduce calls in accountVestingEntryIDs
+            _fallbackCounts[account] = fallbackCount;
+        }
+    }
+
+    /// zeros out a single entry
     function _storeEntryZeroAmount(address account, uint entryId) internal {
-        // read the current value (possibly from fallback)
-        VestingEntries.VestingEntry memory prevEntry = vestingSchedules(account, entryId);
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
-        if (storedEntry.endTime != uint32(prevEntry.endTime)) {
-            storedEntry.endTime = uint32(prevEntry.endTime);
-        }
-        // update amount if needed
-        if (storedEntry.escrowAmount != 0) {
+        if (storedEntry.endTime == 0) {
+            // entry should be in fallback, otherwise it would have endTime or be uninitialized
+            storedEntry.endTime = uint32(fallbackRewardEscrow.vestingSchedules(account, entryId).endTime);
+            // storedEntry.escrowAmount is already 0, since it's uninitialized
+        } else {
             storedEntry.escrowAmount = 0;
         }
     }

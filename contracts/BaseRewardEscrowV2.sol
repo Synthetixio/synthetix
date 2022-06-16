@@ -192,12 +192,14 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     /// public method to vest any accounts vesting entries
     function vestFor(address account, uint256[] memory entryIDs) public {
         uint256 total;
+        VestingEntries.VestingEntry memory entry;
+        uint256 quantity;
         for (uint i = 0; i < entryIDs.length; i++) {
-            VestingEntries.VestingEntry memory entry = vestingSchedules(account, entryIDs[i]);
+            entry = vestingSchedules(account, entryIDs[i]);
 
             /* Skip entry if escrowAmount == 0 already vested */
             if (entry.escrowAmount != 0) {
-                uint256 quantity = _claimableAmount(entry);
+                quantity = _claimableAmount(entry);
 
                 /* update entry to remove escrowAmount */
                 if (quantity > 0) {
@@ -239,36 +241,32 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         uint total;
         uint entryID;
-        uint amount;
-        for (uint i = startIndex; i < numIds; i++) {
+        uint i;
+        VestingEntries.VestingEntry memory entry;
+        // store the count to reduce external calls in accountVestingEntryIDs
+        _storeFallbackIDCount(account);
+        for (i = startIndex; i < numIds; i++) {
             entryID = accountVestingEntryIDs(account, i);
-            VestingEntries.VestingEntry memory entry = vestingSchedules(account, entryID);
+            entry = vestingSchedules(account, entryID);
 
             // skip vested
             if (entry.escrowAmount > 0) {
-                amount = entry.escrowAmount;
-
-                // add to total
-                total = total.add(amount);
-                emit Revoked(account, entryID, amount);
+                total = total.add(entry.escrowAmount);
 
                 // set to zero
                 _storeEntryZeroAmount(account, entryID);
 
                 if (total >= targetAmount) {
-                    if (total > targetAmount) {
-                        // only take the precise amount needed by adding a new entry
-                        // with the difference from total
-                        uint refund = total.sub(targetAmount);
-                        _storeVestingEntry(
-                            account,
-                            VestingEntries.VestingEntry({endTime: entry.endTime, escrowAmount: refund})
-                        );
-                    }
-                    // exit the loop
                     break;
                 }
             }
+        }
+
+        // if too much was revoked
+        if (total > targetAmount) {
+            // only take the precise amount needed by adding a new entry with the difference from total
+            uint refund = total.sub(targetAmount);
+            _storeVestingEntry(account, VestingEntries.VestingEntry({endTime: entry.endTime, escrowAmount: refund}));
         }
 
         // check total is indeed enough, the caller should have checked, but better make sure
@@ -277,6 +275,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(total >= targetAmount, "entries sum less than target");
 
         _transferTokens(account, recipient, targetAmount);
+
+        emit Revoked(account, i, targetAmount);
     }
 
     /**
@@ -491,5 +491,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
-    event Revoked(address indexed account, uint entryID, uint escrowAmount);
+    event Revoked(address indexed account, uint endIndex, uint escrowAmount);
 }
