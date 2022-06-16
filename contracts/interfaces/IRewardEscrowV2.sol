@@ -1,17 +1,8 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
-library VestingEntries {
-    struct VestingEntry {
-        uint64 endTime;
-        uint256 escrowAmount;
-    }
-    struct VestingEntryWithID {
-        uint64 endTime;
-        uint256 escrowAmount;
-        uint256 entryID;
-    }
-}
+// interface for vesting entries
+import "./IRewardEscrowV2Frozen.sol";
 
 interface IRewardEscrowV2 {
     // Views
@@ -44,6 +35,8 @@ interface IRewardEscrowV2 {
     // Mutative functions
     function vest(uint256[] calldata entryIDs) external;
 
+    function vestFor(address account, uint256[] calldata entryIDs) external;
+
     function createEscrowEntry(
         address beneficiary,
         uint256 deposit,
@@ -67,7 +60,7 @@ interface IRewardEscrowV2 {
     // Account Merging
     function startMergingWindow() external;
 
-    function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external;
+    function mergeAccount(address from, uint256[] calldata entryIDs) external;
 
     function nominateAccountToMerge(address account) external;
 
@@ -95,16 +88,7 @@ interface IRewardEscrowV2 {
 
     function nextEntryId() external view returns (uint);
 
-    function vestingSchedules(
-        address account,
-        uint256 index
-    ) external view returns (VestingEntries.VestingEntry memory);
+    function vestingSchedules(address account, uint256 index) external view returns (VestingEntries.VestingEntry memory);
 
-    function accountVestingEntryIDs(
-        address account,
-        uint256 index
-    ) external view returns (uint);
-
-    //function totalEscrowedAccountBalance(address account) external view returns (uint);
-    //function totalVestedAccountBalance(address account) external view returns (uint);
+    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 }

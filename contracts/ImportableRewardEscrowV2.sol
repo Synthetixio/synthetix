@@ -11,7 +11,11 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver, IRewardEscrowV2 _previousEscrow) public BaseRewardEscrowV2(_owner, _resolver, _previousEscrow) {}
+    constructor(
+        address _owner,
+        address _resolver,
+        IRewardEscrowV2Frozen _previousEscrow
+    ) public BaseRewardEscrowV2(_owner, _resolver, _previousEscrow) {}
 
     /* ========== VIEWS ======================= */
 
@@ -34,29 +38,18 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external onlySynthetixBridge {
         // There must be enough balance in the contract to provide for the escrowed balance.
-        totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
+        _storeTotalEscrowedBalance(totalEscrowedBalance().add(escrowedAmount));
         require(
-            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
+            totalEscrowedBalance() <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
         /* Add escrowedAmount to account's escrowed balance */
-        _totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance(account).add(escrowedAmount);
+        _storeTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(escrowedAmount));
 
         for (uint i = 0; i < vestingEntries.length; i++) {
-            _importVestingEntry(account, vestingEntries[i]);
+            _storeVestingEntry(account, vestingEntries[i]);
         }
-    }
-
-    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
-        uint entryID = nextEntryId;
-        _vestingSchedules[account][entryID] = entry;
-
-        /* append entryID to list of entries for account */
-        _accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
     }
 
     modifier onlySynthetixBridge() {

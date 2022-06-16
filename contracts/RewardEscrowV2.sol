@@ -22,7 +22,11 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver, IRewardEscrowV2 _previousRewardEscrow) public BaseRewardEscrowV2(_owner, _resolver, _previousRewardEscrow) {}
+    constructor(
+        address _owner,
+        address _resolver,
+        IRewardEscrowV2Frozen _previousRewardEscrow
+    ) public BaseRewardEscrowV2(_owner, _resolver, _previousRewardEscrow) {}
 
     /* ========== VIEWS ======================= */
 
@@ -164,11 +168,11 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             require(totalBalancePendingMigration[account] == 0, "Account migration is pending already");
 
             /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
-            totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
+            _storeTotalEscrowedBalance(totalEscrowedBalance().add(escrowedAmount));
 
             /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
-            _totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance(account).add(escrowedAmount);
-            _totalVestedAccountBalance[account] = totalVestedAccountBalance(account).add(vestedAmount);
+            _storeTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(escrowedAmount));
+            _storeTotalVestedAccountBalance(account, totalVestedAccountBalance(account).add(vestedAmount));
 
             /* update totalBalancePendingMigration for account */
             totalBalancePendingMigration[account] = escrowedAmount;
@@ -180,7 +184,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     /* Internal function to add entry to vestingSchedules and emit event */
     function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
         /* add vesting entry to account and assign an entryID to it */
-        uint entryID = BaseRewardEscrowV2._addVestingEntry(account, entry);
+        uint entryID = _storeVestingEntry(account, entry);
 
         emit ImportedVestingEntry(account, entryID, entry.escrowAmount, entry.endTime);
     }
@@ -199,6 +203,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntries.VestingEntry memory entry = vestingSchedules(account, entryIDs[i]);
 
+            // only unvested
             if (entry.escrowAmount > 0) {
                 vestingEntries[i] = entry;
 
@@ -206,7 +211,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                 escrowedAccountBalance = escrowedAccountBalance.add(entry.escrowAmount);
 
                 /* Delete the vesting entry being migrated */
-                delete _vestingSchedules[account][entryIDs[i]];
+                _storeEntryAmount(account, entryIDs[i], 0);
             }
         }
 
@@ -215,7 +220,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
          *  transfer the escrowed SNX being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
-            _reduceAccountEscrowBalances(account, escrowedAccountBalance);
+            _updateAggregateBalancesForDelta(account, -int(escrowedAccountBalance));
             IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
         }
 

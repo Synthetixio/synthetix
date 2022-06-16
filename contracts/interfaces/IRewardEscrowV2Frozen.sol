@@ -24,6 +24,8 @@ interface IRewardEscrowV2Frozen {
 
     function numVestingEntries(address account) external view returns (uint);
 
+    function totalEscrowedBalance() external view returns (uint);
+
     function totalEscrowedAccountBalance(address account) external view returns (uint);
 
     function totalVestedAccountBalance(address account) external view returns (uint);

@@ -70,6 +70,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'importVestingEntries',
 				'createEscrowEntry',
 				'vest',
+				'vestFor',
 				'revokeFrom',
 			],
 		});
