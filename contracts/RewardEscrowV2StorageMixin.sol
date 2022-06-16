@@ -113,11 +113,8 @@ contract RewardEscrowV2StorageMixin {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function _storeEntryAmount(
-        address account,
-        uint entryID,
-        uint amount
-    ) internal {
+    /// this method "revokes" a single entry
+    function _storeEntryZeroAmount(address account, uint entryID) internal {
         // read the current value (possibly from fallback)
         VestingEntries.VestingEntry memory prevEntry = vestingSchedules(account, entryID);
         // load storage entry
@@ -127,10 +124,9 @@ contract RewardEscrowV2StorageMixin {
             storedEntry.endTime = uint32(prevEntry.endTime);
         }
         // update amount if needed
-        if (storedEntry.escrowAmount != uint224(amount)) {
-            storedEntry.escrowAmount = uint224(amount);
+        if (storedEntry.escrowAmount != 0) {
+            storedEntry.escrowAmount = 0;
         }
-        // TODO: consider improving gas usage of revoking / vesting by using boolean / binary arrays as 0 marks
     }
 
     function _storeTotalEscrowedAccountBalance(address account, uint amount) internal {

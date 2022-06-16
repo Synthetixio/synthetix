@@ -211,7 +211,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                 escrowedAccountBalance = escrowedAccountBalance.add(entry.escrowAmount);
 
                 /* Delete the vesting entry being migrated */
-                _storeEntryAmount(account, entryIDs[i], 0);
+                _storeEntryZeroAmount(account, entryIDs[i]);
             }
         }
 

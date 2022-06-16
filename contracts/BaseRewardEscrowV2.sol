@@ -201,7 +201,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
                 /* update entry to remove escrowAmount */
                 if (quantity > 0) {
-                    _storeEntryAmount(account, entryIDs[i], 0);
+                    _storeEntryZeroAmount(account, entryIDs[i]);
                 }
 
                 /* add quantity to total */
@@ -253,12 +253,17 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
                 emit Revoked(account, entryID, amount);
 
                 // set to zero
-                _storeEntryAmount(account, entryID, 0);
+                _storeEntryZeroAmount(account, entryID);
 
                 if (total >= targetAmount) {
                     if (total > targetAmount) {
-                        // only take the precise amount needed
-                        _storeEntryAmount(account, entryID, total.sub(targetAmount));
+                        // only take the precise amount needed by adding a new entry
+                        // with the difference from total
+                        uint refund = total.sub(targetAmount);
+                        _storeVestingEntry(
+                            account,
+                            VestingEntries.VestingEntry({endTime: entry.endTime, escrowAmount: refund})
+                        );
                     }
                     // exit the loop
                     break;
@@ -409,7 +414,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             /* ignore vesting entries with zero escrowAmount */
             if (entry.escrowAmount != 0) {
                 // set previous entry amount to zero
-                _storeEntryAmount(from, entryIDs[i], 0);
+                _storeEntryZeroAmount(from, entryIDs[i]);
 
                 // append new entry for recipient, the new entry will have new entryID
                 _storeVestingEntry(to, entry);
