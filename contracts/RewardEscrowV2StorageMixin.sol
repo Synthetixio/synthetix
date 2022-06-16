@@ -24,10 +24,10 @@ contract RewardEscrowV2StorageMixin {
     uint public nextEntryId;
 
     /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
-    mapping(address => uint) internal _totalEscrowedAccountBalance;
+    mapping(address => int) internal _totalEscrowedAccountBalance;
 
     /* An account's total vested reward synthetix. */
-    mapping(address => uint) internal _totalVestedAccountBalance;
+    mapping(address => int) internal _totalVestedAccountBalance;
 
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint internal _totalEscrowedBalance;
@@ -35,9 +35,9 @@ contract RewardEscrowV2StorageMixin {
     // id starting from which the new entries are stored in this contact only (and don't need to be read from fallback)
     uint public fallbackId;
 
-    // 1 wei is a zero value placeholder in the read-through storage.
+    // -1 wei is a zero value placeholder in the read-through storage.
     // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
-    uint internal constant ZERO_PLACEHOLDER = 1;
+    int internal constant ZERO_PLACEHOLDER = -1;
 
     IRewardEscrowV2Frozen public fallbackRewardEscrow;
 
@@ -90,24 +90,26 @@ contract RewardEscrowV2StorageMixin {
     }
 
     function totalEscrowedAccountBalance(address account) public view returns (uint) {
-        uint v = _totalEscrowedAccountBalance[account];
+        // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
+        int v = _totalEscrowedAccountBalance[account];
 
         // 0 should never be stored to prevent reading stale value from fallback
         if (v == 0) {
             return fallbackRewardEscrow.totalEscrowedAccountBalance(account);
         } else {
-            return v == ZERO_PLACEHOLDER ? 0 : v;
+            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
         }
     }
 
     function totalVestedAccountBalance(address account) public view returns (uint) {
-        uint v = _totalVestedAccountBalance[account];
+        // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
+        int v = _totalVestedAccountBalance[account];
 
         // 0 should never be stored to prevent reading stale value from fallback
         if (v == 0) {
             return fallbackRewardEscrow.totalVestedAccountBalance(account);
         } else {
-            return v == ZERO_PLACEHOLDER ? 0 : v;
+            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
         }
     }
 
@@ -146,18 +148,20 @@ contract RewardEscrowV2StorageMixin {
         if (amount == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read form fallback
-            amount = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
+            _totalEscrowedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
+        } else {
+            _totalEscrowedAccountBalance[account] = int(amount);
         }
-        _totalEscrowedAccountBalance[account] = amount;
     }
 
     function _storeTotalVestedAccountBalance(address account, uint amount) internal {
         if (amount == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read form fallback
-            amount = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
+            _totalVestedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
+        } else {
+            _totalVestedAccountBalance[account] = int(amount);
         }
-        _totalVestedAccountBalance[account] = amount;
     }
 
     function _storeTotalEscrowedBalance(uint amount) internal {
