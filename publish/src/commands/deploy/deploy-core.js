@@ -98,10 +98,18 @@ module.exports = async ({
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
+	// SIP-TBD: frozen V2 escrow for migration to new escrow
+	const rewardEscrowV2Frozen = await deployer.deployContract({
+		name: 'RewardEscrowV2Frozen',
+		source: useOvm ? 'ImportableRewardEscrowV2Frozen' : 'RewardEscrowV2Frozen',
+		args: [account, addressOf(readProxyForResolver)],
+		deps: ['AddressResolver'],
+	});
+
 	const rewardEscrowV2 = await deployer.deployContract({
 		name: 'RewardEscrowV2',
 		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [account, addressOf(readProxyForResolver), addressOf(rewardEscrowV2Frozen)],
 		deps: ['AddressResolver'],
 	});
 

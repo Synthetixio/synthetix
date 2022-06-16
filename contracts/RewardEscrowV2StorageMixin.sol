@@ -56,7 +56,7 @@ contract RewardEscrowV2StorageMixin {
 
     function vestingSchedules(address account, uint entryId) public view returns (VestingEntries.VestingEntry memory entry) {
         // read stored entry
-        StorageEntry storage stored = _vestingSchedules[account][entryId];
+        StorageEntry memory stored = _vestingSchedules[account][entryId];
         entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
         // read from fallback if this entryID was created in the old contract and wasn't written locally
         // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
