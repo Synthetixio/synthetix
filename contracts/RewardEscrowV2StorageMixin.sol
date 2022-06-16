@@ -16,7 +16,7 @@ contract RewardEscrowV2StorageMixin {
 
     mapping(address => mapping(uint => StorageEntry)) internal _vestingSchedules;
 
-    mapping(address => uint[]) internal _accountVestingEntryIDs;
+    mapping(address => uint[]) internal _accountVestingEntryIds;
 
     /*Counter for new vesting entry ids. */
     uint public nextEntryId;
@@ -58,7 +58,7 @@ contract RewardEscrowV2StorageMixin {
         // read stored entry
         StorageEntry memory stored = _vestingSchedules[account][entryId];
         entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
-        // read from fallback if this entryID was created in the old contract and wasn't written locally
+        // read from fallback if this entryId was created in the old contract and wasn't written locally
         // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
         if (entryId < fallbackId && entry.endTime == 0) {
             entry = fallbackRewardEscrow.vestingSchedules(account, entryId);
@@ -73,7 +73,7 @@ contract RewardEscrowV2StorageMixin {
         if (index < fallbackCount) {
             return fallbackRewardEscrow.accountVestingEntryIDs(account, index);
         } else {
-            return _accountVestingEntryIDs[account][index - fallbackCount];
+            return _accountVestingEntryIds[account][index - fallbackCount];
         }
     }
 
@@ -108,17 +108,17 @@ contract RewardEscrowV2StorageMixin {
     /// The number of vesting dates in an account's schedule.
     function numVestingEntries(address account) public view returns (uint) {
         /// assumes no enties can be written in frozen contract
-        return fallbackRewardEscrow.numVestingEntries(account) + _accountVestingEntryIDs[account].length;
+        return fallbackRewardEscrow.numVestingEntries(account) + _accountVestingEntryIds[account].length;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// this method "revokes" a single entry
-    function _storeEntryZeroAmount(address account, uint entryID) internal {
+    function _storeEntryZeroAmount(address account, uint entryId) internal {
         // read the current value (possibly from fallback)
-        VestingEntries.VestingEntry memory prevEntry = vestingSchedules(account, entryID);
+        VestingEntries.VestingEntry memory prevEntry = vestingSchedules(account, entryId);
         // load storage entry
-        StorageEntry storage storedEntry = _vestingSchedules[account][entryID];
+        StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
         if (storedEntry.endTime != uint32(prevEntry.endTime)) {
             storedEntry.endTime = uint32(prevEntry.endTime);
@@ -157,19 +157,19 @@ contract RewardEscrowV2StorageMixin {
 
     /// append entry for an account
     function _storeVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal returns (uint) {
-        uint entryID = nextEntryId;
+        uint entryId = nextEntryId;
         // since this is a completely new entry, it's safe to write it directly without checking fallback data
-        _vestingSchedules[account][entryID] = StorageEntry({
+        _vestingSchedules[account][entryId] = StorageEntry({
             endTime: uint32(entry.endTime),
             escrowAmount: uint224(entry.escrowAmount)
         });
 
-        // append entryID to list of entries for account
-        _accountVestingEntryIDs[account].push(entryID);
+        // append entryId to list of entries for account
+        _accountVestingEntryIds[account].push(entryId);
 
         // Increment the next entry id.
         nextEntryId++;
 
-        return entryID;
+        return entryId;
     }
 }

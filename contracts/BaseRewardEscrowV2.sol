@@ -271,6 +271,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             }
         }
 
+        // check total is indeed enough, the caller should have checked, but better make sure
+        // this shouldn't be possible since the caller contract should only call this
+        // if there's enough in escrow to
+        require(total >= targetAmount, "entries sum less than target");
+
         _transferTokens(account, recipient, targetAmount);
     }
 
