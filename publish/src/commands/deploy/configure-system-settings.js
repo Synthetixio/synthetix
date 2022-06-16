@@ -59,7 +59,7 @@ module.exports = async ({
 
 	const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-	// update all synths with 0 current rate
+	// update all synths with 0 current rate, except sUSD
 	const synthsRatesToUpdate = synths
 		.map((synth, i) =>
 			Object.assign(
@@ -70,7 +70,8 @@ module.exports = async ({
 				synth
 			)
 		)
-		.filter(({ currentRate }) => currentRate === '0');
+		.filter(({ currentRate }) => currentRate === '0')
+		.filter(({ name }) => name !== 'sUSD'); // SCCP-190: sUSD rate is 0 despite it being in forex category
 
 	console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
