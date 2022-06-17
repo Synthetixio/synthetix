@@ -677,7 +677,7 @@
 			"released": "ovm"
 		},
 		{
-			"sip": 247,
+			"sip": 251,
 			"layer": "both",
 			"sources": ["Issuer", "Liquidator", "SystemSettings", "SystemSettingsLib"]
 		}
@@ -1257,6 +1257,23 @@
 			},
 			"sips": [243],
 			"released": true
+		},
+		{
+			"name": "Algol",
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251]
+		},
+		{
+			"name": "Algol (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251]
 		}
 	]
 }
