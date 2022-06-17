@@ -267,49 +267,27 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     ) external onlySynthetix {
         require(account != address(0), "account not set");
         require(recipient != address(0), "recipient not set");
-        require(targetAmount > 0, "targetAmount is zero");
 
-        uint numIds = numVestingEntries(account);
-        require(startIndex < numIds, "startIndex too high");
-
-        uint total;
-        uint entryID;
-        uint i;
-        VestingEntries.VestingEntry memory entry;
-        // store the count to reduce external calls in accountVestingEntryIDs
-        state().cacheFallbackIDCount(account);
-        for (i = startIndex; i < numIds; i++) {
-            entryID = accountVestingEntryIDs(account, i);
-            entry = vestingSchedules(account, entryID);
-
-            // skip vested
-            if (entry.escrowAmount > 0) {
-                total = total.add(entry.escrowAmount);
-
-                // set to zero
-                state().setEntryZeroAmount(account, entryID);
-
-                if (total >= targetAmount) {
-                    break;
-                }
-            }
-        }
-
-        // if too much was revoked
-        if (total > targetAmount) {
-            // only take the precise amount needed by adding a new entry with the difference from total
-            uint refund = total.sub(targetAmount);
-            state().addVestingEntry(account, VestingEntries.VestingEntry({endTime: entry.endTime, escrowAmount: refund}));
-        }
+        (uint total, uint endIndex, uint lastEntryTime) = state().setZerosUntilTarget(account, startIndex, targetAmount);
 
         // check total is indeed enough, the caller should have checked, but better make sure
         // this shouldn't be possible since the caller contract should only call this
         // if there's enough in escrow to
         require(total >= targetAmount, "entries sum less than target");
 
+        // if too much was revoked
+        if (total > targetAmount) {
+            // only take the precise amount needed by adding a new entry with the difference from total
+            uint refund = total.sub(targetAmount);
+            state().addVestingEntry(
+                account,
+                VestingEntries.VestingEntry({endTime: uint64(lastEntryTime), escrowAmount: refund})
+            );
+        }
+
         _transferTokens(account, recipient, targetAmount);
 
-        emit Revoked(account, i, targetAmount);
+        emit Revoked(account, endIndex, targetAmount);
     }
 
     /**

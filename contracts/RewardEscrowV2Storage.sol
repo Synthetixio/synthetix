@@ -3,7 +3,10 @@ pragma experimental ABIEncoderV2;
 
 // interface for vesting entries
 import "./interfaces/IRewardEscrowV2.sol";
+
+// libraries
 import "./SignedSafeMath.sol";
+import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 
 // inheritance
 import "./State.sol";
@@ -11,6 +14,7 @@ import "./State.sol";
 /// A contract for reading and writing to/from storage while falling back to values from
 /// previous RewardEscrowV2 contract.
 contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
+    using SafeMath for uint;
     using SignedSafeMath for int;
 
     // cheaper storage for L1
@@ -132,17 +136,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function cacheFallbackIDCount(address account) external onlyAssociatedContract {
-        uint fallbackCount = _fallbackCounts[account];
-        if (fallbackCount == 0) {
-            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
-            // store to reduce calls in accountVestingEntryIDs
-            _fallbackCounts[account] = fallbackCount;
-        }
-    }
-
     /// zeros out a single entry
-    function setEntryZeroAmount(address account, uint entryId) external onlyAssociatedContract {
+    function setEntryZeroAmount(address account, uint entryId) public onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
@@ -155,13 +150,57 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
+    /// zero out multiple entries in order until target is reached (or entries exhausted)
+    function setZerosUntilTarget(
+        address account,
+        uint startIndex,
+        uint targetAmount
+    )
+        external
+        onlyAssociatedContract
+        returns (
+            uint total,
+            uint endIndex,
+            uint lastEntryTime
+        )
+    {
+        require(targetAmount > 0, "targetAmount is zero");
+
+        uint numIds = numVestingEntries(account);
+        require(startIndex < numIds, "startIndex too high");
+
+        uint total;
+        uint entryID;
+        uint i;
+        VestingEntries.VestingEntry memory entry;
+        // store the count to reduce external calls in accountVestingEntryIDs
+        _cacheFallbackIDCount(account);
+        for (i = startIndex; i < numIds; i++) {
+            entryID = accountVestingEntryIDs(account, i);
+            entry = vestingSchedules(account, entryID);
+
+            // skip vested
+            if (entry.escrowAmount > 0) {
+                total = total.add(entry.escrowAmount);
+
+                // set to zero
+                setEntryZeroAmount(account, entryID);
+
+                if (total >= targetAmount) {
+                    break;
+                }
+            }
+        }
+        return (total, i, entry.endTime);
+    }
+
     function updateEscrowAccountBalance(address account, int delta) external onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
         require(total >= 0, "balance must be positive");
         if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
-            //  writing an actual 0 will result in stale value being read form fallback
+            // writing an actual 0 will result in stale value being read form fallback
             _totalEscrowedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
         } else {
             _totalEscrowedAccountBalance[account] = total;
@@ -214,5 +253,16 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         nextEntryId++;
 
         return entryId;
+    }
+
+    /* ========== INTERNAL ========== */
+
+    function _cacheFallbackIDCount(address account) internal {
+        uint fallbackCount = _fallbackCounts[account];
+        if (fallbackCount == 0) {
+            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
+            // store to reduce calls in accountVestingEntryIDs
+            _fallbackCounts[account] = fallbackCount;
+        }
     }
 }

@@ -21,9 +21,19 @@ interface IRewardEscrowV2Storage {
     function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 
     /// Mutative
-    function cacheFallbackIDCount(address account) external;
-
     function setEntryZeroAmount(address account, uint entryId) external;
+
+    function setZerosUntilTarget(
+        address account,
+        uint startIndex,
+        uint targetAmount
+    )
+        external
+        returns (
+            uint total,
+            uint endIndex,
+            uint lastEntryTime
+        );
 
     function updateEscrowAccountBalance(address account, int delta) external;
 
