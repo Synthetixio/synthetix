@@ -11,7 +11,6 @@ const { prepareSmocks, ensureOnlyExpectedMutativeFunctions } = require('./helper
 const { toUnit, currentTime, fastForward } = require('../utils')();
 
 const {
-	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -24,7 +23,12 @@ contract('BaseRewardEscrowV2', async accounts => {
 	const YEAR = 31556926;
 
 	const [, owner, account1, account2] = accounts;
-	let baseRewardEscrowV2, baseRewardEscrowV2Frozen, mocks, feePoolAccount, resolver;
+	let baseRewardEscrowV2,
+		baseRewardEscrowV2Frozen,
+		rewardEscrowV2Storage,
+		mocks,
+		feePoolAccount,
+		resolver;
 
 	addSnapshotBeforeRestoreAfterEach();
 
@@ -38,16 +42,26 @@ contract('BaseRewardEscrowV2', async accounts => {
 		// set feePool address
 		feePoolAccount = mocks['FeePool'].address;
 
-		// initiate frozen escrow contract
+		// initialise frozen escrow contract
 		baseRewardEscrowV2Frozen = await artifacts
 			.require('BaseRewardEscrowV2Frozen')
 			.new(owner, resolver.address);
 
-		// initialise escrow contract
-		baseRewardEscrowV2 = await artifacts
-			.require('BaseRewardEscrowV2')
-			.new(owner, resolver.address, baseRewardEscrowV2Frozen.address);
+		// initialise storage contract
+		rewardEscrowV2Storage = await artifacts
+			.require('RewardEscrowV2Storage')
+			.new(owner, ZERO_ADDRESS, baseRewardEscrowV2Frozen.address);
+		// add the real contract to mocks so that the mock resolver returns its address
+		// when BaseRewardEscrowV2 is constructed
+		mocks['RewardEscrowV2Storage'] = rewardEscrowV2Storage;
 
+		// initialise escrow contract
+		baseRewardEscrowV2 = await artifacts.require('BaseRewardEscrowV2').new(owner, resolver.address);
+
+		// set state write access for storage contract
+		await rewardEscrowV2Storage.setAssociatedContract(baseRewardEscrowV2.address, {
+			from: owner,
+		});
 		// update the resolver for baseRewardEscrowV2
 		await baseRewardEscrowV2.rebuildCache({ from: owner });
 	});
@@ -336,19 +350,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 				symbol: 'SNX',
 			}));
 
-			// replace synthetix on resolver
-			const newResolver = await artifacts.require('AddressResolver').new(owner);
-
-			await newResolver.importAddresses(
-				['Synthetix', 'FeePool', 'Issuer'].map(toBytes32),
-				[mockedSynthetix.address, feePoolAccount, mocks['Issuer'].address],
-				{ from: owner }
-			);
-
-			// update a new baseRewardEscrowV2 with new resolver
-			baseRewardEscrowV2 = await artifacts
-				.require('BaseRewardEscrowV2')
-				.new(owner, newResolver.address, baseRewardEscrowV2Frozen.address);
+			// replace synthetix on resolver (see prepareSmocks() for why this works)
+			mocks['Synthetix'] = mockedSynthetix;
 
 			// rebuild cache
 			await baseRewardEscrowV2.rebuildCache({ from: owner });
