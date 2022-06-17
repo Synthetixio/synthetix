@@ -163,12 +163,9 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             // ensure account doesn't have escrow migration pending / being imported more than once
             require(totalBalancePendingMigration[account] == 0, "Account migration is pending already");
 
-            /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
-            state().setTotalEscrowedBalance(totalEscrowedBalance().add(escrowedAmount));
-
-            /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
-            state().setTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(escrowedAmount));
-            state().setTotalVestedAccountBalance(account, totalVestedAccountBalance(account).add(vestedAmount));
+            /* Update balance for each account */
+            state().updateEscrowAccountBalance(account, int(escrowedAmount));
+            state().updateVestedAccountBalance(account, int(vestedAmount));
 
             /* update totalBalancePendingMigration for account */
             totalBalancePendingMigration[account] = escrowedAmount;
@@ -216,7 +213,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
          *  transfer the escrowed SNX being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
-            _updateAggregateBalancesForDelta(account, -int(escrowedAccountBalance));
+            state().updateEscrowAccountBalance(account, -int(escrowedAccountBalance));
             IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
         }
 

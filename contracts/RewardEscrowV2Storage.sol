@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 // interface for vesting entries
 import "./interfaces/IRewardEscrowV2.sol";
+import "./SignedSafeMath.sol";
 
 // inheritance
 import "./State.sol";
@@ -10,6 +11,8 @@ import "./State.sol";
 /// A contract for reading and writing to/from storage while falling back to values from
 /// previous RewardEscrowV2 contract.
 contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
+    using SignedSafeMath for int;
+
     // cheaper storage for L1
     struct StorageEntry {
         uint32 endTime;
@@ -152,32 +155,43 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function setTotalEscrowedAccountBalance(address account, uint amount) external onlyAssociatedContract {
-        if (amount == 0) {
+    function updateEscrowAccountBalance(address account, int delta) external onlyAssociatedContract {
+        // add / subtract to previous balance
+        int total = int(totalEscrowedAccountBalance(account)).add(delta);
+        require(total >= 0, "balance must be positive");
+        if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read form fallback
             _totalEscrowedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
         } else {
-            _totalEscrowedAccountBalance[account] = int(amount);
+            _totalEscrowedAccountBalance[account] = total;
         }
+
+        // update the global total
+        updateTotalEscrowedBalance(delta);
     }
 
-    function setTotalVestedAccountBalance(address account, uint amount) external onlyAssociatedContract {
-        if (amount == 0) {
+    function updateVestedAccountBalance(address account, int delta) external onlyAssociatedContract {
+        // add / subtract to previous balance
+        int total = int(totalVestedAccountBalance(account)).add(delta);
+        require(total >= 0, "balance must be positive");
+        if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read form fallback
             _totalVestedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
         } else {
-            _totalVestedAccountBalance[account] = int(amount);
+            _totalVestedAccountBalance[account] = total;
         }
     }
 
-    function setTotalEscrowedBalance(uint amount) external onlyAssociatedContract {
+    function updateTotalEscrowedBalance(int delta) public onlyAssociatedContract {
         // this is just to keep the storage read / write interface clean so that
         // all storage read / write methods can be part of a single mixin / contract and logic
         // is separate. This should allow at the very least fewer bugs if using as a mixin, or easy
         // upgradability if refactoring as a separate contract.
-        _totalEscrowedBalance = amount;
+        int total = int(totalEscrowedBalance()).add(delta);
+        require(total >= 0, "balance must be positive");
+        _totalEscrowedBalance = uint(total);
     }
 
     /// append entry for an account

@@ -25,11 +25,9 @@ interface IRewardEscrowV2Storage {
 
     function setEntryZeroAmount(address account, uint entryId) external;
 
-    function setTotalEscrowedAccountBalance(address account, uint amount) external;
+    function updateEscrowAccountBalance(address account, int delta) external;
 
-    function setTotalVestedAccountBalance(address account, uint amount) external;
-
-    function setTotalEscrowedBalance(uint amount) external;
+    function updateVestedAccountBalance(address account, int delta) external;
 
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
 }

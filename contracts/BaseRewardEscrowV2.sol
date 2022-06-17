@@ -248,7 +248,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         if (total != 0) {
             _transferTokens(account, account, total);
             // update total vested
-            state().setTotalVestedAccountBalance(account, totalVestedAccountBalance(account).add(total));
+            state().updateVestedAccountBalance(account, int(total));
             emit Vested(account, block.timestamp, total);
         }
     }
@@ -356,9 +356,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(quantity != 0, "Quantity cannot be zero");
         require(duration > 0 && duration <= max_duration, "Cannot escrow with 0 duration OR above max_duration");
 
-        /* There must be enough balance in the contract to provide for the vesting entry. */
-        state().setTotalEscrowedBalance(totalEscrowedBalance().add(quantity));
+        /* Add quantity to account's escrowed balance */
+        state().updateEscrowAccountBalance(account, int(quantity));
 
+        /* There must be enough balance in the contract to provide for the vesting entry. */
         require(
             totalEscrowedBalance() <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
@@ -366,9 +367,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         /* Escrow the tokens for duration. */
         uint endTime = block.timestamp + duration;
-
-        /* Add quantity to account's escrowed balance */
-        state().setTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(quantity));
 
         // store vesting entry
         uint entryID =
@@ -386,23 +384,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         address transferTo,
         uint256 amount
     ) internal {
-        _updateAggregateBalancesForDelta(removeFrom, -int(amount));
+        state().updateEscrowAccountBalance(removeFrom, -int(amount));
         IERC20(address(synthetix())).transfer(transferTo, amount);
-    }
-
-    function _updateAggregateBalancesForDelta(address account, int delta) internal {
-        if (delta < 0) {
-            uint reduce = uint(-delta);
-            // Reverts if amount being vested is greater than the account's existing totalEscrowedAccountBalance
-            state().setTotalEscrowedBalance(totalEscrowedBalance().sub(reduce));
-            // update escrowed
-            state().setTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).sub(reduce));
-        } else if (delta > 0) {
-            uint increase = uint(delta);
-            state().setTotalEscrowedBalance(totalEscrowedBalance().add(increase));
-            // update escrowed
-            state().setTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(increase));
-        }
     }
 
     /* ========== ACCOUNT MERGING ========== */
@@ -466,9 +449,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         }
 
         // remove from old account
-        _updateAggregateBalancesForDelta(from, -int(totalEscrowAmountMerged));
+        state().updateEscrowAccountBalance(from, -int(totalEscrowAmountMerged));
         // add to recipient account
-        _updateAggregateBalancesForDelta(to, int(totalEscrowAmountMerged));
+        state().updateEscrowAccountBalance(to, int(totalEscrowAmountMerged));
 
         emit AccountMerged(from, to, totalEscrowAmountMerged, entryIDs, block.timestamp);
     }
