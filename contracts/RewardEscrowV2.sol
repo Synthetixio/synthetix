@@ -22,11 +22,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address _owner,
-        address _resolver,
-        IRewardEscrowV2Frozen _previousRewardEscrow
-    ) public BaseRewardEscrowV2(_owner, _resolver, _previousRewardEscrow) {}
+    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {}
 
     /* ========== VIEWS ======================= */
 
@@ -168,11 +164,11 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             require(totalBalancePendingMigration[account] == 0, "Account migration is pending already");
 
             /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
-            _storeTotalEscrowedBalance(totalEscrowedBalance().add(escrowedAmount));
+            state().setTotalEscrowedBalance(totalEscrowedBalance().add(escrowedAmount));
 
             /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
-            _storeTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(escrowedAmount));
-            _storeTotalVestedAccountBalance(account, totalVestedAccountBalance(account).add(vestedAmount));
+            state().setTotalEscrowedAccountBalance(account, totalEscrowedAccountBalance(account).add(escrowedAmount));
+            state().setTotalVestedAccountBalance(account, totalVestedAccountBalance(account).add(vestedAmount));
 
             /* update totalBalancePendingMigration for account */
             totalBalancePendingMigration[account] = escrowedAmount;
@@ -184,7 +180,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     /* Internal function to add entry to vestingSchedules and emit event */
     function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
         /* add vesting entry to account and assign an entryID to it */
-        uint entryID = _storeVestingEntry(account, entry);
+        uint entryID = state().addVestingEntry(account, entry);
 
         emit ImportedVestingEntry(account, entryID, entry.escrowAmount, entry.endTime);
     }
@@ -211,7 +207,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                 escrowedAccountBalance = escrowedAccountBalance.add(entry.escrowAmount);
 
                 /* Delete the vesting entry being migrated */
-                _storeEntryZeroAmount(account, entryIDs[i]);
+                state().setEntryZeroAmount(account, entryIDs[i]);
             }
         }
 

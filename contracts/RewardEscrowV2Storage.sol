@@ -43,11 +43,17 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     IRewardEscrowV2Frozen public fallbackRewardEscrow;
 
+    bytes32 public constant CONTRACT_NAME = "RewardEscrowV2Storage";
+
     /* ========== CONSTRUCTOR ========== */
 
     /// this assumes that IRewardEscrowV2Frozen is in fact Frozen both in code and in data(!!) with all
     /// mutative methods reverting (e.g. due to blocked transfers)
-    constructor(IRewardEscrowV2Frozen _previousEscrow) public {
+    constructor(
+        address _owner,
+        address _associatedContract,
+        IRewardEscrowV2Frozen _previousEscrow
+    ) public Owned(_owner) State(_associatedContract) {
         fallbackRewardEscrow = _previousEscrow;
         nextEntryId = _previousEscrow.nextEntryId();
         fallbackId = nextEntryId;
@@ -123,7 +129,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function _storeFallbackIDCount(address account) internal {
+    function cacheFallbackIDCount(address account) external onlyAssociatedContract {
         uint fallbackCount = _fallbackCounts[account];
         if (fallbackCount == 0) {
             fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
@@ -133,7 +139,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     /// zeros out a single entry
-    function _storeEntryZeroAmount(address account, uint entryId) internal {
+    function setEntryZeroAmount(address account, uint entryId) external onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
@@ -146,7 +152,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function _storeTotalEscrowedAccountBalance(address account, uint amount) internal {
+    function setTotalEscrowedAccountBalance(address account, uint amount) external onlyAssociatedContract {
         if (amount == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read form fallback
@@ -156,7 +162,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function _storeTotalVestedAccountBalance(address account, uint amount) internal {
+    function setTotalVestedAccountBalance(address account, uint amount) external onlyAssociatedContract {
         if (amount == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read form fallback
@@ -166,7 +172,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function _storeTotalEscrowedBalance(uint amount) internal {
+    function setTotalEscrowedBalance(uint amount) external onlyAssociatedContract {
         // this is just to keep the storage read / write interface clean so that
         // all storage read / write methods can be part of a single mixin / contract and logic
         // is separate. This should allow at the very least fewer bugs if using as a mixin, or easy
@@ -175,7 +181,11 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     /// append entry for an account
-    function _storeVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal returns (uint) {
+    function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry)
+        external
+        onlyAssociatedContract
+        returns (uint)
+    {
         uint entryId = nextEntryId;
         // since this is a completely new entry, it's safe to write it directly without checking fallback data
         _vestingSchedules[account][entryId] = StorageEntry({
