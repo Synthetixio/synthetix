@@ -234,6 +234,7 @@ const setupContract = async ({
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
 		BaseRewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
+		RewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
 		RewardEscrowV2Storage: [
 			owner,
 			tryGetAddressOf('RewardEscrowV2'),
@@ -767,7 +768,12 @@ const setupAllContracts = async ({
 		{
 			contract: 'BaseRewardEscrowV2Frozen',
 			deps: ['AddressResolver'],
-			mocks: ['Synthetix', 'FeePool'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
+		},
+		{
+			contract: 'RewardEscrowV2Frozen',
+			deps: ['AddressResolver'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
 		},
 		{
 			contract: 'RewardEscrowV2Storage',

@@ -39,6 +39,8 @@ interface IRewardEscrowV2Storage {
 
     function updateVestedAccountBalance(address account, int delta) external;
 
+    function updateTotalEscrowedBalance(int delta) external;
+
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
 }
 
