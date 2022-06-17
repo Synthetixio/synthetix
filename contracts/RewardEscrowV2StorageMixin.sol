@@ -2,12 +2,14 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // interface for vesting entries
-import "./interfaces/IRewardEscrowV2Frozen.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 
-/// A mixin for reading and writing to/from storage while falling back to values from
+// inheritance
+import "./State.sol";
+
+/// A contract for reading and writing to/from storage while falling back to values from
 /// previous RewardEscrowV2 contract.
-/// Ideally this should be its own contract so that logic on top of this can be upgraded more easily
-contract RewardEscrowV2StorageMixin {
+contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     // cheaper storage for L1
     struct StorageEntry {
         uint32 endTime;

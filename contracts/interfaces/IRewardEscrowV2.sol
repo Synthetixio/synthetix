@@ -4,6 +4,20 @@ pragma experimental ABIEncoderV2;
 // interface for vesting entries
 import "./IRewardEscrowV2Frozen.sol";
 
+interface IRewardEscrowV2Storage {
+    function numVestingEntries(address account) external view returns (uint);
+
+    function totalEscrowedAccountBalance(address account) external view returns (uint);
+
+    function totalVestedAccountBalance(address account) external view returns (uint);
+
+    function nextEntryId() external view returns (uint);
+
+    function vestingSchedules(address account, uint256 index) external view returns (VestingEntries.VestingEntry memory);
+
+    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
+}
+
 interface IRewardEscrowV2 {
     // Views
     function balanceOf(address account) external view returns (uint);
@@ -13,6 +27,12 @@ interface IRewardEscrowV2 {
     function totalEscrowedAccountBalance(address account) external view returns (uint);
 
     function totalVestedAccountBalance(address account) external view returns (uint);
+
+    function nextEntryId() external view returns (uint);
+
+    function vestingSchedules(address account, uint256 index) external view returns (VestingEntries.VestingEntry memory);
+
+    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint);
 
@@ -85,10 +105,4 @@ interface IRewardEscrowV2 {
         uint targetAmount,
         uint startIndex
     ) external;
-
-    function nextEntryId() external view returns (uint);
-
-    function vestingSchedules(address account, uint256 index) external view returns (VestingEntries.VestingEntry memory);
-
-    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 }
