@@ -34,6 +34,7 @@ module.exports = async ({
 		SynthetixEscrow,
 		SystemStatus,
 		TokenStateSynthetix,
+		RewardEscrowV2Storage,
 	} = deployer.deployedContracts;
 
 	// now configure everything
@@ -242,6 +243,16 @@ module.exports = async ({
 
 	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
 	if (RewardEscrowV2 && RewardsDistribution) {
+		await runStep({
+			contract: 'RewardEscrowV2Storage',
+			target: RewardEscrowV2Storage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(RewardEscrowV2),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(RewardEscrowV2),
+			comment: 'Ensure that RewardEscrowV2 contract is allowed to write to RewardEscrowV2Storage',
+		});
+
 		await runStep({
 			contract: 'RewardsDistribution',
 			target: RewardsDistribution,

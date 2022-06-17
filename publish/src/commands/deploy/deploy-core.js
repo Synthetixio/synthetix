@@ -106,10 +106,17 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 	});
 
+	// SIP-TBD: storage contract for RewardEscrowV2
+	await deployer.deployContract({
+		name: 'RewardEscrowV2Storage',
+		args: [account, ZERO_ADDRESS, addressOf(rewardEscrowV2Frozen)],
+		deps: ['AddressResolver'],
+	});
+
 	const rewardEscrowV2 = await deployer.deployContract({
 		name: 'RewardEscrowV2',
 		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
-		args: [account, addressOf(readProxyForResolver), addressOf(rewardEscrowV2Frozen)],
+		args: [account, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
 
