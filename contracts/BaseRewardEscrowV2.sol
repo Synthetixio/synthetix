@@ -18,7 +18,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
+contract BaseRewardEscrowV2 is Owned, IRevokableRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -246,7 +246,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         /* Transfer vested tokens. Will revert if total > totalEscrowedAccountBalance */
         if (total != 0) {
-            _transferTokens(account, account, total);
+            state().transferTokens(account, account, total);
             // update total vested
             state().updateVestedAccountBalance(account, int(total));
             emit Vested(account, block.timestamp, total);
@@ -285,7 +285,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             );
         }
 
-        _transferTokens(account, recipient, targetAmount);
+        state().transferTokens(account, recipient, targetAmount);
 
         emit Revoked(account, endIndex, targetAmount);
     }
@@ -303,7 +303,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
 
         /* Transfer SNX from msg.sender */
-        require(IERC20(address(synthetix())).transferFrom(msg.sender, address(this), deposit), "token transfer failed");
+        require(IERC20(address(synthetix())).transferFrom(msg.sender, address(state()), deposit), "token transfer failed");
 
         /* Append vesting entry for the beneficiary address */
         _appendVestingEntry(beneficiary, deposit, duration);
@@ -339,7 +339,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         require(
-            totalEscrowedBalance() <= IERC20(address(synthetix())).balanceOf(address(this)),
+            totalEscrowedBalance() <= IERC20(address(synthetix())).balanceOf(address(state())),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -354,16 +354,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             );
 
         emit VestingEntryCreated(account, block.timestamp, quantity, duration, entryID);
-    }
-
-    /// remove tokens from vesting aggregates and transfer them to recipient
-    function _transferTokens(
-        address removeFrom,
-        address transferTo,
-        uint256 amount
-    ) internal {
-        state().updateEscrowAccountBalance(removeFrom, -int(amount));
-        IERC20(address(synthetix())).transfer(transferTo, amount);
     }
 
     /* ========== ACCOUNT MERGING ========== */

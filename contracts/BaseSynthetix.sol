@@ -84,8 +84,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
     }
 
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROWV2));
+    function rewardEscrowV2() internal view returns (IRevokableRewardEscrowV2) {
+        return IRevokableRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROWV2));
     }
 
     function liquidator() internal view returns (ILiquidator) {
@@ -284,6 +284,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
         return _transferFromByProxy(messageSender, from, to, value);
+    }
+
+    function adminTransferEscrow() external onlyOwner returns (bool) {
+        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address doesn't exist");
+        address to = resolver.requireAndGetAddress("RewardEscrowV2Storage", "New escrow address doesn't exist");
+
+        uint currentBalance = tokenState.balanceOf(from);
+
+        require(currentBalance > 0, "Nothing to transfer");
+
+        return _internalTransfer(from, to, currentBalance);
     }
 
     function issueSynths(uint amount) external issuanceActive optionalProxy {

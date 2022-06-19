@@ -28,15 +28,64 @@ contract('BaseRewardEscrowV2', async accounts => {
 		rewardEscrowV2Storage,
 		mocks,
 		feePoolAccount,
+		mockedSynthetix,
 		resolver;
 
 	addSnapshotBeforeRestoreAfterEach();
+
+	function assertWithFallback(title, assertFunc) {
+		it(title, async () => {
+			await assertFunc(baseRewardEscrowV2, rewardEscrowV2Storage);
+		});
+
+		it(title + ' (using fallback)', async () => {
+			// need to create a storage contract for full testing
+			const newRewardEscrowV2Storage = await artifacts
+				.require('RewardEscrowV2Storage')
+				.new(owner, resolver.address, mockedSynthetix.address, baseRewardEscrowV2.address);
+
+			// initialise new one falling back to this one
+			const newRewardEscrowV2 = await artifacts
+				.require('BaseRewardEscrowV2')
+				.new(owner, resolver.address);
+
+			// set state write access for storage contract
+			await newRewardEscrowV2Storage.setAssociatedContract(newRewardEscrowV2.address, {
+				from: owner,
+			});
+
+			// add the real contract to mocks so that the mock resolver returns its address
+			// when BaseRewardEscrowV2 is constructed
+			mocks['RewardEscrowV2Storage'] = newRewardEscrowV2Storage;
+
+			// update the resolver for baseRewardEscrowV2
+			await newRewardEscrowV2.rebuildCache({ from: owner });
+
+			const balance = await mockedSynthetix.balanceOf(rewardEscrowV2Storage.address);
+			// in hypothetical migration snx balance would be transferred over to new storage contract
+			// TODO: the `mockToken` implementation does not make it easy to do unchecked transfers,
+			// so we don't have an easy way to check if the old contract somehow got funds or not other than
+			// revert
+			await mockedSynthetix.transfer(newRewardEscrowV2Storage.address, balance, {
+				from: owner,
+			});
+
+			await assertFunc(newRewardEscrowV2, newRewardEscrowV2Storage);
+		});
+	}
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	beforeEach(async () => {
 		({ mocks, resolver } = await prepareSmocks({
 			contracts: ['FeePool', 'Issuer', 'Synthetix'],
 			accounts: accounts.slice(10), // mock using accounts after the first few
+		}));
+
+		// create our own mock for SNX ERC20
+		({ token: mockedSynthetix } = await mockToken({
+			accounts,
+			name: 'Synthetix',
+			symbol: 'SNX',
 		}));
 
 		// set feePool address
@@ -50,7 +99,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		// initialise storage contract
 		rewardEscrowV2Storage = await artifacts
 			.require('RewardEscrowV2Storage')
-			.new(owner, ZERO_ADDRESS, baseRewardEscrowV2Frozen.address);
+			.new(owner, ZERO_ADDRESS, mockedSynthetix.address, baseRewardEscrowV2Frozen.address);
 		// add the real contract to mocks so that the mock resolver returns its address
 		// when BaseRewardEscrowV2 is constructed
 		mocks['RewardEscrowV2Storage'] = rewardEscrowV2Storage;
@@ -179,7 +228,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 			});
 			describe('When successfully appending new escrow entry for account 1 with 10 SNX', () => {
-				let entryID, nextEntryIdAfter, now, escrowAmount;
+				let entryID, now, escrowAmount;
 				beforeEach(async () => {
 					duration = 1 * YEAR;
 
@@ -196,11 +245,10 @@ contract('BaseRewardEscrowV2', async accounts => {
 					await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
 						from: feePoolAccount,
 					});
-
-					nextEntryIdAfter = await baseRewardEscrowV2.nextEntryId();
 				});
-				it('Should return the vesting entry for account 1 and entryID', async () => {
-					const vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+
+				assertWithFallback('Should return the vesting entry for account 1 and entryID', async e => {
+					const vestingEntry = await e.getVestingEntry(account1, entryID);
 
 					// endTime is 1 year after
 					assert.isTrue(vestingEntry.endTime.gte(now + duration));
@@ -208,29 +256,29 @@ contract('BaseRewardEscrowV2', async accounts => {
 					// escrowAmount is 10
 					assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
 				});
-				it('Should increment the nextEntryID', async () => {
-					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
-				});
-				it('Account 1 should have balance of 10 SNX', async () => {
-					assert.bnEqual(await baseRewardEscrowV2.balanceOf(account1), escrowAmount);
-				});
-				it('totalEscrowedBalance of the contract should be 10 SNX', async () => {
-					assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount);
-				});
-				it('Account1 should have totalVested Account Balance of 0', async () => {
-					assert.bnEqual(await baseRewardEscrowV2.totalVestedAccountBalance(account1), new BN(0));
-				});
-				it('Account1 numVestingEntries is 1', async () => {
-					assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account1), new BN(1));
-				});
+				assertWithFallback('Should increment the nextEntryID', async e =>
+					assert.bnEqual(await e.nextEntryId(), entryID.add(new BN(1)))
+				);
+				assertWithFallback('Account 1 should have balance of 10 SNX', async e =>
+					assert.bnEqual(await e.balanceOf(account1), escrowAmount)
+				);
+				assertWithFallback('totalEscrowedBalance of the contract should be 10 SNX', async e =>
+					assert.bnEqual(await e.totalEscrowedBalance(), escrowAmount)
+				);
+				assertWithFallback('Account1 should have totalVested Account1 Balance of 0', async e =>
+					assert.bnEqual(await e.totalVestedAccountBalance(account1), new BN(0))
+				);
+				assertWithFallback('Account1 numvestingEntries is 1', async e =>
+					assert.bnEqual(await e.numVestingEntries(account1), new BN(1))
+				);
 				describe('When 6 months has passed', () => {
 					let timeElapsed;
 					beforeEach(async () => {
 						timeElapsed = YEAR / 2;
 						await fastForward(timeElapsed);
 					});
-					it('then the vesting entry has 0 snx claimable', async () => {
-						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
+					assertWithFallback('then the vesting entry has 0 snx claimable', async e => {
+						const claimable = await e.getVestingEntryClaimable(account1, entryID);
 						assert.bnEqual(claimable, 0);
 					});
 				});
@@ -240,8 +288,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 						await fastForward(YEAR + 1);
 						vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 					});
-					it('then the vesting entry is fully claimable', async () => {
-						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
+					assertWithFallback('then the vesting entry is fully claimable', async e => {
+						const claimable = await e.getVestingEntryClaimable(account1, entryID);
 						assert.bnEqual(claimable, vestingEntry.escrowAmount);
 					});
 				});
@@ -263,38 +311,38 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 			duration = 1 * YEAR;
 		});
-		it('should revert if escrow duration is greater than max_duration', async () => {
+		assertWithFallback('should revert if escrow duration is greater than max_duration', async e => {
 			const maxDuration = await baseRewardEscrowV2.max_duration();
 			await assert.revert(
-				baseRewardEscrowV2.createEscrowEntry(account1, new BN(1000), maxDuration + 10, {
+				e.createEscrowEntry(account1, new BN(1000), maxDuration + 10, {
 					from: owner,
 				}),
 				'Cannot escrow with 0 duration OR above max_duration'
 			);
 		});
-		it('should revert if escrow duration is 0', async () => {
+		assertWithFallback('should revert if escrow duration is 0', async e => {
 			await assert.revert(
-				baseRewardEscrowV2.createEscrowEntry(account1, new BN(1000), 0, {
+				e.createEscrowEntry(account1, new BN(1000), 0, {
 					from: owner,
 				}),
 				'Cannot escrow with 0 duration OR above max_duration'
 			);
 		});
-		it('should revert when beneficiary is address zero', async () => {
+		assertWithFallback('should revert when beneficiary is address zero', async e => {
 			await assert.revert(
-				baseRewardEscrowV2.createEscrowEntry(ZERO_ADDRESS, toUnit('1'), duration),
+				e.createEscrowEntry(ZERO_ADDRESS, toUnit('1'), duration),
 				'Cannot create escrow with address(0)'
 			);
 		});
-		it('should revert when msg.sender has no approval to spend', async () => {
+		assertWithFallback('should revert when msg.sender has no approval to spend', async e => {
 			await assert.revert(
-				baseRewardEscrowV2.createEscrowEntry(ZERO_ADDRESS, toUnit('10'), duration, {
+				e.createEscrowEntry(ZERO_ADDRESS, toUnit('10'), duration, {
 					from: account1,
 				})
 			);
 		});
 		describe('when successfully creating a new escrow entry for acount 1', () => {
-			let vestingEntry, escrowAmount, now, nextEntryIdAfter;
+			let vestingEntry, escrowAmount, now;
 			beforeEach(async () => {
 				now = currentTime();
 				escrowAmount = toUnit('10');
@@ -309,47 +357,36 @@ contract('BaseRewardEscrowV2', async accounts => {
 				entryID = await baseRewardEscrowV2.accountVestingEntryIDs(account1, 0);
 
 				assert.bnEqual(entryID, expectedEntryID);
-
-				nextEntryIdAfter = await baseRewardEscrowV2.nextEntryId();
 			});
-			it('Should have created a new vesting entry for account 1', async () => {
-				vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 
-				// endTime is 1 year after
+			assertWithFallback('Should have created a new vesting entry for account 1', async e => {
+				vestingEntry = await e.getVestingEntry(account1, entryID);
+
 				assert.isTrue(vestingEntry.endTime.gte(now + duration));
 
 				// escrowAmount is 10
 				assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
 			});
-			it('Should increment the nextEntryID', async () => {
-				assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
-			});
-			it('totalEscrowedBalance of the contract should be 10 SNX', async () => {
-				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount);
-			});
-			it('Account1 should have balance of 10 SNX', async () => {
-				assert.bnEqual(await baseRewardEscrowV2.balanceOf(account1), escrowAmount);
-			});
-			it('Account1 should have totalVested Account Balance of 0', async () => {
-				assert.bnEqual(await baseRewardEscrowV2.totalVestedAccountBalance(account1), new BN(0));
-			});
-			it('Account1 numVestingEntries is 1', async () => {
-				assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account1), new BN(1));
-			});
+			assertWithFallback('Should increment the nextEntryID', async e =>
+				assert.bnEqual(await e.nextEntryId(), entryID.add(new BN(1)))
+			);
+			assertWithFallback('totalEscrowedBalance of the contract should be 10 SNX', async e =>
+				assert.bnEqual(await e.totalEscrowedBalance(), escrowAmount)
+			);
+			assertWithFallback('Account1 should have balance of 10 SNX', async e =>
+				assert.bnEqual(await e.balanceOf(account1), escrowAmount)
+			);
+			assertWithFallback('Account1 should have totalVested Account Balance of 0', async e =>
+				assert.bnEqual(await e.totalVestedAccountBalance(account1), new BN(0))
+			);
+			assertWithFallback('Account1 numVestingEntries is 1', async e =>
+				assert.bnEqual(await e.numVestingEntries(account1), new BN(1))
+			);
 		});
 	});
 
 	describe('Vesting', () => {
-		let mockedSynthetix;
-
 		beforeEach(async () => {
-			// Mock SNX ERC20
-			({ token: mockedSynthetix } = await mockToken({
-				accounts,
-				name: 'Synthetix',
-				symbol: 'SNX',
-			}));
-
 			// replace synthetix on resolver (see prepareSmocks() for why this works)
 			mocks['Synthetix'] = mockedSynthetix;
 
@@ -357,7 +394,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			await baseRewardEscrowV2.rebuildCache({ from: owner });
 
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
-			await mockedSynthetix.transfer(baseRewardEscrowV2.address, toUnit('1000'), {
+			await mockedSynthetix.transfer(rewardEscrowV2Storage.address, toUnit('1000'), {
 				from: owner,
 			});
 		});
@@ -380,84 +417,73 @@ contract('BaseRewardEscrowV2', async accounts => {
 				await fastForward(timeElapsed);
 			});
 
-			it('should vest 0 amount if entryID does not exist for user', async () => {
-				const randomID = 200;
-				await baseRewardEscrowV2.vest([randomID], { from: account1 });
+			assertWithFallback(
+				'should vest 0 amount if entryID does not exist for user',
+				async (e, s) => {
+					const randomID = 200;
+					await e.vest([randomID], { from: account1 });
 
-				// Check user has no vested SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
+					// Check user has no vested SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
 
-				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), escrowAmount);
+					// Check rewardEscrow does not have any SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount);
 
-				// Check total escrowedAccountBalance is unchanged
-				const escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(
-					account1
-				);
-				assert.bnEqual(escrowedAccountBalance, escrowAmount);
+					// Check total escrowedAccountBalance is unchanged
+					const escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
+					assert.bnEqual(escrowedAccountBalance, escrowAmount);
 
-				// Account should have 0 vested account balance
-				const totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(
-					account1
-				);
-				assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
-			});
+					// Account should have 0 vested account balance
+					const totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
+					assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
+				}
+			);
 
-			it('should have 0% of the vesting entry claimable', async () => {
+			assertWithFallback('should have 0% of the vesting entry claimable', async e => {
 				const expectedAmount = 0;
-				assert.bnEqual(
-					await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID),
-					expectedAmount
-				);
+				assert.bnEqual(await e.getVestingEntryClaimable(account1, entryID), expectedAmount);
 			});
 
-			it('should vest and transfer 0 SNX from contract to the user', async () => {
-				claimableSNX = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
+			assertWithFallback(
+				'should vest and transfer 0 SNX from contract to the user',
+				async (e, s) => {
+					claimableSNX = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
 
-				const escrowBalanceBefore = await mockedSynthetix.balanceOf(baseRewardEscrowV2.address);
-				const totalEscrowedBalanceBefore = await baseRewardEscrowV2.totalEscrowedBalance();
-				const accountEscrowedBalanceBefore = await baseRewardEscrowV2.totalEscrowedAccountBalance(
-					account1
-				);
-				const accountTotalVestedBefore = await baseRewardEscrowV2.totalVestedAccountBalance(
-					account1
-				);
+					const escrowBalanceBefore = await mockedSynthetix.balanceOf(s.address);
+					const totalEscrowedBalanceBefore = await e.totalEscrowedBalance();
+					const accountEscrowedBalanceBefore = await e.totalEscrowedAccountBalance(account1);
+					const accountTotalVestedBefore = await e.totalVestedAccountBalance(account1);
 
-				// Vest
-				await baseRewardEscrowV2.vest([entryID], { from: account1 });
+					// Vest
+					await e.vest([entryID], { from: account1 });
 
-				// Check user has the 0 vested SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
+					// Check user has the 0 vested SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
 
-				// Check rewardEscrow contract has same amount of SNX
-				assert.bnEqual(
-					await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
-					escrowBalanceBefore
-				);
+					// Check rewardEscrow contract has same amount of SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowBalanceBefore);
 
-				const vestingEntryAfter = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+					const vestingEntryAfter = await e.getVestingEntry(account1, entryID);
 
-				// claimableSNX is 0
-				assert.bnEqual(claimableSNX, 0);
+					// claimableSNX is 0
+					assert.bnEqual(claimableSNX, 0);
 
-				// same total escrowed balance
-				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), totalEscrowedBalanceBefore);
+					// same total escrowed balance
+					assert.bnEqual(await e.totalEscrowedBalance(), totalEscrowedBalanceBefore);
 
-				// same user totalEscrowedAccountBalance
-				assert.bnEqual(
-					await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
-					accountEscrowedBalanceBefore
-				);
+					// same user totalEscrowedAccountBalance
+					assert.bnEqual(
+						await e.totalEscrowedAccountBalance(account1),
+						accountEscrowedBalanceBefore
+					);
 
-				// user totalVestedAccountBalance is same
-				assert.bnEqual(
-					await baseRewardEscrowV2.totalVestedAccountBalance(account1),
-					accountTotalVestedBefore
-				);
+					// user totalVestedAccountBalance is same
+					assert.bnEqual(await e.totalVestedAccountBalance(account1), accountTotalVestedBefore);
 
-				// escrow amount still same on entry
-				assert.bnEqual(vestingEntryAfter.escrowAmount, escrowAmount);
-			});
+					// escrow amount still same on entry
+					assert.bnEqual(vestingEntryAfter.escrowAmount, escrowAmount);
+				}
+			);
 		});
 
 		describe('When vesting after escrow ended', () => {
@@ -476,8 +502,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 				// fast forward to after escrow.endTime
 				fastForward(duration + 10);
 			});
-			it('should vest and transfer all the snx to the user', async () => {
-				await baseRewardEscrowV2.vest([entryID], {
+			assertWithFallback('should vest and transfer all the snx to the user', async (e, s) => {
+				await e.vest([entryID], {
 					from: account1,
 				});
 
@@ -485,11 +511,11 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
 
 				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
+				assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
 			});
 
-			it('should vest and emit a Vest event', async () => {
-				const vestTransaction = await baseRewardEscrowV2.vest([entryID], {
+			assertWithFallback('should vest and emit a Vest event', async e => {
+				const vestTransaction = await e.vest([entryID], {
 					from: account1,
 				});
 
@@ -501,53 +527,51 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 
-			it('should vest and update totalEscrowedAccountBalance', async () => {
+			assertWithFallback('should vest and update totalEscrowedAccountBalance', async e => {
 				// This account should have an escrowedAccountBalance
-				let escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+				let escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
 				assert.bnEqual(escrowedAccountBalance, escrowAmount);
 
 				// Vest
-				await baseRewardEscrowV2.vest([entryID], {
+				await e.vest([entryID], {
 					from: account1,
 				});
 
 				// This account should not have any amount escrowed
-				escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+				escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
 				assert.bnEqual(escrowedAccountBalance, toUnit('0'));
 			});
 
-			it('should vest and update totalVestedAccountBalance', async () => {
+			assertWithFallback('should vest and update totalVestedAccountBalance', async e => {
 				// This account should have zero totalVestedAccountBalance
-				let totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(
-					account1
-				);
+				let totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
 				assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
 
 				// Vest
-				await baseRewardEscrowV2.vest([entryID], {
+				await e.vest([entryID], {
 					from: account1,
 				});
 
 				// This account should have vested its whole amount
-				totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(account1);
+				totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
 				assert.bnEqual(totalVestedAccountBalance, escrowAmount);
 			});
 
-			it('should vest and update totalEscrowedBalance', async () => {
-				await baseRewardEscrowV2.vest([entryID], {
+			assertWithFallback('should vest and update totalEscrowedBalance', async e => {
+				await e.vest([entryID], {
 					from: account1,
 				});
 
 				// There should be no Escrowed balance left in the contract
-				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), toUnit('0'));
+				assert.bnEqual(await e.totalEscrowedBalance(), toUnit('0'));
 			});
-			it('should vest and update entryID.escrowAmount to 0', async () => {
-				await baseRewardEscrowV2.vest([entryID], {
+			assertWithFallback('should vest and update entryID.escrowAmount to 0', async e => {
+				await e.vest([entryID], {
 					from: account1,
 				});
 
 				// There should be no escrowedAmount on entry
-				const entry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+				const entry = await e.getVestingEntry(account1, entryID);
 				assert.bnEqual(entry.escrowAmount, toUnit('0'));
 			});
 		});
@@ -583,14 +607,14 @@ contract('BaseRewardEscrowV2', async accounts => {
 				await fastForward(duration + WEEK * 3);
 			});
 
-			it('should have three vesting entries for the user', async () => {
-				const numOfEntries = await baseRewardEscrowV2.numVestingEntries(account1);
+			assertWithFallback('should have three vesting entries for the user', async e => {
+				const numOfEntries = await e.numVestingEntries(account1);
 				assert.bnEqual(numOfEntries, new BN(3));
 			});
 
 			describe('When another user (account 1) vests all their entries', () => {
-				it('should vest all entries and transfer snx to the user', async () => {
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+				assertWithFallback('should vest all entries and transfer snx to the user', async (e, s) => {
+					await e.vest([entryID1, entryID2, entryID3], {
 						from: account2,
 					});
 
@@ -601,27 +625,27 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
 					// Check rewardEscrow has all the SNX
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
-						toUnit('1000')
-					);
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('1000'));
 				});
 			});
 
-			it('should vest all entries and transfer snx from contract to the user', async () => {
-				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
-					from: account1,
-				});
+			assertWithFallback(
+				'should vest all entries and transfer snx from contract to the user',
+				async (e, s) => {
+					await e.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
 
-				// Check user has all their vested SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
+					// Check user has all their vested SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
-				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
-			});
+					// Check rewardEscrow does not have any SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
+				}
+			);
 
-			it('should vest and emit a Vest event', async () => {
-				const vestTx = await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+			assertWithFallback('should vest and emit a Vest event', async e => {
+				const vestTx = await e.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
@@ -633,69 +657,70 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 
-			it('should vest and update totalEscrowedAccountBalance', async () => {
+			assertWithFallback('should vest and update totalEscrowedAccountBalance', async e => {
 				// This account should have an escrowedAccountBalance
-				let escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+				let escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
 				assert.bnEqual(escrowedAccountBalance, toUnit('1000'));
 
 				// Vest
-				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+				await e.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
 				// This account should not have any amount escrowed
-				escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+				escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
 				assert.bnEqual(escrowedAccountBalance, toUnit('0'));
 			});
 
-			it('should vest and update totalVestedAccountBalance', async () => {
+			assertWithFallback('should vest and update totalVestedAccountBalance', async e => {
 				// This account should have zero totalVestedAccountBalance
-				let totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(
-					account1
-				);
+				let totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
 				assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
 
 				// Vest
-				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+				await e.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
 				// This account should have vested its whole amount
-				totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(account1);
+				totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
 				assert.bnEqual(totalVestedAccountBalance, toUnit('1000'));
 			});
 
-			it('should vest and update totalEscrowedBalance', async () => {
-				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+			assertWithFallback('should vest and update totalEscrowedBalance', async e => {
+				await e.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 				// There should be no Escrowed balance left in the contract
-				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), toUnit('0'));
+				assert.bnEqual(await e.totalEscrowedBalance(), toUnit('0'));
 			});
 
-			it('should vest all entries and ignore duplicate attempts to vest same entries again', async () => {
-				// Vest attempt 1
-				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
-					from: account1,
-				});
+			assertWithFallback(
+				'should vest all entries and ignore duplicate attempts to vest same entries again',
+				async (e, s) => {
+					// Vest attempt 1
+					await e.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
 
-				// Check user has all their vested SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
+					// Check user has all their vested SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
-				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
+					// Check rewardEscrow does not have any SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
 
-				// Vest attempt 2
-				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
-					from: account1,
-				});
+					// Vest attempt 2
+					await e.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
 
-				// Check user has same amount of SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
+					// Check user has same amount of SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
-				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
-			});
+					// Check rewardEscrow does not have any SNX
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
+				}
+			);
 		});
 
 		describe('Vesting multiple vesting entries with different duration / end time', () => {
@@ -728,14 +753,14 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 
-			it('should have three vesting entries for the user', async () => {
-				const numOfEntries = await baseRewardEscrowV2.numVestingEntries(account1);
+			assertWithFallback('should have three vesting entries for the user', async e => {
+				const numOfEntries = await e.numVestingEntries(account1);
 				assert.bnEqual(numOfEntries, new BN(3));
 			});
 
 			describe('When another user (account 1) vests all their entries', () => {
-				it('should vest all entries and transfer snx to the user', async () => {
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+				assertWithFallback('should vest all entries and transfer snx to the user', async (e, s) => {
+					await e.vest([entryID1, entryID2, entryID3], {
 						from: account2,
 					});
 
@@ -746,10 +771,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
 					// Check rewardEscrow has all the SNX
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
-						toUnit('1000')
-					);
+					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('1000'));
 				});
 			});
 
@@ -759,26 +781,26 @@ contract('BaseRewardEscrowV2', async accounts => {
 					await fastForward(duration + WEEK * 2);
 				});
 
-				it('should vest only first 2 entries and transfer snx from contract to the user', async () => {
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
-						from: account1,
-					});
+				assertWithFallback(
+					'should vest only first 2 entries and transfer snx from contract to the user',
+					async (e, s) => {
+						await e.vest([entryID1, entryID2, entryID3], {
+							from: account1,
+						});
 
-					// Check user has entry1 + entry2 amount
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(account1),
-						escrowAmount1.add(escrowAmount2)
-					);
+						// Check user has entry1 + entry2 amount
+						assert.bnEqual(
+							await mockedSynthetix.balanceOf(account1),
+							escrowAmount1.add(escrowAmount2)
+						);
 
-					// Check rewardEscrow has remaining entry3 amount
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
-						escrowAmount3
-					);
-				});
+						// Check rewardEscrow has remaining entry3 amount
+						assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount3);
+					}
+				);
 
-				it('should vest and emit a Vest event', async () => {
-					const vestTx = await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+				assertWithFallback('should vest and emit a Vest event', async e => {
+					const vestTx = await e.vest([entryID1, entryID2, entryID3], {
 						from: account1,
 					});
 
@@ -790,83 +812,76 @@ contract('BaseRewardEscrowV2', async accounts => {
 					});
 				});
 
-				it('should vest and update totalEscrowedAccountBalance', async () => {
+				assertWithFallback('should vest and update totalEscrowedAccountBalance', async e => {
 					// This account should have an escrowedAccountBalance
-					let escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(
-						account1
-					);
+					let escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
 					assert.bnEqual(escrowedAccountBalance, toUnit('1000'));
 
 					// Vest
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+					await e.vest([entryID1, entryID2, entryID3], {
 						from: account1,
 					});
 
 					// This account should have any 500 SNX escrowed
-					escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+					escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
 					assert.bnEqual(escrowedAccountBalance, escrowAmount3);
 				});
 
-				it('should vest and update totalVestedAccountBalance', async () => {
+				assertWithFallback('should vest and update totalVestedAccountBalance', async e => {
 					// This account should have zero totalVestedAccountBalance before
-					let totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(
-						account1
-					);
+					let totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
 					assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
 
 					// Vest
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+					await e.vest([entryID1, entryID2, entryID3], {
 						from: account1,
 					});
 
 					// This account should have vested entry 1 and entry 2 amounts
-					totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(account1);
+					totalVestedAccountBalance = await e.totalVestedAccountBalance(account1);
 					assert.bnEqual(totalVestedAccountBalance, escrowAmount1.add(escrowAmount2));
 				});
 
-				it('should vest and update totalEscrowedBalance', async () => {
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+				assertWithFallback('should vest and update totalEscrowedBalance', async e => {
+					await e.vest([entryID1, entryID2, entryID3], {
 						from: account1,
 					});
 					// There should be escrowAmount3's Escrowed balance left in the contract
-					assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount3);
+					assert.bnEqual(await e.totalEscrowedBalance(), escrowAmount3);
 				});
 
-				it('should vest entryID1 and entryID2 and ignore duplicate attempts to vest same entries again', async () => {
-					// Vest attempt 1
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
-						from: account1,
-					});
+				assertWithFallback(
+					'should vest entryID1 and entryID2 and ignore duplicate attempts to vest same entries again',
+					async (e, s) => {
+						// Vest attempt 1
+						await e.vest([entryID1, entryID2, entryID3], {
+							from: account1,
+						});
 
-					// Check user have vested escrowAmount1 and escrowAmount2 SNX
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(account1),
-						escrowAmount1.add(escrowAmount2)
-					);
+						// Check user have vested escrowAmount1 and escrowAmount2 SNX
+						assert.bnEqual(
+							await mockedSynthetix.balanceOf(account1),
+							escrowAmount1.add(escrowAmount2)
+						);
 
-					// Check rewardEscrow does has escrowAmount3 SNX
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
-						escrowAmount3
-					);
+						// Check rewardEscrow does has escrowAmount3 SNX
+						assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount3);
 
-					// Vest attempt 2
-					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
-						from: account1,
-					});
+						// Vest attempt 2
+						await e.vest([entryID1, entryID2, entryID3], {
+							from: account1,
+						});
 
-					// Check user has same amount of SNX
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(account1),
-						escrowAmount1.add(escrowAmount2)
-					);
+						// Check user has same amount of SNX
+						assert.bnEqual(
+							await mockedSynthetix.balanceOf(account1),
+							escrowAmount1.add(escrowAmount2)
+						);
 
-					// Check rewardEscrow has same escrowAmount3 SNX
-					assert.bnEqual(
-						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
-						escrowAmount3
-					);
-				});
+						// Check rewardEscrow has same escrowAmount3 SNX
+						assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount3);
+					}
+				);
 			});
 		});
 	});
@@ -898,8 +913,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// ensure Issuer.debtBalanceOf returns 0
 			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
 		});
-		it('should return the vesting schedules for account1', async () => {
-			const entries = await baseRewardEscrowV2.getVestingSchedules(account1, 0, 3);
+		assertWithFallback('should return the vesting schedules for account1', async e => {
+			const entries = await e.getVestingSchedules(account1, 0, 3);
 			// should be 3 entries
 			assert.equal(entries.length, 3);
 
@@ -909,8 +924,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(entry.entryID, i + 1);
 			});
 		});
-		it('should return the list of vesting entryIDs for account1', async () => {
-			const vestingEntryIDs = await baseRewardEscrowV2.getAccountVestingEntryIDs(account1, 0, 3);
+		assertWithFallback('should return the list of vesting entryIDs for account1', async e => {
+			const vestingEntryIDs = await e.getAccountVestingEntryIDs(account1, 0, 3);
 
 			// should be 3 entries
 			assert.equal(vestingEntryIDs.length, 3);
@@ -921,7 +936,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 	});
 
-	describe('Stress test - Read Vesting Schedule', () => {
+	describe.skip('Stress test - Read Vesting Schedule', () => {
 		const duration = 1 * YEAR;
 		const escrowAmount = toUnit(1);
 		const numberOfEntries = 260; // 5 years of entries
@@ -939,27 +954,19 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// ensure Issuer.debtBalanceOf returns 0
 			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
 		});
-		it('should return the vesting schedules for account1', async () => {
-			const entries = await baseRewardEscrowV2.getVestingSchedules(account1, 0, numberOfEntries);
+		assertWithFallback('should return the vesting schedules for account1', async e => {
+			const entries = await e.getVestingSchedules(account1, 0, numberOfEntries);
 			// should be 260 entries
 			assert.equal(entries.length, numberOfEntries);
 		});
-		it('should return the list of vesting entryIDs for account1', async () => {
-			const vestingEntryIDs = await baseRewardEscrowV2.getAccountVestingEntryIDs(
-				account1,
-				0,
-				numberOfEntries
-			);
+		assertWithFallback('should return the list of vesting entryIDs for account1', async e => {
+			const vestingEntryIDs = await e.getAccountVestingEntryIDs(account1, 0, numberOfEntries);
 
 			// should be 260 entryID's in the list
 			assert.equal(vestingEntryIDs.length, numberOfEntries);
 		});
-		it('should return a subset of vesting entryIDs for account1', async () => {
-			const vestingEntryIDs = await baseRewardEscrowV2.getAccountVestingEntryIDs(
-				account1,
-				130,
-				numberOfEntries
-			);
+		assertWithFallback('should return a subset of vesting entryIDs for account1', async e => {
+			const vestingEntryIDs = await e.getAccountVestingEntryIDs(account1, 130, numberOfEntries);
 
 			// should be 130 entryID's in the list
 			assert.equal(vestingEntryIDs.length, 130);

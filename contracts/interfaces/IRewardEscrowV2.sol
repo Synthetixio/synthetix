@@ -1,8 +1,17 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
-// interface for vesting entries
-import "./IRewardEscrowV2Frozen.sol";
+library VestingEntries {
+    struct VestingEntry {
+        uint64 endTime;
+        uint256 escrowAmount;
+    }
+    struct VestingEntryWithID {
+        uint64 endTime;
+        uint256 escrowAmount;
+        uint256 entryID;
+    }
+}
 
 interface IRewardEscrowV2Storage {
     /// Views
@@ -42,6 +51,12 @@ interface IRewardEscrowV2Storage {
     function updateTotalEscrowedBalance(int delta) external;
 
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
+
+    function transferTokens(
+        address removeFrom,
+        address transferTo,
+        uint256 amount
+    ) external;
 }
 
 interface IRewardEscrowV2 {
@@ -50,15 +65,11 @@ interface IRewardEscrowV2 {
 
     function numVestingEntries(address account) external view returns (uint);
 
+    function totalEscrowedBalance() external view returns (uint);
+
     function totalEscrowedAccountBalance(address account) external view returns (uint);
 
     function totalVestedAccountBalance(address account) external view returns (uint);
-
-    function nextEntryId() external view returns (uint);
-
-    function vestingSchedules(address account, uint256 entryId) external view returns (VestingEntries.VestingEntry memory);
-
-    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint);
 
@@ -80,8 +91,6 @@ interface IRewardEscrowV2 {
 
     // Mutative functions
     function vest(uint256[] calldata entryIDs) external;
-
-    function vestFor(address account, uint256[] calldata entryIDs) external;
 
     function createEscrowEntry(
         address beneficiary,
@@ -106,7 +115,7 @@ interface IRewardEscrowV2 {
     // Account Merging
     function startMergingWindow() external;
 
-    function mergeAccount(address from, uint256[] calldata entryIDs) external;
+    function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external;
 
     function nominateAccountToMerge(address account) external;
 
@@ -124,6 +133,14 @@ interface IRewardEscrowV2 {
         external
         returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries);
 
+    function nextEntryId() external view returns (uint);
+
+    function vestingSchedules(address account, uint256 index) external view returns (VestingEntries.VestingEntry memory);
+
+    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
+}
+
+interface IRevokableRewardEscrowV2 {
     // revoke entries for liquidations (access controlled to Synthetix)
     function revokeFrom(
         address account,

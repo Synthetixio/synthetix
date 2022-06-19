@@ -11,6 +11,8 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 // inheritance
 import "./State.sol";
 
+import "./interfaces/IERC20.sol";
+
 /// A contract for reading and writing to/from storage while falling back to values from
 /// previous RewardEscrowV2 contract.
 contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
@@ -48,22 +50,25 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
     int internal constant ZERO_PLACEHOLDER = -1;
 
-    IRewardEscrowV2Frozen public fallbackRewardEscrow;
+    IRewardEscrowV2 public fallbackRewardEscrow;
+    IERC20 public token;
 
     bytes32 public constant CONTRACT_NAME = "RewardEscrowV2Storage";
 
     /* ========== CONSTRUCTOR ========== */
 
-    /// this assumes that IRewardEscrowV2Frozen is in fact Frozen both in code and in data(!!) with all
+    /// this assumes that IRewardEscrowV2 is in fact Frozen both in code and in data(!!) with all
     /// mutative methods reverting (e.g. due to blocked transfers)
     constructor(
         address _owner,
         address _associatedContract,
-        IRewardEscrowV2Frozen _previousEscrow
+        IERC20 _token,
+        IRewardEscrowV2 _previousEscrow
     ) public Owned(_owner) State(_associatedContract) {
         fallbackRewardEscrow = _previousEscrow;
         nextEntryId = _previousEscrow.nextEntryId();
         fallbackId = nextEntryId;
+        token = _token;
 
         // carry over previous balance tracking
         _totalEscrowedBalance = fallbackRewardEscrow.totalEscrowedBalance();
@@ -194,7 +199,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return (total, i, entry.endTime);
     }
 
-    function updateEscrowAccountBalance(address account, int delta) external onlyAssociatedContract {
+    function updateEscrowAccountBalance(address account, int delta) public onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
         require(total >= 0, "balance must be positive");
@@ -253,6 +258,16 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         nextEntryId++;
 
         return entryId;
+    }
+
+    /// remove tokens from vesting aggregates and transfer them to recipient
+    function transferTokens(
+        address removeFrom,
+        address transferTo,
+        uint256 amount
+    ) external onlyAssociatedContract {
+        updateEscrowAccountBalance(removeFrom, -int(amount));
+        require(token.transfer(transferTo, amount), "Failed to transfer tokens");
     }
 
     /* ========== INTERNAL ========== */

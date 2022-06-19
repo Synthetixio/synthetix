@@ -42,10 +42,6 @@ contract Synthetix is BaseSynthetix {
         return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARD_ESCROW));
     }
 
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
-    }
-
     function supplySchedule() internal view returns (ISupplySchedule) {
         return ISupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE));
     }

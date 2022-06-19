@@ -93,6 +93,31 @@ module.exports = async ({
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
+	const tokenStateSynthetix = await deployer.deployContract({
+		name: 'TokenStateSynthetix',
+		source: 'LegacyTokenState',
+		args: [account, account],
+	});
+
+	const proxySynthetix = await deployer.deployContract({
+		name: 'ProxySynthetix',
+		source: 'ProxyERC20',
+		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
+		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
+		args: [
+			addressOf(proxySynthetix),
+			addressOf(tokenStateSynthetix),
+			account,
+			currentSynthetixSupply,
+			addressOf(readProxyForResolver),
+		],
+	});
+
 	await deployer.deployContract({
 		name: 'RewardEscrow',
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
@@ -107,9 +132,10 @@ module.exports = async ({
 	});
 
 	// SIP-TBD: storage contract for RewardEscrowV2
+	console.log([account, ZERO_ADDRESS, addressOf(proxySynthetix), addressOf(rewardEscrowV2Frozen)]);
 	await deployer.deployContract({
 		name: 'RewardEscrowV2Storage',
-		args: [account, ZERO_ADDRESS, addressOf(rewardEscrowV2Frozen)],
+		args: [account, ZERO_ADDRESS, addressOf(proxySynthetix), addressOf(rewardEscrowV2Frozen)],
 		deps: ['AddressResolver'],
 	});
 
@@ -191,31 +217,6 @@ module.exports = async ({
 			ZERO_ADDRESS, // Synthetix Proxy
 			addressOf(rewardEscrowV2),
 			addressOf(proxyFeePool),
-		],
-	});
-
-	const tokenStateSynthetix = await deployer.deployContract({
-		name: 'TokenStateSynthetix',
-		source: 'LegacyTokenState',
-		args: [account, account],
-	});
-
-	const proxySynthetix = await deployer.deployContract({
-		name: 'ProxySynthetix',
-		source: 'ProxyERC20',
-		args: [account],
-	});
-
-	await deployer.deployContract({
-		name: 'Synthetix',
-		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
-		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
-		args: [
-			addressOf(proxySynthetix),
-			addressOf(tokenStateSynthetix),
-			account,
-			currentSynthetixSupply,
-			addressOf(readProxyForResolver),
 		],
 	});
 
