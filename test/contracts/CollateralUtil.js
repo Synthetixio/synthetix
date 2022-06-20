@@ -249,15 +249,15 @@ contract('CollateralUtil', async accounts => {
 			assert.bnClose(amountToLiquidate, toUnit(5000), '10000');
 		});
 
-		it('ignores snxLiquidationPenalty when calculating the liquidation amount', async () => {
+		it('ignores LiquidationPenalty when calculating the liquidation amount (uses CollateralLiquidationPenalty)', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
 
-			await systemSettings.setSnxLiquidationPenalty(toUnit('0.2'), { from: owner });
+			await systemSettings.setLiquidationPenalty(toUnit('0.2'), { from: owner });
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
 
-			await systemSettings.setSnxLiquidationPenalty(toUnit('.1'), { from: owner });
+			await systemSettings.setLiquidationPenalty(toUnit('.1'), { from: owner });
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
