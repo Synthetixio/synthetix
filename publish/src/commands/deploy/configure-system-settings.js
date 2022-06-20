@@ -59,7 +59,7 @@ module.exports = async ({
 
 	const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-	// update all synths with 0 current rate
+	// update all synths with 0 current rate, except sUSD
 	const synthsRatesToUpdate = synths
 		.map((synth, i) =>
 			Object.assign(
@@ -70,7 +70,8 @@ module.exports = async ({
 				synth
 			)
 		)
-		.filter(({ currentRate }) => currentRate === '0');
+		.filter(({ currentRate }) => currentRate === '0')
+		.filter(({ name }) => name !== 'sUSD'); // SCCP-190: sUSD rate is 0 despite it being in forex category
 
 	console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -212,6 +213,62 @@ module.exports = async ({
 		writeArg: liquidationPenalty,
 		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
 	});
+
+	if (SystemSettings.selfLiquidationPenalty) {
+		const selfLiquidationPenalty = await getDeployParameter('SELF_LIQUIDATION_PENALTY');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'selfLiquidationPenalty',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(selfLiquidationPenalty),
+			write: 'setSelfLiquidationPenalty',
+			writeArg: selfLiquidationPenalty,
+			comment: 'Set the penalty for self liquidation of an account',
+		});
+	}
+
+	if (SystemSettings.liquidationEscrowDuration) {
+		const liquidationEscrowDuration = await getDeployParameter('LIQUIDATION_ESCROW_DURATION');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'liquidationEscrowDuration',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(liquidationEscrowDuration),
+			write: 'setLiquidationEscrowDuration',
+			writeArg: liquidationEscrowDuration,
+			comment: 'Set the duration of how long liquidation rewards are escrowed for',
+		});
+	}
+
+	if (SystemSettings.flagReward) {
+		const flagReward = await getDeployParameter('FLAG_REWARD');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'flagReward',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(flagReward),
+			write: 'setFlagReward',
+			writeArg: flagReward,
+			comment: 'Set the reward amount for flagging an account for liquidation',
+		});
+	}
+
+	if (SystemSettings.liquidateReward) {
+		const liquidateReward = await getDeployParameter('LIQUIDATE_REWARD');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'liquidateReward',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(liquidateReward),
+			write: 'setLiquidateReward',
+			writeArg: liquidateReward,
+			comment: 'Set the reward amount for peforming a liquidation',
+		});
+	}
 
 	const rateStalePeriod = await getDeployParameter('RATE_STALE_PERIOD');
 	await runStep({

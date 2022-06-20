@@ -1215,6 +1215,35 @@ contract('Exchanger (spec tests)', async accounts => {
 														newRate: divideDecimal(1, 4),
 													});
 												});
+
+												describe('when full exchange() is invoked before settle', () => {
+													let expectedAmountReceived;
+													beforeEach(async () => {
+														expectedAmountReceived = (
+															await exchanger.getAmountsForExchange(
+																srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
+																sEUR,
+																sBTC
+															)
+														)[0];
+
+														await synthetix.exchange(
+															sEUR,
+															await sEURContract.balanceOf(account1),
+															sBTC,
+															{
+																from: account1,
+															}
+														);
+													});
+													it('then exchanges with settled amount', async () => {
+														assert.bnEqual(
+															await sBTCContract.balanceOf(account1),
+															expectedAmountReceived
+														);
+													});
+												});
+
 												describe('when settle() is invoked', () => {
 													let transaction;
 													beforeEach(async () => {
@@ -1415,6 +1444,48 @@ contract('Exchanger (spec tests)', async accounts => {
 												assert.bnEqual(rebateAmount, expected.rebateAmount);
 												assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 											});
+
+											describe('when another minute passes', () => {
+												beforeEach(async () => {
+													await fastForward(60);
+												});
+
+												describe('when full exchange() is invoked before settle', () => {
+													let expectedAmountReceived;
+													beforeEach(async () => {
+														const srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
+														const expectedSettlement = calculateExpectedSettlementAmount({
+															amount: amountOfSrcExchanged,
+															oldRate: divideDecimal(1, 2),
+															newRate: divideDecimal(1, 1),
+														});
+
+														expectedAmountReceived = (
+															await exchanger.getAmountsForExchange(
+																srcBalanceBeforeExchange.add(expectedSettlement.rebateAmount),
+																sEUR,
+																sBTC
+															)
+														)[0];
+
+														await synthetix.exchange(
+															sEUR,
+															await sEURContract.balanceOf(account1),
+															sBTC,
+															{
+																from: account1,
+															}
+														);
+													});
+													it('then exchanges with settled amount', async () => {
+														assert.bnEqual(
+															await sBTCContract.balanceOf(account1),
+															expectedAmountReceived
+														);
+													});
+												});
+											});
+
 											describe('when the user makes a 2nd exchange of 100 sUSD into sUSD:sEUR at 1:1', () => {
 												beforeEach(async () => {
 													// fast forward 60 seconds so 1st exchange is using first rate
@@ -1424,6 +1495,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														from: account1,
 													});
 												});
+
 												describe('and then the price increases for sUSD:sEUR to 2:1', () => {
 													beforeEach(async () => {
 														await fastForward(5);
@@ -3257,6 +3329,94 @@ contract('Exchanger (spec tests)', async accounts => {
 						const lastAtomicVolume = await exchanger.lastAtomicVolume();
 						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
 					});
+				});
+
+				describe('fee reclamation', () => {
+					// sEUR -> sAUD
+					let amountIn;
+
+					beforeEach('initial rate ensure', async () => {
+						await updateRates([sAUD, sEUR], [toUnit('0.7'), toUnit('1.2')]);
+						await fastForward(600);
+					});
+
+					beforeEach(async () => {
+						amountIn = toUnit('10000');
+						await sEURContract.issue(account1, amountIn);
+						await synthetix.exchange(sEUR, amountIn, sAUD, {
+							from: account1,
+						});
+					});
+
+					const settlementCase = newPrice => {
+						describe(`price of sAUD changes to ${newPrice} immediately after trade`, () => {
+							let balanceBefore;
+							let adjustedTransferBalance;
+							let expectedSettlement;
+							let expectedReceiveAmount;
+
+							beforeEach('disable dynamic fee', async () => {
+								// Disable Dynamic Fee here as settlement is L1 and Dynamic fee is on L2
+								await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+							});
+
+							beforeEach('record balance and expected settlement', async () => {
+								balanceBefore = await sAUDContract.balanceOf(account1);
+
+								expectedSettlement = calculateExpectedSettlementAmount({
+									amount: amountIn,
+									oldRate: divideDecimal(toUnit('1.2'), toUnit('0.7')),
+									newRate: divideDecimal(toUnit('1.2'), newPrice),
+								});
+
+								adjustedTransferBalance = balanceBefore.add(
+									expectedSettlement.reclaimAmount.gt(toUnit('0'))
+										? expectedSettlement.reclaimAmount.neg()
+										: expectedSettlement.rebateAmount
+								);
+							});
+
+							beforeEach(`AUD price changes to ${newPrice}`, async () => {
+								await fastForward(5);
+								await updateRates([sAUD], [newPrice]);
+							});
+
+							describe('waiting period passes', () => {
+								beforeEach('change', async () => {
+									await fastForward(600);
+								});
+
+								describe('exchanges for sAUD -> sEUR', () => {
+									beforeEach('exchange', async () => {
+										expectedReceiveAmount = (
+											await exchanger.getAmountsForAtomicExchange(
+												adjustedTransferBalance,
+												sAUD,
+												sEUR
+											)
+										)[0];
+
+										await synthetix.exchangeAtomically(sAUD, balanceBefore, sEUR, toBytes32(), 0, {
+											from: account1,
+										});
+									});
+
+									it('exchanged amounts are correct', async () => {
+										assert.bnEqual(await sAUDContract.balanceOf(account1), toUnit(0));
+										assert.bnClose(
+											await sEURContract.balanceOf(account1),
+											expectedReceiveAmount,
+											10000
+										);
+									});
+								});
+							});
+						});
+					};
+
+					settlementCase(toUnit('0.7'));
+					settlementCase(toUnit('0.8'));
+					settlementCase(toUnit('0.6'));
 				});
 			});
 		});

@@ -63,6 +63,12 @@ module.exports = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
+	// SIP-243: Deprecate sDEFI
+	await deployer.deployContract({
+		name: 'OneNetAggregatorsDEFI',
+		args: [addressOf(readProxyForResolver)],
+	});
+
 	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	await deployer.deployContract({
@@ -133,15 +139,15 @@ module.exports = async ({
 		args: [account, addressOf(delegateApprovalsEternalStorage)],
 	});
 
-	const liquidations = await deployer.deployContract({
-		name: 'Liquidations',
+	await deployer.deployContract({
+		name: 'Liquidator',
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
-		name: 'EternalStorageLiquidations',
-		source: 'EternalStorage',
-		args: [account, addressOf(liquidations)],
+		name: 'LiquidatorRewards',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({

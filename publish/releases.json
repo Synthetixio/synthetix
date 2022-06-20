@@ -394,6 +394,19 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 148,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"LiquidatorRewards",
+				"Synthetix",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
 			"sip": 167,
 			"layer": "both",
 			"sources": {
@@ -620,6 +633,48 @@
 				]
 			},
 			"released": "both"
+		},
+		{
+			"sip": 235,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 236,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Synthetix", "Synths.*", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 239,
+			"layer": "both",
+			"sources": ["Synthetix"],
+			"released": "both"
+		},
+		{
+			"sip": 240,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 243,
+			"layer": "base",
+			"sources": ["OneNetAggregatorsDEFI"],
+			"released": "base"
+		},
+		{
+			"sip": 246,
+			"layer": "ovm",
+			"sources": ["CollateralShort", "Issuer"],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1128,7 +1183,8 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236],
+			"released": true
 		},
 		{
 			"name": "Alpheratz (Optimism)",
@@ -1137,7 +1193,8 @@
 				"major": 2,
 				"minor": 69
 			},
-			"sips": []
+			"sips": [148, 236],
+			"released": true
 		},
 		{
 			"name": "Rasalhague",
@@ -1145,7 +1202,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Rasalhague (Optimism)",
@@ -1154,15 +1212,8 @@
 				"major": 2,
 				"minor": 70
 			},
-			"sips": []
-		},
-		{
-			"name": "Kochab",
-			"version": {
-				"major": 2,
-				"minor": 71
-			},
-			"sips": []
+			"sips": [239],
+			"released": true
 		},
 		{
 			"name": "Kochab (Optimism)",
@@ -1171,7 +1222,8 @@
 				"major": 2,
 				"minor": 71
 			},
-			"sips": []
+			"sips": [246],
+			"released": true
 		},
 		{
 			"name": "Saiph",
@@ -1179,7 +1231,8 @@
 				"major": 2,
 				"minor": 72
 			},
-			"sips": []
+			"sips": [235, 238, 240],
+			"released": true
 		},
 		{
 			"name": "Saiph (Optimism)",
@@ -1188,7 +1241,17 @@
 				"major": 2,
 				"minor": 72
 			},
-			"sips": []
+			"sips": [235, 238, 240],
+			"released": true
+		},
+		{
+			"name": "Denebola",
+			"version": {
+				"major": 2,
+				"minor": 73
+			},
+			"sips": [243],
+			"released": true
 		}
 	]
 }

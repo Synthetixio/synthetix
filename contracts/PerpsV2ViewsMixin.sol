@@ -7,7 +7,7 @@ import "./PerpsV2MarketBase.sol";
  * A mixin that implements vairous useful views that are used externally but
  * aren't used inside the core contract (so don't need to clutter the contract file)
  */
-contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
+contract PerpsV2ViewsMixin is PerpsV2MarketBase {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
@@ -93,35 +93,26 @@ contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
     }
 
     /*
-     * The price at which a position is subject to liquidation; otherwise the price at which the user's remaining
-     * margin has run out. When they have just enough margin left to pay a liquidator, then they are liquidated.
+     * The price at which a position is subject to liquidation, and the expected liquidation fees at that price; o
+     * When they have just enough margin left to pay a liquidator, then they are liquidated.
      * If a position is long, then it is safe as long as the current price is above the liquidation price; if it is
      * short, then it is safe whenever the current price is below the liquidation price.
      * A position's accurate liquidation price can move around slightly due to accrued funding.
      */
-    function liquidationPrice(address account) external view returns (uint price, bool invalid) {
+    function approxLiquidationPriceAndFee(address account)
+        external
+        view
+        returns (
+            uint price,
+            uint fee,
+            bool invalid
+        )
+    {
         (uint aPrice, bool isInvalid) = assetPrice();
         uint liqPrice = _approxLiquidationPrice(positions[account], aPrice);
-        return (liqPrice, isInvalid);
-    }
-
-    /**
-     * The fee paid to liquidator in the event of successful liquidation of an account at current price.
-     * Returns 0 if account cannot be liquidated right now.
-     * @param account address of the trader's account
-     * @return fee that will be paid for liquidating the account if it can be liquidated
-     *  in sUSD fixed point decimal units or 0 if account is not liquidatable.
-     */
-    function liquidationFee(address account) external view returns (uint) {
-        (uint price, bool invalid) = assetPrice();
-        if (!invalid && _canLiquidate(positions[account], price)) {
-            return _liquidationFee(int(positions[account].size), price);
-        } else {
-            // theoretically we can calculate a value, but this value is always incorrect because
-            // it's for a price at which liquidation cannot happen - so is misleading, because
-            // it won't be paid, and what will be paid is a different fee (for a different price)
-            return 0;
-        }
+        // if position cannot be liquidated at any price (is not leveraged), return 0 as possible fee
+        uint liqFee = liqPrice > 0 ? _liquidationFee(int(positions[account].size), liqPrice) : 0;
+        return (liqPrice, liqFee, isInvalid);
     }
 
     /*
@@ -144,13 +135,7 @@ contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
         (uint price, bool isInvalid) = assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
         TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: bytes32(0)
-            });
+            TradeParams({sizeDelta: sizeDelta, price: price, baseFee: _baseFee(marketKey), trackingCode: bytes32(0)});
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
     }
 
@@ -176,13 +161,7 @@ contract MixinPerpsV2MarketViews is PerpsV2MarketBase {
         }
 
         TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: bytes32(0)
-            });
+            TradeParams({sizeDelta: sizeDelta, price: price, baseFee: _baseFee(marketKey), trackingCode: bytes32(0)});
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(positions[sender], params);
 
         liqPrice = _approxLiquidationPrice(newPosition, newPosition.lastPrice);

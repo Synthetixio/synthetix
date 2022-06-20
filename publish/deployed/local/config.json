@@ -77,10 +77,10 @@
 	"Issuer": {
 		"deploy": true
 	},
-	"EternalStorageLiquidations": {
+	"Liquidator": {
 		"deploy": true
 	},
-	"Liquidations": {
+	"LiquidatorRewards": {
 		"deploy": true
 	},
 	"SupplySchedule": {
@@ -333,15 +333,6 @@
 		"deploy": true
 	},
 	"SynthsADA": {
-		"deploy": true
-	},
-	"TokenStatesDEFI": {
-		"deploy": true
-	},
-	"ProxysDEFI": {
-		"deploy": true
-	},
-	"SynthsDEFI": {
 		"deploy": true
 	},
 	"TokenStatesFTSE": {

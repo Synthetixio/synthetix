@@ -42,10 +42,6 @@
 		"asset": "CEX",
 		"feed": "0x1a602D4928faF0A153A520f58B332f9CAFF320f7"
 	},
-	"DEFI": {
-		"asset": "DEFI",
-		"feed": "0x0630521aC362bc7A19a4eE44b57cE72Ea34AD01c"
-	},
 	"EUR": {
 		"asset": "EUR",
 		"feed": "0x78F9e60608bF48a1155b4B2A5e31F32318a1d85F"

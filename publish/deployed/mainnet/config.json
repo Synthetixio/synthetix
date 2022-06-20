@@ -41,12 +41,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"Liquidations": {
-		"deploy": false
-	},
 	"RewardEscrow": {
 		"deploy": false
 	},
@@ -203,15 +197,6 @@
 	"SynthsLINK": {
 		"deploy": false
 	},
-	"TokenStatesDEFI": {
-		"deploy": false
-	},
-	"ProxysDEFI": {
-		"deploy": false
-	},
-	"SynthsDEFI": {
-		"deploy": false
-	},
 	"TokenStatesADA": {
 		"deploy": false
 	},
@@ -342,6 +327,15 @@
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
+		"deploy": false
+	},
+	"OneNetAggregatorsDEFI": {
 		"deploy": false
 	}
 }

@@ -50,12 +50,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"Liquidations": {
-		"deploy": false
-	},
 	"Synthetix": {
 		"deploy": false
 	},
@@ -291,6 +285,12 @@
 		"deploy": false
 	},
 	"SynthsINR": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
 		"deploy": false
 	}
 }

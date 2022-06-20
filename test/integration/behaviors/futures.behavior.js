@@ -15,7 +15,7 @@ function itCanTrade({ ctx }) {
 	describe('opening positions', function() {
 		this.retries(0);
 
-		const sUSDAmount = ethers.utils.parseEther('10000');
+		const sUSDAmount = ethers.utils.parseEther('100000');
 
 		let someUser, otherUser;
 		let FuturesMarketManager,
@@ -59,7 +59,6 @@ function itCanTrade({ ctx }) {
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
-				({ debt } = await FuturesMarketManager.totalDebt());
 			});
 
 			it('user can transferMargin and withdraw it', async () => {
@@ -68,22 +67,27 @@ function itCanTrade({ ctx }) {
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
 
 				// withdraw
-				(await market.withdrawAllMargin()).wait();
+				await (await market.withdrawAllMargin()).wait();
 				const withdrawBalance = await SynthsUSD.balanceOf(someUser.address);
 				assert.bnEqual(withdrawBalance, balance);
 			});
 
 			describe('with funded margin', () => {
+				const largerMargin = margin.mul(50); // 50k
 				before('fund margin', async () => {
-					(await market.transferMargin(margin)).wait();
+					({ debt } = await FuturesMarketManager.totalDebt());
+					await (await market.transferMargin(largerMargin)).wait();
 				});
 
-				it('futures debt increases by the margin deposit', async () => {
+				it('futures debt increases roughly by the margin deposit', async () => {
 					const res = await FuturesMarketManager.totalDebt();
 					assert.bnClose(
 						res.debt.toString(),
-						debt.add(margin).toString(),
-						toUnit(1).toString() // time passage causes funding changes
+						debt.add(largerMargin).toString(),
+						// time passage causes funding changes which can amount to several $ per second, depending
+						// on market conditions at the time (for fork tests)
+						// since the deposit is 50000$, change within 500$ is a sufficient test of the debt being updated
+						toUnit(500).toString()
 					);
 				});
 
@@ -98,7 +102,7 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x); // right position size
 
 					// close
-					(await market.closePosition()).wait();
+					await (await market.closePosition()).wait();
 					assert.bnEqual((await market.positions(someUser.address)).size, 0); // no position
 				});
 
@@ -144,7 +148,7 @@ function itCanTrade({ ctx }) {
 
 						// liquidation tx
 						const otherCaller = FuturesMarketBTC.connect(otherUser);
-						(await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
+						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
 
 						// position: rekt
 						const pos = await market.positions(someUser.address);

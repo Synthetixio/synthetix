@@ -890,8 +890,8 @@ contract('CollateralErc20', async accounts => {
 		});
 
 		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
-			const renAmount = new BN('19642857');
-			const internalAmount = new BN('196428571428571428');
+			const renAmount = new BN('46428571');
+			const internalAmount = new BN('464285714285714283');
 			let liquidationAmount;
 
 			beforeEach(async () => {
@@ -939,7 +939,7 @@ contract('CollateralErc20', async accounts => {
 				const ratio = await cerc20.collateralRatio(id);
 
 				// the loan is very close 150%, we are in 10^18 land.
-				assert.bnClose(ratio, toUnit(1.5), '1000000000000');
+				assert.bnClose(ratio, toUnit(1.5), '1500000000000');
 			});
 		});
 
