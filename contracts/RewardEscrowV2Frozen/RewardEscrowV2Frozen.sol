@@ -17,8 +17,7 @@ import "../interfaces/ISystemStatus.sol";
 contract RewardEscrowV2Frozen is BaseRewardEscrowV2Frozen {
     mapping(address => uint256) public totalBalancePendingMigration;
 
-    uint public migrateEntriesThresholdAmount = SafeDecimalMath.unit() * 1000; // Default 1000 SNX
-
+    uint public migrateEntriesThresholdAmount = (10**18) * 1000; // Default 1000 SNX
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
