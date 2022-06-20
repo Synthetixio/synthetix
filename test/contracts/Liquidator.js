@@ -23,7 +23,6 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_ESCROW_DURATION,
-		COLLATERAL_LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
 		LIQUIDATE_REWARD,
@@ -142,10 +141,6 @@ contract('Liquidator', accounts => {
 		it('liquidation escrow duration', async () => {
 			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
 			assert.bnEqual(liquidationEscrowDuration, LIQUIDATION_ESCROW_DURATION);
-		});
-		it('collateral liquidation penalty ', async () => {
-			const collateralLiquidationPenalty = await liquidator.collateralLiquidationPenalty();
-			assert.bnEqual(collateralLiquidationPenalty, COLLATERAL_LIQUIDATION_PENALTY);
 		});
 		it('self liquidation penalty ', async () => {
 			const selfLiquidationPenalty = await liquidator.selfLiquidationPenalty();
@@ -902,7 +897,7 @@ contract('Liquidator', accounts => {
 										penalty = toUnit('0.3');
 										await systemSettings.setLiquidationPenalty(penalty, { from: owner });
 
-										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on liquidations here.)
+										// And collateral liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on liquidations here.)
 										await systemSettings.setCollateralLiquidationPenalty(toUnit('0.2'), {
 											from: owner,
 										});

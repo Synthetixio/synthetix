@@ -286,7 +286,7 @@ describe('publish scripts', () => {
 					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
 					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await Liquidator.collateralLiquidationPenalty()).toString(),
+						(await SystemSettings.collateralLiquidationPenalty()).toString(),
 						COLLATERAL_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
@@ -459,7 +459,7 @@ describe('publish scripts', () => {
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await Liquidator.collateralLiquidationPenalty()).toString(),
+								(await SystemSettings.collateralLiquidationPenalty()).toString(),
 								newCollateralLiquidationsPenalty
 							);
 							assert.strictEqual(

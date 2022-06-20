@@ -87,10 +87,6 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return getLiquidationEscrowDuration();
     }
 
-    function collateralLiquidationPenalty() external view returns (uint) {
-        return getCollateralLiquidationPenalty();
-    }
-
     function selfLiquidationPenalty() external view returns (uint) {
         return getSelfLiquidationPenalty();
     }
