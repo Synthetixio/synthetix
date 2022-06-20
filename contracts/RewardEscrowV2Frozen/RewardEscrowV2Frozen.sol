@@ -17,6 +17,8 @@ import "../interfaces/ISystemStatus.sol";
 contract RewardEscrowV2Frozen is BaseRewardEscrowV2Frozen {
     mapping(address => uint256) public totalBalancePendingMigration;
 
+    // note that the actual deployed RewardEscrowV2 uses SafeDecimalMath to get this value,
+    // and this is different in order to simplify deployment for testing
     uint public migrateEntriesThresholdAmount = (10**18) * 1000; // Default 1000 SNX
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

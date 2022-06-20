@@ -45,7 +45,7 @@ interface IRewardEscrowV2Storage {
 
 /// this should remain backwards compatible to IRewardEscrowV2Frozen
 /// ideally this would be done by inheriting from that interface
-/// but 0.5 doesn't support interface inheritance
+/// but solidity v0.5 doesn't support interface inheritance
 interface IRewardEscrowV2 {
     // Views
     function balanceOf(address account) external view returns (uint);

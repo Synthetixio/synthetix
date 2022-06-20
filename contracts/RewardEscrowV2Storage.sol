@@ -26,22 +26,27 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint224 escrowAmount;
     }
 
+    // accounts => vesting entrees
     mapping(address => mapping(uint => StorageEntry)) internal _vestingSchedules;
 
+    // accounts => entry ids
     mapping(address => uint[]) internal _accountVestingEntryIds;
 
+    // accounts => cache of entry counts in fallback contract
     mapping(address => uint) internal _fallbackCounts;
 
-    /*Counter for new vesting entry ids. */
+    // Counter for new vesting entry ids.
     uint public nextEntryId;
 
-    /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
+    // An account's total escrow synthetix balance (still to vest)
+    // this as an int in order to be able to store ZERO_PLACEHOLDER
     mapping(address => int) internal _totalEscrowedAccountBalance;
 
-    /* An account's total vested reward synthetix. */
+    // An account's total vested rewards (vested already)
+    // this as an int in order to be able to store ZERO_PLACEHOLDER
     mapping(address => int) internal _totalVestedAccountBalance;
 
-    /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
+    // The total remaining escrow balance of contract
     uint internal _totalEscrowedBalance;
 
     // id starting from which the new entries are stored in this contact only (and don't need to be read from fallback)
@@ -51,8 +56,10 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
     int internal constant ZERO_PLACEHOLDER = -1;
 
+    // previous rewards escrow contract
     IRewardEscrowV2Frozen public fallbackRewardEscrow;
 
+    // interface view
     bytes32 public constant CONTRACT_NAME = "RewardEscrowV2Storage";
 
     /* ========== CONSTRUCTOR ========== */
@@ -77,6 +84,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     function vestingSchedules(address account, uint entryId) public view returns (VestingEntries.VestingEntry memory entry) {
         // read stored entry
         StorageEntry memory stored = _vestingSchedules[account][entryId];
+        // convert to previous data size format
         entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
         // read from fallback if this entryId was created in the old contract and wasn't written locally
         // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
@@ -87,6 +95,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     function accountVestingEntryIDs(address account, uint index) public view returns (uint) {
+        // cache is used here to prevent external calls during setZerosUntilTarget loop
         uint fallbackCount = _fallbackCounts[account];
         if (fallbackCount == 0) {
             // uninitialized
@@ -102,8 +111,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     function totalEscrowedBalance() public view returns (uint) {
-        // this method is just to prevent direct access to storage from logic methods
-        // to reduce bugs (and maybe allow refactoring into separate storage contract)
         return _totalEscrowedBalance;
     }
 
@@ -153,7 +160,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    /// zero out multiple entries in order until target is reached (or entries exhausted)
+    /// zero out multiple entries in order of accountVestingEntryIDs until target is reached (or entries exhausted)
     function setZerosUntilTarget(
         address account,
         uint startIndex,
@@ -194,7 +201,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
                 }
             }
         }
-        i = i == numIds ? i - 1 : i; // i is incremented one last time if there was no break
+        i = i == numIds ? i - 1 : i; // i was incremented one extra time if there was no break
         return (total, i, entry.endTime);
     }
 
@@ -228,10 +235,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     function updateTotalEscrowedBalance(int delta) public onlyAssociatedContract {
-        // this is just to keep the storage read / write interface clean so that
-        // all storage read / write methods can be part of a single mixin / contract and logic
-        // is separate. This should allow at the very least fewer bugs if using as a mixin, or easy
-        // upgradability if refactoring as a separate contract.
         int total = int(totalEscrowedBalance()).add(delta);
         require(total >= 0, "balance must be positive");
         _totalEscrowedBalance = uint(total);

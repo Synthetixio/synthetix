@@ -81,6 +81,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         addresses[3] = CONTRACT_REWARDESCROWV2STORAGE;
     }
 
+    /// views forwarded from storage contract
+
     function numVestingEntries(address account) public view returns (uint) {
         return state().numVestingEntries(account);
     }
@@ -222,7 +224,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         vestFor(msg.sender, entryIDs);
     }
 
-    /// public method to vest any accounts vesting entries
+    /// public method to vest any account's vesting entries
     function vestFor(address account, uint256[] memory entryIDs) public {
         uint256 total;
         VestingEntries.VestingEntry memory entry;

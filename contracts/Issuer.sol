@@ -724,7 +724,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // transferrable is not enough
             uint escrowBalance = rewardEscrowV2().balanceOf(account);
             if (totalRedeemed > transferableBalance.add(escrowBalance)) {
-                // escrow is not enough (other _collateral sources can't be touched)
+                // the full escrow is not enough (other _collateral sources can't be touched)
                 // liquidate all of escrow as well
                 escrowToLiquidate = escrowBalance;
 

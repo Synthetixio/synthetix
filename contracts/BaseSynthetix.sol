@@ -358,7 +358,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
 
-        // This vests the to-be-liquidated part of escrow to the account (!) as liquid SNX.
+        // This transfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger
         // rewards that may need to be paid (so need to be transferrable, to avoid edge cases)
         if (escrowToLiquidate > 0) {
@@ -428,7 +428,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
 
-        // This vests the to-be-liquidated part of escrow to the account (!) as liquid SNX.
+        // This tramsfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
         // It is transferred to the account instead of to the rewards directly to avoid making the following transfer
         // to liquidatorRewards aware of how much needs to be transferred from which part
         if (escrowToLiquidate > 0) {
