@@ -100,7 +100,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						await synthetix.exchange(sUSD, toUnit('100'), sEUR, { from: account1 });
 					});
-					it.only('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
+					it('then the maxSecsLeftInWaitingPeriod is close to 90', async () => {
 						const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 						timeIsClose({ actual: maxSecs, expected: 90, variance: 2 });
 					});
@@ -1314,7 +1314,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												// The user has ~49.5 sEUR and has a reclaim of ~24.75 - so 24.75 after settlement
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-													'but less than the total initially',
+														'but less than the total initially',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1351,7 +1351,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 												describe(
 													'when an exchange out of sEUR for more than the balance after settlement,' +
-													'and more than the total initially and the exchangefee rate changed',
+														'and more than the total initially and the exchangefee rate changed',
 													() => {
 														let txn;
 														beforeEach(async () => {
@@ -1964,7 +1964,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														);
 													}
 												});
-												it('then all succeed', () => { });
+												it('then all succeed', () => {});
 												it('when one more is tried, then if fails', async () => {
 													await assert.revert(
 														synthetix.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
@@ -4139,7 +4139,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		await updateAggregatorRates(exchangeRates, keys, rates);
 	}
 
-	describe.only('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
+	describe('With L1 configuration (Synthetix, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 			const synths = ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
@@ -4281,7 +4281,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					'DelegateApprovals',
 					'FlexibleStorage',
 					'CollateralManager',
-					'VolumePartner'
+					'VolumePartner',
 				],
 			}));
 
