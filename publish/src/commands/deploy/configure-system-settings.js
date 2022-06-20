@@ -202,16 +202,16 @@ module.exports = async ({
 		comment: 'Set the ratio below which an account can be flagged for liquidation',
 	});
 
-	const liquidationPenalty = await getDeployParameter('LIQUIDATION_PENALTY');
+	const collateralLiquidationPenalty = await getDeployParameter('COLLATERAL_LIQUIDATION_PENALTY');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
-		read: 'liquidationPenalty',
+		read: 'collateralLiquidationPenalty',
 		readTarget: previousSystemSettings,
-		expected: allowZeroOrUpdateIfNonZero(liquidationPenalty),
-		write: 'setLiquidationPenalty',
-		writeArg: liquidationPenalty,
-		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
+		expected: allowZeroOrUpdateIfNonZero(collateralLiquidationPenalty),
+		write: 'setCollateralLiquidationPenalty',
+		writeArg: collateralLiquidationPenalty,
+		comment: 'Set the penalty amount a liquidator receives of collateral from a liquidated account',
 	});
 
 	const snxLiquidationPenalty = await getDeployParameter('SNX_LIQUIDATION_PENALTY');

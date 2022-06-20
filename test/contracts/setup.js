@@ -19,7 +19,7 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_ESCROW_DURATION,
-		LIQUIDATION_PENALTY,
+		COLLATERAL_LIQUIDATION_PENALTY,
 		SNX_LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
@@ -1277,7 +1277,9 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationEscrowDuration(LIQUIDATION_ESCROW_DURATION, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setCollateralLiquidationPenalty(COLLATERAL_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setSnxLiquidationPenalty(SNX_LIQUIDATION_PENALTY, {
 				from: owner,
 			}),

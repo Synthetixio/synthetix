@@ -42,7 +42,7 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
-		LIQUIDATION_PENALTY,
+		COLLATERAL_LIQUIDATION_PENALTY,
 		SNX_LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
@@ -287,8 +287,8 @@ describe('publish scripts', () => {
 					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
 					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await Liquidator.liquidationPenalty()).toString(),
-						LIQUIDATION_PENALTY
+						(await Liquidator.collateralLiquidationPenalty()).toString(),
+						COLLATERAL_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual(
 						(await Liquidator.snxLiquidationPenalty()).toString(),

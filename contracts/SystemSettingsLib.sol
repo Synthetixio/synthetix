@@ -169,7 +169,7 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, duration);
     }
 
-    function setLiquidationPenalty(
+    function setCollateralLiquidationPenalty(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         uint penalty
