@@ -287,7 +287,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         _subtractAndTransfer(account, recipient, targetAmount);
 
-        emit Revoked(account, endIndex, targetAmount);
+        emit Revoked(account, recipient, targetAmount, startIndex, endIndex);
     }
 
     /// remove tokens from vesting aggregates and transfer them to recipient
@@ -488,5 +488,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
-    event Revoked(address indexed account, uint endIndex, uint escrowAmount);
+    event Revoked(address indexed account, address indexed recipient, uint targetAmount, uint startIndex, uint endIndex);
 }

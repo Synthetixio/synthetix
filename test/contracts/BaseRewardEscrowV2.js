@@ -6,7 +6,12 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { mockToken } = require('./setup');
 
-const { prepareSmocks, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	prepareSmocks,
+	ensureOnlyExpectedMutativeFunctions,
+	getDecodedLogs,
+	decodedEventEqual,
+} = require('./helpers');
 
 const { toUnit, currentTime, fastForward } = require('../utils')();
 
@@ -22,7 +27,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 	const WEEK = 604800;
 	const YEAR = 31556926;
 
-	const [, owner, account1, account2] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 	let baseRewardEscrowV2,
 		baseRewardEscrowV2Frozen,
 		rewardEscrowV2Storage,
@@ -514,6 +519,18 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
 			});
 
+			assertWithFallback('should vest when called by another account', async (e, s) => {
+				await e.vest([entryID], {
+					from: account2,
+				});
+
+				// Check account1 has all their vested SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
+
+				// Check rewardEscrow does not have any SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
+			});
+
 			assertWithFallback('should vest and emit a Vest event', async e => {
 				const vestTransaction = await e.vest([entryID], {
 					from: account1,
@@ -882,6 +899,213 @@ contract('BaseRewardEscrowV2', async accounts => {
 						assert.bnEqual(await mockedSynthetix.balanceOf(e.address), escrowAmount3);
 					}
 				);
+			});
+		});
+	});
+
+	describe('revokeFrom', () => {
+		const duration = 1 * YEAR;
+		let escrowAmount, timeElapsed, firstEntryId;
+
+		beforeEach(async () => {
+			// replace synthetix on resolver (see prepareSmocks() for why this works)
+			mocks['Synthetix'] = mockedSynthetix;
+
+			// rebuild cache
+			await baseRewardEscrowV2.rebuildCache({ from: owner });
+
+			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			await mockedSynthetix.transfer(baseRewardEscrowV2.address, toUnit('2000'), {
+				from: owner,
+			});
+		});
+		beforeEach(async () => {
+			escrowAmount = toUnit('1000');
+			timeElapsed = 26 * WEEK;
+
+			firstEntryId = await baseRewardEscrowV2.nextEntryId();
+
+			// Add two vesting entries as the feepool address
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
+				from: feePoolAccount,
+			});
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
+				from: feePoolAccount,
+			});
+
+			// Need to go into the future to vest
+			await fastForward(timeElapsed);
+		});
+
+		assertWithFallback('should revert when calling from non Synthetix address', async (e, s) => {
+			await assert.revert(
+				e.revokeFrom(account1, account3, toUnit(1000), 0, { from: account1 }),
+				'Only Synthetix'
+			);
+			await assert.revert(
+				e.revokeFrom(account1, account3, toUnit(1000), 0, { from: account2 }),
+				'Only Synthetix'
+			);
+		});
+
+		assertWithFallback('should revert on invalid inputs', async (e, s) => {
+			await assert.revert(
+				mockedSynthetix.revokeFrom(e.address, ZERO_ADDRESS, account3, toUnit(2000), 0),
+				'account not set'
+			);
+			await assert.revert(
+				mockedSynthetix.revokeFrom(e.address, account1, ZERO_ADDRESS, toUnit(2000), 0),
+				'recipient not set'
+			);
+			await assert.revert(
+				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(3000), 0),
+				'less than target'
+			);
+			await assert.revert(
+				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(2000), 10),
+				'startIndex'
+			);
+			await assert.revert(
+				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(0), 10),
+				'targetAmount'
+			);
+		});
+
+		assertWithFallback(
+			'should revoke and transfer SNX from contract to the recipient before vesting duration',
+			async (e, s) => {
+				const accountEscrowedBalanceBefore = await e.totalEscrowedAccountBalance(account1);
+
+				const targetAmount = toUnit(2000);
+				// revoke
+				// method in PublicEST.sol
+				const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 0);
+
+				// Check user has the 0 vested SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
+
+				// Check recipient contract has same amount of SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(account3), accountEscrowedBalanceBefore);
+
+				const vestingEntryAfter = await e.getVestingEntry(account1, firstEntryId);
+
+				// same total escrowed balance
+				assert.bnEqual(await e.totalEscrowedBalance(), 0);
+
+				// same user totalEscrowedAccountBalance
+				assert.bnEqual(await e.totalEscrowedAccountBalance(account1), 0);
+
+				// user totalVestedAccountBalance is same
+				assert.bnEqual(await e.totalVestedAccountBalance(account1), 0);
+
+				// escrow amount still same on entry
+				assert.bnEqual(vestingEntryAfter.escrowAmount, 0);
+
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [e],
+				});
+
+				decodedEventEqual({
+					event: 'Revoked',
+					emittedFrom: e.address,
+					args: [account1, account3, targetAmount, 0, 1],
+					log: logs.filter(l => !!l).find(({ name }) => name === 'Revoked'),
+				});
+			}
+		);
+
+		assertWithFallback(
+			'should revoke and transfer SNX to recipient for partial amount',
+			async (e, s) => {
+				const escrowBalanceBefore = await mockedSynthetix.balanceOf(e.address);
+				const accountEscrowedBalanceBefore = await e.totalEscrowedAccountBalance(account1);
+
+				const targetAmount = toUnit(1);
+
+				// revoke
+				// method in PublicEST.sol
+				await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 0);
+
+				// Check user has the 0 vested SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
+
+				// Check recipient contract has correct amount of SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(account3), targetAmount);
+
+				// total escrowed balance
+				assert.bnEqual(await e.totalEscrowedBalance(), escrowBalanceBefore.sub(targetAmount));
+
+				// user totalEscrowedAccountBalance
+				assert.bnEqual(
+					await e.totalEscrowedAccountBalance(account1),
+					accountEscrowedBalanceBefore.sub(targetAmount)
+				);
+
+				const vestingEntryAfter = await e.getVestingEntry(account1, firstEntryId);
+				const secondVestingEntryAfter = await e.getVestingEntry(
+					account1,
+					firstEntryId.add(new BN(1))
+				);
+				const thirdVestingEntryAfter = await e.getVestingEntry(
+					account1,
+					firstEntryId.add(new BN(2))
+				);
+
+				// first entry unchanged
+				assert.bnEqual(vestingEntryAfter.escrowAmount, 0);
+				assert.bnEqual(secondVestingEntryAfter.escrowAmount, escrowAmount);
+				assert.bnEqual(thirdVestingEntryAfter.escrowAmount, escrowAmount.sub(targetAmount));
+			}
+		);
+
+		assertWithFallback('should use startIndex', async (e, s) => {
+			const escrowBalanceBefore = await mockedSynthetix.balanceOf(e.address);
+			const accountEscrowedBalanceBefore = await e.totalEscrowedAccountBalance(account1);
+
+			const targetAmount = toUnit(1);
+
+			// revoke
+			// method in PublicEST.sol
+			const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 1);
+
+			// Check user has the 0 vested SNX
+			assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
+
+			// Check recipient contract has correct amount of SNX
+			assert.bnEqual(await mockedSynthetix.balanceOf(account3), targetAmount);
+
+			// total escrowed balance
+			assert.bnEqual(await e.totalEscrowedBalance(), escrowBalanceBefore.sub(targetAmount));
+
+			// user totalEscrowedAccountBalance
+			assert.bnEqual(
+				await e.totalEscrowedAccountBalance(account1),
+				accountEscrowedBalanceBefore.sub(targetAmount)
+			);
+
+			const vestingEntryAfter = await e.getVestingEntry(account1, firstEntryId);
+			const secondVestingEntryAfter = await e.getVestingEntry(
+				account1,
+				firstEntryId.add(new BN(1))
+			);
+			const thirdVestingEntryAfter = await e.getVestingEntry(account1, firstEntryId.add(new BN(2)));
+
+			// first entry unchanged
+			assert.bnEqual(vestingEntryAfter.escrowAmount, escrowAmount);
+			assert.bnEqual(secondVestingEntryAfter.escrowAmount, 0);
+			assert.bnEqual(thirdVestingEntryAfter.escrowAmount, escrowAmount.sub(targetAmount));
+
+			const logs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [e],
+			});
+
+			decodedEventEqual({
+				event: 'Revoked',
+				emittedFrom: e.address,
+				args: [account1, account3, targetAmount, 1, 2],
+				log: logs.filter(l => !!l).find(({ name }) => name === 'Revoked'),
 			});
 		});
 	});

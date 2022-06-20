@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 
+import "../interfaces/IRewardEscrowV2.sol";
 import "../ExternStateToken.sol";
 
 contract PublicEST is ExternStateToken {
@@ -31,5 +32,16 @@ contract PublicEST is ExternStateToken {
 
     function somethingToBeProxied(uint256 inputA, bytes32 inputB) external {
         emit Received(messageSender, inputA, inputB);
+    }
+
+    // SIP-TBD: allow to call revokeFrom on rewardsEscrow
+    function revokeFrom(
+        address rewardEscrowV2,
+        address account,
+        address recipient,
+        uint targetAmount,
+        uint startIndex
+    ) external {
+        IRewardEscrowV2(rewardEscrowV2).revokeFrom(account, recipient, targetAmount, startIndex);
     }
 }
