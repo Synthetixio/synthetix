@@ -23,7 +23,6 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_ESCROW_DURATION,
-		LIQUIDATION_PENALTY,
 		COLLATERAL_LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
@@ -143,10 +142,6 @@ contract('Liquidator', accounts => {
 		it('liquidation escrow duration', async () => {
 			const liquidationEscrowDuration = await liquidator.liquidationEscrowDuration();
 			assert.bnEqual(liquidationEscrowDuration, LIQUIDATION_ESCROW_DURATION);
-		});
-		it('liquidation penalty ', async () => {
-			const liquidationPenalty = await liquidator.liquidationPenalty();
-			assert.bnEqual(liquidationPenalty, LIQUIDATION_PENALTY);
 		});
 		it('collateral liquidation penalty ', async () => {
 			const collateralLiquidationPenalty = await liquidator.collateralLiquidationPenalty();
@@ -572,9 +567,6 @@ contract('Liquidator', accounts => {
 				});
 				it('and liquidation Collateral Ratio is 150%', async () => {
 					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
-				});
-				it('and snx liquidation penalty is 30%', async () => {
-					assert.bnEqual(await liquidator.liquidationPenalty(), LIQUIDATION_PENALTY);
 				});
 				it('and liquidation delay is 3 days', async () => {
 					assert.bnEqual(await liquidator.liquidationDelay(), LIQUIDATION_DELAY);

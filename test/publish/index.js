@@ -42,7 +42,6 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
-		LIQUIDATION_PENALTY,
 		COLLATERAL_LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
@@ -290,10 +289,6 @@ describe('publish scripts', () => {
 						(await Liquidator.collateralLiquidationPenalty()).toString(),
 						COLLATERAL_LIQUIDATION_PENALTY
 					);
-					assert.strictEqual(
-						(await Liquidator.liquidationPenalty()).toString(),
-						LIQUIDATION_PENALTY
-					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
 						(await ExchangeRates.atomicTwapWindow()).toString(),
@@ -466,10 +461,6 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								(await Liquidator.collateralLiquidationPenalty()).toString(),
 								newCollateralLiquidationsPenalty
-							);
-							assert.strictEqual(
-								(await Liquidator.liquidationPenalty()).toString(),
-								newLiquidationsPenalty
 							);
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
