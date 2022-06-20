@@ -14,7 +14,10 @@ const {
 	updateAggregatorRates,
 } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { COLLATERAL_LIQUIDATION_PENALTY },
+} = require('../..');
 
 contract('CollateralUtil', async accounts => {
 	const sUSD = toBytes32('sUSD');
@@ -194,6 +197,13 @@ contract('CollateralUtil', async accounts => {
 			abi: util.abi,
 			ignoreParents: ['MixinResolver'],
 			expected: [],
+		});
+	});
+
+	describe('Default settings', () => {
+		it('collateral liquidation penalty', async () => {
+			const collateralLiquidationPenalty = await systemSettings.collateralLiquidationPenalty();
+			assert.bnEqual(collateralLiquidationPenalty, COLLATERAL_LIQUIDATION_PENALTY);
 		});
 	});
 
