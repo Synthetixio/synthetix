@@ -573,7 +573,7 @@ contract('Liquidator', accounts => {
 				it('and liquidation Collateral Ratio is 150%', async () => {
 					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
 				});
-				it('and snx liquidation penalty is 10%', async () => {
+				it('and snx liquidation penalty is 30%', async () => {
 					assert.bnEqual(await liquidator.snxLiquidationPenalty(), SNX_LIQUIDATION_PENALTY);
 				});
 				it('and liquidation delay is 3 days', async () => {
