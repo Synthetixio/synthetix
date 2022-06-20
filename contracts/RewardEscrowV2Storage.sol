@@ -170,6 +170,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         require(targetAmount > 0, "targetAmount is zero");
 
         uint numIds = numVestingEntries(account);
+        require(numIds > 0, "no entries to iterate");
         require(startIndex < numIds, "startIndex too high");
 
         uint entryID;
@@ -193,6 +194,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
                 }
             }
         }
+        i = i == numIds ? i - 1 : i; // i is incremented one last time if there was no break
         return (total, i, entry.endTime);
     }
 
@@ -241,6 +243,9 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         onlyAssociatedContract
         returns (uint)
     {
+        // zero time is used as read-miss flag in this contract
+        require(entry.endTime != 0, "vesting target time zero");
+
         uint entryId = nextEntryId;
         // since this is a completely new entry, it's safe to write it directly without checking fallback data
         _vestingSchedules[account][entryId] = StorageEntry({

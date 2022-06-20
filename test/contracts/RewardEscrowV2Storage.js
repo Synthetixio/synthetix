@@ -11,15 +11,11 @@ const { toUnit, toBN } = require('../utils')();
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toBytes32 } = require('../../index');
 
-// const {
-// 	constants: { ZERO_ADDRESS },
-// } = require('../..');
-
 contract('RewardEscrowV2Storage', async accounts => {
 	// const WEEK = 7 * 86400;
 	const entry1Amount = toUnit(1);
 
-	const [, owner, writeAccount, user1] = accounts;
+	const [, owner, writeAccount, user1, user2] = accounts;
 	let instance, resolver, frozenRewardEscrowV2, synthetix;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
@@ -158,19 +154,266 @@ contract('RewardEscrowV2Storage', async accounts => {
 			await instance.updateEscrowAccountBalance(user1, 0, { from: writeAccount });
 			await instance.updateVestedAccountBalance(user1, 0, { from: writeAccount });
 			await instance.updateTotalEscrowedBalance(0, { from: writeAccount });
-			await instance.addVestingEntry(user1, [0, toUnit(1)], { from: writeAccount });
+			await instance.addVestingEntry(user1, [1, toUnit(1)], { from: writeAccount });
 		});
 	});
 
-	describe('when adding new entries', async () => {
-		it.skip('for user with existing entries', async () => {});
+	describe('addVestingEntry', async () => {
+		it('cannot set vesting time to zero', async () => {
+			await assert.revert(
+				instance.addVestingEntry(user1, [0, entry1Amount], { from: writeAccount }),
+				'time zero'
+			);
+		});
 
-		it.skip('for user with no existing entries', async () => {});
+		it('for user with existing entries', async () => {
+			await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+
+			// added on this contract
+			assert.bnEqual(await instance.numVestingEntries(user1), 3);
+			// entry
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+
+			// old contract
+			assert.bnEqual(await frozenRewardEscrowV2.numVestingEntries(user1), 2);
+			assert.bnEqual((await frozenRewardEscrowV2.vestingSchedules(user1, 3)).escrowAmount, 0);
+		});
+
+		it('for user with no existing entries', async () => {
+			await instance.addVestingEntry(user2, [1, entry1Amount], { from: writeAccount });
+
+			// added on this contract
+			assert.bnEqual(await instance.numVestingEntries(user2), 1);
+			// entry
+			assert.bnEqual((await instance.vestingSchedules(user2, 3)).escrowAmount, entry1Amount);
+
+			// old contract
+			assert.bnEqual(await frozenRewardEscrowV2.numVestingEntries(user2), 0);
+			assert.bnEqual((await frozenRewardEscrowV2.vestingSchedules(user2, 3)).escrowAmount, 0);
+		});
 	});
 
-	describe('when zeroing out existing entries', async () => {
-		it.skip('setEntryZeroAmount', async () => {});
+	describe('setEntryZeroAmount', async () => {
+		it('entry on old contract', async () => {
+			// set initially
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, entry1Amount);
 
-		it.skip('setZerosUntilTarget', async () => {});
+			await instance.setEntryZeroAmount(user1, 2, { from: writeAccount });
+
+			// read on this contract
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
+
+			// read old contract (untouched)
+			assert.bnEqual(
+				(await frozenRewardEscrowV2.vestingSchedules(user1, 2)).escrowAmount,
+				entry1Amount
+			);
+		});
+
+		it('new entry', async () => {
+			// add entry
+			await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+
+			// set initially
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+
+			await instance.setEntryZeroAmount(user1, 3, { from: writeAccount });
+
+			// read on this contract
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, 0);
+
+			// read old contract (didn't exist)
+			assert.bnEqual((await frozenRewardEscrowV2.vestingSchedules(user1, 3)).escrowAmount, 0);
+		});
+	});
+
+	describe('setZerosUntilTarget', async () => {
+		it('reverts on bad input', async () => {
+			await assert.revert(
+				instance.setZerosUntilTarget(user1, 10, 0, { from: writeAccount }),
+				'targetAmount'
+			);
+			await assert.revert(
+				instance.setZerosUntilTarget(user1, 10, 1, { from: writeAccount }),
+				'startIndex'
+			);
+			await assert.revert(
+				instance.setZerosUntilTarget(user2, 10, 1, { from: writeAccount }),
+				'no entries'
+			);
+		});
+
+		it('entries on old contract', async () => {
+			// set initially
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, entry1Amount);
+
+			// calls this statically to get the returned values
+			const ret = await instance.setZerosUntilTarget.call(user1, 0, toUnit(10), {
+				from: writeAccount,
+			});
+
+			// return values
+			assert.bnEqual(ret.total, entry1Amount);
+			assert.bnEqual(ret.endIndex, 1);
+			assert.bnEqual(
+				ret.lastEntryTime,
+				(await frozenRewardEscrowV2.vestingSchedules(user1, 2)).endTime
+			);
+
+			// send the transaction
+			await instance.setZerosUntilTarget(user1, 0, toUnit(10), { from: writeAccount });
+
+			// read on this contract
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
+
+			// read old contract (untouched)
+			assert.bnEqual(
+				(await frozenRewardEscrowV2.vestingSchedules(user1, 2)).escrowAmount,
+				entry1Amount
+			);
+		});
+
+		it('entries on new and old contract', async () => {
+			// add entry
+			await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+			const entryEndTime = (await instance.vestingSchedules(user1, 3)).endTime;
+
+			// set initially
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+
+			// calls this statically to get the returned values
+			const ret = await instance.setZerosUntilTarget.call(user1, 0, toUnit(10), {
+				from: writeAccount,
+			});
+
+			// return values
+			assert.bnEqual(ret.total, entry1Amount.mul(toBN(2)));
+			assert.bnEqual(ret.endIndex, 2);
+			assert.bnEqual(ret.lastEntryTime, entryEndTime);
+
+			// send the transaction
+			await instance.setZerosUntilTarget(user1, 0, toUnit(10), { from: writeAccount });
+
+			// read on this contract
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, 0);
+
+			// read old contract (untouched)
+			assert.bnEqual(
+				(await frozenRewardEscrowV2.vestingSchedules(user1, 2)).escrowAmount,
+				entry1Amount
+			);
+		});
+
+		it('respects startIndex', async () => {
+			// add entry
+			await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+			const entryEndTime = (await instance.vestingSchedules(user1, 3)).endTime;
+
+			// calls this statically to get the returned values
+			const ret = await instance.setZerosUntilTarget.call(user1, 2, toUnit(10), {
+				from: writeAccount,
+			});
+
+			// return values
+			assert.bnEqual(ret.total, entry1Amount);
+			assert.bnEqual(ret.endIndex, 2);
+			assert.bnEqual(ret.lastEntryTime, entryEndTime);
+
+			// send the transaction
+			await instance.setZerosUntilTarget(user1, 2, toUnit(10), { from: writeAccount });
+
+			// first is untouched
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, entry1Amount);
+			// second is zero
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, 0);
+		});
+
+		it('respects targetAmount', async () => {
+			// add entry
+			await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+			const entryEndTime = (await instance.vestingSchedules(user1, 2)).endTime;
+
+			// calls this statically to get the returned values
+			const ret = await instance.setZerosUntilTarget.call(user1, 0, toUnit(0.5), {
+				from: writeAccount,
+			});
+
+			// return values
+			assert.bnEqual(ret.total, entry1Amount);
+			assert.bnEqual(ret.endIndex, 1);
+			assert.bnEqual(ret.lastEntryTime, entryEndTime);
+
+			// send the transaction
+			await instance.setZerosUntilTarget(user1, 0, toUnit(0.5), { from: writeAccount });
+
+			// first is zero
+			assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
+			// second is untouched
+			assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+		});
+	});
+
+	describe('updateTotalEscrowedBalance', async () => {
+		it('delta cannot cause negative balance', async () => {
+			await assert.revert(
+				instance.updateTotalEscrowedBalance(toUnit('-1000'), { from: writeAccount }),
+				'must be positive'
+			);
+		});
+
+		it('changes balance', async () => {
+			const before = await instance.totalEscrowedBalance();
+
+			const delta = toUnit('-1');
+			await instance.updateTotalEscrowedBalance(delta, { from: writeAccount });
+
+			assert.bnEqual(await instance.totalEscrowedBalance(), before.add(delta));
+
+			await instance.updateTotalEscrowedBalance(delta.mul(toBN(-1)), { from: writeAccount });
+			assert.bnEqual(await instance.totalEscrowedBalance(), before);
+		});
+	});
+
+	describe('updateVestedAccountBalance', async () => {
+		it('delta cannot cause negative balance', async () => {
+			await assert.revert(
+				instance.updateVestedAccountBalance(user1, toUnit('-1000'), { from: writeAccount }),
+				'must be positive'
+			);
+		});
+
+		it('changes balance', async () => {
+			const before = await instance.totalVestedAccountBalance(user1);
+
+			const delta = toUnit('-1');
+			await instance.updateVestedAccountBalance(user1, delta, { from: writeAccount });
+
+			assert.bnEqual(await instance.totalVestedAccountBalance(user1), before.add(delta));
+
+			await instance.updateVestedAccountBalance(user1, delta.mul(toBN(-1)), { from: writeAccount });
+			assert.bnEqual(await instance.totalVestedAccountBalance(user1), before);
+		});
+	});
+
+	describe('updateEscrowAccountBalance', async () => {
+		it('delta cannot cause negative balance', async () => {
+			await assert.revert(
+				instance.updateEscrowAccountBalance(user1, toUnit('-1000'), { from: writeAccount }),
+				'must be positive'
+			);
+		});
+
+		it('changes balance', async () => {
+			const before = await instance.totalEscrowedAccountBalance(user1);
+
+			const delta = toUnit('-1');
+			await instance.updateEscrowAccountBalance(user1, delta, { from: writeAccount });
+
+			assert.bnEqual(await instance.totalEscrowedAccountBalance(user1), before.add(delta));
+
+			await instance.updateEscrowAccountBalance(user1, delta.mul(toBN(-1)), { from: writeAccount });
+			assert.bnEqual(await instance.totalEscrowedAccountBalance(user1), before);
+		});
 	});
 });
