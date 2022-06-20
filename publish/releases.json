@@ -679,7 +679,7 @@
 		{
 			"sip": 251,
 			"layer": "both",
-			"sources": ["Issuer", "Liquidator", "SystemSettings", "SystemSettingsLib"]
+			"sources": ["CollateralUtil", "SystemSettings", "SystemSettingsLib"]
 		}
 	],
 	"releases": [
