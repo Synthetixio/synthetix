@@ -16,8 +16,8 @@
 	{
 		"marketKey": "sETH",
 		"asset": "sETH",
-		"takerFee": "0.003",
-		"makerFee": "0.0025",
+		"takerFee": "0.0035",
+		"makerFee": "0.0030",
 		"takerFeeNextPrice": "0.002",
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
