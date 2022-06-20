@@ -80,7 +80,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				'addVestingEntry',
 				'setEntryZeroAmount',
 				'setZerosUntilTarget',
-				'transferTokens',
+				'subtractAndTransfer',
 				'updateEscrowAccountBalance',
 				'updateTotalEscrowedBalance',
 				'updateVestedAccountBalance',

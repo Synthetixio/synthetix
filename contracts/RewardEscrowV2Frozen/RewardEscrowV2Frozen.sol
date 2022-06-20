@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 import "./BaseRewardEscrowV2Frozen.sol";
 
 // Internal references
-import "./interfaces/IRewardEscrow.sol";
-import "./interfaces/ISystemStatus.sol";
+import "../interfaces/IRewardEscrow.sol";
+import "../interfaces/ISystemStatus.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 /// SIP-TBD: this is the source for immutable V2 escrow on L1 (renamed with suffix Frozen).

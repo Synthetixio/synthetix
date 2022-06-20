@@ -5,7 +5,7 @@ const { toBytes32 } = require('../../..');
 
 function itDoesRewardEscrow({ ctx, contract }) {
 	// old escrow should be basically immutable
-	describe.only('RewardEscrowFrozen', () => {
+	describe('RewardEscrowFrozen', () => {
 		const fakeAmount = ethers.utils.parseEther('100');
 
 		let owner, someUser, otherUser;
@@ -53,7 +53,7 @@ function itDoesRewardEscrow({ ctx, contract }) {
 			console.log('admin transfer escrow');
 
 			// 2. Admin transfer all rewards to the new contract
-			await Synthetix.connect(owner).adminTransferEscrow();
+			await Synthetix.connect(owner).migrateEscrowContractBalance();
 
 			// all below operations will be done by some normie user
 			RewardEscrowV2Frozen = RewardEscrowV2Frozen.connect(someUser);

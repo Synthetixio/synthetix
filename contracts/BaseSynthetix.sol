@@ -84,8 +84,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
     }
 
-    function rewardEscrowV2() internal view returns (IRevokableRewardEscrowV2) {
-        return IRevokableRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROWV2));
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROWV2));
     }
 
     function liquidator() internal view returns (ILiquidator) {
@@ -286,9 +286,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
-    function adminTransferEscrow() external onlyOwner returns (bool) {
-        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address doesn't exist");
-        address to = resolver.requireAndGetAddress("RewardEscrowV2Storage", "New escrow address doesn't exist");
+    // SIP-TBD: migration of SNX token balance from old to new escrow rewards contract
+    function migrateEscrowContractBalance() external onlyOwner returns (bool) {
+        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
+        address to = resolver.requireAndGetAddress("RewardEscrowV2Storage", "New escrow address unset");
 
         uint currentBalance = tokenState.balanceOf(from);
 

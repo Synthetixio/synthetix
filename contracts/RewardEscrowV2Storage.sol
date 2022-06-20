@@ -2,6 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // interface for vesting entries
+import "./RewardEscrowV2Frozen/IRewardEscrowV2Frozen.sol";
+
+// interface
 import "./interfaces/IRewardEscrowV2.sol";
 
 // libraries
@@ -50,25 +53,25 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
     int internal constant ZERO_PLACEHOLDER = -1;
 
-    IRewardEscrowV2 public fallbackRewardEscrow;
-    IERC20 public token;
+    IRewardEscrowV2Frozen public fallbackRewardEscrow;
+    IERC20 public proxySNX;
 
     bytes32 public constant CONTRACT_NAME = "RewardEscrowV2Storage";
 
     /* ========== CONSTRUCTOR ========== */
 
-    /// this assumes that IRewardEscrowV2 is in fact Frozen both in code and in data(!!) with all
+    /// this assumes that IRewardEscrowV2Frozen is in fact Frozen both in code and in data(!!) with all
     /// mutative methods reverting (e.g. due to blocked transfers)
     constructor(
         address _owner,
         address _associatedContract,
-        IERC20 _token,
-        IRewardEscrowV2 _previousEscrow
+        IERC20 _proxySNX,
+        IRewardEscrowV2Frozen _previousEscrow
     ) public Owned(_owner) State(_associatedContract) {
         fallbackRewardEscrow = _previousEscrow;
         nextEntryId = _previousEscrow.nextEntryId();
         fallbackId = nextEntryId;
-        token = _token;
+        proxySNX = _proxySNX;
 
         // carry over previous balance tracking
         _totalEscrowedBalance = fallbackRewardEscrow.totalEscrowedBalance();
@@ -261,13 +264,13 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     /// remove tokens from vesting aggregates and transfer them to recipient
-    function transferTokens(
-        address removeFrom,
+    function subtractAndTransfer(
+        address subtractFrom,
         address transferTo,
         uint256 amount
     ) external onlyAssociatedContract {
-        updateEscrowAccountBalance(removeFrom, -int(amount));
-        require(token.transfer(transferTo, amount), "Failed to transfer tokens");
+        updateEscrowAccountBalance(subtractFrom, -int(amount));
+        require(proxySNX.transfer(transferTo, amount), "Failed to transfer tokens");
     }
 
     /* ========== INTERNAL ========== */

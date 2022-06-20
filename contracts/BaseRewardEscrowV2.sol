@@ -18,7 +18,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract BaseRewardEscrowV2 is Owned, IRevokableRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
+contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -246,7 +246,7 @@ contract BaseRewardEscrowV2 is Owned, IRevokableRewardEscrowV2, LimitedSetup(8 w
 
         /* Transfer vested tokens. Will revert if total > totalEscrowedAccountBalance */
         if (total != 0) {
-            state().transferTokens(account, account, total);
+            state().subtractAndTransfer(account, account, total);
             // update total vested
             state().updateVestedAccountBalance(account, int(total));
             emit Vested(account, block.timestamp, total);
@@ -285,7 +285,7 @@ contract BaseRewardEscrowV2 is Owned, IRevokableRewardEscrowV2, LimitedSetup(8 w
             );
         }
 
-        state().transferTokens(account, recipient, targetAmount);
+        state().subtractAndTransfer(account, recipient, targetAmount);
 
         emit Revoked(account, endIndex, targetAmount);
     }

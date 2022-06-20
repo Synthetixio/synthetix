@@ -2,19 +2,19 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./Owned.sol";
-import "./MixinResolver.sol";
-import "./LimitedSetup.sol";
-import "./interfaces/IRewardEscrowV2.sol";
+import "./IRewardEscrowV2Frozen.sol";
+import "../Owned.sol";
+import "../MixinResolver.sol";
+import "../LimitedSetup.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "../SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
-import "./interfaces/IFeePool.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IIssuer.sol";
+import "../interfaces/IERC20.sol";
+import "../interfaces/IFeePool.sol";
+import "../interfaces/ISynthetix.sol";
+import "../interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 /// SIP-TBD: this is the source for the base of immutable V2 escrow (renamed with suffix Frozen).
@@ -22,7 +22,7 @@ import "./interfaces/IIssuer.sol";
 /// The reason for the naming mess is that the immutable LiquidatorRewards expects a working
 /// RewardEscrowV2 resolver entry for its getReward method, so the "new" (would be V3)
 /// needs to be found at that entry for liq-rewards to function.
-contract BaseRewardEscrowV2Frozen is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
+contract BaseRewardEscrowV2Frozen is Owned, IRewardEscrowV2Frozen, LimitedSetup(8 weeks), MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
