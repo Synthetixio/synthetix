@@ -508,9 +508,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				fastForward(duration + 10);
 			});
 			assertWithFallback('should vest and transfer all the snx to the user', async (e, s) => {
-				await e.vest([entryID], {
-					from: account1,
-				});
+				await e.vest([entryID], { from: account1 });
 
 				// Check user has all their vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
@@ -520,9 +518,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			assertWithFallback('should vest when called by another account', async (e, s) => {
-				await e.vest([entryID], {
-					from: account2,
-				});
+				await e.vestFor(account1, [entryID], { from: account2 });
 
 				// Check account1 has all their vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
