@@ -41,12 +41,6 @@ interface IRewardEscrowV2Storage {
     function updateTotalEscrowedBalance(int delta) external;
 
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
-
-    function subtractAndTransfer(
-        address subtractFrom,
-        address transferTo,
-        uint256 amount
-    ) external;
 }
 
 /// this should remain backwards compatible to IRewardEscrowV2Frozen

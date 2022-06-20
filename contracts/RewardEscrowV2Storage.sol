@@ -14,8 +14,6 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 // inheritance
 import "./State.sol";
 
-import "./interfaces/IERC20.sol";
-
 /// A contract for reading and writing to/from storage while falling back to values from
 /// previous RewardEscrowV2 contract.
 contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
@@ -54,7 +52,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     int internal constant ZERO_PLACEHOLDER = -1;
 
     IRewardEscrowV2Frozen public fallbackRewardEscrow;
-    IERC20 public proxySNX;
 
     bytes32 public constant CONTRACT_NAME = "RewardEscrowV2Storage";
 
@@ -65,13 +62,11 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     constructor(
         address _owner,
         address _associatedContract,
-        IERC20 _proxySNX,
         IRewardEscrowV2Frozen _previousEscrow
     ) public Owned(_owner) State(_associatedContract) {
         fallbackRewardEscrow = _previousEscrow;
         nextEntryId = _previousEscrow.nextEntryId();
         fallbackId = nextEntryId;
-        proxySNX = _proxySNX;
 
         // carry over previous balance tracking
         _totalEscrowedBalance = fallbackRewardEscrow.totalEscrowedBalance();
@@ -177,7 +172,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint numIds = numVestingEntries(account);
         require(startIndex < numIds, "startIndex too high");
 
-        uint total;
         uint entryID;
         uint i;
         VestingEntries.VestingEntry memory entry;
@@ -202,7 +196,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return (total, i, entry.endTime);
     }
 
-    function updateEscrowAccountBalance(address account, int delta) public onlyAssociatedContract {
+    function updateEscrowAccountBalance(address account, int delta) external onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
         require(total >= 0, "balance must be positive");
@@ -261,16 +255,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         nextEntryId++;
 
         return entryId;
-    }
-
-    /// remove tokens from vesting aggregates and transfer them to recipient
-    function subtractAndTransfer(
-        address subtractFrom,
-        address transferTo,
-        uint256 amount
-    ) external onlyAssociatedContract {
-        updateEscrowAccountBalance(subtractFrom, -int(amount));
-        require(proxySNX.transfer(transferTo, amount), "Failed to transfer tokens");
     }
 
     /* ========== INTERNAL ========== */

@@ -67,7 +67,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 		// create instance, controlled by writeAccount
 		instance = await artifacts
 			.require('RewardEscrowV2Storage')
-			.new(owner, writeAccount, synthetix.address, frozenRewardEscrowV2.address);
+			.new(owner, writeAccount, frozenRewardEscrowV2.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -80,7 +80,6 @@ contract('RewardEscrowV2Storage', async accounts => {
 				'addVestingEntry',
 				'setEntryZeroAmount',
 				'setZerosUntilTarget',
-				'subtractAndTransfer',
 				'updateEscrowAccountBalance',
 				'updateTotalEscrowedBalance',
 				'updateVestedAccountBalance',

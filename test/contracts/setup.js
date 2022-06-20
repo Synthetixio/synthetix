@@ -238,7 +238,6 @@ const setupContract = async ({
 		RewardEscrowV2Storage: [
 			owner,
 			tryGetAddressOf('RewardEscrowV2'),
-			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('BaseRewardEscrowV2Frozen'),
 		],
 		BaseRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],

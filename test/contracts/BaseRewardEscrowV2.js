@@ -42,7 +42,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// need to create a storage contract for full testing
 			const newRewardEscrowV2Storage = await artifacts
 				.require('RewardEscrowV2Storage')
-				.new(owner, resolver.address, mockedSynthetix.address, baseRewardEscrowV2.address);
+				.new(owner, resolver.address, baseRewardEscrowV2.address);
 
 			// initialise new one falling back to this one
 			const newRewardEscrowV2 = await artifacts
@@ -61,12 +61,12 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// update the resolver for baseRewardEscrowV2
 			await newRewardEscrowV2.rebuildCache({ from: owner });
 
-			const balance = await mockedSynthetix.balanceOf(rewardEscrowV2Storage.address);
-			// in hypothetical migration snx balance would be transferred over to new storage contract
+			const balance = await mockedSynthetix.balanceOf(baseRewardEscrowV2.address);
+			// in hypothetical migration snx balance would be transferred over to new escrow contract
 			// TODO: the `mockToken` implementation does not make it easy to do unchecked transfers,
 			// so we don't have an easy way to check if the old contract somehow got funds or not other than
 			// revert
-			await mockedSynthetix.transfer(newRewardEscrowV2Storage.address, balance, {
+			await mockedSynthetix.transfer(newRewardEscrowV2.address, balance, {
 				from: owner,
 			});
 
@@ -99,7 +99,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		// initialise storage contract
 		rewardEscrowV2Storage = await artifacts
 			.require('RewardEscrowV2Storage')
-			.new(owner, ZERO_ADDRESS, mockedSynthetix.address, baseRewardEscrowV2Frozen.address);
+			.new(owner, ZERO_ADDRESS, baseRewardEscrowV2Frozen.address);
 		// add the real contract to mocks so that the mock resolver returns its address
 		// when BaseRewardEscrowV2 is constructed
 		mocks['RewardEscrowV2Storage'] = rewardEscrowV2Storage;
@@ -394,7 +394,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			await baseRewardEscrowV2.rebuildCache({ from: owner });
 
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
-			await mockedSynthetix.transfer(rewardEscrowV2Storage.address, toUnit('1000'), {
+			await mockedSynthetix.transfer(baseRewardEscrowV2.address, toUnit('1000'), {
 				from: owner,
 			});
 		});
@@ -427,7 +427,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
 
 					// Check rewardEscrow does not have any SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount);
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), escrowAmount);
 
 					// Check total escrowedAccountBalance is unchanged
 					const escrowedAccountBalance = await e.totalEscrowedAccountBalance(account1);
@@ -449,7 +449,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				async (e, s) => {
 					claimableSNX = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
 
-					const escrowBalanceBefore = await mockedSynthetix.balanceOf(s.address);
+					const escrowBalanceBefore = await mockedSynthetix.balanceOf(e.address);
 					const totalEscrowedBalanceBefore = await e.totalEscrowedBalance();
 					const accountEscrowedBalanceBefore = await e.totalEscrowedAccountBalance(account1);
 					const accountTotalVestedBefore = await e.totalVestedAccountBalance(account1);
@@ -461,7 +461,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
 
 					// Check rewardEscrow contract has same amount of SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowBalanceBefore);
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), escrowBalanceBefore);
 
 					const vestingEntryAfter = await e.getVestingEntry(account1, entryID);
 
@@ -511,7 +511,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
 
 				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
+				assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
 			});
 
 			assertWithFallback('should vest and emit a Vest event', async e => {
@@ -625,7 +625,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
 					// Check rewardEscrow has all the SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('1000'));
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('1000'));
 				});
 			});
 
@@ -640,7 +640,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
 					// Check rewardEscrow does not have any SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
 				}
 			);
 
@@ -707,7 +707,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
 					// Check rewardEscrow does not have any SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
 
 					// Vest attempt 2
 					await e.vest([entryID1, entryID2, entryID3], {
@@ -718,7 +718,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
 					// Check rewardEscrow does not have any SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('0'));
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
 				}
 			);
 		});
@@ -771,7 +771,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
 					// Check rewardEscrow has all the SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(s.address), toUnit('1000'));
+					assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('1000'));
 				});
 			});
 
@@ -795,7 +795,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 						);
 
 						// Check rewardEscrow has remaining entry3 amount
-						assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount3);
+						assert.bnEqual(await mockedSynthetix.balanceOf(e.address), escrowAmount3);
 					}
 				);
 
@@ -865,7 +865,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 						);
 
 						// Check rewardEscrow does has escrowAmount3 SNX
-						assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount3);
+						assert.bnEqual(await mockedSynthetix.balanceOf(e.address), escrowAmount3);
 
 						// Vest attempt 2
 						await e.vest([entryID1, entryID2, entryID3], {
@@ -879,7 +879,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 						);
 
 						// Check rewardEscrow has same escrowAmount3 SNX
-						assert.bnEqual(await mockedSynthetix.balanceOf(s.address), escrowAmount3);
+						assert.bnEqual(await mockedSynthetix.balanceOf(e.address), escrowAmount3);
 					}
 				);
 			});

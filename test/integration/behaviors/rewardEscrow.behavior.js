@@ -50,8 +50,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 			// 1. End merging window
 			await RewardEscrowV2Frozen.connect(owner).setAccountMergingDuration(0);
 
-			console.log('admin transfer escrow');
-
 			// 2. Admin transfer all rewards to the new contract
 			await Synthetix.connect(owner).migrateEscrowContractBalance();
 

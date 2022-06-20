@@ -246,7 +246,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         /* Transfer vested tokens. Will revert if total > totalEscrowedAccountBalance */
         if (total != 0) {
-            state().subtractAndTransfer(account, account, total);
+            _subtractAndTransfer(account, account, total);
             // update total vested
             state().updateVestedAccountBalance(account, int(total));
             emit Vested(account, block.timestamp, total);
@@ -285,9 +285,19 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             );
         }
 
-        state().subtractAndTransfer(account, recipient, targetAmount);
+        _subtractAndTransfer(account, recipient, targetAmount);
 
         emit Revoked(account, endIndex, targetAmount);
+    }
+
+    /// remove tokens from vesting aggregates and transfer them to recipient
+    function _subtractAndTransfer(
+        address subtractFrom,
+        address transferTo,
+        uint256 amount
+    ) internal {
+        state().updateEscrowAccountBalance(subtractFrom, -int(amount));
+        IERC20(address(synthetix())).transfer(transferTo, amount);
     }
 
     /**
@@ -303,7 +313,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
 
         /* Transfer SNX from msg.sender */
-        require(IERC20(address(synthetix())).transferFrom(msg.sender, address(state()), deposit), "token transfer failed");
+        require(IERC20(address(synthetix())).transferFrom(msg.sender, address(this), deposit), "token transfer failed");
 
         /* Append vesting entry for the beneficiary address */
         _appendVestingEntry(beneficiary, deposit, duration);
@@ -339,7 +349,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         require(
-            totalEscrowedBalance() <= IERC20(address(synthetix())).balanceOf(address(state())),
+            totalEscrowedBalance() <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 

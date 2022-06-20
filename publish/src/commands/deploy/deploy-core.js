@@ -132,10 +132,9 @@ module.exports = async ({
 	});
 
 	// SIP-TBD: storage contract for RewardEscrowV2
-	console.log([account, ZERO_ADDRESS, addressOf(proxySynthetix), addressOf(rewardEscrowV2Frozen)]);
 	await deployer.deployContract({
 		name: 'RewardEscrowV2Storage',
-		args: [account, ZERO_ADDRESS, addressOf(proxySynthetix), addressOf(rewardEscrowV2Frozen)],
+		args: [account, ZERO_ADDRESS, addressOf(rewardEscrowV2Frozen)],
 		deps: ['AddressResolver'],
 	});
 

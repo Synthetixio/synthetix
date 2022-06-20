@@ -289,7 +289,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // SIP-TBD: migration of SNX token balance from old to new escrow rewards contract
     function migrateEscrowContractBalance() external onlyOwner returns (bool) {
         address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
-        address to = resolver.requireAndGetAddress("RewardEscrowV2Storage", "New escrow address unset");
+        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
 
         uint currentBalance = tokenState.balanceOf(from);
 
