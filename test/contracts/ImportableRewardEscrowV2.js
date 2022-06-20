@@ -56,7 +56,7 @@ contract('ImportableRewardEscrowV2', async accounts => {
 
 	describe('importVestingEntries', async () => {
 		const total = toUnit('1');
-		const entries = [[0, toUnit('1')]];
+		const entries = [[1, toUnit('1')]];
 		it('Can only be called by bridge', async () => {
 			await assert.revert(
 				rewardEscrowV2.importVestingEntries(owner, total, entries, {
