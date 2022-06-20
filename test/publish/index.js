@@ -42,8 +42,8 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
+		LIQUIDATION_PENALTY,
 		COLLATERAL_LIQUIDATION_PENALTY,
-		SNX_LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
@@ -291,8 +291,8 @@ describe('publish scripts', () => {
 						COLLATERAL_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual(
-						(await Liquidator.snxLiquidationPenalty()).toString(),
-						SNX_LIQUIDATION_PENALTY
+						(await Liquidator.liquidationPenalty()).toString(),
+						LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
@@ -330,7 +330,7 @@ describe('publish scripts', () => {
 					let newLiquidationsDelay;
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
-					let newSnxLiquidationsPenalty;
+					let newCollateralLiquidationsPenalty;
 					let newRateStalePeriod;
 					let newAtomicTwapWindow;
 					let newRateForsUSD;
@@ -347,7 +347,7 @@ describe('publish scripts', () => {
 						newLiquidationsDelay = newFeePeriodDuration;
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
-						newSnxLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
+						newCollateralLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
 						newAtomicTwapWindow = '1800';
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
@@ -386,13 +386,13 @@ describe('publish scripts', () => {
 						tx = await SystemSettings.setLiquidationRatio(newLiquidationsRatio, overrides);
 						await tx.wait();
 
-						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
-						await tx.wait();
-
-						tx = await SystemSettings.setSnxLiquidationPenalty(
-							newSnxLiquidationsPenalty,
+						tx = await SystemSettings.setCollateralLiquidationPenalty(
+							newCollateralLiquidationsPenalty,
 							overrides
 						);
+						await tx.wait();
+
+						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
 						await tx.wait();
 
 						tx = await SystemSettings.setAtomicTwapWindow(newAtomicTwapWindow, overrides);
@@ -464,12 +464,12 @@ describe('publish scripts', () => {
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await Liquidator.liquidationPenalty()).toString(),
-								newLiquidationsPenalty
+								(await Liquidator.collateralLiquidationPenalty()).toString(),
+								newCollateralLiquidationsPenalty
 							);
 							assert.strictEqual(
-								(await Liquidator.snxLiquidationPenalty()).toString(),
-								newSnxLiquidationsPenalty
+								(await Liquidator.liquidationPenalty()).toString(),
+								newLiquidationsPenalty
 							);
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
