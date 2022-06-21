@@ -711,34 +711,23 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
-        // Note: While amountToLiquidate takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
-        // Therefore, it is correct to add the penalty modification below to the totalRedeemed.
-        totalRedeemed = _usdToSnx(debtRemoved, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+        // Note: While redeemTarget takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
+        // Therefore, it is correct to add the penalty modification below to the redeemTarget.
+        // This is a "target" because it may not be available, so will be adjusted
+        uint redeemTarget = _usdToSnx(debtRemoved, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
-        escrowToLiquidate = 0;
+        // calculate actually redeemable collateral for the conditions
+        (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, isSelfLiquidation);
 
-        // The balanceOf here can be considered "transferable" since it's not escrowed,
-        // and it is the only SNX that can potentially be transfered if unstaked.
-        uint transferableBalance = synthetixERC20().balanceOf(account);
-        if (totalRedeemed > transferableBalance) {
-            // transferrable is not enough
-            uint escrowBalance = rewardEscrowV2().balanceOf(account);
-            if (totalRedeemed > transferableBalance.add(escrowBalance)) {
-                // the full escrow is not enough (other _collateral sources can't be touched)
-                // liquidate all of escrow as well
-                escrowToLiquidate = escrowBalance;
+        // totalRedeemed == redeemTarget, all of the debt is removed, otherwise adjust it to redeemable collateral
+        if (totalRedeemed < redeemTarget) {
+            // Adjust debt amount to ratio of actual vs. target collateral amounts
+            debtRemoved = debtRemoved.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);
 
-                // When this is over the account will have 0 SNX to back anything. So remove all debt as well
+            // if all collateral is gone, erase the bad debt (some unliquidatable collateral can be in
+            // legacy SynthetixEscrow or LiquidatorRewards (if Synthetix liquidation method didn't call getReward() before this)
+            if (collateralForAccount == totalRedeemed) {
                 debtRemoved = debtBalance;
-
-                // Set totalRedeemed to all transferable collateral + escrow.
-                // i.e. the value of the account's staking position relative to balanceOf will be unwound.
-                totalRedeemed = transferableBalance.add(escrowBalance);
-            } else {
-                // escrow is enough
-                // liquidate missing part from escrow (total - transferrable)
-                escrowToLiquidate = totalRedeemed.sub(transferableBalance);
-                // totalRedeemed is unchanged
             }
         }
 
@@ -747,6 +736,39 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Remove liquidation flag
         liquidator().removeAccountInLiquidation(account);
+    }
+
+    // SIP-252
+    // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
+    // of transferrable & escrowed collateral & self or forced liquidation
+    function _redeemableCollateralForTarget(
+        address account,
+        uint redeemTarget,
+        bool isSelfLiquidation
+    ) internal returns (uint totalRedeemed, uint escrowToLiquidate) {
+        // The balanceOf here can be considered "transferable" since it's not escrowed,
+        // and it is the only SNX that can potentially be transfered if unstaked.
+        uint transferable = synthetixERC20().balanceOf(account);
+        if (redeemTarget <= transferable) {
+            // transferrable is enough
+            return (redeemTarget, 0);
+        } else {
+            // if transferrable is not enough
+            if (isSelfLiquidation) {
+                // cannot use escrow because self-liquidation is available without being flagged
+                return (transferable, 0);
+            } else {
+                // can use escrow if forced liquidation (assumed to be flagged)
+                uint escrow = rewardEscrowV2().balanceOf(account);
+                if (redeemTarget > transferable.add(escrow)) {
+                    // all of escrow needs to be redeemed
+                    return (transferable.add(escrow), escrow);
+                } else {
+                    // need only part of the escrow, add the needed part to redeemed
+                    return (transferable.add(escrowToLiquidate), redeemTarget.sub(transferable));
+                }
+            }
+        }
     }
 
     function setCurrentPeriodId(uint128 periodId) external {
