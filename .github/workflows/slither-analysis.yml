@@ -28,6 +28,9 @@ jobs:
         continue-on-error: true
 
       - uses: actions/cache@136d96b4aee02b1f0de3ba493b1d47135042d9c0 # pin@v3
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "::set-output name=dir::$(npm config get cache)"
         with:
           path: |
             .npm-cache
