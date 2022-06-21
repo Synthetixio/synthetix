@@ -28,7 +28,7 @@ library SystemSettingsLib {
     uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
     uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
 
-    uint public constant MAX_LIQUIDATION_PENALTY = 3e18 / 10; // Max 30% liquidation penalty / bonus
+    uint public constant MAX_LIQUIDATION_PENALTY = 9e18 / 10; // Max 90% liquidation penalty / bonus
 
     uint public constant MAX_LIQUIDATION_DELAY = 3 days;
     uint public constant MIN_LIQUIDATION_DELAY = 300; // 5 min
