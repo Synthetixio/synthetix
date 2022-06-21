@@ -377,7 +377,7 @@ function itCanLiquidate({ ctx }) {
 			});
 		});
 
-		describe('full self liquidation with a majority of collateral in escrow', () => {
+		describe('full liquidation with a majority of collateral in escrow', () => {
 			let tx;
 			let beforeEscrowBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
@@ -410,15 +410,18 @@ function itCanLiquidate({ ctx }) {
 				});
 			});
 
-			it('still not open for self liquidation because not flagged', async () => {
-				assert.equal(await Liquidator.isLiquidationOpen(user8.address, true), false);
+			it('still not open for liquidation because not flagged', async () => {
+				assert.equal(await Liquidator.isLiquidationOpen(user8.address, false), false);
 			});
 
-			before('user8 flags themself', async () => {
-				await Liquidator.connect(user8).flagAccountForLiquidation(user8.address);
+			before('liquidatorUser flags user8', async () => {
+				await (
+					await Liquidator.connect(liquidatorUser).flagAccountForLiquidation(user8.address)
+				).wait();
+				await skipLiquidationDelay({ ctx });
 			});
 
-			before('user8 calls liquidateSelf', async () => {
+			before('liquidatorUser calls liquidateDelinquentAccount', async () => {
 				beforeSnxBalance = await Synthetix.balanceOf(user8.address);
 				beforeEscrowBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user8.address);
 				beforeDebtShares = await SynthetixDebtShare.balanceOf(user8.address);
@@ -426,11 +429,11 @@ function itCanLiquidate({ ctx }) {
 				beforeDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
 				beforeRewardsCredittedSnx = await Synthetix.balanceOf(LiquidatorRewards.address);
 
-				tx = await Synthetix.connect(user8).liquidateSelf();
+				tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user8.address);
 
 				const { gasUsed } = await tx.wait();
 				console.log(
-					`liquidateSelf() with 100 escrow entries gas used: ${Math.round(
+					`liquidateDelinquentAccount() with 100 escrow entries gas used: ${Math.round(
 						gasUsed / 1000
 					).toString()}k`
 				);
@@ -483,15 +486,18 @@ function itCanLiquidate({ ctx }) {
 				assert.bnEqual(await Liquidator.getLiquidationDeadlineForAccount(user8.address), 0);
 			});
 
-			it('transfers the redeemed SNX + escrow to LiquidatorRewards', async () => {
+			it('transfers the remaining SNX + escrow to LiquidatorRewards', async () => {
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 				const snxRedeemed = liqEvent.args.snxRedeemed;
 
-				assert.bnNotEqual(snxRedeemed, '0');
+				const flagReward = await Liquidator.flagReward();
+				const liquidateReward = await Liquidator.liquidateReward();
+				const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
+				assert.bnNotEqual(remainingReward, '0');
 				assert.bnEqual(
 					await Synthetix.balanceOf(LiquidatorRewards.address),
-					beforeRewardsCredittedSnx.add(snxRedeemed)
+					beforeRewardsCredittedSnx.add(remainingReward)
 				);
 			});
 
