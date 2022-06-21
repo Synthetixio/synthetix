@@ -123,7 +123,7 @@ module.exports = async ({
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
-	// SIP-TBD: frozen V2 escrow for migration to new escrow
+	// SIP-252: frozen V2 escrow for migration to new escrow
 	const rewardEscrowV2Frozen = await deployer.deployContract({
 		name: 'RewardEscrowV2Frozen',
 		source: useOvm ? 'ImportableRewardEscrowV2Frozen' : 'RewardEscrowV2Frozen',
@@ -131,7 +131,7 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 	});
 
-	// SIP-TBD: storage contract for RewardEscrowV2
+	// SIP-252: storage contract for RewardEscrowV2
 	await deployer.deployContract({
 		name: 'RewardEscrowV2Storage',
 		args: [account, ZERO_ADDRESS, addressOf(rewardEscrowV2Frozen)],

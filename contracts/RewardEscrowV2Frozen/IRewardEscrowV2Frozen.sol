@@ -13,7 +13,7 @@ library VestingEntries {
     }
 }
 
-/// SIP-TBD: this is the interface for immutable V2 escrow (renamed with suffix Frozen).
+/// SIP-252: this is the interface for immutable V2 escrow (renamed with suffix Frozen).
 /// These sources need to exist here and match on-chain frozen contracts for tests and reference.
 /// the reason for the naming mess is that the immutable LiquidatorRewards expects a working
 /// RewardEscrowV2 resolver entry for its getReward method, so the "new" (would be V3)

@@ -34,7 +34,7 @@ contract PublicEST is ExternStateToken {
         emit Received(messageSender, inputA, inputB);
     }
 
-    // SIP-TBD: allow to call revokeFrom on rewardsEscrow
+    // SIP-252: allow to call revokeFrom on rewardsEscrow
     // this is needed here because SNX is both the required caller for this method, and needs to be an actual ERC20,
     // so using an EOA instead of it doesn't work
     function revokeFrom(

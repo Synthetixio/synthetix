@@ -17,7 +17,7 @@ import "../interfaces/ISynthetix.sol";
 import "../interfaces/IIssuer.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-/// SIP-TBD: this is the source for the base of immutable V2 escrow (renamed with suffix Frozen).
+/// SIP-252: this is the source for the base of immutable V2 escrow (renamed with suffix Frozen).
 /// These sources need to exist here and match on-chain frozen contracts for tests and reference.
 /// The reason for the naming mess is that the immutable LiquidatorRewards expects a working
 /// RewardEscrowV2 resolver entry for its getReward method, so the "new" (would be V3)
