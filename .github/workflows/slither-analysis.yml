@@ -31,19 +31,13 @@ jobs:
         run: echo "::set-output name=dir::$(npm config get cache)"
 
       - uses: actions/cache@c3f1317a9e7b1ef106c153ac8c0f00fed3ddbc0d # pin@v3.0.4
-        id: cache-npm
-        env:
-          cache-name: cache-node-modules
         with:
           path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-ubuntu-16_15-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-ubuntu-16_15-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-ubuntu-16_15-${{ env.cache-name }}-
             ${{ runner.os }}-ubuntu-16_15-
 
       - name: Install dependencies
-        # run only if cache is not present
-        if: ${{ steps.cache-npm.outputs.cache-hit == 'false' }}
         run: npm ci --prefer-offline
 
       - name: Run slither
