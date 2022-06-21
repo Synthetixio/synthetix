@@ -73,14 +73,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-15 Liquidations
-    // penalty taken away from target of liquidation (with 18 decimals). E.g. 10% is 0.1e18
-    function collateralLiquidationPenalty() external view returns (uint) {
-        return getCollateralLiquidationPenalty();
-    }
-
-    // penalty taken away from target of liquidation specific (with 18 decimals). E.g. 10% is 0.1e18
+    // penalty taken away from target of SNX liquidation (with 18 decimals). E.g. 30% is 0.3e18
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
+    }
+
+    // SIP-251 Differentiate Liquidation Penalties
+    // penalty taken away from target of Collateral loan liquidation (with 18 decimals). E.g. 10% is 0.1e18
+    function collateralLiquidationPenalty() external view returns (uint) {
+        return getCollateralLiquidationPenalty();
     }
 
     /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
