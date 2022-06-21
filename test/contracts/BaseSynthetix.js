@@ -113,7 +113,6 @@ contract('BaseSynthetix', async accounts => {
 				'transfer',
 				'transferFrom',
 				'liquidateSelf',
-				'liquidateSelfEscrowIndex',
 				'liquidateDelinquentAccount',
 				'liquidateDelinquentAccountEscrowIndex',
 				'initializeLiquidatorRewardsRestitution',
@@ -557,7 +556,7 @@ contract('BaseSynthetix', async accounts => {
 			});
 		});
 
-		// SIP-TBD
+		// SIP-252
 		describe('migrateEscrowContractBalance', () => {
 			it('restricted to owner', async () => {
 				await assert.revert(

@@ -130,8 +130,6 @@ interface ISynthetix {
 
     function liquidateSelf() external returns (bool);
 
-    function liquidateSelfEscrowIndex(uint escrowStartIndex) external returns (bool);
-
     // Restricted Functions
 
     function mintSecondary(address account, uint amount) external;

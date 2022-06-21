@@ -286,7 +286,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
-    // SIP-TBD: migration of SNX token balance from old to new escrow rewards contract
+    // SIP-252: migration of SNX token balance from old to new escrow rewards contract
     function migrateEscrowContractBalance() external onlyOwner returns (bool) {
         address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
         address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
@@ -406,17 +406,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
-        return _liquidateSelf(0);
-    }
-
-    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
-    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateSelfEscrowIndex(uint escrowStartIndex) external systemActive optionalProxy returns (bool) {
-        return _liquidateSelf(escrowStartIndex);
-    }
-
-    /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
-    function _liquidateSelf(uint escrowStartIndex) internal returns (bool) {
         // must store liquidated account address because below functions may attempt to transfer SNX which changes messageSender
         address liquidatedAccount = messageSender;
 
@@ -425,15 +414,11 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
         (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
+        // escrowToLiquidate can only be zero, this is to protect from an issuer calc bug causing
+        // incorrect accounting & transfers later
+        require(escrowToLiquidate == 0, "cannot self liquidate escrow");
 
         emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
-
-        // This tramsfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
-        // It is transferred to the account instead of to the rewards directly to avoid making the following transfer
-        // to liquidatorRewards aware of how much needs to be transferred from which part
-        if (escrowToLiquidate > 0) {
-            rewardEscrowV2().revokeFrom(liquidatedAccount, liquidatedAccount, escrowToLiquidate, escrowStartIndex);
-        }
 
         // Transfer the redeemed SNX to the LiquidatorRewards contract.
         // Reverts if amount to redeem is more than balanceOf account (i.e. due to escrowed balance).

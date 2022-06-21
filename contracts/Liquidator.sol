@@ -128,14 +128,16 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             return false;
         }
 
-        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         if (!isSelfLiquidation) {
+            LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+
             // Open for liquidation if the deadline has passed and the user has enough SNX collateral.
-            return _deadlinePassed(liquidation.deadline) && _hasEnoughSNX(account);
-        } else {
-            // open for liquidation if was flagged
-            return liquidation.deadline != 0;
+            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNX(account)) {
+                return true;
+            }
+            return false;
         }
+        return true;
     }
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool) {
