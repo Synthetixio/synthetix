@@ -21,16 +21,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # pin@v2
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # pin@v3.0.2
 
       - name: Set npm cache directory
         run: npm config set cache .npm-cache --global
         continue-on-error: true
 
-      - uses: actions/cache@136d96b4aee02b1f0de3ba493b1d47135042d9c0 # pin@v3
       - name: Get npm cache directory
         id: npm-cache-dir
         run: echo "::set-output name=dir::$(npm config get cache)"
+
+      - uses: actions/cache@c3f1317a9e7b1ef106c153ac8c0f00fed3ddbc0d # pin@v3.0.4
         with:
           path: |
             .npm-cache
