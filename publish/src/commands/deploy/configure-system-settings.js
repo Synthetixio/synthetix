@@ -218,7 +218,7 @@ module.exports = async ({
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
-		read: 'collateralLiquidationPenalty',
+		read: 'snxLiquidationPenalty',
 		readTarget: previousSystemSettings,
 		expected: allowZeroOrUpdateIfNonZero(snxLiquidationPenalty),
 		write: 'setSnxLiquidationPenalty',

@@ -24,7 +24,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: { COLLATERAL_LIQUIDATION_PENALTY },
+	defaults: { LIQUIDATION_PENALTY },
 } = require('../..');
 
 contract('CollateralShort', async accounts => {
@@ -221,10 +221,7 @@ contract('CollateralShort', async accounts => {
 			assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
 			assert.equal(await short.synths(1), toBytes32('SynthsETH'));
 			assert.bnEqual(await short.minCratio(), toUnit(1.2));
-			assert.bnEqual(
-				await systemSettings.collateralLiquidationPenalty(),
-				COLLATERAL_LIQUIDATION_PENALTY
-			); // 10% penalty
+			assert.bnEqual(await systemSettings.liquidationPenalty(), LIQUIDATION_PENALTY); // 10% penalty
 		});
 
 		it('should access its dependencies via the address resolver', async () => {
@@ -963,7 +960,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			it('liquidation should be capped to only fix the c ratio', async () => {
-				const penalty = await systemSettings.collateralLiquidationPenalty();
+				const penalty = await systemSettings.liquidationPenalty();
 				const cratio = await short.minCratio();
 				const currentEthRate = toUnit(110);
 				const currentDebt = multiplyDecimal(initialLoan, currentEthRate);
