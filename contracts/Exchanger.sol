@@ -99,17 +99,17 @@ contract Exchanger is ExchangerBase {
         entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
         entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
 
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        entry.sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmountAfterSettlement == 0) {
-            return (0, 0, IVirtualSynth(0));
+        if (entry.sourceAmountAfterSettlement == 0) {
+            return (0, 0, 0, IVirtualSynth(0));
         }
 
         (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
             sourceCurrencyKey,
-            sourceAmountAfterSettlement,
+            entry.sourceAmountAfterSettlement,
             destinationCurrencyKey,
             entry.roundIdForSrc,
             entry.roundIdForDest
@@ -153,7 +153,7 @@ contract Exchanger is ExchangerBase {
         vSynth = _convert(
             sourceCurrencyKey,
             from,
-            sourceAmountAfterSettlement,
+            entry.sourceAmountAfterSettlement,
             destinationCurrencyKey,
             amountReceived,
             destinationAddress,
@@ -200,7 +200,7 @@ contract Exchanger is ExchangerBase {
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
             sourceCurrencyKey,
-            sourceAmountAfterSettlement,
+            entry.sourceAmountAfterSettlement,
             destinationCurrencyKey,
             amountReceived,
             destinationAddress
@@ -212,7 +212,7 @@ contract Exchanger is ExchangerBase {
             appendExchange(
                 destinationAddress,
                 sourceCurrencyKey,
-                sourceAmountAfterSettlement,
+                entry.sourceAmountAfterSettlement,
                 destinationCurrencyKey,
                 amountReceived,
                 entry.exchangeFeeRate
