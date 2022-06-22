@@ -890,8 +890,8 @@ contract('CollateralErc20', async accounts => {
 		});
 
 		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
-			const renAmount = new BN('46428571');
-			const internalAmount = new BN('464285714285714283');
+			const renAmount = new BN('19642857');
+			const internalAmount = new BN('196428571428571428');
 			let liquidationAmount;
 
 			beforeEach(async () => {

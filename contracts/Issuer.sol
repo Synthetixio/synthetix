@@ -702,7 +702,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
         // Get the penalty for the liquidation type
-        uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getLiquidationPenalty();
+        uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
 
         // Get the account's debt balance
         (uint debtBalance, , bool anyRateIsInvalid) =

@@ -71,6 +71,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			},
 		});
 
+		await new Promise(resolve => setTimeout(resolve, 10000));
+
 		if (result.data.result === 'Contract source code not verified') {
 			const { source } = deployment.targets[name];
 			console.log(
