@@ -214,6 +214,18 @@ module.exports = async ({
 		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
 	});
 
+	const collateralLiquidationPenalty = await getDeployParameter('COLLATERAL_LIQUIDATION_PENALTY');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'collateralLiquidationPenalty',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(collateralLiquidationPenalty),
+		write: 'setCollateralLiquidationPenalty',
+		writeArg: collateralLiquidationPenalty,
+		comment: 'Set the penalty amount a liquidator receives of collateral from a liquidated account',
+	});
+
 	if (SystemSettings.selfLiquidationPenalty) {
 		const selfLiquidationPenalty = await getDeployParameter('SELF_LIQUIDATION_PENALTY');
 		await runStep({

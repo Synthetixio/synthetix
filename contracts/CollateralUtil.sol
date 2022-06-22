@@ -71,7 +71,7 @@ contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings
         uint minCratio,
         bytes32 collateralKey
     ) external view returns (uint amount) {
-        uint liquidationPenalty = getLiquidationPenalty();
+        uint liquidationPenalty = getCollateralLiquidationPenalty();
         uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
         uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint unit = SafeDecimalMath.unit();
@@ -89,7 +89,7 @@ contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings
         uint amount,
         bytes32 collateralKey
     ) external view returns (uint collateral) {
-        uint liquidationPenalty = getLiquidationPenalty();
+        uint liquidationPenalty = getCollateralLiquidationPenalty();
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
         return collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
     }

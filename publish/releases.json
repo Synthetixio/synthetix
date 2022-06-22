@@ -675,6 +675,11 @@
 			"layer": "ovm",
 			"sources": ["CollateralShort", "Issuer"],
 			"released": "ovm"
+		},
+		{
+			"sip": 251,
+			"layer": "both",
+			"sources": ["CollateralUtil", "SystemSettings", "SystemSettingsLib"]
 		}
 	],
 	"releases": [
@@ -1252,6 +1257,23 @@
 			},
 			"sips": [243],
 			"released": true
+		},
+		{
+			"name": "Algol",
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251]
+		},
+		{
+			"name": "Algol (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251]
 		}
 	]
 }
