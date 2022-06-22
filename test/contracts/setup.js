@@ -20,6 +20,7 @@ const {
 		LIQUIDATION_RATIO,
 		LIQUIDATION_ESCROW_DURATION,
 		LIQUIDATION_PENALTY,
+		COLLATERAL_LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
 		LIQUIDATE_REWARD,
@@ -274,7 +275,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sUSD'),
-			toUnit(1.35),
+			toUnit(1.3),
 			toUnit(100),
 		],
 		CollateralEth: [
@@ -282,7 +283,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'),
-			toUnit(1.35),
+			toUnit(1.3),
 			toUnit(2),
 		],
 		CollateralShort: [
@@ -290,7 +291,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sUSD'),
-			toUnit(1.35),
+			toUnit(1.2),
 			toUnit(100),
 		],
 		WETH: [],
@@ -1276,7 +1277,12 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationEscrowDuration(LIQUIDATION_ESCROW_DURATION, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setCollateralLiquidationPenalty(COLLATERAL_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
 				from: owner,
 			}),
