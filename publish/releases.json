@@ -675,6 +675,11 @@
 			"layer": "ovm",
 			"sources": ["CollateralShort", "Issuer"],
 			"released": "ovm"
+		},
+		{
+			"sip": 252,
+			"layer": "both",
+			"sources": ["Issuer", "RewardEscrowV2", "Synthetix"]
 		}
 	],
 	"releases": [
