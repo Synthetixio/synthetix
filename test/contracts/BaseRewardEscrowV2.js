@@ -138,7 +138,6 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'importVestingEntries',
 				'createEscrowEntry',
 				'vest',
-				'vestFor',
 				'revokeFrom',
 			],
 		});
@@ -511,16 +510,6 @@ contract('BaseRewardEscrowV2', async accounts => {
 				await e.vest([entryID], { from: account1 });
 
 				// Check user has all their vested SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
-
-				// Check rewardEscrow does not have any SNX
-				assert.bnEqual(await mockedSynthetix.balanceOf(e.address), toUnit('0'));
-			});
-
-			assertWithFallback('should vest when called by another account', async (e, s) => {
-				await e.vestFor(account1, [entryID], { from: account2 });
-
-				// Check account1 has all their vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), escrowAmount);
 
 				// Check rewardEscrow does not have any SNX

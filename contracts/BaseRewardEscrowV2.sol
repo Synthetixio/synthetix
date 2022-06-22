@@ -221,11 +221,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
      * Allows users to vest their vesting entries based on msg.sender
      */
     function vest(uint256[] calldata entryIDs) external {
-        vestFor(msg.sender, entryIDs);
-    }
+        // only account can call vest
+        address account = msg.sender;
 
-    /// public method to vest any account's vesting entries
-    function vestFor(address account, uint256[] memory entryIDs) public {
         uint256 total;
         VestingEntries.VestingEntry memory entry;
         uint256 quantity;
