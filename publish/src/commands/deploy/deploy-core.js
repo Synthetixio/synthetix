@@ -124,6 +124,8 @@ module.exports = async ({
 	});
 
 	// SIP-252: frozen V2 escrow for migration to new escrow
+	// this is actually deployed in integration tests, but it shouldn't be deployed (should only be configured)
+	// for fork-tests & actual deployment (by not specifying RewardEscrowV2Frozen in config and releases)
 	const rewardEscrowV2Frozen = await deployer.deployContract({
 		name: 'RewardEscrowV2Frozen',
 		source: useOvm ? 'ImportableRewardEscrowV2Frozen' : 'RewardEscrowV2Frozen',
