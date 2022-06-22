@@ -4,14 +4,7 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const {
-	fastForward,
-	toUnit,
-	fromUnit,
-	toBN,
-	multiplyDecimal,
-	divideDecimal,
-} = require('../utils')();
+const { fastForward, toUnit, fromUnit, toBN } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 
@@ -22,10 +15,7 @@ const {
 	updateAggregatorRates,
 } = require('./helpers');
 
-const {
-	toBytes32,
-	defaults: { COLLATERAL_LIQUIDATION_PENALTY },
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
@@ -220,11 +210,7 @@ contract('CollateralShort', async accounts => {
 			assert.equal(await short.collateralKey(), sUSD);
 			assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
 			assert.equal(await short.synths(1), toBytes32('SynthsETH'));
-			assert.bnEqual(await short.minCratio(), toUnit(1.2));
-			assert.bnEqual(
-				await systemSettings.collateralLiquidationPenalty(),
-				COLLATERAL_LIQUIDATION_PENALTY
-			); // 10% penalty
+			assert.bnEqual(await short.minCratio(), toUnit(1.35));
 		});
 
 		it('should access its dependencies via the address resolver', async () => {
@@ -923,69 +909,26 @@ contract('CollateralShort', async accounts => {
 
 		describe('Liquidating shorts', async () => {
 			const oneETH = toUnit(1);
-			const initialLoan = oneETH;
-			const susdCollateral = toUnit('130');
-
-			// getExpectedValues takes into account penalty, rate and cratio
-			const getExpectedValues = async ({
-				initialCollateral,
-				initialLoan,
-				currentDebt,
-				cratio,
-				penalty,
-				exchangeRates,
-			}) => {
-				const one = toUnit(1);
-
-				// apply formula to get collateralUtil formula to get liquidationAmount
-				const dividend = currentDebt.sub(divideDecimal(initialCollateral, cratio));
-				const divisor = one.sub(divideDecimal(one.add(penalty), cratio));
-				const liquidatedAmountsUSD = divideDecimal(dividend, divisor);
-
-				const liquidatedLoan = await exchangeRates.effectiveValue(sUSD, liquidatedAmountsUSD, sETH);
-				const remainingLoan = initialLoan.sub(liquidatedLoan);
-				const liquidatedCollateral = multiplyDecimal(
-					await exchangeRates.effectiveValue(sETH, liquidatedLoan, sUSD),
-					one.add(penalty)
-				);
-				const remainingCollateral = initialCollateral.sub(liquidatedCollateral);
-
-				return { liquidatedCollateral, remainingCollateral, liquidatedLoan, remainingLoan };
-			};
+			const susdCollateral = toUnit('145');
+			const expectedCollateralRemaining = toUnit('54.000000000000002379');
+			const expectedCollateralLiquidated = toUnit('90.999999999999997621');
+			const expectedLiquidationAmount = toUnit('0.636363636363636347');
+			const expectedLoanRemaining = toUnit('0.363636363636363653');
 
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
 
-				tx = await short.open(susdCollateral, initialLoan, sETH, { from: account1 });
+				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
 				id = getid(tx);
 				await fastForwardAndUpdateRates(3600);
 			});
 
 			it('liquidation should be capped to only fix the c ratio', async () => {
-				const penalty = await systemSettings.collateralLiquidationPenalty();
-				const cratio = await short.minCratio();
-				const currentEthRate = toUnit(110);
-				const currentDebt = multiplyDecimal(initialLoan, currentEthRate);
-
-				await updateAggregatorRates(exchangeRates, [sETH], [currentEthRate]);
-
-				const {
-					liquidatedCollateral,
-					remainingCollateral,
-					liquidatedLoan,
-					remainingLoan,
-				} = await getExpectedValues({
-					initialCollateral: susdCollateral,
-					initialLoan,
-					currentDebt,
-					cratio,
-					penalty,
-					exchangeRates,
-				});
+				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(110)]);
 
 				// When the ETH price increases 10% to $110, the short
-				// which started at 130% should allow 0.18 ETH
+				// which started at 145% should allow 0.636 ETH
 				// to be liquidated to restore its c ratio and no more.
 
 				await issue(sETHSynth, oneETH, account2);
@@ -996,14 +939,14 @@ contract('CollateralShort', async accounts => {
 					account: account1,
 					id: id,
 					liquidator: account2,
-					amountLiquidated: liquidatedLoan,
-					collateralLiquidated: liquidatedCollateral,
+					amountLiquidated: expectedLiquidationAmount,
+					collateralLiquidated: expectedCollateralLiquidated,
 				});
 
 				loan = await short.loans(id);
 
-				assert.bnEqual(loan.amount, remainingLoan);
-				assert.bnEqual(loan.collateral, remainingCollateral);
+				assert.bnEqual(loan.amount, expectedLoanRemaining);
+				assert.bnEqual(loan.collateral, expectedCollateralRemaining);
 
 				const ratio = await short.collateralRatio(id);
 
