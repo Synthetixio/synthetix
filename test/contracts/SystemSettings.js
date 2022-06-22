@@ -78,7 +78,6 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationPenalty',
 				'setLiquidationRatio',
 				'setLiquidationEscrowDuration',
-				'setCollateralLiquidationPenalty',
 				'setSelfLiquidationPenalty',
 				'setLiquidateReward',
 				'setFlagReward',
@@ -641,44 +640,6 @@ contract('SystemSettings', async accounts => {
 		it('owner can set liquidationPenalty to 0%', async () => {
 			await systemSettings.setLiquidationPenalty(toUnit('0'), { from: owner });
 			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('0'));
-		});
-	});
-
-	describe('setCollateralLiquidationPenalty()', () => {
-		it('can only be invoked by owner', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setCollateralLiquidationPenalty,
-				args: [toUnit('.1')],
-				address: owner,
-				accounts,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('when setCollateralLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
-			// Have to hardcode here due to public const not available in Solidity V5
-			// https://ethereum.stackexchange.com/a/102633/33908
-			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
-			const newCollateralLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
-			await assert.revert(
-				systemSettings.setCollateralLiquidationPenalty(newCollateralLiquidationPenalty, {
-					from: owner,
-				}),
-				'penalty > MAX_LIQUIDATION_PENALTY'
-			);
-		});
-
-		it('owner can set CollateralLiquidationPenalty to 25%', async () => {
-			await systemSettings.setCollateralLiquidationPenalty(toUnit('.25'), { from: owner });
-			assert.bnEqual(await systemSettings.collateralLiquidationPenalty(), toUnit('.25'));
-		});
-		it('owner can set CollateralLiquidationPenalty to 1%', async () => {
-			await systemSettings.setCollateralLiquidationPenalty(toUnit('.01'), { from: owner });
-			assert.bnEqual(await systemSettings.collateralLiquidationPenalty(), toUnit('.01'));
-		});
-		it('owner can set CollateralLiquidationPenalty to 0%', async () => {
-			await systemSettings.setCollateralLiquidationPenalty(toUnit('0'), { from: owner });
-			assert.bnEqual(await systemSettings.collateralLiquidationPenalty(), toUnit('0'));
 		});
 	});
 

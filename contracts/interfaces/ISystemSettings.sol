@@ -21,8 +21,6 @@ interface ISystemSettings {
 
     function liquidationPenalty() external view returns (uint);
 
-    function collateralLiquidationPenalty() external view returns (uint);
-
     function selfLiquidationPenalty() external view returns (uint);
 
     function flagReward() external view returns (uint);

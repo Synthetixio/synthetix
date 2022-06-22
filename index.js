@@ -133,7 +133,6 @@ const defaults = {
 		.toString(), // 2/3 = 0.6666666667 // 150% ratio
 	LIQUIDATION_ESCROW_DURATION: (3600 * 24 * 365).toString(), // 1 year
 	LIQUIDATION_PENALTY: w3utils.toWei('0.3'), // 30% penalty
-	COLLATERAL_LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
 	SELF_LIQUIDATION_PENALTY: w3utils.toWei('0.2'), // 20% penalty
 	FLAG_REWARD: w3utils.toWei('10'), // 10 SNX
 	LIQUIDATE_REWARD: w3utils.toWei('20'), // 20 SNX
