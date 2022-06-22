@@ -73,15 +73,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-15 Liquidations
-    // penalty taken away from target of SNX liquidation (with 18 decimals). E.g. 30% is 0.3e18
+    // penalty taken away from target of Collateral liquidation (with 18 decimals). E.g. 10% is 0.1e18
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
     }
 
     // SIP-251 Differentiate Liquidation Penalties
-    // penalty taken away from target of Collateral loan liquidation (with 18 decimals). E.g. 10% is 0.1e18
-    function collateralLiquidationPenalty() external view returns (uint) {
-        return getCollateralLiquidationPenalty();
+    // penalty taken away from target of SNX liquidation (with 18 decimals). E.g. 30% is 0.3e18
+    function snxLiquidationPenalty() external view returns (uint) {
+        return getSnxLiquidationPenalty();
     }
 
     /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
@@ -328,9 +328,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit LiquidationEscrowDurationUpdated(duration);
     }
 
-    function setCollateralLiquidationPenalty(uint penalty) external onlyOwner {
-        flexibleStorage().setCollateralLiquidationPenalty(SETTING_COLLATERAL_LIQUIDATION_PENALTY, penalty);
-        emit CollateralLiquidationPenaltyUpdated(penalty);
+    function setSnxLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSnxLiquidationPenalty(SETTING_SNX_LIQUIDATION_PENALTY, penalty);
+        emit SnxLiquidationPenaltyUpdated(penalty);
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
@@ -541,7 +541,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationEscrowDurationUpdated(uint newDuration);
     event LiquidationPenaltyUpdated(uint newPenalty);
-    event CollateralLiquidationPenaltyUpdated(uint newPenalty);
+    event SnxLiquidationPenaltyUpdated(uint newPenalty);
     event SelfLiquidationPenaltyUpdated(uint newPenalty);
     event FlagRewardUpdated(uint newReward);
     event LiquidateRewardUpdated(uint newReward);

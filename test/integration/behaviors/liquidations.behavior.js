@@ -54,7 +54,7 @@ function itCanLiquidate({ ctx }) {
 		before('system settings are set', async () => {
 			await SystemSettings.setIssuanceRatio(ethers.utils.parseEther('0.25')); // 400% c-ratio
 			await SystemSettings.setLiquidationRatio(ethers.utils.parseEther('0.5')); // 200% c-ratio
-			await SystemSettings.setLiquidationPenalty(ethers.utils.parseEther('0.3')); // 30% penalty
+			await SystemSettings.setSnxLiquidationPenalty(ethers.utils.parseEther('0.3')); // 30% penalty
 			await SystemSettings.setSelfLiquidationPenalty(ethers.utils.parseEther('0.2')); // 20% penalty
 			await SystemSettings.setFlagReward(ethers.utils.parseEther('1')); // 1 SNX
 			await SystemSettings.setLiquidateReward(ethers.utils.parseEther('2')); // 2 SNX

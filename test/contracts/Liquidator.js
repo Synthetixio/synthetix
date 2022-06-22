@@ -568,7 +568,7 @@ contract('Liquidator', accounts => {
 				it('and liquidation Collateral Ratio is 150%', async () => {
 					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
 				});
-				it('and liquidation penalty is 30%', async () => {
+				it('and liquidation penalty is 10%', async () => {
 					assert.bnEqual(await liquidator.liquidationPenalty(), LIQUIDATION_PENALTY);
 				});
 				it('and liquidation delay is 3 days', async () => {
@@ -905,8 +905,8 @@ contract('Liquidator', accounts => {
 										penalty = toUnit('0.3');
 										await systemSettings.setLiquidationPenalty(penalty, { from: owner });
 
-										// And collateral liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on liquidations here.)
-										await systemSettings.setCollateralLiquidationPenalty(toUnit('0.2'), {
+										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on SNX liquidations.)
+										await systemSettings.setLiquidationPenalty(toUnit('0.2'), {
 											from: owner,
 										});
 

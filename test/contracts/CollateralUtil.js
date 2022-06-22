@@ -16,7 +16,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: { COLLATERAL_LIQUIDATION_PENALTY },
+	defaults: { SNX_LIQUIDATION_PENALTY },
 } = require('../..');
 
 contract('CollateralUtil', async accounts => {
@@ -201,9 +201,9 @@ contract('CollateralUtil', async accounts => {
 	});
 
 	describe('Default settings', () => {
-		it('collateral liquidation penalty', async () => {
-			const collateralLiquidationPenalty = await systemSettings.collateralLiquidationPenalty();
-			assert.bnEqual(collateralLiquidationPenalty, COLLATERAL_LIQUIDATION_PENALTY);
+		it('snx liquidation penalty', async () => {
+			const snxLiquidationPenalty = await systemSettings.snxLiquidationPenalty();
+			assert.bnEqual(snxLiquidationPenalty, SNX_LIQUIDATION_PENALTY);
 		});
 	});
 
@@ -259,15 +259,15 @@ contract('CollateralUtil', async accounts => {
 			assert.bnClose(amountToLiquidate, toUnit(5000), '10000');
 		});
 
-		it('ignores LiquidationPenalty when calculating the liquidation amount (uses CollateralLiquidationPenalty)', async () => {
+		it('ignores snxLiquidationPenalty when calculating the liquidation amount (uses liquidationPenalty)', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
 
-			await systemSettings.setLiquidationPenalty(toUnit('0.2'), { from: owner });
+			await systemSettings.setSnxLiquidationPenalty(toUnit('0.2'), { from: owner });
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
 
-			await systemSettings.setLiquidationPenalty(toUnit('.1'), { from: owner });
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.1'), { from: owner });
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');

@@ -211,19 +211,19 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(liquidationPenalty),
 		write: 'setLiquidationPenalty',
 		writeArg: liquidationPenalty,
-		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
+		comment: 'Set the penalty amount a liquidator receives from a liquidated Collateral loan',
 	});
 
-	const collateralLiquidationPenalty = await getDeployParameter('COLLATERAL_LIQUIDATION_PENALTY');
+	const snxLiquidationPenalty = await getDeployParameter('SNX_LIQUIDATION_PENALTY');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'collateralLiquidationPenalty',
 		readTarget: previousSystemSettings,
-		expected: allowZeroOrUpdateIfNonZero(collateralLiquidationPenalty),
-		write: 'setCollateralLiquidationPenalty',
-		writeArg: collateralLiquidationPenalty,
-		comment: 'Set the penalty amount a liquidator receives of collateral from a liquidated account',
+		expected: allowZeroOrUpdateIfNonZero(snxLiquidationPenalty),
+		write: 'setSnxLiquidationPenalty',
+		writeArg: snxLiquidationPenalty,
+		comment: 'Set the penalty amount of SNX from a liquidated account',
 	});
 
 	if (SystemSettings.selfLiquidationPenalty) {
