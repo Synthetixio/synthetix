@@ -421,6 +421,14 @@ function itCanLiquidate({ ctx }) {
 				await skipLiquidationDelay({ ctx });
 			});
 
+			it('user8 cannot self liquidate', async () => {
+				// because collateral is in escrow
+				await assert.revert(
+					Synthetix.connect(user8.address).liquidateSelf(),
+					'Not open for liquidation'
+				);
+			});
+
 			before('liquidatorUser calls liquidateDelinquentAccount', async () => {
 				beforeSnxBalance = await Synthetix.balanceOf(user8.address);
 				beforeEscrowBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user8.address);

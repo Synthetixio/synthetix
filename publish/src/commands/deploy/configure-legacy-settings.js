@@ -35,6 +35,7 @@ module.exports = async ({
 		SystemStatus,
 		TokenStateSynthetix,
 		RewardEscrowV2Storage,
+		RewardEscrowV2Frozen,
 	} = deployer.deployedContracts;
 
 	// now configure everything
@@ -243,6 +244,7 @@ module.exports = async ({
 
 	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
 	if (RewardEscrowV2 && RewardsDistribution) {
+		// SIP-252 rewards escrow migration
 		await runStep({
 			contract: 'RewardEscrowV2Storage',
 			target: RewardEscrowV2Storage,
@@ -251,6 +253,23 @@ module.exports = async ({
 			write: 'setAssociatedContract',
 			writeArg: addressOf(RewardEscrowV2),
 			comment: 'Ensure that RewardEscrowV2 contract is allowed to write to RewardEscrowV2Storage',
+		});
+
+		await runStep({
+			contract: 'RewardEscrowV2Frozen',
+			target: RewardEscrowV2Frozen,
+			read: 'accountMergingDuration',
+			expected: input => input === 0,
+			write: 'setAccountMergingDuration',
+			writeArg: 0,
+			comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
+		});
+
+		await runStep({
+			contract: 'Synthetix',
+			target: Synthetix,
+			write: 'migrateEscrowContractBalance',
+			comment: 'Ensure that old escrow SNX balance is migrated to new contract',
 		});
 
 		await runStep({
