@@ -153,7 +153,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /// @notice Checks if an account has enough SNX balance to be considered open for forced liquidation.
     function _hasEnoughSNX(address account) internal view returns (bool) {
-        uint balance = IERC20(address(synthetix())).balanceOf(account);
+        uint balance = issuer().collateral(account);
         return balance > (getLiquidateReward().add(getFlagReward()));
     }
 

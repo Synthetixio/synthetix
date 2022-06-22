@@ -679,7 +679,7 @@
 		{
 			"sip": 252,
 			"layer": "both",
-			"sources": ["Issuer", "RewardEscrowV2", "Synthetix"]
+			"sources": ["Issuer", "RewardEscrowV2", "Synthetix", "Liquidator"]
 		}
 	],
 	"releases": [
