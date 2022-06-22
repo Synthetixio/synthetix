@@ -905,6 +905,11 @@ contract('Liquidator', accounts => {
 										penalty = toUnit('0.3');
 										await systemSettings.setLiquidationPenalty(penalty, { from: owner });
 
+										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on SNX liquidations.)
+										await systemSettings.setLiquidationPenalty(toUnit('0.2'), {
+											from: owner,
+										});
+
 										// Record Alices state
 										aliceCollateralBefore = await synthetix.collateral(alice);
 										aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
