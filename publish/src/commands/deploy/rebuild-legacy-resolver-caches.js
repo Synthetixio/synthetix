@@ -72,6 +72,9 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 
 				// Synths deprecated during Denebola (v2.73)
 				SynthsDEFI: '0x918b1dbf0917FdD74D03fB9434915E2ECEc89286',
+
+				// SIP-252
+				RewardEscrowV2Frozen: '0xDA4eF8520b1A57D7d63f1E249606D1A459698876',
 			};
 		} else if (useOvm) {
 			// Get legacy contracts for L2.
@@ -79,6 +82,9 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 				// Sargas v2.50 CollateralShort contract, replaced in Kochab v2.71.
 				// This still holds some funds, so ensure its cache is up to date.
 				CollateralShortLegacy: '0xEbCe9728E2fDdC26C9f4B00df5180BdC5e184953',
+
+				// SIP-252
+				RewardEscrowV2Frozen: '0x47eE58801C1AC44e54FF2651aE50525c5cfc66d0',
 			};
 		}
 

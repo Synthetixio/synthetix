@@ -7,7 +7,6 @@
 	"Proxy",
 	"ProxyERC20",
 	"RewardEscrow$",
-	"RewardEscrowV2Storage",
 	"RewardEscrowV2Frozen",
 	"RewardsDistribution",
 	"SafeDecimalMath",
