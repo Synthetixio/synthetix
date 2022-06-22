@@ -14,7 +14,10 @@ const {
 	updateAggregatorRates,
 } = require('./helpers');
 
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	defaults: { SNX_LIQUIDATION_PENALTY },
+} = require('../..');
 
 contract('CollateralUtil', async accounts => {
 	const sUSD = toBytes32('sUSD');
@@ -45,7 +48,8 @@ contract('CollateralUtil', async accounts => {
 		manager,
 		issuer,
 		util,
-		debtCache;
+		debtCache,
+		systemSettings;
 
 	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -97,6 +101,7 @@ contract('CollateralUtil', async accounts => {
 			DebtCache: debtCache,
 			CollateralManager: manager,
 			CollateralManagerState: managerState,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -112,6 +117,7 @@ contract('CollateralUtil', async accounts => {
 				'CollateralUtil',
 				'CollateralManager',
 				'CollateralManagerState',
+				'SystemSettings',
 			],
 		}));
 
@@ -194,6 +200,13 @@ contract('CollateralUtil', async accounts => {
 		});
 	});
 
+	describe('Default settings', () => {
+		it('snx liquidation penalty', async () => {
+			const snxLiquidationPenalty = await systemSettings.snxLiquidationPenalty();
+			assert.bnEqual(snxLiquidationPenalty, SNX_LIQUIDATION_PENALTY);
+		});
+	});
+
 	describe('liquidation amount test', async () => {
 		let amountToLiquidate;
 
@@ -228,7 +241,7 @@ contract('CollateralUtil', async accounts => {
 
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
-			assert.bnClose(amountToLiquidate, toUnit(2500), '100000');
+			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
 		});
 
 		it('when we start at 200%, a price shock of 40% in the collateral requires 75% of the loan to be liquidated', async () => {
@@ -236,14 +249,28 @@ contract('CollateralUtil', async accounts => {
 
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
-			assert.bnClose(amountToLiquidate, toUnit(7500), '100000');
+			assert.bnClose(amountToLiquidate, toUnit(3750), '10000');
 		});
 
 		it('when we start at 200%, a price shock of 45% in the collateral requires 100% of the loan to be liquidated', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(5500)]);
 			amountToLiquidate = await cerc20.liquidationAmount(id);
 
-			assert.bnClose(amountToLiquidate, toUnit(10000), '100000');
+			assert.bnClose(amountToLiquidate, toUnit(5000), '10000');
+		});
+
+		it('ignores snxLiquidationPenalty when calculating the liquidation amount (uses liquidationPenalty)', async () => {
+			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
+
+			await systemSettings.setSnxLiquidationPenalty(toUnit('0.2'), { from: owner });
+			amountToLiquidate = await cerc20.liquidationAmount(id);
+
+			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
+
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.1'), { from: owner });
+			amountToLiquidate = await cerc20.liquidationAmount(id);
+
+			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
 		});
 	});
 
@@ -255,38 +282,38 @@ contract('CollateralUtil', async accounts => {
 			collateralKey = await cerc20.collateralKey();
 		});
 
-		it('when BTC is @ $10000 and we are liquidating 1000 sUSD, then redeem 0.13 BTC', async () => {
+		it('when BTC is @ $10000 and we are liquidating 1000 sUSD, then redeem 0.11 BTC', async () => {
 			collateralRedeemed = await util.collateralRedeemed(sUSD, oneThousandsUSD, collateralKey);
 
-			assert.bnEqual(collateralRedeemed, toUnit(0.13));
+			assert.bnEqual(collateralRedeemed, toUnit(0.11));
 		});
 
-		it('when BTC is @ $20000 and we are liquidating 1000 sUSD, then redeem 0.065 BTC', async () => {
+		it('when BTC is @ $20000 and we are liquidating 1000 sUSD, then redeem 0.055 BTC', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(20000)]);
 
 			collateralRedeemed = await util.collateralRedeemed(sUSD, oneThousandsUSD, collateralKey);
 
-			assert.bnEqual(collateralRedeemed, toUnit(0.065));
+			assert.bnEqual(collateralRedeemed, toUnit(0.055));
 		});
 
-		it('when BTC is @ $7000 and we are liquidating 2500 sUSD, then redeem 0.46428 BTC', async () => {
+		it('when BTC is @ $7000 and we are liquidating 2500 sUSD, then redeem 0.36666 BTC', async () => {
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
 
 			collateralRedeemed = await util.collateralRedeemed(sUSD, toUnit(2500), collateralKey);
 
-			assert.bnClose(collateralRedeemed, toUnit(0.464285714285714285), '100');
+			assert.bnClose(collateralRedeemed, toUnit(0.392857142857142857), '100');
 		});
 
-		it('regardless of BTC price, we liquidate 1.3 * amount when doing sETH', async () => {
+		it('regardless of BTC price, we liquidate 1.1 * amount when doing sETH', async () => {
 			collateralRedeemed = await util.collateralRedeemed(sBTC, toUnit(1), collateralKey);
 
-			assert.bnEqual(collateralRedeemed, toUnit(1.3));
+			assert.bnEqual(collateralRedeemed, toUnit(1.1));
 
 			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(1000)]);
 
 			collateralRedeemed = await util.collateralRedeemed(sBTC, toUnit(1), collateralKey);
 
-			assert.bnEqual(collateralRedeemed, toUnit(1.3));
+			assert.bnEqual(collateralRedeemed, toUnit(1.1));
 		});
 	});
 });
