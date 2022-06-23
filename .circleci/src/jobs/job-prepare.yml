@@ -23,7 +23,9 @@ steps:
       key: dependencies-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
       paths:
         - .npm-cache
+        - node_modules
   - persist_to_workspace:
       root: .
       paths:
         - .npm-cache
+        - node_modules
