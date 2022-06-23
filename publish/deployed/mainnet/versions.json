@@ -4334,13 +4334,15 @@
 			},
 			"SystemSettings": {
 				"address": "0xdD3c1c64402A679e8D709FcCf606BD77eE12b567",
-				"status": "current",
-				"keccak256": "0xa15c48a5fcce352747f56841f0bd92a1c8ee2e0dcac77c8fb78ce2f2769e48cb"
+				"status": "replaced",
+				"keccak256": "0xa15c48a5fcce352747f56841f0bd92a1c8ee2e0dcac77c8fb78ce2f2769e48cb",
+				"replaced_in": "v2.74.1"
 			},
 			"SystemSettingsLib": {
 				"address": "0x307bDCE0A68C612a17BaE8d929f36402d7c94CFA",
-				"status": "current",
-				"keccak256": "0x1265bea471bda199f9b45756be028eaf5dda97e0fb7864b95e7020627827784b"
+				"status": "replaced",
+				"keccak256": "0x1265bea471bda199f9b45756be028eaf5dda97e0fb7864b95e7020627827784b",
+				"replaced_in": "v2.74.1"
 			},
 			"Liquidator": {
 				"address": "0x0e5fe1b05612581576e9A3dB048416d0B1E3C425",
@@ -4435,8 +4437,9 @@
 			},
 			"Issuer": {
 				"address": "0xE5CC99EFA57943F4EA0cE6bed265318697748649",
-				"status": "current",
-				"keccak256": "0x34e363bf253f754b3a5cd444df9ce0aa3d4079419d362c6bbc281d1df8128923"
+				"status": "replaced",
+				"keccak256": "0x34e363bf253f754b3a5cd444df9ce0aa3d4079419d362c6bbc281d1df8128923",
+				"replaced_in": "v2.74.1"
 			},
 			"SynthsADA": {
 				"address": "0x91b82d62Ff322b8e02b86f33E9A99a813437830d",
@@ -4477,6 +4480,31 @@
 				"address": "0x646F23085281Dbd006FBFD211FD38d0743884864",
 				"status": "current",
 				"keccak256": "0x5b5d345731005a6932760cc76f2a390544cae09c21f7141f4ebeca21f9248692"
+			}
+		}
+	},
+	"v2.74.1": {
+		"tag": "v2.74.1",
+		"fulltag": "v2.74.1",
+		"release": "Algol",
+		"network": "mainnet",
+		"date": "2022-06-23T16:57:09-04:00",
+		"commit": "3a4935c088a516b5efa0b19b118892058619534c",
+		"contracts": {
+			"Issuer": {
+				"address": "0xc9380E4A1570cce7b99eeD107aC42C754c4CE3Bf",
+				"status": "current",
+				"keccak256": "0x9820f36cf8ee40e9cfb286cae173e716e009ebe5594e921afac85a40f103c71b"
+			},
+			"SystemSettings": {
+				"address": "0x5ad055A1F8C936FB0deb7024f1539Bb3eAA8dc3E",
+				"status": "current",
+				"keccak256": "0xc78f371d395251ef1ee8c1305b485d38f084d31530560e802f5fc5147fe83451"
+			},
+			"SystemSettingsLib": {
+				"address": "0x4A9a8B1B596Fe1096cD75a588fD559968ca64259",
+				"status": "current",
+				"keccak256": "0xc4e328478f9c625bb34c4f019040afd62b9dfb8f03882727e39888d3173f09a9"
 			}
 		}
 	}

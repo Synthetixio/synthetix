@@ -679,7 +679,8 @@
 		{
 			"sip": 251,
 			"layer": "both",
-			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"]
+			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -1264,7 +1265,8 @@
 				"major": 2,
 				"minor": 74
 			},
-			"sips": [251]
+			"sips": [251],
+			"released": true
 		},
 		{
 			"name": "Algol (Optimism)",
@@ -1273,7 +1275,8 @@
 				"major": 2,
 				"minor": 74
 			},
-			"sips": [251]
+			"sips": [251],
+			"released": true
 		}
 	]
 }
