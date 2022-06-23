@@ -48,3 +48,5 @@ optimism
 
 # sarif files
 slither.sarif
+
+.npm-cache
