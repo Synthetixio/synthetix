@@ -428,8 +428,8 @@
 			"address": "0xc9380E4A1570cce7b99eeD107aC42C754c4CE3Bf",
 			"source": "Issuer",
 			"link": "https://etherscan.io/address/0xc9380E4A1570cce7b99eeD107aC42C754c4CE3Bf",
-			"timestamp": "2022-06-23T17:15:46.319Z",
-			"txn": "",
+			"timestamp": "2022-06-23T17:15:38.000Z",
+			"txn": "https://etherscan.io/tx/0x82370c7cb2165d7efb2323951b3a1b7c9f156c75c26e44294409ef4a5de1e0bd",
 			"network": "mainnet"
 		},
 		"IssuanceEternalStorage": {
@@ -590,8 +590,8 @@
 			"address": "0x5ad055A1F8C936FB0deb7024f1539Bb3eAA8dc3E",
 			"source": "SystemSettings",
 			"link": "https://etherscan.io/address/0x5ad055A1F8C936FB0deb7024f1539Bb3eAA8dc3E",
-			"timestamp": "2022-06-23T17:12:50.967Z",
-			"txn": "",
+			"timestamp": "2022-06-23T17:12:43.000Z",
+			"txn": "https://etherscan.io/tx/0xb6156f48700dab9b6cee99cd7f00d73a6cfc153f4e90d797885366c65bbae8f2",
 			"network": "mainnet"
 		},
 		"TradingRewards": {
@@ -977,8 +977,8 @@
 			"address": "0x4A9a8B1B596Fe1096cD75a588fD559968ca64259",
 			"source": "SystemSettingsLib",
 			"link": "https://etherscan.io/address/0x4A9a8B1B596Fe1096cD75a588fD559968ca64259",
-			"timestamp": "2022-06-23T17:12:32.673Z",
-			"txn": "",
+			"timestamp": "2022-06-23T17:12:18.000Z",
+			"txn": "https://etherscan.io/tx/0x71c09dc5f71d998012dedfff8f1d1f034dbc41badea7ae3ff9c3504b8f4ef354",
 			"network": "mainnet"
 		},
 		"SynthetixDebtShare": {
