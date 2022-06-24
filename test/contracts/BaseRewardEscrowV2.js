@@ -47,7 +47,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// need to create a storage contract for full testing
 			const newRewardEscrowV2Storage = await artifacts
 				.require('RewardEscrowV2Storage')
-				.new(owner, resolver.address, baseRewardEscrowV2.address);
+				.new(owner, resolver.address);
 
 			// initialise new one falling back to this one
 			const newRewardEscrowV2 = await artifacts
@@ -56,6 +56,10 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 			// set state write access for storage contract
 			await newRewardEscrowV2Storage.setAssociatedContract(newRewardEscrowV2.address, {
+				from: owner,
+			});
+			// set the fallback to previous reward escrow
+			await newRewardEscrowV2Storage.setFallbackRewardEscrow(baseRewardEscrowV2.address, {
 				from: owner,
 			});
 
@@ -104,7 +108,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		// initialise storage contract
 		rewardEscrowV2Storage = await artifacts
 			.require('RewardEscrowV2Storage')
-			.new(owner, ZERO_ADDRESS, baseRewardEscrowV2Frozen.address);
+			.new(owner, ZERO_ADDRESS);
 		// add the real contract to mocks so that the mock resolver returns its address
 		// when BaseRewardEscrowV2 is constructed
 		mocks['RewardEscrowV2Storage'] = rewardEscrowV2Storage;
@@ -114,6 +118,10 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 		// set state write access for storage contract
 		await rewardEscrowV2Storage.setAssociatedContract(baseRewardEscrowV2.address, {
+			from: owner,
+		});
+		// set the fallback to previous reward escrow
+		await rewardEscrowV2Storage.setFallbackRewardEscrow(baseRewardEscrowV2Frozen.address, {
 			from: owner,
 		});
 		// update the resolver for baseRewardEscrowV2

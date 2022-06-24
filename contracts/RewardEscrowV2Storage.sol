@@ -64,15 +64,16 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== CONSTRUCTOR ========== */
 
-    /// this assumes that IRewardEscrowV2Frozen is in fact Frozen both in code and in data(!!) with all
-    /// mutative methods reverting (e.g. due to blocked transfers)
-    constructor(
-        address _owner,
-        address _associatedContract,
-        IRewardEscrowV2Frozen _previousEscrow
-    ) public Owned(_owner) State(_associatedContract) {
-        fallbackRewardEscrow = _previousEscrow;
-        nextEntryId = _previousEscrow.nextEntryId();
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
+
+    /// this can happen only once and assumes that IRewardEscrowV2Frozen is in fact Frozen both in code and in
+    /// data(!!) with most mutative methods reverting (e.g. due to blocked transfers)
+    function setFallbackRewardEscrow(IRewardEscrowV2Frozen previousEscrow) external onlyOwner {
+        require(address(fallbackRewardEscrow) == address(0), "already set");
+        require(address(previousEscrow) != address(0), "cannot be zero address");
+
+        fallbackRewardEscrow = previousEscrow;
+        nextEntryId = previousEscrow.nextEntryId();
         fallbackId = nextEntryId;
 
         // carry over previous balance tracking
@@ -81,7 +82,12 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== VIEWS ========== */
 
-    function vestingSchedules(address account, uint entryId) public view returns (VestingEntries.VestingEntry memory entry) {
+    function vestingSchedules(address account, uint entryId)
+        public
+        view
+        initialized
+        returns (VestingEntries.VestingEntry memory entry)
+    {
         // read stored entry
         StorageEntry memory stored = _vestingSchedules[account][entryId];
         // convert to previous data size format
@@ -94,7 +100,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return entry;
     }
 
-    function accountVestingEntryIDs(address account, uint index) public view returns (uint) {
+    function accountVestingEntryIDs(address account, uint index) public view initialized returns (uint) {
         // cache is used here to prevent external calls during setZerosUntilTarget loop
         uint fallbackCount = _fallbackCounts[account];
         if (fallbackCount == 0) {
@@ -114,7 +120,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return _totalEscrowedBalance;
     }
 
-    function totalEscrowedAccountBalance(address account) public view returns (uint) {
+    function totalEscrowedAccountBalance(address account) public view initialized returns (uint) {
         // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
         int v = _totalEscrowedAccountBalance[account];
 
@@ -126,7 +132,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function totalVestedAccountBalance(address account) public view returns (uint) {
+    function totalVestedAccountBalance(address account) public view initialized returns (uint) {
         // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
         int v = _totalVestedAccountBalance[account];
 
@@ -139,7 +145,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     /// The number of vesting dates in an account's schedule.
-    function numVestingEntries(address account) public view returns (uint) {
+    function numVestingEntries(address account) public view initialized returns (uint) {
         /// assumes no enties can be written in frozen contract
         return fallbackRewardEscrow.numVestingEntries(account) + _accountVestingEntryIds[account].length;
     }
@@ -147,7 +153,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// zeros out a single entry
-    function setEntryZeroAmount(address account, uint entryId) public onlyAssociatedContract {
+    function setEntryZeroAmount(address account, uint entryId) public initialized onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
@@ -167,6 +173,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint targetAmount
     )
         external
+        initialized
         onlyAssociatedContract
         returns (
             uint total,
@@ -205,7 +212,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return (total, i, entry.endTime);
     }
 
-    function updateEscrowAccountBalance(address account, int delta) external onlyAssociatedContract {
+    function updateEscrowAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
         require(total >= 0, "balance must be positive");
@@ -221,7 +228,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         updateTotalEscrowedBalance(delta);
     }
 
-    function updateVestedAccountBalance(address account, int delta) external onlyAssociatedContract {
+    function updateVestedAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalVestedAccountBalance(account)).add(delta);
         require(total >= 0, "balance must be positive");
@@ -234,7 +241,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function updateTotalEscrowedBalance(int delta) public onlyAssociatedContract {
+    function updateTotalEscrowedBalance(int delta) public initialized onlyAssociatedContract {
         int total = int(totalEscrowedBalance()).add(delta);
         require(total >= 0, "balance must be positive");
         _totalEscrowedBalance = uint(total);
@@ -243,6 +250,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /// append entry for an account
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry)
         external
+        initialized
         onlyAssociatedContract
         returns (uint)
     {
@@ -274,5 +282,12 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
             // store to reduce calls in accountVestingEntryIDs
             _fallbackCounts[account] = fallbackCount;
         }
+    }
+
+    /* ========== Modifier ========== */
+
+    modifier initialized() {
+        require(address(fallbackRewardEscrow) != address(0), "not initialized");
+        _;
     }
 }

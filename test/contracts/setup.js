@@ -236,11 +236,7 @@ const setupContract = async ({
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
 		BaseRewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
 		RewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
-		RewardEscrowV2Storage: [
-			owner,
-			tryGetAddressOf('RewardEscrowV2'),
-			tryGetAddressOf('BaseRewardEscrowV2Frozen'),
-		],
+		RewardEscrowV2Storage: [owner, ZERO_ADDRESS],
 		BaseRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		RewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		ImportableRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
@@ -571,12 +567,20 @@ const setupContract = async ({
 		async RewardEscrowV2() {
 			await Promise.all([
 				cache['RewardEscrowV2Storage'].setAssociatedContract(instance.address, { from: owner }),
+				cache['RewardEscrowV2Storage'].setFallbackRewardEscrow(
+					cache['RewardEscrowV2Frozen'].address,
+					{ from: owner }
+				),
 			]);
 		},
 
 		async ImportableRewardEscrowV2() {
 			await Promise.all([
 				cache['RewardEscrowV2Storage'].setAssociatedContract(instance.address, { from: owner }),
+				cache['RewardEscrowV2Storage'].setFallbackRewardEscrow(
+					cache['RewardEscrowV2Frozen'].address,
+					{ from: owner }
+				),
 			]);
 		},
 
@@ -778,7 +782,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'RewardEscrowV2Storage',
-			deps: ['BaseRewardEscrowV2Frozen'],
+			deps: ['RewardEscrowV2Frozen'],
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
 		},
 		{
