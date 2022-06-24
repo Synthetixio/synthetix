@@ -178,10 +178,24 @@ contract('RewardEscrowV2Storage', async accounts => {
 			await assert.revert(instance.addVestingEntry(user1, [0, 0], { from: owner }), revertMsg);
 		});
 
+		it('setFallbackRewardEscrow revert as expected', async () => {
+			// cannot be zero address
+			await assert.revert(instance.setFallbackRewardEscrow(ZERO_ADDRESS, { from: owner }), 'zero');
+			// only owner
+			await assert.revert(instance.setFallbackRewardEscrow(ZERO_ADDRESS, { from: user1 }), 'owner');
+		});
+
 		describe('when initialized with previous fallback', () => {
 			beforeEach(async () => {
 				// initialize fallback contract
 				await instance.setFallbackRewardEscrow(frozenRewardEscrowV2.address, { from: owner });
+			});
+
+			it('can only setFallbackRewardEscrow once', async () => {
+				await assert.revert(
+					instance.setFallbackRewardEscrow(user1, { from: owner }),
+					'already set'
+				);
 			});
 
 			it('all revert for anyone that is not storage owner', async () => {
