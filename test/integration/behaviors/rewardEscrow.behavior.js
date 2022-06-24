@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
-
+const { getCompiledArtifacts } = require('../../utils')();
 const { toBytes32 } = require('../../..');
 
 function itDoesRewardEscrow({ ctx, contract }) {
@@ -14,7 +14,7 @@ function itDoesRewardEscrow({ ctx, contract }) {
 		let fakeEscrowEntryId;
 
 		before('target contracts and users and setup', async () => {
-			({ AddressResolver, RewardEscrowV2Frozen, RewardEscrowV2, Synthetix } = ctx.contracts);
+			({ AddressResolver, RewardEscrowV2, Synthetix } = ctx.contracts);
 
 			({ owner, someUser, otherUser } = ctx.users);
 
@@ -22,6 +22,19 @@ function itDoesRewardEscrow({ ctx, contract }) {
 
 			// create some fake stuff before the migration is completed
 			// fake escrow entry
+
+			// get the address that's configured in the resolver
+			const initialFrozenAddress = await AddressResolver.requireAndGetAddress(
+				toBytes32('RewardEscrowV2Frozen'),
+				'missing RewardEscrowV2Frozen address'
+			);
+
+			// create an instance of frozen interface on the address
+			RewardEscrowV2Frozen = new ethers.Contract(
+				initialFrozenAddress,
+				getCompiledArtifacts('RewardEscrowV2Frozen').abi,
+				ctx.provider
+			);
 
 			await AddressResolver.connect(owner).importAddresses(
 				[toBytes32('RewardEscrowV2')],
