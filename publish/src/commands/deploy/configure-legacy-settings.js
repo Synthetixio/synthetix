@@ -244,6 +244,10 @@ module.exports = async ({
 
 	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
 	if (RewardEscrowV2 && RewardsDistribution) {
+		// get either previous address, or newly deployed address
+		const rewardEscrowV2Frozen =
+			RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
+
 		// SIP-252 rewards escrow migration
 		await runStep({
 			contract: 'RewardEscrowV2Storage',
@@ -256,8 +260,19 @@ module.exports = async ({
 		});
 
 		await runStep({
+			contract: 'RewardEscrowV2Storage',
+			target: RewardEscrowV2Storage,
+			read: 'fallbackRewardEscrow',
+			expected: input => input === addressOf(rewardEscrowV2Frozen),
+			write: 'setFallbackRewardEscrow',
+			writeArg: addressOf(rewardEscrowV2Frozen),
+			comment:
+				'Ensure that RewardEscrowV2Storage contract is initialized with address of RewardEscrowV2Frozen',
+		});
+
+		await runStep({
 			contract: 'RewardEscrowV2Frozen',
-			target: RewardEscrowV2Frozen,
+			target: rewardEscrowV2Frozen,
 			read: 'accountMergingDuration',
 			expected: input => input === 0,
 			write: 'setAccountMergingDuration',

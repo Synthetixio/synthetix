@@ -126,22 +126,17 @@ module.exports = async ({
 	// SIP-252: frozen V2 escrow for migration to new escrow
 	// this is actually deployed in integration tests, but it shouldn't be deployed (should only be configured)
 	// for fork-tests & actual deployment (by not specifying RewardEscrowV2Frozen in config and releases)
-	const rewardEscrowV2Frozen = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'RewardEscrowV2Frozen',
 		source: useOvm ? 'ImportableRewardEscrowV2Frozen' : 'RewardEscrowV2Frozen',
 		args: [account, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
 
-	// get either previous address, or newly deployed address
-	const rewardEscrowV2FrozenAddress =
-		addressOf(rewardEscrowV2Frozen) ||
-		addressOf(await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
-
 	// SIP-252: storage contract for RewardEscrowV2
 	await deployer.deployContract({
 		name: 'RewardEscrowV2Storage',
-		args: [account, ZERO_ADDRESS, rewardEscrowV2FrozenAddress],
+		args: [account, ZERO_ADDRESS],
 		deps: ['AddressResolver'],
 	});
 
