@@ -42,7 +42,7 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
-		LIQUIDATION_PENALTY,
+		SNX_LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
@@ -286,8 +286,8 @@ describe('publish scripts', () => {
 					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
 					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await Liquidator.liquidationPenalty()).toString(),
-						LIQUIDATION_PENALTY
+						(await SystemSettings.snxLiquidationPenalty()).toString(),
+						SNX_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
@@ -325,6 +325,7 @@ describe('publish scripts', () => {
 					let newLiquidationsDelay;
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
+					let newSnxLiquidationsPenalty;
 					let newRateStalePeriod;
 					let newAtomicTwapWindow;
 					let newRateForsUSD;
@@ -341,6 +342,7 @@ describe('publish scripts', () => {
 						newLiquidationsDelay = newFeePeriodDuration;
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
+						newSnxLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
 						newAtomicTwapWindow = '1800';
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
@@ -377,6 +379,12 @@ describe('publish scripts', () => {
 						await tx.wait();
 
 						tx = await SystemSettings.setLiquidationRatio(newLiquidationsRatio, overrides);
+						await tx.wait();
+
+						tx = await SystemSettings.setSnxLiquidationPenalty(
+							newSnxLiquidationsPenalty,
+							overrides
+						);
 						await tx.wait();
 
 						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
@@ -451,8 +459,8 @@ describe('publish scripts', () => {
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await Liquidator.liquidationPenalty()).toString(),
-								newLiquidationsPenalty
+								(await SystemSettings.snxLiquidationPenalty()).toString(),
+								newSnxLiquidationsPenalty
 							);
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),

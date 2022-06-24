@@ -1783,8 +1783,9 @@
 		"contracts": {
 			"SystemSettings": {
 				"address": "0x8567bBd72aE1639b8EA378eF108a9614e6Ce8081",
-				"status": "current",
-				"keccak256": "0xa15c48a5fcce352747f56841f0bd92a1c8ee2e0dcac77c8fb78ce2f2769e48cb"
+				"status": "replaced",
+				"keccak256": "0xa15c48a5fcce352747f56841f0bd92a1c8ee2e0dcac77c8fb78ce2f2769e48cb",
+				"replaced_in": "v2.74.0-alpha"
 			},
 			"Synthetix": {
 				"address": "0x01eBf544794F7f38d1e937BeA1c15F952ced7c62",
@@ -1805,8 +1806,9 @@
 			},
 			"SystemSettingsLib": {
 				"address": "0x6BB4D7603eAE01c5537D46084C675ae19740f41c",
-				"status": "current",
-				"keccak256": "0x1265bea471bda199f9b45756be028eaf5dda97e0fb7864b95e7020627827784b"
+				"status": "replaced",
+				"keccak256": "0x1265bea471bda199f9b45756be028eaf5dda97e0fb7864b95e7020627827784b",
+				"replaced_in": "v2.74.0-alpha"
 			},
 			"Liquidator": {
 				"address": "0xE50124A0C087EC06a273D0B9886902273B02d4D8",
@@ -1872,8 +1874,9 @@
 			},
 			"Issuer": {
 				"address": "0x1433512539954651cB95A73D4C551943fB723b48",
-				"status": "current",
-				"keccak256": "0x34e363bf253f754b3a5cd444df9ce0aa3d4079419d362c6bbc281d1df8128923"
+				"status": "replaced",
+				"keccak256": "0x34e363bf253f754b3a5cd444df9ce0aa3d4079419d362c6bbc281d1df8128923",
+				"replaced_in": "v2.74.0-alpha"
 			},
 			"SynthsUSD": {
 				"address": "0xbdb2Bf553b5f9Ca3327809F3748b86C106719C95",
@@ -1939,6 +1942,31 @@
 				"address": "0x92d4e5CAfbf3219E81f1c904068Fe7CD2d440F57",
 				"status": "current",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			}
+		}
+	},
+	"v2.74.0-alpha": {
+		"tag": "v2.74.0-alpha",
+		"fulltag": "v2.74.0-alpha",
+		"release": "Algol",
+		"network": "kovan",
+		"date": "2022-06-22T18:06:28-04:00",
+		"commit": "d4eaa4f3c2490b2c6c94f79a6b44986ba911bd7d",
+		"contracts": {
+			"SystemSettings": {
+				"address": "0x56D751dbE802fb91C3e6389c0e442B4cC8cAb78C",
+				"status": "current",
+				"keccak256": "0xd8f9900f60805d827d743696ead877969025716675e6561262db2156f0a9de37"
+			},
+			"Issuer": {
+				"address": "0xA727916250F1d0e1190b9CAdfaD75aCBbFC8B8ce",
+				"status": "current",
+				"keccak256": "0x9820f36cf8ee40e9cfb286cae173e716e009ebe5594e921afac85a40f103c71b"
+			},
+			"SystemSettingsLib": {
+				"address": "0x6E5D8e1efe75eD37beD0cEcEfe2b11f0894FeE9C",
+				"status": "current",
+				"keccak256": "0xc4e328478f9c625bb34c4f019040afd62b9dfb8f03882727e39888d3173f09a9"
 			}
 		}
 	}

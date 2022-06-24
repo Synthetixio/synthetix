@@ -677,6 +677,12 @@
 			"released": "ovm"
 		},
 		{
+      "sip": 251,
+			"layer": "both",
+			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
+			"released": "both"
+    },
+    {
 			"sip": 252,
 			"layer": "both",
 			"sources": [
@@ -1262,6 +1268,25 @@
 				"minor": 73
 			},
 			"sips": [243],
+			"released": true
+		},
+		{
+			"name": "Algol",
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251],
+			"released": true
+		},
+		{
+			"name": "Algol (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251],
 			"released": true
 		}
 	]
