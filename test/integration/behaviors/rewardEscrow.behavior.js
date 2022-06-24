@@ -97,21 +97,16 @@ function itDoesRewardEscrow({ ctx, contract }) {
 			});
 
 			describe('layer 1 specific methods', () => {
-				it('reverts on call to startMergingWindow', async () => {
-					// only relevant on layer 1
+				before('skip on l2', async function() {
 					if (!ctx.contracts.SynthetixBridgeToOptimism) {
 						this.skip();
 					}
-
+				});
+				it('reverts on call to startMergingWindow', async () => {
 					await assert.revert(RewardEscrowV2Frozen.startMergingWindow(), 'Only the contract owner');
 				});
 
 				it('reverts on call to setAccountMergingWindowDuration', async () => {
-					// only relevant on layer 1
-					if (!ctx.contracts.SynthetixBridgeToOptimism) {
-						this.skip();
-					}
-
 					await assert.revert(
 						RewardEscrowV2Frozen.setAccountMergingDuration(100),
 						'Only the contract owner'
@@ -119,11 +114,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				});
 
 				it('reverts on call to setMaxAccountMergingWindow', async () => {
-					// only relevant on layer 1
-					if (!ctx.contracts.SynthetixBridgeToOptimism) {
-						this.skip();
-					}
-
 					await assert.revert(
 						RewardEscrowV2Frozen.setMaxAccountMergingWindow(100),
 						'Only the contract owner'
@@ -131,11 +121,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				});
 
 				it('reverts on call to setMaxAccountEscrowDuration', async () => {
-					// only relevant on layer 1
-					if (!ctx.contracts.SynthetixBridgeToOptimism) {
-						this.skip();
-					}
-
 					await assert.revert(
 						RewardEscrowV2Frozen.setMaxEscrowDuration(100),
 						'Only the contract owner'
@@ -145,11 +130,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				// nominate account to merge is ok because it doesn't alter escrow states
 
 				it('reverts on call to mergeAccount', async () => {
-					// only relevant on layer 1
-					if (!ctx.contracts.SynthetixBridgeToOptimism) {
-						this.skip();
-					}
-
 					await assert.revert(
 						RewardEscrowV2Frozen.mergeAccount(someUser.address, []),
 						'Account merging has ended'
@@ -159,11 +139,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				// no more accounts will be migratable for migrateVestingSchedule
 
 				it('reverts on call to migrateAccountEscrowBalances', async () => {
-					// only relevant on layer 1
-					if (!ctx.contracts.SynthetixBridgeToOptimism) {
-						this.skip();
-					}
-
 					await assert.revert(
 						RewardEscrowV2Frozen.migrateAccountEscrowBalances([], [], []),
 						'Only'
@@ -171,11 +146,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				});
 
 				it('reverts on call to burnForMigration', async () => {
-					// only relevant on layer 1
-					if (!ctx.contracts.SynthetixBridgeToOptimism) {
-						this.skip();
-					}
-
 					await assert.revert(
 						RewardEscrowV2Frozen.burnForMigration(otherUser.address, [fakeAmount]),
 						'Can only be invoked by SynthetixBridgeToOptimism contract'
@@ -196,15 +166,21 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				await (
 					await RewardEscrowV2.connect(owner).createEscrowEntry(someUser.address, fakeAmount, 1)
 				).wait();
-				const escrowNew = await RewardEscrowV2.balanceOf(someUser.address);
-				assert.bnEqual(escrowNew.sub(escrowBefore), fakeAmount);
+				const escrowAfter = await RewardEscrowV2.balanceOf(someUser.address);
+				assert.bnEqual(escrowAfter.sub(escrowBefore), fakeAmount);
 			});
 
 			it('can vest', async () => {
 				const balanceBefore = await Synthetix.balanceOf(someUser.address);
+				const escrowBefore = await RewardEscrowV2.balanceOf(someUser.address);
+
 				await (await RewardEscrowV2.connect(someUser).vest([newEntryId])).wait();
+
 				const balanceAfter = await Synthetix.balanceOf(someUser.address);
+				const escrowAfter = await RewardEscrowV2.balanceOf(someUser.address);
+
 				assert.bnEqual(balanceAfter.sub(balanceBefore), fakeAmount);
+				assert.bnEqual(escrowBefore.sub(escrowAfter), fakeAmount);
 			});
 		});
 	});
