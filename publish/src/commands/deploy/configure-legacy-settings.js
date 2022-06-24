@@ -16,7 +16,6 @@ module.exports = async ({
 	console.log(gray(`\n------ CONFIGURE LEGACY CONTRACTS VIA SETTERS ------\n`));
 
 	const {
-		AddressResolver,
 		DelegateApprovals,
 		DelegateApprovalsEternalStorage,
 		Exchanger,
@@ -35,8 +34,6 @@ module.exports = async ({
 		SynthetixEscrow,
 		SystemStatus,
 		TokenStateSynthetix,
-		RewardEscrowV2Storage,
-		RewardEscrowV2Frozen,
 	} = deployer.deployedContracts;
 
 	// now configure everything
@@ -245,60 +242,6 @@ module.exports = async ({
 
 	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
 	if (RewardEscrowV2 && RewardsDistribution) {
-		// get either previous address, or newly deployed address
-		const rewardEscrowV2Frozen =
-			RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
-
-		// SIP-252 rewards escrow migration
-		await runStep({
-			contract: 'RewardEscrowV2Storage',
-			target: RewardEscrowV2Storage,
-			read: 'associatedContract',
-			expected: input => input === addressOf(RewardEscrowV2),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(RewardEscrowV2),
-			comment: 'Ensure that RewardEscrowV2 contract is allowed to write to RewardEscrowV2Storage',
-		});
-
-		await runStep({
-			contract: 'RewardEscrowV2Storage',
-			target: RewardEscrowV2Storage,
-			read: 'fallbackRewardEscrow',
-			expected: input => input === addressOf(rewardEscrowV2Frozen),
-			write: 'setFallbackRewardEscrow',
-			writeArg: addressOf(rewardEscrowV2Frozen),
-			comment:
-				'Ensure that RewardEscrowV2Storage contract is initialized with address of RewardEscrowV2Frozen',
-		});
-
-		await runStep({
-			contract: 'RewardEscrowV2Frozen',
-			target: rewardEscrowV2Frozen,
-			read: 'accountMergingDuration',
-			expected: input => input === 0,
-			write: 'setAccountMergingDuration',
-			writeArg: 0,
-			comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
-		});
-
-		await runStep({
-			contract: 'AddressResolver',
-			target: AddressResolver,
-			read: 'getAddress',
-			readArg: [toBytes32('RewardEscrowV2Frozen')],
-			expected: input => input === addressOf(rewardEscrowV2Frozen),
-			write: 'importAddresses',
-			writeArg: [[toBytes32('RewardEscrowV2Frozen')], [addressOf(rewardEscrowV2Frozen)]],
-			comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
-		});
-
-		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
-			write: 'migrateEscrowContractBalance',
-			comment: 'Ensure that old escrow SNX balance is migrated to new contract',
-		});
-
 		await runStep({
 			contract: 'RewardsDistribution',
 			target: RewardsDistribution,
