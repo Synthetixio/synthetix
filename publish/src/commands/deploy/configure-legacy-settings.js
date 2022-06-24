@@ -16,6 +16,7 @@ module.exports = async ({
 	console.log(gray(`\n------ CONFIGURE LEGACY CONTRACTS VIA SETTERS ------\n`));
 
 	const {
+		AddressResolver,
 		DelegateApprovals,
 		DelegateApprovalsEternalStorage,
 		Exchanger,
@@ -278,6 +279,17 @@ module.exports = async ({
 			write: 'setAccountMergingDuration',
 			writeArg: 0,
 			comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
+		});
+
+		await runStep({
+			contract: 'AddressResolver',
+			target: AddressResolver,
+			read: 'getAddress',
+			readArg: [toBytes32('RewardEscrowV2Frozen')],
+			expected: input => input === addressOf(rewardEscrowV2Frozen),
+			write: 'importAddresses',
+			writeArg: [[toBytes32('RewardEscrowV2Frozen')], [addressOf(rewardEscrowV2Frozen)]],
+			comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
 		});
 
 		await runStep({
