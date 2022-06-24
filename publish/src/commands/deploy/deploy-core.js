@@ -6,7 +6,6 @@ const {
 	constants: { ZERO_ADDRESS },
 	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../../..');
-const { toBytes32 } = require('../../../../index');
 
 module.exports = async ({
 	account,
@@ -137,7 +136,7 @@ module.exports = async ({
 	// get either previous address, or newly deployed address
 	const rewardEscrowV2FrozenAddress =
 		addressOf(rewardEscrowV2Frozen) ||
-		(await readProxyForResolver.getAddress(toBytes32('RewardEscrowV2Frozen')));
+		addressOf(await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
 
 	// SIP-252: storage contract for RewardEscrowV2
 	await deployer.deployContract({
