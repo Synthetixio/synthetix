@@ -482,7 +482,7 @@ contract('SystemSettings', async accounts => {
 		});
 		describe('given liquidation penalty is 10%', () => {
 			beforeEach(async () => {
-				await systemSettings.setLiquidationPenalty(toUnit('0.1'), { from: owner });
+				await systemSettings.setSnxLiquidationPenalty(toUnit('0.1'), { from: owner });
 			});
 			it('owner can change liquidationRatio to 150%', async () => {
 				const ratio = divideDecimal(toUnit('2'), toUnit('3'));
