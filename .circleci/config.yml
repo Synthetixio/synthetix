@@ -16,7 +16,7 @@ jobs:
   job-audit:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:16.14-ubuntu
+      - image: synthetixio/docker-sec-tools:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -33,7 +33,7 @@ jobs:
   job-compile:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -45,7 +45,7 @@ jobs:
   job-fork-tests-ovm:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -74,7 +74,7 @@ jobs:
   job-fork-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -152,7 +152,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -164,7 +164,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -178,7 +178,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -208,7 +208,7 @@ jobs:
   job-simulate-release:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -235,7 +235,7 @@ jobs:
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -255,7 +255,7 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -281,7 +281,7 @@ jobs:
   job-unit-tests-coverage-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:16.14-ubuntu
+      - image: synthetixio/docker-sec-tools:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -297,7 +297,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -327,7 +327,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -348,7 +348,7 @@ jobs:
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -384,7 +384,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -403,7 +403,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.14-ubuntu
+      - image: synthetixio/docker-node:16.15-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
