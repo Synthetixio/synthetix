@@ -3,11 +3,12 @@ const { assert } = require('../../contracts/common');
 const { getCompiledArtifacts } = require('../../utils')();
 const { toBytes32 } = require('../../..');
 const { skipLiquidationDelay } = require('../utils/skip');
+// const { ensureBalance } = require('../utils/balances');
 
 function itDoesRewardEscrow({ ctx, contract }) {
 	// old escrow should be basically immutable
 	describe('RewardEscrowFrozen and RewardEscrowV2 migration', () => {
-		const fakeAmount = ethers.utils.parseEther('100');
+		const fakeAmount = ethers.utils.parseEther('1');
 
 		let owner, someUser, otherUser;
 		let AddressResolver, RewardEscrowV2Frozen, RewardEscrowV2, Synthetix;
@@ -19,10 +20,10 @@ function itDoesRewardEscrow({ ctx, contract }) {
 
 			({ owner, someUser, otherUser } = ctx.users);
 
-			// this undos the migration steps and simulates it again
+			/// UNDO the migration
 
-			// create some fake stuff before the migration is completed
-			// fake escrow entry
+			// this undos the migration steps to create a known vesting entry to try to vest
+			// it then redoes the migration and checks that things work as expected
 
 			// get the address that's configured in the resolver
 			const initialFrozenAddress = await AddressResolver.requireAndGetAddress(
@@ -30,26 +31,33 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				'missing RewardEscrowV2Frozen address'
 			);
 
-			// create an instance of frozen interface on the address
+			// create an instance of frozen interface on the address so that we can work with it (it's not part of
+			// normal deployment)
 			RewardEscrowV2Frozen = new ethers.Contract(
 				initialFrozenAddress,
 				getCompiledArtifacts('RewardEscrowV2Frozen').abi,
 				ctx.provider
 			);
 
+			// switch the contracts to move the balance back into the frozen
 			await AddressResolver.connect(owner).importAddresses(
-				[toBytes32('RewardEscrowV2')],
-				[RewardEscrowV2Frozen.address]
+				['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
+				[RewardEscrowV2Frozen.address, RewardEscrowV2.address]
 			);
+			// move the balance back (otherwise createEscrowEntry fails)
+			await Synthetix.connect(owner).migrateEscrowContractBalance();
 			await RewardEscrowV2Frozen.connect(owner).rebuildCache(); // it should have the correct SNX address
 			await Synthetix.connect(owner).rebuildCache(); // for transfers to work
 
+			// allow owner to create entries
+			// await ensureBalance({ ctx, symbol: 'SNX', user: owner, balance: fakeAmount.mul(100) });
 			await Synthetix.connect(owner).approve(
 				RewardEscrowV2Frozen.address,
 				ethers.constants.MaxUint256
 			);
 			await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
 
+			// create fake entries on old contract
 			await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(otherUser.address, fakeAmount, 1);
 			await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(
 				someUser.address,
@@ -61,16 +69,18 @@ function itDoesRewardEscrow({ ctx, contract }) {
 			// these new entries aren't available to it, because they are after the fallbackId of the migration
 			fakeEscrowEntryId = await RewardEscrowV2Frozen.accountVestingEntryIDs(otherUser.address, 0);
 
+			/// REDO the migration
 			await AddressResolver.connect(owner).importAddresses(
-				[toBytes32('RewardEscrowV2')],
-				[RewardEscrowV2.address]
+				['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
+				[RewardEscrowV2.address, RewardEscrowV2Frozen.address]
 			);
 			await Synthetix.connect(owner).rebuildCache(); // for transfers to work
 
-			// repeat transfer all rewards to the new contract (because new SNX was transferred in the setup above)
+			// transfer all rewards to the new contract
 			await Synthetix.connect(owner).migrateEscrowContractBalance();
 
 			// skip a small amount of time so that in optimism ops tool (CI L2 integration tests) entries are vestable
+			// this is because time passage when using the ops tools is only done via L1 time
 			await skipLiquidationDelay({ ctx });
 
 			// all below operations will be done by some normie user
