@@ -2,6 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { getCompiledArtifacts } = require('../../utils')();
 const { toBytes32 } = require('../../..');
+const { skipLiquidationDelay } = require('../utils/skip');
 
 function itDoesRewardEscrow({ ctx, contract }) {
 	// old escrow should be basically immutable
@@ -40,12 +41,15 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				[toBytes32('RewardEscrowV2')],
 				[RewardEscrowV2Frozen.address]
 			);
+			await RewardEscrowV2Frozen.connect(owner).rebuildCache(); // it should have the correct SNX address
+			await Synthetix.connect(owner).rebuildCache(); // for transfers to work
 
 			await Synthetix.connect(owner).approve(
 				RewardEscrowV2Frozen.address,
 				ethers.constants.MaxUint256
 			);
 			await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
+
 			await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(otherUser.address, fakeAmount, 1);
 			await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(
 				someUser.address,
@@ -61,9 +65,13 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				[toBytes32('RewardEscrowV2')],
 				[RewardEscrowV2.address]
 			);
+			await Synthetix.connect(owner).rebuildCache(); // for transfers to work
 
 			// repeat transfer all rewards to the new contract (because new SNX was transferred in the setup above)
 			await Synthetix.connect(owner).migrateEscrowContractBalance();
+
+			// skip a small amount of time so that in optimism ops tool (CI L2 integration tests) entries are vestable
+			await skipLiquidationDelay({ ctx });
 
 			// all below operations will be done by some normie user
 			RewardEscrowV2Frozen = RewardEscrowV2Frozen.connect(someUser);
@@ -171,6 +179,9 @@ function itDoesRewardEscrow({ ctx, contract }) {
 			});
 
 			it('can vest', async () => {
+				// skip a small amount of time so that in optimism ops tool (CI L2 integration tests) entries are vestable
+				await skipLiquidationDelay({ ctx });
+
 				const balanceBefore = await Synthetix.balanceOf(someUser.address);
 				const escrowBefore = await RewardEscrowV2.balanceOf(someUser.address);
 
