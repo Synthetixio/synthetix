@@ -159,7 +159,7 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				it('reverts on call to migrateAccountEscrowBalances', async () => {
 					await assert.revert(
 						RewardEscrowV2Frozen.migrateAccountEscrowBalances([], [], []),
-						'Only'
+						'during setup'
 					);
 				});
 
