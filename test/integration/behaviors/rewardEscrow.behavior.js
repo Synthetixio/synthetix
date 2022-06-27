@@ -3,27 +3,19 @@ const { assert } = require('../../contracts/common');
 const { getCompiledArtifacts } = require('../../utils')();
 const { toBytes32 } = require('../../..');
 const { skipLiquidationDelay } = require('../utils/skip');
-// const { ensureBalance } = require('../utils/balances');
 
 function itDoesRewardEscrow({ ctx, contract }) {
 	// old escrow should be basically immutable
-	describe('RewardEscrowFrozen and RewardEscrowV2 migration', () => {
+	describe('RewardEscrowFrozen and RewardEscrowV2', () => {
 		const fakeAmount = ethers.utils.parseEther('1');
 
 		let owner, someUser, otherUser;
 		let AddressResolver, RewardEscrowV2Frozen, RewardEscrowV2, Synthetix;
 
-		let fakeEscrowEntryId;
-
 		before('target contracts and users and setup', async () => {
 			({ AddressResolver, RewardEscrowV2, Synthetix } = ctx.contracts);
 
 			({ owner, someUser, otherUser } = ctx.users);
-
-			/// UNDO the migration
-
-			// this undos the migration steps to create a known vesting entry to try to vest
-			// it then redoes the migration and checks that things work as expected
 
 			// get the address that's configured in the resolver
 			const initialFrozenAddress = await AddressResolver.requireAndGetAddress(
@@ -39,49 +31,15 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				ctx.provider
 			);
 
-			// switch the contracts to move the balance back into the frozen
-			await AddressResolver.connect(owner).importAddresses(
-				['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
-				[RewardEscrowV2Frozen.address, RewardEscrowV2.address]
-			);
-			// move the balance back (otherwise createEscrowEntry fails)
-			await Synthetix.connect(owner).migrateEscrowContractBalance();
-			await RewardEscrowV2Frozen.connect(owner).rebuildCache(); // it should have the correct SNX address
-			await Synthetix.connect(owner).rebuildCache(); // for transfers to work
+			// it should have the correct SNX address for attempted transfers
+			await RewardEscrowV2Frozen.connect(owner).rebuildCache();
 
 			// allow owner to create entries
-			// await ensureBalance({ ctx, symbol: 'SNX', user: owner, balance: fakeAmount.mul(100) });
+			await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
 			await Synthetix.connect(owner).approve(
 				RewardEscrowV2Frozen.address,
 				ethers.constants.MaxUint256
 			);
-			await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
-
-			// create fake entries on old contract
-			await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(otherUser.address, fakeAmount, 1);
-			await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(
-				someUser.address,
-				fakeAmount.mul(2),
-				1
-			);
-
-			// note that since this is happening after the deployment of new RewardEscrowV2 and RewardEscrowV2Storage
-			// these new entries aren't available to it, because they are after the fallbackId of the migration
-			fakeEscrowEntryId = await RewardEscrowV2Frozen.accountVestingEntryIDs(otherUser.address, 0);
-
-			/// REDO the migration
-			await AddressResolver.connect(owner).importAddresses(
-				['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
-				[RewardEscrowV2.address, RewardEscrowV2Frozen.address]
-			);
-			await Synthetix.connect(owner).rebuildCache(); // for transfers to work
-
-			// transfer all rewards to the new contract
-			await Synthetix.connect(owner).migrateEscrowContractBalance();
-
-			// skip a small amount of time so that in optimism ops tool (CI L2 integration tests) entries are vestable
-			// this is because time passage when using the ops tools is only done via L1 time
-			await skipLiquidationDelay({ ctx });
 
 			// all below operations will be done by some normie user
 			RewardEscrowV2Frozen = RewardEscrowV2Frozen.connect(someUser);
@@ -103,13 +61,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 						fakeAmount,
 						100
 					),
-					'Only the proxy can call'
-				);
-			});
-
-			it('reverts on call to vest', async () => {
-				await assert.revert(
-					RewardEscrowV2Frozen.connect(otherUser).vest([fakeEscrowEntryId]),
 					'Only the proxy can call'
 				);
 			});
@@ -157,9 +108,11 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				// no more accounts will be migratable for migrateVestingSchedule
 
 				it('reverts on call to migrateAccountEscrowBalances', async () => {
+					// fork has an old contract so should fail at the first modifier
+					const revertMsg = ctx.fork ? 'during setup' : `Only the contract owner`;
 					await assert.revert(
 						RewardEscrowV2Frozen.migrateAccountEscrowBalances([], [], []),
-						'during setup'
+						revertMsg
 					);
 				});
 
@@ -202,6 +155,57 @@ function itDoesRewardEscrow({ ctx, contract }) {
 
 				assert.bnEqual(balanceAfter.sub(balanceBefore), fakeAmount);
 				assert.bnEqual(escrowBefore.sub(escrowAfter), fakeAmount);
+			});
+		});
+
+		// old escrow should be basically immutable
+		describe('migration replay to check vesting reverts', () => {
+			let fakeEscrowEntryId;
+
+			before('undo migration, add vesting entry, and redo migration', async () => {
+				/// UNDO the migration
+
+				// switch the contracts to move the balance back into the frozen
+				await AddressResolver.connect(owner).importAddresses(
+					['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
+					[RewardEscrowV2Frozen.address, RewardEscrowV2.address]
+				);
+				// move the balance back (otherwise createEscrowEntry fails)
+				await Synthetix.connect(owner).migrateEscrowContractBalance();
+				await RewardEscrowV2Frozen.connect(owner).rebuildCache(); // it should have the correct SNX address
+				await Synthetix.connect(owner).rebuildCache(); // for transfers to work
+
+				// create fake entries on old contract
+				await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(
+					otherUser.address,
+					fakeAmount,
+					1
+				);
+
+				// note that since this is happening after the deployment of new RewardEscrowV2 and RewardEscrowV2Storage
+				// these new entries aren't available to it, because they are after the fallbackId of the migration
+				fakeEscrowEntryId = await RewardEscrowV2Frozen.accountVestingEntryIDs(otherUser.address, 0);
+
+				/// REDO the migration
+				await AddressResolver.connect(owner).importAddresses(
+					['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
+					[RewardEscrowV2.address, RewardEscrowV2Frozen.address]
+				);
+				await Synthetix.connect(owner).rebuildCache(); // for transfers to work
+
+				// transfer all rewards to the new contract
+				await Synthetix.connect(owner).migrateEscrowContractBalance();
+
+				// skip a small amount of time so that in optimism ops tool (CI L2 integration tests) entries are vestable
+				// this is because time passage when using the ops tools is only done via L1 time
+				await skipLiquidationDelay({ ctx });
+			});
+
+			it('RewardEscrowV2Frozen reverts on call to vest', async () => {
+				await assert.revert(
+					RewardEscrowV2Frozen.connect(otherUser).vest([fakeEscrowEntryId]),
+					'Only the proxy can call'
+				);
 			});
 		});
 	});
