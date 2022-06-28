@@ -357,6 +357,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().getReward(account);
 
         (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
+        // this should not happen, but better to ensure (since it's coming from another contract)
+        require(totalRedeemed >= escrowToLiquidate, "escrowToLiquidate too large");
 
         // This transfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger

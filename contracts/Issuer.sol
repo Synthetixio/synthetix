@@ -755,17 +755,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         } else {
             // if transferrable is not enough
             if (isSelfLiquidation) {
-                // cannot use escrow because self-liquidation is available without being flagged
+                // cannot use escrow because it's not available for self-liquidation
                 return (transferable, 0);
             } else {
-                // can use escrow if forced liquidation (assumed to be flagged)
+                // can use escrow if forced liquidation
                 uint escrow = rewardEscrowV2().balanceOf(account);
                 if (redeemTarget > transferable.add(escrow)) {
                     // all of escrow needs to be redeemed
                     return (transferable.add(escrow), escrow);
                 } else {
                     // need only part of the escrow, add the needed part to redeemed
-                    return (transferable.add(escrowToLiquidate), redeemTarget.sub(transferable));
+                    escrowToLiquidate = redeemTarget.sub(transferable);
+                    return (transferable.add(escrowToLiquidate), escrowToLiquidate);
                 }
             }
         }
