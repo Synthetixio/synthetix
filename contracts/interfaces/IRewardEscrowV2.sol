@@ -122,7 +122,7 @@ interface IRewardEscrowV2 {
 
     function nextEntryId() external view returns (uint);
 
-    function vestingSchedules(address account, uint256 index) external view returns (VestingEntries.VestingEntry memory);
+    function vestingSchedules(address account, uint256 entryId) external view returns (VestingEntries.VestingEntry memory);
 
     function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 

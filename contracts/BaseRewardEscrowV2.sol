@@ -103,8 +103,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         return state().nextEntryId();
     }
 
-    function vestingSchedules(address account, uint256 index) public view returns (VestingEntries.VestingEntry memory) {
-        return state().vestingSchedules(account, index);
+    function vestingSchedules(address account, uint256 entryId) public view returns (VestingEntries.VestingEntry memory) {
+        return state().vestingSchedules(account, entryId);
     }
 
     function accountVestingEntryIDs(address account, uint256 index) public view returns (uint) {
