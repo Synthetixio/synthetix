@@ -1075,6 +1075,7 @@ contract('Liquidator', accounts => {
 								it('escrow balance is used used for liquidation (partial)', async () => {
 									const debtBefore = await synthetix.debtBalanceOf(alice, sUSD);
 									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
+									const viewResult = await liquidator.liquidationAmounts(alice, false);
 									await synthetix.liquidateDelinquentAccount(alice, { from: bob });
 									// no liquid balance added
 									assert.bnEqual(await synthetix.balanceOf(alice), 0);
@@ -1095,6 +1096,15 @@ contract('Liquidator', accounts => {
 										debtAfter,
 										multiplyDecimal(debtBefore.sub(redeemed), shareMultiplier),
 										toUnit(0.001)
+									);
+									// check view results
+									assert.bnEqual(viewResult.initialDebtBalance, toUnit('75'));
+									assert.bnEqual(viewResult.totalRedeemed, escrowBefore.sub(escrowAfter));
+									assert.bnEqual(viewResult.escrowToLiquidate, escrowBefore.sub(escrowAfter));
+									assert.bnClose(
+										viewResult.debtToRemove,
+										toUnit('75').sub(debtAfter),
+										toUnit(0.01)
 									);
 								});
 								it('escrow balance is used used for liquidation (full)', async () => {
@@ -1208,6 +1218,7 @@ contract('Liquidator', accounts => {
 									escrowBefore = escrowBefore.add(
 										await createEscrowEntries(alice, toUnit('1'), 90)
 									);
+									const viewResult = await liquidator.liquidationAmounts(alice, false);
 									await synthetix.liquidateDelinquentAccount(alice, { from: bob });
 									// new balances
 									const liquidAfter = await synthetix.balanceOf(alice);
@@ -1219,6 +1230,18 @@ contract('Liquidator', accounts => {
 									assert.bnLt(escrowAfter, escrowBefore.div(toBN(10)));
 									// some debt remains
 									assert.bnGt(debtAfter, 0);
+									// check view results
+									assert.bnEqual(viewResult.initialDebtBalance, toUnit('75'));
+									assert.bnEqual(
+										viewResult.totalRedeemed,
+										liquidBefore.add(escrowBefore).sub(escrowAfter)
+									);
+									assert.bnEqual(viewResult.escrowToLiquidate, escrowBefore.sub(escrowAfter));
+									assert.bnClose(
+										viewResult.debtToRemove,
+										toUnit('75').sub(debtAfter),
+										toUnit(0.01)
+									);
 								});
 							});
 							describe('last escrow entry remainder is added as new entry', () => {

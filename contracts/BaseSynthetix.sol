@@ -34,7 +34,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
-    bytes32 private constant CONTRACT_REWARDESCROWV2 = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
 
     // ========== CONSTRUCTOR ==========
 
@@ -61,7 +61,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
         addresses[4] = CONTRACT_LIQUIDATORREWARDS;
         addresses[5] = CONTRACT_LIQUIDATOR;
-        addresses[6] = CONTRACT_REWARDESCROWV2;
+        addresses[6] = CONTRACT_REWARDESCROW_V2;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -85,7 +85,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROWV2));
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function liquidator() internal view returns (ILiquidator) {

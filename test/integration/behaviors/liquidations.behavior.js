@@ -162,6 +162,13 @@ function itCanLiquidate({ ctx }) {
 						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(
 							liquidatedUser.address
 						);
+
+						const { gasUsed } = await tx.wait();
+						console.log(
+							`liquidateDelinquentAccount() with no escrow entries gas used: ${Math.round(
+								gasUsed / 1000
+							).toString()}k`
+						);
 					});
 
 					it('fixes the c-ratio of the partially liquidatedUser', async () => {

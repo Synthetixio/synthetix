@@ -140,6 +140,27 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return true;
     }
 
+    /// View for calculating the amounts of collateral (liquid and escrow that will be liquidated), and debt that will
+    /// removed.
+    /// @param account The account to be liquidated
+    /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
+    /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)
+    /// @return debtToRemove the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return escrowToLiquidate the amount of escrow SNX that will be revoked during liquidation
+    /// @return initialDebtBalance the amount of initial (sUSD) debt the account has
+    function liquidationAmounts(address account, bool isSelfLiquidation)
+        external
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint initialDebtBalance
+        )
+    {
+        return issuer().liquidationAmounts(account, isSelfLiquidation);
+    }
+
     function isLiquidationDeadlinePassed(address account) external view returns (bool) {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         return _deadlinePassed(liquidation.deadline);

@@ -460,6 +460,26 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return addresses;
     }
 
+    /// @notice Provide the results that would be returned by the mutative liquidateAccount() method (that's reserved to Synthetix)
+    /// @param account The account to be liquidated
+    /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
+    /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)
+    /// @return debtToRemove the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return escrowToLiquidate the amount of escrow SNX that will be revoked during liquidation
+    /// @return initialDebtBalance the amount of initial (sUSD) debt the account has
+    function liquidationAmounts(address account, bool isSelfLiquidation)
+        external
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint initialDebtBalance
+        )
+    {
+        return _liquidationAmounts(account, isSelfLiquidation);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function _addSynth(ISynth synth) internal {
@@ -676,8 +696,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /// @notice This is where the core internal liquidation logic resides. This function can only be invoked by Synthetix.
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
-    /// @return uint the total amount of collateral (SNX) to redeem
-    /// @return uint the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)
+    /// @return debtRemoved the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return escrowToLiquidate the amount of escrow SNX that will be revoked during liquidation
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
         onlySynthetix
@@ -689,6 +710,29 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     {
         require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
+        uint initialDebtBalance;
+        (totalRedeemed, debtRemoved, escrowToLiquidate, initialDebtBalance) = _liquidationAmounts(
+            account,
+            isSelfLiquidation
+        );
+
+        // Reduce debt shares by amount to liquidate.
+        _removeFromDebtRegister(account, debtRemoved, initialDebtBalance);
+
+        // Remove liquidation flag
+        liquidator().removeAccountInLiquidation(account);
+    }
+
+    function _liquidationAmounts(address account, bool isSelfLiquidation)
+        internal
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint debtBalance
+        )
+    {
         // Get the penalty for the liquidation type
         uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
 
@@ -704,7 +748,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint collateralForAccount = _collateral(account);
 
         // Calculate the amount of debt to liquidate to fix c-ratio
-        debtRemoved = liquidator().calculateAmountToFixCollateral(
+        debtToRemove = liquidator().calculateAmountToFixCollateral(
             debtBalance,
             _snxToUSD(collateralForAccount, snxRate),
             penalty
@@ -714,7 +758,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Note: While redeemTarget takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
         // Therefore, it is correct to add the penalty modification below to the redeemTarget.
         // This is a "target" because it may not be available, so will be adjusted
-        uint redeemTarget = _usdToSnx(debtRemoved, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+        uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
         // calculate actually redeemable collateral for the conditions
         (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, isSelfLiquidation);
@@ -722,20 +766,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // totalRedeemed == redeemTarget, all of the debt is removed, otherwise adjust it to redeemable collateral
         if (totalRedeemed < redeemTarget) {
             // Adjust debt amount to ratio of actual vs. target collateral amounts
-            debtRemoved = debtRemoved.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);
+            debtToRemove = debtToRemove.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);
 
             // if all collateral is gone, erase the bad debt (some unliquidatable collateral can be in
             // legacy SynthetixEscrow or LiquidatorRewards (if Synthetix liquidation method didn't call getReward() before this)
             if (collateralForAccount == totalRedeemed) {
-                debtRemoved = debtBalance;
+                debtToRemove = debtBalance;
             }
         }
 
-        // Reduce debt shares by amount to liquidate.
-        _removeFromDebtRegister(account, debtRemoved, debtBalance);
-
-        // Remove liquidation flag
-        liquidator().removeAccountInLiquidation(account);
+        return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
     }
 
     // SIP-252
@@ -745,7 +785,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address account,
         uint redeemTarget,
         bool isSelfLiquidation
-    ) internal returns (uint totalRedeemed, uint escrowToLiquidate) {
+    ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferable = synthetixERC20().balanceOf(account);
