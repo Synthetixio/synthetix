@@ -76,7 +76,8 @@ module.exports = {
 			chainId: 69,
 		},
 		local: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
+			chainId: 31337,
+			url: 'http://localhost:8545/',
 		},
 		'local-ovm': {
 			url: process.env.OVM_PROVIDER_URL || 'http://localhost:9545/',
