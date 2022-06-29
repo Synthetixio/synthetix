@@ -293,9 +293,9 @@ function itCanLiquidate({ ctx }) {
 				});
 
 				describe('getting liquidated', () => {
-					let tx;
+					let tx, viewResults;
 					let collateralBefore;
-					let beforeDebtShares, beforeSharesSupply;
+					let beforeDebtShares, beforeSharesSupply, beforeDebtBalance;
 					let beforeFlagRewardCredittedSnx,
 						beforeLiquidateRewardCredittedSnx,
 						beforeRemainingRewardCredittedSnx;
@@ -309,14 +309,25 @@ function itCanLiquidate({ ctx }) {
 						beforeRemainingRewardCredittedSnx = await Synthetix.balanceOf(
 							LiquidatorRewards.address
 						);
+						beforeDebtBalance = await Synthetix.debtBalanceOf(user7.address, toBytes32('sUSD'));
 
+						viewResults = await Liquidator.liquidationAmounts(user7.address, false);
 						tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user7.address);
+					});
+
+					it('results correspond to view before liquidation', async () => {
+						assert.bnEqual(viewResults.totalRedeemed, collateralBefore);
+						assert.bnEqual(viewResults.escrowToLiquidate, 0);
+						assert.bnEqual(viewResults.initialDebtBalance, beforeDebtBalance);
+						// debt per debt share changes a bit
+						assert.bnEqual(viewResults.debtToRemove.toString(), beforeDebtBalance.toString());
 					});
 
 					it('removes all transferable collateral from the liquidated user', async () => {
 						const collateralAfter = await Synthetix.collateral(user7.address);
 						assert.bnLt(collateralAfter, collateralBefore);
 						assert.bnEqual(await Synthetix.balanceOf(user7.address), '0');
+						assert.bnEqual(viewResults.totalRedeemed, collateralBefore);
 					});
 
 					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
@@ -385,7 +396,7 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		describe('full liquidation with a majority of collateral in escrow', () => {
-			let tx;
+			let tx, viewResults;
 			let beforeEscrowBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
 			let beforeSnxBalance, beforeRewardsCredittedSnx;
@@ -444,6 +455,7 @@ function itCanLiquidate({ ctx }) {
 				beforeDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
 				beforeRewardsCredittedSnx = await Synthetix.balanceOf(LiquidatorRewards.address);
 
+				viewResults = await Liquidator.liquidationAmounts(user8.address, false);
 				tx = await Synthetix.connect(liquidatorUser).liquidateDelinquentAccount(user8.address);
 
 				const { gasUsed } = await tx.wait();
@@ -475,6 +487,14 @@ function itCanLiquidate({ ctx }) {
 			it('should remove all debt', async () => {
 				const afterDebtBalance = await Synthetix.debtBalanceOf(user8.address, toBytes32('sUSD'));
 				assert.bnEqual(afterDebtBalance, '0');
+			});
+
+			it('results correspond to view before liquidation', async () => {
+				assert.bnEqual(viewResults.totalRedeemed, beforeSnxBalance.add(beforeEscrowBalance));
+				assert.bnEqual(viewResults.escrowToLiquidate, beforeEscrowBalance);
+				assert.bnEqual(viewResults.initialDebtBalance, beforeDebtBalance);
+				// debt per debt share changes a bit
+				assert.bnEqual(viewResults.debtToRemove.toString(), beforeDebtBalance.toString());
 			});
 
 			it('should liquidate all debt and redeem all SNX', async () => {
