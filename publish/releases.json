@@ -677,12 +677,12 @@
 			"released": "ovm"
 		},
 		{
-      "sip": 251,
+			"sip": 251,
 			"layer": "both",
 			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
 			"released": "both"
-    },
-    {
+		},
+		{
 			"sip": 252,
 			"layer": "both",
 			"sources": [

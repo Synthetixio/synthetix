@@ -694,6 +694,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     // SIP-148: Upgraded Liquidation Mechanism
     /// @notice This is where the core internal liquidation logic resides. This function can only be invoked by Synthetix.
+    /// Reverts if liquidator().isLiquidationOpen() returns false (e.g. c-ratio is too high, delay hasn't passed,
+    ///     account wasn't flagged etc)
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
     /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)

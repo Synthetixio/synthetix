@@ -419,71 +419,67 @@ contract('RewardEscrowV2Storage', async accounts => {
 				});
 			});
 
-			describe('updateTotalEscrowedBalance', async () => {
+			// utility to check multiple cases for a writeMethod that expects a delta as input
+			// and has a corresponding readMethod
+			const balanceUpdateChecks = async (readMethod, writeMethod, firstArgs = []) => {
+				const readPromise = (contract, amountArg) =>
+					contract[readMethod](...[...firstArgs, amountArg]);
+
+				const writePromise = (contract, amountArg, from) =>
+					contract[writeMethod](...[...firstArgs, amountArg], { from });
+
 				it('delta cannot cause negative balance', async () => {
 					await assert.revert(
-						instance.updateTotalEscrowedBalance(toUnit('-1000'), { from: writeAccount }),
+						writePromise(instance, toUnit('-1000'), writeAccount),
 						'must be positive'
 					);
 				});
 
+				// this case is important to check correct usage of ZERO_PLACEHOLDER for zero values
+				it('can set old balance to zero', async () => {
+					const oldBalance = await readPromise(frozenRewardEscrowV2);
+					// not zero
+					assert.bnGt(oldBalance, 0);
+					// equal in both contracts
+					assert.bnEqual(await readPromise(instance), oldBalance);
+
+					// set to zero
+					await writePromise(instance, oldBalance.neg(), writeAccount);
+
+					// zero in new contract
+					assert.bnEqual(await readPromise(instance), 0);
+
+					// read old contract (untouched)
+					assert.bnEqual(await readPromise(frozenRewardEscrowV2), oldBalance);
+				});
+
 				it('changes balance', async () => {
-					const before = await instance.totalEscrowedBalance();
+					const before = await readPromise(instance);
 
 					const delta = toUnit('-1');
-					await instance.updateTotalEscrowedBalance(delta, { from: writeAccount });
+					await writePromise(instance, delta, writeAccount);
 
-					assert.bnEqual(await instance.totalEscrowedBalance(), before.add(delta));
+					assert.bnEqual(await readPromise(instance), before.add(delta));
 
-					await instance.updateTotalEscrowedBalance(delta.mul(toBN(-1)), { from: writeAccount });
-					assert.bnEqual(await instance.totalEscrowedBalance(), before);
+					await writePromise(instance, delta.neg(), writeAccount);
+					assert.bnEqual(await readPromise(instance), before);
 				});
+			};
+
+			describe('updateTotalEscrowedBalance', async () => {
+				await balanceUpdateChecks('totalEscrowedBalance', 'updateTotalEscrowedBalance');
 			});
 
 			describe('updateVestedAccountBalance', async () => {
-				it('delta cannot cause negative balance', async () => {
-					await assert.revert(
-						instance.updateVestedAccountBalance(user1, toUnit('-1000'), { from: writeAccount }),
-						'must be positive'
-					);
-				});
-
-				it('changes balance', async () => {
-					const before = await instance.totalVestedAccountBalance(user1);
-
-					const delta = toUnit('-1');
-					await instance.updateVestedAccountBalance(user1, delta, { from: writeAccount });
-
-					assert.bnEqual(await instance.totalVestedAccountBalance(user1), before.add(delta));
-
-					await instance.updateVestedAccountBalance(user1, delta.mul(toBN(-1)), {
-						from: writeAccount,
-					});
-					assert.bnEqual(await instance.totalVestedAccountBalance(user1), before);
-				});
+				await balanceUpdateChecks('totalVestedAccountBalance', 'updateVestedAccountBalance', [
+					user1,
+				]);
 			});
 
 			describe('updateEscrowAccountBalance', async () => {
-				it('delta cannot cause negative balance', async () => {
-					await assert.revert(
-						instance.updateEscrowAccountBalance(user1, toUnit('-1000'), { from: writeAccount }),
-						'must be positive'
-					);
-				});
-
-				it('changes balance', async () => {
-					const before = await instance.totalEscrowedAccountBalance(user1);
-
-					const delta = toUnit('-1');
-					await instance.updateEscrowAccountBalance(user1, delta, { from: writeAccount });
-
-					assert.bnEqual(await instance.totalEscrowedAccountBalance(user1), before.add(delta));
-
-					await instance.updateEscrowAccountBalance(user1, delta.mul(toBN(-1)), {
-						from: writeAccount,
-					});
-					assert.bnEqual(await instance.totalEscrowedAccountBalance(user1), before);
-				});
+				await balanceUpdateChecks('totalEscrowedAccountBalance', 'updateEscrowAccountBalance', [
+					user1,
+				]);
 			});
 		});
 	});

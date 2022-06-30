@@ -564,6 +564,17 @@ contract('BaseSynthetix', async accounts => {
 					'contract owner'
 				);
 			});
+			it('reverts if both are the same address', async () => {
+				await addressResolver.importAddresses(
+					['RewardEscrowV2Frozen', 'RewardEscrowV2'].map(toBytes32),
+					[account1, account1],
+					{ from: owner }
+				);
+				await assert.revert(
+					baseSynthetixImpl.migrateEscrowContractBalance({ from: owner }),
+					'same address'
+				);
+			});
 			it('transfers balance as needed', async () => {
 				await baseSynthetixProxy.transfer(account1, toUnit('10'), { from: owner });
 				// check balances
