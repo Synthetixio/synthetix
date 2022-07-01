@@ -765,7 +765,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // calculate actually redeemable collateral for the conditions
         (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, isSelfLiquidation);
 
-        // totalRedeemed == redeemTarget, all of the debt is removed, otherwise adjust it to redeemable collateral
+        // totalRedeemed == redeemTarget, all of the debtToRemove is removed, otherwise adjust it to redeemable collateral
         if (totalRedeemed < redeemTarget) {
             // Adjust debt amount to ratio of actual vs. target collateral amounts
             debtToRemove = debtToRemove.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);

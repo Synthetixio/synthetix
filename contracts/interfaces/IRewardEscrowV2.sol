@@ -41,6 +41,8 @@ interface IRewardEscrowV2Storage {
     function updateTotalEscrowedBalance(int delta) external;
 
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
+
+    // setFallbackRewardEscrow is used for configuration but not used by contracts
 }
 
 /// this should remain backwards compatible to IRewardEscrowV2Frozen

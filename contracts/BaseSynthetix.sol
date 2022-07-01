@@ -336,7 +336,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        return _liquidateDelinquentAccount(account, 0);
+        return _liquidateDelinquentAccount(account, 0, messageSender);
     }
 
     /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
@@ -347,15 +347,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         optionalProxy
         returns (bool)
     {
-        return _liquidateDelinquentAccount(account, escrowStartIndex);
+        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
     }
 
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
-    function _liquidateDelinquentAccount(address account, uint escrowStartIndex) internal returns (bool) {
-        // must store liquidator account address because below functions may attempt to transfer SNX which changes messageSender
-        address liquidatorAccount = messageSender;
-
+    function _liquidateDelinquentAccount(
+        address account,
+        uint escrowStartIndex,
+        address liquidatorAccount
+    ) internal returns (bool) {
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
         liquidatorRewards().getReward(account);
 

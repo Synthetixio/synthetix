@@ -64,7 +64,8 @@ contract('RewardEscrowV2Storage', async accounts => {
 		});
 		await synthetix.rebuildCache();
 
-		// create instance, controlled by writeAccount
+		// create new instance, controlled by writeAccount
+		// we're not using the instance created in setupAllContracts because it had its fallback set already
 		instance = await artifacts.require('RewardEscrowV2Storage').new(owner, writeAccount);
 	});
 
@@ -88,7 +89,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 
 	describe('after construction', async () => {
 		describe('when not initialized with fallback', () => {
-			it('should expected global values', async () => {
+			it('should return expected global values', async () => {
 				assert.equal(await instance.owner(), owner);
 				assert.equal(await instance.fallbackRewardEscrow(), ZERO_ADDRESS);
 				assert.equal(await instance.associatedContract(), writeAccount);
@@ -98,7 +99,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				assert.bnEqual(await instance.totalEscrowedBalance(), 0);
 			});
 
-			it('should revert for view method relying on fallback contract', async () => {
+			it('should revert for view methods relying on fallback contract', async () => {
 				const revertMsg = 'not initialized';
 				await assert.revert(instance.numVestingEntries(user1), revertMsg);
 				await assert.revert(instance.totalEscrowedAccountBalance(user1), revertMsg);

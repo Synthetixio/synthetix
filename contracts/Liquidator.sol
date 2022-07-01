@@ -141,7 +141,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     /// View for calculating the amounts of collateral (liquid and escrow that will be liquidated), and debt that will
-    /// removed.
+    /// be removed.
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
     /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)

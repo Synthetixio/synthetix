@@ -68,12 +68,12 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /// this can happen only once and assumes that IRewardEscrowV2Frozen is in fact Frozen both in code and in
     /// data(!!) with most mutative methods reverting (e.g. due to blocked transfers)
-    function setFallbackRewardEscrow(IRewardEscrowV2Frozen previousEscrow) external onlyOwner {
+    function setFallbackRewardEscrow(IRewardEscrowV2Frozen _fallbackRewardEscrow) external onlyOwner {
         require(address(fallbackRewardEscrow) == address(0), "already set");
-        require(address(previousEscrow) != address(0), "cannot be zero address");
+        require(address(_fallbackRewardEscrow) != address(0), "cannot be zero address");
 
-        fallbackRewardEscrow = previousEscrow;
-        nextEntryId = previousEscrow.nextEntryId();
+        fallbackRewardEscrow = _fallbackRewardEscrow;
+        nextEntryId = _fallbackRewardEscrow.nextEntryId();
         fallbackId = nextEntryId;
 
         // carry over previous balance tracking
@@ -167,6 +167,12 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     /// zero out multiple entries in order of accountVestingEntryIDs until target is reached (or entries exhausted)
+    /// @param account: account
+    /// @param startIndex: index into accountVestingEntryIDs to start with. NOT an entryID.
+    /// @param targetAmount: amount to try and reach during the iteration, once the amount it reached (and passed)
+    ///     the iteration stops
+    /// @return total: total sum reached, may different from targetAmount (higher if sum is a bit more), lower
+    ///     if target wasn't reached reaching the length of the array
     function setZerosUntilTarget(
         address account,
         uint startIndex,
@@ -218,7 +224,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         require(total >= 0, "balance must be positive");
         if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
-            // writing an actual 0 will result in stale value being read form fallback
+            // writing an actual 0 will result in stale value being read from fallback
             _totalEscrowedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
         } else {
             _totalEscrowedAccountBalance[account] = total;
@@ -234,13 +240,15 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         require(total >= 0, "balance must be positive");
         if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
-            //  writing an actual 0 will result in stale value being read form fallback
+            //  writing an actual 0 will result in stale value being read from fallback
             _totalVestedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
         } else {
             _totalVestedAccountBalance[account] = total;
         }
     }
 
+    /// this method is unused in contracts (because updateEscrowAccountBalance uses it), but it is here
+    /// for completeness, in case a fix to one of these values is needed (but not the other)
     function updateTotalEscrowedBalance(int delta) public initialized onlyAssociatedContract {
         int total = int(totalEscrowedBalance()).add(delta);
         require(total >= 0, "balance must be positive");

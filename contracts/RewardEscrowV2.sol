@@ -68,8 +68,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
          *  transfer the escrowed SNX being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
-            state().updateEscrowAccountBalance(account, -int(escrowedAccountBalance));
-            IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
+            state().updateEscrowAccountBalance(account, -SafeCast.toInt256(escrowedAccountBalance));
+            synthetixERC20().transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
         }
 
         emit BurnedForMigrationToL2(account, entryIDs, escrowedAccountBalance, block.timestamp);
