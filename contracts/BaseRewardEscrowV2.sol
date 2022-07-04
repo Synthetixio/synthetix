@@ -235,7 +235,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
                 /* update entry to remove escrowAmount */
                 if (quantity > 0) {
-                    state().setEntryZeroAmount(account, entryIDs[i]);
+                    state().setZeroAmount(account, entryIDs[i]);
                 }
 
                 /* add quantity to total */
@@ -268,7 +268,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(recipient != address(0), "recipient not set");
 
         // set stored entries to zero
-        (uint total, uint endIndex, uint lastEntryTime) = state().setZerosUntilTarget(account, startIndex, targetAmount);
+        (uint total, uint endIndex, uint lastEntryTime) =
+            state().setZeroAmountUntilTarget(account, startIndex, targetAmount);
 
         // check total is indeed enough
         // the caller should have checked for the general amount of escrow
@@ -418,7 +419,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             /* ignore vesting entries with zero escrowAmount */
             if (entry.escrowAmount != 0) {
                 // set previous entry amount to zero
-                state().setEntryZeroAmount(from, entryIDs[i]);
+                state().setZeroAmount(from, entryIDs[i]);
 
                 // append new entry for recipient, the new entry will have new entryID
                 state().addVestingEntry(to, entry);

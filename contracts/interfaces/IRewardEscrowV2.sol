@@ -20,9 +20,9 @@ interface IRewardEscrowV2Storage {
     function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 
     /// Mutative
-    function setEntryZeroAmount(address account, uint entryId) external;
+    function setZeroAmount(address account, uint entryId) external;
 
-    function setZerosUntilTarget(
+    function setZeroAmountUntilTarget(
         address account,
         uint startIndex,
         uint targetAmount

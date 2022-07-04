@@ -101,7 +101,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     function accountVestingEntryIDs(address account, uint index) public view initialized returns (uint) {
-        // cache is used here to prevent external calls during setZerosUntilTarget loop
+        // cache is used here to prevent external calls during setZeroAmountUntilTarget loop
         uint fallbackCount = _fallbackCounts[account];
         if (fallbackCount == 0) {
             // uninitialized
@@ -153,7 +153,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// zeros out a single entry
-    function setEntryZeroAmount(address account, uint entryId) public initialized onlyAssociatedContract {
+    function setZeroAmount(address account, uint entryId) public initialized onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
@@ -173,7 +173,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     ///     the iteration stops
     /// @return total: total sum reached, may different from targetAmount (higher if sum is a bit more), lower
     ///     if target wasn't reached reaching the length of the array
-    function setZerosUntilTarget(
+    function setZeroAmountUntilTarget(
         address account,
         uint startIndex,
         uint targetAmount
@@ -207,7 +207,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
                 total = total.add(entry.escrowAmount);
 
                 // set to zero
-                setEntryZeroAmount(account, entryID);
+                setZeroAmount(account, entryID);
 
                 if (total >= targetAmount) {
                     break;
