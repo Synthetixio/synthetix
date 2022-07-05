@@ -25,7 +25,7 @@ contract OneNetAggregatorDebtRatio is BaseOneNetAggregator {
 
         uint result =
             totalDebtShares == 0
-                ? 1000000000000000000000000000
+                ? 10**27
                 : totalIssuedSynths.decimalToPreciseDecimal().divideDecimalRound(totalDebtShares);
 
         uint dataTimestamp = now;

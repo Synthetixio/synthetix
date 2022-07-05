@@ -177,7 +177,7 @@ contract('CollateralEth', async accounts => {
 		assert.equal(await ceth.collateralKey(), sETH);
 		assert.equal(await ceth.synths(0), toBytes32('SynthsUSD'));
 		assert.equal(await ceth.synths(1), toBytes32('SynthsETH'));
-		assert.bnEqual(await ceth.minCratio(), toUnit('1.35'));
+		assert.bnEqual(await ceth.minCratio(), toUnit('1.3'));
 		assert.bnEqual(await ceth.minCollateral(), toUnit('2'));
 	});
 
@@ -260,12 +260,12 @@ contract('CollateralEth', async accounts => {
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
 			// $270 worth of eth should allow 200 sUSD to be issued.
-			const sUSDAmount = await ceth.maxLoan(toUnit('2.7'), sUSD);
+			const sUSDAmount = await ceth.maxLoan(toUnit('2.6'), sUSD);
 
 			assert.bnClose(sUSDAmount, toUnit('200'), '100');
 
 			// $270 worth of eth should allow $200 (0.02) of sBTC to be issued.
-			const sBTCAmount = await ceth.maxLoan(toUnit('2.7'), sBTC);
+			const sBTCAmount = await ceth.maxLoan(toUnit('2.6'), sBTC);
 
 			assert.bnEqual(sBTCAmount, toUnit('0.02'));
 		});
@@ -716,7 +716,7 @@ contract('CollateralEth', async accounts => {
 
 		beforeEach(async () => {
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
-			loan = await ceth.open(toUnit('175'), sUSD, {
+			loan = await ceth.open(toUnit('200'), sUSD, {
 				value: toUnit('2.6'),
 				from: account1,
 			});
@@ -773,7 +773,7 @@ contract('CollateralEth', async accounts => {
 		});
 
 		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
-			const liquidatedCollateral = new BN('649999999999999983');
+			const liquidatedCollateral = new BN('1588888888888888880');
 			let liquidationAmount;
 
 			beforeEach(async () => {
@@ -801,7 +801,7 @@ contract('CollateralEth', async accounts => {
 
 			it('should reduce the liquidators synth amount', async () => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
-				const expectedBalance = toUnit('1000').sub(toUnit('45'));
+				const expectedBalance = toUnit('1000').sub(toUnit('130'));
 				assert.bnClose(liquidatorBalance, expectedBalance, '100000000000');
 			});
 
@@ -820,7 +820,7 @@ contract('CollateralEth', async accounts => {
 			it('should fix the collateralisation ratio of the loan', async () => {
 				const ratio = await ceth.collateralRatio(id);
 				// the loan is very close 150%, we are in 10^18 land.
-				assert.bnClose(ratio, toUnit('1.35'), '10000000000000');
+				assert.bnClose(ratio, toUnit('1.3'), '10000000000000');
 			});
 
 			it('should allow the liquidator to call claim', async () => {
@@ -868,7 +868,7 @@ contract('CollateralEth', async accounts => {
 
 			it('should reduce the liquidators synth amount', async () => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
-				const expectedBalance = toUnit(1000).sub(toUnit('175'));
+				const expectedBalance = toUnit(1000).sub(toUnit('200'));
 
 				assert.bnClose(liquidatorBalance, expectedBalance, '1000000000000000');
 			});

@@ -335,15 +335,6 @@
 	"SynthsADA": {
 		"deploy": true
 	},
-	"TokenStatesDEFI": {
-		"deploy": true
-	},
-	"ProxysDEFI": {
-		"deploy": true
-	},
-	"SynthsDEFI": {
-		"deploy": true
-	},
 	"TokenStatesFTSE": {
 		"deploy": true
 	},
