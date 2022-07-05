@@ -3636,7 +3636,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						it('when called with invalid synth, then reverts', async () => {
 							await assert.revert(
 								exchanger.suspendSynthWithInvalidRate(toBytes32('XYZ')),
-								'No such synth'
+								'No aggregator'
 							);
 						});
 

@@ -260,7 +260,7 @@ contract('CollateralUtil', async accounts => {
 		});
 
 		it('ignores snxLiquidationPenalty when calculating the liquidation amount (uses liquidationPenalty)', async () => {
-			await updateAggregatorRates(exchangeRates, [sBTC], [toUnit(7000)]);
+			await updateAggregatorRates(exchangeRates, null, [sBTC], [toUnit(7000)]);
 
 			await systemSettings.setSnxLiquidationPenalty(toUnit('0.2'), { from: owner });
 			amountToLiquidate = await cerc20.liquidationAmount(id);

@@ -943,24 +943,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _;
     }
 
-    modifier issuanceActive() {
-        _issuanceActive();
-        _;
-    }
-
-    function _issuanceActive() private {
-        systemStatus().requireIssuanceActive();
-    }
-
-    modifier synthActive(bytes32 currencyKey) {
-        _synthActive(currencyKey);
-        _;
-    }
-
-    function _synthActive(bytes32 currencyKey) private {
-        systemStatus().requireSynthActive(currencyKey);
-    }
-
     /* ========== EVENTS ========== */
 
     event SynthAdded(bytes32 currencyKey, address synth);
