@@ -59,7 +59,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         returns (Position memory position, PositionStatus memory positionStatus)
     {
         (uint price, bool isInvalid) = assetPrice(marketKey);
-        position = _storageViews().positions(marketKey, account);
+        position = _stateViews().positions(marketKey, account);
         uint liqPrice = _approxLiquidationPrice(position, price);
         // if position cannot be liquidated at any price (no leverage), return 0 as possible fee
         uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
@@ -79,7 +79,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     }
 
     function storageContract() external view returns (IPerpsStorageV2External) {
-        return _storageViews();
+        return _stateViews();
     }
 
     /**
@@ -121,7 +121,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
             return (0, 0, 0, Status.InvalidPrice);
         }
 
-        Position memory position = _storageViews().positions(marketKey, account);
+        Position memory position = _stateViews().positions(marketKey, account);
 
         TradeParams memory params =
             TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: bytes32(0)});

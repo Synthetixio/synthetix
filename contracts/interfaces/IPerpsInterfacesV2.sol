@@ -123,7 +123,7 @@ interface IPerpsEngineV2Internal {
     // internal mutative
 
     // only manager
-    function initOrCheckMarket(bytes32 marketKey, bytes32 baseAsset) external;
+    function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external;
 
     // only settings
     function recomputeFunding(bytes32 marketKey) external;

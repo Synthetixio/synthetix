@@ -132,14 +132,14 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /* ========== EXTERNAL MUTATIVE METHODS ========== */
 
-    function initOrCheckMarket(bytes32 marketKey, bytes32 baseAsset) external {
+    function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external {
         // only manager can call
         _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
         // load current stored market
-        MarketScalars memory market = _storageViews().marketScalars(marketKey);
+        MarketScalars memory market = _stateViews().marketScalars(marketKey);
         if (market.baseAsset == bytes32(0)) {
             // market is not initialized yet, init its storage, this can only be done once in storage
-            _storageMutative().initMarket(marketKey, baseAsset);
+            _stateMutative().initMarket(marketKey, baseAsset);
         } else {
             // market was previously initialized, ensure it was initialized to the same baseAsset
             // this behavior is important in order to allow manager to add previously removed markets
@@ -259,10 +259,10 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         uint price
     ) internal {
         // get previous values
-        Position memory oldPosition = _storageViews().positions(marketKey, account);
+        Position memory oldPosition = _stateViews().positions(marketKey, account);
         // update position and ger the new state
         Position memory newPosition =
-            _storageMutative().storePosition(marketKey, account, newMargin, newLocked, newSize, price);
+            _stateMutative().storePosition(marketKey, account, newMargin, newLocked, newSize, price);
 
         // load market scalars to update aggregates
         MarketScalars memory market = _marketScalars(marketKey);
@@ -271,7 +271,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         int oldSize = oldPosition.size;
         int debtCorrectionDelta = _positionDebtCorrection(newPosition).sub(_positionDebtCorrection(oldPosition));
 
-        _storageMutative().storeMarketAggregates(
+        _stateMutative().storeMarketAggregates(
             marketKey,
             market.marketSize.add(_abs(newSize)).sub(_abs(oldSize)),
             market.marketSkew.add(newSize).sub(oldSize),
@@ -324,7 +324,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
         int newFundingAmount = _nextFundingAmount(marketKey, price);
-        _storageMutative().addFundingEntry(marketKey, newFundingAmount);
+        _stateMutative().addFundingEntry(marketKey, newFundingAmount);
     }
 
     function _transferMargin(
@@ -366,7 +366,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         uint burnAmount,
         uint price
     ) internal {
-        Position memory oldPosition = _storageMutative().positionWithInit(marketKey, account);
+        Position memory oldPosition = _stateMutative().positionWithInit(marketKey, account);
 
         // ensure we only burn as much as previously locked + newly locked
         // burn is always positive (uint), and lockedDelta can be positive or negative
@@ -407,7 +407,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         address account,
         TradeParams memory params
     ) internal {
-        Position memory oldPosition = _storageMutative().positionWithInit(marketKey, account);
+        Position memory oldPosition = _stateMutative().positionWithInit(marketKey, account);
 
         // Compute the new position after performing the trade
         (uint newMargin, int newSize, uint fee, Status status) = _postTradeDetails(oldPosition, params);
@@ -452,7 +452,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         uint price,
         address liquidator
     ) internal {
-        Position memory prevPosition = _storageMutative().positionWithInit(marketKey, account);
+        Position memory prevPosition = _stateMutative().positionWithInit(marketKey, account);
 
         // check can actually liquidate
         _revertIfError(!_canLiquidate(prevPosition, price), Status.CannotLiquidate);
@@ -506,11 +506,11 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
-    function _storageMutative() internal view returns (IPerpsStorageV2Internal) {
+    function _stateMutative() internal view returns (IPerpsStorageV2Internal) {
         return IPerpsStorageV2Internal(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
-    function _storageViews() internal view returns (IPerpsStorageV2External) {
+    function _stateViews() internal view returns (IPerpsStorageV2External) {
         return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
@@ -521,7 +521,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     /* ========== INTERNAL LOGIC VIEWS ========== */
 
     function _marketScalars(bytes32 marketKey) internal view returns (MarketScalars memory market) {
-        market = _storageViews().marketScalars(marketKey);
+        market = _stateViews().marketScalars(marketKey);
         require(market.baseAsset != bytes32(0), "market not initialised");
         return market;
     }
@@ -549,7 +549,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     function _unrecordedFunding(bytes32 marketKey, uint price) internal view returns (int funding) {
-        uint lastTimestamp = _storageViews().lastFundingEntry(marketKey).timestamp;
+        uint lastTimestamp = _stateViews().lastFundingEntry(marketKey).timestamp;
         int elapsed = int(block.timestamp.sub(lastTimestamp));
         // The current funding rate, rescaled to a percentage per second.
         int currentFundingRatePerSecond = _currentFundingRate(marketKey, price) / 1 days;
@@ -561,7 +561,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
     function _nextFundingAmount(bytes32 marketKey, uint price) internal view returns (int funding) {
-        return (_storageViews().lastFundingEntry(marketKey).funding).add(_unrecordedFunding(marketKey, price));
+        return (_stateViews().lastFundingEntry(marketKey).funding).add(_unrecordedFunding(marketKey, price));
     }
 
     /*

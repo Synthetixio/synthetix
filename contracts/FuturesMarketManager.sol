@@ -154,21 +154,17 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
         return (total, anyIsInvalid);
     }
 
-    // backwards compatibility for FuturesMarketSettings and FuturesMarketData
+    /// backwards compatibility for FuturesMarketSettings and FuturesMarketData
     function marketForKey(bytes32 marketKey) external view returns (address) {
         return marketV1ForKey[marketKey];
     }
 
-    /*
-     * The market addresses for a given set of market key strings.
-     */
+    /// The market addresses for a given set of market key strings.
     function marketsV1ForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory) {
         return _addressesForKeysV1(marketKeys);
     }
 
-    /*
-     * The list of all markets.
-     */
+    /// The list of all markets.
     function allMarketsV1() public view returns (address[] memory) {
         return _marketsV1.getPage(0, _marketsV1.elements.length);
     }
@@ -374,14 +370,12 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
 
     ///// Mutative V1
 
-    // backwards compatibility with futures v1
+    /// backwards compatibility with futures v1
     function payFee(uint amount) external onlyMarketsOrRouters {
         _payFee(amount, bytes32(0));
     }
 
-    /*
-     * Add a set of new markets. Reverts if some market key already has a market.
-     */
+    /// Add a list of new markets. Reverts if some market key already has a market.
     function addMarketsV1(address[] memory marketsToAdd) public onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
@@ -403,21 +397,17 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
         }
     }
 
-    // backwards compatibility for V1 (e.g. migration contracts and scripts)
+    /// backwards compatibility for V1 (e.g. migration contracts and scripts)
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
         addMarketsV1(marketsToAdd);
     }
 
-    /*
-     * Remove a set of markets. Reverts if any market is not known to the manager.
-     */
+    /// Remove a list of markets. Reverts if any market is not known to the manager.
     function removeMarketsV1(address[] calldata marketsToRemove) external onlyOwner {
         return _removeMarketsV1(marketsToRemove);
     }
 
-    /*
-     * Remove the markets for a given set of market keys. Reverts if any key has no associated market.
-     */
+    /// Remove the markets for a given set of market keys. Reverts if any key has no associated market.
     function removeMarketsByKeyV1(bytes32[] calldata marketKeysToRemove) external onlyOwner {
         _removeMarketsV1(_addressesForKeysV1(marketKeysToRemove));
     }
@@ -444,7 +434,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
             // initialize market in engine or check that it's already initialized with correct asset.
             // Note that this will add all preivous data for the stored market, so if this is not
             // the intention - a new marketKey should be used.
-            _perpsEngineV2().initOrCheckMarket(marketKey, baseAsset);
+            _perpsEngineV2().ensureInitialized(marketKey, baseAsset);
 
             emit MarketAddedV2(baseAsset, marketKey);
         }
@@ -452,7 +442,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
 
     function removeMarketsV2(bytes32[] calldata marketKeys) external onlyOwner {
         uint numOfMarkets = marketKeys.length;
-        IPerpsStorageV2External persStorage = _perpsEngineV2Views().storageContract();
+        IPerpsStorageV2External perpsStorage = _perpsEngineV2Views().storageContract();
         for (uint i; i < numOfMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
             // check it was added
@@ -463,7 +453,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
             // and so if added again, will contain all the previous data.
             _marketsV2.remove(marketKey);
 
-            emit MarketRemovedV2(persStorage.marketScalars(marketKey).baseAsset, marketKey);
+            emit MarketRemovedV2(perpsStorage.marketScalars(marketKey).baseAsset, marketKey);
         }
     }
 
