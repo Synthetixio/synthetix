@@ -154,13 +154,8 @@ interface IPerpsEngineV2Internal {
 }
 
 interface IPerpsStorageV2External {
-    // views
-
+    // views only
     function marketScalars(bytes32 marketKey) external view returns (IPerpsTypesV2.MarketScalars memory);
-
-    function fundingSequences(bytes32 marketKey, uint index) external view returns (IPerpsTypesV2.FundingEntry memory);
-
-    function fundingSequenceLength(bytes32 marketKey) external view returns (uint);
 
     function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsTypesV2.FundingEntry memory);
 
@@ -176,7 +171,7 @@ interface IPerpsStorageV2Internal {
 
     function positionWithInit(bytes32 marketKey, address account) external returns (IPerpsTypesV2.Position memory);
 
-    function addFundingEntry(bytes32 marketKey, int funding) external;
+    function updateFunding(bytes32 marketKey, int funding) external;
 
     function storePosition(
         bytes32 marketKey,

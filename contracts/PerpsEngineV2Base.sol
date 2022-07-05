@@ -324,7 +324,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
         int newFundingAmount = _nextFundingAmount(marketKey, price);
-        _stateMutative().addFundingEntry(marketKey, newFundingAmount);
+        _stateMutative().updateFunding(marketKey, newFundingAmount);
     }
 
     function _transferMargin(
@@ -557,8 +557,8 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     /*
-     * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
-     * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
+     * The funding is updated when recomputed. It is the sum of the
+     * last entry and the unrecorded funding, so the last entry accumulates the running total over the market's lifetime.
      */
     function _nextFundingAmount(bytes32 marketKey, uint price) internal view returns (int funding) {
         return (_stateViews().lastFundingEntry(marketKey).funding).add(_unrecordedFunding(marketKey, price));
