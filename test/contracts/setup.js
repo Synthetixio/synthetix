@@ -312,7 +312,7 @@ const setupContract = async ({
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
 		PerpsSettingsV2: [owner, tryGetAddressOf('AddressResolver')],
-		PerpsStorageV2: [tryGetAddressOf('AddressResolver')],
+		PerpsStorageV2: [owner, ZERO_ADDRESS],
 		PerpsEngineV2: [tryGetAddressOf('AddressResolver')],
 		PerpsOrdersV2: [tryGetAddressOf('AddressResolver')],
 	};
@@ -574,6 +574,9 @@ const setupContract = async ({
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarketsV1([instance.address], { from: owner }),
 			]);
+		},
+		async PerpsEngineV2() {
+			await cache['PerpsStorageV2'].setAssociatedContract(instance.address, { from: owner });
 		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
@@ -1038,7 +1041,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'PerpsStorageV2',
-			deps: ['AddressResolver', 'FlexibleStorage'],
+			deps: [],
 		},
 		{
 			contract: 'PerpsEngineV2',
