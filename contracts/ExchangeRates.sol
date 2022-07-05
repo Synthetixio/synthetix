@@ -80,7 +80,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             bool staleOrInvalid
         )
     {
-        require(currencyKey == "sUSD" || address(aggregators[currencyKey]) != address(0), "No aggregator for asset");
+        address aggregatorAddress = address(aggregators[currencyKey]);
+        require(currencyKey == "sUSD" || aggregatorAddress != address(0), "No aggregator for asset");
 
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
@@ -88,14 +89,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return (rateAndTime.rate, false, false);
         }
 
-        bool broken = circuitBreaker().probeCircuitBreaker(address(aggregators[currencyKey]), rateAndTime.rate);
-
-        return (
-            rateAndTime.rate,
-            broken,
-            _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
-                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()))
-        );
+        rate = rateAndTime.rate;
+        broken = circuitBreaker().probeCircuitBreaker(aggregatorAddress, rateAndTime.rate);
+        staleOrInvalid = _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
+                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()));
     }
 
     /* ========== VIEWS ========== */
