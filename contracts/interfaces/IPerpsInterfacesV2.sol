@@ -57,7 +57,8 @@ interface IPerpsTypesV2 {
         uint timestamp;
     }
 
-    struct PositionStatus {
+    struct PositionSummary {
+        Position position;
         int profitLoss;
         int accruedFunding;
         uint remainingMargin;
@@ -86,7 +87,7 @@ interface IPerpsEngineV2External {
     function positionSummary(bytes32 marketKey, address account)
         external
         view
-        returns (IPerpsTypesV2.Position memory position, IPerpsTypesV2.PositionStatus memory positionStatus);
+        returns (IPerpsTypesV2.PositionSummary memory);
 
     function orderFee(
         bytes32 marketKey,
@@ -214,7 +215,7 @@ interface IPerpsOrdersV2 {
     function positionSummary(bytes32 marketKey, address account)
         external
         view
-        returns (IPerpsTypesV2.Position memory position, IPerpsTypesV2.PositionStatus memory positionStatus);
+        returns (IPerpsTypesV2.PositionSummary memory);
 
     function marketSummary(bytes32 marketKey) external view returns (IFuturesMarketManager.MarketSummary memory);
 

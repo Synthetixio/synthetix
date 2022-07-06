@@ -84,11 +84,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return _dynamicFeeRate(marketKey);
     }
 
-    function positionSummary(bytes32 marketKey, address account)
-        external
-        view
-        returns (Position memory position, PositionStatus memory positionStatus)
-    {
+    function positionSummary(bytes32 marketKey, address account) external view returns (PositionSummary memory) {
         return engineContract().positionSummary(marketKey, account);
     }
 
@@ -166,8 +162,8 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
      */
     function withdrawAllMargin(bytes32 marketKey) external {
         address account = msg.sender;
-        (, PositionStatus memory posStatus) = engineContract().positionSummary(marketKey, account);
-        int marginDelta = -int(posStatus.accessibleMargin);
+        PositionSummary memory posSummary = engineContract().positionSummary(marketKey, account);
+        int marginDelta = -int(posSummary.accessibleMargin);
         _engineInternal().transferMargin(marketKey, account, marginDelta);
     }
 

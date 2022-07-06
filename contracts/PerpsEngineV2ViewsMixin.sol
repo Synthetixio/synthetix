@@ -53,19 +53,15 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
      * short, then it is safe whenever the current price is below the liquidation price.
      * A position's accurate liquidation price can move around slightly due to accrued funding.
      */
-    function positionSummary(bytes32 marketKey, address account)
-        external
-        view
-        returns (Position memory position, PositionStatus memory positionStatus)
-    {
+    function positionSummary(bytes32 marketKey, address account) external view returns (PositionSummary memory) {
         (uint price, bool isInvalid) = assetPrice(marketKey);
-        position = _stateViews().positions(marketKey, account);
+        Position memory position = _stateViews().positions(marketKey, account);
         uint liqPrice = _approxLiquidationPrice(position, price);
         // if position cannot be liquidated at any price (no leverage), return 0 as possible fee
         uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
-        return (
-            position,
-            PositionStatus({
+        return
+            PositionSummary({
+                position: position,
                 profitLoss: _profitLoss(position, price),
                 accruedFunding: _accruedFunding(position, price),
                 remainingMargin: _remainingMargin(position, price),
@@ -74,8 +70,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
                 approxLiquidationPrice: liqPrice,
                 approxLiquidationFee: liqFee,
                 priceInvalid: isInvalid
-            })
-        );
+            });
     }
 
     function stateContract() external view returns (IPerpsStorageV2External) {

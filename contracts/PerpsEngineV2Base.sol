@@ -19,34 +19,6 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
-    /* ========== LIBRARIES ========== */
-
-    using SafeMath for uint;
-    using SignedSafeMath for int;
-    using SignedSafeDecimalMath for int;
-    using SafeDecimalMath for uint;
-
-    /* ========== PUBLIC CONSTANTS ========== */
-
-    bytes32 public constant CONTRACT_NAME = "PerpsEngineV2";
-
-    /* ========== INTERNAL CONSTANTS ========== */
-
-    // This is the same unit as used inside `SignedSafeDecimalMath`.
-    int private constant _UNIT = int(10**uint(18));
-
-    //slither-disable-next-line naming-convention
-    bytes32 internal constant sUSD = "sUSD";
-
-    mapping(uint8 => string) internal _errorMessages;
-
-    // Address Resolver Configuration
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
-    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
-    bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
-    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-
     /* ========== EVENTS ========== */
 
     event MarginModified(
@@ -79,6 +51,34 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     );
 
     event Tracking(bytes32 indexed trackingCode, bytes32 marketKey, address account, int sizeDelta, uint fee);
+
+    /* ========== LIBRARIES ========== */
+
+    using SafeMath for uint;
+    using SignedSafeMath for int;
+    using SignedSafeDecimalMath for int;
+    using SafeDecimalMath for uint;
+
+    /* ========== PUBLIC CONSTANTS ========== */
+
+    bytes32 public constant CONTRACT_NAME = "PerpsEngineV2";
+
+    /* ========== INTERNAL CONSTANTS ========== */
+
+    // This is the same unit as used inside `SignedSafeDecimalMath`.
+    int private constant _UNIT = int(10**uint(18));
+
+    //slither-disable-next-line naming-convention
+    bytes32 internal constant sUSD = "sUSD";
+
+    mapping(uint8 => string) internal _errorMessages;
+
+    // Address Resolver Configuration
+    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+    bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
+    bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
+    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     /* ========== MODIFIERS ========== */
 
