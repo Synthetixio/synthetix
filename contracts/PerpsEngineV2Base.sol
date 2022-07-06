@@ -85,7 +85,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     modifier approvedRouterAndMarket(bytes32 marketKey) {
         // msg.sender is the calling order routers contract.
         // both the router and the marketKey (and possibly their combination)
-        // need to be approved by the manager to ensure e.g. market was not removed, and router is
+        // need to be approved by the manager to ensure e.g. market amd routers were not removed, and router is
         // authorized to perform trades on behalf of users (and passing fee rates for those trades)
         bool approved = _manager().approvedRouterAndMarket(msg.sender, marketKey);
         _revertIfError(!approved, Status.NotPermitted);
@@ -718,11 +718,11 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
             if (checkLeverage && _abs(curLeverage) > _maxLeverage(position.marketKey)) {
                 return (newMargin, Status.MaxLeverageExceeded);
             }
-        }
 
-        // check that min margin is kept if check is needed (skipped for size decreasing trades)
-        if (checkMinMargin && newMargin < _minInitialMargin()) {
-            return (newMargin, Status.InsufficientMargin);
+            // check that min margin is kept if check is needed (skipped for size decreasing trades)
+            if (checkMinMargin && newMargin < _minInitialMargin()) {
+                return (newMargin, Status.InsufficientMargin);
+            }
         }
 
         return (newMargin, Status.Ok);
@@ -798,6 +798,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return _remainingMargin(position, price) <= _liquidationMargin(_notionalValue(position.size, price));
     }
 
+    /// Equivalent to the position's notional value divided by its remaining margin.
     function _currentLeverage(int notionalValue, uint remainingMargin_) internal pure returns (int leverage) {
         // No position is open, or it is ready to be liquidated; leverage goes to nil
         if (remainingMargin_ == 0) {

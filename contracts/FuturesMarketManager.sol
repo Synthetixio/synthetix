@@ -251,7 +251,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     }
 
     function _perpsOrdersV2() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_PERPSENGINEV2);
+        return requireAndGetAddress(CONTRACT_PERPSORDERSEV2);
     }
 
     ///// V1 helper views
