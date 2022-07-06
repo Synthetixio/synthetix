@@ -6,7 +6,7 @@ interface IFuturesMarketManager {
     struct MarketSummary {
         string version;
         address market;
-        bytes32 asset;
+        bytes32 baseAsset;
         bytes32 marketKey;
         uint price;
         uint marketSize;
@@ -61,6 +61,8 @@ interface IFuturesMarketManager {
     function totalDebtV2() external view returns (uint debt, bool isInvalid);
 
     function allMarketSummariesV2() external view returns (MarketSummary[] memory);
+
+    function marketSummariesV2(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory);
 }
 
 /// internal interface

@@ -216,6 +216,10 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return _marketSummariesV2(allMarketsV2());
     }
 
+    function marketSummariesV2(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
+        return _marketSummariesV2(marketKeys);
+    }
+
     function approvedRouterAndMarket(address router, bytes32 marketKey) external view returns (bool approved) {
         // currently only the default orders router (PerpsOrdersV2) is approved
         // for any V2 market, in future upgrades additional order routers might be supported
@@ -274,7 +278,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
             summaries[i] = MarketSummary({
                 version: "V1",
                 market: address(market),
-                asset: baseAsset,
+                baseAsset: baseAsset,
                 marketKey: marketKey,
                 price: price,
                 marketSize: market.marketSize(),
@@ -304,7 +308,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
             summaries[i] = MarketSummary({
                 version: "V2",
                 market: address(perpsEngine),
-                asset: marketScalars.baseAsset,
+                baseAsset: marketScalars.baseAsset,
                 marketKey: marketKey,
                 price: price,
                 marketSize: marketScalars.marketSize,

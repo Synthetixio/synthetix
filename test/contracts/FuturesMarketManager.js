@@ -607,7 +607,7 @@ contract('FuturesMarketManager', accounts => {
 
 			assert.equal(summary.market, market.address);
 			assert.equal(summary.marketKey, marketKey);
-			assert.equal(summary.asset, assetKey);
+			assert.equal(summary.baseAsset, assetKey);
 			assert.equal(summary.price, price);
 			assert.equal(summary.marketSize, await market.marketSize());
 			assert.equal(summary.marketSkew, await market.marketSkew());
@@ -633,7 +633,7 @@ contract('FuturesMarketManager', accounts => {
 			const linkSummary = summaries.find(summary => summary.marketKey === toBytes32('sLINK'));
 
 			assert.equal(btcSummary.market, markets[0].address);
-			assert.equal(btcSummary.asset, toBytes32(assets[0]));
+			assert.equal(btcSummary.baseAsset, toBytes32(assets[0]));
 			let price = await markets[0].assetPrice();
 			assert.equal(btcSummary.price, price.price);
 			assert.equal(btcSummary.marketSize, await markets[0].marketSize());
@@ -641,7 +641,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
 
 			assert.equal(ethSummary.market, markets[1].address);
-			assert.equal(ethSummary.asset, toBytes32(assets[1]));
+			assert.equal(ethSummary.baseAsset, toBytes32(assets[1]));
 			price = await markets[1].assetPrice();
 			assert.equal(ethSummary.price, price.price);
 			assert.equal(ethSummary.marketSize, await markets[1].marketSize());
@@ -649,7 +649,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
 
 			assert.equal(linkSummary.market, await futuresMarketManager.marketForKey(toBytes32('sLINK')));
-			assert.equal(linkSummary.asset, toBytes32('LINK'));
+			assert.equal(linkSummary.baseAsset, toBytes32('LINK'));
 			assert.equal(linkSummary.price, toUnit(1000));
 			assert.equal(linkSummary.marketSize, toUnit(0));
 			assert.equal(linkSummary.marketSkew, toUnit(0));
