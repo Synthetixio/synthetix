@@ -74,12 +74,7 @@ contract('FuturesMarket', accounts => {
 	const initialFundingIndex = toBN(0);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(
-			exchangeRates,
-			circuitBreaker,
-			[asset],
-			[price]
-		);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, [asset], [price]);
 		// reset the last price to the new price, so that we don't trip the breaker
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {

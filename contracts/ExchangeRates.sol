@@ -91,8 +91,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
         rate = rateAndTime.rate;
         broken = circuitBreaker().probeCircuitBreaker(aggregatorAddress, rateAndTime.rate);
-        staleOrInvalid = _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
-                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()));
+        staleOrInvalid =
+            _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
+            _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()));
     }
 
     /* ========== VIEWS ========== */

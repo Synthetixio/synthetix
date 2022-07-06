@@ -11,7 +11,6 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 } = require('./helpers');
-const { parseBytes32String } = require('ethers/lib/utils');
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
 const MockExchanger = artifacts.require('MockExchanger');
@@ -33,12 +32,7 @@ contract('FuturesMarketManager', accounts => {
 	const initialMint = toUnit('100000');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(
-			exchangeRates,
-			circuitBreaker,
-			[asset],
-			[price]
-		);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, [asset], [price]);
 		// reset the last price to the new price, so that we don't trip the breaker
 		// on various tests that change prices beyond the allowed deviation
 		if (resetCircuitBreaker) {
