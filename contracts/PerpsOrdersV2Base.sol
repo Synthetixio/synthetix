@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsSettingsV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -66,7 +67,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return IPerpsEngineV2External(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
-    function storageContract() public view returns (IPerpsStorageV2External) {
+    function stateContract() public view returns (IPerpsStorageV2External) {
         return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
@@ -105,7 +106,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint rate, bool tooVolatile) {
-        bytes32 baseAsset = storageContract().marketScalars(marketKey).baseAsset;
+        bytes32 baseAsset = stateContract().marketScalars(marketKey).baseAsset;
         return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
     }
 
@@ -188,7 +189,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {
-        int size = storageContract().positions(marketKey, msg.sender).size;
+        int size = stateContract().positions(marketKey, msg.sender).size;
         require(size != 0, "No position open");
         _modifyPosition(marketKey, -size, trackingCode);
     }

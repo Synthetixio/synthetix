@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsSettingsV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";

@@ -88,7 +88,7 @@ contract('FuturesMarketData', accounts => {
 			});
 
 			await addressResolver.rebuildCaches([market.address], { from: owner });
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
+			await futuresMarketManager.addMarketsV1([market.address], { from: owner });
 
 			await setupPriceAggregators(exchangeRates, owner, [assetKey]);
 			await setPrice(assetKey, toUnit(1000));

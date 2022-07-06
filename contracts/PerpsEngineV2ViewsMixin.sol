@@ -78,7 +78,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         );
     }
 
-    function storageContract() external view returns (IPerpsStorageV2External) {
+    function stateContract() external view returns (IPerpsStorageV2External) {
         return _stateViews();
     }
 

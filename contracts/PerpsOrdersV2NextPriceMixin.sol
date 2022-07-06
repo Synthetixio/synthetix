@@ -28,7 +28,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     }
 
     function currentRoundId(bytes32 marketKey) public view returns (uint) {
-        bytes32 baseAsset = storageContract().marketScalars(marketKey).baseAsset;
+        bytes32 baseAsset = stateContract().marketScalars(marketKey).baseAsset;
         return _exchangeRates().getCurrentRoundId(baseAsset);
     }
 

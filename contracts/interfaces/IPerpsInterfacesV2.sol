@@ -75,7 +75,7 @@ interface IPerpsEngineV2External {
     // views
     function assetPrice(bytes32 marketKey) external view returns (uint price, bool invalid);
 
-    function storageContract() external view returns (IPerpsStorageV2External);
+    function stateContract() external view returns (IPerpsStorageV2External);
 
     function marketSizes(bytes32 marketKey) external view returns (uint long, uint short);
 
@@ -190,21 +190,11 @@ interface IPerpsStorageV2Internal {
     ) external;
 }
 
-interface IFuturesMarketManagerInternal {
-    function issueSUSD(address account, uint amount) external;
-
-    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
-
-    function payFee(uint amount, bytes32 trackingCode) external;
-
-    function approvedRouterAndMarket(address router, bytes32 marketKey) external returns (bool approved);
-}
-
 interface IPerpsOrdersV2 {
     // VIEWS
     function engineContract() external view returns (IPerpsEngineV2External);
 
-    function storageContract() external view returns (IPerpsStorageV2External);
+    function stateContract() external view returns (IPerpsStorageV2External);
 
     function nextPriceOrders(bytes32 marketKey, address account) external view returns (IPerpsTypesV2.NextPriceOrder memory);
 

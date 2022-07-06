@@ -20,7 +20,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketManager
-contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IPerpsTypesV2 {
+contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IFuturesMarketManagerInternal, IPerpsTypesV2 {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
     using Bytes32SetLib for Bytes32SetLib.Bytes32Set;
@@ -293,7 +293,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
         uint nMarkets = marketKeys.length;
         MarketSummary[] memory summaries = new MarketSummary[](nMarkets);
         IPerpsEngineV2External perpsEngine = _perpsEngineV2Views();
-        IPerpsStorageV2External perpsStorage = perpsEngine.storageContract();
+        IPerpsStorageV2External perpsStorage = perpsEngine.stateContract();
         for (uint i; i < nMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
             MarketScalars memory marketScalars = perpsStorage.marketScalars(marketKey);
@@ -397,9 +397,10 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
         }
     }
 
-    /// backwards compatibility for V1 (e.g. migration contracts and scripts)
-    function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
-        addMarketsV1(marketsToAdd);
+    /// backwards interface compatibility for compilation of old migration contracts and scripts
+    function addMarkets(address[] calldata marketsToAdd) external {
+        marketsToAdd; // avoid unused variable linter issues
+        revert("deprecated");
     }
 
     /// Remove a list of markets. Reverts if any market is not known to the manager.
@@ -442,7 +443,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IP
 
     function removeMarketsV2(bytes32[] calldata marketKeys) external onlyOwner {
         uint numOfMarkets = marketKeys.length;
-        IPerpsStorageV2External perpsStorage = _perpsEngineV2Views().storageContract();
+        IPerpsStorageV2External perpsStorage = _perpsEngineV2Views().stateContract();
         for (uint i; i < numOfMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
             // check it was added

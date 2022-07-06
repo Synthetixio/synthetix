@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+/// external interface
 interface IFuturesMarketManager {
     struct MarketSummary {
         string version;
@@ -60,11 +61,12 @@ interface IFuturesMarketManager {
     function totalDebtV2() external view returns (uint debt, bool isInvalid);
 
     function allMarketSummariesV2() external view returns (MarketSummary[] memory);
+}
 
+/// internal interface
+interface IFuturesMarketManagerInternal {
+    // view
     function approvedRouterAndMarket(address router, bytes32 marketKey) external view returns (bool approved);
-
-    // Mutative V1 backwards compatibility in migration contracts
-    function addMarkets(address[] calldata marketsToAdd) external;
 
     // Mutative V1 owner actions
     function addMarketsV1(address[] calldata marketsToAdd) external;
@@ -78,7 +80,7 @@ interface IFuturesMarketManager {
 
     function removeMarketsV2(bytes32[] calldata marketKeys) external;
 
-    // Mutative for market & order methods
+    // Mutative internal for engine & order methods
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);

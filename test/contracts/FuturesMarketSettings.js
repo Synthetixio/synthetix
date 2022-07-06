@@ -85,7 +85,7 @@ contract('FuturesMarketSettings', accounts => {
 		});
 
 		// add the market
-		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addMarketsV1([mockFuturesMarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -430,7 +430,7 @@ contract('FuturesMarketSettings', accounts => {
 			});
 
 			// add the market
-			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+			await futuresMarketManager.addMarketsV1([secondBTCMarket.address], { from: owner });
 		});
 
 		it('should be able to change parameters for both markets independently', async () => {
