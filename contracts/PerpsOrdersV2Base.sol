@@ -21,6 +21,7 @@ import "./interfaces/IERC20.sol";
 
 contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
 
@@ -83,6 +84,30 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return _dynamicFeeRate(marketKey);
     }
 
+    function positionSummary(bytes32 marketKey, address account)
+        external
+        view
+        returns (Position memory position, PositionStatus memory positionStatus)
+    {
+        return engineContract().positionSummary(marketKey, account);
+    }
+
+    function marketSummary(bytes32 marketKey) external view returns (IFuturesMarketManager.MarketSummary memory) {
+        bytes32[] memory keys = new bytes32[](1);
+        keys[0] = marketKey;
+        return IFuturesMarketManager(address(_manager())).marketSummariesV2(keys)[0];
+    }
+
+    /// view for returning max possible order size that take into account existing orders
+    function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short) {
+        (uint price, ) = engineContract().assetPrice(marketKey);
+        (uint longSize, uint shortSize) = engineContract().marketSizes(marketKey);
+        uint sizeLimit = _maxSingleSideValueUSD(marketKey).divideDecimal(price);
+        long = longSize < sizeLimit ? sizeLimit.sub(longSize) : 0;
+        short = shortSize < sizeLimit ? sizeLimit.sub(shortSize) : 0;
+        return (long, short);
+    }
+
     // INTERNAL
 
     function _manager() internal view returns (IFuturesMarketManagerInternal) {
@@ -141,7 +166,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
      */
     function withdrawAllMargin(bytes32 marketKey) external {
         address account = msg.sender;
-        (, PositionStatus memory posStatus) = engineContract().positionDetails(marketKey, account);
+        (, PositionStatus memory posStatus) = engineContract().positionSummary(marketKey, account);
         int marginDelta = -int(posStatus.accessibleMargin);
         _engineInternal().transferMargin(marketKey, account, marginDelta);
     }

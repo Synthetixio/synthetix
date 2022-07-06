@@ -53,7 +53,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
      * short, then it is safe whenever the current price is below the liquidation price.
      * A position's accurate liquidation price can move around slightly due to accrued funding.
      */
-    function positionDetails(bytes32 marketKey, address account)
+    function positionSummary(bytes32 marketKey, address account)
         external
         view
         returns (Position memory position, PositionStatus memory positionStatus)

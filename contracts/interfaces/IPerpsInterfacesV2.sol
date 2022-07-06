@@ -1,10 +1,8 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-// a contract / interface matching the filename is expected for compilation
-interface IPerpsInterfacesV2 {
-    function noEmptyBlocks() external; // no empty blocks (post commit checks)
-}
+// for summary struct
+import "./IFuturesMarketManager.sol";
 
 interface IPerpsTypesV2 {
     enum Status {
@@ -85,7 +83,7 @@ interface IPerpsEngineV2External {
 
     function unrecordedFunding(bytes32 marketKey) external view returns (int funding, bool invalid);
 
-    function positionDetails(bytes32 marketKey, address account)
+    function positionSummary(bytes32 marketKey, address account)
         external
         view
         returns (IPerpsTypesV2.Position memory position, IPerpsTypesV2.PositionStatus memory positionStatus);
@@ -210,6 +208,16 @@ interface IPerpsOrdersV2 {
 
     function currentRoundId(bytes32 marketKey) external view returns (uint);
 
+    function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short);
+
+    // forwarded views
+    function positionSummary(bytes32 marketKey, address account)
+        external
+        view
+        returns (IPerpsTypesV2.Position memory position, IPerpsTypesV2.PositionStatus memory positionStatus);
+
+    function marketSummary(bytes32 marketKey) external view returns (IFuturesMarketManager.MarketSummary memory);
+
     // MUTATIVE
 
     function transferMargin(bytes32 marketKey, int marginDelta) external;
@@ -275,4 +283,9 @@ interface IPerpsSettingsV2 {
     function liquidationBufferRatio() external view returns (uint);
 
     function minInitialMargin() external view returns (uint);
+}
+
+// a contract / interface matching the filename is expected for compilation
+interface IPerpsInterfacesV2 {
+    function noEmptyBlocks() external; // no empty blocks (post commit checks)
 }
