@@ -814,6 +814,9 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'DebtCache',
 				'SynthetixDebtShare',
+				'RewardEscrowV2',
+				'SynthetixEscrow',
+				'Liquidator',
 			],
 		},
 		{
@@ -1037,7 +1040,7 @@ const setupAllContracts = async ({
 		// perps v2
 		{
 			contract: 'PerpsSettingsV2',
-			deps: ['AddressResolver', 'FlexibleStorage'],
+			deps: ['AddressResolver', 'FlexibleStorage', 'PerpsEngineV2'],
 		},
 		{
 			contract: 'PerpsStorageV2',
@@ -1049,7 +1052,6 @@ const setupAllContracts = async ({
 			deps: [
 				'AddressResolver',
 				// 'FuturesMarketManager', // is also required, but creates a circular dependence, since both need each other
-				'PerpsSettingsV2',
 				'PerpsStorageV2',
 				'SystemStatus',
 				'ExchangeCircuitBreaker',

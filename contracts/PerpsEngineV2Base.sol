@@ -149,14 +149,14 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     /**
-     * Pushes a new entry to the funding sequence at the current price and funding rate.
-     * @dev Admin only method accessible to FuturesMarketSettings. This is admin only because:
+     * Updates funding entry with unrecorded funding.
+     * @dev Admin only method accessible to PerpsSettings. This is admin only because:
      * - When system parameters change, funding should be recomputed, but system may be paused
      *   during that time for any reason, so this method needs to work even if system is paused.
      *   But in that case, it shouldn't be accessible to external accounts.
      */
     function recomputeFunding(bytes32 marketKey) external {
-        // only FuturesMarketSettings is allowed to use this method
+        // only PerpsSettings is allowed to use this method
         _revertIfError(msg.sender != _settings(), Status.NotPermitted);
         if (_marketScalars(marketKey).marketSize == 0) {
             // short circuit in case of empty market (to avoid reverts on initial configuration)

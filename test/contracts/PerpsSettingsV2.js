@@ -1,9 +1,9 @@
-const { artifacts, contract } = require('hardhat');
+const { contract } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 const { toUnit, toBN } = require('../utils')();
 
-const { mockGenericContractFnc, setupAllContracts } = require('./setup');
+const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const {
 	getDecodedLogs,
@@ -17,11 +17,10 @@ const BN = require('bn.js');
 contract('PerpsSettingsV2', accounts => {
 	let futuresMarketManager, perpsSettings;
 
-	let mockPerpsV2MarketpBTC;
-
 	const owner = accounts[1];
 
 	const marketKey = toBytes32('pBTC');
+	const asset = toBytes32('BTC');
 	const baseFee = toUnit('0.003');
 	const baseFeeNextPrice = toUnit('0.0005');
 	const nextPriceConfirmWindow = toBN('2');
@@ -42,49 +41,12 @@ contract('PerpsSettingsV2', accounts => {
 			contracts: [
 				'PerpsSettingsV2',
 				'FuturesMarketManager',
-				'AddressResolver',
-				'FeePool',
-				'ExchangeRates',
-				'SystemStatus',
-				'SystemSettings',
-				'Synthetix',
-				'DebtCache',
-				'CollateralManager',
+				'LiquidatorRewards', // needed for Issuer, but can't be in deps b/c of circular dependency
 			],
 		}));
 
-		mockPerpsV2MarketpBTC = await artifacts.require('GenericMock').new();
-
-		await mockGenericContractFnc({
-			instance: mockPerpsV2MarketpBTC,
-			mock: 'PerpsV2Market',
-			fncName: 'recomputeFunding',
-			returns: ['0'],
-		});
-
-		await mockGenericContractFnc({
-			instance: mockPerpsV2MarketpBTC,
-			mock: 'PerpsV2Market',
-			fncName: 'marketSize',
-			returns: ['1'],
-		});
-
-		await mockGenericContractFnc({
-			instance: mockPerpsV2MarketpBTC,
-			mock: 'PerpsV2Market',
-			fncName: 'baseAsset',
-			returns: [toBytes32('BTC')],
-		});
-
-		await mockGenericContractFnc({
-			instance: mockPerpsV2MarketpBTC,
-			mock: 'PerpsV2Market',
-			fncName: 'marketKey',
-			returns: [toBytes32('pBTC')],
-		});
-
-		// add the market
-		await futuresMarketManager.addMarkets([mockPerpsV2MarketpBTC.address], { from: owner });
+		// add the market to initialize it
+		await futuresMarketManager.addMarketsV2([marketKey], [asset], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -136,7 +98,7 @@ contract('PerpsSettingsV2', accounts => {
 					perpsSettings.setBaseFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
-					'taker fee greater than 1'
+					'base fee greater than 1'
 				);
 			});
 
@@ -145,7 +107,7 @@ contract('PerpsSettingsV2', accounts => {
 					perpsSettings.setBaseFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
-					'taker fee greater than 1'
+					'base fee greater than 1'
 				);
 			});
 
@@ -395,53 +357,19 @@ contract('PerpsSettingsV2', accounts => {
 	});
 
 	describe('migration scenario: different parameters for two markets for same asset', () => {
-		const firstMarketKey = toBytes32('pBTC');
 		const secondMarketKey = toBytes32('SomethingElse');
 
-		let secondBTCMarket;
-
 		before(async () => {
-			// add a second BTC market
-			secondBTCMarket = await artifacts.require('GenericMock').new();
-
-			await mockGenericContractFnc({
-				instance: secondBTCMarket,
-				mock: 'PerpsV2Market',
-				fncName: 'recomputeFunding',
-				returns: ['0'],
-			});
-
-			await mockGenericContractFnc({
-				instance: secondBTCMarket,
-				mock: 'PerpsV2Market',
-				fncName: 'marketSize',
-				returns: ['1'],
-			});
-
-			await mockGenericContractFnc({
-				instance: secondBTCMarket,
-				mock: 'PerpsV2Market',
-				fncName: 'baseAsset',
-				returns: [toBytes32('BTC')],
-			});
-
-			await mockGenericContractFnc({
-				instance: secondBTCMarket,
-				mock: 'PerpsV2Market',
-				fncName: 'marketKey',
-				returns: [secondMarketKey],
-			});
-
 			// add the market
-			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+			await futuresMarketManager.addMarketsV2([secondMarketKey], [asset], { from: owner });
 		});
 
 		it('should be able to change parameters for both markets independently', async () => {
 			const val1 = toUnit(0.1);
 			const val2 = toUnit(0.5);
-			await perpsSettings.setMaxFundingRate(firstMarketKey, val1, { from: owner });
+			await perpsSettings.setMaxFundingRate(marketKey, val1, { from: owner });
 			await perpsSettings.setMaxFundingRate(secondMarketKey, val2, { from: owner });
-			assert.bnEqual(await perpsSettings.maxFundingRate(firstMarketKey), val1);
+			assert.bnEqual(await perpsSettings.maxFundingRate(marketKey), val1);
 			assert.bnEqual(await perpsSettings.maxFundingRate(secondMarketKey), val2);
 		});
 	});

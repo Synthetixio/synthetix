@@ -9,11 +9,14 @@ import "./PerpsSettingsV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
 contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
+    /* ========== EVENTS ========== */
+    event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
+    event MinKeeperFeeUpdated(uint sUSD);
+    event LiquidationFeeRatioUpdated(uint bps);
+    event LiquidationBufferRatioUpdated(uint bps);
+    event MinInitialMarginUpdated(uint minMargin);
+
     /* ========== CONSTANTS ========== */
-
-    /* ---------- Address Resolver Configuration ---------- */
-
-    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
 
     bytes32 public constant CONTRACT_NAME = "PerpsSettingsV2";
 
@@ -22,6 +25,8 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
     constructor(address _owner, address _resolver) public Owned(_owner) PerpsSettingsV2Mixin(_resolver) {}
 
     /* ========== VIEWS ========== */
+
+    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
@@ -36,51 +41,37 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
 
     /* ---------- Getters ---------- */
 
-    /*
-     * The fee charged when opening a position on the heavy side of a market.
-     */
+    /// The static fee charged when opening a position
     function baseFee(bytes32 marketKey) external view returns (uint) {
         return _baseFee(marketKey);
     }
 
-    /*
-     * The fee charged when opening a position on the heavy side of a market using next price mechanism.
-     */
+    /// The fee charged when opening a position using next price mechanism.
     function baseFeeNextPrice(bytes32 marketKey) external view returns (uint) {
         return _baseFeeNextPrice(marketKey);
     }
 
-    /*
-     * The number of price update rounds during which confirming next-price is allowed
-     */
+    /// The number of price update rounds during which confirming next-price is allowed
     function nextPriceConfirmWindow(bytes32 marketKey) external view returns (uint) {
         return _nextPriceConfirmWindow(marketKey);
     }
 
-    /*
-     * The maximum allowable leverage in a market.
-     */
+    /// The maximum allowable leverage in a market.
     function maxLeverage(bytes32 marketKey) external view returns (uint) {
         return _maxLeverage(marketKey);
     }
 
-    /*
-     * The maximum allowable notional value on each side of a market.
-     */
+    /// The maximum allowable notional value on each side of a market.
     function maxSingleSideValueUSD(bytes32 marketKey) external view returns (uint) {
         return _maxSingleSideValueUSD(marketKey);
     }
 
-    /*
-     * The maximum theoretical funding rate per day charged by a market.
-     */
+    /// The maximum possible funding rate per day charged by a market.
     function maxFundingRate(bytes32 marketKey) external view returns (uint) {
         return _maxFundingRate(marketKey);
     }
 
-    /*
-     * The skew level at which the max funding rate will be charged.
-     */
+    /// The skew level at which the max funding rate will be charged.
     function skewScaleUSD(bytes32 marketKey) external view returns (uint) {
         return _skewScaleUSD(marketKey);
     }
@@ -98,33 +89,25 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
             });
     }
 
-    /*
-     * The minimum amount of sUSD paid to a liquidator when they successfully liquidate a position.
-     * This quantity must be no greater than `minInitialMargin`.
-     */
+    /// The minimum amount of sUSD paid to a liquidator when they successfully liquidate a position.
+    /// This quantity must be no greater than `minInitialMargin`.
     function minKeeperFee() external view returns (uint) {
         return _minKeeperFee();
     }
 
-    /*
-     * Liquidation fee basis points paid to liquidator.
-     * Use together with minKeeperFee() to calculate the actual fee paid.
-     */
+    /// Liquidation fee percent (as ratio) paid to liquidator.
+    /// Use together with minKeeperFee() to calculate the actual fee paid.
     function liquidationFeeRatio() external view returns (uint) {
         return _liquidationFeeRatio();
     }
 
-    /*
-     * Liquidation price buffer in basis points to prevent negative margin on liquidation.
-     */
+    /// Liquidation price buffer percent (as ratio) to prevent negative margin on liquidation.
     function liquidationBufferRatio() external view returns (uint) {
         return _liquidationBufferRatio();
     }
 
-    /*
-     * The minimum margin required to open a position.
-     * This quantity must be no less than `minKeeperFee`.
-     */
+    /// The minimum margin required to open a position.
+    /// This quantity must be no less than `minKeeperFee`.
     function minInitialMargin() external view returns (uint) {
         return _minInitialMargin();
     }
@@ -165,7 +148,7 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
-    // must be recomputed, otherwise already-accrued but unrealised funding in the market can change.
+    // must be recomputed, otherwise already-accrued but unrecorded funding in the market can change.
     function _recomputeFunding(bytes32 marketKey) internal {
         _engine().recomputeFunding(marketKey);
     }
@@ -191,7 +174,6 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
         uint _maxFundingRate,
         uint _skewScaleUSD
     ) external onlyOwner {
-        _recomputeFunding(marketKey);
         setBaseFee(marketKey, _baseFee);
         setBaseFeeNextPrice(marketKey, _baseFeeNextPrice);
         setNextPriceConfirmWindow(marketKey, _nextPriceConfirmWindow);
@@ -222,12 +204,4 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
         emit MinInitialMarginUpdated(_minMargin);
     }
-
-    /* ========== EVENTS ========== */
-
-    event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
-    event MinKeeperFeeUpdated(uint sUSD);
-    event LiquidationFeeRatioUpdated(uint bps);
-    event LiquidationBufferRatioUpdated(uint bps);
-    event MinInitialMarginUpdated(uint minMargin);
 }
