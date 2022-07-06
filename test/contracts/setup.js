@@ -1048,7 +1048,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'PerpsEngineV2',
-			// source: 'TestablePerpsV2Market',
+			source: 'TestablePerpsEngineV2',
 			deps: [
 				'AddressResolver',
 				// 'FuturesMarketManager', // is also required, but creates a circular dependence, since both need each other
@@ -1405,7 +1405,9 @@ const setupAllContracts = async ({
 			await Promise.all(promises);
 
 			// set up
-			for (const { marketKey, assetKey } of perps) {
+			for (let { marketKey, assetKey } of perps) {
+				marketKey = toBytes32(marketKey);
+				assetKey = toBytes32(assetKey);
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
 
