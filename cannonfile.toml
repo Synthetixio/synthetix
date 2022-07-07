@@ -24,58 +24,53 @@ modified = ["contracts", "publish/src"]
 
 [invoke.set_ownership]
 target = [
-    "<%= outputs.self.runs.synthetix.AddressResolverAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralErc20Address %>",
-    #"<%= outputs.self.runs.synthetix.CollateralEthAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralManagerAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralManagerStateAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralShortAddress %>",
-    #"<%= outputs.self.runs.synthetix.CollateralUtilAddress %>",
-    "<%= outputs.self.runs.synthetix.DappMaintenanceAddress %>",
-    "<%= outputs.self.runs.synthetix.DebtCacheAddress %>",
-    "<%= outputs.self.runs.synthetix.DelegateApprovalsAddress %>",
-    "<%= outputs.self.runs.synthetix.DelegateApprovalsEternalStorageAddress %>",
-    "<%= outputs.self.runs.synthetix.DepotAddress %>",
-    #"<%= outputs.self.runs.synthetix.EscrowCheckerAddress %>",
-    "<%= outputs.self.runs.synthetix.EternalStorageLiquidationsAddress %>",
-    "<%= outputs.self.runs.synthetix.EtherWrapperAddress %>",
-    "<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>",
-    "<%= outputs.self.runs.synthetix.ExchangeStateAddress %>",
-    "<%= outputs.self.runs.synthetix.ExchangerAddress %>",
-    "<%= outputs.self.runs.synthetix.FeePoolAddress %>",
-    "<%= outputs.self.runs.synthetix.FeePoolEternalStorageAddress %>",
-    #"<%= outputs.self.runs.synthetix.FlexibleStorageAddress %>",
-    "<%= outputs.self.runs.synthetix.IssuerAddress %>",
-    "<%= outputs.self.runs.synthetix.LiquidationsAddress %>",
-    "<%= outputs.self.runs.synthetix.NativeEtherWrapperAddress %>",
-    "<%= outputs.self.runs.synthetix.OwnerRelayOnEthereumAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxyERC20Address %>",
-    "<%= outputs.self.runs.synthetix.ProxyERC20sUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxyFeePoolAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxySynthetixAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxysUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxysETHAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxysBTCAddress %>",
-    "<%= outputs.self.runs.synthetix.RewardEscrowAddress %>",
-    "<%= outputs.self.runs.synthetix.RewardsDistributionAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixBridgeEscrowAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixBridgeToOptimismAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixDebtShareAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixEscrowAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthsUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthsETHAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthsBTCAddress %>",
-    "<%= outputs.self.runs.synthetix.SystemSettingsAddress %>",
-    "<%= outputs.self.runs.synthetix.SystemStatusAddress %>",
-    "<%= outputs.self.runs.synthetix.TokenStatesUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.TokenStatesETHAddress %>",
-    "<%= outputs.self.runs.synthetix.TokenStatesBTCAddress %>",
-    "<%= outputs.self.runs.synthetix.TradingRewardsAddress %>",
-    "<%= outputs.self.runs.synthetix.WrapperFactoryAddress %>",
+    "AddressResolver",
+    "CollateralErc20",
+    #"CollateralEth",
+    "CollateralManager",
+    "CollateralManagerState",
+    "CollateralShort",
+    #"CollateralUtil",
+    "DappMaintenance",
+    "DebtCache",
+    "DelegateApprovals",
+    "DelegateApprovalsEternalStorage",
+    "Depot",
+    #"EscrowChecker",
+    "EtherWrapper",
+    "ExchangeRates",
+    "ExchangeState",
+    "Exchanger",
+    "FeePool",
+    "FeePoolEternalStorage",
+    #"FlexibleStorage",
+    "Issuer",
+    "Liquidator",
+    "NativeEtherWrapper",
+    "OwnerRelayOnEthereum",
+    "ProxyFeePool",
+    "ProxySynthetix",
+    "ProxysUSD",
+    "ProxysETH",
+    "ProxysBTC",
+    "RewardEscrow",
+    "RewardsDistribution",
+    "Synthetix",
+    "SynthetixBridgeEscrow",
+    "SynthetixBridgeToOptimism",
+    "SynthetixDebtShare",
+    "SynthetixEscrow",
+    "SynthsUSD",
+    "SynthsETH",
+    "SynthsBTC",
+    "SystemSettings",
+    "SystemStatus",
+    "TokenStatesUSD",
+    "TokenStatesETH",
+    "TokenStatesBTC",
+    "TradingRewards",
+    "WrapperFactory",
 ]
-
-abi = "<%= outputs.self.runs.synthetix.AddressResolverABI %>"
 
 func = "nominateNewOwner"
 args = ["<%= settings.owner %>"]
@@ -87,58 +82,53 @@ step = 1
 
 [invoke.accept_ownership]
 target = [
-    "<%= outputs.self.runs.synthetix.AddressResolverAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralErc20Address %>",
-    #"<%= outputs.self.runs.synthetix.CollateralEthAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralManagerAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralManagerStateAddress %>",
-    "<%= outputs.self.runs.synthetix.CollateralShortAddress %>",
-    #"<%= outputs.self.runs.synthetix.CollateralUtilAddress %>",
-    "<%= outputs.self.runs.synthetix.DappMaintenanceAddress %>",
-    "<%= outputs.self.runs.synthetix.DebtCacheAddress %>",
-    "<%= outputs.self.runs.synthetix.DelegateApprovalsAddress %>",
-    "<%= outputs.self.runs.synthetix.DelegateApprovalsEternalStorageAddress %>",
-    "<%= outputs.self.runs.synthetix.DepotAddress %>",
-    #"<%= outputs.self.runs.synthetix.EscrowCheckerAddress %>",
-    "<%= outputs.self.runs.synthetix.EternalStorageLiquidationsAddress %>",
-    "<%= outputs.self.runs.synthetix.EtherWrapperAddress %>",
-    "<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>",
-    "<%= outputs.self.runs.synthetix.ExchangeStateAddress %>",
-    "<%= outputs.self.runs.synthetix.ExchangerAddress %>",
-    "<%= outputs.self.runs.synthetix.FeePoolAddress %>",
-    "<%= outputs.self.runs.synthetix.FeePoolEternalStorageAddress %>",
-    #"<%= outputs.self.runs.synthetix.FlexibleStorageAddress %>",
-    "<%= outputs.self.runs.synthetix.IssuerAddress %>",
-    "<%= outputs.self.runs.synthetix.LiquidationsAddress %>",
-    "<%= outputs.self.runs.synthetix.NativeEtherWrapperAddress %>",
-    "<%= outputs.self.runs.synthetix.OwnerRelayOnEthereumAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxyERC20Address %>",
-    "<%= outputs.self.runs.synthetix.ProxyERC20sUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxyFeePoolAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxySynthetixAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxysUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxysETHAddress %>",
-    "<%= outputs.self.runs.synthetix.ProxysBTCAddress %>",
-    "<%= outputs.self.runs.synthetix.RewardEscrowAddress %>",
-    "<%= outputs.self.runs.synthetix.RewardsDistributionAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixBridgeEscrowAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixBridgeToOptimismAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixDebtShareAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthetixEscrowAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthsUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthsETHAddress %>",
-    "<%= outputs.self.runs.synthetix.SynthsBTCAddress %>",
-    "<%= outputs.self.runs.synthetix.SystemSettingsAddress %>",
-    "<%= outputs.self.runs.synthetix.SystemStatusAddress %>",
-    "<%= outputs.self.runs.synthetix.TokenStatesUSDAddress %>",
-    "<%= outputs.self.runs.synthetix.TokenStatesETHAddress %>",
-    "<%= outputs.self.runs.synthetix.TokenStatesBTCAddress %>",
-    "<%= outputs.self.runs.synthetix.TradingRewardsAddress %>",
-    "<%= outputs.self.runs.synthetix.WrapperFactoryAddress %>",
+    "AddressResolver",
+    "CollateralErc20",
+    #"CollateralEth",
+    "CollateralManager",
+    "CollateralManagerState",
+    "CollateralShort",
+    #"CollateralUtil",
+    "DappMaintenance",
+    "DebtCache",
+    "DelegateApprovals",
+    "DelegateApprovalsEternalStorage",
+    "Depot",
+    #"EscrowChecker",
+    "EtherWrapper",
+    "ExchangeRates",
+    "ExchangeState",
+    "Exchanger",
+    "FeePool",
+    "FeePoolEternalStorage",
+    #"FlexibleStorage",
+    "Issuer",
+    "Liquidator",
+    "NativeEtherWrapper",
+    "OwnerRelayOnEthereum",
+    "ProxyFeePool",
+    "ProxySynthetix",
+    "ProxysUSD",
+    "ProxysETH",
+    "ProxysBTC",
+    "RewardEscrow",
+    "RewardsDistribution",
+    "Synthetix",
+    "SynthetixBridgeEscrow",
+    "SynthetixBridgeToOptimism",
+    "SynthetixDebtShare",
+    "SynthetixEscrow",
+    "SynthsUSD",
+    "SynthsETH",
+    "SynthsBTC",
+    "SystemSettings",
+    "SystemStatus",
+    "TokenStatesUSD",
+    "TokenStatesETH",
+    "TokenStatesBTC",
+    "TradingRewards",
+    "WrapperFactory",
 ]
-
-abi = "<%= outputs.self.runs.synthetix.AddressResolverABI %>"
 
 from = "<%= settings.owner %>"
 func = "acceptOwnership"
@@ -155,48 +145,46 @@ step = 1
 [import.aggregator_eth]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_eth %>"
+options.timestamp = "<%= timestamp %>"
 options.salt = "eth"
 step = 1
 
 [import.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
+options.timestamp = "<%= timestamp %>"
 options.salt = "btc"
 step = 1
 
 [invoke.set_aggregator_snx]
-target = ["<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.ExchangeRatesABI %>"
+target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x534e580000000000000000000000000000000000000000000000000000000000", "<%= outputs.aggregator_snx.contracts.aggregator.address %>"]
+args = ["0x534e580000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_snx.contracts.aggregator.address %>"]
 
 step = 2
 
 [invoke.set_aggregator_eth]
-target = ["<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.ExchangeRatesABI %>"
+target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x7345544800000000000000000000000000000000000000000000000000000000", "<%= outputs.aggregator_eth.contracts.aggregator.address %>"]
+args = ["0x7345544800000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
 
 step = 2
 
 [invoke.set_aggregator_btc]
-target = ["<%= outputs.self.runs.synthetix.ExchangeRatesAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.ExchangeRatesABI %>"
+target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x7342544300000000000000000000000000000000000000000000000000000000", "<%= outputs.aggregator_eth.contracts.aggregator.address %>"]
+args = ["0x7342544300000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
 
 step = 2
 
 [invoke.increase_snapshot_stale_time]
-target = ["<%= outputs.self.runs.synthetix.SystemSettingsAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.SystemSettingsABI %>"
+target = ["SystemSettings"]
 
 from = "<%= settings.owner %>"
 func = "setDebtSnapshotStaleTime"
@@ -205,8 +193,7 @@ args = ["2000000000"]
 step = 2
 
 [invoke.increase_rate_stale_time]
-target = ["<%= outputs.self.runs.synthetix.SystemSettingsAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.SystemSettingsABI %>"
+target = ["SystemSettings"]
 
 from = "<%= settings.owner %>"
 func = "setRateStalePeriod"
@@ -215,26 +202,23 @@ args = ["2000000000"]
 step = 2
 
 [invoke.snapshot]
-target = ["<%= outputs.self.runs.synthetix.DebtCacheAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.DebtCacheABI %>"
+target = ["DebtCache"]
 
 func = "takeDebtSnapshot"
 
-step = 2
+step = 3
 
 [invoke.test_user_snx]
-target = ["<%= outputs.self.runs.synthetix.SynthetixAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.SynthetixABI %>"
+target = ["ProxySynthetix"]
 
-from = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+from = "<%= settings.owner %>"
 func = "transfer"
 args = ["<%= settings.test_user %>", "10000000000000000000000000"]
 
 step = 3
 
 [invoke.test_user_mint]
-target = ["<%= outputs.self.runs.synthetix.SynthetixAddress %>"]
-abi = "<%= outputs.self.runs.synthetix.SynthetixABI %>"
+target = ["Synthetix"]
 
 from = "<%= settings.test_user %>"
 func = "issueSynths"

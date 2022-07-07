@@ -26,6 +26,7 @@ async function deployInstance({
 	skipFeedChecks = true,
 	useFork = false,
 	useOvm,
+	provider,
 }) {
 	const privateKey = (await hre.ethers.getSigners())[0].privateKey;
 
@@ -41,11 +42,14 @@ async function deployInstance({
 		skipFeedChecks,
 		useFork,
 		useOvm,
+		providerUrl: provider.connection.url,
+		maxFeePerGas: 1,
+		maxPriorityFeePerGas: 1,
 		yes: true,
 	});
 }
 
-async function deploy() {
+async function deploy(runtime) {
 	const network = 'local';
 
 	const useOvm = false;
@@ -59,6 +63,7 @@ async function deploy() {
 		addNewSynths: true,
 		buildPath,
 		useOvm,
+		provider: runtime.provider,
 	});
 
 	// pull deployed contract information
@@ -67,19 +72,14 @@ async function deploy() {
 
 	const contracts = {};
 	Object.entries(allTargets).map(([name, target]) => {
-		contracts[name + 'Address'] = synthetix.getTarget({
-			fs,
-			path,
-			network,
-			useOvm,
-			contract: name,
-		}).address;
-		contracts[name + 'ABI'] = JSON.stringify(
-			synthetix.getSource({ fs, path, network, useOvm, contract: target.source }).abi
-		);
+		contracts[name] = {
+			address: target.address,
+			abi: synthetix.getSource({ fs, path, network, useOvm, contract: target.source }).abi,
+			deployTxn: target.txn,
+		};
 	});
 
-	return contracts;
+	return { contracts };
 }
 
 if (module === require.main) {
