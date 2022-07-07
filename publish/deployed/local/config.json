@@ -50,6 +50,9 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
 	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
@@ -74,10 +77,10 @@
 	"Issuer": {
 		"deploy": true
 	},
-	"EternalStorageLiquidations": {
+	"Liquidator": {
 		"deploy": true
 	},
-	"Liquidations": {
+	"LiquidatorRewards": {
 		"deploy": true
 	},
 	"SupplySchedule": {
@@ -167,6 +170,9 @@
 	"NativeEtherWrapper": {
 		"deploy": true
 	},
+	"FuturesMarketManager": {
+		"deploy": true
+	},
 	"WrapperFactory": {
 		"deploy": true
 	},
@@ -177,6 +183,12 @@
 		"deploy": true
 	},
 	"SynthRedeemer": {
+		"deploy": true
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": true
+	},
+	"OneNetAggregatorDebtRatio": {
 		"deploy": true
 	},
 	"SystemSettingsLib": {

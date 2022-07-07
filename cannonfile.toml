@@ -20,7 +20,7 @@ defaultValue = "50000000000"
 [run.synthetix]
 exec = "./publish/cannon.js"
 func = "deploy"
-modified = ["contracts", "publish/src"]
+modified = ["contracts", "publish/src", "publish/deployed/local"]
 
 [invoke.set_ownership]
 target = [
@@ -38,15 +38,20 @@ target = [
     "Depot",
     #"EscrowChecker",
     "EtherWrapper",
+    "ExchangeCircuitBreaker",
     "ExchangeRates",
     "ExchangeState",
     "Exchanger",
     "FeePool",
     "FeePoolEternalStorage",
+    #"FuturesMarketManager",
     #"FlexibleStorage",
     "Issuer",
     "Liquidator",
+    "LiquidatorRewards",
     "NativeEtherWrapper",
+    "OneNetAggregatorDebtRatio",
+    "OneNetAggregatorIssuedSynths",
     "OwnerRelayOnEthereum",
     "ProxyFeePool",
     "ProxySynthetix",
@@ -96,15 +101,20 @@ target = [
     "Depot",
     #"EscrowChecker",
     "EtherWrapper",
+    "ExchangeCircuitBreaker",
     "ExchangeRates",
     "ExchangeState",
     "Exchanger",
     "FeePool",
     "FeePoolEternalStorage",
+    #"FuturesMarketManager",
     #"FlexibleStorage",
     "Issuer",
     "Liquidator",
+    "LiquidatorRewards",
     "NativeEtherWrapper",
+    "OneNetAggregatorDebtRatio",
+    "OneNetAggregatorIssuedSynths",
     "OwnerRelayOnEthereum",
     "ProxyFeePool",
     "ProxySynthetix",
@@ -139,20 +149,21 @@ step = 1
 [import.aggregator_snx]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_snx %>"
+options.timestamp = "100"
 options.salt = "snx"
 step = 1
 
 [import.aggregator_eth]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_eth %>"
-options.timestamp = "<%= timestamp %>"
+options.timestamp = "100"
 options.salt = "eth"
 step = 1
 
 [import.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
-options.timestamp = "<%= timestamp %>"
+options.timestamp = "1000"
 options.salt = "btc"
 step = 1
 
@@ -206,7 +217,7 @@ target = ["DebtCache"]
 
 func = "takeDebtSnapshot"
 
-step = 3
+step = 2
 
 [invoke.test_user_snx]
 target = ["ProxySynthetix"]
