@@ -59,7 +59,7 @@ module.exports = async ({
 
 	const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-	// update all synths with 0 current rate
+	// update all synths with 0 current rate, except sUSD
 	const synthsRatesToUpdate = synths
 		.map((synth, i) =>
 			Object.assign(
@@ -70,7 +70,8 @@ module.exports = async ({
 				synth
 			)
 		)
-		.filter(({ currentRate }) => currentRate === '0');
+		.filter(({ currentRate }) => currentRate === '0')
+		.filter(({ name }) => name !== 'sUSD'); // SCCP-190: sUSD rate is 0 despite it being in forex category
 
 	console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -210,8 +211,76 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(liquidationPenalty),
 		write: 'setLiquidationPenalty',
 		writeArg: liquidationPenalty,
-		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
+		comment: 'Set the penalty amount a liquidator receives from a liquidated Collateral loan',
 	});
+
+	const snxLiquidationPenalty = await getDeployParameter('SNX_LIQUIDATION_PENALTY');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'snxLiquidationPenalty',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(snxLiquidationPenalty),
+		write: 'setSnxLiquidationPenalty',
+		writeArg: snxLiquidationPenalty,
+		comment: 'Set the penalty amount of SNX from a liquidated account',
+	});
+
+	if (SystemSettings.selfLiquidationPenalty) {
+		const selfLiquidationPenalty = await getDeployParameter('SELF_LIQUIDATION_PENALTY');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'selfLiquidationPenalty',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(selfLiquidationPenalty),
+			write: 'setSelfLiquidationPenalty',
+			writeArg: selfLiquidationPenalty,
+			comment: 'Set the penalty for self liquidation of an account',
+		});
+	}
+
+	if (SystemSettings.liquidationEscrowDuration) {
+		const liquidationEscrowDuration = await getDeployParameter('LIQUIDATION_ESCROW_DURATION');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'liquidationEscrowDuration',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(liquidationEscrowDuration),
+			write: 'setLiquidationEscrowDuration',
+			writeArg: liquidationEscrowDuration,
+			comment: 'Set the duration of how long liquidation rewards are escrowed for',
+		});
+	}
+
+	if (SystemSettings.flagReward) {
+		const flagReward = await getDeployParameter('FLAG_REWARD');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'flagReward',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(flagReward),
+			write: 'setFlagReward',
+			writeArg: flagReward,
+			comment: 'Set the reward amount for flagging an account for liquidation',
+		});
+	}
+
+	if (SystemSettings.liquidateReward) {
+		const liquidateReward = await getDeployParameter('LIQUIDATE_REWARD');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'liquidateReward',
+			readTarget: previousSystemSettings,
+			expected: allowZeroOrUpdateIfNonZero(liquidateReward),
+			write: 'setLiquidateReward',
+			writeArg: liquidateReward,
+			comment: 'Set the reward amount for peforming a liquidation',
+		});
+	}
 
 	const rateStalePeriod = await getDeployParameter('RATE_STALE_PERIOD');
 	await runStep({
@@ -303,16 +372,31 @@ module.exports = async ({
 		comment: 'Set the gas limit for withdrawing from L2',
 	});
 
-	const crossDomainRelayGasLimit = await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT');
+	const crossDomainCloseFeePeriodGasLimit = await getDeployParameter(
+		'CROSS_DOMAIN_FEE_PERIOD_CLOSE_GAS_LIMIT'
+	);
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
 		read: 'crossDomainMessageGasLimit',
 		readArg: 4,
 		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(crossDomainCloseFeePeriodGasLimit),
+		write: 'setCrossDomainMessageGasLimit',
+		writeArg: [4, crossDomainCloseFeePeriodGasLimit],
+		comment: 'Set the gas limit for closing the fee period L2 from L1',
+	});
+
+	const crossDomainRelayGasLimit = await getDeployParameter('CROSS_DOMAIN_RELAY_GAS_LIMIT');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'crossDomainMessageGasLimit',
+		readArg: 5,
+		readTarget: previousSystemSettings,
 		expected: allowZeroOrUpdateIfNonZero(crossDomainRelayGasLimit),
 		write: 'setCrossDomainMessageGasLimit',
-		writeArg: [4, crossDomainRelayGasLimit],
+		writeArg: [5, crossDomainRelayGasLimit],
 		comment: 'Set the gas limit for relaying owner actions to L2',
 	});
 
@@ -477,24 +561,6 @@ module.exports = async ({
 				write: 'setAtomicExchangeFeeRate',
 				writeArg: [toBytes32(currencyKey), rate],
 				comment: 'SIP-120 Set the exchange fee rate for swapping atomically into this synth',
-			});
-		}
-	}
-
-	const atomicPriceBuffer = await getDeployParameter('ATOMIC_PRICE_BUFFER');
-	if (SystemSettings.atomicPriceBuffer && atomicPriceBuffer) {
-		for (const [currencyKey, buffer] of Object.entries(atomicPriceBuffer)) {
-			await runStep({
-				contract: 'SystemSettings',
-				target: SystemSettings,
-				read: 'atomicPriceBuffer',
-				readArg: toBytes32(currencyKey),
-				readTarget: previousSystemSettings,
-				expected: input => input !== 0, // only change if zero
-				write: 'setAtomicPriceBuffer',
-				writeArg: [toBytes32(currencyKey), buffer],
-				comment:
-					'SIP-120 Set the price buffer applied to the base chainlink rate when comparing atomically',
 			});
 		}
 	}

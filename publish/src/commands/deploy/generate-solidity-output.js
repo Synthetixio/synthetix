@@ -37,7 +37,7 @@ module.exports = async ({
 	const internalFunctions = [];
 
 	// function to derive a unique name for each new contract
-	const newContractVariableFunctor = name => `new_${name}_contract`;
+	const newContractVariableFunctor = name => `new_${name.replace('ext:', '')}_contract`;
 
 	for (const [
 		runIndex,
@@ -206,7 +206,7 @@ contract Migration_${releaseName} is BaseMigration {
 
 	function migrate() external onlyOwner {
 		${Object.entries(newContractsBeingAdded)
-			.filter(([, { name, library }]) => !/^Proxy/.test(name) && !library) // ignore the check for proxies and libraries
+			.filter(([, { name, library }]) => !library && !/^Proxy/.test(name) && !/^ext:/.test(name)) // ignore the check for libraries, proxies, and externals
 			.map(
 				([address, { name, source }]) =>
 					`require(ISynthetixNamedContract(${newContractVariableFunctor(

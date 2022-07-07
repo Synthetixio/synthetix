@@ -30,5 +30,33 @@
 	"EUR": {
 		"asset": "EUR",
 		"feed": "0x3626369857A10CcC6cc3A6e4f5C2f5984a519F20"
+	},
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0x338ed6787f463394D24813b297401B9F05a8C9d1"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0x11429eE838cC01071402f21C219870cbAc0a59A0"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0x8F7bFb42Bf7421c2b34AAD619be4654bFa7B3B8B"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0x290dd71254874f0d4356443607cb8234958DEe49"
+	},
+	"INR": {
+		"asset": "INR",
+		"feed": "0x5535e67d8f99c8ebe961E1Fc1F6DDAE96FEC82C9"
+	},
+	"APE": {
+		"asset": "APE",
+		"feed": "0x89178957E9bD07934d7792fFc0CF39f11c8C2B1F"
+	},
+	"DYDX": {
+		"asset": "DYDX",
+		"feed": "0xee35A95c9a064491531493D8b380bC40A4CCd0Da"
 	}
 }

@@ -14,38 +14,42 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/synthetixio/docker-sec-tools/ubuntu:16.13
+      image: ghcr.io/synthetixio/docker-sec-tools/ubuntu:16.15
       credentials:
         username: synthetixio
         password: ${{ secrets.GH_PACKAGES_READ_ONLY }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # pin@v3.0.2
 
       - name: Set npm cache directory
         run: npm config set cache .npm-cache --global
-        continue-on-error: true
 
-      - uses: actions/cache@c64c572235d810460d0d6876e9c705ad5002b353 # pin@v2
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "::set-output name=dir::$(npm config get cache)"
+
+      - name: Get node version
+        id: node-version
+        run: echo "::set-output name=version::$(node --version)"
+
+      - uses: actions/cache@c3f1317a9e7b1ef106c153ac8c0f00fed3ddbc0d # pin@v3.0.4
         with:
-          path: |
-            .npm-cache
-            node_modules
-          key: ${{ runner.os }}-ubuntu-${{ hashFiles('**/package-lock.json') }}
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-ubuntu-${{ steps.node-version.outputs.version }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-ubuntu-
-        continue-on-error: true
+            ${{ runner.os }}-ubuntu-${{ steps.node-version.outputs.version }}-
 
       - name: Install dependencies
-        run: npm install --prefer-offline
+        run: npm ci --prefer-offline
 
       - name: Run slither
         run: slither . --sarif slither.sarif || true
 
       - name: Upload lint results
         if: always()
-        uses: github/codeql-action/upload-sarif@7112cdaa06f3b661965fe3e2e93c9acaadbe85f3 # pin@codeql-bundle-20210921
+        uses: github/codeql-action/upload-sarif@81bfc289f5947eca8a3358341c874cb4f4697b64 # pin@codeql-bundle-20220322
         with:
           sarif_file: slither.sarif
         continue-on-error: true

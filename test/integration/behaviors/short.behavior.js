@@ -19,14 +19,18 @@ function itCanOpenAndCloseShort({ ctx }) {
 		const amountToBorrow = parseEther('0.000001'); // sETH
 		const amountToExchange = parseEther('100'); // sUSD
 
-		let user;
-		let CollateralShort, Synthetix, SynthsUSD, interactionDelay;
+		const shortableSynth = toBytes32('sETH');
+
+		let user, owner;
+		let CollateralShort, CollateralManager, Synthetix, SynthsUSD, interactionDelay;
 
 		before('target contracts and users', () => {
-			({ CollateralShort, Synthetix, SynthsUSD } = ctx.contracts);
+			({ CollateralShort, CollateralManager, Synthetix, SynthsUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
+			owner = ctx.users.owner;
 
+			CollateralManager = CollateralManager.connect(owner);
 			CollateralShort = CollateralShort.connect(user);
 			Synthetix = Synthetix.connect(user);
 		});
@@ -73,7 +77,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					before('skip if max borrowing power reached', async function() {
 						const maxBorrowingPower = await CollateralShort.maxLoan(
 							amountToDeposit,
-							toBytes32('sETH')
+							shortableSynth
 						);
 						const maxBorrowingPowerReached = maxBorrowingPower <= amountToBorrow;
 
@@ -87,6 +91,17 @@ function itCanOpenAndCloseShort({ ctx }) {
 						}
 					});
 
+					before('add the shortable synths if needed', async () => {
+						await CollateralShort.connect(owner).addSynths(
+							[toBytes32(`SynthsETH`)],
+							[shortableSynth]
+						);
+
+						await CollateralManager.addSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
+
+						await CollateralManager.addShortableSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
+					});
+
 					before('approve the synths for collateral short', async () => {
 						await approveIfNeeded({
 							token: SynthsUSD,
@@ -97,7 +112,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					});
 
 					before('open the loan', async () => {
-						tx = await CollateralShort.open(amountToDeposit, amountToBorrow, toBytes32('sETH'));
+						tx = await CollateralShort.open(amountToDeposit, amountToBorrow, shortableSynth);
 
 						const { events } = await tx.wait();
 
@@ -169,7 +184,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 						});
 
 						before('settle', async () => {
-							const tx = await Synthetix.settle(toBytes32('sETH'));
+							const tx = await Synthetix.settle(shortableSynth);
 							await tx.wait();
 						});
 

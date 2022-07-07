@@ -17,7 +17,17 @@ interface ISystemSettings {
 
     function liquidationRatio() external view returns (uint);
 
+    function liquidationEscrowDuration() external view returns (uint);
+
     function liquidationPenalty() external view returns (uint);
+
+    function snxLiquidationPenalty() external view returns (uint);
+
+    function selfLiquidationPenalty() external view returns (uint);
+
+    function flagReward() external view returns (uint);
+
+    function liquidateReward() external view returns (uint);
 
     function rateStalePeriod() external view returns (uint);
 
@@ -39,9 +49,9 @@ interface ISystemSettings {
 
     function etherWrapperMaxETH() external view returns (uint);
 
-    function etherWrapperMintFeeRate() external view returns (uint);
-
     function etherWrapperBurnFeeRate() external view returns (uint);
+
+    function etherWrapperMintFeeRate() external view returns (uint);
 
     function interactionDelay(address collateral) external view returns (uint);
 
@@ -53,9 +63,9 @@ interface ISystemSettings {
 
     function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint);
-
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint);
 
     function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint);
+
+    function pureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) external view returns (bool);
 }

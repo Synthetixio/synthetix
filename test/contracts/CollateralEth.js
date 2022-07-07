@@ -259,12 +259,12 @@ contract('CollateralEth', async accounts => {
 
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
-			// $260 worth of eth should allow 200 sUSD to be issued.
+			// $270 worth of eth should allow 200 sUSD to be issued.
 			const sUSDAmount = await ceth.maxLoan(toUnit('2.6'), sUSD);
 
 			assert.bnClose(sUSDAmount, toUnit('200'), '100');
 
-			// $260 worth of eth should allow $200 (0.02) of sBTC to be issued.
+			// $270 worth of eth should allow $200 (0.02) of sBTC to be issued.
 			const sBTCAmount = await ceth.maxLoan(toUnit('2.6'), sBTC);
 
 			assert.bnEqual(sBTCAmount, toUnit('0.02'));
@@ -802,7 +802,6 @@ contract('CollateralEth', async accounts => {
 			it('should reduce the liquidators synth amount', async () => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
 				const expectedBalance = toUnit('1000').sub(toUnit('130'));
-
 				assert.bnClose(liquidatorBalance, expectedBalance, '100000000000');
 			});
 
@@ -820,7 +819,6 @@ contract('CollateralEth', async accounts => {
 
 			it('should fix the collateralisation ratio of the loan', async () => {
 				const ratio = await ceth.collateralRatio(id);
-
 				// the loan is very close 150%, we are in 10^18 land.
 				assert.bnClose(ratio, toUnit('1.3'), '10000000000000');
 			});

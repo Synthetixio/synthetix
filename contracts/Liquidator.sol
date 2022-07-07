@@ -4,20 +4,21 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/ILiquidations.sol";
+import "./interfaces/ILiquidator.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./EternalStorage.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/liquidations
-contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
+/// @title Upgrade Liquidation Mechanism V2 (SIP-148)
+/// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15
+contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -30,11 +31,12 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_ETERNALSTORAGE_LIQUIDATIONS = "EternalStorageLiquidations";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
     /* ========== CONSTANTS ========== */
+
+    bytes32 public constant CONTRACT_NAME = "Liquidator";
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
@@ -45,12 +47,11 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
-        newAddresses[2] = CONTRACT_ETERNALSTORAGE_LIQUIDATIONS;
-        newAddresses[3] = CONTRACT_ISSUER;
-        newAddresses[4] = CONTRACT_EXRATES;
+        newAddresses[2] = CONTRACT_ISSUER;
+        newAddresses[3] = CONTRACT_EXRATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -70,11 +71,6 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    // refactor to synthetix storage eternal storage contract once that's ready
-    function eternalStorageLiquidations() internal view returns (EternalStorage) {
-        return EternalStorage(requireAndGetAddress(CONTRACT_ETERNALSTORAGE_LIQUIDATIONS));
-    }
-
     function issuanceRatio() external view returns (uint) {
         return getIssuanceRatio();
     }
@@ -87,8 +83,24 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         return getLiquidationRatio();
     }
 
+    function liquidationEscrowDuration() external view returns (uint) {
+        return getLiquidationEscrowDuration();
+    }
+
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
+    }
+
+    function selfLiquidationPenalty() external view returns (uint) {
+        return getSelfLiquidationPenalty();
+    }
+
+    function liquidateReward() external view returns (uint) {
+        return getLiquidateReward();
+    }
+
+    function flagReward() external view returns (uint) {
+        return getFlagReward();
     }
 
     function liquidationCollateralRatio() external view returns (uint) {
@@ -100,22 +112,32 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         return liquidation.deadline;
     }
 
-    function isOpenForLiquidation(address account) external view returns (bool) {
+    function getLiquidationCallerForAccount(address account) external view returns (address) {
+        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        return liquidation.caller;
+    }
+
+    /// @notice Determines if an account is eligible for forced or self liquidation
+    /// @dev An account is eligible to self liquidate if its c-ratio is below the target c-ratio
+    /// @dev An account with no SNX collateral will not be open for liquidation since the ratio is 0
+    function isLiquidationOpen(address account, bool isSelfLiquidation) external view returns (bool) {
         uint accountCollateralisationRatio = synthetix().collateralisationRatio(account);
 
-        // Liquidation closed if collateral ratio less than or equal target issuance Ratio
-        // Account with no snx collateral will also not be open for liquidation (ratio is 0)
+        // Not open for liquidation if collateral ratio is less than or equal to target issuance ratio
         if (accountCollateralisationRatio <= getIssuanceRatio()) {
             return false;
         }
 
-        LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
+        if (!isSelfLiquidation) {
+            LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
-        // liquidation cap at issuanceRatio is checked above
-        if (_deadlinePassed(liquidation.deadline)) {
-            return true;
+            // Open for liquidation if the deadline has passed and the user has enough SNX collateral.
+            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNX(account)) {
+                return true;
+            }
+            return false;
         }
-        return false;
+        return true;
     }
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool) {
@@ -129,6 +151,12 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         return deadline > 0 && now > deadline;
     }
 
+    /// @notice Checks if an account has enough SNX balance to be considered open for forced liquidation.
+    function _hasEnoughSNX(address account) internal view returns (bool) {
+        uint balance = IERC20(address(synthetix())).balanceOf(account);
+        return balance > (getLiquidateReward().add(getFlagReward()));
+    }
+
     /**
      * r = target issuance ratio
      * D = debt balance
@@ -136,12 +164,16 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
-    function calculateAmountToFixCollateral(uint debtBalance, uint collateral) external view returns (uint) {
+    function calculateAmountToFixCollateral(
+        uint debtBalance,
+        uint collateral,
+        uint penalty
+    ) external view returns (uint) {
         uint ratio = getIssuanceRatio();
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtBalance.sub(collateral.multiplyDecimal(ratio));
-        uint divisor = unit.sub(unit.add(getLiquidationPenalty()).multiplyDecimal(ratio));
+        uint divisor = unit.sub(unit.add(penalty).multiplyDecimal(ratio));
 
         return dividend.divideDecimal(divisor);
     }
@@ -149,10 +181,10 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
     // get liquidationEntry for account
     // returns deadline = 0 when not set
     function _getLiquidationEntryForAccount(address account) internal view returns (LiquidationEntry memory _liquidation) {
-        _liquidation.deadline = eternalStorageLiquidations().getUIntValue(_getKey(LIQUIDATION_DEADLINE, account));
+        _liquidation.deadline = flexibleStorage().getUIntValue(CONTRACT_NAME, _getKey(LIQUIDATION_DEADLINE, account));
 
-        // liquidation caller not used
-        _liquidation.caller = address(0);
+        // This is used to reward the caller for flagging an account for liquidation.
+        _liquidation.caller = flexibleStorage().getAddressValue(CONTRACT_NAME, _getKey(LIQUIDATION_CALLER, account));
     }
 
     function _getKey(bytes32 _scope, address _account) internal pure returns (bytes32) {
@@ -187,8 +219,8 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         emit AccountFlaggedForLiquidation(account, deadline);
     }
 
-    // Internal function to remove account from liquidations
-    // Does not check collateral ratio is fixed
+    /// @notice This function is called by the Issuer to remove an account's liquidation entry
+    /// @dev The Issuer must check if the account's c-ratio is fixed before removing
     function removeAccountInLiquidation(address account) external onlyIssuer {
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
         if (liquidation.deadline > 0) {
@@ -196,9 +228,8 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         }
     }
 
-    // Public function to allow an account to remove from liquidations
-    // Checks collateral ratio is fixed - below target issuance ratio
-    // Check SNX rate is not stale
+    /// @notice External function to allow anyone to remove an account's liquidation entry
+    /// @dev This function checks if the account's c-ratio is OK and that the rate of SNX is not stale
     function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("SNX") {
         systemStatus().requireSystemActive();
 
@@ -208,7 +239,7 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
 
         uint accountsCollateralisationRatio = synthetix().collateralisationRatio(account);
 
-        // Remove from liquidations if accountsCollateralisationRatio is fixed (less than equal target issuance ratio)
+        // Remove from liquidator if accountsCollateralisationRatio is fixed (less than equal target issuance ratio)
         if (accountsCollateralisationRatio <= getIssuanceRatio()) {
             _removeLiquidationEntry(account);
         }
@@ -219,23 +250,22 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         uint _deadline,
         address _caller
     ) internal {
-        // record liquidation deadline
-        eternalStorageLiquidations().setUIntValue(_getKey(LIQUIDATION_DEADLINE, _account), _deadline);
-        eternalStorageLiquidations().setAddressValue(_getKey(LIQUIDATION_CALLER, _account), _caller);
+        // record liquidation deadline and caller
+        flexibleStorage().setUIntValue(CONTRACT_NAME, _getKey(LIQUIDATION_DEADLINE, _account), _deadline);
+
+        flexibleStorage().setAddressValue(CONTRACT_NAME, _getKey(LIQUIDATION_CALLER, _account), _caller);
     }
 
+    /// @notice Only delete the deadline value, keep caller for flag reward payout
     function _removeLiquidationEntry(address _account) internal {
-        // delete liquidation deadline
-        eternalStorageLiquidations().deleteUIntValue(_getKey(LIQUIDATION_DEADLINE, _account));
-        // delete liquidation caller
-        eternalStorageLiquidations().deleteAddressValue(_getKey(LIQUIDATION_CALLER, _account));
+        flexibleStorage().deleteUIntValue(CONTRACT_NAME, _getKey(LIQUIDATION_DEADLINE, _account));
 
         emit AccountRemovedFromLiquidation(_account, now);
     }
 
     /* ========== MODIFIERS ========== */
     modifier onlyIssuer() {
-        require(msg.sender == address(issuer()), "Liquidations: Only the Issuer contract can perform this action");
+        require(msg.sender == address(issuer()), "Liquidator: Only the Issuer contract can perform this action");
         _;
     }
 

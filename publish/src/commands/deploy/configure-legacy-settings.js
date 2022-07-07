@@ -18,13 +18,12 @@ module.exports = async ({
 	const {
 		DelegateApprovals,
 		DelegateApprovalsEternalStorage,
-		EternalStorageLiquidations,
 		Exchanger,
 		ExchangeState,
+		ExchangeCircuitBreaker,
 		FeePool,
 		FeePoolEternalStorage,
-		Liquidations,
-		ProxyERC20,
+		Issuer,
 		ProxyFeePool,
 		ProxySynthetix,
 		RewardEscrow,
@@ -49,10 +48,10 @@ module.exports = async ({
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControls',
 			writeArg: [
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
-				[true, true, true, true, true],
-				[true, true, true, true, true],
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth', 'Futures'].map(toBytes32),
+				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
+				[true, true, true, true, true, true],
+				[true, true, true, true, true, true],
 			],
 			comment: 'Ensure the owner can suspend and resume the protocol',
 		});
@@ -66,18 +65,6 @@ module.exports = async ({
 			write: 'setAssociatedContract',
 			writeArg: addressOf(DelegateApprovals),
 			comment: 'Ensure that DelegateApprovals contract is allowed to write to its EternalStorage',
-		});
-	}
-
-	if (Liquidations && EternalStorageLiquidations) {
-		await runStep({
-			contract: 'EternalStorageLiquidations',
-			target: EternalStorageLiquidations,
-			read: 'associatedContract',
-			expected: input => input === addressOf(Liquidations),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(Liquidations),
-			comment: 'Ensure the Liquidations contract is allowed to write to its EternalStorage',
 		});
 	}
 
@@ -105,29 +92,6 @@ module.exports = async ({
 		});
 	}
 
-	if (Synthetix && ProxyERC20) {
-		await runStep({
-			contract: 'ProxyERC20',
-			target: ProxyERC20,
-			read: 'target',
-			expected: input => input === addressOf(Synthetix),
-			write: 'setTarget',
-			writeArg: addressOf(Synthetix),
-			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
-			// Skip solidity for this as on mainnet, as ProxySynthetix is the same and it will manage it
-			skipSolidity: network === 'mainnet',
-		});
-		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
-			read: 'proxy',
-			expected: input => input === addressOf(ProxyERC20),
-			write: 'setProxy',
-			writeArg: addressOf(ProxyERC20),
-			comment: 'Ensure the Synthetix contract has the correct ERC20 proxy set',
-		});
-	}
-
 	if (ProxySynthetix && Synthetix) {
 		await runStep({
 			contract: 'ProxySynthetix',
@@ -137,6 +101,15 @@ module.exports = async ({
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
 			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
+		});
+		await runStep({
+			contract: 'Synthetix',
+			target: Synthetix,
+			read: 'proxy',
+			expected: input => input === addressOf(ProxySynthetix),
+			write: 'setProxy',
+			writeArg: addressOf(ProxySynthetix),
+			comment: 'Ensure the Synthetix contract has the correct ERC20 proxy set',
 		});
 	}
 
@@ -153,17 +126,31 @@ module.exports = async ({
 		});
 	}
 
-	if (Exchanger && SystemStatus) {
+	if (ExchangeCircuitBreaker && SystemStatus) {
 		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			read: 'accessControl',
-			readArg: [toBytes32('Synth'), addressOf(Exchanger)],
+			readArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker)],
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
-			writeArg: [toBytes32('Synth'), addressOf(Exchanger), true, false],
-			comment: 'Ensure the Exchanger contract can suspend synths - see SIP-65',
+			writeArg: [toBytes32('Synth'), addressOf(ExchangeCircuitBreaker), true, false],
+			comment: 'Ensure the ExchangeCircuitBreaker contract can suspend synths - see SIP-65',
+		});
+	}
+
+	if (Issuer && SystemStatus) {
+		// SIP-165: ensure Issuer can suspend issuance if unusual volitility occurs
+		await runStep({
+			contract: 'SystemStatus',
+			target: SystemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('Issuance'), addressOf(Issuer)],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControl',
+			writeArg: [toBytes32('Issuance'), addressOf(Issuer), true, false],
+			comment: 'Ensure Issuer contract can suspend issuance - see SIP-165',
 		});
 	}
 
@@ -224,9 +211,9 @@ module.exports = async ({
 			contract: 'SupplySchedule',
 			target: SupplySchedule,
 			read: 'synthetixProxy',
-			expected: input => input === addressOf(ProxyERC20),
+			expected: input => input === addressOf(ProxySynthetix),
 			write: 'setSynthetixProxy',
-			writeArg: addressOf(ProxyERC20),
+			writeArg: addressOf(ProxySynthetix),
 			comment: 'Ensure the SupplySchedule is connected to the SNX proxy for reading',
 		});
 	}
@@ -246,9 +233,9 @@ module.exports = async ({
 			contract: 'RewardsDistribution',
 			target: RewardsDistribution,
 			read: 'synthetixProxy',
-			expected: input => input === addressOf(ProxyERC20),
+			expected: input => input === addressOf(ProxySynthetix),
 			write: 'setSynthetixProxy',
-			writeArg: addressOf(ProxyERC20),
+			writeArg: addressOf(ProxySynthetix),
 			comment: 'Ensure the RewardsDistribution can find the Synthetix proxy to read and transfer',
 		});
 	}
@@ -267,7 +254,7 @@ module.exports = async ({
 	}
 
 	// ----------------
-	// Setting ProxyERC20 Synthetix for SynthetixEscrow
+	// Setting ProxySynthetix Synthetix for SynthetixEscrow
 	// ----------------
 
 	// Skip setting unless redeploying either of these,
@@ -279,9 +266,9 @@ module.exports = async ({
 				contract: 'SynthetixEscrow',
 				target: SynthetixEscrow,
 				read: 'havven',
-				expected: input => input === addressOf(ProxyERC20),
+				expected: input => input === addressOf(ProxySynthetix),
 				write: 'setHavven',
-				writeArg: addressOf(ProxyERC20),
+				writeArg: addressOf(ProxySynthetix),
 				comment:
 					'Ensure the legacy token sale escrow can find the Synthetix proxy to read and transfer',
 			});
@@ -290,9 +277,9 @@ module.exports = async ({
 				contract: 'SynthetixEscrow',
 				target: SynthetixEscrow,
 				read: 'synthetix',
-				expected: input => input === addressOf(ProxyERC20),
+				expected: input => input === addressOf(ProxySynthetix),
 				write: 'setSynthetix',
-				writeArg: addressOf(ProxyERC20),
+				writeArg: addressOf(ProxySynthetix),
 				comment: 'Ensure the token sale escrow can find the Synthetix proxy to read and transfer',
 			});
 		}

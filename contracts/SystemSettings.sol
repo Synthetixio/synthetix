@@ -72,11 +72,45 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationRatio();
     }
 
-    // SIP-15 Liquidations
-    // penalty taken away from target of liquidation (with 18 decimals). E.g. 10% is 0.1e18
+    // SIP-97 Liquidations
+    // penalty taken away from target of Collateral liquidation (with 18 decimals). E.g. 10% is 0.1e18
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
     }
+
+    // SIP-251 Differentiate Liquidation Penalties
+    // penalty taken away from target of SNX liquidation (with 18 decimals). E.g. 30% is 0.3e18
+    function snxLiquidationPenalty() external view returns (uint) {
+        return getSnxLiquidationPenalty();
+    }
+
+    /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
+
+    /// @notice Get the escrow duration for liquidation rewards
+    /// @return The escrow duration for liquidation rewards
+    function liquidationEscrowDuration() external view returns (uint) {
+        return getLiquidationEscrowDuration();
+    }
+
+    /// @notice Get the penalty for self liquidation
+    /// @return The self liquidation penalty
+    function selfLiquidationPenalty() external view returns (uint) {
+        return getSelfLiquidationPenalty();
+    }
+
+    /// @notice Get the reward for flagging an account for liquidation
+    /// @return The reward for flagging an account
+    function flagReward() external view returns (uint) {
+        return getFlagReward();
+    }
+
+    /// @notice Get the reward for liquidating an account
+    /// @return The reward for performing a forced liquidation
+    function liquidateReward() external view returns (uint) {
+        return getLiquidateReward();
+    }
+
+    /* ========== End SIP-148 ========== */
 
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
@@ -206,12 +240,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-120 Atomic exchanges
-    // price dampener for chainlink prices when considered for atomic exchanges
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicPriceBuffer(currencyKey);
-    }
-
-    // SIP-120 Atomic exchanges
     // consideration window for determining synth volatility
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityConsiderationWindow(currencyKey);
@@ -221,6 +249,18 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // update threshold for determining synth volatility
     function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityUpdateThreshold(currencyKey);
+    }
+
+    // SIP-198: Atomic Exchange At Pure Chainlink Price
+    // Whether to use the pure Chainlink price for a given currency key
+    function pureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) external view returns (bool) {
+        return getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+    }
+
+    // SIP-229 Atomic exchanges
+    // enable/disable sending of synths cross chain
+    function crossChainSynthTransferEnabled(bytes32 currencyKey) external view returns (uint) {
+        return getCrossChainSynthTransferEnabled(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -277,15 +317,40 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         flexibleStorage().setLiquidationRatio(
             SETTING_LIQUIDATION_RATIO,
             _liquidationRatio,
-            getLiquidationPenalty(),
+            getSnxLiquidationPenalty(),
             getIssuanceRatio()
         );
         emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
+    function setLiquidationEscrowDuration(uint duration) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_ESCROW_DURATION, duration);
+        emit LiquidationEscrowDurationUpdated(duration);
+    }
+
+    function setSnxLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSnxLiquidationPenalty(SETTING_SNX_LIQUIDATION_PENALTY, penalty);
+        emit SnxLiquidationPenaltyUpdated(penalty);
+    }
+
     function setLiquidationPenalty(uint penalty) external onlyOwner {
         flexibleStorage().setLiquidationPenalty(SETTING_LIQUIDATION_PENALTY, penalty);
         emit LiquidationPenaltyUpdated(penalty);
+    }
+
+    function setSelfLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSelfLiquidationPenalty(SETTING_SELF_LIQUIDATION_PENALTY, penalty);
+        emit SelfLiquidationPenaltyUpdated(penalty);
+    }
+
+    function setFlagReward(uint reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD, reward);
+        emit FlagRewardUpdated(reward);
+    }
+
+    function setLiquidateReward(uint reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD, reward);
+        emit LiquidateRewardUpdated(reward);
     }
 
     function setRateStalePeriod(uint period) external onlyOwner {
@@ -432,11 +497,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
-    function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
-        flexibleStorage().setAtomicPriceBuffer(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey, _buffer);
-        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
-    }
-
     function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
         flexibleStorage().setAtomicVolatilityConsiderationWindow(
             SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
@@ -455,6 +515,20 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
     }
 
+    function setPureChainlinkPriceForAtomicSwapsEnabled(bytes32 _currencyKey, bool _enabled) external onlyOwner {
+        flexibleStorage().setPureChainlinkPriceForAtomicSwapsEnabled(
+            SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED,
+            _currencyKey,
+            _enabled
+        );
+        emit PureChainlinkPriceForAtomicSwapsEnabledUpdated(_currencyKey, _enabled);
+    }
+
+    function setCrossChainSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
+        flexibleStorage().setCrossChainSynthTransferEnabled(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, _currencyKey, _value);
+        emit CrossChainSynthTransferEnabledUpdated(_currencyKey, _value);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event IssuanceRatioUpdated(uint newRatio);
@@ -465,7 +539,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event TargetThresholdUpdated(uint newTargetThreshold);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationEscrowDurationUpdated(uint newDuration);
     event LiquidationPenaltyUpdated(uint newPenalty);
+    event SnxLiquidationPenaltyUpdated(uint newPenalty);
+    event SelfLiquidationPenaltyUpdated(uint newPenalty);
+    event FlagRewardUpdated(uint newReward);
+    event LiquidateRewardUpdated(uint newReward);
     event RateStalePeriodUpdated(uint rateStalePeriod);
     /* ========== Exchange Fees Related ========== */
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
@@ -489,7 +568,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event AtomicTwapWindowUpdated(uint newWindow);
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
     event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
     event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
     event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
+    event PureChainlinkPriceForAtomicSwapsEnabledUpdated(bytes32 synthKey, bool enabled);
+    event CrossChainSynthTransferEnabledUpdated(bytes32 synthKey, uint value);
 }

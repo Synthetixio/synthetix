@@ -26,6 +26,8 @@ interface IFeePool {
 
     function closeCurrentFeePeriod() external;
 
+    function closeSecondary(uint snxBackedDebt, uint debtShareSupply) external;
+
     function recordFeePaid(uint sUSDAmount) external;
 
     function setRewardsToDistribute(uint amount) external;

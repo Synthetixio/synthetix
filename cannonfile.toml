@@ -147,19 +147,19 @@ args = []
 step = 1
 
 [import.aggregator_snx]
-source = "chainlink:0.9-mock"
+source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_snx %>"
 options.salt = "snx"
 step = 1
 
 [import.aggregator_eth]
-source = "chainlink:0.9-mock"
+source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_eth %>"
 options.salt = "eth"
 step = 1
 
 [import.aggregator_btc]
-source = "chainlink:0.9-mock"
+source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
 options.salt = "btc"
 step = 1

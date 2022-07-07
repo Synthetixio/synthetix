@@ -16,6 +16,7 @@ const {
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
+const { artifacts } = require('hardhat');
 
 contract('Rewards Integration Tests', accounts => {
 	// These functions are for manual debugging:
@@ -126,6 +127,7 @@ contract('Rewards Integration Tests', accounts => {
 	// VARIABLES
 	let feePool,
 		synthetix,
+		synthetixProxy,
 		exchangeRates,
 		exchanger,
 		debtCache,
@@ -150,6 +152,7 @@ contract('Rewards Integration Tests', accounts => {
 			RewardEscrowV2: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SynthsUSD: sUSDContract,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
@@ -168,8 +171,12 @@ contract('Rewards Integration Tests', accounts => {
 				'Synthetix',
 				'SystemSettings',
 				'CollateralManager',
+				'LiquidatorRewards',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sBTC, iBTC, sETH, ETH]);
 
@@ -638,7 +645,7 @@ contract('Rewards Integration Tests', accounts => {
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%
-			const potentialFee = exchangeFeeIncurred(toUnit('10000'));
+			const potentialFee = exchangeFeeIncurred(toUnit('20000'));
 			await synthetix.issueSynths(tenK.sub(half(potentialFee)), { from: account3 });
 
 			// Get the SNX mintableSupply for week 2

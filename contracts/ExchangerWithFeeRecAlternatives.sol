@@ -86,7 +86,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
-        bytes32 trackingCode
+        bytes32 trackingCode,
+        uint minAmount
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
@@ -96,6 +97,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             destinationCurrencyKey,
             destinationAddress
         );
+
+        require(amountReceived >= minAmount, "The amount received is below the minimum amount specified.");
 
         _processTradingRewards(fee, destinationAddress);
 
@@ -135,13 +138,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        // One of src/dest synth must be sUSD (checked below for gas optimization reasons)
-        require(
-            !exchangeRates().synthTooVolatileForAtomicExchange(
-                sourceCurrencyKey == sUSD ? destinationCurrencyKey : sourceCurrencyKey
-            ),
-            "Src/dest synth too volatile"
-        );
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
@@ -167,20 +165,17 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
 
         // SIP-65: Decentralized Circuit Breaker (checking current system rates)
-        if (
-            _suspendIfRateInvalid(sourceCurrencyKey, systemSourceRate) ||
-            _suspendIfRateInvalid(destinationCurrencyKey, systemDestinationRate)
-        ) {
+        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
             return (0, 0);
         }
 
         // Sanity check atomic output's value against current system value (checking atomic rates)
         require(
-            !_isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
+            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
             "Atomic rate deviates too much"
         );
 
-        // Ensure src/dest synth is sUSD and determine sUSD value of exchange
+        // Determine sUSD value of exchange
         uint sourceSusdValue;
         if (sourceCurrencyKey == sUSD) {
             // Use after-settled amount as this is amount converted (not sourceAmount)
@@ -189,7 +184,10 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
             sourceSusdValue = systemConvertedAmount;
         } else {
-            revert("Src/dest synth must be sUSD");
+            // Otherwise, convert source to sUSD value
+            (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
+                _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, sUSD);
+            sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
         }
 
         // Check and update atomic volume limit
@@ -272,14 +270,11 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         view
         returns (uint)
     {
-        // unused
-        sourceCurrencyKey;
-
-        // Get the exchange fee rate as per destination currencyKey
-        uint baseRate = getAtomicExchangeFeeRate(destinationCurrencyKey);
+        // Get the exchange fee rate as per source and destination currencyKey
+        uint baseRate = getAtomicExchangeFeeRate(sourceCurrencyKey).add(getAtomicExchangeFeeRate(destinationCurrencyKey));
         if (baseRate == 0) {
             // If no atomic rate was set, fallback to the regular exchange rate
-            baseRate = getExchangeFeeRate(destinationCurrencyKey);
+            baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
         }
 
         return baseRate;

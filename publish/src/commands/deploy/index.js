@@ -26,20 +26,23 @@ const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
+const configureFutures = require('./configure-futures');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
+const deployFutures = require('./deploy-futures');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
 const importFeePeriods = require('./import-fee-periods');
+const importExcludedDebt = require('./import-excluded-debt');
 const performSafetyChecks = require('./perform-safety-checks');
 const rebuildResolverCaches = require('./rebuild-resolver-caches');
 const rebuildLegacyResolverCaches = require('./rebuild-legacy-resolver-caches');
 const systemAndParameterCheck = require('./system-and-parameter-check');
-const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+// const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
 	priorityGasPrice: '1',
@@ -128,8 +131,6 @@ const deploy = async ({
 		useOvm,
 	});
 
-	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
-
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
 	);
@@ -216,7 +217,7 @@ const deploy = async ({
 		getDeployParameter,
 		network,
 		skipFeedChecks,
-		standaloneFeeds,
+		feeds,
 		synths,
 		useFork,
 		useOvm,
@@ -270,6 +271,7 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		deploymentPath,
 		generateSolidity,
 		network,
 		synths,
@@ -285,6 +287,18 @@ const deploy = async ({
 		getDeployParameter,
 		network,
 		useOvm,
+	});
+
+	await deployFutures({
+		account,
+		addressOf,
+		getDeployParameter,
+		deployer,
+		runStep,
+		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
 	});
 
 	await deployDappUtils({
@@ -344,19 +358,29 @@ const deploy = async ({
 		yes,
 	});
 
+	await importExcludedDebt({
+		deployer,
+		freshDeploy,
+		runStep,
+	});
+
+	// Configure all feeds as standalone in case they are being used as synth currency keys (through synth),
+	// or directly (e.g. futures). Adding just one or the other may cause issues if e.g. initially futures
+	// market exists, but later a synth is added. Or if initially both exist, but later the spot synth
+	// is removed. The standalone feed should always be added and available.
 	await configureStandalonePriceFeeds({
 		deployer,
 		runStep,
-		standaloneFeeds,
+		feeds,
 		useOvm,
 	});
 
 	await configureSynths({
 		addressOf,
-		deployer,
 		explorerLinkPrefix,
-		feeds,
 		generateSolidity,
+		feeds,
+		deployer,
 		network,
 		runStep,
 		synths,
@@ -388,14 +412,26 @@ const deploy = async ({
 		runStep,
 	});
 
-	await takeDebtSnapshotWhenRequired({
-		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
+	await configureFutures({
+		addressOf,
 		deployer,
-		generateSolidity,
+		loadAndCheckRequiredSources,
 		runStep,
+		getDeployParameter,
 		useOvm,
-		useFork,
+		freshDeploy,
+		deploymentPath,
+		network,
 	});
+
+	// await takeDebtSnapshotWhenRequired({
+	// 	debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
+	// 	deployer,
+	// 	generateSolidity,
+	// 	runStep,
+	// 	useOvm,
+	// 	useFork,
+	// });
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
@@ -425,7 +461,8 @@ module.exports = {
 			.description('Deploy compiled solidity files')
 			.option(
 				'-a, --add-new-synths',
-				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`
+				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`,
+				true
 			)
 			.option(
 				'-b, --build-path [value]',

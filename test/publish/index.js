@@ -42,7 +42,7 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
-		LIQUIDATION_PENALTY,
+		SNX_LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
@@ -183,7 +183,7 @@ describe('publish scripts', () => {
 			let Exchanger;
 			let Issuer;
 			let SystemSettings;
-			let Liquidations;
+			let Liquidator;
 			let ExchangeRates;
 			const aggregators = {};
 
@@ -245,20 +245,20 @@ describe('publish scripts', () => {
 				targets = getTarget();
 				synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
+				Synthetix = getContract({ target: 'ProxySynthetix', source: 'Synthetix' });
 				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
 				Exchanger = getContract({ target: 'Exchanger' });
 				DebtCache = getContract({ target: 'DebtCache' });
 
 				Issuer = getContract({ target: 'Issuer' });
 
-				sUSDContract = getContract({ target: 'ProxyERC20sUSD', source: 'Synth' });
+				sUSDContract = getContract({ target: 'ProxysUSD', source: 'Synth' });
 
 				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
 				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
 				SystemSettings = getContract({ target: 'SystemSettings' });
 
-				Liquidations = getContract({ target: 'Liquidations' });
+				Liquidator = getContract({ target: 'Liquidator' });
 
 				ExchangeRates = getContract({ target: 'ExchangeRates' });
 			});
@@ -282,11 +282,11 @@ describe('publish scripts', () => {
 						ethers.utils.parseEther((TARGET_THRESHOLD / 100).toString()).toString()
 					);
 
-					assert.strictEqual((await Liquidations.liquidationDelay()).toString(), LIQUIDATION_DELAY);
-					assert.strictEqual((await Liquidations.liquidationRatio()).toString(), LIQUIDATION_RATIO);
+					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
+					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await Liquidations.liquidationPenalty()).toString(),
-						LIQUIDATION_PENALTY
+						(await SystemSettings.snxLiquidationPenalty()).toString(),
+						SNX_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
@@ -310,6 +310,7 @@ describe('publish scripts', () => {
 					let newLiquidationsDelay;
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
+					let newSnxLiquidationsPenalty;
 					let newRateStalePeriod;
 					let newAtomicTwapWindow;
 					let newRateForsUSD;
@@ -326,6 +327,7 @@ describe('publish scripts', () => {
 						newLiquidationsDelay = newFeePeriodDuration;
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
+						newSnxLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
 						newAtomicTwapWindow = '1800';
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
@@ -362,6 +364,12 @@ describe('publish scripts', () => {
 						await tx.wait();
 
 						tx = await SystemSettings.setLiquidationRatio(newLiquidationsRatio, overrides);
+						await tx.wait();
+
+						tx = await SystemSettings.setSnxLiquidationPenalty(
+							newSnxLiquidationsPenalty,
+							overrides
+						);
 						await tx.wait();
 
 						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
@@ -428,16 +436,16 @@ describe('publish scripts', () => {
 								ethers.utils.parseEther((newTargetThreshold / 100).toString()).toString()
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationDelay()).toString(),
+								(await Liquidator.liquidationDelay()).toString(),
 								newLiquidationsDelay
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationRatio()).toString(),
+								(await Liquidator.liquidationRatio()).toString(),
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationPenalty()).toString(),
-								newLiquidationsPenalty
+								(await SystemSettings.snxLiquidationPenalty()).toString(),
+								newSnxLiquidationsPenalty
 							);
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
@@ -1088,7 +1096,7 @@ describe('publish scripts', () => {
 									'FeePool',
 									'FeePoolEternalStorage',
 									'Issuer',
-									'Liquidations',
+									'Liquidator',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
@@ -1159,6 +1167,10 @@ describe('publish scripts', () => {
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
 									// Same applies to the owner relays
 									.filter(([contract]) => !/^OwnerRelay/.test(contract))
+									// same for external contracts
+									.filter(([contract]) => !/^ext:/.test(contract))
+									// remove debt oracles
+									.filter(([contract]) => !/^OneNet/.test(contract))
 									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([, { source }]) =>

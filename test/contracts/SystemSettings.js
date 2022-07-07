@@ -19,6 +19,7 @@ const { toBN } = require('web3-utils');
 contract('SystemSettings', async accounts => {
 	const [, owner, account1] = accounts;
 	const oneWeek = toBN(7 * 24 * 60 * 60);
+	const oneYear = toBN(3600 * 24 * 365);
 	const ONE = toBN('1');
 
 	let short, synths, systemSettings;
@@ -59,11 +60,11 @@ contract('SystemSettings', async accounts => {
 				'setAtomicEquivalentForDexPricing',
 				'setAtomicExchangeFeeRate',
 				'setAtomicMaxVolumePerBlock',
-				'setAtomicPriceBuffer',
 				'setAtomicTwapWindow',
 				'setAtomicVolatilityConsiderationWindow',
 				'setAtomicVolatilityUpdateThreshold',
 				'setCollapseFeeRate',
+				'setCrossChainSynthTransferEnabled',
 				'setCrossDomainMessageGasLimit',
 				'setDebtSnapshotStaleTime',
 				'setEtherWrapperBurnFeeRate',
@@ -76,6 +77,11 @@ contract('SystemSettings', async accounts => {
 				'setLiquidationDelay',
 				'setLiquidationPenalty',
 				'setLiquidationRatio',
+				'setLiquidationEscrowDuration',
+				'setSnxLiquidationPenalty',
+				'setSelfLiquidationPenalty',
+				'setLiquidateReward',
+				'setFlagReward',
 				'setMinimumStakeTime',
 				'setPriceDeviationThresholdFactor',
 				'setRateStalePeriod',
@@ -89,6 +95,7 @@ contract('SystemSettings', async accounts => {
 				'setExchangeDynamicFeeWeightDecay',
 				'setExchangeDynamicFeeRounds',
 				'setExchangeMaxDynamicFee',
+				'setPureChainlinkPriceForAtomicSwapsEnabled',
 			],
 		});
 	});
@@ -108,7 +115,7 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 		it('cannot exceed the maximum ovm gas limit', async () => {
-			const newLimit = 8.000001e6;
+			const newLimit = 12.000001e6;
 			const gasLimitType = 0;
 			await assert.revert(
 				systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
@@ -145,6 +152,7 @@ contract('SystemSettings', async accounts => {
 		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 2 });
 		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 3 });
 		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 4 });
+		itCanSetCrossDomainGasLimitOfType({ gasLimitType: 5 });
 	});
 
 	describe('setTradingRewardsEnabled()', () => {
@@ -424,7 +432,7 @@ contract('SystemSettings', async accounts => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setLiquidationDelay,
-				args: [oneWeek],
+				args: [day],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -435,7 +443,7 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setLiquidationDelay(0, {
 					from: owner,
 				}),
-				'Must be greater than 1 day'
+				'Must be greater than MIN_LIQUIDATION_DELAY'
 			);
 		});
 		it('when setLiquidationDelay is set above 30 days then revert', async () => {
@@ -443,7 +451,7 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setLiquidationDelay(31 * day, {
 					from: owner,
 				}),
-				'Must be less than 30 days'
+				'Must be less than MAX_LIQUIDATION_DELAY'
 			);
 		});
 		it('owner can set liquidationDelay to 1 day', async () => {
@@ -451,10 +459,10 @@ contract('SystemSettings', async accounts => {
 			const liquidationDelay = await systemSettings.liquidationDelay();
 			assert.bnEqual(liquidationDelay, day);
 		});
-		it('owner can set liquidationDelay to 30 days', async () => {
-			await systemSettings.setLiquidationDelay(30 * day, { from: owner });
+		it('owner can set liquidationDelay to 3 days', async () => {
+			await systemSettings.setLiquidationDelay(3 * day, { from: owner });
 			const liquidationDelay = await systemSettings.liquidationDelay();
-			assert.bnEqual(liquidationDelay, 30 * day);
+			assert.bnEqual(liquidationDelay, 3 * day);
 		});
 	});
 
@@ -463,9 +471,10 @@ contract('SystemSettings', async accounts => {
 			await setupSettings();
 		});
 		it('can only be invoked by owner', async () => {
+			const ratio = divideDecimal(toUnit('2'), toUnit('3'));
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setLiquidationRatio,
-				args: [toUnit('.5')],
+				args: [ratio],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -473,17 +482,17 @@ contract('SystemSettings', async accounts => {
 		});
 		describe('given liquidation penalty is 10%', () => {
 			beforeEach(async () => {
-				await systemSettings.setLiquidationPenalty(toUnit('0.1'), { from: owner });
+				await systemSettings.setSnxLiquidationPenalty(toUnit('0.1'), { from: owner });
 			});
-			it('owner can change liquidationRatio to 300%', async () => {
-				const ratio = divideDecimal(toUnit('1'), toUnit('3'));
+			it('owner can change liquidationRatio to 150%', async () => {
+				const ratio = divideDecimal(toUnit('2'), toUnit('3'));
 				await systemSettings.setLiquidationRatio(ratio, {
 					from: owner,
 				});
 				assert.bnClose(await systemSettings.liquidationRatio(), ratio);
 			});
-			it('owner can change liquidationRatio to 200%', async () => {
-				const ratio = toUnit('.5');
+			it('owner can change liquidationRatio to 120%', async () => {
+				const ratio = divideDecimal(toUnit('1'), toUnit('1.2'));
 				await systemSettings.setLiquidationRatio(ratio, { from: owner });
 				assert.bnEqual(await systemSettings.liquidationRatio(), ratio);
 			});
@@ -572,6 +581,31 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	describe('setLiquidationEscrowDuration()', () => {
+		const week = 3600 * 24 * 7;
+		const month = 3600 * 24 * 30;
+
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setLiquidationEscrowDuration,
+				args: [oneYear],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('owner can set liquidationEscrowDuration to 1 week', async () => {
+			await systemSettings.setLiquidationEscrowDuration(week, { from: owner });
+			const liquidationEscrowDuration = await systemSettings.liquidationEscrowDuration();
+			assert.bnEqual(liquidationEscrowDuration, week);
+		});
+		it('owner can set liquidationEscrowDuration to 1 month', async () => {
+			await systemSettings.setLiquidationEscrowDuration(month, { from: owner });
+			const liquidationEscrowDuration = await systemSettings.liquidationEscrowDuration();
+			assert.bnEqual(liquidationEscrowDuration, month);
+		});
+	});
+
 	describe('setLiquidationPenalty()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
@@ -607,6 +641,128 @@ contract('SystemSettings', async accounts => {
 		it('owner can set liquidationPenalty to 0%', async () => {
 			await systemSettings.setLiquidationPenalty(toUnit('0'), { from: owner });
 			assert.bnEqual(await systemSettings.liquidationPenalty(), toUnit('0'));
+		});
+	});
+
+	describe('setSnxLiquidationPenalty()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setSnxLiquidationPenalty,
+				args: [toUnit('.1')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('when setSnxLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
+			const newSnxLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
+			await assert.revert(
+				systemSettings.setSnxLiquidationPenalty(newSnxLiquidationPenalty, {
+					from: owner,
+				}),
+				'penalty > MAX_LIQUIDATION_PENALTY'
+			);
+		});
+
+		it('owner can set SnxLiquidationPenalty to 25%', async () => {
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.25'), { from: owner });
+			assert.bnEqual(await systemSettings.snxLiquidationPenalty(), toUnit('.25'));
+		});
+		it('owner can set SnxLiquidationPenalty to 1%', async () => {
+			await systemSettings.setSnxLiquidationPenalty(toUnit('.01'), { from: owner });
+			assert.bnEqual(await systemSettings.snxLiquidationPenalty(), toUnit('.01'));
+		});
+		it('owner can set SnxLiquidationPenalty to 0%', async () => {
+			await systemSettings.setSnxLiquidationPenalty(toUnit('0'), { from: owner });
+			assert.bnEqual(await systemSettings.snxLiquidationPenalty(), toUnit('0'));
+		});
+	});
+
+	describe('setSelfLiquidationPenalty()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setSelfLiquidationPenalty,
+				args: [toUnit('0.1')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('when setSelfLiquidationPenalty is set above MAX_LIQUIDATION_PENALTY then revert', async () => {
+			// Have to hardcode here due to public const not available in Solidity V5
+			// https://ethereum.stackexchange.com/a/102633/33908
+			const MAX_LIQUIDATION_PENALTY = toUnit('0.25');
+			const newLiquidationPenalty = MAX_LIQUIDATION_PENALTY.add(toUnit('1'));
+			await assert.revert(
+				systemSettings.setSelfLiquidationPenalty(newLiquidationPenalty, {
+					from: owner,
+				}),
+				'penalty > MAX_LIQUIDATION_PENALTY'
+			);
+		});
+
+		it('owner can set selfLiquidationPenalty to 20%', async () => {
+			await systemSettings.setSelfLiquidationPenalty(toUnit('0.2'), { from: owner });
+			assert.bnEqual(await systemSettings.selfLiquidationPenalty(), toUnit('0.2'));
+		});
+		it('owner can set selfLiquidationPenalty to 1%', async () => {
+			await systemSettings.setSelfLiquidationPenalty(toUnit('0.01'), { from: owner });
+			assert.bnEqual(await systemSettings.selfLiquidationPenalty(), toUnit('0.01'));
+		});
+		it('owner can set selfLiquidationPenalty to 0%', async () => {
+			await systemSettings.setSelfLiquidationPenalty(toUnit('0'), { from: owner });
+			assert.bnEqual(await systemSettings.selfLiquidationPenalty(), toUnit('0'));
+		});
+	});
+
+	describe('setFlagReward()', () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setFlagReward(toUnit('10'), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setFlagReward(toUnit('10'), { from: owner });
+			});
+			it('should update the flag reward', async () => {
+				assert.bnEqual(await systemSettings.flagReward(), toUnit('10'));
+			});
+			it('should allow the flag reward to be 0', async () => {
+				await systemSettings.setFlagReward(toUnit('0'), { from: owner });
+				assert.bnEqual(await systemSettings.flagReward(), toUnit('0'));
+			});
+		});
+	});
+
+	describe('setLiquidateReward()', () => {
+		describe('revert condtions', async () => {
+			it('should fail if not called by the owner', async () => {
+				await assert.revert(
+					systemSettings.setLiquidateReward(toUnit('20'), { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+		describe('when it succeeds', async () => {
+			beforeEach(async () => {
+				await systemSettings.setLiquidateReward(toUnit('20'), { from: owner });
+			});
+			it('should update the liquidate reward', async () => {
+				assert.bnEqual(await systemSettings.liquidateReward(), toUnit('20'));
+			});
+			it('should allow the liquidate reward to be 0', async () => {
+				await systemSettings.setLiquidateReward(toUnit('0'), { from: owner });
+				assert.bnEqual(await systemSettings.liquidateReward(), toUnit('0'));
+			});
 		});
 	});
 
@@ -1177,46 +1333,6 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setAtomicPriceBuffer', () => {
-		const sETH = toBytes32('sETH');
-		const buffer = toUnit('0.5');
-		it('can only be invoked by owner', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setAtomicPriceBuffer,
-				args: [sETH, buffer],
-				address: owner,
-				accounts,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		describe('when successfully invoked', () => {
-			let txn;
-			beforeEach(async () => {
-				txn = await systemSettings.setAtomicPriceBuffer(sETH, buffer, { from: owner });
-			});
-
-			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), buffer);
-			});
-
-			it('and emits an AtomicPriceBufferUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [sETH, buffer]);
-			});
-
-			it('allows to be changed', async () => {
-				const newBuffer = buffer.div(toBN('2'));
-				await systemSettings.setAtomicPriceBuffer(sETH, newBuffer, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), newBuffer);
-			});
-
-			it('allows to be reset to zero', async () => {
-				await systemSettings.setAtomicPriceBuffer(sETH, 0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), 0);
-			});
-		});
-	});
-
 	describe('setAtomicVolatilityConsiderationWindow', () => {
 		const sETH = toBytes32('sETH');
 		const considerationWindow = toBN('600'); // 10 min
@@ -1338,6 +1454,45 @@ contract('SystemSettings', async accounts => {
 			it('allows to be reset to zero', async () => {
 				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 0, { from: owner });
 				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), 0);
+			});
+		});
+	});
+
+	describe('setCrossChainSynthTransferEnabled', () => {
+		const sETH = toBytes32('sETH');
+		const enabled = 1;
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setCrossChainSynthTransferEnabled,
+				args: [sETH, enabled],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setCrossChainSynthTransferEnabled(sETH, enabled, {
+					from: owner,
+				});
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.crossChainSynthTransferEnabled(sETH), enabled);
+			});
+
+			it('and emits an AtomicVolatilityUpdateThresholdUpdated event', async () => {
+				assert.eventEqual(txn, 'CrossChainSynthTransferEnabledUpdated', [sETH, enabled]);
+			});
+
+			it('allows to be changed', async () => {
+				const newValue = 0;
+				await systemSettings.setCrossChainSynthTransferEnabled(sETH, newValue, {
+					from: owner,
+				});
+				assert.bnEqual(await systemSettings.crossChainSynthTransferEnabled(sETH), newValue);
 			});
 		});
 	});
@@ -1577,6 +1732,33 @@ contract('SystemSettings', async accounts => {
 				systemSettings.setExchangeMaxDynamicFee(toUnit('11'), { from: owner }),
 				'MAX_EXCHANGE_FEE_RATE exceeded'
 			);
+		});
+	});
+
+	describe('setPureChainlinkPriceForAtomicSwapsEnabled()', () => {
+		const currencyKey = toBytes32('sUSD');
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled,
+				args: [currencyKey, true],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const txn = await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
+				currencyKey,
+				true,
+				{ from: owner }
+			);
+			const actual = await systemSettings.pureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+			assert.bnEqual(
+				actual,
+				true,
+				'Configured pure chainlink price for atomic swaps enabled is set correctly'
+			);
+			assert.eventEqual(txn, 'PureChainlinkPriceForAtomicSwapsEnabledUpdated', [currencyKey, true]);
 		});
 	});
 });

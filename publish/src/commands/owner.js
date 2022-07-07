@@ -392,7 +392,7 @@ const owner = async ({
 			const batchData = OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
 				batchActions.map(({ target }) => target),
 				batchActions.map(({ data }) => data),
-				ethers.BigNumber.from('0'),
+				ethers.BigNumber.from('10000000'),
 			]);
 			if (safeBatchSubmitter) {
 				await safeBatchSubmitter.appendTransaction({
@@ -452,6 +452,10 @@ const owner = async ({
 					yellow(nonce)
 				)
 			);
+
+			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+		} else {
+			console.log(gray('No transactions to stage'));
 		}
 	}
 

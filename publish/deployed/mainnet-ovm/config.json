@@ -50,12 +50,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"Liquidations": {
-		"deploy": false
-	},
 	"Synthetix": {
 		"deploy": false
 	},
@@ -78,12 +72,6 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false
-	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
 		"deploy": false
 	},
 	"ProxyFeePool": {
@@ -210,6 +198,99 @@
 		"deploy": false
 	},
 	"SynthsEUR": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketSettings": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"FuturesMarketBTC": {
+		"deploy": false
+	},
+	"FuturesMarketETH": {
+		"deploy": false
+	},
+	"FuturesMarketLINK": {
+		"deploy": false
+	},
+	"TokenStatesAAVE": {
+		"deploy": false
+	},
+	"ProxysAAVE": {
+		"deploy": false
+	},
+	"SynthsAAVE": {
+		"deploy": false
+	},
+	"TokenStatesUNI": {
+		"deploy": false
+	},
+	"ProxysUNI": {
+		"deploy": false
+	},
+	"SynthsUNI": {
+		"deploy": false
+	},
+	"FuturesMarketSOL": {
+		"deploy": false
+	},
+	"FuturesMarketAVAX": {
+		"deploy": false
+	},
+	"FuturesMarketAAVE": {
+		"deploy": false
+	},
+	"FuturesMarketUNI": {
+		"deploy": false
+	},
+	"FuturesMarketMATIC": {
+		"deploy": false
+	},
+	"FuturesMarketXAU": {
+		"deploy": false
+	},
+	"FuturesMarketXAG": {
+		"deploy": false
+	},
+	"FuturesMarketEUR": {
+		"deploy": false
+	},
+	"FuturesMarketAPE": {
+		"deploy": false
+	},
+	"FuturesMarketDYDX": {
+		"deploy": false
+	},
+	"TokenStatesINR": {
+		"deploy": false
+	},
+	"ProxysINR": {
+		"deploy": false
+	},
+	"SynthsINR": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
 		"deploy": false
 	}
 }

@@ -33,7 +33,7 @@ module.exports = async ({
 	getDeployParameter,
 	network,
 	skipFeedChecks,
-	standaloneFeeds,
+	feeds,
 	synths,
 	useFork,
 	useOvm,
@@ -127,7 +127,7 @@ module.exports = async ({
 			useOvm,
 			synths,
 			oldExrates,
-			standaloneFeeds,
+			feeds,
 		});
 		aggregatedPriceResults = padding + aggResults.join(padding);
 	}

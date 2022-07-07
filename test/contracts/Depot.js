@@ -23,9 +23,18 @@ const {
 const { mockToken, setupAllContracts } = require('./setup');
 
 const { toBytes32 } = require('../..');
+const { artifacts } = require('hardhat');
 
 contract('Depot', async accounts => {
-	let synthetix, synth, depot, addressResolver, systemStatus, exchangeRates, ethRate, snxRate;
+	let synthetix,
+		synthetixProxy,
+		synth,
+		depot,
+		addressResolver,
+		systemStatus,
+		exchangeRates,
+		ethRate,
+		snxRate;
 
 	const [, owner, , fundsWallet, address1, address2, address3] = accounts;
 
@@ -57,6 +66,7 @@ contract('Depot', async accounts => {
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 		} = await setupAllContracts({
 			accounts,
 			mocks: {
@@ -72,6 +82,9 @@ contract('Depot', async accounts => {
 				'Issuer',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [ETH]);
 	});

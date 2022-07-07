@@ -60,9 +60,18 @@ async function _areRatesInvalid({ ctx }) {
 }
 
 async function _printCacheInfo({ ctx }) {
-	const { DebtCache } = ctx.contracts;
+	const { DebtCache, Issuer, FuturesMarketManager, CollateralManager } = ctx.contracts;
 
-	console.log(await DebtCache.cacheInfo());
+	console.log('debt-cache', await DebtCache.cacheInfo());
+
+	console.log('keys', await Issuer.availableCurrencyKeys());
+
+	console.log('futures', await FuturesMarketManager.totalDebt());
+
+	console.log('collat long', await CollateralManager.totalLong());
+	console.log('collat short', await CollateralManager.totalShort());
+
+	await _printRatesInfo({ ctx });
 }
 
 async function _printRatesInfo({ ctx }) {

@@ -9,6 +9,7 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 };
@@ -83,6 +84,7 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -119,13 +121,22 @@ const defaults = {
 	ISSUANCE_RATIO: w3utils
 		.toBN(1)
 		.mul(w3utils.toBN(1e18))
-		.div(w3utils.toBN(6))
-		.toString(), // 1/6 = 0.16666666667
+		.div(w3utils.toBN(3))
+		.toString(), // 1/3 = 0.3333333333 // 300% ratio
 	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
-	LIQUIDATION_DELAY: (3600 * 24 * 3).toString(), // 3 days
-	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
-	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
+	LIQUIDATION_DELAY: (3600 * 24).toString(), // 24 hours
+	LIQUIDATION_RATIO: w3utils
+		.toBN(1)
+		.mul(w3utils.toBN(2e18))
+		.div(w3utils.toBN(3))
+		.toString(), // 2/3 = 0.6666666667 // 150% ratio
+	LIQUIDATION_ESCROW_DURATION: (3600 * 24 * 365).toString(), // 1 year
+	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty (used for Collateral liquidations)
+	SNX_LIQUIDATION_PENALTY: w3utils.toWei('0.3'), // 30% penalty (used for SNX Liquidations)
+	SELF_LIQUIDATION_PENALTY: w3utils.toWei('0.2'), // 20% penalty
+	FLAG_REWARD: w3utils.toWei('10'), // 10 SNX
+	LIQUIDATE_REWARD: w3utils.toWei('20'), // 20 SNX
 	RATE_STALE_PERIOD: (3600 * 25).toString(), // 25 hours
 	EXCHANGE_FEE_RATES: {
 		forex: w3utils.toWei('0.003'),
@@ -134,10 +145,10 @@ const defaults = {
 		crypto: w3utils.toWei('0.01'),
 		index: w3utils.toWei('0.01'),
 	},
-	EXCHANGE_DYNAMIC_FEE_THRESHOLD: w3utils.toWei('0.004'), // 40 bps
-	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: w3utils.toWei('0.9'), // dynamic fee weight decay for each round
-	EXCHANGE_DYNAMIC_FEE_ROUNDS: '10', // dynamic fee rounds
-	EXCHANGE_MAX_DYNAMIC_FEE: w3utils.toWei('0.05'), // cap max dynamic fee to 5%
+	EXCHANGE_DYNAMIC_FEE_THRESHOLD: w3utils.toWei('0.0025'),
+	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: w3utils.toWei('0.95'), // dynamic fee weight decay for each round
+	EXCHANGE_DYNAMIC_FEE_ROUNDS: '6', // dynamic fee rounds
+	EXCHANGE_MAX_DYNAMIC_FEE: w3utils.toWei('0.015'), // cap max dynamic fee
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
@@ -162,6 +173,7 @@ const defaults = {
 	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_RELAY_GAS_LIMIT: `${8e6}`,
+	CROSS_DOMAIN_FEE_PERIOD_CLOSE_GAS_LIMIT: `${8e6}`,
 
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
@@ -196,6 +208,10 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 5 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: '0',
 
+	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('5'), // 5 sUSD min keeper fee
+	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
+	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
+	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('40'), // minimum initial margin for all markets
 	// SIP-120
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
 	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
@@ -220,7 +236,7 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', useOvm = false, path
 
 // Pass in fs and path to avoid webpack wrapping those
 const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false }) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].deployment;
 	}
 	const pathToDeployment = deploymentPath
@@ -319,7 +335,7 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
 	let feeds;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		feeds = data[getFolderNameForNetwork({ network, useOvm })].feeds;
 	} else {
 		const pathToFeeds = deploymentPath
@@ -336,18 +352,9 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 		feeds = JSON.parse(fs.readFileSync(pathToFeeds));
 	}
 
-	const synths = getSynths({ network, useOvm, path, fs, deploymentPath, skipPopulate: true });
-
 	// now mix in the asset data
 	return Object.entries(feeds).reduce((memo, [asset, entry]) => {
-		memo[asset] = Object.assign(
-			// standalone feeds are those without a synth using them
-			// Note: ETH still used as a rate for Depot, can remove the below once the Depot uses sETH rate or is
-			// removed from the system
-			{ standalone: !synths.find(synth => synth.asset === asset) || asset === 'ETH' },
-			assets[asset],
-			entry
-		);
+		memo[asset] = Object.assign(assets[asset], entry);
 		return memo;
 	}, {});
 };
@@ -366,7 +373,7 @@ const getSynths = ({
 } = {}) => {
 	let synths;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		synths = data[getFolderNameForNetwork({ network, useOvm })].synths;
 	} else {
 		const pathToSynthList = deploymentPath
@@ -416,6 +423,46 @@ const getSynths = ({
 	});
 };
 
+const getFuturesMarkets = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	let futuresMarkets;
+	if (!deploymentPath && (!path || !fs)) {
+		futuresMarkets = data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
+	} else {
+		const pathToFuturesMarketsList = deploymentPath
+			? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					useOvm,
+					file: constants.FUTURES_MARKETS_FILENAME,
+			  });
+		if (!fs.existsSync(pathToFuturesMarketsList)) {
+			futuresMarkets = [];
+		} else {
+			futuresMarkets = JSON.parse(fs.readFileSync(pathToFuturesMarketsList)) || [];
+		}
+	}
+
+	return futuresMarkets.map(futuresMarket => {
+		/**
+		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
+		 * Unfortunately due to some historical reasons 'sBTC', 'sETH' and 'sLINK' does not follow this format
+		 * We adjust for that here.
+		 */
+		const marketsWithIncorrectAssetKey = ['sBTC', 'sETH', 'sLINK'];
+		const assetKeyNeedsAdjustment = marketsWithIncorrectAssetKey.includes(futuresMarket.asset);
+		const assetKey = assetKeyNeedsAdjustment ? futuresMarket.asset.slice(1) : futuresMarket.asset;
+		// mixin the asset details
+		return Object.assign({}, assets[assetKey], futuresMarket);
+	});
+};
+
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
@@ -426,7 +473,7 @@ const getStakingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
 	}
 
@@ -454,7 +501,7 @@ const getShortingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
 	}
 
@@ -509,6 +556,12 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			// Deterministic account #0 when using `npx hardhat node`
 			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 		}),
+		'local-ovm': Object.assign({}, base, {
+			// Deterministic account #0 when using `npx hardhat node`
+			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		}),
 	};
 
 	const users = Object.entries(
@@ -528,7 +581,7 @@ const getVersions = ({
 } = {}) => {
 	let versions;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		versions = data[getFolderNameForNetwork({ network, useOvm })].versions;
 	} else {
 		const pathToVersions = deploymentPath
@@ -564,6 +617,8 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		6: 'Index Rebalance',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
+		80: 'Futures configuration', // pausing according to deployment configuration
+		231: 'Latency Breaker', // https://sips.synthetix.io/sips/sip-231/
 		99999: 'Emergency',
 	};
 
@@ -584,7 +639,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: 'SNX',
 				asset: 'SNX',
 				name: 'Synthetix',
-				address: targets.ProxyERC20.address,
+				address: targets.ProxySynthetix.address,
 				decimals: 18,
 			},
 			feeds['SNX'].feed ? { feed: feeds['SNX'].feed } : {}
@@ -596,8 +651,7 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: synth.name,
 				asset: synth.asset,
 				name: synth.description,
-				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
-					.address,
+				address: (targets[`Proxy${synth.name}`] || {}).address,
 				index: synth.index,
 				decimals: 18,
 				feed: synth.feed,
@@ -632,6 +686,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getFeeds',
 		'getSynths',
 		'getTarget',
+		'getFuturesMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -662,6 +717,7 @@ module.exports = {
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,
+	getFuturesMarkets,
 	getTarget,
 	getTokens,
 	getUsers,

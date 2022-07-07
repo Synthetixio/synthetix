@@ -939,7 +939,7 @@ contract('CollateralErc20', async accounts => {
 				const ratio = await cerc20.collateralRatio(id);
 
 				// the loan is very close 150%, we are in 10^18 land.
-				assert.bnClose(ratio, toUnit(1.5), '1000000000000');
+				assert.bnClose(ratio, toUnit(1.5), '1500000000000');
 			});
 		});
 

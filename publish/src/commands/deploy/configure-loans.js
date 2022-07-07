@@ -235,42 +235,36 @@ module.exports = async ({
 		comment: 'Set the base short rate in the CollateralManager',
 	});
 
-	// add to the manager.
+	// add to the manager if the synths aren't already added.
 	const CollateralManagerSynths = collateralManagerDefaults['SYNTHS'];
-	await runStep({
-		gasLimit: 1e6,
-		contract: 'CollateralManager',
-		target: CollateralManager,
-		read: 'areSynthsAndCurrenciesSet',
-		readArg: [
-			CollateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
-			CollateralManagerSynths.map(toBytes32),
-		],
-		expected: input => input,
-		write: 'addSynths',
-		writeArg: [
-			CollateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
-			CollateralManagerSynths.map(toBytes32),
-		],
-		comment: 'Ensure the CollateralManager contract has all associated synths added',
-	});
+	for (const synth of CollateralManagerSynths) {
+		await runStep({
+			contract: 'CollateralManager',
+			gasLimit: 1e6,
+			target: CollateralManager,
+			read: 'synthsByKey',
+			readArg: toBytes32(synth),
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
+			comment: `Ensure the CollateralManager contract has associated ${synth} added`,
+		});
+	}
 
 	const CollateralManagerShorts = collateralManagerDefaults['SHORTS'];
-	await runStep({
-		gasLimit: 1e6,
-		contract: 'CollateralManager',
-		target: CollateralManager,
-		read: 'areShortableSynthsSet',
-		readArg: [
-			CollateralManagerShorts.map(key => toBytes32(`Synth${key}`)),
-			CollateralManagerShorts.map(toBytes32),
-		],
-		expected: input => input,
-		write: 'addShortableSynths',
-		writeArg: [
-			CollateralManagerShorts.map(key => toBytes32(`Synth${key}`)),
-			CollateralManagerShorts.map(toBytes32),
-		],
-		comment: 'Ensure the CollateralManager contract has all associated short synths added',
-	});
+	if (CollateralManager.shortableSynthsByKey) {
+		for (const synth of CollateralManagerShorts) {
+			await runStep({
+				contract: 'CollateralManager',
+				gasLimit: 1e6,
+				target: CollateralManager,
+				read: 'shortableSynthsByKey',
+				readArg: toBytes32(synth),
+				expected: input => input,
+				write: 'addShortableSynths',
+				writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
+				comment: `Ensure the CollateralManager contract has associated short ${synth} added`,
+			});
+		}
+	}
 };

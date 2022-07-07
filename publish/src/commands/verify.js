@@ -71,6 +71,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			},
 		});
 
+		await new Promise(resolve => setTimeout(resolve, 5000));
+
 		if (result.data.result === 'Contract source code not verified') {
 			const { source } = deployment.targets[name];
 			console.log(
@@ -123,7 +125,10 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			console.log(gray(' - Constructor arguments', constructorArguments));
 
 			const readFlattened = () => {
-				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${source}.sol`);
+				const sourcePath = Object.entries(
+					deployment.sources[source].metadata.settings.compilationTarget
+				).find(([key, value]) => value === source)[0];
+				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, sourcePath);
 				try {
 					return fs.readFileSync(flattenedFilename).toString();
 				} catch (err) {
@@ -149,8 +154,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 						return (
 							`\nThe proxy for this contract can be found here:\n\n` +
 							`https://contracts.synthetix.io/${network !== 'mainnet' ? network + '/' : ''}${
-								name === 'Synthetix' ? 'ProxyERC20' : 'Proxy' + name
-							}`
+								useOvm ? '/ovm' : ''
+							}${`Proxy${name}`}`
 						);
 					};
 					return (
@@ -186,8 +191,10 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					runs,
 					libraryname1: 'SafeDecimalMath',
 					libraryname2: 'SystemSettingsLib',
+					libraryname3: 'SignedSafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
 					libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
+					libraryaddress3: (deployment.targets['SignedSafeDecimalMath'] || {}).address,
 					apikey: etherscanKey,
 				}),
 				{
@@ -238,8 +245,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				}
 
 				if (status !== 'Pass - Verified') {
-					console.log(gray(' - Sleeping for 5 seconds and re-checking.'));
-					await new Promise(resolve => setTimeout(resolve, 5000));
+					console.log(gray(' - Sleeping for 15 seconds and re-checking.'));
+					await new Promise(resolve => setTimeout(resolve, 15000));
 				} else {
 					console.log(green(` - Verified ${name}`));
 					tableData.push([name, address, 'Successfully verified']);
@@ -272,6 +279,5 @@ module.exports = {
 			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-
 			.action(verify),
 };

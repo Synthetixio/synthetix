@@ -361,7 +361,7 @@ module.exports = ({ web3 } = {}) => {
 	/**
 	 *  Convenience method to assert that two BN.js instances are within 100 units of each other.
 	 *  @param actualBN The BN.js instance you received
-	 *  @param expectedBN The BN.js amount you expected to receive, allowing a varience of +/- 100 units
+	 *  @param expectedBN The BN.js amount you expected to receive, allowing a variance of +/- 100 units
 	 */
 	const assertBNClose = (actualBN, expectedBN, varianceParam = '10') => {
 		const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
@@ -436,6 +436,19 @@ module.exports = ({ web3 } = {}) => {
 		}
 		// Otherwise dig through the deeper object and recurse
 		else if (Array.isArray(expected)) {
+			// check lengths
+			let len = actual.length;
+			if (len === undefined) {
+				// If `actual` is not a real array we'll try to interpret the keys of it
+				// as if it secretly wants to be one.
+				// We take the keys that are integers as the array part, and get the `length` of that.
+				// This is because this method is used to check event args or view result structs
+				// that are shaped like {0: bla, 1: foo, blaName: bla, fooName: foo}. FML-JS
+				const intLike = Object.keys(actual).filter(k => k.match(/^\d+$/g) !== null);
+				len = intLike.length;
+			}
+			assert.strictEqual(len, expected.length, `array length`);
+			// check elements
 			for (let i = 0; i < expected.length; i++) {
 				assertDeepEqual(actual[i], expected[i], `(array index: ${i}) `);
 			}

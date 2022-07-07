@@ -30,6 +30,7 @@ contract('Synthetix', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
+		synthetixProxy,
 		exchangeRates,
 		debtCache,
 		supplySchedule,
@@ -43,6 +44,7 @@ contract('Synthetix', async accounts => {
 	before(async () => {
 		({
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			DebtCache: debtCache,
@@ -63,6 +65,7 @@ contract('Synthetix', async accounts => {
 				'SystemStatus',
 				'DebtCache',
 				'Issuer',
+				'LiquidatorRewards',
 				'Exchanger',
 				'RewardsDistribution',
 				'CollateralManager',
@@ -70,6 +73,9 @@ contract('Synthetix', async accounts => {
 				'RewardEscrow',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetixProxy = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH]);
 	});
@@ -120,6 +126,7 @@ contract('Synthetix', async accounts => {
 		const currencyKey1 = sAUD;
 		const currencyKey2 = sEUR;
 		const trackingCode = toBytes32('1inch');
+		const minAmount = '0';
 		const msgSender = owner;
 
 		it('exchangeWithVirtual is called with the right arguments', async () => {
@@ -158,15 +165,23 @@ contract('Synthetix', async accounts => {
 		});
 
 		it('exchangeAtomically is called with the right arguments ', async () => {
-			await synthetix.exchangeAtomically(currencyKey1, amount1, currencyKey2, trackingCode, {
-				from: owner,
-			});
+			await synthetix.exchangeAtomically(
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				trackingCode,
+				minAmount,
+				{
+					from: owner,
+				}
+			);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][0], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][1], currencyKey1);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][2].toString(), amount1);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][3], currencyKey2);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][4], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][5], trackingCode);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][6], minAmount);
 		});
 	});
 
@@ -327,7 +342,7 @@ contract('Synthetix', async accounts => {
 		let rewardEscrowBalanceBefore;
 		beforeEach(async () => {
 			// transfer SNX to rewardEscrow
-			await synthetix.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
+			await synthetixProxy.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
 
 			rewardEscrowBalanceBefore = await synthetix.balanceOf(rewardEscrow.address);
 		});

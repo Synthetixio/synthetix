@@ -14,7 +14,15 @@ const {
 	toBN,
 } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const {
+	setupAllContracts,
+	constantsOverrides: {
+		EXCHANGE_DYNAMIC_FEE_ROUNDS,
+		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+		EXCHANGE_MAX_DYNAMIC_FEE,
+	},
+} = require('./setup');
 
 const {
 	setExchangeFeeRateForSynths,
@@ -31,15 +39,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: {
-		WAITING_PERIOD_SECS,
-		PRICE_DEVIATION_THRESHOLD_FACTOR,
-		ATOMIC_MAX_VOLUME_PER_BLOCK,
-		EXCHANGE_DYNAMIC_FEE_ROUNDS,
-		EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
-		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
-		EXCHANGE_MAX_DYNAMIC_FEE,
-	},
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ATOMIC_MAX_VOLUME_PER_BLOCK },
 } = require('../..');
 
 const bnCloseVariance = '30';
@@ -461,22 +461,27 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	const itCalculatesFeeRateForExchange = () => {
 		describe('Given exchangeFeeRates are configured and when calling feeRateForExchange()', () => {
-			it('for two long synths, returns the regular exchange fee', async () => {
+			it('for two long synths, returns double the regular exchange fee', async () => {
 				const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC);
-				assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+				assert.bnEqual(
+					actualFeeRate,
+					exchangeFeeRate.mul(toBN('2')),
+					'Rate must be the exchange fee rate'
+				);
 			});
 		});
 	};
 
 	const itCalculatesFeeRateForExchange2 = () => {
 		describe('given exchange fee rates are configured into categories', () => {
+			const bipsUSD = toUnit('0');
 			const bipsFX = toUnit('0.01');
 			const bipsCrypto = toUnit('0.02');
 			const bipsInverse = toUnit('0.03');
 			beforeEach(async () => {
 				await systemSettings.setExchangeFeeRateForSynths(
-					[sAUD, sEUR, sETH, sBTC, iBTC],
-					[bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
+					[sUSD, sAUD, sEUR, sETH, sBTC, iBTC],
+					[bipsUSD, bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
 					{
 						from: owner,
 					}
@@ -538,6 +543,46 @@ contract('Exchanger (spec tests)', async accounts => {
 					it('then return the feeRate', async () => {
 						const exchangeFeeRate = await exchanger.feeRateForExchange(sUSD, sEUR);
 						assert.bnEqual(feeRate, exchangeFeeRate);
+					});
+				});
+
+				describe('when the fees are changed', () => {
+					const amount = toUnit('1000');
+
+					it('updates exchange fee amounts appropriately', async () => {
+						await systemSettings.setExchangeFeeRateForSynths([sUSD], [toUnit(0)], {
+							from: owner,
+						});
+						await systemSettings.setExchangeFeeRateForSynths([sAUD], [toUnit(0)], {
+							from: owner,
+						});
+
+						const { exchangeFeeRate: exchangeFeeRate1 } = await exchanger.getAmountsForExchange(
+							amount,
+							sUSD,
+							sAUD
+						);
+						assert.bnEqual(exchangeFeeRate1, 0);
+
+						await systemSettings.setExchangeFeeRateForSynths([sUSD], [toUnit(0.1)], {
+							from: owner,
+						});
+						const { exchangeFeeRate: exchangeFeeRate2 } = await exchanger.getAmountsForExchange(
+							amount,
+							sUSD,
+							sAUD
+						);
+						assert.bnEqual(exchangeFeeRate2, toUnit(0.1));
+
+						await systemSettings.setExchangeFeeRateForSynths([sAUD], [toUnit(0.01)], {
+							from: owner,
+						});
+						const { exchangeFeeRate: exchangeFeeRate3 } = await exchanger.getAmountsForExchange(
+							amount,
+							sUSD,
+							sAUD
+						);
+						assert.bnEqual(exchangeFeeRate3, toUnit(0.11));
 					});
 				});
 
@@ -708,9 +753,10 @@ contract('Exchanger (spec tests)', async accounts => {
 							const expectedDynamicFee = toUnit(0.02)
 								.sub(threshold)
 								.mul(toBN(2));
+
 							assert.bnEqual(
 								await exchanger.feeRateForExchange(sBTC, sETH),
-								bipsCrypto.add(expectedDynamicFee)
+								bipsCrypto.add(bipsCrypto).add(expectedDynamicFee)
 							);
 							assert.deepEqual(await exchanger.dynamicFeeRateForExchange(sBTC, sETH), [
 								expectedDynamicFee,
@@ -719,7 +765,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							// reverse direction is the same
 							assert.bnEqual(
 								await exchanger.feeRateForExchange(sETH, sBTC),
-								bipsCrypto.add(expectedDynamicFee)
+								bipsCrypto.add(bipsCrypto).add(expectedDynamicFee)
 							);
 							assert.deepEqual(await exchanger.dynamicFeeRateForExchange(sETH, sBTC), [
 								expectedDynamicFee,
@@ -846,7 +892,13 @@ contract('Exchanger (spec tests)', async accounts => {
 	};
 
 	const amountAfterExchangeFee = ({ amount }) => {
-		return multiplyDecimal(amount, toUnit('1').sub(exchangeFeeRate));
+		// exchange fee is applied twice, because we assume it is the same one used for both synths in the exchange
+		return multiplyDecimal(
+			amount,
+			toUnit('1')
+				.sub(exchangeFeeRate)
+				.sub(exchangeFeeRate)
+		);
 	};
 
 	const calculateExpectedSettlementAmount = ({ amount, oldRate, newRate }) => {
@@ -1163,6 +1215,35 @@ contract('Exchanger (spec tests)', async accounts => {
 														newRate: divideDecimal(1, 4),
 													});
 												});
+
+												describe('when full exchange() is invoked before settle', () => {
+													let expectedAmountReceived;
+													beforeEach(async () => {
+														expectedAmountReceived = (
+															await exchanger.getAmountsForExchange(
+																srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
+																sEUR,
+																sBTC
+															)
+														)[0];
+
+														await synthetix.exchange(
+															sEUR,
+															await sEURContract.balanceOf(account1),
+															sBTC,
+															{
+																from: account1,
+															}
+														);
+													});
+													it('then exchanges with settled amount', async () => {
+														assert.bnEqual(
+															await sBTCContract.balanceOf(account1),
+															expectedAmountReceived
+														);
+													});
+												});
+
 												describe('when settle() is invoked', () => {
 													let transaction;
 													beforeEach(async () => {
@@ -1363,6 +1444,48 @@ contract('Exchanger (spec tests)', async accounts => {
 												assert.bnEqual(rebateAmount, expected.rebateAmount);
 												assert.bnEqual(reclaimAmount, expected.reclaimAmount);
 											});
+
+											describe('when another minute passes', () => {
+												beforeEach(async () => {
+													await fastForward(60);
+												});
+
+												describe('when full exchange() is invoked before settle', () => {
+													let expectedAmountReceived;
+													beforeEach(async () => {
+														const srcBalanceBeforeExchange = await sEURContract.balanceOf(account1);
+														const expectedSettlement = calculateExpectedSettlementAmount({
+															amount: amountOfSrcExchanged,
+															oldRate: divideDecimal(1, 2),
+															newRate: divideDecimal(1, 1),
+														});
+
+														expectedAmountReceived = (
+															await exchanger.getAmountsForExchange(
+																srcBalanceBeforeExchange.add(expectedSettlement.rebateAmount),
+																sEUR,
+																sBTC
+															)
+														)[0];
+
+														await synthetix.exchange(
+															sEUR,
+															await sEURContract.balanceOf(account1),
+															sBTC,
+															{
+																from: account1,
+															}
+														);
+													});
+													it('then exchanges with settled amount', async () => {
+														assert.bnEqual(
+															await sBTCContract.balanceOf(account1),
+															expectedAmountReceived
+														);
+													});
+												});
+											});
+
 											describe('when the user makes a 2nd exchange of 100 sUSD into sUSD:sEUR at 1:1', () => {
 												beforeEach(async () => {
 													// fast forward 60 seconds so 1st exchange is using first rate
@@ -1372,6 +1495,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														from: account1,
 													});
 												});
+
 												describe('and then the price increases for sUSD:sEUR to 2:1', () => {
 													beforeEach(async () => {
 														await fastForward(5);
@@ -1518,11 +1642,11 @@ contract('Exchanger (spec tests)', async accounts => {
 														});
 													});
 
-													// The user has 49.5 sEUR and has a rebate of 49.5 - so 99 after settlement
+													// The user has 49 sEUR and has a rebate of 49 - so 98 after settlement
 													describe('when an exchange out of sEUR for their expected balance before exchange', () => {
 														let txn;
 														beforeEach(async () => {
-															txn = await synthetix.exchange(sEUR, toUnit('49.5'), sBTC, {
+															txn = await synthetix.exchange(sEUR, toUnit('49'), sBTC, {
 																from: account1,
 															});
 														});
@@ -2024,7 +2148,8 @@ contract('Exchanger (spec tests)', async accounts => {
 						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
 						assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
 
-						assert.bnEqual(feeRate, exchangeFeeRate);
+						// Double the exchange fee rate (once for sUSD, once for sAUD)
+						assert.bnEqual(feeRate, exchangeFeeRate.add(exchangeFeeRate));
 					});
 
 					it('should emit a SynthExchange event @gasprofile', async () => {
@@ -2146,7 +2271,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									// view reverts
 									await assert.revert(
 										exchanger.getAmountsForExchange(toUnit('1'), sUSD, sAUD),
-										'stale'
+										'invalid'
 									);
 								});
 								it('settling still works ', async () => {
@@ -2794,11 +2919,6 @@ contract('Exchanger (spec tests)', async accounts => {
 							await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - i * 5 * 60);
 						}
 
-						// DexPriceAggregator
-						const dexPriceAggregator = await MockDexPriceAggregator.new();
-						await dexPriceAggregator.setAssetToAssetRate(ethOnDex);
-						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
-
 						// Synth equivalents (needs ability to read into decimals)
 						const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
 						const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
@@ -2826,6 +2946,50 @@ contract('Exchanger (spec tests)', async accounts => {
 						await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, web3.utils.toBN(2), {
 							from: owner,
 						});
+
+						// DexPriceAggregator
+						const dexPriceAggregator = await MockDexPriceAggregator.new();
+						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, ethOnDex);
+						await dexPriceAggregator.setAssetToAssetRate(
+							susdDexEquivalentToken.address,
+							toUnit('1')
+						);
+						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
+					});
+
+					describe('when a user sets a minimum amount', () => {
+						const amountIn = toUnit('100');
+
+						it('reverts when the received amount is too low', async () => {
+							await assert.revert(
+								synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), toUnit('.498'), {
+									from: account1,
+								}),
+								'The amount received is below the minimum amount specified.'
+							);
+						});
+
+						it('succeeds when the received amount is equal to the minimum amount', async () => {
+							await synthetix.exchangeAtomically(
+								sUSD,
+								amountIn,
+								sETH,
+								toBytes32(),
+								toUnit('.495'),
+								{
+									from: account1,
+								}
+							);
+
+							const { amountReceived } = await exchanger.getAmountsForAtomicExchange(
+								amountIn,
+								sUSD,
+								sETH
+							);
+
+							assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
+							assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+						});
 					});
 
 					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {
@@ -2843,6 +3007,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								amountIn,
 								sETH,
 								atomicTrackingCode,
+								0,
 								{
 									from: account1,
 								}
@@ -2941,7 +3106,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						beforeEach(async () => {
-							await synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), {
+							await synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), 0, {
 								from: account1,
 							});
 
@@ -2964,7 +3129,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('when a user exchanges without a tracking code', () => {
 						let txn;
 						beforeEach(async () => {
-							txn = await synthetix.exchangeAtomically(sUSD, toUnit('10'), sETH, toBytes32(), {
+							txn = await synthetix.exchangeAtomically(sUSD, toUnit('10'), sETH, toBytes32(), 0, {
 								from: account1,
 							});
 						});
@@ -2978,6 +3143,282 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 				});
 			});
+
+			describe('when we can use the pure Chainlink price', () => {
+				let amountIn;
+				let amountReceived;
+				let amountFee;
+
+				beforeEach(async () => {
+					// Set up Chainlink Prices
+					const seurChainlinkPrice = toUnit('1.2');
+					const seurAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sEUR, seurAggregator.address, { from: owner });
+					await seurAggregator.setLatestAnswer(seurChainlinkPrice, await currentTime());
+
+					const saudChainlinkPrice = toUnit('0.7');
+					const saudAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sAUD, saudAggregator.address, { from: owner });
+					await saudAggregator.setLatestAnswer(saudChainlinkPrice, await currentTime());
+
+					const sbtcChainlinkPrice = toUnit('40000');
+					const sbtcAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(sBTC, sbtcAggregator.address, { from: owner });
+					await sbtcAggregator.setLatestAnswer(sbtcChainlinkPrice, await currentTime());
+
+					// Add Synth Equivalents to System Settings
+					const susdDexEquivalentToken = await MockToken.new('sUSD equivalent', 'esUSD', '6');
+					const sbtcDexEquivalentToken = await MockToken.new('sBTC equivalent', 'esBTC', '9');
+					const seurDexEquivalentToken = await MockToken.new('sEUR equivalent', 'esEUR', '18');
+					const saudDexEquivalentToken = await MockToken.new('sAUD equivalent', 'esAUD', '18');
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sUSD,
+						susdDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sBTC,
+						sbtcDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sEUR,
+						seurDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+					await systemSettings.setAtomicEquivalentForDexPricing(
+						sAUD,
+						saudDexEquivalentToken.address,
+						{
+							from: owner,
+						}
+					);
+
+					// Set up Uniswap Price Aggregator with different prices
+					const dexPriceAggregator = await MockDexPriceAggregator.new();
+					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit('1'));
+					await dexPriceAggregator.setAssetToAssetRate(
+						seurDexEquivalentToken.address,
+						toUnit('1.1')
+					);
+					await dexPriceAggregator.setAssetToAssetRate(
+						saudDexEquivalentToken.address,
+						toUnit('0.8')
+					);
+					await dexPriceAggregator.setAssetToAssetRate(
+						sbtcDexEquivalentToken.address,
+						toUnit('50000')
+					);
+					await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
+
+					// Set Forex to use the pure Chainlink price
+					for (const forexCurrencyKey of [sAUD, sEUR, sUSD]) {
+						await systemSettings.setPureChainlinkPriceForAtomicSwapsEnabled(
+							forexCurrencyKey,
+							true,
+							{
+								from: owner,
+							}
+						);
+					}
+				});
+
+				describe('for the source currency', () => {
+					// sEUR -> sBTC
+
+					beforeEach(async () => {
+						amountIn = toUnit('10000');
+						await sEURContract.issue(account1, amountIn);
+						({
+							amountReceived,
+							exchangeFeeRate,
+							fee: amountFee,
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC));
+						await synthetix.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), 0, {
+							from: account1,
+						});
+					});
+
+					it('completed the exchange atomically', async () => {
+						assert.bnEqual(await sEURContract.balanceOf(account1), 0);
+						assert.bnEqual(await sBTCContract.balanceOf(account1), amountReceived);
+					});
+
+					it('used the correct atomic exchange rate', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const expectedAmountInBtc = divideDecimal(expectedAmountInUsd, toUnit('50000')); // dex
+						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInBtc);
+					});
+
+					it('updates atomic volume correctly', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const lastAtomicVolume = await exchanger.lastAtomicVolume();
+						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
+					});
+				});
+
+				describe('for the destination currency', () => {
+					// sBTC -> sEUR
+
+					beforeEach(async () => {
+						amountIn = toUnit('1');
+						await sBTCContract.issue(account1, amountIn);
+						({
+							amountReceived,
+							exchangeFeeRate,
+							fee: amountFee,
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sBTC, sEUR));
+						await synthetix.exchangeAtomically(sBTC, amountIn, sEUR, toBytes32(), 0, {
+							from: account1,
+						});
+					});
+
+					it('completed the exchange atomically', async () => {
+						assert.bnEqual(await sBTCContract.balanceOf(account1), 0);
+						assert.bnEqual(await sEURContract.balanceOf(account1), amountReceived);
+					});
+
+					it('used the correct atomic exchange rate', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('40000')); // pure (bc its worse)
+						const expectedAmountInEur = divideDecimal(expectedAmountInUsd, toUnit('1.2')); // pure
+						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInEur);
+					});
+
+					it('updates atomic volume correctly', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('40000')); // pure (bc its worse)
+						const lastAtomicVolume = await exchanger.lastAtomicVolume();
+						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
+					});
+				});
+
+				describe('for both the source and destination currency', () => {
+					// sEUR -> sAUD
+
+					beforeEach(async () => {
+						amountIn = toUnit('10000');
+						await sEURContract.issue(account1, amountIn);
+						({
+							amountReceived,
+							exchangeFeeRate,
+							fee: amountFee,
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sAUD));
+						await synthetix.exchangeAtomically(sEUR, amountIn, sAUD, toBytes32(), 0, {
+							from: account1,
+						});
+					});
+
+					it('completed the exchange atomically', async () => {
+						assert.bnEqual(await sEURContract.balanceOf(account1), 0);
+						assert.bnEqual(await sAUDContract.balanceOf(account1), amountReceived);
+					});
+
+					it('used the correct atomic exchange rate', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const expectedAmountInAud = divideDecimal(expectedAmountInUsd, toUnit('0.7')); // pure chainlink price
+						assert.bnEqual(amountReceived.add(amountFee), expectedAmountInAud);
+					});
+
+					it('updates atomic volume correctly', async () => {
+						const expectedAmountInUsd = multiplyDecimal(amountIn, toUnit('1.2')); // pure chainlink price
+						const lastAtomicVolume = await exchanger.lastAtomicVolume();
+						assert.bnEqual(lastAtomicVolume.volume, expectedAmountInUsd);
+					});
+				});
+
+				describe('fee reclamation', () => {
+					// sEUR -> sAUD
+					let amountIn;
+
+					beforeEach('initial rate ensure', async () => {
+						await updateRates([sAUD, sEUR], [toUnit('0.7'), toUnit('1.2')]);
+						await fastForward(600);
+					});
+
+					beforeEach(async () => {
+						amountIn = toUnit('10000');
+						await sEURContract.issue(account1, amountIn);
+						await synthetix.exchange(sEUR, amountIn, sAUD, {
+							from: account1,
+						});
+					});
+
+					const settlementCase = newPrice => {
+						describe(`price of sAUD changes to ${newPrice} immediately after trade`, () => {
+							let balanceBefore;
+							let adjustedTransferBalance;
+							let expectedSettlement;
+							let expectedReceiveAmount;
+
+							beforeEach('disable dynamic fee', async () => {
+								// Disable Dynamic Fee here as settlement is L1 and Dynamic fee is on L2
+								await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
+							});
+
+							beforeEach('record balance and expected settlement', async () => {
+								balanceBefore = await sAUDContract.balanceOf(account1);
+
+								expectedSettlement = calculateExpectedSettlementAmount({
+									amount: amountIn,
+									oldRate: divideDecimal(toUnit('1.2'), toUnit('0.7')),
+									newRate: divideDecimal(toUnit('1.2'), newPrice),
+								});
+
+								adjustedTransferBalance = balanceBefore.add(
+									expectedSettlement.reclaimAmount.gt(toUnit('0'))
+										? expectedSettlement.reclaimAmount.neg()
+										: expectedSettlement.rebateAmount
+								);
+							});
+
+							beforeEach(`AUD price changes to ${newPrice}`, async () => {
+								await fastForward(5);
+								await updateRates([sAUD], [newPrice]);
+							});
+
+							describe('waiting period passes', () => {
+								beforeEach('change', async () => {
+									await fastForward(600);
+								});
+
+								describe('exchanges for sAUD -> sEUR', () => {
+									beforeEach('exchange', async () => {
+										expectedReceiveAmount = (
+											await exchanger.getAmountsForAtomicExchange(
+												adjustedTransferBalance,
+												sAUD,
+												sEUR
+											)
+										)[0];
+
+										await synthetix.exchangeAtomically(sAUD, balanceBefore, sEUR, toBytes32(), 0, {
+											from: account1,
+										});
+									});
+
+									it('exchanged amounts are correct', async () => {
+										assert.bnEqual(await sAUDContract.balanceOf(account1), toUnit(0));
+										assert.bnClose(
+											await sEURContract.balanceOf(account1),
+											expectedReceiveAmount,
+											10000
+										);
+									});
+								});
+							});
+						});
+					};
+
+					settlementCase(toUnit('0.7'));
+					settlementCase(toUnit('0.8'));
+					settlementCase(toUnit('0.6'));
+				});
+			});
 		});
 	};
 
@@ -2985,7 +3426,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		describe('it cannot exchange atomically', () => {
 			it('errors with not implemented when attempted to exchange', async () => {
 				await assert.revert(
-					synthetix.exchangeAtomically(sUSD, amountIssued, sETH, toBytes32(), {
+					synthetix.exchangeAtomically(sUSD, amountIssued, sETH, toBytes32(), 0, {
 						from: account1,
 					}),
 					'Cannot be run on this layer'
@@ -3011,24 +3452,6 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			};
 
-			describe('resetLastExchangeRate() SIP-139', () => {
-				it('cannot be invoked by any user', async () => {
-					await onlyGivenAddressCanInvoke({
-						fnc: exchanger.resetLastExchangeRate,
-						args: [[sEUR, sAUD]],
-						accounts,
-						address: owner,
-						reason: 'Only the contract owner may perform this action',
-					});
-				});
-				it('when invoked without valid exchange rates, it reverts', async () => {
-					await assert.revert(
-						exchanger.resetLastExchangeRate([sEUR, sAUD, toBytes32('sUNKNOWN')], { from: owner }),
-						'Rates for given synths not valid'
-					);
-				});
-			});
-
 			describe(`when the price of sETH is ${baseRate}`, () => {
 				updateRate({ target: sETH, rate: baseRate });
 
@@ -3043,16 +3466,12 @@ contract('Exchanger (spec tests)', async accounts => {
 					// lastExchangeRate, used for price deviations (SIP-65)
 					describe('lastExchangeRate is persisted during exchanges', () => {
 						it('initially has no entries', async () => {
-							assert.equal(await exchanger.lastExchangeRate(sUSD), '0');
 							assert.equal(await exchanger.lastExchangeRate(sETH), '0');
 							assert.equal(await exchanger.lastExchangeRate(sEUR), '0');
 						});
 						describe('when a user exchanges into sETH from sUSD', () => {
 							beforeEach(async () => {
 								await synthetix.exchange(sUSD, toUnit('100'), sETH, { from: account1 });
-							});
-							it('then the source side has a rate persisted', async () => {
-								assert.bnEqual(await exchanger.lastExchangeRate(sUSD), toUnit('1'));
 							});
 							it('and the dest side has a rate persisted', async () => {
 								assert.bnEqual(await exchanger.lastExchangeRate(sETH), toUnit(baseRate.toString()));
@@ -3083,9 +3502,6 @@ contract('Exchanger (spec tests)', async accounts => {
 											toUnit((baseRate * 1.1).toString())
 										);
 									});
-									it('and the dest side has a rate persisted', async () => {
-										assert.bnEqual(await exchanger.lastExchangeRate(sUSD), toUnit('1'));
-									});
 								});
 							});
 							describe('when the price of sETH is over a deviation', () => {
@@ -3109,8 +3525,8 @@ contract('Exchanger (spec tests)', async accounts => {
 											toUnit(baseRate.toString())
 										);
 									});
-									it('then the dest side has not persisted the rate', async () => {
-										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+									it('then the dest side has persisted the rate', async () => {
+										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('1.9'));
 									});
 								});
 							});
@@ -3135,25 +3551,8 @@ contract('Exchanger (spec tests)', async accounts => {
 											toUnit((baseRate * 1.1).toString())
 										);
 									});
-									it('and the dest side has not persisted the rate', async () => {
+									it('and the dest side has persisted the rate', async () => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
-									});
-
-									describe('when the owner invokes resetLastExchangeRate([sEUR, sETH])', () => {
-										beforeEach(async () => {
-											await exchanger.resetLastExchangeRate([sEUR, sETH], { from: owner });
-										});
-
-										it('then the sEUR last exchange rate is updated to the current price', async () => {
-											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
-										});
-
-										it('and the sETH rate has not changed', async () => {
-											assert.bnEqual(
-												await exchanger.lastExchangeRate(sETH),
-												toUnit((baseRate * 1.1).toString())
-											);
-										});
 									});
 								});
 							});
