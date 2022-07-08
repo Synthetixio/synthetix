@@ -221,7 +221,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     function updateEscrowAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
-        require(total >= 0, "balance must be positive");
+        require(total >= 0, "updateEscrowAccountBalance: balance must be positive");
         if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             // writing an actual 0 will result in stale value being read from fallback
@@ -237,7 +237,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     function updateVestedAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalVestedAccountBalance(account)).add(delta);
-        require(total >= 0, "balance must be positive");
+        require(total >= 0, "updateVestedAccountBalance: balance must be positive");
         if (total == 0) {
             // zero value must never be written, because it is used to signal uninitialized
             //  writing an actual 0 will result in stale value being read from fallback
@@ -251,7 +251,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /// for completeness, in case a fix to one of these values is needed (but not the other)
     function updateTotalEscrowedBalance(int delta) public initialized onlyAssociatedContract {
         int total = int(totalEscrowedBalance()).add(delta);
-        require(total >= 0, "balance must be positive");
+        require(total >= 0, "updateTotalEscrowedBalance: balance must be positive");
         _totalEscrowedBalance = uint(total);
     }
 
