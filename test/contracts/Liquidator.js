@@ -57,6 +57,7 @@ contract('Liquidator', accounts => {
 		systemSettings,
 		systemStatus,
 		debtCache,
+		legacySynthetixEscrow,
 		issuer;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -76,6 +77,7 @@ contract('Liquidator', accounts => {
 			SystemStatus: systemStatus,
 			DebtCache: debtCache,
 			Issuer: issuer,
+			SynthetixEscrow: legacySynthetixEscrow,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -94,6 +96,7 @@ contract('Liquidator', accounts => {
 				'SynthetixDebtShare',
 				'CollateralManager',
 				'RewardEscrowV2', // required for Issuer._collateral() to load balances
+				'SynthetixEscrow', // needed to check that it's not considered for rewards
 			],
 		}));
 
@@ -665,6 +668,17 @@ contract('Liquidator', accounts => {
 						assert.isFalse(await liquidator.isLiquidationDeadlinePassed(alice));
 					});
 				});
+				it('if not enough SNX to cover flag reward flagAccountForLiquidation reverts', async () => {
+					await setLiquidSNXBalance(alice, toUnit(1));
+					await updateSNXPrice('6');
+					await synthetix.issueMaxSynths({ from: alice });
+					await updateSNXPrice('1');
+					// cannot flag the account
+					await assert.revert(
+						liquidator.flagAccountForLiquidation(alice, { from: bob }),
+						'not enough SNX for rewards'
+					);
+				});
 				describe('when Bob flags Alice for liquidation', () => {
 					let flagForLiquidationTransaction;
 					let timeOfTransaction;
@@ -757,6 +771,36 @@ contract('Liquidator', accounts => {
 							await updateSNXPrice('1');
 							// should be false
 							assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
+						});
+
+						it('ignores SynthetixEscrow balance', async () => {
+							await setLiquidSNXBalance(alice, 0);
+							const escrowedAmount = toUnit(1000);
+							await synthetix.transfer(legacySynthetixEscrow.address, escrowedAmount, {
+								from: owner,
+							});
+							await legacySynthetixEscrow.appendVestingEntry(
+								alice,
+								toBN(await currentTime()).add(toBN(1000)),
+								escrowedAmount,
+								{
+									from: owner,
+								}
+							);
+							// check it's counted towards collateral (if this check fails and SynthetixEscrow is no longer
+							// collateral, update Liquidator to *not* subtract it in _hasEnoughSNXForRewards
+							assert.bnEqual(await issuer.collateral(alice), escrowedAmount);
+							// cause bad c-ratio
+							await updateSNXPrice('6');
+							await synthetix.issueMaxSynths({ from: alice });
+							await updateSNXPrice('1');
+							// should be false
+							assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
+							// cannot flag the account
+							await assert.revert(
+								liquidator.flagAccountForLiquidation(alice, { from: bob }),
+								'not enough SNX for rewards'
+							);
 						});
 					});
 					describe('when Bob or anyone else tries to flag Alice address for liquidation again', () => {

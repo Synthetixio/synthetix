@@ -15,6 +15,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IHasBalance.sol";
 
 /// @title Upgrade Liquidation Mechanism V2 (SIP-148)
 /// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15
@@ -33,6 +34,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
 
     /* ========== CONSTANTS ========== */
 
@@ -47,11 +49,12 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_ISSUER;
         newAddresses[3] = CONTRACT_EXRATES;
+        newAddresses[4] = CONTRACT_SYNTHETIXESCROW;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -69,6 +72,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    }
+
+    function synthetixEscrow() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -132,7 +139,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
             // Open for liquidation if the deadline has passed and the user has enough SNX collateral.
-            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNX(account)) {
+            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNXForRewards(account)) {
                 return true;
             }
             return false;
@@ -173,8 +180,13 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     /// @notice Checks if an account has enough SNX balance to be considered open for forced liquidation.
-    function _hasEnoughSNX(address account) internal view returns (bool) {
-        uint balance = issuer().collateral(account);
+    function _hasEnoughSNXForRewards(address account) internal view returns (bool) {
+        /// SynthetixEscrow is unliquidatable so should be subtracted from SNX that can be used for rewards.
+        /// This has internal knowledge about collateral calculation (should only be in Issuer), and if SynthetixEscrow
+        /// is deprecated from Issuer's collateral balance - this needs to be updated too. The reason it's added here
+        /// is because it's an unlikely scenario and Issuer code size (and interface) are already too big.
+        uint unliquidatable = synthetixEscrow().balanceOf(account);
+        uint balance = issuer().collateral(account).sub(unliquidatable);
         return balance > (getLiquidateReward().add(getFlagReward()));
     }
 
@@ -232,6 +244,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             accountsCollateralisationRatio >= getLiquidationRatio(),
             "Account issuance ratio is less than liquidation ratio"
         );
+
+        // if account doesn't have enough liquidatable collateral for rewards the liquidation transaction
+        // is not possible
+        require(_hasEnoughSNXForRewards(account), "not enough SNX for rewards");
 
         uint deadline = now.add(getLiquidationDelay());
 
