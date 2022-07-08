@@ -95,11 +95,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         return state().totalEscrowedAccountBalance(account);
     }
 
-    function totalVestedAccountBalance(address account) public view returns (uint) {
+    function totalVestedAccountBalance(address account) external view returns (uint) {
         return state().totalVestedAccountBalance(account);
     }
 
-    function nextEntryId() public view returns (uint) {
+    function nextEntryId() external view returns (uint) {
         return state().nextEntryId();
     }
 
