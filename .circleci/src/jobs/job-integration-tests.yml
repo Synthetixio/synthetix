@@ -12,7 +12,7 @@ steps:
   - rust/install: {}
   - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
   - run: ./foundryup -r usecannon/foundry
-  - run: rm ./foundryup
+  - run: rm -rf *
   - save_cache:
       key: foundry
       paths:
