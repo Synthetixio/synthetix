@@ -286,7 +286,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
                     VestingEntries.VestingEntry({endTime: uint64(lastEntryTime), escrowAmount: refund})
                 );
             // emit event
-            emit VestingEntryCreated(account, block.timestamp, refund, lastEntryTime.sub(block.timestamp), entryID);
+            uint duration = lastEntryTime > block.timestamp ? lastEntryTime.sub(block.timestamp) : 0;
+            emit VestingEntryCreated(account, block.timestamp, refund, duration, entryID);
         }
 
         // update the aggregates and move the tokens
