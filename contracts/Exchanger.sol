@@ -142,7 +142,7 @@ contract Exchanger is ExchangerBase {
         protocolFee = entry.destinationAmount.sub(amountReceived);
 
         if (trackingCode != bytes32(0)) {
-            partnerFee = _deductFeesFromAmount(entry.destinationAmount, volumePartner().getFeeRate(trackingCode)).sub(
+            partnerFee = _deductFeesFromAmount(entry.destinationAmount, getPartnerFeeRate(trackingCode)).sub(
                 amountReceived
             );
             amountReceived = amountReceived.sub(partnerFee);
@@ -183,7 +183,7 @@ contract Exchanger is ExchangerBase {
             // Note: `partnerFee` is being reused to avoid stack too deep errors.
             partnerFee = exchangeRates().effectiveValue(destinationCurrencyKey, partnerFee, sUSD);
 
-            volumePartner().accrueFee(trackingCode, partnerFee);
+            payToPartner(trackingCode, from, partnerFee);
         }
 
         // Note: As of this point, fees are denominated in sUSD.
@@ -508,7 +508,7 @@ contract Exchanger is ExchangerBase {
         );
 
         if (trackingCode != bytes32(0)) {
-            uint partnerFeeRate = volumePartner().getFeeRate(trackingCode);
+            uint partnerFeeRate = getPartnerFeeRate(trackingCode);
             (uint destinationAmount, , ) =
                 exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
             uint partnerFee = _deductFeesFromAmount(destinationAmount, partnerFeeRate).sub(amountReceived);

@@ -21,8 +21,8 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
-import "./interfaces/IVolumePartner.sol";
 import "./Proxyable.sol";
+import "./MixinPartner.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
@@ -70,7 +70,7 @@ interface IExchangerInternalDebtCache {
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
 
-contract ExchangerBase is Owned, MixinSystemSettings, IExchanger {
+contract ExchangerBase is Owned, MixinSystemSettings, MixinPartner, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -90,13 +90,13 @@ contract ExchangerBase is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
-    bytes32 private constant CONTRACT_VOLUME_PARTNER = "VolumePartner";
+    bytes32 private constant CONTRACT_PARTNER_REGISTRY = "PartnerRegistry";
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](11);
+        bytes32[] memory newAddresses = new bytes32[](10);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -107,7 +107,6 @@ contract ExchangerBase is Owned, MixinSystemSettings, IExchanger {
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
         newAddresses[9] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[10] = CONTRACT_VOLUME_PARTNER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -149,10 +148,6 @@ contract ExchangerBase is Owned, MixinSystemSettings, IExchanger {
 
     function debtCache() internal view returns (IExchangerInternalDebtCache) {
         return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
-    }
-
-    function volumePartner() internal view returns (IVolumePartner) {
-        return IVolumePartner(requireAndGetAddress(CONTRACT_VOLUME_PARTNER));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {

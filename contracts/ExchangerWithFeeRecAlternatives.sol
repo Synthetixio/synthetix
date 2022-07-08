@@ -274,7 +274,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, ExchangerBase {
             // Note: `partnerFee` is being reused to avoid stack too deep errors.
             partnerFee = exchangeRates().effectiveValue(destinationCurrencyKey, partnerFee, sUSD);
 
-            volumePartner().accrueFee(trackingCode, partnerFee);
+            payToPartner(trackingCode, from, partnerFee);
         }
 
         // Note: As of this point, `fee` is denominated in sUSD.
@@ -365,7 +365,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, ExchangerBase {
         protocolFee = destinationAmount.sub(amountReceived);
 
         if (trackingCode != bytes32(0)) {
-            uint partnerFeeRate = volumePartner().getFeeRate(trackingCode);
+            uint partnerFeeRate = getPartnerFeeRate(trackingCode);
             (destinationAmount, , ) = exchangeRates().effectiveValueAndRates(
                 sourceCurrencyKey,
                 sourceAmount,
