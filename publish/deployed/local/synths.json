@@ -24,5 +24,16 @@
 		"description": "Ether",
 		"name": "sETH",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"name": "sREDEEMER",
+		"asset": "USD"
 	}
 ]

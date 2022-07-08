@@ -32,12 +32,19 @@ jobs:
             lockfile-lint -p package-lock.json --type npm --allowed-hosts npm --validate-https --empty-hostname false
   job-cannon:
     working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+    machine:
+      image: ubuntu-2204:2022.04.1
+      docker_layer_caching: true
     steps:
+      - restore_cache:
+          keys:
+            - foundry
+      - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+      - run: ./foundryup -r usecannon/foundry
+      - save_cache:
+          key: v6-optimism-build-
+          paths:
+            - ./optimism
       - checkout
       - attach_workspace:
           at: .
@@ -49,11 +56,12 @@ jobs:
           root: .
           paths:
             - build
+            - cannon
             - publish/deployed
   job-fork-tests-ovm:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -82,7 +90,7 @@ jobs:
   job-fork-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -115,6 +123,15 @@ jobs:
       docker_layer_caching: true
     resource_class: large
     steps:
+      - restore_cache:
+          keys:
+            - foundry
+      - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+      - run: ./foundryup -r usecannon/foundry
+      - save_cache:
+          key: v6-optimism-build-{{ checksum "package-lock.json" }}
+          paths:
+            - ./optimism
       - checkout
       - attach_workspace:
           at: .
@@ -160,7 +177,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -172,7 +189,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -186,7 +203,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -216,7 +233,7 @@ jobs:
   job-simulate-release:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -243,7 +260,7 @@ jobs:
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -263,7 +280,7 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -305,7 +322,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -335,7 +352,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -356,7 +373,7 @@ jobs:
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -392,7 +409,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -411,7 +428,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
+      - image: bealdh/foundry:latest
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN

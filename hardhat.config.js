@@ -79,7 +79,7 @@ module.exports = {
 		rinkeby: {
 			url: process.env.PROVIDER_URL || '',
 			chainId: 4,
-			accounts: [process.env.PRIVATE_KEY || ''],
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		local: {
 			chainId: 31337,
