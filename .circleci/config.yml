@@ -45,6 +45,7 @@ jobs:
       - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
       - run: ./foundryup -r usecannon/foundry
       - run: rm -rf *
+      - run: export PATH="$PATH:$HOME/.foundry/bin"
       - save_cache:
           key: foundry
           paths:
@@ -55,7 +56,7 @@ jobs:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: node publish build --test-helpers
-      - run: npx hardhat cannon:build --file cannonfile.aggregator.toml rate=5
+      - run: npx hardhat cannon:build --file cannonfile.aggregator.toml
       - run: npx hardhat cannon:build
       - persist_to_workspace:
           root: .
@@ -135,6 +136,7 @@ jobs:
       - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
       - run: ./foundryup -r usecannon/foundry
       - run: rm -rf *
+      - run: export PATH="$PATH:$HOME/.foundry/bin"
       - save_cache:
           key: foundry
           paths:
