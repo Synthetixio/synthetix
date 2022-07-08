@@ -44,11 +44,7 @@ class Deployer {
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 
-		if (providerUrl) {
-			this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
-		} else {
-			this.provider = require('hardhat').ethers.provider;
-		}
+		this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 		// use the default owner when in a fork or in local mode and no private key supplied
 		if ((useFork || network === 'local') && !privateKey) {

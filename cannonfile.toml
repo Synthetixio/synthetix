@@ -22,6 +22,15 @@ exec = "./publish/cannon.js"
 func = "deploy"
 modified = ["contracts", "publish/src", "publish/deployed/local"]
 
+[invoke.transfer_owner_snx]
+target = ["ProxySynthetix"]
+
+fromCall.func = "owner"
+func = "transfer"
+args = ["<%= settings.owner %>", "100000000000000000000000000"]
+
+step = 1
+
 [invoke.set_ownership]
 target = [
     "AddressResolver",

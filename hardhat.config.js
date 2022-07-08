@@ -76,6 +76,11 @@ module.exports = {
 			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
 			chainId: 69,
 		},
+		rinkeby: {
+			url: process.env.PROVIDER_URL || '',
+			chainId: 4,
+			accounts: [process.env.PRIVATE_KEY || ''],
+		},
 		local: {
 			chainId: 31337,
 			url: 'http://localhost:8545/',
