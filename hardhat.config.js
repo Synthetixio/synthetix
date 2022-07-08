@@ -60,6 +60,11 @@ module.exports = {
 			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
 		},
+		localhost9545: {
+			gas: 12e6,
+			blockGasLimit: 12e6,
+			url: 'http://localhost:9545',
+		},
 		mainnet: {
 			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
 			chainId: 1,
