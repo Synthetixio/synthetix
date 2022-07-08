@@ -1128,6 +1128,9 @@ contract('Liquidator', accounts => {
 									await fastForward((await liquidator.liquidationDelay()) + 100);
 									await updateSNXPrice('1');
 								});
+								it('getFirstNonZeroEscrowIndex returns first entry as non zero', async () => {
+									assert.bnEqual(await synthetix.getFirstNonZeroEscrowIndex(alice), 0);
+								});
 								it('escrow balance is used for liquidation (partial)', async () => {
 									const debtBefore = await synthetix.debtBalanceOf(alice, sUSD);
 									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
@@ -1141,6 +1144,11 @@ contract('Liquidator', accounts => {
 									const debtAfter = await synthetix.debtBalanceOf(alice, sUSD);
 									// escrow is mostly removed
 									assert.bnLt(escrowAfter, escrowBefore.div(toBN(20)));
+									// first non zero entry is somewhere towards the end
+									const firstNonZero = await synthetix.getFirstNonZeroEscrowIndex(alice);
+									assert.bnGt(firstNonZero, toBN(95));
+									assert.bnLt(firstNonZero, toBN(100));
+
 									// check debt shares forgiven matching the liquidated SNX
 									// debt is fewer shares (but of higher debt per share), by (total - redeemed / total) more debt per share
 									const redeemed = multiplyDecimal(

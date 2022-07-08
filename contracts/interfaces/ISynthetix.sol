@@ -43,6 +43,8 @@ interface ISynthetix {
 
     function transferableSynthetix(address account) external view returns (uint transferable);
 
+    function getFirstNonZeroEscrowIndex(address account) external view returns (uint);
+
     // Mutative Functions
     function burnSynths(uint amount) external;
 

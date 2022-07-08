@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./interfaces/IERC20.sol";
@@ -158,6 +159,23 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function transferableSynthetix(address account) external view returns (uint transferable) {
         (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
+    }
+
+    /// the index of the first non zero RewardEscrowV2 entry for an account in order of iteration over accountVestingEntryIDs.
+    /// This is intended as a convenience off-chain view for liquidators to calculate the startIndex to pass
+    /// into liquidateDelinquentAccountEscrowIndex to save gas.
+    function getFirstNonZeroEscrowIndex(address account) external view returns (uint) {
+        uint numIds = rewardEscrowV2().numVestingEntries(account);
+        uint entryID;
+        VestingEntries.VestingEntry memory entry;
+        for (uint i = 0; i < numIds; i++) {
+            entryID = rewardEscrowV2().accountVestingEntryIDs(account, i);
+            entry = rewardEscrowV2().vestingSchedules(account, entryID);
+            if (entry.escrowAmount > 0) {
+                return i;
+            }
+        }
+        revert("all entries are zero");
     }
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
