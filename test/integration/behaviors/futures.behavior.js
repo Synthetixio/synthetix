@@ -186,7 +186,7 @@ function itCanTrade({ ctx }) {
 			});
 
 			it('number of markets and summaries', async () => {
-				assert.ok(allMarketsAddresses.length >= 3);
+				assert.ok(allMarketsAddresses.length >= 2);
 				assert.ok(allMarketsAddresses.length === allSummaries.length);
 			});
 
