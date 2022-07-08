@@ -999,6 +999,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					contracts: [e],
 				});
 
+				// only Revoked event
 				decodedEventEqual({
 					event: 'Revoked',
 					emittedFrom: e.address,
@@ -1018,7 +1019,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 				// revoke
 				// method in PublicEST.sol
-				await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 0);
+				const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 0);
 
 				// Check user has the 0 vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
@@ -1040,15 +1041,44 @@ contract('BaseRewardEscrowV2', async accounts => {
 					account1,
 					firstEntryId.add(new BN(1))
 				);
-				const thirdVestingEntryAfter = await e.getVestingEntry(
-					account1,
-					firstEntryId.add(new BN(2))
-				);
+				const thirdEntryID = firstEntryId.add(new BN(2));
+				const thirdVestingEntryAfter = await e.getVestingEntry(account1, thirdEntryID);
 
-				// first entry unchanged
+				// first entry is zero
 				assert.bnEqual(vestingEntryAfter.escrowAmount, 0);
+				// second entru unchanged
 				assert.bnEqual(secondVestingEntryAfter.escrowAmount, escrowAmount);
+				// third entry created
 				assert.bnEqual(thirdVestingEntryAfter.escrowAmount, escrowAmount.sub(targetAmount));
+
+				// check events
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [e],
+				});
+
+				// VestingEntryCreated event for the refunf
+				const timestamp = await currentTime();
+				decodedEventEqual({
+					event: 'VestingEntryCreated',
+					emittedFrom: e.address,
+					args: [
+						account1,
+						timestamp,
+						escrowAmount.sub(targetAmount),
+						thirdVestingEntryAfter.endTime - timestamp,
+						thirdEntryID,
+					],
+					log: logs.filter(l => !!l).find(({ name }) => name === 'VestingEntryCreated'),
+				});
+
+				// Revoked event
+				decodedEventEqual({
+					event: 'Revoked',
+					emittedFrom: e.address,
+					args: [account1, account3, targetAmount, 0, 1],
+					log: logs.filter(l => !!l).find(({ name }) => name === 'Revoked'),
+				});
 			}
 		);
 

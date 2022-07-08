@@ -280,10 +280,13 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         if (total > targetAmount) {
             // only take the precise amount needed by adding a new entry with the difference from total
             uint refund = total.sub(targetAmount);
-            state().addVestingEntry(
-                account,
-                VestingEntries.VestingEntry({endTime: uint64(lastEntryTime), escrowAmount: refund})
-            );
+            uint entryID =
+                state().addVestingEntry(
+                    account,
+                    VestingEntries.VestingEntry({endTime: uint64(lastEntryTime), escrowAmount: refund})
+                );
+            // emit event
+            emit VestingEntryCreated(account, block.timestamp, refund, lastEntryTime.sub(block.timestamp), entryID);
         }
 
         // update the aggregates and move the tokens
