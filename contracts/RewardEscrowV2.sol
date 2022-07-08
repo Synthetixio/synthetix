@@ -6,14 +6,12 @@ import "./BaseRewardEscrowV2.sol";
 
 // Internal references
 import "./interfaces/IRewardEscrow.sol";
-import "./interfaces/ISystemStatus.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract RewardEscrowV2 is BaseRewardEscrowV2 {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
-    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -23,18 +21,13 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseRewardEscrowV2.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](2);
+        bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM;
-        newAddresses[1] = CONTRACT_SYSTEMSTATUS;
         return combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM);
-    }
-
-    function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     /* ========== L2 MIGRATION ========== */
@@ -81,11 +74,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     modifier onlySynthetixBridge() {
         require(msg.sender == synthetixBridgeToOptimism(), "Can only be invoked by SynthetixBridgeToOptimism contract");
-        _;
-    }
-
-    modifier systemActive() {
-        systemStatus().requireSystemActive();
         _;
     }
 
