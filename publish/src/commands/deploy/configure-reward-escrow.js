@@ -71,16 +71,22 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
 	});
 
-	// move SNX balances
-	await runStep({
-		contract: 'Synthetix',
-		target: Synthetix,
-		write: 'migrateEscrowContractBalance',
-		comment: 'Ensure that old escrow SNX balance is migrated to new contract',
-	});
+	// move SNX balances if needed
+	const migratableBalance = await Synthetix.balanceOf(frozenOrPreviousEscrow.address);
+	if (migratableBalance.gt(0)) {
+		await runStep({
+			contract: 'Synthetix',
+			target: Synthetix,
+			write: 'migrateEscrowContractBalance',
+			comment: 'Ensure that old escrow SNX balance is migrated to new contract',
+		});
+	} else {
+		console.log(
+			gray('Skipping Synthetix.migrateEscrowContractBalance as frozen contract has no SNX balance.')
+		);
+	}
 
 	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
-	// this is also ensured in configure-legacy-settings, but here again for completeness
 	await runStep({
 		contract: 'RewardsDistribution',
 		target: RewardsDistribution,

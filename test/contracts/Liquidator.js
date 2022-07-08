@@ -1072,7 +1072,7 @@ contract('Liquidator', accounts => {
 									await fastForward((await liquidator.liquidationDelay()) + 100);
 									await updateSNXPrice('1');
 								});
-								it('escrow balance is used used for liquidation (partial)', async () => {
+								it('escrow balance is used for liquidation (partial)', async () => {
 									const debtBefore = await synthetix.debtBalanceOf(alice, sUSD);
 									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
 									const viewResult = await liquidator.liquidationAmounts(alice, false);
@@ -1107,7 +1107,7 @@ contract('Liquidator', accounts => {
 										toUnit(0.01)
 									);
 								});
-								it('escrow balance is used used for liquidation (full)', async () => {
+								it('escrow balance is used for liquidation (full)', async () => {
 									// penalty leaves no SNX
 									await updateSNXPrice('0.1');
 									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
