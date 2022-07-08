@@ -774,6 +774,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
             // if all collateral is gone, erase the bad debt (some unliquidatable collateral can be in
             // legacy SynthetixEscrow or LiquidatorRewards (if Synthetix liquidation method didn't call getReward() before this)
+            // Note that collateralForAccount cannot be < totalRedeemed, because totalRedeemed comes from an exact
+            // calculation in _redeemableCollateralForTarget(). If the calculations change to create a possibility
+            // for a rounding imprecision, this check may need to be changed to `<=`.
             if (collateralForAccount == totalRedeemed) {
                 debtToRemove = debtBalance;
             }
