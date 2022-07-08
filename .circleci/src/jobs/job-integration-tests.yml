@@ -9,7 +9,7 @@ steps:
   - restore_cache:
       keys:
         - foundry
-  - rust/install: stable
+  - rust/install: {}
   - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
   - run: ./foundryup -r usecannon/foundry
   - save_cache:
