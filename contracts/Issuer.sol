@@ -200,9 +200,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         uint stalePeriod = getRateStalePeriod();
 
-        isStale = stalePeriod < block.timestamp && (
-            block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
-            block.timestamp - getRateStalePeriod() > ratioUpdatedAt);
+        isStale =
+            stalePeriod < block.timestamp &&
+            (block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
+                block.timestamp - getRateStalePeriod() > ratioUpdatedAt);
     }
 
     function issuanceRatio() external view returns (uint) {
