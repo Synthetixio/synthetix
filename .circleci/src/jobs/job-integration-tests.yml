@@ -13,7 +13,7 @@ steps:
   - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
   - run: ./foundryup -r usecannon/foundry
   - run: rm -rf *
-  - run: export PATH="$PATH:$HOME/.foundry/bin"
+  - run: echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
   - save_cache:
       key: foundry
       paths:
