@@ -35,7 +35,7 @@ step = 1
 target = [
     "AddressResolver",
     "CollateralErc20",
-    #"CollateralEth",
+    "CollateralEth",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
@@ -98,7 +98,7 @@ step = 1
 target = [
     "AddressResolver",
     "CollateralErc20",
-    #"CollateralEth",
+    "CollateralEth",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
