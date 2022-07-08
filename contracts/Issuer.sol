@@ -710,8 +710,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint escrowToLiquidate
         )
     {
-        require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
-
+        // liquidationAmounts checks isLiquidationOpen for the account
         uint initialDebtBalance;
         (totalRedeemed, debtRemoved, escrowToLiquidate, initialDebtBalance) = _liquidationAmounts(
             account,
@@ -735,6 +734,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint debtBalance
         )
     {
+        // otherwise calculateAmountToFixCollateral reverts with unhelpful underflow error
+        require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
+
         // Get the penalty for the liquidation type
         uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
 

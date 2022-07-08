@@ -466,6 +466,12 @@ contract('Liquidator', accounts => {
 							'Not open for liquidation'
 						);
 					});
+					it('then liquidationAmounts reverts too', async () => {
+						await assert.revert(
+							liquidator.liquidationAmounts(alice, true),
+							'Not open for liquidation'
+						);
+					});
 					it('then Alices account is not open for self liquidation', async () => {
 						const isSelfLiquidationOpen = await liquidator.isLiquidationOpen(alice, true);
 						assert.bnEqual(isSelfLiquidationOpen, false);
@@ -611,6 +617,12 @@ contract('Liquidator', accounts => {
 				it('when an account is not open for liquidation then revert', async () => {
 					await assert.revert(
 						synthetix.liquidateDelinquentAccount(alice, { from: bob }),
+						'Not open for liquidation'
+					);
+				});
+				it('then liquidationAmounts reverts too', async () => {
+					await assert.revert(
+						liquidator.liquidationAmounts(alice, true),
 						'Not open for liquidation'
 					);
 				});
@@ -1106,11 +1118,17 @@ contract('Liquidator', accounts => {
 										toUnit('75').sub(debtAfter),
 										toUnit(0.01)
 									);
+									// check result of view after liquidation
+									await assert.revert(
+										liquidator.liquidationAmounts(alice, false),
+										'Not open for liquidation'
+									);
 								});
 								it('escrow balance is used for liquidation (full)', async () => {
 									// penalty leaves no SNX
 									await updateSNXPrice('0.1');
 									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
+									const viewResult = await liquidator.liquidationAmounts(alice, false);
 									await synthetix.liquidateDelinquentAccount(alice, { from: bob });
 									// no liquid balance added
 									assert.bnEqual(await synthetix.balanceOf(alice), 0);
@@ -1121,6 +1139,16 @@ contract('Liquidator', accounts => {
 									// escrow is mostly removed
 									assert.bnEqual(escrowAfter, 0);
 									assert.bnEqual(debtAfter, 0);
+									// check view results
+									assert.bnEqual(viewResult.initialDebtBalance, toUnit('75'));
+									assert.bnEqual(viewResult.totalRedeemed, escrowBefore);
+									assert.bnEqual(viewResult.escrowToLiquidate, escrowBefore);
+									assert.bnClose(viewResult.debtToRemove, toUnit('75'), toUnit(0.01));
+									// check result of view after liquidation
+									await assert.revert(
+										liquidator.liquidationAmounts(alice, false),
+										'Not open for liquidation'
+									);
 								});
 								it('liquidateDelinquentAccountEscrowIndex reverts if index is too high and not enough is revoked', async () => {
 									await assert.revert(
@@ -1241,6 +1269,11 @@ contract('Liquidator', accounts => {
 										viewResult.debtToRemove,
 										toUnit('75').sub(debtAfter),
 										toUnit(0.01)
+									);
+									// check result of view after liquidation
+									await assert.revert(
+										liquidator.liquidationAmounts(alice, false),
+										'Not open for liquidation'
 									);
 								});
 							});
