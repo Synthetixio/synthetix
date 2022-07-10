@@ -32,7 +32,7 @@ options.salt = "eth"
 [import.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
-options.timestamp = "1000"
+options.timestamp = "100"
 options.salt = "btc"
 
 [run.synthetix]
@@ -187,7 +187,7 @@ target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x7345544800000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
+args = ["0x4554480000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
 
 depends = ["invoke.accept_ownership", "import.aggregator_eth"]
 
@@ -196,7 +196,7 @@ target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x7342544300000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_btc.contracts.aggregator.address %>"]
+args = ["0x4254430000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_btc.contracts.aggregator.address %>"]
 
 depends = ["invoke.accept_ownership", "import.aggregator_btc"]
 
