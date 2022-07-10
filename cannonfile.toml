@@ -17,6 +17,24 @@ defaultValue = "5000000000"
 [setting.rate_btc]
 defaultValue = "50000000000"
 
+[import.aggregator_snx]
+source = "chainlink:0.7-mock"
+options.rate = "<%= settings.rate_snx %>"
+options.timestamp = "100"
+options.salt = "snx"
+
+[import.aggregator_eth]
+source = "chainlink:0.7-mock"
+options.rate = "<%= settings.rate_eth %>"
+options.timestamp = "100"
+options.salt = "eth"
+
+[import.aggregator_btc]
+source = "chainlink:0.7-mock"
+options.rate = "<%= settings.rate_btc %>"
+options.timestamp = "1000"
+options.salt = "btc"
+
 [run.synthetix]
 exec = "./publish/cannon.js"
 func = "deploy"
@@ -29,7 +47,7 @@ fromCall.func = "owner"
 func = "transfer"
 args = ["<%= settings.owner %>", "100000000000000000000000000"]
 
-step = 1
+depends = ["run.synthetix"]
 
 [invoke.set_ownership]
 target = [
@@ -91,7 +109,7 @@ args = ["<%= settings.owner %>"]
 
 fromCall.func = "owner"
 
-step = 1
+depends = ["run.synthetix"]
 
 
 [invoke.accept_ownership]
@@ -153,28 +171,7 @@ from = "<%= settings.owner %>"
 func = "acceptOwnership"
 args = []
 
-step = 1
-
-[import.aggregator_snx]
-source = "chainlink:0.7-mock"
-options.rate = "<%= settings.rate_snx %>"
-options.timestamp = "100"
-options.salt = "snx"
-step = 1
-
-[import.aggregator_eth]
-source = "chainlink:0.7-mock"
-options.rate = "<%= settings.rate_eth %>"
-options.timestamp = "100"
-options.salt = "eth"
-step = 1
-
-[import.aggregator_btc]
-source = "chainlink:0.7-mock"
-options.rate = "<%= settings.rate_btc %>"
-options.timestamp = "1000"
-options.salt = "btc"
-step = 1
+depends = ["invoke.set_ownership"]
 
 [invoke.set_aggregator_snx]
 target = ["ExchangeRates"]
@@ -183,7 +180,7 @@ from = "<%= settings.owner %>"
 func = "addAggregator"
 args = ["0x534e580000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_snx.contracts.aggregator.address %>"]
 
-step = 2
+depends = ["invoke.accept_ownership", "import.aggregator_snx"]
 
 [invoke.set_aggregator_eth]
 target = ["ExchangeRates"]
@@ -192,16 +189,16 @@ from = "<%= settings.owner %>"
 func = "addAggregator"
 args = ["0x7345544800000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
 
-step = 2
+depends = ["invoke.accept_ownership", "import.aggregator_eth"]
 
 [invoke.set_aggregator_btc]
 target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x7342544300000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
+args = ["0x7342544300000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_btc.contracts.aggregator.address %>"]
 
-step = 2
+depends = ["invoke.accept_ownership", "import.aggregator_btc"]
 
 [invoke.increase_snapshot_stale_time]
 target = ["SystemSettings"]
@@ -210,7 +207,7 @@ from = "<%= settings.owner %>"
 func = "setDebtSnapshotStaleTime"
 args = ["2000000000"]
 
-step = 2
+depends = ["invoke.accept_ownership"]
 
 [invoke.increase_rate_stale_time]
 target = ["SystemSettings"]
@@ -219,14 +216,14 @@ from = "<%= settings.owner %>"
 func = "setRateStalePeriod"
 args = ["2000000000"]
 
-step = 2
+depends = ["invoke.accept_ownership"]
 
 [invoke.snapshot]
 target = ["DebtCache"]
 
 func = "takeDebtSnapshot"
 
-step = 2
+depends = ["run.synthetix"]
 
 [invoke.test_user_snx]
 target = ["ProxySynthetix"]
@@ -235,7 +232,7 @@ from = "<%= settings.owner %>"
 func = "transfer"
 args = ["<%= settings.test_user %>", "10000000000000000000000000"]
 
-step = 3
+depends = ["invoke.transfer_owner_snx"]
 
 [invoke.test_user_mint]
 target = ["Synthetix"]
@@ -245,4 +242,4 @@ func = "issueSynths"
 args = ["1000000000000000000000"]
 #args = ['1']
 
-step = 3
+depends = ["invoke.test_user_snx", "invoke.increase_snapshot_stale_time", "invoke.increase_rate_stale_time"]

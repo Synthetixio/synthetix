@@ -22,4 +22,4 @@ target = ["aggregator"]
 func = "setLatestAnswer"
 args = ["<%= settings.rate %>", "<%= settings.timestamp %>"]
 
-step = 1
+depends = ["contract.aggregator"]
