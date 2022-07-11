@@ -34,7 +34,7 @@ interface AggregatorV2V3Interface {
 
 contract MockAggregatorV2V3 is AggregatorV2V3Interface {
     uint80 public roundId = 0;
-    uint8 public keyDecimals = 6;
+    uint8 public keyDecimals = 0;
 
     struct Entry {
         uint80 roundId;
