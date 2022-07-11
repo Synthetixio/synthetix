@@ -10,7 +10,6 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     /* ========== Events ========== */
     event MarketInitialised(bytes32 marketKey, bytes32 baseAsset);
     event PositionInitialised(bytes32 indexed marketKey, uint id, address account);
-    event FundingUpdated(bytes32 indexed marketKey, int funding, uint timestamp);
 
     /* ========== PUBLIC STATE ========== */
     // storage is split between multiple variables instead of nesting in a single e.g. Market
@@ -96,7 +95,6 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
 
     function updateFunding(bytes32 marketKey, int funding) public onlyAssociatedContract requireInit(marketKey) {
         lastFundingEntry[marketKey] = FundingEntry(funding, block.timestamp);
-        emit FundingUpdated(marketKey, funding, block.timestamp);
     }
 
     function storePosition(

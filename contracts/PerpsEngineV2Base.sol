@@ -52,6 +52,8 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     event Tracking(bytes32 indexed trackingCode, bytes32 marketKey, address account, int sizeDelta, uint fee);
 
+    event FundingUpdated(bytes32 indexed marketKey, int funding, uint timestamp);
+
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -326,6 +328,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
         int newFundingAmount = _nextFundingAmount(marketKey, price);
         _stateMutative().updateFunding(marketKey, newFundingAmount);
+        emit FundingUpdated(marketKey, newFundingAmount, block.timestamp);
     }
 
     function _transferMargin(
@@ -735,7 +738,11 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return uint(_max(0, remaining));
     }
 
+    /// assumes position was initilized (has valid marketKey)
     function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
+        if (position.id == 0) {
+            return 0; // The position does not exist -- no margin.
+        }
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
