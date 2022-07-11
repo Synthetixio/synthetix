@@ -20,12 +20,12 @@ const fromBlockMap = {
 	// blocks from the Acrux deploy (everything prior to this has been settled)
 	// kovan: 19220640,
 	// rinkeby: 6750628,
-	ropsten: 8195362,
+	// ropsten: 8195362,
 	// mainnet: 10364175,
 
 	// blocks from the Pollux deploy
-	kovan: 20528323,
-	rinkeby: 7100439,
+	// kovan: 20528323,
+	// rinkeby: 7100439,
 	// Note: ropsten was not settled. Needs to be done after https://github.com/Synthetixio/synthetix/pull/699
 	mainnet: 11590207, // system exchanged after SCCP-68 implemented
 };
@@ -371,7 +371,7 @@ module.exports = {
 				false
 			)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 350e3)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
 			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'

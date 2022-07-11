@@ -66,13 +66,13 @@ module.exports = {
 			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
 			chainId: 10,
 		},
-		kovan: {
+		goerli: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545',
-			chainId: 42,
+			chainId: 5,
 		},
-		'kovan-ovm': {
-			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
-			chainId: 69,
+		'goerli-ovm': {
+			url: process.env.OVM_PROVIDER_URL,
+			chainId: 420,
 		},
 		local: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
