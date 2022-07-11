@@ -469,11 +469,13 @@ contract('Liquidator', accounts => {
 							'Not open for liquidation'
 						);
 					});
-					it('then liquidationAmounts reverts too', async () => {
-						await assert.revert(
-							liquidator.liquidationAmounts(alice, true),
-							'Not open for liquidation'
-						);
+					it('then liquidationAmounts returns zeros', async () => {
+						assert.deepEqual(await liquidator.liquidationAmounts(alice, true), [
+							0,
+							0,
+							0,
+							toUnit('600'),
+						]);
 					});
 					it('then Alices account is not open for self liquidation', async () => {
 						const isSelfLiquidationOpen = await liquidator.isLiquidationOpen(alice, true);
@@ -623,11 +625,8 @@ contract('Liquidator', accounts => {
 						'Not open for liquidation'
 					);
 				});
-				it('then liquidationAmounts reverts too', async () => {
-					await assert.revert(
-						liquidator.liquidationAmounts(alice, true),
-						'Not open for liquidation'
-					);
+				it('then liquidationAmounts returns zeros', async () => {
+					assert.deepEqual(await liquidator.liquidationAmounts(alice, false), [0, 0, 0, 0]);
 				});
 			});
 			describe('when Alice is undercollateralized', () => {
@@ -1171,10 +1170,12 @@ contract('Liquidator', accounts => {
 										toUnit(0.01)
 									);
 									// check result of view after liquidation
-									await assert.revert(
-										liquidator.liquidationAmounts(alice, false),
-										'Not open for liquidation'
-									);
+									assert.deepEqual(await liquidator.liquidationAmounts(alice, false), [
+										0,
+										0,
+										0,
+										debtAfter,
+									]);
 								});
 								it('escrow balance is used for liquidation (full)', async () => {
 									// penalty leaves no SNX
@@ -1197,10 +1198,7 @@ contract('Liquidator', accounts => {
 									assert.bnEqual(viewResult.escrowToLiquidate, escrowBefore);
 									assert.bnClose(viewResult.debtToRemove, toUnit('75'), toUnit(0.01));
 									// check result of view after liquidation
-									await assert.revert(
-										liquidator.liquidationAmounts(alice, false),
-										'Not open for liquidation'
-									);
+									assert.deepEqual(await liquidator.liquidationAmounts(alice, false), [0, 0, 0, 0]);
 								});
 								it('liquidateDelinquentAccountEscrowIndex reverts if index is too high and not enough is revoked', async () => {
 									await assert.revert(
@@ -1323,10 +1321,12 @@ contract('Liquidator', accounts => {
 										toUnit(0.01)
 									);
 									// check result of view after liquidation
-									await assert.revert(
-										liquidator.liquidationAmounts(alice, false),
-										'Not open for liquidation'
-									);
+									assert.deepEqual(await liquidator.liquidationAmounts(alice, false), [
+										0,
+										0,
+										0,
+										debtAfter,
+									]);
 								});
 							});
 							describe('last escrow entry remainder is added as new entry', () => {

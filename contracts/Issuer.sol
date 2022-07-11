@@ -710,6 +710,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint escrowToLiquidate
         )
     {
+        require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
+
         // liquidationAmounts checks isLiquidationOpen for the account
         uint initialDebtBalance;
         (totalRedeemed, debtRemoved, escrowToLiquidate, initialDebtBalance) = _liquidationAmounts(
@@ -734,15 +736,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint debtBalance
         )
     {
+        // Get the account's debt balance
+        bool anyRateIsInvalid;
+        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
+
         // otherwise calculateAmountToFixCollateral reverts with unhelpful underflow error
-        require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
+        if (!liquidator().isLiquidationOpen(account, isSelfLiquidation)) {
+            return (0, 0, 0, debtBalance);
+        }
 
         // Get the penalty for the liquidation type
         uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
-
-        // Get the account's debt balance
-        (uint debtBalance, , bool anyRateIsInvalid) =
-            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
 
         // Get the SNX rate
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
