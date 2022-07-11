@@ -71,14 +71,14 @@ module.exports = {
 			chainId: 5,
 		},
 		'goerli-ovm': {
-			url: process.env.OVM_PROVIDER_URL,
+			url: process.env.GOERLI_OVM_PROVIDER_URL,
 			chainId: 420,
 		},
 		local: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
 		},
 		'local-ovm': {
-			url: process.env.OVM_PROVIDER_URL || 'http://localhost:9545/',
+			url: 'http://localhost:9545/',
 		},
 	},
 	gasReporter: {
