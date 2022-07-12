@@ -9,7 +9,7 @@ defaultValue = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 defaultValue = "0x73570075092502472E4b61A7058Df1A4a1DB12f2"
 
 [setting.rate_snx]
-defaultValue = "5000000"
+defaultValue = "500000000000"
 
 [setting.rate_eth]
 defaultValue = "5000000000"
@@ -239,7 +239,7 @@ target = ["Synthetix"]
 
 from = "<%= settings.test_user %>"
 func = "issueSynths"
-args = ["100000000000000000000"]
+args = ["1000000000000000000"]
 #args = ['1']
 
 depends = ["invoke.test_user_snx", "invoke.increase_snapshot_stale_time", "invoke.increase_rate_stale_time"]
