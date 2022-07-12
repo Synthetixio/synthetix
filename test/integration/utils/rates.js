@@ -42,14 +42,7 @@ async function addAggregatorAndSetRate({ ctx, currencyKey, rate }) {
 	const { timestamp } = await ctx.provider.getBlock();
 	await (await aggregator.setLatestAnswer(rate, timestamp)).wait();
 	// set the aggregator in ExchangeRates
-	console.log(
-		'SETTING A NEW AGGREGATOR!',
-		ethers.utils.parseBytes32String(currencyKey),
-		rate.toString()
-	);
-	console.log('woot', await exchangeRates.aggregators(currencyKey));
 	await (await exchangeRates.addAggregator(currencyKey, aggregator.address)).wait();
-	console.log('woot2', await exchangeRates.aggregators(currencyKey));
 }
 
 async function _isCacheInvalid({ ctx }) {

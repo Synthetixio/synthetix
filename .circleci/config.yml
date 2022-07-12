@@ -159,15 +159,15 @@ jobs:
           paths:
             - ./optimism
       - run:
+          name: Run isolated layer 1 integration tests
+          command: |
+            npx hardhat test:integration:l1 --deploy
+      - run:
           name: Start docker chains
           background: true
           command: |
             docker --version
             npx hardhat ops --start
-      - run:
-          name: Run isolated layer 1 integration tests
-          command: |
-            npx hardhat test:integration:l1 --deploy
       - cmd-wait-for-port:
           port: 8545
       - cmd-wait-for-port:
