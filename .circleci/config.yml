@@ -40,14 +40,14 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry
+            - foundry2
       - rust/install: {}
       - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
       - run: ./foundryup -r usecannon/foundry
       - run: rm -rf *
       - run: echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry
+          key: foundry2
           paths:
             - ~/.cargo
             - ~/.foundry
