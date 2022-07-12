@@ -170,8 +170,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint256 endIndex = index + pageSize;
 
         // If the page extends past the end of the accountVestingEntryIDs, truncate it.
-        if (endIndex > numVestingEntries(account)) {
-            endIndex = numVestingEntries(account);
+        uint numEntries = numVestingEntries(account);
+        if (endIndex > numEntries) {
+            endIndex = numEntries;
         }
         if (endIndex <= index) {
             return new uint256[](0);
