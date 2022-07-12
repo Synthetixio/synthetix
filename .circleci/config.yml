@@ -40,14 +40,14 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry2
+            - foundry3
       - rust/install: {}
       - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
       - run: ./foundryup -r usecannon/foundry
       - run: rm -rf *
       - run: echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry2
+          key: foundry3
           paths:
             - ~/.cargo
             - ~/.foundry
@@ -131,14 +131,14 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry
+            - foundry3
       - rust/install: {}
       - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
       - run: ./foundryup -r usecannon/foundry
       - run: rm -rf *
       - run: echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry
+          key: foundry3
           paths:
             - ~/.cargo
             - ~/.foundry
@@ -289,13 +289,24 @@ jobs:
           destination: slitherReport.txt
   job-test-deploy-script:
     working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+    machine:
+      image: ubuntu-2204:2022.04.1
+      docker_layer_caching: true
     resource_class: large
     steps:
+      - restore_cache:
+          keys:
+            - foundry3
+      - rust/install: {}
+      - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+      - run: ./foundryup -r usecannon/foundry
+      - run: rm -rf *
+      - run: echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+      - save_cache:
+          key: foundry3
+          paths:
+            - ~/.cargo
+            - ~/.foundry
       - checkout
       - attach_workspace:
           at: .

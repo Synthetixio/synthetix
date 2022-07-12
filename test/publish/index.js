@@ -130,7 +130,7 @@ describe('publish scripts', () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
 		provider = new ethers.providers.JsonRpcProvider({
-			url: 'http://localhost:8545',
+			url: 'http://127.0.0.1:8545',
 		});
 
 		const { isCompileRequired, createMockAggregatorFactory } = testUtils();
