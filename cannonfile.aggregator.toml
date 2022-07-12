@@ -9,12 +9,21 @@ defaultValue = "1000000000000000000"
 # by default, its dated into the future
 defaultValue = "10000000000000"
 
+[setting.decimals]
+defaultValue = "6"
+
 [setting.salt]
 defaultValue = "default"
 
 [contract.aggregator]
 artifact = "MockAggregatorV2V3"
 salt = "<%= settings.salt %>"
+
+[invoke.set_decimals]
+target = ["aggregator"]
+func = "setDecimals"
+args = ["<%= settings.decimals %>"]
+depends = ["contract.aggregator"]
 
 [invoke.set_answer]
 target = ["aggregator"]
