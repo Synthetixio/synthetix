@@ -19,8 +19,8 @@ contract('RewardEscrowV2Storage', async accounts => {
 	// const WEEK = 7 * 86400;
 	const entry1Amount = toUnit(1);
 
-	const [, owner, writeAccount, user1, user2] = accounts;
-	let instance, resolver, frozenRewardEscrowV2, synthetix;
+	const [, owner, writeAccount, user1, user2, user3, user4] = accounts;
+	let instance, resolver, frozenRewardEscrowV2, synthetix, firstNonFallbackId, user3NumEntries;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
@@ -48,7 +48,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 		await frozenRewardEscrowV2.rebuildCache();
 		await synthetix.rebuildCache();
 		// mint some snx into it
-		await synthetix.mintSecondary(frozenRewardEscrowV2.address, toUnit(100), {
+		await synthetix.mintSecondary(frozenRewardEscrowV2.address, toUnit(1000), {
 			from: owner,
 		});
 
@@ -57,6 +57,12 @@ contract('RewardEscrowV2Storage', async accounts => {
 		await frozenRewardEscrowV2.appendVestingEntry(user1, entry1Amount, 1, { from: owner });
 		// vest first entry
 		await frozenRewardEscrowV2.vest([1], { from: user1 });
+		// create a hundred entries in frozen for user3 for gas tests
+		user3NumEntries = 100;
+		for (let i = 0; i < user3NumEntries; i++) {
+			await frozenRewardEscrowV2.appendVestingEntry(user3, entry1Amount, 1, { from: owner });
+		}
+		firstNonFallbackId = await frozenRewardEscrowV2.nextEntryId();
 
 		// set RewardEscrowV2 key to not the frozen rewards to prevent any SNX transfers by it
 		await resolver.importAddresses(['RewardEscrowV2'].map(toBytes32), [writeAccount], {
@@ -118,18 +124,27 @@ contract('RewardEscrowV2Storage', async accounts => {
 				assert.equal(await instance.owner(), owner);
 				assert.equal(await instance.fallbackRewardEscrow(), frozenRewardEscrowV2.address);
 				assert.equal(await instance.associatedContract(), writeAccount);
-				assert.bnEqual(await instance.nextEntryId(), 3);
-				assert.bnEqual(await instance.fallbackId(), 3);
+				assert.bnEqual(await instance.nextEntryId(), firstNonFallbackId);
+				assert.bnEqual(await instance.fallbackId(), firstNonFallbackId);
 				// only on unvested entry
-				assert.bnEqual(await instance.totalEscrowedBalance(), entry1Amount);
+				assert.bnEqual(
+					await instance.totalEscrowedBalance(),
+					entry1Amount.mul(toBN(user3NumEntries + 1))
+				);
 			});
 
-			it('should have expected account values for user with existing entries', async () => {
+			it('should have expected account values for users with existing entries', async () => {
 				assert.bnEqual(await instance.numVestingEntries(user1), 2);
+				assert.bnEqual(await instance.numVestingEntries(user3), user3NumEntries);
 				// one unvested
 				assert.bnEqual(await instance.totalEscrowedAccountBalance(user1), entry1Amount);
+				assert.bnEqual(
+					await instance.totalEscrowedAccountBalance(user3),
+					entry1Amount.mul(toBN(user3NumEntries))
+				);
 				// one vested
 				assert.bnEqual(await instance.totalVestedAccountBalance(user1), entry1Amount);
+				assert.bnEqual(await instance.totalVestedAccountBalance(user3), 0);
 			});
 		});
 	});
@@ -244,11 +259,17 @@ contract('RewardEscrowV2Storage', async accounts => {
 					// added on this contract
 					assert.bnEqual(await instance.numVestingEntries(user1), 3);
 					// entry
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+					assert.bnEqual(
+						(await instance.vestingSchedules(user1, user3NumEntries + 3)).escrowAmount,
+						entry1Amount
+					);
 
 					// old contract
 					assert.bnEqual(await frozenRewardEscrowV2.numVestingEntries(user1), 2);
-					assert.bnEqual((await frozenRewardEscrowV2.vestingSchedules(user1, 3)).escrowAmount, 0);
+					assert.bnEqual(
+						(await frozenRewardEscrowV2.vestingSchedules(user1, user3NumEntries + 3)).escrowAmount,
+						0
+					);
 				});
 
 				it('for user with no existing entries', async () => {
@@ -257,11 +278,17 @@ contract('RewardEscrowV2Storage', async accounts => {
 					// added on this contract
 					assert.bnEqual(await instance.numVestingEntries(user2), 1);
 					// entry
-					assert.bnEqual((await instance.vestingSchedules(user2, 3)).escrowAmount, entry1Amount);
+					assert.bnEqual(
+						(await instance.vestingSchedules(user2, user3NumEntries + 3)).escrowAmount,
+						entry1Amount
+					);
 
 					// old contract
 					assert.bnEqual(await frozenRewardEscrowV2.numVestingEntries(user2), 0);
-					assert.bnEqual((await frozenRewardEscrowV2.vestingSchedules(user2, 3)).escrowAmount, 0);
+					assert.bnEqual(
+						(await frozenRewardEscrowV2.vestingSchedules(user2, user3NumEntries + 3)).escrowAmount,
+						0
+					);
 				});
 			});
 
@@ -285,17 +312,24 @@ contract('RewardEscrowV2Storage', async accounts => {
 				it('new entry', async () => {
 					// add entry
 					await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+					const entryId = user3NumEntries + 3;
 
 					// set initially
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+					assert.bnEqual(
+						(await instance.vestingSchedules(user1, entryId)).escrowAmount,
+						entry1Amount
+					);
 
-					await instance.setZeroAmount(user1, 3, { from: writeAccount });
+					await instance.setZeroAmount(user1, entryId, { from: writeAccount });
 
 					// read on this contract
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, 0);
+					assert.bnEqual((await instance.vestingSchedules(user1, entryId)).escrowAmount, 0);
 
 					// read old contract (didn't exist)
-					assert.bnEqual((await frozenRewardEscrowV2.vestingSchedules(user1, 3)).escrowAmount, 0);
+					assert.bnEqual(
+						(await frozenRewardEscrowV2.vestingSchedules(user1, entryId)).escrowAmount,
+						0
+					);
 				});
 			});
 
@@ -325,6 +359,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					});
 
 					// return values
+
 					assert.bnEqual(ret.total, entry1Amount);
 					assert.bnEqual(ret.endIndex, 1);
 					assert.bnEqual(
@@ -345,13 +380,47 @@ contract('RewardEscrowV2Storage', async accounts => {
 					);
 				});
 
+				it('gas test for 100 entries on old contract', async () => {
+					const {
+						receipt: { gasUsed },
+					} = await instance.setZeroAmountUntilTarget(user3, 0, toUnit(user3NumEntries), {
+						from: writeAccount,
+					});
+					console.log(
+						`setZeroAmountUntilTarget() with 100 escrow entries on old contract gas used: ${Math.round(
+							gasUsed / 1000
+						).toString()}k`
+					);
+				});
+
+				it('gas test for 100 entries on new contract', async () => {
+					for (let i = 0; i < 100; i++) {
+						await frozenRewardEscrowV2.appendVestingEntry(user4, entry1Amount, 1, { from: owner });
+					}
+					// send the transaction
+					const {
+						receipt: { gasUsed },
+					} = await instance.setZeroAmountUntilTarget(user4, 0, toUnit(user3NumEntries), {
+						from: writeAccount,
+					});
+					console.log(
+						`setZeroAmountUntilTarget() with 100 escrow entries on new contract gas used: ${Math.round(
+							gasUsed / 1000
+						).toString()}k`
+					);
+				});
+
 				it('entries on new and old contract', async () => {
 					// add entry
+					const entryId = user3NumEntries + 3;
 					await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
-					const entryEndTime = (await instance.vestingSchedules(user1, 3)).endTime;
+					const entryEndTime = (await instance.vestingSchedules(user1, entryId)).endTime;
 
 					// set initially
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+					assert.bnEqual(
+						(await instance.vestingSchedules(user1, entryId)).escrowAmount,
+						entry1Amount
+					);
 
 					// calls this statically to get the returned values
 					const ret = await instance.setZeroAmountUntilTarget.call(user1, 0, toUnit(10), {
@@ -368,7 +437,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 
 					// read on this contract
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, 0);
+					assert.bnEqual((await instance.vestingSchedules(user1, entryId)).escrowAmount, 0);
 
 					// read old contract (untouched)
 					assert.bnEqual(
@@ -380,7 +449,8 @@ contract('RewardEscrowV2Storage', async accounts => {
 				it('respects startIndex', async () => {
 					// add entry
 					await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
-					const entryEndTime = (await instance.vestingSchedules(user1, 3)).endTime;
+					const entryId = user3NumEntries + 3;
+					const entryEndTime = (await instance.vestingSchedules(user1, entryId)).endTime;
 
 					// calls this statically to get the returned values
 					const ret = await instance.setZeroAmountUntilTarget.call(user1, 2, toUnit(10), {
@@ -398,12 +468,13 @@ contract('RewardEscrowV2Storage', async accounts => {
 					// first is untouched
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, entry1Amount);
 					// second is zero
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, 0);
+					assert.bnEqual((await instance.vestingSchedules(user1, entryId)).escrowAmount, 0);
 				});
 
 				it('respects targetAmount', async () => {
 					// add entry
 					await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
+					const entryId = user3NumEntries + 3;
 					const entryEndTime = (await instance.vestingSchedules(user1, 2)).endTime;
 
 					// calls this statically to get the returned values
@@ -422,7 +493,10 @@ contract('RewardEscrowV2Storage', async accounts => {
 					// first is zero
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
 					// second is untouched
-					assert.bnEqual((await instance.vestingSchedules(user1, 3)).escrowAmount, entry1Amount);
+					assert.bnEqual(
+						(await instance.vestingSchedules(user1, entryId)).escrowAmount,
+						entry1Amount
+					);
 				});
 			});
 
