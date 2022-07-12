@@ -40,7 +40,7 @@ async function loadUsers({ ctx }) {
 	// ensure all the users have eth
 	await Promise.all(
 		Object.values(ctx.users).map(async account => {
-			//console.log(`  > Unlocking & Funding ${account.name}: ${account.address}`);
+			// console.log(`  > Unlocking & Funding ${account.name}: ${account.address}`);
 
 			// owner might not have eth when we impersonate them
 			await ctx.provider.send('hardhat_setBalance', [account.address, '0x10000000000000000000000']);
