@@ -52,9 +52,9 @@ async function deployInstance({
 async function deploy(runtime, networkVariant) {
 	const network = 'local';
 
-	if (networkVariant !== 'mainnet' || networkVariant !== 'optimism') {
+	if (networkVariant !== 'mainnet' && networkVariant !== 'optimism') {
 		throw new Error(
-			'please use either `mainnet` or `optimism` to specify the network variant to deploy.'
+			`invalid network specified "${networkVariant}". please use either "mainnet" or "optimism" to specify the network variant to deploy.`
 		);
 	}
 

@@ -5,7 +5,7 @@ description = "Infinite liquidity is here."
 # overrides the deployed contracts used by the deployer
 # not to be confused with the cannon network
 [setting.network]
-defaultValue = "mainnet"
+defaultValue = "optimism"
 
 # contracts will be owned by the specified address (defaults to the first known test address)
 [setting.owner]
@@ -51,11 +51,12 @@ func = "deploy"
 args = ["<%= settings.network %>"]
 modified = ["contracts", "publish/src", "publish/deployed/local"]
 
+# "hack mint" by sending txn as if it is from the bridge
 [invoke.transfer_owner_snx]
-target = ["ProxySynthetix"]
+target = ["Synthetix"]
 
-fromCall.func = "owner"
-func = "transfer"
+from = "<%= contracts.SynthetixBridgeToBase.address %>"
+func = "mintSecondary"
 args = ["<%= settings.owner %>", "100000000000000000000000000"]
 
 depends = ["run.synthetix"]
@@ -63,8 +64,6 @@ depends = ["run.synthetix"]
 [invoke.set_ownership]
 target = [
     "AddressResolver",
-    "CollateralErc20",
-    "CollateralEth",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
@@ -73,20 +72,18 @@ target = [
     "DelegateApprovals",
     "DelegateApprovalsEternalStorage",
     "Depot",
-    "EtherWrapper",
     "ExchangeCircuitBreaker",
     "ExchangeRates",
     "ExchangeState",
     "Exchanger",
     "FeePool",
     "FeePoolEternalStorage",
+    "FuturesMarketManager",
     "Issuer",
     "Liquidator",
     "LiquidatorRewards",
-    "NativeEtherWrapper",
     "OneNetAggregatorDebtRatio",
     "OneNetAggregatorIssuedSynths",
-    "OwnerRelayOnEthereum",
     "ProxyFeePool",
     "ProxySynthetix",
     "ProxysUSD",
@@ -95,8 +92,7 @@ target = [
     "RewardEscrow",
     "RewardsDistribution",
     "Synthetix",
-    "SynthetixBridgeEscrow",
-    "SynthetixBridgeToOptimism",
+    "SynthetixBridgeToBase",
     "SynthetixDebtShare",
     "SynthetixEscrow",
     "SynthsUSD",
@@ -122,8 +118,6 @@ depends = ["run.synthetix"]
 [invoke.accept_ownership]
 target = [
     "AddressResolver",
-    "CollateralErc20",
-    "CollateralEth",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
@@ -132,20 +126,18 @@ target = [
     "DelegateApprovals",
     "DelegateApprovalsEternalStorage",
     "Depot",
-    "EtherWrapper",
     "ExchangeCircuitBreaker",
     "ExchangeRates",
     "ExchangeState",
     "Exchanger",
     "FeePool",
     "FeePoolEternalStorage",
+    "FuturesMarketManager",
     "Issuer",
     "Liquidator",
     "LiquidatorRewards",
-    "NativeEtherWrapper",
     "OneNetAggregatorDebtRatio",
     "OneNetAggregatorIssuedSynths",
-    "OwnerRelayOnEthereum",
     "ProxyFeePool",
     "ProxySynthetix",
     "ProxysUSD",
@@ -154,8 +146,7 @@ target = [
     "RewardEscrow",
     "RewardsDistribution",
     "Synthetix",
-    "SynthetixBridgeEscrow",
-    "SynthetixBridgeToOptimism",
+    "SynthetixBridgeToBase",
     "SynthetixDebtShare",
     "SynthetixEscrow",
     "SynthsUSD",

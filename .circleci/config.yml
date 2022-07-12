@@ -163,6 +163,10 @@ jobs:
           command: |
             npx hardhat test:integration:l1 --deploy
       - run:
+          name: Run isolated layer 2 integration tests
+          command: |
+            npx hardhat test:integration:l2 --deploy
+      - run:
           name: Start docker chains
           background: true
           command: |
@@ -173,13 +177,9 @@ jobs:
       - cmd-wait-for-port:
           port: 9545
       - run:
-          name: Run isolated layer 2 integration tests
-          command: |
-            npx hardhat --network localhost test:integration:l2 --deploy
-      - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat --network localhost test:integration:dual --deploy
+            npx hardhat test:integration:dual --deploy
       - store_test_results:
           path: /tmp/junit/
       - store_artifacts:

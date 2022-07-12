@@ -44,25 +44,6 @@ function bootstrapL2({ ctx }) {
 
 		ctx.addedSynths = hre.config.addedSynths || [];
 
-		/*
-		 * We also bootstrap an L1 provider on the assumption that the L2 integration tests
-		 * are running against an Optimism ops tool.
-		 * The L1 provider allows us to indirectly fast forward the L2 chain by fast forwarding
-		 * the L1 chain and waiting for the L2 chain to sync.
-		 * Direct fast forwarding on the L2 chain is not possible because the rpc does not support
-		 * the method evm_increaseTime.
-		 *
-		 * L1 provider is not needed when fork testing
-		 * */
-		if (!ctx.fork) {
-			ctx.l1mock = { useOvm: false };
-			ctx.l1mock.provider = _setupProvider({
-				url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
-			});
-
-			await loadUsers({ ctx: ctx.l1mock });
-		}
-
 		ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});

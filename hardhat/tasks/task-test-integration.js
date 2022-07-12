@@ -119,7 +119,11 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				await hre.run('cannon:build', { options: { network: 'optimism' } });
+				await hre.run('cannon:build', {
+					file: 'cannonfile.optimism.toml',
+					preset: 'optimism',
+					options: ['network=optimism'],
+				});
 			}
 			hre.config.addedSynths = synthsToAdd;
 		}
