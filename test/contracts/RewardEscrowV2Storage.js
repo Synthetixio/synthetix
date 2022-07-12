@@ -100,7 +100,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				assert.equal(await instance.fallbackRewardEscrow(), ZERO_ADDRESS);
 				assert.equal(await instance.associatedContract(), writeAccount);
 				assert.bnEqual(await instance.nextEntryId(), 0);
-				assert.bnEqual(await instance.fallbackId(), 0);
+				assert.bnEqual(await instance.firstNonFallbackId(), 0);
 				// only on unvested entry
 				assert.bnEqual(await instance.totalEscrowedBalance(), 0);
 			});
@@ -125,7 +125,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				assert.equal(await instance.fallbackRewardEscrow(), frozenRewardEscrowV2.address);
 				assert.equal(await instance.associatedContract(), writeAccount);
 				assert.bnEqual(await instance.nextEntryId(), firstNonFallbackId);
-				assert.bnEqual(await instance.fallbackId(), firstNonFallbackId);
+				assert.bnEqual(await instance.firstNonFallbackId(), firstNonFallbackId);
 				// only on unvested entry
 				assert.bnEqual(
 					await instance.totalEscrowedBalance(),

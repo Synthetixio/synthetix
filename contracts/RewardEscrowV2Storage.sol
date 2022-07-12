@@ -22,8 +22,9 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     // cheaper storage for L1
     struct StorageEntry {
+        bool initialized; // stores whether the entry was initialized in this contract or should be read from fallback
         uint32 endTime;
-        uint224 escrowAmount;
+        uint216 escrowAmount;
     }
 
     // accounts => vesting entrees
@@ -32,35 +33,45 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     // accounts => entry ids
     mapping(address => uint[]) internal _accountVestingEntryIds;
 
-    // accounts => cache of entry counts in fallback contract
-    mapping(address => uint) internal _fallbackCounts;
-
-    // Counter for new vesting entry ids.
-    uint public nextEntryId;
-
-    // An account's total escrow synthetix balance (still to vest)
-    // this as an int in order to be able to store ZERO_PLACEHOLDER
-    mapping(address => int) internal _totalEscrowedAccountBalance;
+    // An account's total escrow SNX balance (still to vest)
+    mapping(address => uint) internal _totalEscrowedAccountBalance;
 
     // An account's total vested rewards (vested already)
-    // this as an int in order to be able to store ZERO_PLACEHOLDER
-    mapping(address => int) internal _totalVestedAccountBalance;
+    mapping(address => uint) internal _totalVestedAccountBalance;
 
     // The total remaining escrow balance of contract
     uint internal _totalEscrowedBalance;
 
-    // id starting from which the new entries are stored in this contact only (and don't need to be read from fallback)
-    uint public fallbackId;
+    // Counter for new vesting entry ids.
+    uint public nextEntryId;
 
-    // -1 wei is a zero value placeholder in the read-through storage.
-    // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
-    int internal constant ZERO_PLACEHOLDER = -1;
+    // accounts => cached stats from previous contract
+    mapping(address => bool) internal _fallbackStatsCached;
+
+    // accounts => cached numEntries from previous contract
+    mapping(address => uint) internal _fallbackNumEntriesCache;
 
     // previous rewards escrow contract
     IRewardEscrowV2Frozen public fallbackRewardEscrow;
 
+    // id starting from which the new entries are stored in this contact only
+    // this is a precaution against a case in which somehow entries are added in the frozen contract
+    uint public firstNonFallbackId;
+
     // interface view
     bytes32 public constant CONTRACT_NAME = "RewardEscrowV2Storage";
+
+    /* ========== Modifier ========== */
+
+    modifier withFallback() {
+        require(address(fallbackRewardEscrow) != address(0), "not initialized");
+        _;
+    }
+
+    modifier withCached(address account) {
+        _cacheFallbackAccountStats(account);
+        _;
+    }
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -74,7 +85,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
         fallbackRewardEscrow = _fallbackRewardEscrow;
         nextEntryId = _fallbackRewardEscrow.nextEntryId();
-        fallbackId = nextEntryId;
+        firstNonFallbackId = nextEntryId;
 
         // carry over previous balance tracking
         _totalEscrowedBalance = fallbackRewardEscrow.totalEscrowedBalance();
@@ -85,34 +96,29 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     function vestingSchedules(address account, uint entryId)
         public
         view
-        initialized
-        returns (VestingEntries.VestingEntry memory entry)
+        withFallback
+        returns (VestingEntries.VestingEntry memory)
     {
         // read stored entry
         StorageEntry memory stored = _vestingSchedules[account][entryId];
-        // convert to previous data size format
-        entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
-        // read from fallback if this entryId was created in the old contract and wasn't written locally
-        // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
-        if (entryId < fallbackId && entry.endTime == 0) {
-            entry = fallbackRewardEscrow.vestingSchedules(account, entryId);
+        // return new if initialized, otherwise read from fallback
+        // fallbackId is used to prevent reading from old contract in case it was mutated (despite the assumption
+        // that its mutations are going to be disabled)
+        if (stored.initialized || entryId >= firstNonFallbackId) {
+            // convert to previous data size format
+            return VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
+        } else {
+            return fallbackRewardEscrow.vestingSchedules(account, entryId);
         }
-        return entry;
     }
 
-    function accountVestingEntryIDs(address account, uint index) public view initialized returns (uint) {
-        // cache is used here to prevent external calls during setZeroAmountUntilTarget loop
-        uint fallbackCount = _fallbackCounts[account];
-        if (fallbackCount == 0) {
-            // uninitialized
-            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
-        }
-
+    function accountVestingEntryIDs(address account, uint index) public view withFallback returns (uint) {
+        uint fallbackNumEntries = _fallbackNumEntries(account);
         // this assumes no new entries can be created in the old contract
-        if (index < fallbackCount) {
+        if (index < fallbackNumEntries) {
             return fallbackRewardEscrow.accountVestingEntryIDs(account, index);
         } else {
-            return _accountVestingEntryIds[account][index - fallbackCount];
+            return _accountVestingEntryIds[account][index - fallbackNumEntries];
         }
     }
 
@@ -120,50 +126,49 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return _totalEscrowedBalance;
     }
 
-    function totalEscrowedAccountBalance(address account) public view initialized returns (uint) {
-        // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
-        int v = _totalEscrowedAccountBalance[account];
-
-        // 0 should never be stored to prevent reading stale value from fallback
-        if (v == 0) {
-            return fallbackRewardEscrow.totalEscrowedAccountBalance(account);
-        } else {
-            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
-        }
+    function totalEscrowedAccountBalance(address account) public view withFallback returns (uint) {
+        return
+            _fallbackStatsCached[account]
+                ? _totalEscrowedAccountBalance[account]
+                : fallbackRewardEscrow.totalEscrowedAccountBalance(account);
     }
 
-    function totalVestedAccountBalance(address account) public view initialized returns (uint) {
-        // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
-        int v = _totalVestedAccountBalance[account];
-
-        // 0 should never be stored to prevent reading stale value from fallback
-        if (v == 0) {
-            return fallbackRewardEscrow.totalVestedAccountBalance(account);
-        } else {
-            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
-        }
+    function totalVestedAccountBalance(address account) public view withFallback returns (uint) {
+        return
+            _fallbackStatsCached[account]
+                ? _totalVestedAccountBalance[account]
+                : fallbackRewardEscrow.totalVestedAccountBalance(account);
     }
 
     /// The number of vesting dates in an account's schedule.
-    function numVestingEntries(address account) public view initialized returns (uint) {
+    function numVestingEntries(address account) public view withFallback returns (uint) {
         /// assumes no enties can be written in frozen contract
-        return fallbackRewardEscrow.numVestingEntries(account) + _accountVestingEntryIds[account].length;
+        return _fallbackNumEntries(account) + _accountVestingEntryIds[account].length;
+    }
+
+    /* ========== INTERNAL VIEWS ========== */
+
+    function _fallbackNumEntries(address account) internal view returns (uint) {
+        return
+            _fallbackStatsCached[account]
+                ? _fallbackNumEntriesCache[account]
+                : fallbackRewardEscrow.numVestingEntries(account);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// zeros out a single entry
-    function setZeroAmount(address account, uint entryId) public initialized onlyAssociatedContract {
+    /// note withCached(account) is not needed here since it operates on a specific entry, and non aggregate
+    /// views are used
+    function setZeroAmount(address account, uint entryId) public withFallback onlyAssociatedContract {
         // load storage entry
-        StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
-        // update endTime from fallback if this is first time this entry is written in this contract
-        if (storedEntry.endTime == 0) {
-            // entry should be in fallback, otherwise it would have endTime or be uninitialized
-            storedEntry.endTime = uint32(fallbackRewardEscrow.vestingSchedules(account, entryId).endTime);
-            // storedEntry.escrowAmount is already 0, since it's uninitialized
-        } else {
-            storedEntry.escrowAmount = 0;
+        StorageEntry storage stored = _vestingSchedules[account][entryId];
+        if (stored.initialized == false) {
+            // update endTime from fallback if this is first time this entry is written in this contract
+            stored.endTime = uint32(fallbackRewardEscrow.vestingSchedules(account, entryId).endTime);
         }
+        stored.initialized = true;
+        stored.escrowAmount = 0;
     }
 
     /// zero out multiple entries in order of accountVestingEntryIDs until target is reached (or entries exhausted)
@@ -179,8 +184,9 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint targetAmount
     )
         external
-        initialized
+        withFallback
         onlyAssociatedContract
+        withCached(account)
         returns (
             uint total,
             uint endIndex,
@@ -196,8 +202,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint entryID;
         uint i;
         VestingEntries.VestingEntry memory entry;
-        // store the count to reduce external calls in accountVestingEntryIDs
-        _cacheFallbackIDCount(account);
         for (i = startIndex; i < numIds; i++) {
             entryID = accountVestingEntryIDs(account, i);
             entry = vestingSchedules(account, entryID);
@@ -218,47 +222,45 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return (total, i, entry.endTime);
     }
 
-    function updateEscrowAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
+    function updateEscrowAccountBalance(address account, int delta)
+        external
+        withFallback
+        onlyAssociatedContract
+        withCached(account)
+    {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
         require(total >= 0, "updateEscrowAccountBalance: balance must be positive");
-        if (total == 0) {
-            // zero value must never be written, because it is used to signal uninitialized
-            // writing an actual 0 will result in stale value being read from fallback
-            _totalEscrowedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
-        } else {
-            _totalEscrowedAccountBalance[account] = total;
-        }
-
+        _totalEscrowedAccountBalance[account] = uint(total);
         // update the global total
         updateTotalEscrowedBalance(delta);
     }
 
-    function updateVestedAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
+    function updateVestedAccountBalance(address account, int delta)
+        external
+        withFallback
+        onlyAssociatedContract
+        withCached(account)
+    {
         // add / subtract to previous balance
         int total = int(totalVestedAccountBalance(account)).add(delta);
         require(total >= 0, "updateVestedAccountBalance: balance must be positive");
-        if (total == 0) {
-            // zero value must never be written, because it is used to signal uninitialized
-            //  writing an actual 0 will result in stale value being read from fallback
-            _totalVestedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
-        } else {
-            _totalVestedAccountBalance[account] = total;
-        }
+        _totalVestedAccountBalance[account] = uint(total);
     }
 
     /// this method is unused in contracts (because updateEscrowAccountBalance uses it), but it is here
     /// for completeness, in case a fix to one of these values is needed (but not the other)
-    function updateTotalEscrowedBalance(int delta) public initialized onlyAssociatedContract {
+    function updateTotalEscrowedBalance(int delta) public withFallback onlyAssociatedContract {
         int total = int(totalEscrowedBalance()).add(delta);
         require(total >= 0, "updateTotalEscrowedBalance: balance must be positive");
         _totalEscrowedBalance = uint(total);
     }
 
-    /// append entry for an account
+    /// Append entry for an account
+    /// This doesn't need withCached(account) since it operates on a single entry
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry)
         external
-        initialized
+        withFallback
         onlyAssociatedContract
         returns (uint)
     {
@@ -268,8 +270,9 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint entryId = nextEntryId;
         // since this is a completely new entry, it's safe to write it directly without checking fallback data
         _vestingSchedules[account][entryId] = StorageEntry({
+            initialized: true,
             endTime: uint32(entry.endTime),
-            escrowAmount: uint224(entry.escrowAmount)
+            escrowAmount: uint216(entry.escrowAmount)
         });
 
         // append entryId to list of entries for account
@@ -281,21 +284,15 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return entryId;
     }
 
-    /* ========== INTERNAL ========== */
+    /* ========== INTERNAL MUTATIVE ========== */
 
-    function _cacheFallbackIDCount(address account) internal {
-        uint fallbackCount = _fallbackCounts[account];
-        if (fallbackCount == 0) {
-            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
-            // store to reduce calls in accountVestingEntryIDs
-            _fallbackCounts[account] = fallbackCount;
+    // cache the stats of the account from previous contract
+    function _cacheFallbackAccountStats(address account) internal {
+        if (!_fallbackStatsCached[account]) {
+            _fallbackStatsCached[account] = true;
+            _fallbackNumEntriesCache[account] = fallbackRewardEscrow.numVestingEntries(account);
+            _totalEscrowedAccountBalance[account] = fallbackRewardEscrow.totalEscrowedAccountBalance(account);
+            _totalVestedAccountBalance[account] = fallbackRewardEscrow.totalVestedAccountBalance(account);
         }
-    }
-
-    /* ========== Modifier ========== */
-
-    modifier initialized() {
-        require(address(fallbackRewardEscrow) != address(0), "not initialized");
-        _;
     }
 }
