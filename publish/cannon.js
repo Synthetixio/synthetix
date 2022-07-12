@@ -49,10 +49,16 @@ async function deployInstance({
 	});
 }
 
-async function deploy(runtime) {
+async function deploy(runtime, networkVariant) {
 	const network = 'local';
 
-	const useOvm = false;
+	if (networkVariant !== 'mainnet' || networkVariant !== 'optimism') {
+		throw new Error(
+			'please use either `mainnet` or `optimism` to specify the network variant to deploy.'
+		);
+	}
+
+	const useOvm = networkVariant === 'optimism';
 	const buildPath = path.join(__dirname, '..', synthetix.constants.BUILD_FOLDER);
 
 	// prepare the synths but skip preparing releases (as this isn't a fork)

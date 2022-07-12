@@ -119,16 +119,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				const network = 'local';
-				await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
-				await deployInstance({
-					addNewSynths: true,
-					buildPath,
-					network,
-					providerPort: providerPortL2,
-					providerUrl,
-					useOvm,
-				});
+				await hre.run('cannon:build', { options: { network: 'optimism' } });
 			}
 			hre.config.addedSynths = synthsToAdd;
 		}

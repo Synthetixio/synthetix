@@ -2,18 +2,28 @@ name = "synthetix"
 version = "2.73.1"
 description = "Infinite liquidity is here."
 
+# overrides the deployed contracts used by the deployer
+# not to be confused with the cannon network
+[setting.network]
+defaultValue = "mainnet"
+
+# contracts will be owned by the specified address (defaults to the first known test address)
 [setting.owner]
 defaultValue = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
+# some snx and sUSD will be minted by this address
 [setting.test_user]
 defaultValue = "0x73570075092502472E4b61A7058Df1A4a1DB12f2"
 
+# how much should SNX be worth (6 decimals)
 [setting.rate_snx]
 defaultValue = "5000000"
 
+# how much should ETH be worth (6 decimals)
 [setting.rate_eth]
 defaultValue = "5000000000"
 
+# how much should BTC be worth (6 decimals)
 [setting.rate_btc]
 defaultValue = "50000000000"
 
@@ -38,6 +48,7 @@ options.salt = "btc"
 [run.synthetix]
 exec = "./publish/cannon.js"
 func = "deploy"
+args = "<%= settings.network %>"
 modified = ["contracts", "publish/src", "publish/deployed/local"]
 
 [invoke.transfer_owner_snx]
