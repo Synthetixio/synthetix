@@ -239,7 +239,7 @@ target = ["Synthetix"]
 
 from = "<%= settings.test_user %>"
 func = "issueSynths"
-args = ["1000000000000000000000"]
+args = ["100000000000000000000"]
 #args = ['1']
 
 depends = ["invoke.test_user_snx", "invoke.increase_snapshot_stale_time", "invoke.increase_rate_stale_time"]
