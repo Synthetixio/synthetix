@@ -197,9 +197,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         debt = uint(rawIssuedSynths);
         sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
+
+        uint stalePeriod = getRateStalePeriod();
+
         isStale =
-            block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
-            block.timestamp - getRateStalePeriod() > ratioUpdatedAt;
+            stalePeriod < block.timestamp &&
+            (block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
+                block.timestamp - getRateStalePeriod() > ratioUpdatedAt);
     }
 
     function issuanceRatio() external view returns (uint) {
