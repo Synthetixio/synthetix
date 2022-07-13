@@ -395,7 +395,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 
 				it('gas test for 100 entries on new contract', async () => {
 					for (let i = 0; i < 100; i++) {
-						await frozenRewardEscrowV2.appendVestingEntry(user4, entry1Amount, 1, { from: owner });
+						await instance.addVestingEntry(user4, [1, entry1Amount], { from: writeAccount });
 					}
 					// send the transaction
 					const {
