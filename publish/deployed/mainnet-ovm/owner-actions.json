@@ -1,9 +1,1 @@
-{
-    "0xaE55F163337A2A46733AA66dA9F35299f9A46e9e.setMinKeeperFee(uint256):1000000000000000000": {
-            "target": "0xaE55F163337A2A46733AA66dA9F35299f9A46e9e",
-            "action": "0xaE55F163337A2A46733AA66dA9F35299f9A46e9e.setMinKeeperFee(uint256):1000000000000000000",
-            "complete": false,
-            "link": "undefined/address/0xaE55F163337A2A46733AA66dA9F35299f9A46e9e#writeContract",
-            "data": "0x333ef2530000000000000000000000000000000000000000000000000de0b6b3a7640000"
-    }
-}
+{}
