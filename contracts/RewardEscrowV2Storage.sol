@@ -26,6 +26,25 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint224 escrowAmount;
     }
 
+    // Storage of zeroed out storage ranges that allows bypassing writing and reading from
+    // stored individual entries.
+    // This can be done if entryIds for each account are monotonically increasing, so if a zeroed out range is stored
+    // subsequent reads from this range can be short-circuited using this data.
+    // Entry IDs in THIS contract are guaranteed to be monotonically increasing (due to only being appended)
+    // Entry IDS is the FALLBACK contract are in some cases non-monotonic, so a check for this property is
+    // performed and its result is also stored in this struct.
+    struct ZerosRange {
+        bool fallbackMonotonicChecked;
+        bool fallbackMonotonic;
+        uint32 endIndexFallback;
+        uint32 endIdFallback;
+        uint64 endIndex; // leave more room for indices of new contract
+        uint64 endId; // leave more room for ids of new contract
+    }
+
+    // per account short-circuit zero-ranges structs
+    mapping(address => ZerosRange) internal _zerosRanges;
+
     // accounts => vesting entrees
     mapping(address => mapping(uint => StorageEntry)) internal _vestingSchedules;
 
@@ -82,7 +101,10 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== VIEWS ========== */
 
-    function vestingSchedules(address account, uint entryId)
+    /// read the entries without applying the ZerosRange short-circuit override
+    /// this is public as a precaution in case of a bug in the short-circuit logic (in case using this
+    /// can help mitigate such an issue in the upgradable calling contract)
+    function vestingSchedulesNoShortCircuit(address account, uint entryId)
         public
         view
         initialized
@@ -96,6 +118,25 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
         if (entryId < fallbackId && entry.endTime == 0) {
             entry = fallbackRewardEscrow.vestingSchedules(account, entryId);
+        }
+        return entry;
+    }
+
+    function vestingSchedules(address account, uint entryId) public view returns (VestingEntries.VestingEntry memory entry) {
+        // read the entry (this is needed even if short-circuit is applied to return the correct endTime)
+        entry = vestingSchedulesNoShortCircuit(account, entryId);
+
+        // check zeros range short-circuit
+        ZerosRange memory zeroRange = _zerosRanges[account];
+        uint _fallbackId = fallbackId; // memory fallbackId
+
+        // within this contract's range + within zeroed range
+        bool inZeroRangeThisContract = (entryId >= _fallbackId && entryId <= zeroRange.endId);
+        // within fallback range + within fallback zeroed range + fallback ids are monotonic (redundant)
+        bool inZeroRangeFallback =
+            (entryId < _fallbackId && zeroRange.fallbackMonotonic && entryId <= zeroRange.endIdFallback);
+        if (inZeroRangeThisContract || inZeroRangeFallback) {
+            entry.escrowAmount = 0;
         }
         return entry;
     }
@@ -148,7 +189,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /* ========== INTERNAL VIEWS ========== */
 
     function _fallbackNumVestingEntries(address account) internal view returns (uint) {
-        // cache is used here to prevent external calls during setZeroAmountUntilTarget loop
+        // cache is used here to prevent external calls during looping
         int v = _fallbackCounts[account];
         if (v == 0) {
             // uninitialized
@@ -158,9 +199,27 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
+    /// ids in accountVestingEntryIds should be monotonic unless they were merged
+    /// this check is useful if revoking a large amount of entries - so that storing a whole
+    /// range as zeroed can be done to save gas
+    function _fallbackIdsMonotonic(address account) internal view returns (bool) {
+        uint numIds = _fallbackNumVestingEntries(account);
+        if (numIds <= 1) {
+            return true; // a single ID is monotonic
+        }
+        uint[] memory entryIds = fallbackRewardEscrow.getAccountVestingEntryIDs(account, 0, numIds);
+        // start from second id
+        for (uint i = 1; i < numIds; i++) {
+            if (entryIds[i] < entryIds[i - 1]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /// zeros out a single entry
+    /// zeros out a single entry in storage
     function setZeroAmount(address account, uint entryId) public initialized onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
@@ -176,16 +235,11 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /// zero out multiple entries in order of accountVestingEntryIDs until target is reached (or entries exhausted)
     /// @param account: account
-    /// @param startIndex: index into accountVestingEntryIDs to start with. NOT an entryID.
     /// @param targetAmount: amount to try and reach during the iteration, once the amount it reached (and passed)
     ///     the iteration stops
     /// @return total: total sum reached, may different from targetAmount (higher if sum is a bit more), lower
     ///     if target wasn't reached reaching the length of the array
-    function setZeroAmountUntilTarget(
-        address account,
-        uint startIndex,
-        uint targetAmount
-    )
+    function setZeroAmountUntilTarget(address account, uint targetAmount)
         external
         initialized
         onlyAssociatedContract
@@ -201,30 +255,40 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         _cacheFallbackIDCount(account);
 
         uint numIds = numVestingEntries(account);
+        uint numIdsFallback = _fallbackNumVestingEntries(account);
         require(numIds > 0, "no entries to iterate");
-        require(startIndex < numIds, "startIndex too high");
 
-        uint entryID;
-        uint i;
-        VestingEntries.VestingEntry memory entry;
-        for (i = startIndex; i < numIds; i++) {
-            entryID = accountVestingEntryIDs(account, i);
-            entry = vestingSchedules(account, entryID);
+        // load zeros-range storage data
+        ZerosRange memory zeroRange = _zerosRanges[account];
 
-            // skip vested
-            if (entry.escrowAmount > 0) {
-                total = total.add(entry.escrowAmount);
+        // start from non zeroed entries or 0
+        uint startIndex = zeroRange.endIndex > zeroRange.endIndexFallback ? zeroRange.endIndex : zeroRange.endIndexFallback;
 
-                // set to zero
-                setZeroAmount(account, entryID);
-
-                if (total >= targetAmount) {
-                    break;
-                }
-            }
+        // scan and zero out fallback range if starting in its range
+        if (startIndex < numIdsFallback) {
+            (total, endIndex, lastEntryTime) = _fallbackSetZeroAmountUntilTarget(
+                account,
+                targetAmount,
+                startIndex,
+                numIdsFallback.sub(1) // entry to parent if block ensures it's not zero
+            );
         }
-        i = i == numIds ? i - 1 : i; // i was incremented one extra time if there was no break
-        return (total, i, entry.endTime);
+
+        // scan new (non-fallback) range if target not reached and there are non-fallback entries
+        if (total < targetAmount && numIds > numIdsFallback) {
+            // fallback wasn't enough, we need to find the endIndex in new entries
+            uint totalZeroedNonFallback;
+            (totalZeroedNonFallback, endIndex, lastEntryTime) = _nonFallbackSetZeroAmountUntilTarget(
+                account,
+                targetAmount.sub(total), // only the remaining sum
+                numIdsFallback, // start from entries in this contract
+                numIds.sub(1) // will be at least one due to if
+            );
+            // update total
+            total = total.add(totalZeroedNonFallback);
+        }
+
+        return (total, endIndex, lastEntryTime);
     }
 
     function updateEscrowAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
@@ -305,6 +369,131 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
                 _fallbackCounts[account] = fallbackCount; // finite and small so doesn't require SafeCast
             }
         }
+    }
+
+    /// sets zeros either efficiently (using ZeroRange) or non efficiently (per entry) for the fallback entries
+    function _fallbackSetZeroAmountUntilTarget(
+        address account,
+        uint targetAmount,
+        uint startIndex,
+        uint maxIndex
+    )
+        internal
+        returns (
+            uint total,
+            uint endIndex,
+            uint lastEntryTime
+        )
+    {
+        // load zeros-range storage data
+        ZerosRange storage zeroRange = _zerosRanges[account];
+
+        // check if we can be efficient here if not checked previously for this account
+        if (!zeroRange.fallbackMonotonicChecked) {
+            // check and record result
+            zeroRange.fallbackMonotonic = _fallbackIdsMonotonic(account);
+            // store the fact we checked this already for next time
+            zeroRange.fallbackMonotonicChecked = true;
+        }
+
+        if (zeroRange.fallbackMonotonic) {
+            uint lastEntryId;
+            // store the short-circuit limits indeces and entryIds
+            (total, endIndex, lastEntryTime, lastEntryId) = _scanSumAndZero(
+                account,
+                targetAmount,
+                startIndex,
+                maxIndex,
+                false // don't store individually, we're in efficient mode
+            );
+            zeroRange.endIndexFallback = uint32(endIndex);
+            zeroRange.endIdFallback = uint32(lastEntryId);
+        } else {
+            // store the zeros individually if fallback is NOT monotonic
+            (total, endIndex, lastEntryTime, ) = _scanSumAndZero(
+                account,
+                targetAmount,
+                startIndex,
+                maxIndex,
+                true // store individually
+            );
+        }
+        return (total, endIndex, lastEntryTime);
+    }
+
+    /// sets zeros efficiently (using ZeroRange) for the entries in this contract
+    function _nonFallbackSetZeroAmountUntilTarget(
+        address account,
+        uint targetAmount,
+        uint startIndex,
+        uint maxIndex
+    )
+        internal
+        returns (
+            uint total,
+            uint endIndex,
+            uint lastEntryTime
+        )
+    {
+        // load zeros-range storage data
+        ZerosRange storage zeroRange = _zerosRanges[account];
+
+        uint lastEntryId;
+        (total, endIndex, lastEntryTime, lastEntryId) = _scanSumAndZero(
+            account,
+            targetAmount, // we got part from fallback entries
+            startIndex, // start from current contract's ids
+            maxIndex,
+            false // no need to store the zeros
+        );
+        // update to latest endIndex
+        zeroRange.endIndex = uint64(endIndex);
+        zeroRange.endId = uint64(lastEntryId);
+        return (total, endIndex, lastEntryTime);
+    }
+
+    /// utility function to scan and sum entries for an account in order to set them to zero
+    /// either in storage, or without setting them to zero in storage (and using the ZeroRange short-circuit data)
+    function _scanSumAndZero(
+        address account,
+        uint targetAmount,
+        uint startIndex,
+        uint maxIndex,
+        bool storeAmount
+    )
+        internal
+        returns (
+            uint total,
+            uint endIndex,
+            uint lastEntryId,
+            uint lastEntryTime
+        )
+    {
+        VestingEntries.VestingEntry memory entry;
+        uint i;
+        uint entryID;
+        for (i = startIndex; i <= maxIndex; i++) {
+            entryID = accountVestingEntryIDs(account, i);
+            entry = vestingSchedules(account, entryID);
+
+            // skip vested
+            if (entry.escrowAmount > 0) {
+                // add to total
+                total = total.add(entry.escrowAmount);
+
+                // set to zero ONLY if store flag is true (otherwise the caller is using the short-circuit storage)
+                if (storeAmount) {
+                    setZeroAmount(account, entryID);
+                }
+
+                if (total >= targetAmount) {
+                    // exit the loop
+                    break;
+                }
+            }
+        }
+        i = i <= maxIndex ? i : maxIndex; // i was incremented one extra time if there was no break
+        return (total, i, entry.endTime, entryID);
     }
 
     /* ========== Modifier ========== */

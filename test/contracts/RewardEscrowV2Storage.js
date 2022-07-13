@@ -181,10 +181,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 		it('should revert when not initialized with fallback', async () => {
 			const revertMsg = 'not initialized';
 			await assert.revert(instance.setZeroAmount(user1, 1, { from: owner }), revertMsg);
-			await assert.revert(
-				instance.setZeroAmountUntilTarget(user1, 0, 0, { from: owner }),
-				revertMsg
-			);
+			await assert.revert(instance.setZeroAmountUntilTarget(user1, 0, { from: owner }), revertMsg);
 			await assert.revert(
 				instance.updateEscrowAccountBalance(user1, 0, { from: owner }),
 				revertMsg
@@ -221,7 +218,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				const revertMsg = 'associated contract';
 				await assert.revert(instance.setZeroAmount(user1, 1, { from: owner }), revertMsg);
 				await assert.revert(
-					instance.setZeroAmountUntilTarget(user1, 0, 0, { from: owner }),
+					instance.setZeroAmountUntilTarget(user1, 0, { from: owner }),
 					revertMsg
 				);
 				await assert.revert(
@@ -238,7 +235,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 
 			it('all succeed for storage owner', async () => {
 				await instance.setZeroAmount(user1, 1, { from: writeAccount });
-				await instance.setZeroAmountUntilTarget(user1, 0, toUnit(1), { from: writeAccount });
+				await instance.setZeroAmountUntilTarget(user1, toUnit(1), { from: writeAccount });
 				await instance.updateEscrowAccountBalance(user1, 0, { from: writeAccount });
 				await instance.updateVestedAccountBalance(user1, 0, { from: writeAccount });
 				await instance.updateTotalEscrowedBalance(0, { from: writeAccount });
@@ -336,15 +333,11 @@ contract('RewardEscrowV2Storage', async accounts => {
 			describe('setZeroAmountUntilTarget', async () => {
 				it('reverts on bad input', async () => {
 					await assert.revert(
-						instance.setZeroAmountUntilTarget(user1, 10, 0, { from: writeAccount }),
+						instance.setZeroAmountUntilTarget(user1, 0, { from: writeAccount }),
 						'targetAmount'
 					);
 					await assert.revert(
-						instance.setZeroAmountUntilTarget(user1, 10, 1, { from: writeAccount }),
-						'startIndex'
-					);
-					await assert.revert(
-						instance.setZeroAmountUntilTarget(user2, 10, 1, { from: writeAccount }),
+						instance.setZeroAmountUntilTarget(user4, 10, { from: writeAccount }),
 						'no entries'
 					);
 				});
@@ -354,7 +347,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, entry1Amount);
 
 					// calls this statically to get the returned values
-					const ret = await instance.setZeroAmountUntilTarget.call(user1, 0, toUnit(10), {
+					const ret = await instance.setZeroAmountUntilTarget.call(user1, toUnit(10), {
 						from: writeAccount,
 					});
 
@@ -368,7 +361,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					);
 
 					// send the transaction
-					await instance.setZeroAmountUntilTarget(user1, 0, toUnit(10), { from: writeAccount });
+					await instance.setZeroAmountUntilTarget(user1, toUnit(10), { from: writeAccount });
 
 					// read on this contract
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
@@ -383,7 +376,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				it('gas test for 100 entries on old contract', async () => {
 					const {
 						receipt: { gasUsed },
-					} = await instance.setZeroAmountUntilTarget(user3, 0, toUnit(user3NumEntries), {
+					} = await instance.setZeroAmountUntilTarget(user3, toUnit(user3NumEntries), {
 						from: writeAccount,
 					});
 					console.log(
@@ -400,7 +393,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					// send the transaction
 					const {
 						receipt: { gasUsed },
-					} = await instance.setZeroAmountUntilTarget(user4, 0, toUnit(user3NumEntries), {
+					} = await instance.setZeroAmountUntilTarget(user4, toUnit(user3NumEntries), {
 						from: writeAccount,
 					});
 					console.log(
@@ -423,7 +416,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					);
 
 					// calls this statically to get the returned values
-					const ret = await instance.setZeroAmountUntilTarget.call(user1, 0, toUnit(10), {
+					const ret = await instance.setZeroAmountUntilTarget.call(user1, toUnit(10), {
 						from: writeAccount,
 					});
 
@@ -433,7 +426,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					assert.bnEqual(ret.lastEntryTime, entryEndTime);
 
 					// send the transaction
-					await instance.setZeroAmountUntilTarget(user1, 0, toUnit(10), { from: writeAccount });
+					await instance.setZeroAmountUntilTarget(user1, toUnit(10), { from: writeAccount });
 
 					// read on this contract
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
@@ -446,31 +439,6 @@ contract('RewardEscrowV2Storage', async accounts => {
 					);
 				});
 
-				it('respects startIndex', async () => {
-					// add entry
-					await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
-					const entryId = user3NumEntries + 3;
-					const entryEndTime = (await instance.vestingSchedules(user1, entryId)).endTime;
-
-					// calls this statically to get the returned values
-					const ret = await instance.setZeroAmountUntilTarget.call(user1, 2, toUnit(10), {
-						from: writeAccount,
-					});
-
-					// return values
-					assert.bnEqual(ret.total, entry1Amount);
-					assert.bnEqual(ret.endIndex, 2);
-					assert.bnEqual(ret.lastEntryTime, entryEndTime);
-
-					// send the transaction
-					await instance.setZeroAmountUntilTarget(user1, 2, toUnit(10), { from: writeAccount });
-
-					// first is untouched
-					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, entry1Amount);
-					// second is zero
-					assert.bnEqual((await instance.vestingSchedules(user1, entryId)).escrowAmount, 0);
-				});
-
 				it('respects targetAmount', async () => {
 					// add entry
 					await instance.addVestingEntry(user1, [1, entry1Amount], { from: writeAccount });
@@ -478,7 +446,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					const entryEndTime = (await instance.vestingSchedules(user1, 2)).endTime;
 
 					// calls this statically to get the returned values
-					const ret = await instance.setZeroAmountUntilTarget.call(user1, 0, toUnit(0.5), {
+					const ret = await instance.setZeroAmountUntilTarget.call(user1, toUnit(0.5), {
 						from: writeAccount,
 					});
 
@@ -488,7 +456,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 					assert.bnEqual(ret.lastEntryTime, entryEndTime);
 
 					// send the transaction
-					await instance.setZeroAmountUntilTarget(user1, 0, toUnit(0.5), { from: writeAccount });
+					await instance.setZeroAmountUntilTarget(user1, toUnit(0.5), { from: writeAccount });
 
 					// first is zero
 					assert.bnEqual((await instance.vestingSchedules(user1, 2)).escrowAmount, 0);
