@@ -174,6 +174,50 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
+    function getAccountVestingEntryIDs(
+        address account,
+        uint startIndex,
+        uint pageSize
+    ) public view initialized returns (uint[] memory) {
+        uint endIndex = startIndex + pageSize;
+
+        // If the page extends past the end of the accountVestingEntryIDs, truncate it.
+        uint numEntries = numVestingEntries(account);
+        if (endIndex > numEntries) {
+            endIndex = numEntries;
+        }
+        if (endIndex <= startIndex) {
+            return new uint[](0);
+        }
+
+        uint[] memory fallbackEntries;
+        uint[] memory nonFallbackEntries;
+        uint numFallbackEntries = _fallbackNumVestingEntries(account);
+        if (startIndex < numFallbackEntries) {
+            // get the entryIds from fallback with startIndex
+            fallbackEntries = fallbackRewardEscrow.getAccountVestingEntryIDs(account, startIndex, pageSize);
+            // get the entryIds from this contract from the start
+            nonFallbackEntries = getAccountVestingEntryIDsNoFallback(account, 0, pageSize);
+        } else {
+            fallbackEntries = new uint[](0);
+            uint startIndexNoFallback = startIndex.sub(numFallbackEntries);
+            // get the entriIds from this contract with correct offset
+            nonFallbackEntries = getAccountVestingEntryIDsNoFallback(account, startIndexNoFallback, pageSize);
+        }
+
+        // combine arrays
+        uint n = fallbackEntries.length + nonFallbackEntries.length;
+        uint[] memory page = new uint[](n);
+        for (uint i; i < n; i++) {
+            if (i < fallbackEntries.length) {
+                page[i] = fallbackEntries[i];
+            } else {
+                page[i] = nonFallbackEntries[i - fallbackEntries.length];
+            }
+        }
+        return page;
+    }
+
     /// The number of vesting dates in an account's schedule.
     function numVestingEntries(address account) public view initialized returns (uint) {
         /// assumes no enties can be written in frozen contract
@@ -222,6 +266,30 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
             }
         }
         return true;
+    }
+
+    function getAccountVestingEntryIDsNoFallback(
+        address account,
+        uint index,
+        uint pageSize
+    ) internal view returns (uint[] memory) {
+        uint endIndex = index + pageSize;
+
+        // If the page extends past the end of the accountVestingEntryIDs, truncate it.
+        uint numEntries = _accountVestingEntryIds[account].length;
+        if (endIndex > numEntries) {
+            endIndex = numEntries;
+        }
+        if (endIndex <= index) {
+            return new uint[](0);
+        }
+
+        uint n = endIndex - index;
+        uint[] memory page = new uint[](n);
+        for (uint i; i < n; i++) {
+            page[i] = _accountVestingEntryIds[account][i + index];
+        }
+        return page;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -479,8 +547,9 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         VestingEntries.VestingEntry memory entry;
         uint i;
         uint entryID;
+        uint[] memory entryIds = getAccountVestingEntryIDs(account, startIndex, maxIndex - startIndex + 1);
         for (i = startIndex; i <= maxIndex; i++) {
-            entryID = accountVestingEntryIDs(account, i);
+            entryID = entryIds[i - startIndex];
 
             // if we're looping over the entries, means that they fall out of zeros range
             // checking ZeroRange for these entries can be skipped to save gas
