@@ -50,3 +50,6 @@ optimism
 slither.sarif
 
 .npm-cache
+
+# cannon build files
+cannon/
