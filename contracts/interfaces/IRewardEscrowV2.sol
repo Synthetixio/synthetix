@@ -130,7 +130,6 @@ interface IRewardEscrowV2 {
     function revokeFrom(
         address account,
         address recipient,
-        uint targetAmount,
-        uint startIndex
+        uint targetAmount
     ) external;
 }

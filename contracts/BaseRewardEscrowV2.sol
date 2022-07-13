@@ -258,23 +258,20 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     /// @param account: account
     /// @param recipient: account to transfer the revoked tokens to
     /// @param targetAmount: amount of SNX to revoke, when this amount is reached, no more entries are revoked
-    /// @param startIndex: index into accountVestingEntryIDs[account] to start iterating from
     function revokeFrom(
         address account,
         address recipient,
-        uint targetAmount,
-        uint startIndex
+        uint targetAmount
     ) external onlySynthetix {
         require(account != address(0), "account not set");
         require(recipient != address(0), "recipient not set");
 
         // set stored entries to zero
-        (uint total, uint endIndex, uint lastEntryTime) =
-            state().setZeroAmountUntilTarget(account, startIndex, targetAmount);
+        (uint total, uint endIndex, uint lastEntryTime) = state().setZeroAmountUntilTarget(account, targetAmount);
 
         // check total is indeed enough
         // the caller should have checked for the general amount of escrow
-        // but only here we check that startIndex results in sufficient amount
+        // but only here we check that it actually results in sufficient amount
         require(total >= targetAmount, "entries sum less than target");
 
         // if too much was revoked
@@ -294,7 +291,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         // update the aggregates and move the tokens
         _subtractAndTransfer(account, recipient, targetAmount);
 
-        emit Revoked(account, recipient, targetAmount, startIndex, endIndex);
+        emit Revoked(account, recipient, targetAmount, endIndex);
     }
 
     /// remove tokens from vesting aggregates and transfer them to recipient
@@ -496,5 +493,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
-    event Revoked(address indexed account, address indexed recipient, uint targetAmount, uint startIndex, uint endIndex);
+    event Revoked(address indexed account, address indexed recipient, uint targetAmount, uint endIndex);
 }

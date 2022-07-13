@@ -932,34 +932,30 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 		assertWithFallback('should revert when calling from non Synthetix address', async (e, s) => {
 			await assert.revert(
-				e.revokeFrom(account1, account3, toUnit(1000), 0, { from: account1 }),
+				e.revokeFrom(account1, account3, toUnit(1000), { from: account1 }),
 				'Only Synthetix'
 			);
 			await assert.revert(
-				e.revokeFrom(account1, account3, toUnit(1000), 0, { from: account2 }),
+				e.revokeFrom(account1, account3, toUnit(1000), { from: account2 }),
 				'Only Synthetix'
 			);
 		});
 
 		assertWithFallback('should revert on invalid inputs', async (e, s) => {
 			await assert.revert(
-				mockedSynthetix.revokeFrom(e.address, ZERO_ADDRESS, account3, toUnit(2000), 0),
+				mockedSynthetix.revokeFrom(e.address, ZERO_ADDRESS, account3, toUnit(2000)),
 				'account not set'
 			);
 			await assert.revert(
-				mockedSynthetix.revokeFrom(e.address, account1, ZERO_ADDRESS, toUnit(2000), 0),
+				mockedSynthetix.revokeFrom(e.address, account1, ZERO_ADDRESS, toUnit(2000)),
 				'recipient not set'
 			);
 			await assert.revert(
-				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(3000), 0),
+				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(3000)),
 				'less than target'
 			);
 			await assert.revert(
-				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(2000), 10),
-				'startIndex'
-			);
-			await assert.revert(
-				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(0), 10),
+				mockedSynthetix.revokeFrom(e.address, account1, account3, toUnit(0)),
 				'targetAmount'
 			);
 		});
@@ -972,7 +968,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				const targetAmount = toUnit(2000);
 				// revoke
 				// method in PublicEST.sol
-				const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 0);
+				const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount);
 
 				// Check user has the 0 vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
@@ -1003,7 +999,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				decodedEventEqual({
 					event: 'Revoked',
 					emittedFrom: e.address,
-					args: [account1, account3, targetAmount, 0, 1],
+					args: [account1, account3, targetAmount, 1],
 					log: logs.filter(l => !!l).find(({ name }) => name === 'Revoked'),
 				});
 			}
@@ -1019,7 +1015,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 				// revoke
 				// method in PublicEST.sol
-				const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 0);
+				const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount);
 
 				// Check user has the 0 vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
@@ -1076,61 +1072,11 @@ contract('BaseRewardEscrowV2', async accounts => {
 				decodedEventEqual({
 					event: 'Revoked',
 					emittedFrom: e.address,
-					args: [account1, account3, targetAmount, 0, 1],
+					args: [account1, account3, targetAmount, 1],
 					log: logs.filter(l => !!l).find(({ name }) => name === 'Revoked'),
 				});
 			}
 		);
-
-		assertWithFallback('should use startIndex', async (e, s) => {
-			const escrowBalanceBefore = await mockedSynthetix.balanceOf(e.address);
-			const accountEscrowedBalanceBefore = await e.totalEscrowedAccountBalance(account1);
-
-			const targetAmount = toUnit(1);
-
-			// revoke
-			// method in PublicEST.sol
-			const tx = await mockedSynthetix.revokeFrom(e.address, account1, account3, targetAmount, 1);
-
-			// Check user has the 0 vested SNX
-			assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
-
-			// Check recipient contract has correct amount of SNX
-			assert.bnEqual(await mockedSynthetix.balanceOf(account3), targetAmount);
-
-			// total escrowed balance
-			assert.bnEqual(await e.totalEscrowedBalance(), escrowBalanceBefore.sub(targetAmount));
-
-			// user totalEscrowedAccountBalance
-			assert.bnEqual(
-				await e.totalEscrowedAccountBalance(account1),
-				accountEscrowedBalanceBefore.sub(targetAmount)
-			);
-
-			const vestingEntryAfter = await e.getVestingEntry(account1, firstEntryId);
-			const secondVestingEntryAfter = await e.getVestingEntry(
-				account1,
-				firstEntryId.add(new BN(1))
-			);
-			const thirdVestingEntryAfter = await e.getVestingEntry(account1, firstEntryId.add(new BN(2)));
-
-			// first entry unchanged
-			assert.bnEqual(vestingEntryAfter.escrowAmount, escrowAmount);
-			assert.bnEqual(secondVestingEntryAfter.escrowAmount, 0);
-			assert.bnEqual(thirdVestingEntryAfter.escrowAmount, escrowAmount.sub(targetAmount));
-
-			const logs = await getDecodedLogs({
-				hash: tx.tx,
-				contracts: [e],
-			});
-
-			decodedEventEqual({
-				event: 'Revoked',
-				emittedFrom: e.address,
-				args: [account1, account3, targetAmount, 1, 2],
-				log: logs.filter(l => !!l).find(({ name }) => name === 'Revoked'),
-			});
-		});
 	});
 
 	describe('Read Vesting Schedule', () => {

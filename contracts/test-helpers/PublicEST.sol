@@ -41,9 +41,8 @@ contract PublicEST is ExternStateToken {
         address rewardEscrowV2,
         address account,
         address recipient,
-        uint targetAmount,
-        uint startIndex
+        uint targetAmount
     ) external {
-        IRewardEscrowV2(rewardEscrowV2).revokeFrom(account, recipient, targetAmount, startIndex);
+        IRewardEscrowV2(rewardEscrowV2).revokeFrom(account, recipient, targetAmount);
     }
 }
