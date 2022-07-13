@@ -33,7 +33,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     mapping(address => uint[]) internal _accountVestingEntryIds;
 
     // accounts => cache of entry counts in fallback contract
-    mapping(address => uint) internal _fallbackCounts;
+    mapping(address => int) internal _fallbackCounts;
 
     // Counter for new vesting entry ids.
     uint public nextEntryId;
@@ -101,12 +101,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     function accountVestingEntryIDs(address account, uint index) public view initialized returns (uint) {
-        // cache is used here to prevent external calls during setZeroAmountUntilTarget loop
-        uint fallbackCount = _fallbackCounts[account];
-        if (fallbackCount == 0) {
-            // uninitialized
-            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
-        }
+        uint fallbackCount = _fallbackNumVestingEntries(account);
 
         // this assumes no new entries can be created in the old contract
         if (index < fallbackCount) {
@@ -147,7 +142,20 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /// The number of vesting dates in an account's schedule.
     function numVestingEntries(address account) public view initialized returns (uint) {
         /// assumes no enties can be written in frozen contract
-        return fallbackRewardEscrow.numVestingEntries(account) + _accountVestingEntryIds[account].length;
+        return _fallbackNumVestingEntries(account) + _accountVestingEntryIds[account].length;
+    }
+
+    /* ========== INTERNAL VIEWS ========== */
+
+    function _fallbackNumVestingEntries(address account) internal view returns (uint) {
+        // cache is used here to prevent external calls during setZeroAmountUntilTarget loop
+        int v = _fallbackCounts[account];
+        if (v == 0) {
+            // uninitialized
+            return fallbackRewardEscrow.numVestingEntries(account);
+        } else {
+            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
+        }
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -189,6 +197,9 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     {
         require(targetAmount > 0, "targetAmount is zero");
 
+        // store the count to reduce external calls in accountVestingEntryIDs
+        _cacheFallbackIDCount(account);
+
         uint numIds = numVestingEntries(account);
         require(numIds > 0, "no entries to iterate");
         require(startIndex < numIds, "startIndex too high");
@@ -196,8 +207,6 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint entryID;
         uint i;
         VestingEntries.VestingEntry memory entry;
-        // store the count to reduce external calls in accountVestingEntryIDs
-        _cacheFallbackIDCount(account);
         for (i = startIndex; i < numIds; i++) {
             entryID = accountVestingEntryIDs(account, i);
             entry = vestingSchedules(account, entryID);
@@ -284,11 +293,17 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /* ========== INTERNAL ========== */
 
     function _cacheFallbackIDCount(address account) internal {
-        uint fallbackCount = _fallbackCounts[account];
+        int fallbackCount = _fallbackCounts[account];
         if (fallbackCount == 0) {
-            fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
-            // store to reduce calls in accountVestingEntryIDs
-            _fallbackCounts[account] = fallbackCount;
+            fallbackCount = int(fallbackRewardEscrow.numVestingEntries(account));
+            // cache the value but don't write zero
+            if (fallbackCount == 0) {
+                // zero value should not be written, because it is used to signal uninitialized
+                // writing an actual 0 will result repeatedly querying fallback
+                _fallbackCounts[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
+            } else {
+                _fallbackCounts[account] = fallbackCount; // finite and small so doesn't require SafeCast
+            }
         }
     }
 
