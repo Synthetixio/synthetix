@@ -1,0 +1,239 @@
+name = "synthetix"
+version = "<%= package.version %>"
+description = "Infinite liquidity is here."
+
+# overrides the deployed contracts used by the deployer
+# not to be confused with the cannon network
+[setting.network]
+defaultValue = "optimism"
+
+# contracts will be owned by the specified address (defaults to the first known test address)
+[setting.owner]
+defaultValue = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+
+# some snx and sUSD will be minted by this address
+[setting.test_user]
+defaultValue = "0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+
+# how much should SNX be worth (6 decimals)
+[setting.rate_snx]
+defaultValue = "5000000"
+
+# how much should ETH be worth (6 decimals)
+[setting.rate_eth]
+defaultValue = "5000000000"
+
+# how much should BTC be worth (6 decimals)
+[setting.rate_btc]
+defaultValue = "50000000000"
+
+[import.aggregator_snx]
+source = "chainlink:0.7-mock"
+options.rate = "<%= settings.rate_snx %>"
+options.timestamp = "100"
+options.salt = "snx"
+
+[import.aggregator_eth]
+source = "chainlink:0.7-mock"
+options.rate = "<%= settings.rate_eth %>"
+options.timestamp = "100"
+options.salt = "eth"
+
+[import.aggregator_btc]
+source = "chainlink:0.7-mock"
+options.rate = "<%= settings.rate_btc %>"
+options.timestamp = "100"
+options.salt = "btc"
+
+[run.synthetix]
+exec = "./publish/cannon.js"
+func = "deploy"
+args = ["<%= settings.network %>"]
+modified = ["contracts", "publish/src", "publish/deployed/local"]
+
+# "hack mint" by sending txn as if it is from the bridge
+[invoke.transfer_owner_snx]
+target = ["Synthetix"]
+
+from = "<%= contracts.SynthetixBridgeToBase.address %>"
+func = "mintSecondary"
+args = ["<%= settings.owner %>", "100000000000000000000000000"]
+
+depends = ["run.synthetix"]
+
+[invoke.set_ownership]
+target = [
+    "AddressResolver",
+    "CollateralManager",
+    "CollateralManagerState",
+    "CollateralShort",
+    "DappMaintenance",
+    "DebtCache",
+    "DelegateApprovals",
+    "DelegateApprovalsEternalStorage",
+    "Depot",
+    "ExchangeCircuitBreaker",
+    "ExchangeRates",
+    "ExchangeState",
+    "Exchanger",
+    "FeePool",
+    "FeePoolEternalStorage",
+    "FuturesMarketManager",
+    "Issuer",
+    "Liquidator",
+    "LiquidatorRewards",
+    "OneNetAggregatorDebtRatio",
+    "OneNetAggregatorIssuedSynths",
+    "ProxyFeePool",
+    "ProxySynthetix",
+    "ProxysUSD",
+    "ProxysETH",
+    "ProxysBTC",
+    "RewardEscrow",
+    "RewardsDistribution",
+    "Synthetix",
+    "SynthetixBridgeToBase",
+    "SynthetixDebtShare",
+    "SynthetixEscrow",
+    "SynthsUSD",
+    "SynthsETH",
+    "SynthsBTC",
+    "SystemSettings",
+    "SystemStatus",
+    "TokenStatesUSD",
+    "TokenStatesETH",
+    "TokenStatesBTC",
+    "TradingRewards",
+    "WrapperFactory",
+]
+
+func = "nominateNewOwner"
+args = ["<%= settings.owner %>"]
+
+fromCall.func = "owner"
+
+depends = ["run.synthetix"]
+
+
+[invoke.accept_ownership]
+target = [
+    "AddressResolver",
+    "CollateralManager",
+    "CollateralManagerState",
+    "CollateralShort",
+    "DappMaintenance",
+    "DebtCache",
+    "DelegateApprovals",
+    "DelegateApprovalsEternalStorage",
+    "Depot",
+    "ExchangeCircuitBreaker",
+    "ExchangeRates",
+    "ExchangeState",
+    "Exchanger",
+    "FeePool",
+    "FeePoolEternalStorage",
+    "FuturesMarketManager",
+    "Issuer",
+    "Liquidator",
+    "LiquidatorRewards",
+    "OneNetAggregatorDebtRatio",
+    "OneNetAggregatorIssuedSynths",
+    "ProxyFeePool",
+    "ProxySynthetix",
+    "ProxysUSD",
+    "ProxysETH",
+    "ProxysBTC",
+    "RewardEscrow",
+    "RewardsDistribution",
+    "Synthetix",
+    "SynthetixBridgeToBase",
+    "SynthetixDebtShare",
+    "SynthetixEscrow",
+    "SynthsUSD",
+    "SynthsETH",
+    "SynthsBTC",
+    "SystemSettings",
+    "SystemStatus",
+    "TokenStatesUSD",
+    "TokenStatesETH",
+    "TokenStatesBTC",
+    "TradingRewards",
+    "WrapperFactory",
+]
+
+from = "<%= settings.owner %>"
+func = "acceptOwnership"
+args = []
+
+depends = ["invoke.set_ownership"]
+
+[invoke.set_aggregator_snx]
+target = ["ExchangeRates"]
+
+from = "<%= settings.owner %>"
+func = "addAggregator"
+args = ["0x534e580000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_snx.contracts.aggregator.address %>"]
+
+depends = ["invoke.accept_ownership", "import.aggregator_snx"]
+
+[invoke.set_aggregator_eth]
+target = ["ExchangeRates"]
+
+from = "<%= settings.owner %>"
+func = "addAggregator"
+args = ["0x4554480000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
+
+depends = ["invoke.accept_ownership", "import.aggregator_eth"]
+
+[invoke.set_aggregator_btc]
+target = ["ExchangeRates"]
+
+from = "<%= settings.owner %>"
+func = "addAggregator"
+args = ["0x4254430000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_btc.contracts.aggregator.address %>"]
+
+depends = ["invoke.accept_ownership", "import.aggregator_btc"]
+
+[invoke.increase_snapshot_stale_time]
+target = ["SystemSettings"]
+
+from = "<%= settings.owner %>"
+func = "setDebtSnapshotStaleTime"
+args = ["2000000000"]
+
+depends = ["invoke.accept_ownership"]
+
+[invoke.increase_rate_stale_time]
+target = ["SystemSettings"]
+
+from = "<%= settings.owner %>"
+func = "setRateStalePeriod"
+args = ["2000000000"]
+
+depends = ["invoke.accept_ownership"]
+
+[invoke.snapshot]
+target = ["DebtCache"]
+
+func = "takeDebtSnapshot"
+
+depends = ["run.synthetix"]
+
+[invoke.test_user_snx]
+target = ["ProxySynthetix"]
+
+from = "<%= settings.owner %>"
+func = "transfer"
+args = ["<%= settings.test_user %>", "10000000000000000000000000"]
+
+depends = ["invoke.transfer_owner_snx"]
+
+[invoke.test_user_mint]
+target = ["Synthetix"]
+
+from = "<%= settings.test_user %>"
+func = "issueSynths"
+args = ["1000000000000000000000"]
+#args = ['1']
+
+depends = ["invoke.test_user_snx", "invoke.increase_snapshot_stale_time", "invoke.increase_rate_stale_time"]

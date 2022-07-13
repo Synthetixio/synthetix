@@ -24,18 +24,5 @@
 		"maxMarketValueUSD": "20000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "300000000"
-	},
-	{
-		"marketKey": "sLINK",
-		"asset": "sLINK",
-		"takerFee": "0.003",
-		"makerFee": "0.002",
-		"takerFeeNextPrice": "0.001",
-		"makerFeeNextPrice": "0.0",
-		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
-		"maxMarketValueUSD": "2000000",
-		"maxFundingRate": "0.1",
-		"skewScaleUSD": "300000000"
 	}
 ]
