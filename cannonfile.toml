@@ -1,5 +1,5 @@
 name = "synthetix"
-version = "2.73.1"
+version = "<%= package.version %>"
 description = "Infinite liquidity is here."
 
 # overrides the deployed contracts used by the deployer

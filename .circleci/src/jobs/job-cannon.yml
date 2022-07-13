@@ -1,21 +1,8 @@
 # Builds a testing chain which is used for integration tests and downstream projects
 {{> job-header-machine.yml}}
 steps:
-  # get foundry
-  - restore_cache:
-      keys:
-        - foundry3
   - rust/install: {}
-  - run: curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
-  - run: ./foundryup -r usecannon/foundry
-  - run: rm -rf *
-  - run: echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
-  - save_cache:
-      key: foundry3
-      paths:
-        - ~/.cargo
-        - ~/.foundry
-
+  - run: curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/foundryup && chmod +x ~/foundryup && ~/foundryup
   - checkout
   - attach_workspace:
       at: .
