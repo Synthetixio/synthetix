@@ -1127,9 +1127,6 @@ contract('Liquidator', accounts => {
 									await fastForward((await liquidator.liquidationDelay()) + 100);
 									await updateSNXPrice('1');
 								});
-								it('getFirstNonZeroEscrowIndex returns first entry as non zero', async () => {
-									assert.bnEqual(await synthetix.getFirstNonZeroEscrowIndex(alice), 0);
-								});
 								it('escrow balance is used for liquidation (partial)', async () => {
 									const debtBefore = await synthetix.debtBalanceOf(alice, sUSD);
 									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
@@ -1143,10 +1140,6 @@ contract('Liquidator', accounts => {
 									const debtAfter = await synthetix.debtBalanceOf(alice, sUSD);
 									// escrow is mostly removed
 									assert.bnLt(escrowAfter, escrowBefore.div(toBN(20)));
-									// first non zero entry is somewhere towards the end
-									const firstNonZero = await synthetix.getFirstNonZeroEscrowIndex(alice);
-									assert.bnGt(firstNonZero, toBN(95));
-									assert.bnLt(firstNonZero, toBN(100));
 
 									// check debt shares forgiven matching the liquidated SNX
 									// debt is fewer shares (but of higher debt per share), by (total - redeemed / total) more debt per share
@@ -1199,49 +1192,6 @@ contract('Liquidator', accounts => {
 									assert.bnClose(viewResult.debtToRemove, toUnit('75'), toUnit(0.01));
 									// check result of view after liquidation
 									assert.deepEqual(await liquidator.liquidationAmounts(alice, false), [0, 0, 0, 0]);
-								});
-								it('liquidateDelinquentAccountEscrowIndex reverts if index is too high and not enough is revoked', async () => {
-									await assert.revert(
-										synthetix.liquidateDelinquentAccountEscrowIndex(alice, 10, { from: bob }),
-										'entries sum less than target'
-									);
-								});
-								it('liquidateDelinquentAccountEscrowIndex revokes only after the index provided', async () => {
-									const debtBefore = await synthetix.debtBalanceOf(alice, sUSD);
-									const totalDebt = await synthetix.totalIssuedSynths(sUSD);
-									await synthetix.liquidateDelinquentAccountEscrowIndex(alice, 2, { from: bob });
-									// check first two entries
-									const firstEntryId = await rewardEscrowV2.accountVestingEntryIDs(alice, 0);
-									const secondEntryId = await rewardEscrowV2.accountVestingEntryIDs(alice, 1);
-									assert.bnEqual(
-										(await rewardEscrowV2.vestingSchedules(alice, firstEntryId)).escrowAmount,
-										toUnit(1)
-									);
-									assert.bnEqual(
-										(await rewardEscrowV2.vestingSchedules(alice, secondEntryId)).escrowAmount,
-										toUnit(1)
-									);
-									// check the rest of the amounts
-									// no liquid balance added
-									assert.bnEqual(await synthetix.balanceOf(alice), 0);
-									// system debt is the same
-									assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), totalDebt);
-									const escrowAfter = await rewardEscrowV2.balanceOf(alice);
-									const debtAfter = await synthetix.debtBalanceOf(alice, sUSD);
-									// escrow is mostly removed
-									assert.bnLt(escrowAfter, escrowBefore.div(toBN(20)));
-									// check debt shares forgiven matching the liquidated SNX
-									// debt is fewer shares (but of higher debt per share), by (total - redeemed / total) more debt per share
-									const redeemed = multiplyDecimal(
-										escrowBefore.sub(escrowAfter),
-										divideDecimal(toUnit('1'), toUnit('1.3'))
-									);
-									const shareMultiplier = divideDecimal(totalDebt, totalDebt.sub(redeemed));
-									assert.bnClose(
-										debtAfter,
-										multiplyDecimal(debtBefore.sub(redeemed), shareMultiplier),
-										toUnit(0.001)
-									);
 								});
 							});
 							describe('with some liquid and some escrowed', () => {

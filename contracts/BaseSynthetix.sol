@@ -161,23 +161,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
     }
 
-    /// the index of the first non zero RewardEscrowV2 entry for an account in order of iteration over accountVestingEntryIDs.
-    /// This is intended as a convenience off-chain view for liquidators to calculate the startIndex to pass
-    /// into liquidateDelinquentAccountEscrowIndex to save gas.
-    function getFirstNonZeroEscrowIndex(address account) external view returns (uint) {
-        uint numIds = rewardEscrowV2().numVestingEntries(account);
-        uint entryID;
-        VestingEntries.VestingEntry memory entry;
-        for (uint i = 0; i < numIds; i++) {
-            entryID = rewardEscrowV2().accountVestingEntryIDs(account, i);
-            entry = rewardEscrowV2().vestingSchedules(account, entryID);
-            if (entry.escrowAmount > 0) {
-                return i;
-            }
-        }
-        revert("all entries are zero");
-    }
-
     function _canTransfer(address account, uint value) internal view returns (bool) {
         if (issuer().debtBalanceOf(account, sUSD) > 0) {
             (uint transferable, bool anyRateIsInvalid) =
@@ -354,27 +337,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        return _liquidateDelinquentAccount(account, 0, messageSender);
-    }
-
-    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
-    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
+        return _liquidateDelinquentAccount(account, messageSender);
     }
 
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
-    function _liquidateDelinquentAccount(
-        address account,
-        uint escrowStartIndex,
-        address liquidatorAccount
-    ) internal returns (bool) {
+    function _liquidateDelinquentAccount(address account, address liquidatorAccount) internal returns (bool) {
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
         liquidatorRewards().getReward(account);
 
@@ -386,7 +354,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger
         // rewards that may need to be paid (so need to be transferrable, to avoid edge cases)
         if (escrowToLiquidate > 0) {
-            rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate, escrowStartIndex);
+            rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate);
         }
 
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
