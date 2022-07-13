@@ -128,14 +128,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
         // check zeros range short-circuit
         ZerosRange memory zeroRange = _zerosRanges[account];
-        uint _fallbackId = fallbackId; // memory fallbackId
 
-        // within this contract's range + within zeroed range
-        bool inZeroRangeThisContract = (entryId >= _fallbackId && entryId <= zeroRange.endId);
-        // within fallback range + within fallback zeroed range + fallback ids are monotonic (redundant)
-        bool inZeroRangeFallback =
-            (entryId < _fallbackId && zeroRange.fallbackMonotonic && entryId <= zeroRange.endIdFallback);
-        if (inZeroRangeThisContract || inZeroRangeFallback) {
+        if (_entryInZeroRange(entryId, zeroRange, fallbackId)) {
             entry.escrowAmount = 0;
         }
         return entry;
@@ -187,6 +181,19 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     }
 
     /* ========== INTERNAL VIEWS ========== */
+
+    function _entryInZeroRange(
+        uint entryId,
+        ZerosRange memory zeroRange,
+        uint _fallbackId
+    ) internal pure returns (bool) {
+        // within this contract's range + within zeroed range
+        bool inZeroRangeThisContract = (entryId >= _fallbackId && entryId <= zeroRange.endId);
+        // within fallback range + within fallback zeroed range + fallback ids are monotonic (redundant)
+        bool inZeroRangeFallback =
+            (entryId < _fallbackId && zeroRange.fallbackMonotonic && entryId <= zeroRange.endIdFallback);
+        return (inZeroRangeThisContract || inZeroRangeFallback);
+    }
 
     function _fallbackNumVestingEntries(address account) internal view returns (uint) {
         // cache is used here to prevent external calls during looping
@@ -474,7 +481,10 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint entryID;
         for (i = startIndex; i <= maxIndex; i++) {
             entryID = accountVestingEntryIDs(account, i);
-            entry = vestingSchedules(account, entryID);
+
+            // if we're looping over the entries, means that they fall out of zeros range
+            // checking ZeroRange for these entries can be skipped to save gas
+            entry = vestingSchedulesNoShortCircuit(account, entryID);
 
             // skip vested
             if (entry.escrowAmount > 0) {
