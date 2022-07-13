@@ -22,11 +22,7 @@ interface IRewardEscrowV2Storage {
     /// Mutative
     function setZeroAmount(address account, uint entryId) external;
 
-    function setZeroAmountUntilTarget(
-        address account,
-        uint startIndex,
-        uint targetAmount
-    )
+    function setZeroAmountUntilTarget(address account, uint targetAmount)
         external
         returns (
             uint total,
