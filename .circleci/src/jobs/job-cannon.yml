@@ -1,8 +1,11 @@
 # Builds a testing chain which is used for integration tests and downstream projects
 {{> job-header-machine.yml}}
 steps:
-  - rust/install: {}
-  - run: curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/foundryup && chmod +x ~/foundryup && ~/foundryup
+  - run: |
+      mkdir -p ~/.foundry/bin
+      curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
+      chmod +x ~/.foundry/foundryup
+      ~/.foundry/foundryup
   - checkout
   - attach_workspace:
       at: .

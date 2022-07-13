@@ -38,8 +38,11 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     steps:
-      - rust/install: {}
-      - run: curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/foundryup && chmod +x ~/foundryup && ~/foundryup
+      - run: |
+          mkdir -p ~/.foundry/bin
+          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
+          chmod +x ~/.foundry/foundryup
+          ~/.foundry/foundryup
       - checkout
       - attach_workspace:
           at: .
@@ -118,7 +121,11 @@ jobs:
       docker_layer_caching: true
     resource_class: large
     steps:
-      - run: curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/foundryup && chmod +x ~/foundryup && ~/foundryup
+      - run: |
+          mkdir -p ~/.foundry/bin
+          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
+          chmod +x ~/.foundry/foundryup
+          ~/.foundry/foundryup
       - checkout
       - attach_workspace:
           at: .
@@ -271,7 +278,11 @@ jobs:
       docker_layer_caching: true
     resource_class: large
     steps:
-      - run: curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/foundryup && chmod +x ~/foundryup && ~/foundryup
+      - run: |
+          mkdir -p ~/.foundry/bin
+          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
+          chmod +x ~/.foundry/foundryup
+          ~/.foundry/foundryup
       - checkout
       - attach_workspace:
           at: .
