@@ -7,10 +7,10 @@
 		"takerFeeNextPrice": "0.002",
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
+		"maxLeverage": "25",
 		"maxMarketValueUSD": "3000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
+		"skewScaleUSD": "300000000",
 		"paused": false
 	},
 	{
@@ -21,10 +21,10 @@
 		"takerFeeNextPrice": "0.002",
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
+		"maxLeverage": "25",
 		"maxMarketValueUSD": "25000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
+		"skewScaleUSD": "300000000",
 		"paused": false
 	},
 	{
@@ -35,10 +35,10 @@
 		"takerFeeNextPrice": "0.0025",
 		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
+		"maxLeverage": "25",
 		"maxMarketValueUSD": "3000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "20000000",
+		"skewScaleUSD": "300000000",
 		"paused": false
 	},
 	{
@@ -49,10 +49,10 @@
 		"takerFeeNextPrice": "0.003",
 		"makerFeeNextPrice": "0.003",
 		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
+		"maxLeverage": "25",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "20000000",
+		"skewScaleUSD": "50000000",
 		"paused": false
 	},
 	{
@@ -66,7 +66,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "20000000",
+		"skewScaleUSD": "50000000",
 		"paused": false
 	},
 	{
@@ -80,7 +80,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "20000000",
+		"skewScaleUSD": "50000000",
 		"paused": false
 	},
 	{
@@ -94,7 +94,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "20000000",
+		"skewScaleUSD": "50000000",
 		"paused": false
 	},
 	{
@@ -108,7 +108,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "20000000",
+		"skewScaleUSD": "50000000",
 		"paused": false
 	},
 	{
@@ -128,8 +128,8 @@
 	{
 		"marketKey": "sXAG",
 		"asset": "XAG",
-		"takerFee": "0.0015",
-		"makerFee": "0.0015",
+		"takerFee": "0.0025",
+		"makerFee": "0.0020",
 		"takerFeeNextPrice": "0.001",
 		"makerFeeNextPrice": "0.001",
 		"nextPriceConfirmWindow": "2",
