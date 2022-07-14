@@ -103,7 +103,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         // convert to previous data size format
         entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
         // read from fallback if this entryId was created in the old contract and wasn't written locally
-        // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
+        // this assumes that no new entries can be created with endTime = 0 (checked during addVestingEntry)
         if (entryId < firstNonFallbackId && entry.endTime == 0) {
             entry = fallbackRewardEscrow.vestingSchedules(account, entryId);
         }
@@ -178,7 +178,11 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         // update endTime from fallback if this is first time this entry is written in this contract
         if (storedEntry.endTime == 0) {
             // entry should be in fallback, otherwise it would have endTime or be uninitialized
-            storedEntry.endTime = uint32(fallbackRewardEscrow.vestingSchedules(account, entryId).endTime);
+            uint prevTime = fallbackRewardEscrow.vestingSchedules(account, entryId).endTime;
+            // Impossible edge-case: checking that prevTime is not zero (in which case the entry will be
+            // read from fallback again). A zero endTime with non-zero amount is not possible in the old contract
+            // but it's better to check just for completeness still, and write current timestamp (vestable).
+            storedEntry.endTime = uint32(prevTime != 0 ? prevTime : block.timestamp);
             // storedEntry.escrowAmount is already 0, since it's uninitialized
         } else {
             storedEntry.escrowAmount = 0;
