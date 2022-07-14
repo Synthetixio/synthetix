@@ -68,10 +68,12 @@ module.exports = {
 		mainnet: {
 			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
 			chainId: 1,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'mainnet-ovm': {
 			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
 			chainId: 10,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		goerli: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545',

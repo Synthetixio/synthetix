@@ -5,7 +5,7 @@ description = "Infinite liquidity is here."
 # overrides the deployed contracts used by the deployer
 # not to be confused with the cannon network
 [setting.network]
-defaultValue = "mainnet"
+defaultValue = "local"
 
 # contracts will be owned by the specified address (defaults to the first known test address)
 [setting.owner]

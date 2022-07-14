@@ -219,6 +219,7 @@ const deploy = async ({
 		skipFeedChecks,
 		feeds,
 		synths,
+		providerUrl,
 		useFork,
 		useOvm,
 		yes,

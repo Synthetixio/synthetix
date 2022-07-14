@@ -19,16 +19,19 @@ async function prepareDeploy(...args) {
 async function deployInstance({
 	addNewSynths,
 	buildPath,
-	freshDeploy = true,
+	freshDeploy,
 	generateSolidity = false,
 	ignoreCustomParameters = false,
-	network = 'local',
+	network,
 	skipFeedChecks = true,
 	useFork = false,
 	useOvm,
 	provider,
 }) {
-	const privateKey = (await hre.ethers.getSigners())[0].privateKey;
+	const signers = await hre.ethers.getSigners();
+	if (!signers.length) {
+		throw new Error(`cannon.js: no private key set for ${hre.network.name}`);
+	}
 
 	await commands.deploy({
 		addNewSynths,
@@ -38,7 +41,7 @@ async function deployInstance({
 		generateSolidity,
 		ignoreCustomParameters,
 		network,
-		privateKey,
+		privateKey: signers[0].privateKey,
 		skipFeedChecks,
 		useFork,
 		useOvm,
@@ -50,25 +53,36 @@ async function deployInstance({
 }
 
 async function deploy(runtime, networkVariant) {
-	const network = 'local';
-
-	if (networkVariant !== 'mainnet' && networkVariant !== 'optimism') {
+	if (
+		networkVariant !== 'local' &&
+		networkVariant !== 'local-ovm' &&
+		networkVariant !== hre.network.name
+	) {
 		throw new Error(
-			`invalid network specified "${networkVariant}". please use either "mainnet" or "optimism" to specify the network variant to deploy.`
+			`Wrong network: set to "${networkVariant}". It should be "${hre.network.name}".`
 		);
 	}
 
-	const useOvm = networkVariant === 'optimism';
+	let network = networkVariant;
+	let useOvm = false;
+	if (networkVariant.endsWith('-ovm')) {
+		useOvm = true;
+		network = networkVariant.slice(0, networkVariant.length - 4);
+	}
 	const buildPath = path.join(__dirname, '..', synthetix.constants.BUILD_FOLDER);
 
 	// prepare the synths but skip preparing releases (as this isn't a fork)
-	const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
+	const synthsToAdd = networkVariant.startsWith('local')
+		? [{ name: 'sREDEEMER', asset: 'USD' }]
+		: [];
 	// const synthsToAdd = [];
 	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 	await deployInstance({
 		addNewSynths: true,
 		buildPath,
 		useOvm,
+		network,
+		freshDeploy: networkVariant.startsWith('local'),
 		provider: runtime.provider,
 	});
 
