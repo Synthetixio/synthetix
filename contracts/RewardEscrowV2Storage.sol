@@ -20,40 +20,50 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     using SafeMath for uint;
     using SignedSafeMath for int;
 
-    // cheaper storage for L1
+    // cheaper storage for L1 compared to original struct, only used for storage
+    // original struct still used in interface for backwards compatibility
     struct StorageEntry {
         uint32 endTime;
         uint224 escrowAmount;
     }
 
-    // accounts => vesting entrees
+    /// INTERNAL storage
+
+    // accounts => vesting entries
     mapping(address => mapping(uint => StorageEntry)) internal _vestingSchedules;
 
     // accounts => entry ids
     mapping(address => uint[]) internal _accountVestingEntryIds;
 
     // accounts => cache of entry counts in fallback contract
+    // this as an int in order to be able to store ZERO_PLACEHOLDER to only cache once
     mapping(address => int) internal _fallbackCounts;
 
-    // Counter for new vesting entry ids.
-    uint public nextEntryId;
-
-    // An account's total escrow synthetix balance (still to vest)
-    // this as an int in order to be able to store ZERO_PLACEHOLDER
+    // account's total escrow SNX balance (still to vest)
+    // this as an int in order to be able to store ZERO_PLACEHOLDER to prevent reading stale values
     mapping(address => int) internal _totalEscrowedAccountBalance;
 
-    // An account's total vested rewards (vested already)
-    // this as an int in order to be able to store ZERO_PLACEHOLDER
+    // account's total vested rewards (vested already)
+    // this as an int in order to be able to store ZERO_PLACEHOLDER to prevent reading stale values
     mapping(address => int) internal _totalVestedAccountBalance;
 
     // The total remaining escrow balance of contract
     uint internal _totalEscrowedBalance;
 
+    /// PUBLIC storage
+
+    // Counter for new vesting entry ids.
+    uint public nextEntryId;
+
     // id starting from which the new entries are stored in this contact only (and don't need to be read from fallback)
-    uint public fallbackId;
+    uint public firstNonFallbackId;
 
     // -1 wei is a zero value placeholder in the read-through storage.
     // needed to prevent writing zeros and reading stale values (0 is used to mean uninitialized)
+    // The alternative of explicit flags introduces its own set problems of ensuring they are written and read
+    // correctly (in addition to the values themselves). It adds code complexity, and gas costs, which when optimized
+    // lead to added coupling between different variables and even more complexity and potential for mistakenly
+    // invalidating or not invalidating the cache.
     int internal constant ZERO_PLACEHOLDER = -1;
 
     // previous rewards escrow contract
@@ -74,7 +84,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
         fallbackRewardEscrow = _fallbackRewardEscrow;
         nextEntryId = _fallbackRewardEscrow.nextEntryId();
-        fallbackId = nextEntryId;
+        firstNonFallbackId = nextEntryId;
 
         // carry over previous balance tracking
         _totalEscrowedBalance = fallbackRewardEscrow.totalEscrowedBalance();
@@ -85,7 +95,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     function vestingSchedules(address account, uint entryId)
         public
         view
-        initialized
+        withFallback
         returns (VestingEntries.VestingEntry memory entry)
     {
         // read stored entry
@@ -94,16 +104,17 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
         // read from fallback if this entryId was created in the old contract and wasn't written locally
         // this assumes that no new entries can be created with endTime = 0 (kinda defeats the purpose of vesting)
-        if (entryId < fallbackId && entry.endTime == 0) {
+        if (entryId < firstNonFallbackId && entry.endTime == 0) {
             entry = fallbackRewardEscrow.vestingSchedules(account, entryId);
         }
         return entry;
     }
 
-    function accountVestingEntryIDs(address account, uint index) public view initialized returns (uint) {
+    function accountVestingEntryIDs(address account, uint index) public view withFallback returns (uint) {
         uint fallbackCount = _fallbackNumVestingEntries(account);
 
         // this assumes no new entries can be created in the old contract
+        // any added entries in the old contract after this value is cached will be ignored
         if (index < fallbackCount) {
             return fallbackRewardEscrow.accountVestingEntryIDs(account, index);
         } else {
@@ -111,11 +122,11 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
     }
 
-    function totalEscrowedBalance() public view returns (uint) {
+    function totalEscrowedBalance() public view withFallback returns (uint) {
         return _totalEscrowedBalance;
     }
 
-    function totalEscrowedAccountBalance(address account) public view initialized returns (uint) {
+    function totalEscrowedAccountBalance(address account) public view withFallback returns (uint) {
         // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
         int v = _totalEscrowedAccountBalance[account];
 
@@ -123,11 +134,11 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         if (v == 0) {
             return fallbackRewardEscrow.totalEscrowedAccountBalance(account);
         } else {
-            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
+            return uint(_readWithZeroPlaceholder(v));
         }
     }
 
-    function totalVestedAccountBalance(address account) public view initialized returns (uint) {
+    function totalVestedAccountBalance(address account) public view withFallback returns (uint) {
         // this as an int in order to be able to store ZERO_PLACEHOLDER which is -1
         int v = _totalVestedAccountBalance[account];
 
@@ -135,12 +146,12 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         if (v == 0) {
             return fallbackRewardEscrow.totalVestedAccountBalance(account);
         } else {
-            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
+            return uint(_readWithZeroPlaceholder(v));
         }
     }
 
     /// The number of vesting dates in an account's schedule.
-    function numVestingEntries(address account) public view initialized returns (uint) {
+    function numVestingEntries(address account) public view withFallback returns (uint) {
         /// assumes no enties can be written in frozen contract
         return _fallbackNumVestingEntries(account) + _accountVestingEntryIds[account].length;
     }
@@ -148,20 +159,20 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /* ========== INTERNAL VIEWS ========== */
 
     function _fallbackNumVestingEntries(address account) internal view returns (uint) {
-        // cache is used here to prevent external calls during setZeroAmountUntilTarget loop
+        // cache is used here to prevent external calls during looping
         int v = _fallbackCounts[account];
         if (v == 0) {
             // uninitialized
             return fallbackRewardEscrow.numVestingEntries(account);
         } else {
-            return v == ZERO_PLACEHOLDER ? 0 : uint(v);
+            return uint(_readWithZeroPlaceholder(v));
         }
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /// zeros out a single entry
-    function setZeroAmount(address account, uint entryId) public initialized onlyAssociatedContract {
+    function setZeroAmount(address account, uint entryId) public withFallback onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
         // update endTime from fallback if this is first time this entry is written in this contract
@@ -187,7 +198,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         uint targetAmount
     )
         external
-        initialized
+        withFallback
         onlyAssociatedContract
         returns (
             uint total,
@@ -227,38 +238,30 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return (total, i, entry.endTime);
     }
 
-    function updateEscrowAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
+    function updateEscrowAccountBalance(address account, int delta) external withFallback onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalEscrowedAccountBalance(account)).add(delta);
         require(total >= 0, "updateEscrowAccountBalance: balance must be positive");
-        if (total == 0) {
-            // zero value must never be written, because it is used to signal uninitialized
-            // writing an actual 0 will result in stale value being read from fallback
-            _totalEscrowedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
-        } else {
-            _totalEscrowedAccountBalance[account] = total;
-        }
+        // zero value must never be written, because it is used to signal uninitialized
+        //  writing an actual 0 will result in stale value being read from fallback
+        _totalEscrowedAccountBalance[account] = _writeWithZeroPlaceholder(total);
 
         // update the global total
         updateTotalEscrowedBalance(delta);
     }
 
-    function updateVestedAccountBalance(address account, int delta) external initialized onlyAssociatedContract {
+    function updateVestedAccountBalance(address account, int delta) external withFallback onlyAssociatedContract {
         // add / subtract to previous balance
         int total = int(totalVestedAccountBalance(account)).add(delta);
         require(total >= 0, "updateVestedAccountBalance: balance must be positive");
-        if (total == 0) {
-            // zero value must never be written, because it is used to signal uninitialized
-            //  writing an actual 0 will result in stale value being read from fallback
-            _totalVestedAccountBalance[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
-        } else {
-            _totalVestedAccountBalance[account] = total;
-        }
+        // zero value must never be written, because it is used to signal uninitialized
+        //  writing an actual 0 will result in stale value being read from fallback
+        _totalVestedAccountBalance[account] = _writeWithZeroPlaceholder(total);
     }
 
     /// this method is unused in contracts (because updateEscrowAccountBalance uses it), but it is here
     /// for completeness, in case a fix to one of these values is needed (but not the other)
-    function updateTotalEscrowedBalance(int delta) public initialized onlyAssociatedContract {
+    function updateTotalEscrowedBalance(int delta) public withFallback onlyAssociatedContract {
         int total = int(totalEscrowedBalance()).add(delta);
         require(total >= 0, "updateTotalEscrowedBalance: balance must be positive");
         _totalEscrowedBalance = uint(total);
@@ -267,7 +270,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /// append entry for an account
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry)
         external
-        initialized
+        withFallback
         onlyAssociatedContract
         returns (uint)
     {
@@ -292,25 +295,31 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== INTERNAL ========== */
 
+    function _writeWithZeroPlaceholder(int v) internal pure returns (int) {
+        // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
+        return v == 0 ? ZERO_PLACEHOLDER : v;
+    }
+
+    function _readWithZeroPlaceholder(int v) internal pure returns (int) {
+        // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
+        return v == ZERO_PLACEHOLDER ? 0 : v;
+    }
+
+    /// this caching is done to prevent repeatedly calling the old contract for number of entries
+    /// during looping
     function _cacheFallbackIDCount(address account) internal {
         int fallbackCount = _fallbackCounts[account];
         if (fallbackCount == 0) {
             fallbackCount = int(fallbackRewardEscrow.numVestingEntries(account));
             // cache the value but don't write zero
-            if (fallbackCount == 0) {
-                // zero value should not be written, because it is used to signal uninitialized
-                // writing an actual 0 will result repeatedly querying fallback
-                _fallbackCounts[account] = ZERO_PLACEHOLDER; // place holder value to prevent writing 0
-            } else {
-                _fallbackCounts[account] = fallbackCount; // finite and small so doesn't require SafeCast
-            }
+            _fallbackCounts[account] = _writeWithZeroPlaceholder(fallbackCount);
         }
     }
 
     /* ========== Modifier ========== */
 
-    modifier initialized() {
-        require(address(fallbackRewardEscrow) != address(0), "not initialized");
+    modifier withFallback() {
+        require(address(fallbackRewardEscrow) != address(0), "fallback not set");
         _;
     }
 }

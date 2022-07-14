@@ -100,13 +100,12 @@ contract('RewardEscrowV2Storage', async accounts => {
 				assert.equal(await instance.fallbackRewardEscrow(), ZERO_ADDRESS);
 				assert.equal(await instance.associatedContract(), writeAccount);
 				assert.bnEqual(await instance.nextEntryId(), 0);
-				assert.bnEqual(await instance.fallbackId(), 0);
-				// only on unvested entry
-				assert.bnEqual(await instance.totalEscrowedBalance(), 0);
+				assert.bnEqual(await instance.firstNonFallbackId(), 0);
 			});
 
-			it('should revert for view methods relying on fallback contract', async () => {
-				const revertMsg = 'not initialized';
+			it('should revert for view methods relying on fallback contract being initialized', async () => {
+				const revertMsg = 'fallback not set';
+				await assert.revert(instance.totalEscrowedBalance(), revertMsg);
 				await assert.revert(instance.numVestingEntries(user1), revertMsg);
 				await assert.revert(instance.totalEscrowedAccountBalance(user1), revertMsg);
 				await assert.revert(instance.totalVestedAccountBalance(user1), revertMsg);
@@ -125,7 +124,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 				assert.equal(await instance.fallbackRewardEscrow(), frozenRewardEscrowV2.address);
 				assert.equal(await instance.associatedContract(), writeAccount);
 				assert.bnEqual(await instance.nextEntryId(), firstNonFallbackId);
-				assert.bnEqual(await instance.fallbackId(), firstNonFallbackId);
+				assert.bnEqual(await instance.firstNonFallbackId(), firstNonFallbackId);
 				// only on unvested entry
 				assert.bnEqual(
 					await instance.totalEscrowedBalance(),
@@ -179,7 +178,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 
 	describe('mutative methods access', async () => {
 		it('should revert when not initialized with fallback', async () => {
-			const revertMsg = 'not initialized';
+			const revertMsg = 'fallback not set';
 			await assert.revert(instance.setZeroAmount(user1, 1, { from: owner }), revertMsg);
 			await assert.revert(
 				instance.setZeroAmountUntilTarget(user1, 0, 0, { from: owner }),
