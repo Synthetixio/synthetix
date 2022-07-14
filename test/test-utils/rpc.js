@@ -1,6 +1,14 @@
 async function fastForward({ seconds, provider }) {
 	await provider.send('evm_increaseTime', [seconds]);
-	await provider.send('evm_mine', []);
+
+	// anvil has a slightly different format for `evm_mine` annoyingly, so
+	// we have to fallback here
+	try {
+		await provider.send('evm_mine', [{}]);
+	} catch (err) {
+		// backup
+		await provider.send('evm_mine', []);
+	}
 }
 
 async function dummyTx({ wallet, gasPrice = 0, gasLimit = 8000000 }) {
