@@ -197,15 +197,6 @@
 	"SynthsLINK": {
 		"deploy": false
 	},
-	"TokenStatesDEFI": {
-		"deploy": false
-	},
-	"ProxysDEFI": {
-		"deploy": false
-	},
-	"SynthsDEFI": {
-		"deploy": false
-	},
 	"TradingRewards": {
 		"deploy": false
 	},
@@ -273,6 +264,9 @@
 		"deploy": false
 	},
 	"LiquidatorRewards": {
+		"deploy": false
+	},
+	"OneNetAggregatorsDEFI": {
 		"deploy": false
 	}
 }

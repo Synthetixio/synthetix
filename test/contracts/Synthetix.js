@@ -30,6 +30,7 @@ contract('Synthetix', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
+		synthetixProxy,
 		exchangeRates,
 		debtCache,
 		supplySchedule,
@@ -43,6 +44,7 @@ contract('Synthetix', async accounts => {
 	before(async () => {
 		({
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			DebtCache: debtCache,
@@ -71,6 +73,9 @@ contract('Synthetix', async accounts => {
 				'RewardEscrow',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetixProxy = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH]);
 	});
@@ -337,7 +342,7 @@ contract('Synthetix', async accounts => {
 		let rewardEscrowBalanceBefore;
 		beforeEach(async () => {
 			// transfer SNX to rewardEscrow
-			await synthetix.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
+			await synthetixProxy.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
 
 			rewardEscrowBalanceBefore = await synthetix.balanceOf(rewardEscrow.address);
 		});

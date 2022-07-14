@@ -43,6 +43,7 @@ contract('Liquidator', accounts => {
 		liquidator,
 		liquidatorRewards,
 		synthetix,
+		synthetixProxy,
 		synthetixDebtShare,
 		systemSettings,
 		systemStatus,
@@ -58,6 +59,7 @@ contract('Liquidator', accounts => {
 			Liquidator: liquidator,
 			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
+			ProxyERC20Synthetix: synthetixProxy,
 			SynthetixDebtShare: synthetixDebtShare,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
@@ -83,6 +85,9 @@ contract('Liquidator', accounts => {
 				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -900,6 +905,11 @@ contract('Liquidator', accounts => {
 										penalty = toUnit('0.3');
 										await systemSettings.setLiquidationPenalty(penalty, { from: owner });
 
+										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on SNX liquidations.)
+										await systemSettings.setLiquidationPenalty(toUnit('0.2'), {
+											from: owner,
+										});
+
 										// Record Alices state
 										aliceCollateralBefore = await synthetix.collateral(alice);
 										aliceDebtShareBefore = await synthetixDebtShare.balanceOf(alice);
@@ -1067,12 +1077,8 @@ contract('Liquidator', accounts => {
 							from: bob,
 						});
 					});
-					it('then David should have 0 collateral', async () => {
-						assert.bnEqual(await synthetix.collateral(david), toUnit('0'));
-					});
-					it('then David should have a collateral ratio of 0', async () => {
-						const davidCRatioAfter = await synthetix.collateralisationRatio(david);
-						assert.bnEqual(davidCRatioAfter, 0);
+					it('then David should have 0 transferable collateral', async () => {
+						assert.bnEqual(await synthetix.balanceOf(david), toUnit('0'));
 					});
 					it('then David should still have debt owing', async () => {
 						const davidDebt = await synthetixDebtShare.balanceOf(david);
