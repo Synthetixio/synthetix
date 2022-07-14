@@ -2,8 +2,10 @@
 
 const { artifacts, web3, log } = require('hardhat');
 
-const { toWei } = web3.utils;
+const { toWei, toBN } = web3.utils;
 const { toUnit } = require('../utils')();
+const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
+
 const {
 	toBytes32,
 	getUsers,
@@ -16,10 +18,21 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
+		LIQUIDATION_ESCROW_DURATION,
 		LIQUIDATION_PENALTY,
+		SNX_LIQUIDATION_PENALTY,
+		SELF_LIQUIDATION_PENALTY,
+		FLAG_REWARD,
+		LIQUIDATE_REWARD,
 		RATE_STALE_PERIOD,
+		// EXCHANGE_DYNAMIC_FEE_THRESHOLD, // overridden
+		// EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, // overridden
+		// EXCHANGE_DYNAMIC_FEE_ROUNDS, // overridden
+		// EXCHANGE_MAX_DYNAMIC_FEE, // overridden
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
+		ATOMIC_MAX_VOLUME_PER_BLOCK,
+		ATOMIC_TWAP_WINDOW,
 		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
@@ -27,10 +40,23 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
+		// FUTURES_MIN_KEEPER_FEE, // overridden
+		FUTURES_LIQUIDATION_FEE_RATIO,
+		FUTURES_LIQUIDATION_BUFFER_RATIO,
+		FUTURES_MIN_INITIAL_MARGIN,
 	},
 } = require('../../');
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
+
+// constants overrides for testing (to avoid having to update tests for config changes)
+const constantsOverrides = {
+	EXCHANGE_DYNAMIC_FEE_ROUNDS: '10',
+	EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY: toWei('0.95'),
+	EXCHANGE_DYNAMIC_FEE_THRESHOLD: toWei('0.004'),
+	EXCHANGE_MAX_DYNAMIC_FEE: toWei('0.05'),
+	FUTURES_MIN_KEEPER_FEE: toWei('20'),
+};
 
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
@@ -78,7 +104,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	const abiEntryForFnc = artifacts.require(mock).abi.find(({ name }) => name === fncName);
 
 	if (!fncName || !abiEntryForFnc) {
-		throw Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
+		throw new Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
 	}
 	const signature = web3.eth.abi.encodeFunctionSignature(abiEntryForFnc);
 
@@ -107,7 +133,7 @@ const setupContract = async ({
 	skipPostDeploy = false,
 	properties = {},
 }) => {
-	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
+	const [deployerAccount, owner, , fundsWallet] = accounts;
 
 	const artifact = artifacts.require(source || contract);
 
@@ -121,7 +147,16 @@ const setupContract = async ({
 
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
-		await artifact.link(await artifacts.require('SafeDecimalMath').new());
+		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
+		if (artifact._json.contractName === 'SystemSettings') {
+			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
+			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
+			SystemSettingsLib.link(safeDecimalMath);
+			artifact.link(await SystemSettingsLib.new());
+		} else {
+			// SafeDecimalMath -> anything else that expects linking
+			artifact.link(safeDecimalMath);
+		}
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -139,31 +174,34 @@ const setupContract = async ({
 		}
 	};
 
+	const perpSuffix = tryGetProperty({ property: 'perpSuffix', otherwise: '' });
+
 	const defaultArgs = {
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
+		OneNetAggregatorIssuedSynths: [tryGetAddressOf('AddressResolver')],
+		OneNetAggregatorDebtRatio: [tryGetAddressOf('AddressResolver')],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
-		ExchangeRates: [
-			owner,
-			oracle,
-			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')],
-			[toWei('0.2', 'ether')],
-		],
+		ExchangeRates: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeRatesWithDexPricing: [owner, tryGetAddressOf('AddressResolver')],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
 		ProxyERC20: [owner],
+		ProxySynthetix: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		SynthUtil: [tryGetAddressOf('AddressResolver')],
 		DappMaintenance: [owner],
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
+		SynthetixDebtShare: [owner, tryGetAddressOf('AddressResolver')],
 		BaseSynthetix: [
 			tryGetAddressOf('ProxyERC20BaseSynthetix'),
 			tryGetAddressOf('TokenStateBaseSynthetix'),
@@ -205,7 +243,6 @@ const setupContract = async ({
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
-		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
 			tryGetAddressOf('ProxyERC20Synth'),
@@ -220,7 +257,8 @@ const setupContract = async ({
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
-		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
+		Liquidator: [owner, tryGetAddressOf('AddressResolver')],
+		LiquidatorRewards: [owner, tryGetAddressOf('AddressResolver')],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -237,7 +275,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sUSD'),
-			toUnit(1.2),
+			toUnit(1.3),
 			toUnit(100),
 		],
 		CollateralEth: [
@@ -258,6 +296,31 @@ const setupContract = async ({
 		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
+		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesMarketBTC: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC' + perpSuffix), // market key
+		],
+		FuturesMarketETH: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'), // base asset
+			toBytes32('sETH' + perpSuffix), // market key
+		],
+		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
+		// perps v2
+		PerpsV2Settings: [owner, tryGetAddressOf('AddressResolver')],
+		PerpsV2MarketpBTC: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('BTC'), // base asset
+			toBytes32('pBTC'), // market key
+		],
+		PerpsV2MarketpETH: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('ETH'), // base asset
+			toBytes32('pETH'), // market key
+		],
 	};
 
 	let instance;
@@ -276,24 +339,12 @@ const setupContract = async ({
 			);
 		}
 	} catch (err) {
-		throw Error(
+		throw new Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
 	}
 
 	const postDeployTasks = {
-		async Issuer() {
-			await Promise.all(
-				[].concat(
-					// Synthetix State is where the issuance data lives so it needs to be connected to Issuer
-					tryInvocationIfNotMocked({
-						name: 'SynthetixState',
-						fncName: 'setAssociatedContract',
-						args: [instance.address],
-					}) || []
-				)
-			);
-		},
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
 			// the constructor args)
@@ -444,13 +495,6 @@ const setupContract = async ({
 					)
 					.concat(
 						tryInvocationIfNotMocked({
-							name: 'FeePoolState',
-							fncName: 'setFeePool',
-							args: [instance.address],
-						}) || []
-					)
-					.concat(
-						tryInvocationIfNotMocked({
 							name: 'FeePoolEternalStorage',
 							fncName: 'setAssociatedContract',
 							args: [instance.address],
@@ -465,17 +509,39 @@ const setupContract = async ({
 					)
 			);
 		},
+		async Issuer() {
+			await Promise.all([
+				cache['SystemStatus'].updateAccessControl(
+					toBytes32('Issuance'),
+					instance.address,
+					true,
+					false,
+					{ from: owner }
+				),
+			]);
+		},
 		async DelegateApprovals() {
 			await cache['EternalStorageDelegateApprovals'].setAssociatedContract(instance.address, {
 				from: owner,
 			});
 		},
-		async Liquidations() {
-			await cache['EternalStorageLiquidations'].setAssociatedContract(instance.address, {
-				from: owner,
-			});
-		},
 		async Exchanger() {
+			await Promise.all([
+				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
+			]);
+		},
+		async ExchangeCircuitBreaker() {
+			await Promise.all([
+				cache['SystemStatus'].updateAccessControl(
+					toBytes32('Synth'),
+					instance.address,
+					true,
+					false,
+					{ from: owner }
+				),
+			]);
+		},
+		async ExchangerWithFeeRecAlternatives() {
 			await Promise.all([
 				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
 
@@ -498,14 +564,33 @@ const setupContract = async ({
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
 			await instance.updateAccessControls(
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[owner, owner, owner, owner, owner],
-				[true, true, true, true, true],
-				[true, true, true, true, true],
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth', 'Futures'].map(toBytes32),
+				[owner, owner, owner, owner, owner, owner],
+				[true, true, true, true, true, true],
+				[true, true, true, true, true, true],
 				{ from: owner }
 			);
 		},
-
+		async FuturesMarketBTC() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
+		async FuturesMarketETH() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
+		async PerpsV2MarketpBTC() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
+		async PerpsV2MarketpETH() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
@@ -543,6 +628,15 @@ const setupContract = async ({
 						returns: [toWei('0.0030')],
 					}),
 				]);
+			} else if (mock === 'Issuer') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'debtBalanceOf',
+						returns: [toWei('0')],
+					}),
+				]);
 			} else if (mock === 'ExchangeState') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -567,6 +661,24 @@ const setupContract = async ({
 						returns: [false],
 					}),
 				]);
+			} else if (mock === 'FuturesMarketManager') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'totalDebt',
+						returns: ['0', false],
+					}),
+				]);
+			} else if (mock === 'FuturesMarket') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'recomputeFunding',
+						returns: ['0'],
+					}),
+				]);
 			}
 		},
 	};
@@ -585,6 +697,7 @@ const setupAllContracts = async ({
 	mocks = {},
 	contracts = [],
 	synths = [],
+	feeds = [],
 }) => {
 	const [, owner] = accounts;
 
@@ -595,8 +708,18 @@ const setupAllContracts = async ({
 	// BASE CONTRACTS
 
 	// Note: those with deps need to be listed AFTER their deps
+	// Note: deps are based on the contract's resolver name, allowing different contracts to be used
+	// for the same dependency (e.g. in l1/l2 configurations)
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
+		{
+			contract: 'OneNetAggregatorIssuedSynths',
+			resolverAlias: 'ext:AggregatorIssuedSynths',
+		},
+		{
+			contract: 'OneNetAggregatorDebtRatio',
+			resolverAlias: 'ext:AggregatorDebtRatio',
+		},
 		{ contract: 'SystemStatus' },
 		{ contract: 'ExchangeState' },
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
@@ -607,9 +730,9 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['Exchanger'],
+			mocks: ['ExchangeCircuitBreaker'],
 		},
-		{ contract: 'SynthetixState' },
+		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
@@ -641,11 +764,14 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
-		{ contract: 'FeePoolState', mocks: ['FeePool'] },
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
-		{ contract: 'EternalStorage', forContract: 'Liquidations' },
-		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
+		{ contract: 'EternalStorage', forContract: 'Liquidator' },
+		{ contract: 'Liquidator', deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage'] },
+		{
+			contract: 'LiquidatorRewards',
+			deps: ['AddressResolver', 'Liquidator', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
+		},
 		{
 			contract: 'RewardsDistribution',
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
@@ -676,7 +802,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -684,7 +810,6 @@ const setupAllContracts = async ({
 			mocks: [
 				'CollateralManager',
 				'Synthetix',
-				'SynthetixState',
 				'Exchanger',
 				'FeePool',
 				'DelegateApprovals',
@@ -693,11 +818,43 @@ const setupAllContracts = async ({
 				'EtherWrapper',
 				'SynthRedeemer',
 			],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
+			deps: [
+				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorDebtRatio',
+				'AddressResolver',
+				'SystemStatus',
+				'FlexibleStorage',
+				'DebtCache',
+				'SynthetixDebtShare',
+			],
+		},
+		{
+			contract: 'ExchangeCircuitBreaker',
+			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
+			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
 		},
 		{
 			contract: 'Exchanger',
-			source: 'ExchangerWithVirtualSynth',
+			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
+			deps: [
+				'AddressResolver',
+				'TradingRewards',
+				'SystemStatus',
+				'ExchangeRates',
+				'ExchangeState',
+				'FlexibleStorage',
+				'DebtCache',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'ExchangeRatesWithDexPricing',
+			resolverAlias: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
+		{
+			contract: 'ExchangerWithFeeRecAlternatives',
+			resolverAlias: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [
 				'AddressResolver',
@@ -707,6 +864,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{
@@ -723,49 +881,35 @@ const setupAllContracts = async ({
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
-				'Liquidations',
+				'Liquidator',
+				'LiquidatorRewards',
 			],
-			deps: [
-				'Issuer',
-				'SynthetixState',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-				'ExchangeRates',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'BaseSynthetix',
+			resolverAlias: 'Synthetix',
 			mocks: [
 				'Exchanger',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
-				'Liquidations',
+				'Liquidator',
+				'LiquidatorRewards',
 			],
-			deps: [
-				'Issuer',
-				'SynthetixState',
-				'Proxy',
-				'ProxyERC20',
-				'AddressResolver',
-				'TokenState',
-				'SystemStatus',
-				'ExchangeRates',
-			],
+			deps: ['Issuer', 'Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState', 'SystemStatus'],
 		},
 		{
 			contract: 'MintableSynthetix',
+			resolverAlias: 'Synthetix',
 			mocks: [
 				'Exchanger',
 				'SynthetixEscrow',
-				'Liquidations',
+				'Liquidator',
+				'LiquidatorRewards',
 				'Issuer',
 				'SystemStatus',
-				'ExchangeRates',
 				'SynthetixBridgeToBase',
 			],
 			deps: [
@@ -775,7 +919,6 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
-				'SynthetixState',
 			],
 		},
 		{
@@ -783,6 +926,7 @@ const setupAllContracts = async ({
 			mocks: [
 				'ext:Messenger',
 				'ovm:SynthetixBridgeToBase',
+				'FeePool',
 				'SynthetixBridgeEscrow',
 				'RewardsDistribution',
 			],
@@ -790,7 +934,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
-			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'],
+			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'FeePool', 'RewardEscrowV2'],
 			deps: ['AddressResolver', 'Synthetix'],
 		},
 		{
@@ -805,7 +949,6 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'Exchanger',
 				'Issuer',
-				'SynthetixState',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'DelegateApprovals',
@@ -814,9 +957,17 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'CollateralManager',
 				'EtherWrapper',
+				'FuturesMarketManager',
 				'WrapperFactory',
+				'SynthetixBridgeToOptimism',
 			],
-			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
+			deps: [
+				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorDebtRatio',
+				'SystemStatus',
+				'SynthetixDebtShare',
+				'AddressResolver',
+			],
 		},
 		{
 			contract: 'CollateralState',
@@ -854,7 +1005,93 @@ const setupAllContracts = async ({
 			contract: 'CollateralShort',
 			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
+		{
+			contract: 'FuturesMarketManager',
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
+		},
+		{
+			contract: 'FuturesMarketSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		// perps v1 - "futures"
+		{
+			contract: 'FuturesMarketBTC',
+			source: 'TestableFuturesMarket',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'SystemStatus',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'FuturesMarketETH',
+			source: 'TestableFuturesMarket',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
+
+		// perps v2
+		{
+			contract: 'PerpsV2Settings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'PerpsV2MarketpBTC',
+			source: 'TestablePerpsV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'PerpsV2Settings',
+				'SystemStatus',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'PerpsV2MarketpETH',
+			source: 'TestablePerpsV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
 	];
+
+	// check contract list for contracts with the same address resolver name
+	const checkConflictsInDeclaredContracts = ({ contractList }) => {
+		// { resolverName: [contract1, contract2, ...], ... }
+		const resolverNameToContracts = baseContracts
+			.filter(({ contract }) => contractList.includes(contract))
+			.filter(({ forContract }) => !forContract) // ignore proxies
+			.map(({ contract, resolverAlias }) => [contract, resolverAlias || contract])
+			.reduce((memo, [name, resolverName]) => {
+				memo[resolverName] = [].concat(memo[resolverName] || [], name);
+				return memo;
+			}, {});
+		// [[resolverName, [contract1, contract2, ...]]]
+		const conflicts = Object.entries(resolverNameToContracts).filter(
+			([resolverName, contracts]) => contracts.length > 1
+		);
+
+		if (conflicts.length) {
+			const errorStr = conflicts.map(
+				([resolverName, contracts]) => `[${contracts.join(',')}] conflict for ${resolverName}`
+			);
+
+			throw new Error(`Conflicting contracts declared in setup: ${errorStr}`);
+		}
+	};
 
 	// get deduped list of all required base contracts
 	const findAllAssociatedContracts = ({ contractList }) => {
@@ -874,6 +1111,15 @@ const setupAllContracts = async ({
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
 	const contractNamesRequested = contracts.map(contract => contract.contract || contract);
 
+	// ensure user didn't specify conflicting contracts
+	checkConflictsInDeclaredContracts({ contractList: contractNamesRequested });
+
+	// get list of resolver aliases from declared contracts
+	const namesResolvedThroughAlias = contractNamesRequested
+		.map(contractName => baseContracts.find(({ contract }) => contract === contractName))
+		.map(({ resolverAlias }) => resolverAlias)
+		.filter(resolverAlias => !!resolverAlias);
+
 	// now go through all contracts and compile a list of them and all nested dependencies
 	const contractsRequired = findAllAssociatedContracts({ contractList: contractNamesRequested });
 
@@ -881,15 +1127,17 @@ const setupAllContracts = async ({
 	const contractsToFetch = baseContracts.filter(
 		({ contract, forContract }) =>
 			// keep if contract is required
-			contractsRequired.indexOf(contract) > -1 &&
+			contractsRequired.includes(contract) &&
+			// ignore if contract has been aliased
+			!namesResolvedThroughAlias.includes(contract) &&
 			// and either there is no "forContract" or the forContract is itself required
-			(!forContract || contractsRequired.indexOf(forContract) > -1) &&
+			(!forContract || contractsRequired.includes(forContract)) &&
 			// and no entry in the existingContracts object
 			!(contract in existing)
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, source, mocks = [], forContract } of contractsToFetch) {
+	for (const { contract, source, resolverAlias, mocks = [], forContract } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		// for all mocks required for this contract
@@ -912,12 +1160,10 @@ const setupAllContracts = async ({
 		// (e.g. Proxy + FeePool)
 		const forContractName = forContract || '';
 
+		// some contracts should be registered to the address resolver with a different name
+		const contractRegistered = resolverAlias || contract;
+
 		// deploy the contract
-		// HACK: if MintableSynthetix is deployed then rename it
-		let contractRegistered = contract;
-		if (contract === 'MintableSynthetix' || contract === 'BaseSynthetix') {
-			contractRegistered = 'Synthetix';
-		}
 		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
@@ -1028,8 +1274,45 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationRatio(LIQUIDATION_RATIO, { from: owner }),
-			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, { from: owner }),
+			returnObj['SystemSettings'].setLiquidationEscrowDuration(LIQUIDATION_ESCROW_DURATION, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setSnxLiquidationPenalty(SNX_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setFlagReward(FLAG_REWARD, { from: owner }),
+			returnObj['SystemSettings'].setLiquidateReward(LIQUIDATE_REWARD, { from: owner }),
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
+			returnObj['SystemSettings'].setExchangeDynamicFeeThreshold(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_THRESHOLD,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeWeightDecay(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeDynamicFeeRounds(
+				constantsOverrides.EXCHANGE_DYNAMIC_FEE_ROUNDS,
+				{
+					from: owner,
+				}
+			),
+			returnObj['SystemSettings'].setExchangeMaxDynamicFee(
+				constantsOverrides.EXCHANGE_MAX_DYNAMIC_FEE,
+				{
+					from: owner,
+				}
+			),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
 				from: owner,
@@ -1043,15 +1326,132 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
+			returnObj['SystemSettings'].setAtomicMaxVolumePerBlock(ATOMIC_MAX_VOLUME_PER_BLOCK, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setAtomicTwapWindow(ATOMIC_TWAP_WINDOW, {
+				from: owner,
+			}),
 		]);
+
+		// legacy futures
+		if (returnObj['FuturesMarketSettings']) {
+			const promises = [
+				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['FuturesMarketSettings'].setMinKeeperFee(
+					constantsOverrides.FUTURES_MIN_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
+				returnObj['FuturesMarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+					from: owner,
+				}),
+				returnObj['FuturesMarketSettings'].setLiquidationBufferRatio(
+					FUTURES_LIQUIDATION_BUFFER_RATIO,
+					{
+						from: owner,
+					}
+				),
+			];
+
+			// TODO: fetch settings per-market programmatically
+			const setupFuturesMarket = async market => {
+				const assetKey = await market.baseAsset();
+				const marketKey = await market.marketKey();
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await Promise.all([
+					returnObj['FuturesMarketSettings'].setParameters(
+						marketKey,
+						toWei('0.003'), // 0.3% taker fee
+						toWei('0.001'), // 0.1% maker fee
+						toWei('0.0005'), // 0.05% taker fee next price
+						toWei('0.0001'), // 0.01% maker fee next price
+						toBN('2'), // 2 rounds next price confirm window
+						toWei('10'), // 10x max leverage
+						toWei('100000'), // 100000 max market debt
+						toWei('0.1'), // 10% max funding rate
+						toWei('100000'), // 100000 USD skewScaleUSD
+						{ from: owner }
+					),
+				]);
+			};
+
+			if (returnObj['FuturesMarketBTC']) {
+				promises.push(setupFuturesMarket(returnObj['FuturesMarketBTC']));
+			}
+			if (returnObj['FuturesMarketETH']) {
+				promises.push(setupFuturesMarket(returnObj['FuturesMarketETH']));
+			}
+
+			await Promise.all(promises);
+		}
+
+		// perps V2
+		if (returnObj['PerpsV2Settings']) {
+			const promises = [
+				returnObj['PerpsV2Settings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setMinKeeperFee(constantsOverrides.FUTURES_MIN_KEEPER_FEE, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+					from: owner,
+				}),
+				returnObj['PerpsV2Settings'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
+					from: owner,
+				}),
+			];
+
+			const setupPerpsV2Market = async market => {
+				const assetKey = await market.baseAsset();
+				const marketKey = await market.marketKey();
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await Promise.all([
+					returnObj['PerpsV2Settings'].setParameters(
+						marketKey,
+						toWei('0.003'), // 0.3% base fee
+						toWei('0.0005'), // 0.05% base fee next price
+						toBN('2'), // 2 rounds next price confirm window
+						toWei('10'), // 10x max leverage
+						toWei('100000'), // 100000 max single side OI
+						toWei('0.1'), // 10% max funding rate
+						toWei('100000'), // 100000 USD skewScaleUSD
+						{ from: owner }
+					),
+				]);
+			};
+
+			if (returnObj['PerpsV2MarketpBTC']) {
+				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpBTC']));
+			}
+			if (returnObj['PerpsV2MarketpETH']) {
+				promises.push(setupPerpsV2Market(returnObj['PerpsV2MarketpETH']));
+			}
+
+			await Promise.all(promises);
+		}
 	}
 
-	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
+	// finally if any of our contracts have setAddressResolver (from MockSynth), then invoke it
 	await Promise.all(
 		Object.values(returnObj)
-			.filter(contract => contract.setSystemStatus)
-			.map(mock => mock.setSystemStatus(returnObj['SystemStatus'].address))
+			.filter(contract => contract.setAddressResolver)
+			.map(mock => mock.setAddressResolver(returnObj['AddressResolver'].address))
 	);
+
+	if (returnObj['ExchangeRates']) {
+		// setup SNX price feed and any other feeds
+		const keys = ['SNX', ...(feeds || [])].map(toBytes32);
+		const prices = ['0.2', ...(feeds || []).map(() => '1.0')].map(toUnit);
+		await setupPriceAggregators(returnObj['ExchangeRates'], owner, keys);
+		await updateAggregatorRates(returnObj['ExchangeRates'], keys, prices);
+	}
 
 	return returnObj;
 };
@@ -1061,4 +1461,5 @@ module.exports = {
 	mockGenericContractFnc,
 	setupContract,
 	setupAllContracts,
+	constantsOverrides,
 };

@@ -6,8 +6,13 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 let MultiCollateralSynth;
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
+const { toUnit, fastForward } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -16,9 +21,10 @@ const {
 const { setupAllContracts } = require('./setup');
 
 contract('MultiCollateralSynth', accounts => {
-	const [deployerAccount, owner, oracle, , account1] = accounts;
+	const [deployerAccount, owner, , , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
+	const sBTC = toBytes32('sBTC');
 
 	let issuer,
 		resolver,
@@ -43,23 +49,11 @@ contract('MultiCollateralSynth', accounts => {
 		});
 	};
 
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		const sBTC = toBytes32('sBTC');
-
-		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-	};
-
 	before(async () => {
 		MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 	});
+
+	const onlyInternalString = 'Only internal contracts allowed';
 
 	before(async () => {
 		synths = ['sUSD'];
@@ -88,8 +82,12 @@ contract('MultiCollateralSynth', accounts => {
 				'CollateralManager',
 				'CollateralManagerState',
 				'CollateralEth',
+				'FuturesMarketManager',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
+		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -98,8 +96,6 @@ contract('MultiCollateralSynth', accounts => {
 		await debtCache.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
-
-		await updateRatesWithDefaults();
 
 		await issuesUSDToAccount(toUnit(1000), owner);
 		await debtCache.takeDebtSnapshot();
@@ -158,6 +154,7 @@ contract('MultiCollateralSynth', accounts => {
 			await proxy.setTarget(synth.address, { from: owner });
 			await issuer.addSynth(synth.address, { from: owner });
 			this.synth = synth;
+			this.synthViaProxy = await MultiCollateralSynth.at(proxy.address);
 		});
 
 		it('ensure only known functions are mutative', () => {
@@ -172,8 +169,51 @@ contract('MultiCollateralSynth', accounts => {
 			const actual = await this.synth.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'CollateralManager'].map(toBytes32)
+				[
+					'SystemStatus',
+					'Exchanger',
+					'Issuer',
+					'FeePool',
+					'FuturesMarketManager',
+					'CollateralManager',
+					'EtherWrapper',
+					'WrapperFactory',
+				].map(toBytes32)
 			);
+		});
+
+		// SIP-238
+		describe('implementation does not allow transfer calls (but allows approve)', () => {
+			const revertMsg = 'Only the proxy';
+			const amount = toUnit('100');
+			beforeEach(async () => {
+				// approve for transferFrom to work
+				await this.synthViaProxy.approve(account1, amount, { from: owner });
+			});
+			it('approve does not revert', async () => {
+				await this.synth.approve(account1, amount, { from: owner });
+			});
+			it('transfer reverts', async () => {
+				await assert.revert(this.synth.transfer(account1, amount, { from: owner }), revertMsg);
+			});
+			it('transferFrom reverts', async () => {
+				await assert.revert(
+					this.synth.transferFrom(owner, account1, amount, { from: account1 }),
+					revertMsg
+				);
+			});
+			it('transferAndSettle reverts', async () => {
+				await assert.revert(
+					this.synth.transferAndSettle(account1, amount, { from: account1 }),
+					revertMsg
+				);
+			});
+			it('transferFromAndSettle reverts', async () => {
+				await assert.revert(
+					this.synth.transferFromAndSettle(owner, account1, amount, { from: account1 }),
+					revertMsg
+				);
+			});
 		});
 
 		describe('when non-multiCollateral tries to issue', () => {
@@ -182,7 +222,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer, Wrapper, or MultiCollateral contracts allowed',
+					reason: onlyInternalString,
 				});
 			});
 		});
@@ -192,18 +232,16 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer, Wrapper, or MultiCollateral contracts allowed',
+					reason: onlyInternalString,
 				});
 			});
 		});
 
 		describe('when multiCollateral is set to the owner', () => {
 			beforeEach(async () => {
-				const timestamp = await currentTime();
-
-				await exchangeRates.updateRates([toBytes32('sXYZ')], [toUnit(5)], timestamp, {
-					from: oracle,
-				});
+				const sXYZ = toBytes32('sXYZ');
+				await setupPriceAggregators(exchangeRates, owner, [sXYZ]);
+				await updateAggregatorRates(exchangeRates, [sXYZ], [toUnit(5)]);
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {
@@ -247,19 +285,21 @@ contract('MultiCollateralSynth', accounts => {
 			});
 
 			describe('when synthetix set to account1', () => {
+				const accountToIssue = account1;
+				const issueAmount = toUnit('1');
+
 				beforeEach(async () => {
 					// have account1 simulate being Issuer so we can invoke issue and burn
-					await resolver.importAddresses([toBytes32('Issuer')], [account1], { from: owner });
+					await resolver.importAddresses([toBytes32('Issuer')], [accountToIssue], { from: owner });
 					// now have the synth resync its cache
 					await this.synth.rebuildCache();
 				});
+
 				it('then it can issue new synths as account1', async () => {
-					const accountToIssue = account1;
-					const issueAmount = toUnit('1');
 					const totalSupplyBefore = await this.synth.totalSupply();
 					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
 
-					await this.synth.issue(accountToIssue, issueAmount, { from: account1 });
+					await this.synth.issue(accountToIssue, issueAmount, { from: accountToIssue });
 
 					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
 					assert.bnEqual(

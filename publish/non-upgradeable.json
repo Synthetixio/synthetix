@@ -9,7 +9,6 @@
 	"RewardEscrow",
 	"RewardsDistribution",
 	"SafeDecimalMath",
-	"SupplySchedule",
 	"SynthetixEscrow",
 	"SynthetixState",
 	"TokenState",

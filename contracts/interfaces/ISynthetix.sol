@@ -97,6 +97,14 @@ interface ISynthetix {
         bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
+    function exchangeAtomically(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode,
+        uint minAmount
+    ) external returns (uint amountReceived);
+
     function issueMaxSynths() external;
 
     function issueMaxSynthsOnBehalf(address issueForAddress) external;
@@ -116,7 +124,9 @@ interface ISynthetix {
         );
 
     // Liquidations
-    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
+    function liquidateDelinquentAccount(address account) external returns (bool);
+
+    function liquidateSelf() external returns (bool);
 
     // Restricted Functions
 

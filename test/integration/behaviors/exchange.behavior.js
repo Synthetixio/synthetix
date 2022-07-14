@@ -41,7 +41,8 @@ function itCanExchange({ ctx }) {
 				await updateCache({ ctx });
 
 				const tx = await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'));
-				await tx.wait();
+				const { gasUsed } = await tx.wait();
+				console.log(`exchange() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 			});
 
 			it('receives the expected amount of sETH', async () => {
@@ -77,7 +78,8 @@ function itCanExchange({ ctx }) {
 
 				before('settle', async () => {
 					const tx = await Synthetix.settle(toBytes32('sETH'));
-					await tx.wait();
+					const { gasUsed } = await tx.wait();
+					console.log(`settle() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 				});
 
 				it('shows that the user no longer has pending settlements', async () => {
@@ -86,6 +88,30 @@ function itCanExchange({ ctx }) {
 					assert.bnEqual(numEntries, ethers.constants.Zero);
 				});
 			});
+		});
+	});
+
+	describe('settings are configurable', async () => {
+		let owner, SystemSettings;
+
+		before('target contracts and users', () => {
+			({ SystemSettings } = ctx.contracts);
+			owner = ctx.users.owner;
+		});
+
+		it('set sUSD to use the pure chainlink price for atomic swap', async () => {
+			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(
+				toBytes32('sUSD'),
+				false
+			);
+			const resp1 = await SystemSettings.pureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'));
+			assert.bnEqual(resp1, false);
+			await SystemSettings.connect(owner).setPureChainlinkPriceForAtomicSwapsEnabled(
+				toBytes32('sUSD'),
+				true
+			);
+			const resp2 = await SystemSettings.pureChainlinkPriceForAtomicSwapsEnabled(toBytes32('sUSD'));
+			assert.bnEqual(resp2, true);
 		});
 	});
 }

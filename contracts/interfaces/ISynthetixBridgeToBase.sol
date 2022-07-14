@@ -13,4 +13,6 @@ interface ISynthetixBridgeToBase {
 
     // invoked by the xDomain messenger on L2
     function finalizeRewardDeposit(address from, uint amount) external;
+
+    function finalizeFeePeriodClose(uint snxBackedDebt, uint debtSharesSupply) external;
 }

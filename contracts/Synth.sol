@@ -12,6 +12,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
@@ -33,6 +34,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -58,7 +60,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function transfer(address to, uint value) public optionalProxy returns (bool) {
+    function transfer(address to, uint value) public onlyProxyOrInternal returns (bool) {
         _ensureCanTransfer(messageSender, value);
 
         // transfers to FEE_ADDRESS will be exchanged into sUSD and recorded as fee
@@ -74,7 +76,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    function transferAndSettle(address to, uint value) public optionalProxy returns (bool) {
+    function transferAndSettle(address to, uint value) public onlyProxyOrInternal returns (bool) {
         // Exchanger.settle ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(messageSender, currencyKey);
 
@@ -95,7 +97,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address from,
         address to,
         uint value
-    ) public optionalProxy returns (bool) {
+    ) public onlyProxyOrInternal returns (bool) {
         _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
@@ -105,7 +107,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         address from,
         address to,
         uint value
-    ) public optionalProxy returns (bool) {
+    ) public onlyProxyOrInternal returns (bool) {
         // Exchanger.settle() ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
@@ -187,11 +189,12 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
+        addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_FEEPOOL;
+        addresses[4] = CONTRACT_FUTURESMARKETMANAGER;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -208,6 +211,10 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
@@ -250,17 +257,55 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyInternalContracts() {
-        bool isFeePool = msg.sender == address(feePool());
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isIssuer = msg.sender == address(issuer());
+    function _isInternalContract(address account) internal view returns (bool) {
+        return
+            account == address(feePool()) ||
+            account == address(exchanger()) ||
+            account == address(issuer()) ||
+            account == address(futuresMarketManager());
+    }
 
-        require(isFeePool || isExchanger || isIssuer, "Only FeePool, Exchanger or Issuer contracts allowed");
+    modifier onlyInternalContracts() {
+        require(_isInternalContract(msg.sender), "Only internal contracts allowed");
         _;
+    }
+
+    modifier onlyProxyOrInternal {
+        _onlyProxyOrInternal();
+        _;
+    }
+
+    function _onlyProxyOrInternal() internal {
+        if (msg.sender == address(proxy)) {
+            // allow proxy through, messageSender should be already set correctly
+            return;
+        } else if (_isInternalTransferCaller(msg.sender)) {
+            // optionalProxy behaviour only for the internal legacy contracts
+            messageSender = msg.sender;
+        } else {
+            revert("Only the proxy can call");
+        }
+    }
+
+    /// some legacy internal contracts use transfer methods directly on implementation
+    /// which isn't supported due to SIP-238 for other callers
+    function _isInternalTransferCaller(address caller) internal view returns (bool) {
+        // These entries are not required or cached in order to allow them to not exist (==address(0))
+        // e.g. due to not being available on L2 or at some future point in time.
+        return
+            // ordered to reduce gas for more frequent calls
+            caller == resolver.getAddress("CollateralShort") ||
+            // not used frequently
+            caller == resolver.getAddress("SynthRedeemer") ||
+            caller == resolver.getAddress("WrapperFactory") || // transfer not used by users
+            // legacy
+            caller == resolver.getAddress("NativeEtherWrapper") ||
+            caller == resolver.getAddress("Depot");
     }
 
     /* ========== EVENTS ========== */
     event Issued(address indexed account, uint value);
+
     bytes32 private constant ISSUED_SIG = keccak256("Issued(address,uint256)");
 
     function emitIssued(address account, uint value) internal {
@@ -268,6 +313,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     event Burned(address indexed account, uint value);
+
     bytes32 private constant BURNED_SIG = keccak256("Burned(address,uint256)");
 
     function emitBurned(address account, uint value) internal {

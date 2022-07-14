@@ -14,7 +14,7 @@ steps:
       command: npm config set cache .npm-cache --global
   - run:
       name: Install dependencies
-      command: npm install --prefer-offline --no-audit
+      command: npm ci --prefer-offline --no-audit
   - save_cache:
       key: v5-dependencies-{{ checksum "package-lock.json" }}
       paths:

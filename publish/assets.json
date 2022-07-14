@@ -233,11 +233,11 @@
 		"sign": "",
 		"description": "Centralised Exchange Index"
 	},
-	"DEFI": {
-		"asset": "DEFI",
-		"category": "index",
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"category": "crypto",
 		"sign": "",
-		"description": "DeFi Index"
+		"description": "ETH / BTC"
 	},
 	"EUR": {
 		"asset": "EUR",
@@ -289,6 +289,12 @@
 	},
 	"OIL": {
 		"asset": "OIL",
+		"category": "commodity",
+		"sign": "$",
+		"description": "Perpetual Oil Futures"
+	},
+	"WTI": {
+		"asset": "WTI",
 		"category": "commodity",
 		"sign": "$",
 		"description": "Perpetual Oil Futures"
@@ -404,5 +410,47 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Alpha Finance"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Solana"
+	},
+	"AVAX": {
+		"asset": "AVAX",
+		"category": "crypto",
+		"sign": "",
+		"description": "Avalanche"
+	},
+	"MATIC": {
+		"asset": "MATIC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Matic"
+	},
+	"APE": {
+		"asset": "APE",
+		"category": "crypto",
+		"sign": "",
+		"description": "ApeCoin"
+	},
+	"DYDX": {
+		"asset": "DYDX",
+		"category": "crypto",
+		"sign": "",
+		"description": "dYdX"
+	},
+	"INR": {
+		"asset": "INR",
+		"category": "forex",
+		"sign": "₹",
+		"description": "Indian Rupee"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"category": "crypto",
+		"sign": "",
+		"description": "Axie Infinity"
 	}
 }

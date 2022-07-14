@@ -15,7 +15,7 @@ interface IExchangeRates {
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
-    function currentRoundForRate(bytes32 currencyKey) external view returns (uint);
+    function anyRateIsInvalidAtRound(bytes32[] calldata currencyKeys, uint[] calldata roundIds) external view returns (bool);
 
     function currenciesUsingAggregator(address aggregator) external view returns (bytes32[] memory);
 
@@ -38,13 +38,34 @@ interface IExchangeRates {
             uint destinationRate
         );
 
-    function effectiveValueAtRound(
+    function effectiveValueAndRatesAtRound(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         uint roundIdForSrc,
         uint roundIdForDest
-    ) external view returns (uint value);
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        );
+
+    function effectiveAtomicValueAndRates(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint systemValue,
+            uint systemSourceRate,
+            uint systemDestinationRate
+        );
 
     function getCurrentRoundId(bytes32 currencyKey) external view returns (uint);
 
@@ -56,8 +77,6 @@ interface IExchangeRates {
     ) external view returns (uint);
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256);
-
-    function oracle() external view returns (address);
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time);
 
@@ -75,10 +94,11 @@ interface IExchangeRates {
 
     function rateStalePeriod() external view returns (uint);
 
-    function ratesAndUpdatedTimeForCurrencyLastNRounds(bytes32 currencyKey, uint numRounds)
-        external
-        view
-        returns (uint[] memory rates, uint[] memory times);
+    function ratesAndUpdatedTimeForCurrencyLastNRounds(
+        bytes32 currencyKey,
+        uint numRounds,
+        uint roundId
+    ) external view returns (uint[] memory rates, uint[] memory times);
 
     function ratesAndInvalidForCurrencies(bytes32[] calldata currencyKeys)
         external
@@ -86,4 +106,6 @@ interface IExchangeRates {
         returns (uint[] memory rates, bool anyRateInvalid);
 
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory);
+
+    function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool);
 }

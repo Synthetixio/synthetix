@@ -4,6 +4,7 @@ const { gray } = require('chalk');
 
 const {
 	constants: { ZERO_ADDRESS },
+	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../../..');
 
 module.exports = async ({
@@ -13,20 +14,31 @@ module.exports = async ({
 	currentSynthetixSupply,
 	currentWeekOfInflation,
 	deployer,
-	oracleAddress,
 	useOvm,
 }) => {
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
 
 	await deployer.deployContract({
 		name: 'SafeDecimalMath',
+		library: true,
 	});
 
 	await deployer.deployContract({
 		name: 'Math',
+		library: true,
 	});
 
-	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
+	await deployer.deployContract({
+		name: 'SystemSettingsLib',
+		library: true,
+	});
+
+	await deployer.deployContract({
+		name: 'SignedSafeDecimalMath',
+		library: true,
+	});
+
+	console.log(gray(`\n------ DEPLOY ADDRESS RESOLVER ------\n`));
 
 	await deployer.deployContract({
 		name: 'AddressResolver',
@@ -38,6 +50,26 @@ module.exports = async ({
 		source: 'ReadProxy',
 		args: [account],
 	});
+
+	console.log(gray(`\n------ DEPLOY SELF ORACLES ------\n`));
+
+	await deployer.deployContract({
+		name: 'OneNetAggregatorIssuedSynths',
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'OneNetAggregatorDebtRatio',
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	// SIP-243: Deprecate sDEFI
+	await deployer.deployContract({
+		name: 'OneNetAggregatorsDEFI',
+		args: [addressOf(readProxyForResolver)],
+	});
+
+	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	await deployer.deployContract({
 		name: 'FlexibleStorage',
@@ -57,7 +89,8 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleAddress, addressOf(readProxyForResolver), [], []],
+		source: useOvm ? 'ExchangeRates' : 'ExchangeRatesWithDexPricing',
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
@@ -83,6 +116,12 @@ module.exports = async ({
 		args: [account, account],
 	});
 
+	await deployer.deployContract({
+		name: 'SynthetixDebtShare',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
 	const proxyFeePool = await deployer.deployContract({
 		name: 'ProxyFeePool',
 		source: 'Proxy',
@@ -100,15 +139,15 @@ module.exports = async ({
 		args: [account, addressOf(delegateApprovalsEternalStorage)],
 	});
 
-	const liquidations = await deployer.deployContract({
-		name: 'Liquidations',
+	await deployer.deployContract({
+		name: 'Liquidator',
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
-		name: 'EternalStorageLiquidations',
-		source: 'EternalStorage',
-		args: [account, addressOf(liquidations)],
+		name: 'LiquidatorRewards',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
@@ -140,38 +179,29 @@ module.exports = async ({
 		],
 	});
 
-	// New Synthetix proxy.
-	const proxyERC20Synthetix = await deployer.deployContract({
-		name: 'ProxyERC20',
-		args: [account],
-	});
-
 	const tokenStateSynthetix = await deployer.deployContract({
 		name: 'TokenStateSynthetix',
 		source: 'LegacyTokenState',
 		args: [account, account],
 	});
 
+	const proxySynthetix = await deployer.deployContract({
+		name: 'ProxySynthetix',
+		source: 'ProxyERC20',
+		args: [account],
+	});
+
 	await deployer.deployContract({
 		name: 'Synthetix',
 		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
-		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
+		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
-			addressOf(proxyERC20Synthetix),
+			addressOf(proxySynthetix),
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
 			addressOf(readProxyForResolver),
 		],
-	});
-
-	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
-	// To be removed after May 30, 2020:
-	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
-	await deployer.deployContract({
-		name: 'ProxySynthetix',
-		source: 'Proxy',
-		args: [account],
 	});
 
 	await deployer.deployContract({
@@ -182,7 +212,14 @@ module.exports = async ({
 
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
-		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithFeeRecAlternatives',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'ExchangeCircuitBreaker',
+		source: 'ExchangeCircuitBreaker',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
@@ -199,7 +236,6 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'Issuer',
-		source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
@@ -239,6 +275,18 @@ module.exports = async ({
 		name: 'SynthetixBridgeEscrow',
 		deps: ['AddressResolver'],
 		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'OwnerRelayOnEthereum',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'OwnerRelayOnOptimism',
+		deps: ['AddressResolver'],
+		args: [addressOf(readProxyForResolver), account, TEMP_OWNER_DEFAULT_DURATION],
 	});
 
 	await deployer.deployContract({

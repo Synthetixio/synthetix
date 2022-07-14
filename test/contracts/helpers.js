@@ -6,7 +6,55 @@ const { smockit } = require('@eth-optimism/smock');
 const { assert } = require('./common');
 
 const { currentTime, toUnit } = require('../utils')();
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
+} = require('../..');
+
+const MockAggregator = artifacts.require('MockAggregatorV2V3');
+
+/// utility function to setup price aggregators
+/// @param exchangeRates instance of ExchangeRates contract
+/// @param owner owner account of exchangeRates contract for adding an aggregator
+/// @param keys array of bytes32 currency keys
+/// @param decimalsArray optional array of ints for each key, defaults to 18 decimals
+async function setupPriceAggregators(exchangeRates, owner, keys, decimalsArray = []) {
+	let aggregator;
+	for (let i = 0; i < keys.length; i++) {
+		aggregator = await MockAggregator.new({ from: owner });
+		await aggregator.setDecimals(decimalsArray.length > 0 ? decimalsArray[i] : 18);
+		await exchangeRates.addAggregator(keys[i], aggregator.address, { from: owner });
+	}
+}
+
+/// same as setupPriceAggregators, but checks if an aggregator for that currency is already setup up
+async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
+	const missingKeys = [];
+	for (let i = 0; i < keys.length; i++) {
+		if ((await exchangeRates.aggregators(keys[i])) === ZERO_ADDRESS) {
+			missingKeys.push(keys[i]);
+		}
+	}
+	await setupPriceAggregators(exchangeRates, owner, missingKeys);
+}
+// utility function update rates for aggregators that are already set up
+/// @param exchangeRates instance of ExchangeRates contract
+/// @param owner owner account of exchangeRates contract for adding an aggregator
+/// @param keys array of bytes32 currency keys
+/// @param rates array of BN rates
+/// @param timestamp optional timestamp for the update, currentTime() is used by default
+async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = undefined) {
+	timestamp = timestamp || (await currentTime());
+	for (let i = 0; i < keys.length; i++) {
+		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
+		if (aggregatorAddress === ZERO_ADDRESS) {
+			throw new Error(`Aggregator set to zero address, use "setupPriceAggregators" to set it up`);
+		}
+		const aggregator = await MockAggregator.at(aggregatorAddress);
+		// set the rate
+		await aggregator.setLatestAnswer(rates[i], timestamp);
+	}
+}
 
 module.exports = {
 	/**
@@ -33,6 +81,9 @@ module.exports = {
 		assert.equal(log.address, emittedFrom, 'log emission address does not match');
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
+
+			// // for debugging
+			// console.log(i, arg.toString(), value.toString())
 
 			if (type === 'address') {
 				assert.equal(
@@ -84,28 +135,17 @@ module.exports = {
 		return web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 	},
 
-	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
-		const timestamp = await currentTime();
+	setupPriceAggregators,
 
-		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
-			'SNX',
-			'sAUD',
-			'sEUR',
-			'sBTC',
-			'iBTC',
-			'sETH',
-			'ETH',
-		].map(toBytes32);
+	updateAggregatorRates,
 
-		await exchangeRates.updateRates(
-			[SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH],
-			['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit),
-			timestamp,
-			{
-				from: oracle,
-			}
-		);
+	async updateRatesWithDefaults({ exchangeRates, owner, debtCache }) {
+		const keys = ['SNX', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
+		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
+		// set up any missing aggregators
+		await setupMissingPriceAggregators(exchangeRates, owner, keys);
 
+		await updateAggregatorRates(exchangeRates, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 
@@ -287,6 +327,51 @@ module.exports = {
 		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
 
 		return { mocks, resolver };
+	},
+
+	prepareFlexibleStorageSmock(flexibleStorage) {
+		// Allow mocked flexible storage to be persisted through a run,
+		// to build up configuration values over multiple contexts
+		const flexibleStorageMemory = {};
+
+		const flexibleStorageTypes = [
+			['uint', 'getUIntValue', '0'],
+			['uints', 'getUIntValues', ['0', '0', '0', '0']],
+			['int', 'getIntValue', '0'],
+			['address', 'getAddressValue', ZERO_ADDRESS],
+			['bool', 'getBoolValue', false],
+			['bytes32', 'getBytes32Value', ZERO_BYTES32],
+		];
+		for (const [type, funcName, defaultValue] of flexibleStorageTypes) {
+			flexibleStorage.smocked[funcName].will.return.with((contract, record) => {
+				const storedValue =
+					flexibleStorageMemory[contract] &&
+					flexibleStorageMemory[contract][record] &&
+					flexibleStorageMemory[contract][record][type];
+				return storedValue || defaultValue;
+			});
+		}
+
+		const bytes32SystemSettings = toBytes32('SystemSettings');
+		return {
+			mockSystemSetting: ({ type, setting, value }) => {
+				const record = setting.startsWith('0x') ? setting : toBytes32(setting);
+
+				flexibleStorageMemory[bytes32SystemSettings] =
+					flexibleStorageMemory[bytes32SystemSettings] || {};
+				flexibleStorageMemory[bytes32SystemSettings][record] =
+					flexibleStorageMemory[bytes32SystemSettings][record] || {};
+				flexibleStorageMemory[bytes32SystemSettings][record][type] =
+					flexibleStorageMemory[bytes32SystemSettings][record][type] || {};
+
+				if (type === 'uint' || type === 'int') {
+					// Smock does not like non-native numbers like BNs, so downcast them to string
+					value = String(value);
+				}
+
+				flexibleStorageMemory[bytes32SystemSettings][record][type] = value;
+			},
+		};
 	},
 
 	getEventByName({ tx, name }) {

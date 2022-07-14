@@ -23,6 +23,9 @@
 	"ExchangeRates": {
 		"deploy": true
 	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
 	"Exchanger": {
 		"deploy": true
 	},
@@ -30,9 +33,6 @@
 		"deploy": true
 	},
 	"FeePool": {
-		"deploy": true
-	},
-	"FeePoolState": {
 		"deploy": true
 	},
 	"FeePoolEternalStorage": {
@@ -50,10 +50,10 @@
 	"Issuer": {
 		"deploy": true
 	},
-	"EternalStorageLiquidations": {
+	"Liquidator": {
 		"deploy": true
 	},
-	"Liquidations": {
+	"LiquidatorRewards": {
 		"deploy": true
 	},
 	"Synthetix": {
@@ -71,7 +71,7 @@
 	"RewardsDistribution": {
 		"deploy": true
 	},
-	"SynthetixState": {
+	"SynthetixDebtShare": {
 		"deploy": true
 	},
 	"SystemStatus": {
@@ -84,12 +84,6 @@
 		"deploy": true
 	},
 	"SynthsUSD": {
-		"deploy": true
-	},
-	"ProxyERC20": {
-		"deploy": true
-	},
-	"ProxyERC20sUSD": {
 		"deploy": true
 	},
 	"ProxyFeePool": {
@@ -113,19 +107,19 @@
 	"TokenStatesUSD": {
 		"deploy": true
 	},
-	"TokenStatesETH": {
-		"deploy": true
-	},
 	"TokenStatesBTC": {
-		"deploy": true
-	},
-	"ProxysETH": {
 		"deploy": true
 	},
 	"ProxysBTC": {
 		"deploy": true
 	},
 	"SynthsBTC": {
+		"deploy": true
+	},
+	"TokenStatesETH": {
+		"deploy": true
+	},
+	"ProxysETH": {
 		"deploy": true
 	},
 	"SynthsETH": {
@@ -149,13 +143,40 @@
 	"EtherWrapper": {
 		"deploy": true
 	},
+	"FuturesMarketBTC": {
+		"deploy": true
+	},
+	"FuturesMarketETH": {
+		"deploy": true
+	},
+	"FuturesMarketManager": {
+		"deploy": true
+	},
+	"FuturesMarketSettings": {
+		"deploy": true
+	},
+	"FuturesMarketData": {
+		"deploy": true
+	},
 	"WrapperFactory": {
 		"deploy": true
 	},
 	"WETH": {
 		"deploy": true
 	},
+	"OwnerRelayOnOptimism": {
+		"deploy": true
+	},
 	"SynthRedeemer": {
+		"deploy": true
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": true
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": true
+	},
+	"SystemSettingsLib": {
 		"deploy": true
 	}
 }

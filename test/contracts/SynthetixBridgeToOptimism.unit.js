@@ -15,6 +15,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		rewardsDistribution,
 		snxBridgeToBase,
 		SynthetixBridgeEscrow,
+		FeePool,
 		randomAddress,
 	] = accounts;
 
@@ -23,6 +24,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			abi: SynthetixBridgeToOptimism.abi,
 			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
+				'closeFeePeriod',
 				'depositAndMigrateEscrow',
 				'deposit',
 				'depositTo',
@@ -45,6 +47,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let messenger;
 		let synthetix;
 		let issuer;
+		let exchangeRates;
+		let systemStatus;
 		let resolver;
 		let rewardEscrow;
 		const escrowAmount = 100;
@@ -63,6 +67,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
+			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
+			systemStatus = await smockit(artifacts.require('SystemStatus').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
@@ -72,6 +78,9 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'ext:Messenger',
 					'Synthetix',
 					'Issuer',
+					'ExchangeRates',
+					'SystemStatus',
+					'FeePool',
 					'RewardsDistribution',
 					'ovm:SynthetixBridgeToBase',
 					'RewardEscrowV2',
@@ -82,6 +91,9 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					messenger.address,
 					synthetix.address,
 					issuer.address,
+					exchangeRates.address,
+					systemStatus.address,
+					FeePool,
 					rewardsDistribution,
 					snxBridgeToBase,
 					rewardEscrow.address,
@@ -444,6 +456,49 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
+			describe('closeFeePeriod()', () => {
+				describe('failure modes', () => {
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(
+							instance.closeFeePeriod('1', '2', { from: FeePool }),
+							'Initiation deactivated'
+						);
+					});
+
+					it('fails when invoked by a user directly', async () => {
+						await assert.revert(
+							instance.closeFeePeriod('1', '2'),
+							'Only the fee pool can call this'
+						);
+					});
+				});
+
+				describe('when invoked by fee pool', () => {
+					let txn;
+					beforeEach(async () => {
+						txn = await instance.closeFeePeriod('1', '2', { from: FeePool });
+					});
+
+					it('relays the message', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
+							fnc: 'finalizeFeePeriodClose',
+							args: ['1', '2'],
+						});
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+					});
+
+					it('emits FeePeriodClosed', async () => {
+						assert.eventEqual(txn, 'FeePeriodClosed', ['1', '2']);
+					});
+				});
+			});
+
 			describe('notifyRewardAmount', () => {
 				describe('failure modes', () => {
 					it('does not work when not invoked by the rewardDistribution address', async () => {
@@ -508,7 +563,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							instance.finalizeWithdrawal(user1, 100, {
 								from: smockedMessenger,
 							}),
-							'Only the L2 bridge can invoke'
+							'Only a counterpart bridge can invoke'
 						);
 					});
 				});

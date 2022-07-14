@@ -25,7 +25,7 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		'05ace3ae2c12c6ba5a4a0ac33254f9547cc4557c'
+		'f1631a5f7ddb6eb4a342bfbd7d46233a43412f9b'
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
@@ -150,9 +150,12 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
 	}
 	console.log(gray('  get dependencies'));
-	execa.sync('sh', ['-c', `cd ${opsPath} && yarn `]);
+
+	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
+	const yarnOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
+	execa.sync('sh', ['-c', `yarn `], yarnOpts);
 	console.log(gray('  build'));
-	execa.sync('sh', ['-c', `cd ${opsPath} && yarn build `]);
+	execa.sync('sh', ['-c', `yarn build `], yarnOpts);
 }
 
 function _buildOps({ opsPath }) {

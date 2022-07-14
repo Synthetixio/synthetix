@@ -6,14 +6,12 @@ const pLimit = require('p-limit');
 const ethers = require('ethers');
 const isCI = require('is-ci');
 
-const { loadCompiledFiles } = require('../../publish/src/solidity');
 const { loadLocalWallets } = require('../test-utils/wallets');
 const { fastForward } = require('../test-utils/rpc');
 
 const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployShortingRewardsCmd = require('../../publish/src/commands/deploy-shorting-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
-const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
 
 const commands = {
@@ -44,12 +42,13 @@ const {
 		TARGET_THRESHOLD,
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
-		LIQUIDATION_PENALTY,
+		SNX_LIQUIDATION_PENALTY,
 		RATE_STALE_PERIOD,
-		EXCHANGE_FEE_RATES,
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
 		DEBT_SNAPSHOT_STALE_TIME,
+		ATOMIC_MAX_VOLUME_PER_BLOCK,
+		ATOMIC_TWAP_WINDOW,
 	},
 	wrap,
 } = snx;
@@ -95,6 +94,7 @@ describe('publish scripts', () => {
 	let sETH;
 	let provider;
 	let overrides;
+	let MockAggregatorFactory;
 
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
@@ -130,10 +130,10 @@ describe('publish scripts', () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
 		provider = new ethers.providers.JsonRpcProvider({
-			url: 'http://localhost:8545',
+			url: 'http://127.0.0.1:8545',
 		});
 
-		const { isCompileRequired } = testUtils();
+		const { isCompileRequired, createMockAggregatorFactory } = testUtils();
 
 		// load accounts used by local EVM
 		const wallets = loadLocalWallets({ provider });
@@ -151,6 +151,8 @@ describe('publish scripts', () => {
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
+
+		MockAggregatorFactory = await createMockAggregatorFactory(accounts.deployer);
 
 		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
@@ -181,7 +183,7 @@ describe('publish scripts', () => {
 			let Exchanger;
 			let Issuer;
 			let SystemSettings;
-			let Liquidations;
+			let Liquidator;
 			let ExchangeRates;
 			const aggregators = {};
 
@@ -193,15 +195,6 @@ describe('publish scripts', () => {
 				);
 
 			const createMockAggregator = async () => {
-				// get last build
-				const { compiled } = loadCompiledFiles({ buildPath });
-				const {
-					abi,
-					evm: {
-						bytecode: { object: bytecode },
-					},
-				} = compiled['MockAggregatorV2V3'];
-				const MockAggregatorFactory = new ethers.ContractFactory(abi, bytecode, accounts.deployer);
 				const MockAggregator = await MockAggregatorFactory.deploy({ gasLimit, gasPrice });
 
 				const tx = await MockAggregator.setDecimals('8', {
@@ -252,20 +245,20 @@ describe('publish scripts', () => {
 				targets = getTarget();
 				synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
+				Synthetix = getContract({ target: 'ProxySynthetix', source: 'Synthetix' });
 				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
 				Exchanger = getContract({ target: 'Exchanger' });
 				DebtCache = getContract({ target: 'DebtCache' });
 
 				Issuer = getContract({ target: 'Issuer' });
 
-				sUSDContract = getContract({ target: 'ProxyERC20sUSD', source: 'Synth' });
+				sUSDContract = getContract({ target: 'ProxysUSD', source: 'Synth' });
 
 				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
 				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
 				SystemSettings = getContract({ target: 'SystemSettings' });
 
-				Liquidations = getContract({ target: 'Liquidations' });
+				Liquidator = getContract({ target: 'Liquidator' });
 
 				ExchangeRates = getContract({ target: 'ExchangeRates' });
 			});
@@ -278,6 +271,10 @@ describe('publish scripts', () => {
 						PRICE_DEVIATION_THRESHOLD_FACTOR
 					);
 					assert.strictEqual(await Exchanger.tradingRewardsEnabled(), TRADING_REWARDS_ENABLED);
+					assert.strictEqual(
+						(await Exchanger.atomicMaxVolumePerBlock()).toString(),
+						ATOMIC_MAX_VOLUME_PER_BLOCK
+					);
 					assert.strictEqual((await Issuer.issuanceRatio()).toString(), ISSUANCE_RATIO);
 					assert.strictEqual((await FeePool.feePeriodDuration()).toString(), FEE_PERIOD_DURATION);
 					assert.strictEqual(
@@ -285,44 +282,37 @@ describe('publish scripts', () => {
 						ethers.utils.parseEther((TARGET_THRESHOLD / 100).toString()).toString()
 					);
 
-					assert.strictEqual((await Liquidations.liquidationDelay()).toString(), LIQUIDATION_DELAY);
-					assert.strictEqual((await Liquidations.liquidationRatio()).toString(), LIQUIDATION_RATIO);
+					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
+					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await Liquidations.liquidationPenalty()).toString(),
-						LIQUIDATION_PENALTY
+						(await SystemSettings.snxLiquidationPenalty()).toString(),
+						SNX_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
+					assert.strictEqual(
+						(await ExchangeRates.atomicTwapWindow()).toString(),
+						ATOMIC_TWAP_WINDOW
+					);
 					assert.strictEqual(
 						(await DebtCache.debtSnapshotStaleTime()).toString(),
 						DEBT_SNAPSHOT_STALE_TIME
 					);
 					assert.strictEqual((await Issuer.minimumStakeTime()).toString(), MINIMUM_STAKE_TIME);
-					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
-						// take the first synth we can find from that category, ignoring ETH and BTC as
-						// they deviate from the rest of the synth fee category defaults
-						const synth = synths.find(
-							({ category: c, name }) => c === category && !/^.(BTC|ETH)$/.test(name)
-						);
-
-						assert.strictEqual(
-							(
-								await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
-							).toString(),
-							rate
-						);
-					}
 				});
 
 				describe('when defaults are changed', () => {
 					let newWaitingPeriod;
 					let newPriceDeviation;
+					let newAtomicMaxVolumePerBlock;
 					let newIssuanceRatio;
 					let newFeePeriodDuration;
 					let newTargetThreshold;
 					let newLiquidationsDelay;
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
+					let newSnxLiquidationsPenalty;
 					let newRateStalePeriod;
+					let newAtomicTwapWindow;
 					let newRateForsUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
@@ -330,13 +320,16 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
 						newPriceDeviation = ethers.utils.parseEther('0.45').toString();
+						newAtomicMaxVolumePerBlock = ethers.utils.parseEther('1000').toString();
 						newIssuanceRatio = ethers.utils.parseEther('0.25').toString();
 						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
 						newTargetThreshold = '6';
 						newLiquidationsDelay = newFeePeriodDuration;
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
+						newSnxLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
+						newAtomicTwapWindow = '1800';
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
@@ -348,6 +341,12 @@ describe('publish scripts', () => {
 
 						tx = await SystemSettings.setPriceDeviationThresholdFactor(
 							newPriceDeviation,
+							overrides
+						);
+						await tx.wait();
+
+						tx = await SystemSettings.setAtomicMaxVolumePerBlock(
+							newAtomicMaxVolumePerBlock,
 							overrides
 						);
 						await tx.wait();
@@ -367,7 +366,16 @@ describe('publish scripts', () => {
 						tx = await SystemSettings.setLiquidationRatio(newLiquidationsRatio, overrides);
 						await tx.wait();
 
+						tx = await SystemSettings.setSnxLiquidationPenalty(
+							newSnxLiquidationsPenalty,
+							overrides
+						);
+						await tx.wait();
+
 						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
+						await tx.wait();
+
+						tx = await SystemSettings.setAtomicTwapWindow(newAtomicTwapWindow, overrides);
 						await tx.wait();
 
 						tx = await SystemSettings.setRateStalePeriod(newRateStalePeriod, overrides);
@@ -414,6 +422,10 @@ describe('publish scripts', () => {
 								(await Exchanger.priceDeviationThresholdFactor()).toString(),
 								newPriceDeviation
 							);
+							assert.strictEqual(
+								(await Exchanger.atomicMaxVolumePerBlock()).toString(),
+								newAtomicMaxVolumePerBlock
+							);
 							assert.strictEqual((await Issuer.issuanceRatio()).toString(), newIssuanceRatio);
 							assert.strictEqual(
 								(await FeePool.feePeriodDuration()).toString(),
@@ -424,20 +436,24 @@ describe('publish scripts', () => {
 								ethers.utils.parseEther((newTargetThreshold / 100).toString()).toString()
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationDelay()).toString(),
+								(await Liquidator.liquidationDelay()).toString(),
 								newLiquidationsDelay
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationRatio()).toString(),
+								(await Liquidator.liquidationRatio()).toString(),
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await Liquidations.liquidationPenalty()).toString(),
-								newLiquidationsPenalty
+								(await SystemSettings.snxLiquidationPenalty()).toString(),
+								newSnxLiquidationsPenalty
 							);
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
 								newRateStalePeriod
+							);
+							assert.strictEqual(
+								(await ExchangeRates.atomicTwapWindow()).toString(),
+								newAtomicTwapWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
 							assert.strictEqual(
@@ -633,7 +649,7 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
+							periodsAdded.push([`${startTime}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
@@ -641,8 +657,7 @@ describe('publish scripts', () => {
 
 							const tx = await FeePool.importFeePeriod(
 								i,
-								i + 1,
-								0,
+								startTime,
 								startTime,
 								3,
 								4,
@@ -953,7 +968,7 @@ describe('publish scripts', () => {
 						const currentFeeds = JSON.parse(fs.readFileSync(feedsJSONPath));
 
 						// mutate parameters of EUR - instructing it to use the mock aggregator as a feed
-						currentFeeds['EUR'].feed = mockAggregator.address;
+						currentFeeds['BTC'].feed = mockAggregator.address;
 
 						fs.writeFileSync(feedsJSONPath, JSON.stringify(currentFeeds));
 					});
@@ -978,18 +993,18 @@ describe('publish scripts', () => {
 
 							ExchangeRates = getContract({ target: 'ExchangeRates' });
 						});
-						it('then the aggregator must be set for the sEUR price', async () => {
-							const sEURAggregator = await callMethodWithRetry(
-								ExchangeRates.aggregators(toBytes32('sEUR'))
+						it('then the aggregator must be set for the sBTC price', async () => {
+							const aggregator = await callMethodWithRetry(
+								ExchangeRates.aggregators(toBytes32('sBTC'))
 							);
-							assert.strictEqual(sEURAggregator, mockAggregator.address);
+							assert.strictEqual(aggregator, mockAggregator.address);
 						});
 
-						describe('when ExchangeRates has rates for all synths except the aggregated synth sEUR', () => {
+						describe('when ExchangeRates has rates for all synths except the aggregated synth sBTC', () => {
 							beforeEach(async () => {
 								// update rates
 								const synthsToUpdate = synths
-									.filter(({ name }) => name !== 'sEUR')
+									.filter(({ name }) => name !== 'sBTC')
 									.concat({ asset: 'SNX', rate: 1 });
 
 								for (const { asset } of synthsToUpdate) {
@@ -997,7 +1012,7 @@ describe('publish scripts', () => {
 								}
 							});
 							describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
-								it('then it returns true as sEUR still is', async () => {
+								it('then it returns true as sBTC still is', async () => {
 									const response = await Synthetix.anySynthOrSNXRateIsInvalid();
 									assert.strictEqual(response, true, 'anySynthOrSNXRateIsInvalid must be true');
 								});
@@ -1018,7 +1033,7 @@ describe('publish scripts', () => {
 								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
 									it('correctly returns the rate', async () => {
 										const response = await callMethodWithRetry(
-											ExchangeRates.rateForCurrency(toBytes32('sEUR'))
+											ExchangeRates.rateForCurrency(toBytes32('sBTC'))
 										);
 										assert.strictEqual(ethers.utils.formatEther(response.toString()), rate);
 									});
@@ -1080,15 +1095,14 @@ describe('publish scripts', () => {
 									'ExchangeState',
 									'FeePool',
 									'FeePoolEternalStorage',
-									'FeePoolState',
 									'Issuer',
-									'Liquidations',
+									'Liquidator',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
 									'Synthetix',
+									'SynthetixDebtShare',
 									'SynthetixEscrow',
-									'SynthetixState',
 									'SynthsETH',
 									'SynthsUSD',
 									'SystemStatus',
@@ -1151,6 +1165,12 @@ describe('publish scripts', () => {
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
+									// Same applies to the owner relays
+									.filter(([contract]) => !/^OwnerRelay/.test(contract))
+									// same for external contracts
+									.filter(([contract]) => !/^ext:/.test(contract))
+									// remove debt oracles
+									.filter(([contract]) => !/^OneNet/.test(contract))
 									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([, { source }]) =>

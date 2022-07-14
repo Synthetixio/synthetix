@@ -41,12 +41,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"Liquidations": {
-		"deploy": false
-	},
 	"RewardEscrow": {
 		"deploy": false
 	},
@@ -128,9 +122,6 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
-	"ProxyERC20": {
-		"deploy": false
-	},
 	"ProxyFeePool": {
 		"deploy": false
 	},
@@ -197,9 +188,6 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
 	"TokenStatesLINK": {
 		"deploy": false
 	},
@@ -207,15 +195,6 @@
 		"deploy": false
 	},
 	"SynthsLINK": {
-		"deploy": false
-	},
-	"TokenStatesDEFI": {
-		"deploy": false
-	},
-	"ProxysDEFI": {
-		"deploy": false
-	},
-	"SynthsDEFI": {
 		"deploy": false
 	},
 	"TokenStatesADA": {
@@ -311,7 +290,52 @@
 	"NativeEtherWrapper": {
 		"deploy": false
 	},
+	"WrapperFactory": {
+		"deploy": false
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": false
+	},
 	"SynthRedeemer": {
+		"deploy": false
+	},
+	"TokenStatesETHBTC": {
+		"deploy": false
+	},
+	"ProxysETHBTC": {
+		"deploy": false
+	},
+	"SynthsETHBTC": {
+		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
+	},
+	"SynthetixDebtShare": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
+		"deploy": false
+	},
+	"OneNetAggregatorsDEFI": {
 		"deploy": false
 	}
 }

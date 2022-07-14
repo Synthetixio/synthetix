@@ -101,6 +101,25 @@ contract Synthetix is BaseSynthetix {
         );
     }
 
+    function exchangeAtomically(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode,
+        uint minAmount
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeAtomically(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender,
+                trackingCode,
+                minAmount
+            );
+    }
+
     function settle(bytes32 currencyKey)
         external
         optionalProxy
@@ -122,13 +141,13 @@ contract Synthetix is BaseSynthetix {
         uint supplyToMint = _supplySchedule.mintableSupply();
         require(supplyToMint > 0, "No supply is mintable");
 
+        emitTransfer(address(0), address(this), supplyToMint);
+
         // record minting event before mutation to token supply
-        _supplySchedule.recordMintEvent(supplyToMint);
+        uint minterReward = _supplySchedule.recordMintEvent(supplyToMint);
 
         // Set minted SNX balance to RewardEscrow's balance
         // Minus the minterReward and set balance of minter to add reward
-        uint minterReward = _supplySchedule.minterReward();
-        // Get the remainder
         uint amountToDistribute = supplyToMint.sub(minterReward);
 
         // Set the token balance to the RewardsDistribution contract
@@ -145,25 +164,10 @@ contract Synthetix is BaseSynthetix {
         tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
         emitTransfer(address(this), msg.sender, minterReward);
 
+        // Increase total supply by minted amount
         totalSupply = totalSupply.add(supplyToMint);
 
         return true;
-    }
-
-    function liquidateDelinquentAccount(address account, uint susdAmount)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        (uint totalRedeemed, uint amountLiquidated) =
-            issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
-
-        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
-
-        // Transfer SNX redeemed to messageSender
-        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
-        return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
     /* Once off function for SIP-60 to migrate SNX balances in the RewardEscrow contract
@@ -179,19 +183,30 @@ contract Synthetix is BaseSynthetix {
     }
 
     // ========== EVENTS ==========
-    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
-    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
 
-    function emitAccountLiquidated(
+    event AtomicSynthExchange(
+        address indexed account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    );
+    bytes32 internal constant ATOMIC_SYNTH_EXCHANGE_SIG =
+        keccak256("AtomicSynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+
+    function emitAtomicSynthExchange(
         address account,
-        uint256 snxRedeemed,
-        uint256 amountLiquidated,
-        address liquidator
-    ) internal {
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    ) external onlyExchanger {
         proxy._emit(
-            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
-            ACCOUNTLIQUIDATED_SIG,
+            ATOMIC_SYNTH_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0

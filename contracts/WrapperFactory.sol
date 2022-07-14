@@ -14,7 +14,7 @@ import "./interfaces/IWrapperFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/wrapperfactory
 contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
-    bytes32 internal constant CONTRACT_NAME = "WrapperFactory";
+    bytes32 public constant CONTRACT_NAME = "WrapperFactory";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 internal constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
@@ -93,9 +93,6 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
             // Transfer sUSD to the fee pool
             bool success = synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
             require(success, "Transfer did not succeed");
-
-            // this is supposed to be done automatically by `transfer` but for some reason that doesn't happen
-            feePool().recordFeePaid(amountSUSD);
         }
     }
 

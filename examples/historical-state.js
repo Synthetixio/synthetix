@@ -17,21 +17,33 @@ program
 	.description('Inspect historical state of Synthetix at some given block')
 	.arguments('[args...]')
 	.option('-b, --block-number <value>', 'Block')
-	.option('-c, --contract <value>', 'The contract label or address', 'ProxyERC20')
+	.option('-c, --contract <value>', 'The contract label or address', 'ProxySynthetix')
 	.option('-s, --source <value>', 'The label of the source contract', 'Synthetix')
 	.option('-m, --method <value>', 'The method name', 'name')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-i, --infura-project-id <value>', 'An infura project ID with access to archive state')
 	.option('-e, --etherscan-key <value>', 'Etherscan api key')
+	.option('--use-ovm', 'Use OVM')
 	.action(
 		async (
 			_,
-			{ network, contract, source, blockNumber, method, infuraProjectId, etherscanKey, args }
+			{
+				network,
+				contract,
+				source,
+				blockNumber,
+				method,
+				infuraProjectId,
+				etherscanKey,
+				args,
+				useOvm,
+			}
 		) => {
 			if (!infuraProjectId || !etherscanKey) {
 				require('dotenv').config();
 				infuraProjectId = infuraProjectId || process.env.INFURA_PROJECT_ID;
-				etherscanKey = etherscanKey || process.env.ETHERSCAN_KEY;
+				etherscanKey =
+					etherscanKey || (useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY);
 				if (!infuraProjectId) {
 					throw Error('Missing infura project ID');
 				}

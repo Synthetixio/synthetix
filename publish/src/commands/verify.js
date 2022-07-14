@@ -56,6 +56,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 
 	const tableData = [];
 
+	const etherscanKey = useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY;
+
 	for (const name of Object.keys(config)) {
 		const { address } = deployment.targets[name];
 		// Check if this contract already has been verified.
@@ -65,9 +67,11 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				module: 'contract',
 				action: 'getabi',
 				address,
-				apikey: process.env.ETHERSCAN_KEY,
+				apikey: etherscanKey,
 			},
 		});
+
+		await new Promise(resolve => setTimeout(resolve, 5000));
 
 		if (result.data.result === 'Contract source code not verified') {
 			const { source } = deployment.targets[name];
@@ -82,7 +86,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					action: 'txlist',
 					address,
 					sort: 'asc',
-					apikey: process.env.ETHERSCAN_KEY,
+					apikey: etherscanKey,
 				},
 			});
 
@@ -121,7 +125,10 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			console.log(gray(' - Constructor arguments', constructorArguments));
 
 			const readFlattened = () => {
-				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, `${source}.sol`);
+				const sourcePath = Object.entries(
+					deployment.sources[source].metadata.settings.compilationTarget
+				).find(([key, value]) => value === source)[0];
+				const flattenedFilename = path.join(buildPath, FLATTENED_FOLDER, sourcePath);
 				try {
 					return fs.readFileSync(flattenedFilename).toString();
 				} catch (err) {
@@ -147,8 +154,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 						return (
 							`\nThe proxy for this contract can be found here:\n\n` +
 							`https://contracts.synthetix.io/${network !== 'mainnet' ? network + '/' : ''}${
-								name === 'Synthetix' ? 'ProxyERC20' : 'Proxy' + name
-							}`
+								useOvm ? '/ovm' : ''
+							}${`Proxy${name}`}`
 						);
 					};
 					return (
@@ -179,12 +186,16 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
 					// if ovm remove the +commit... info
-					compilerversion: useOvm ? solcVersion.replace(/\+commit.+$/, '') : solcVersion,
+					compilerversion: solcVersion,
 					optimizationUsed: 1,
 					runs,
 					libraryname1: 'SafeDecimalMath',
+					libraryname2: 'SystemSettingsLib',
+					libraryname3: 'SignedSafeDecimalMath',
 					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
-					apikey: process.env.ETHERSCAN_KEY,
+					libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
+					libraryaddress3: (deployment.targets['SignedSafeDecimalMath'] || {}).address,
+					apikey: etherscanKey,
 				}),
 				{
 					headers: {
@@ -234,8 +245,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				}
 
 				if (status !== 'Pass - Verified') {
-					console.log(gray(' - Sleeping for 5 seconds and re-checking.'));
-					await new Promise(resolve => setTimeout(resolve, 5000));
+					console.log(gray(' - Sleeping for 15 seconds and re-checking.'));
+					await new Promise(resolve => setTimeout(resolve, 15000));
 				} else {
 					console.log(green(` - Verified ${name}`));
 					tableData.push([name, address, 'Successfully verified']);
@@ -268,6 +279,5 @@ module.exports = {
 			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-
 			.action(verify),
 };

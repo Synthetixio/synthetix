@@ -29,12 +29,20 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'sUSD') {
 		await _getsUSD({ ctx, user, amount });
+	} else if (symbol === 'sETH') {
+		await _getSynth({ ctx, symbol, user, amount });
 	} else if (symbol === 'ETH') {
 		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
 		throw new Error(
 			`Symbol ${symbol} not yet supported. TODO: Support via exchanging sUSD to other Synths.`
 		);
+	}
+
+	// sanity check
+	const newBalance = await _readBalance({ ctx, symbol, user });
+	if (newBalance.lt(amount)) {
+		throw new Error(`Failed to get required ${amount} ${symbol} for ${user.address}`);
 	}
 }
 
@@ -79,7 +87,11 @@ async function _getWETH({ ctx, user, amount }) {
 }
 
 async function _getSNX({ ctx, user, amount }) {
+	const { ProxySynthetix } = ctx.contracts;
 	let { Synthetix } = ctx.contracts;
+
+	// connect via proxy
+	Synthetix = new ethers.Contract(ProxySynthetix.address, Synthetix.interface, ctx.provider);
 
 	const ownerTransferable = await Synthetix.transferableSynthetix(ctx.users.owner.address);
 	if (ownerTransferable.lt(amount)) {
@@ -134,7 +146,12 @@ async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
 }
 
 async function _getsUSD({ ctx, user, amount }) {
+	const { ProxySynthetix, ProxysUSD } = ctx.contracts;
 	let { Synthetix, SynthsUSD } = ctx.contracts;
+
+	// connect via proxy
+	Synthetix = new ethers.Contract(ProxySynthetix.address, Synthetix.interface, ctx.provider);
+	SynthsUSD = new ethers.Contract(ProxysUSD.address, SynthsUSD.interface, ctx.provider);
 
 	let tx;
 
@@ -142,12 +159,58 @@ async function _getsUSD({ ctx, user, amount }) {
 	await ensureBalance({ ctx, symbol: 'SNX', user, balance: requiredSNX });
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
-	tx = await Synthetix.issueSynths(amount);
+
+	const tmpWallet = await ethers.Wallet.createRandom().connect(ctx.provider);
+
+	await _getETHFromOtherUsers({
+		ctx,
+		symbol: 'ETH',
+		user: tmpWallet,
+		amount: ethers.utils.parseEther('1'),
+	});
+
+	tx = await Synthetix.transfer(tmpWallet.address, requiredSNX.mul(2));
 	await tx.wait();
 
-	SynthsUSD = SynthsUSD.connect(ctx.users.owner);
-	tx = await SynthsUSD.transfer(user.address, amount);
+	tx = await Synthetix.connect(tmpWallet).issueSynths(amount);
 	await tx.wait();
+
+	tx = await SynthsUSD.connect(tmpWallet).transfer(user.address, amount);
+	await tx.wait();
+}
+
+async function _getSynth({ ctx, user, symbol, amount }) {
+	let spent = ethers.utils.parseEther('0');
+	let partialAmount = ethers.utils.parseEther('1000'); // choose a "reasonable" amount to start with
+
+	let remaining = amount;
+
+	const token = _getTokenFromSymbol({ ctx, symbol });
+
+	// requiring from within function to prevent circular dependency
+	const { exchangeSynths } = require('./exchanging');
+
+	while (remaining.gt(0)) {
+		await exchangeSynths({
+			ctx,
+			dest: symbol,
+			src: 'sUSD',
+			amount: partialAmount,
+			user,
+		});
+
+		spent = spent.add(partialAmount);
+		const newBalance = await token.balanceOf(user.address);
+
+		if (newBalance.eq(0)) {
+			throw new Error('received no synths from exchange, did breaker trip? is rate set?');
+		}
+
+		remaining = amount.sub(newBalance);
+
+		// estimate what more to send based on the rate we got for the first exchange
+		partialAmount = spent.mul(remaining.add(remaining.div(10))).div(newBalance);
+	}
 }
 
 async function _getSNXAmountRequiredForsUSDAmount({ ctx, amount }) {

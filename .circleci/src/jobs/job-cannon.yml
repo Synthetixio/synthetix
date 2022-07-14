@@ -1,0 +1,22 @@
+# Builds a testing chain which is used for integration tests and downstream projects
+{{> job-header-machine.yml}}
+steps:
+  - run: |
+      mkdir -p ~/.foundry/bin
+      curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
+      chmod +x ~/.foundry/foundryup
+      ~/.foundry/foundryup
+      echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npx hardhat compile --optimizer --fail-oversize
+  - run: node publish build --test-helpers
+  - run: npx hardhat cannon:build --file cannonfile.aggregator.toml
+  - run: npx hardhat cannon:build
+  - persist_to_workspace:
+      root: .
+      paths:
+        - build
+        - cannon
+        - publish/deployed

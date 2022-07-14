@@ -10,7 +10,7 @@ const TokenState = artifacts.require('TokenState');
 const LegacyTokenState = artifacts.require('LegacyTokenState');
 const VirtualSynth = artifacts.require('VirtualSynth');
 
-const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('BaseMigration', async accounts => {
 	const [deployerAccount, owner] = accounts;
@@ -46,23 +46,8 @@ contract('BaseMigration', async accounts => {
 			});
 		});
 
-		it('deployer is set', async () => {
-			assert.equal(await instance.deployer(), deployerAccount);
-		});
-
 		it('owner is set', async () => {
 			assert.equal(await instance.owner(), owner);
-		});
-
-		describe('when the onlyDeployer modifier is used', () => {
-			it('only allows the deployer to execute', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: instance.canOnlyBeRunByDeployer,
-					args: [],
-					address: deployerAccount,
-					accounts,
-				});
-			});
 		});
 
 		describe('when ownership needs returning', () => {

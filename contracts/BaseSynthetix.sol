@@ -9,11 +9,12 @@ import "./interfaces/ISynthetix.sol";
 // Internal references
 import "./interfaces/ISynth.sol";
 import "./TokenState.sol";
-import "./interfaces/ISynthetixState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/ILiquidator.sol";
+import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
@@ -26,11 +27,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 public constant sUSD = "sUSD";
 
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
-    bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
+    bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
 
     // ========== CONSTRUCTOR ==========
 
@@ -50,16 +52,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](5);
-        addresses[0] = CONTRACT_SYNTHETIXSTATE;
-        addresses[1] = CONTRACT_SYSTEMSTATUS;
-        addresses[2] = CONTRACT_EXCHANGER;
-        addresses[3] = CONTRACT_ISSUER;
-        addresses[4] = CONTRACT_REWARDSDISTRIBUTION;
-    }
-
-    function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
+        addresses = new bytes32[](6);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_EXCHANGER;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[4] = CONTRACT_LIQUIDATORREWARDS;
+        addresses[5] = CONTRACT_LIQUIDATOR;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -76,6 +75,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
         return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
+    }
+
+    function liquidatorRewards() internal view returns (ILiquidatorRewards) {
+        return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
+    }
+
+    function liquidator() internal view returns (ILiquidator) {
+        return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
 
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
@@ -147,14 +154,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
-        (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
-
-        if (initialDebtOwnership > 0) {
+        if (issuer().debtBalanceOf(account, sUSD) > 0) {
             (uint transferable, bool anyRateIsInvalid) =
                 issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
             require(value <= transferable, "Cannot transfer staked or escrowed SNX");
             require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
+
         return true;
     }
 
@@ -250,7 +256,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         );
     }
 
-    function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
+    function transfer(address to, uint value) external onlyProxyOrInternal systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
 
@@ -264,7 +270,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address from,
         address to,
         uint value
-    ) external optionalProxy systemActive returns (bool) {
+    ) external onlyProxyOrInternal systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(from, value);
 
@@ -305,13 +311,90 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
+    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
+    function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, false);
+
+        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+
+        if (totalRedeemed > 0) {
+            uint stakerRewards; // The amount of rewards to be sent to the LiquidatorRewards contract.
+            uint flagReward = liquidator().flagReward();
+            uint liquidateReward = liquidator().liquidateReward();
+            // Check if the total amount of redeemed SNX is enough to payout the liquidation rewards.
+            if (totalRedeemed > flagReward.add(liquidateReward)) {
+                // Transfer the flagReward to the account who flagged this account for liquidation.
+                address flagger = liquidator().getLiquidationCallerForAccount(account);
+                bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
+                require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
+
+                // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
+                bool liquidateRewardTransferSucceeded = _transferByProxy(account, messageSender, liquidateReward);
+                require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
+
+                // The remaining SNX to be sent to the LiquidatorRewards contract.
+                stakerRewards = totalRedeemed.sub(flagReward.add(liquidateReward));
+            } else {
+                /* If the total amount of redeemed SNX is greater than zero 
+                but is less than the sum of the flag & liquidate rewards,
+                then just send all of the SNX to the LiquidatorRewards contract. */
+                stakerRewards = totalRedeemed;
+            }
+
+            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), stakerRewards);
+            require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
+
+            // Inform the LiquidatorRewards contract about the incoming SNX rewards.
+            liquidatorRewards().notifyRewardAmount(stakerRewards);
+
+            return true;
+        } else {
+            // In this unlikely case, the total redeemed SNX is not greater than zero so don't perform any transfers.
+            return false;
+        }
+    }
+
+    /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
+    function liquidateSelf() external systemActive optionalProxy returns (bool) {
+        // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
+        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(messageSender, true);
+
+        emitAccountLiquidated(messageSender, totalRedeemed, amountLiquidated, messageSender);
+
+        // Transfer the redeemed SNX to the LiquidatorRewards contract.
+        // Reverts if amount to redeem is more than balanceOf account (i.e. due to escrowed balance).
+        bool success = _transferByProxy(messageSender, address(liquidatorRewards()), totalRedeemed);
+        require(success, "Transfer to LiquidatorRewards failed");
+
+        // Inform the LiquidatorRewards contract about the incoming SNX rewards.
+        liquidatorRewards().notifyRewardAmount(totalRedeemed);
+
+        return success;
+    }
+
+    /**
+     * @notice Once off function for SIP-239 to recover unallocated SNX rewards
+     * due to an initialization issue in the LiquidatorRewards contract deployed in SIP-148.
+     * @param amount The amount of SNX to be recovered and distributed to the rightful owners
+     */
+    bool public restituted = false;
+
+    function initializeLiquidatorRewardsRestitution(uint amount) external onlyOwner {
+        if (!restituted) {
+            restituted = true;
+            bool success = _transferByProxy(address(liquidatorRewards()), owner, amount);
+            require(success, "restitution transfer failed");
+        }
+    }
+
     function exchangeWithTrackingForInitiator(
         bytes32,
         uint,
         bytes32,
         address,
         bytes32
-    ) external returns (uint amountReceived) {
+    ) external returns (uint) {
         _notImplemented();
     }
 
@@ -324,11 +407,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _notImplemented();
     }
 
-    function mint() external returns (bool) {
+    function exchangeAtomically(
+        bytes32,
+        uint,
+        bytes32,
+        bytes32,
+        uint
+    ) external returns (uint) {
         _notImplemented();
     }
 
-    function liquidateDelinquentAccount(address, uint) external returns (bool) {
+    function mint() external returns (bool) {
         _notImplemented();
     }
 
@@ -355,7 +444,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _systemActive() private {
+    function _systemActive() private view {
         systemStatus().requireSystemActive();
     }
 
@@ -364,7 +453,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _issuanceActive() private {
+    function _issuanceActive() private view {
         systemStatus().requireIssuanceActive();
     }
 
@@ -373,7 +462,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _exchangeActive(bytes32 src, bytes32 dest) private {
+    function _exchangeActive(bytes32 src, bytes32 dest) private view {
         systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
     }
 
@@ -382,11 +471,63 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _onlyExchanger() private {
+    function _onlyExchanger() private view {
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
     }
 
+    modifier onlyProxyOrInternal {
+        _onlyProxyOrInternal();
+        _;
+    }
+
+    function _onlyProxyOrInternal() internal {
+        if (msg.sender == address(proxy)) {
+            // allow proxy through, messageSender should be already set correctly
+            return;
+        } else if (_isInternalTransferCaller(msg.sender)) {
+            // optionalProxy behaviour only for the internal legacy contracts
+            messageSender = msg.sender;
+        } else {
+            revert("Only the proxy can call");
+        }
+    }
+
+    /// some legacy internal contracts use transfer methods directly on implementation
+    /// which isn't supported due to SIP-238 for other callers
+    function _isInternalTransferCaller(address caller) internal view returns (bool) {
+        // These entries are not required or cached in order to allow them to not exist (==address(0))
+        // e.g. due to not being available on L2 or at some future point in time.
+        return
+            // ordered to reduce gas for more frequent calls, bridge first, vesting after, legacy last
+            caller == resolver.getAddress("SynthetixBridgeToOptimism") ||
+            caller == resolver.getAddress("RewardEscrowV2") ||
+            // legacy contracts
+            caller == resolver.getAddress("RewardEscrow") ||
+            caller == resolver.getAddress("SynthetixEscrow") ||
+            caller == resolver.getAddress("TradingRewards") ||
+            caller == resolver.getAddress("Depot");
+    }
+
     // ========== EVENTS ==========
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
+    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
+
+    function emitAccountLiquidated(
+        address account,
+        uint256 snxRedeemed,
+        uint256 amountLiquidated,
+        address liquidator
+    ) internal {
+        proxy._emit(
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
+            2,
+            ACCOUNTLIQUIDATED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
@@ -395,7 +536,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 internal constant SYNTHEXCHANGE_SIG =
+    bytes32 internal constant SYNTH_EXCHANGE_SIG =
         keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
 
     function emitSynthExchange(
@@ -409,7 +550,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         proxy._emit(
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
-            SYNTHEXCHANGE_SIG,
+            SYNTH_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0

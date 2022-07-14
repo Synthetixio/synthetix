@@ -60,6 +60,40 @@
 			"sources": ["Exchanger", "ExchangeRates"]
 		},
 		{
+			"sip": 80,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SystemStatus",
+					"FuturesMarketManager"
+				],
+				"ovm": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SystemStatus",
+					"FuturesMarket.+",
+					"FuturesMarketManager",
+					"FuturesMarketSettings",
+					"FuturesMarketData"
+				]
+			},
+			"released": "both"
+		},
+		{
 			"sip": 83,
 			"layer": "base",
 			"released": "base",
@@ -277,6 +311,12 @@
 			"sources": ["Exchanger"]
 		},
 		{
+			"sip": 120,
+			"layer": "base",
+			"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"],
+			"released": "base"
+		},
+		{
 			"sip": 121,
 			"layer": "ovm",
 			"released": "ovm",
@@ -354,9 +394,54 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 148,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"LiquidatorRewards",
+				"Synthetix",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 167,
+			"layer": "both",
+			"sources": {
+				"base": ["OwnerRelayOnEthereum", "SystemSettings"],
+				"ovm": ["Issuer", "OwnerRelayOnOptimism", "SystemSettings"]
+			},
+			"released": "both"
+		},
+		{
 			"sip": 158,
 			"layer": "base",
 			"released": "base"
+		},
+		{
+			"sip": 165,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"FeePool",
+					"Issuer",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
+					"SynthetixBridgeToOptimism",
+					"SystemSettings"
+				],
+				"ovm": [
+					"FeePool",
+					"Issuer",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
+					"SynthetixBridgeToBase",
+					"SystemSettings"
+				]
+			},
+			"released": "both"
 		},
 		{
 			"sip": 169,
@@ -376,7 +461,7 @@
 		},
 		{
 			"sip": 182,
-			"layer": "ovm",
+			"layer": "both",
 			"sources": [
 				"DebtCache",
 				"FeePool",
@@ -385,12 +470,216 @@
 				"SystemSettings",
 				"WrapperFactory"
 			],
-			"released": "ovm"
+			"released": "both"
+		},
+		{
+			"sip": 184,
+			"layer": "both",
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
+			"released": "both"
+		},
+		{
+			"sip": 185,
+			"layer": "both",
+			"sources": ["Synthetix", "FeePool", "Issuer", "SynthetixDebtShare"],
+			"released": "both"
 		},
 		{
 			"sip": 187,
 			"layer": "both",
 			"sources": ["DebtCache", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 188,
+			"layer": "base",
+			"sources": [],
+			"released": "base"
+		},
+		{
+			"sip": 192,
+			"layer": "both",
+			"sources": ["WrapperFactory"],
+			"released": "both"
+		},
+		{
+			"sip": 193,
+			"layer": "both",
+			"sources": ["SystemSettings", "SystemSettingsLib"],
+			"released": "both"
+		},
+		{
+			"sip": 194,
+			"layer": "ovm",
+			"sources": ["Synthetix"],
+			"released": "ovm"
+		},
+		{
+			"sip": 195,
+			"layer": "ovm",
+			"sources": ["CollateralEth"],
+			"released": "ovm"
+		},
+		{
+			"sip": 196,
+			"layer": "both",
+			"sources": ["ExchangeRates"],
+			"released": "both"
+		},
+		{
+			"sip": 198,
+			"layer": "both",
+			"sources": [
+				"Synthetix",
+				"Exchanger",
+				"ExchangeRates",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 199,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 200,
+			"layer": "both",
+			"sources": ["FeePool"],
+			"released": "both"
+		},
+		{
+			"sip": 202,
+			"layer": "base",
+			"sources": ["SupplySchedule", "Synthetix"],
+			"released": "base"
+		},
+		{
+			"sip": 205,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 209,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 212,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 213,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 216,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 217,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 219,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 220,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 222,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 223,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 229,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"SynthetixBridgeToOptimism",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				],
+				"ovm": [
+					"SynthetixBridgeToBase",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 235,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 236,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Synthetix", "Synths.*", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 239,
+			"layer": "both",
+			"sources": ["Synthetix"],
+			"released": "both"
+		},
+		{
+			"sip": 240,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 243,
+			"layer": "base",
+			"sources": ["OneNetAggregatorsDEFI"],
+			"released": "base"
+		},
+		{
+			"sip": 246,
+			"layer": "ovm",
+			"sources": ["CollateralShort", "Issuer"],
+			"released": "ovm"
+		},
+		{
+			"sip": 251,
+			"layer": "both",
+			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
 			"released": "both"
 		}
 	],
@@ -658,41 +947,336 @@
 		},
 		{
 			"name": "Alkaid",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 53
 			},
-			"sips": []
-		},
-		{
-			"name": "Alkaid (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 53
-			},
-			"sips": []
+			"sips": [120, 182]
 		},
 		{
 			"name": "Menkalinan",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 54
 			},
-			"sips": []
+			"sips": [167]
 		},
 		{
 			"name": "Menkalinan (Optimism)",
 			"ovm": true,
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 54
 			},
-			"sips": []
+			"sips": [167]
+		},
+		{
+			"name": "Atria",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 55
+			},
+			"sips": [192]
+		},
+		{
+			"name": "Atria (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 55
+			},
+			"sips": [192]
+		},
+		{
+			"name": "Alhena",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 56
+			},
+			"sips": [188]
+		},
+		{
+			"name": "Alhena (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 56
+			},
+			"sips": [194, 195]
+		},
+		{
+			"name": "Peacock",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 57
+			},
+			"sips": [200]
+		},
+		{
+			"name": "Peacock (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 57
+			},
+			"sips": [200]
+		},
+		{
+			"name": "Alsephina",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 58
+			},
+			"sips": [184, 193, 196]
+		},
+		{
+			"name": "Alsephina (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 58
+			},
+			"sips": [184, 193, 196]
+		},
+		{
+			"name": "Mirzam",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 59
+			},
+			"sips": [209]
+		},
+		{
+			"name": "Mirzam (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 59
+			},
+			"sips": [209]
+		},
+		{
+			"name": "Alphard",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 60
+			},
+			"sips": [185]
+		},
+		{
+			"name": "Alphard (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 60
+			},
+			"sips": [185]
+		},
+		{
+			"name": "Polaris (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 61
+			},
+			"sips": [199]
+		},
+		{
+			"name": "Hamal",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 62
+			},
+			"sips": [202]
+		},
+		{
+			"name": "Algieba (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 63
+			},
+			"sips": [205]
+		},
+		{
+			"name": "Diphda",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": [80, 165]
+		},
+		{
+			"name": "Diphda (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": [80, 165, 213]
+		},
+		{
+			"name": "Mizar",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": [220]
+		},
+		{
+			"name": "Mizar (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": [220]
+		},
+		{
+			"name": "Nunki (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 66
+			},
+			"sips": [217]
+		},
+		{
+			"name": "Mirach",
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": [198, 222, 229],
+			"released": true
+		},
+		{
+			"name": "Mirach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": [198, 216, 219, 222, 223, 229],
+			"released": true
+		},
+		{
+			"name": "Alpheratz",
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": [148, 236],
+			"released": true
+		},
+		{
+			"name": "Alpheratz (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": [148, 236],
+			"released": true
+		},
+		{
+			"name": "Rasalhague",
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": [239],
+			"released": true
+		},
+		{
+			"name": "Rasalhague (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": [239],
+			"released": true
+		},
+		{
+			"name": "Kochab (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 71
+			},
+			"sips": [246],
+			"released": true
+		},
+		{
+			"name": "Saiph",
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": [235, 238, 240],
+			"released": true
+		},
+		{
+			"name": "Saiph (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": [235, 238, 240],
+			"released": true
+		},
+		{
+			"name": "Denebola",
+			"version": {
+				"major": 2,
+				"minor": 73
+			},
+			"sips": [243],
+			"released": true
+		},
+		{
+			"name": "Algol",
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251],
+			"released": true
+		},
+		{
+			"name": "Algol (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251],
+			"released": true
 		}
 	]
 }

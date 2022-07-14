@@ -6,5 +6,5 @@ steps:
   - run:
       shell: /bin/sh
       command: |
-        wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 300 http://localhost:<<parameters.port>>
+        wget --retry-connrefused --waitretry=1 --read-timeout=180 --timeout=180 -t 300 http://localhost:<<parameters.port>>
         :

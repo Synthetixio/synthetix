@@ -2,51 +2,29 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISystemSettings.sol";
-
-// Libraries
-import "./SafeDecimalMath.sol";
+import "./SystemSettingsLib.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
+    // SystemSettingsLib is a way to split out the setters to reduce contract size
+    using SystemSettingsLib for IFlexibleStorage;
 
-    // No more synths may be issued than the value of SNX backing them.
-    uint public constant MAX_ISSUANCE_RATIO = 1e18;
-
-    // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
-
-    uint public constant MAX_TARGET_THRESHOLD = 50;
-
-    uint public constant MAX_LIQUIDATION_RATIO = 1e18; // 100% issuance ratio
-
-    uint public constant MAX_LIQUIDATION_PENALTY = 1e18 / 4; // Max 25% liquidation penalty / bonus
-
-    uint public constant RATIO_FROM_TARGET_BUFFER = 2e18; // 200% - mininimum buffer between issuance ratio and liquidation ratio
-
-    uint public constant MAX_LIQUIDATION_DELAY = 30 days;
-    uint public constant MIN_LIQUIDATION_DELAY = 1 days;
-
-    // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
-
-    // Minimum Stake time may not exceed 1 weeks.
-    uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
-
-    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
-    uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
-
-    int public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
-    int public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
-
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
+        // SETTING_CONTRACT_NAME is defined for the getters in MixinSystemSettings and
+        // SystemSettingsLib.contractName() is a view into SystemSettingsLib of the contract name
+        // that's used by the setters. They have to be equal.
+        require(SETTING_CONTRACT_NAME == SystemSettingsLib.contractName(), "read and write keys not equal");
+    }
 
     // ========== VIEWS ==========
+
+    // backwards compatibility to having CONTRACT_NAME public constant
+    // solhint-disable-next-line func-name-mixedcase
+    function CONTRACT_NAME() external view returns (bytes32) {
+        return SystemSettingsLib.contractName();
+    }
 
     // SIP-37 Fee Reclamation
     // The number of seconds after an exchange is executed that must be waited
@@ -94,20 +72,82 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationRatio();
     }
 
-    // SIP-15 Liquidations
-    // penalty taken away from target of liquidation (with 18 decimals). E.g. 10% is 0.1e18
+    // SIP-97 Liquidations
+    // penalty taken away from target of Collateral liquidation (with 18 decimals). E.g. 10% is 0.1e18
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
     }
+
+    // SIP-251 Differentiate Liquidation Penalties
+    // penalty taken away from target of SNX liquidation (with 18 decimals). E.g. 30% is 0.3e18
+    function snxLiquidationPenalty() external view returns (uint) {
+        return getSnxLiquidationPenalty();
+    }
+
+    /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
+
+    /// @notice Get the escrow duration for liquidation rewards
+    /// @return The escrow duration for liquidation rewards
+    function liquidationEscrowDuration() external view returns (uint) {
+        return getLiquidationEscrowDuration();
+    }
+
+    /// @notice Get the penalty for self liquidation
+    /// @return The self liquidation penalty
+    function selfLiquidationPenalty() external view returns (uint) {
+        return getSelfLiquidationPenalty();
+    }
+
+    /// @notice Get the reward for flagging an account for liquidation
+    /// @return The reward for flagging an account
+    function flagReward() external view returns (uint) {
+        return getFlagReward();
+    }
+
+    /// @notice Get the reward for liquidating an account
+    /// @return The reward for performing a forced liquidation
+    function liquidateReward() external view returns (uint) {
+        return getLiquidateReward();
+    }
+
+    /* ========== End SIP-148 ========== */
 
     // How long will the ExchangeRates contract assume the rate of any asset is correct
     function rateStalePeriod() external view returns (uint) {
         return getRateStalePeriod();
     }
 
+    /* ========== Exchange Related Fees ========== */
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getExchangeFeeRate(currencyKey);
     }
+
+    // SIP-184 Dynamic Fee
+    /// @notice Get the dynamic fee threshold
+    /// @return The dynamic fee threshold
+    function exchangeDynamicFeeThreshold() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().threshold;
+    }
+
+    /// @notice Get the dynamic fee weight decay per round
+    /// @return The dynamic fee weight decay per round
+    function exchangeDynamicFeeWeightDecay() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().weightDecay;
+    }
+
+    /// @notice Get the dynamic fee total rounds for calculation
+    /// @return The dynamic fee total rounds for calculation
+    function exchangeDynamicFeeRounds() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().rounds;
+    }
+
+    /// @notice Get the max dynamic fee
+    /// @return The max dynamic fee
+    function exchangeMaxDynamicFee() external view returns (uint) {
+        return getExchangeDynamicFeeConfig().maxFee;
+    }
+
+    /* ========== End Exchange Related Fees ========== */
 
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();
@@ -167,14 +207,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getWrapperBurnFeeRate(wrapper);
     }
 
-    function minCratio(address collateral) external view returns (uint) {
-        return getMinCratio(collateral);
-    }
-
-    function collateralManager(address collateral) external view returns (address) {
-        return getNewCollateralManager(collateral);
-    }
-
     function interactionDelay(address collateral) external view returns (uint) {
         return getInteractionDelay(collateral);
     }
@@ -183,256 +215,344 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getCollapseFeeRate(collateral);
     }
 
+    // SIP-120 Atomic exchanges
+    // max allowed volume per block for atomic exchanges
+    function atomicMaxVolumePerBlock() external view returns (uint) {
+        return getAtomicMaxVolumePerBlock();
+    }
+
+    // SIP-120 Atomic exchanges
+    // time window (in seconds) for TWAP prices when considered for atomic exchanges
+    function atomicTwapWindow() external view returns (uint) {
+        return getAtomicTwapWindow();
+    }
+
+    // SIP-120 Atomic exchanges
+    // equivalent asset to use for a synth when considering external prices for atomic exchanges
+    function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
+        return getAtomicEquivalentForDexPricing(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // fee rate override for atomic exchanges into a synth
+    function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicExchangeFeeRate(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // consideration window for determining synth volatility
+    function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityConsiderationWindow(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // update threshold for determining synth volatility
+    function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityUpdateThreshold(currencyKey);
+    }
+
+    // SIP-198: Atomic Exchange At Pure Chainlink Price
+    // Whether to use the pure Chainlink price for a given currency key
+    function pureChainlinkPriceForAtomicSwapsEnabled(bytes32 currencyKey) external view returns (bool) {
+        return getPureChainlinkPriceForAtomicSwapsEnabled(currencyKey);
+    }
+
+    // SIP-229 Atomic exchanges
+    // enable/disable sending of synths cross chain
+    function crossChainSynthTransferEnabled(bytes32 currencyKey) external view returns (uint) {
+        return getCrossChainSynthTransferEnabled(currencyKey);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
         external
         onlyOwner
     {
-        require(
-            _crossDomainMessageGasLimit >= MIN_CROSS_DOMAIN_GAS_LIMIT &&
-                _crossDomainMessageGasLimit <= MAX_CROSS_DOMAIN_GAS_LIMIT,
-            "Out of range xDomain gasLimit"
-        );
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            _getGasLimitSetting(_gasLimitType),
-            _crossDomainMessageGasLimit
-        );
+        flexibleStorage().setCrossDomainMessageGasLimit(_getGasLimitSetting(_gasLimitType), _crossDomainMessageGasLimit);
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
+    function setIssuanceRatio(uint ratio) external onlyOwner {
+        flexibleStorage().setIssuanceRatio(SETTING_ISSUANCE_RATIO, ratio);
+        emit IssuanceRatioUpdated(ratio);
+    }
+
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
-        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
+        flexibleStorage().setTradingRewardsEnabled(SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
         emit TradingRewardsEnabled(_tradingRewardsEnabled);
     }
 
     function setWaitingPeriodSecs(uint _waitingPeriodSecs) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
+        flexibleStorage().setWaitingPeriodSecs(SETTING_WAITING_PERIOD_SECS, _waitingPeriodSecs);
         emit WaitingPeriodSecsUpdated(_waitingPeriodSecs);
     }
 
     function setPriceDeviationThresholdFactor(uint _priceDeviationThresholdFactor) external onlyOwner {
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
+        flexibleStorage().setPriceDeviationThresholdFactor(
             SETTING_PRICE_DEVIATION_THRESHOLD_FACTOR,
             _priceDeviationThresholdFactor
         );
         emit PriceDeviationThresholdUpdated(_priceDeviationThresholdFactor);
     }
 
-    function setIssuanceRatio(uint _issuanceRatio) external onlyOwner {
-        require(_issuanceRatio <= MAX_ISSUANCE_RATIO, "New issuance ratio cannot exceed MAX_ISSUANCE_RATIO");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUANCE_RATIO, _issuanceRatio);
-        emit IssuanceRatioUpdated(_issuanceRatio);
-    }
-
     function setFeePeriodDuration(uint _feePeriodDuration) external onlyOwner {
-        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
-        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
-
+        flexibleStorage().setFeePeriodDuration(SETTING_FEE_PERIOD_DURATION, _feePeriodDuration);
         emit FeePeriodDurationUpdated(_feePeriodDuration);
     }
 
-    function setTargetThreshold(uint _percent) external onlyOwner {
-        require(_percent <= MAX_TARGET_THRESHOLD, "Threshold too high");
-
-        uint _targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_TARGET_THRESHOLD, _targetThreshold);
-
-        emit TargetThresholdUpdated(_targetThreshold);
+    function setTargetThreshold(uint percent) external onlyOwner {
+        uint threshold = flexibleStorage().setTargetThreshold(SETTING_TARGET_THRESHOLD, percent);
+        emit TargetThresholdUpdated(threshold);
     }
 
     function setLiquidationDelay(uint time) external onlyOwner {
-        require(time <= MAX_LIQUIDATION_DELAY, "Must be less than 30 days");
-        require(time >= MIN_LIQUIDATION_DELAY, "Must be greater than 1 day");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_DELAY, time);
-
+        flexibleStorage().setLiquidationDelay(SETTING_LIQUIDATION_DELAY, time);
         emit LiquidationDelayUpdated(time);
     }
 
     // The collateral / issuance ratio ( debt / collateral ) is higher when there is less collateral backing their debt
     // Upper bound liquidationRatio is 1 + penalty (100% + 10% = 110%) to allow collateral value to cover debt and liquidation penalty
     function setLiquidationRatio(uint _liquidationRatio) external onlyOwner {
-        require(
-            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getLiquidationPenalty())),
-            "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
+        flexibleStorage().setLiquidationRatio(
+            SETTING_LIQUIDATION_RATIO,
+            _liquidationRatio,
+            getSnxLiquidationPenalty(),
+            getIssuanceRatio()
         );
-
-        // MIN_LIQUIDATION_RATIO is a product of target issuance ratio * RATIO_FROM_TARGET_BUFFER
-        // Ensures that liquidation ratio is set so that there is a buffer between the issuance ratio and liquidation ratio.
-        uint MIN_LIQUIDATION_RATIO = getIssuanceRatio().multiplyDecimal(RATIO_FROM_TARGET_BUFFER);
-        require(_liquidationRatio >= MIN_LIQUIDATION_RATIO, "liquidationRatio < MIN_LIQUIDATION_RATIO");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_RATIO, _liquidationRatio);
-
         emit LiquidationRatioUpdated(_liquidationRatio);
     }
 
+    function setLiquidationEscrowDuration(uint duration) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_ESCROW_DURATION, duration);
+        emit LiquidationEscrowDurationUpdated(duration);
+    }
+
+    function setSnxLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSnxLiquidationPenalty(SETTING_SNX_LIQUIDATION_PENALTY, penalty);
+        emit SnxLiquidationPenaltyUpdated(penalty);
+    }
+
     function setLiquidationPenalty(uint penalty) external onlyOwner {
-        require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
-
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY, penalty);
-
+        flexibleStorage().setLiquidationPenalty(SETTING_LIQUIDATION_PENALTY, penalty);
         emit LiquidationPenaltyUpdated(penalty);
     }
 
-    function setRateStalePeriod(uint period) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_RATE_STALE_PERIOD, period);
+    function setSelfLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSelfLiquidationPenalty(SETTING_SELF_LIQUIDATION_PENALTY, penalty);
+        emit SelfLiquidationPenaltyUpdated(penalty);
+    }
 
+    function setFlagReward(uint reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FLAG_REWARD, reward);
+        emit FlagRewardUpdated(reward);
+    }
+
+    function setLiquidateReward(uint reward) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATE_REWARD, reward);
+        emit LiquidateRewardUpdated(reward);
+    }
+
+    function setRateStalePeriod(uint period) external onlyOwner {
+        flexibleStorage().setRateStalePeriod(SETTING_RATE_STALE_PERIOD, period);
         emit RateStalePeriodUpdated(period);
     }
 
+    /* ========== Exchange Fees Related ========== */
     function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
         external
         onlyOwner
     {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
+        flexibleStorage().setExchangeFeeRateForSynths(SETTING_EXCHANGE_FEE_RATE, synthKeys, exchangeFeeRates);
         for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
-            flexibleStorage().setUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_EXCHANGE_FEE_RATE, synthKeys[i])),
-                exchangeFeeRates[i]
-            );
             emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
         }
     }
 
+    /// @notice Set exchange dynamic fee threshold constant in decimal ratio
+    /// @param threshold The exchange dynamic fee threshold
+    /// @return uint threshold constant
+    function setExchangeDynamicFeeThreshold(uint threshold) external onlyOwner {
+        require(threshold != 0, "Threshold cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD, threshold);
+
+        emit ExchangeDynamicFeeThresholdUpdated(threshold);
+    }
+
+    /// @notice Set exchange dynamic fee weight decay constant
+    /// @param weightDecay The exchange dynamic fee weight decay
+    /// @return uint weight decay constant
+    function setExchangeDynamicFeeWeightDecay(uint weightDecay) external onlyOwner {
+        require(weightDecay != 0, "Weight decay cannot be 0");
+
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, weightDecay);
+
+        emit ExchangeDynamicFeeWeightDecayUpdated(weightDecay);
+    }
+
+    /// @notice Set exchange dynamic fee last N rounds with minimum 2 rounds
+    /// @param rounds The exchange dynamic fee last N rounds
+    /// @return uint dynamic fee last N rounds
+    function setExchangeDynamicFeeRounds(uint rounds) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_ROUNDS, rounds);
+
+        emit ExchangeDynamicFeeRoundsUpdated(rounds);
+    }
+
+    /// @notice Set max exchange dynamic fee
+    /// @param maxFee The max exchange dynamic fee
+    /// @return uint dynamic fee last N rounds
+    function setExchangeMaxDynamicFee(uint maxFee) external onlyOwner {
+        flexibleStorage().setExchangeMaxDynamicFee(SETTING_EXCHANGE_MAX_DYNAMIC_FEE, maxFee);
+        emit ExchangeMaxDynamicFeeUpdated(maxFee);
+    }
+
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
-        require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME, _seconds);
+        flexibleStorage().setMinimumStakeTime(SETTING_MINIMUM_STAKE_TIME, _seconds);
         emit MinimumStakeTimeUpdated(_seconds);
     }
 
     function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
+        flexibleStorage().setDebtSnapshotStaleTime(SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
         emit DebtSnapshotStaleTimeUpdated(_seconds);
     }
 
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
-        require(_flags != address(0), "Valid address must be given");
-        flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
+        flexibleStorage().setAggregatorWarningFlags(SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
     function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
+        flexibleStorage().setEtherWrapperMaxETH(SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
         emit EtherWrapperMaxETHUpdated(_maxETH);
     }
 
     function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= uint(MAX_WRAPPER_MINT_FEE_RATE), "rate > MAX_WRAPPER_MINT_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
+        flexibleStorage().setEtherWrapperMintFeeRate(SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
         emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
     function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= uint(MAX_WRAPPER_BURN_FEE_RATE), "rate > MAX_WRAPPER_BURN_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
+        flexibleStorage().setEtherWrapperBurnFeeRate(SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
     function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwner {
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper)),
-            _maxTokenAmount
-        );
+        flexibleStorage().setWrapperMaxTokenAmount(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper, _maxTokenAmount);
         emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
     function setWrapperMintFeeRate(address _wrapper, int _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
-        require(_rate >= -MAX_WRAPPER_MINT_FEE_RATE, "rate < -MAX_WRAPPER_MINT_FEE_RATE");
-        
-        // if mint rate is negative, burn fee rate should be positive and at least equal in magnitude
-        // otherwise risk of flash loan attack
-        if (_rate < 0) {
-            require(-_rate <= getWrapperBurnFeeRate(_wrapper), "-rate > wrapperBurnFeeRate");
-        }
-
-        flexibleStorage().setIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
-            _rate
+        flexibleStorage().setWrapperMintFeeRate(
+            SETTING_WRAPPER_MINT_FEE_RATE,
+            _wrapper,
+            _rate,
+            getWrapperBurnFeeRate(_wrapper)
         );
         emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
     function setWrapperBurnFeeRate(address _wrapper, int _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
-        require(_rate >= -MAX_WRAPPER_BURN_FEE_RATE, "rate < -MAX_WRAPPER_BURN_FEE_RATE");
-        
-        // if burn rate is negative, burn fee rate should be negative and at least equal in magnitude
-        // otherwise risk of flash loan attack
-        if (_rate < 0) {
-            require(-_rate <= getWrapperMintFeeRate(_wrapper), "-rate > wrapperMintFeeRate");
-        }
-
-        flexibleStorage().setIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),
-            _rate
+        flexibleStorage().setWrapperBurnFeeRate(
+            SETTING_WRAPPER_BURN_FEE_RATE,
+            _wrapper,
+            _rate,
+            getWrapperMintFeeRate(_wrapper)
         );
         emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
-    function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
-        require(_minCratio >= SafeDecimalMath.unit(), "Cratio must be above 1");
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, _collateral)),
-            _minCratio
-        );
-        emit MinCratioRatioUpdated(_minCratio);
-    }
-
-    function setCollateralManager(address _collateral, address _newCollateralManager) external onlyOwner {
-        flexibleStorage().setAddressValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, _collateral)),
-            _newCollateralManager
-        );
-        emit CollateralManagerUpdated(_newCollateralManager);
-    }
-
     function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, _collateral)),
-            _interactionDelay
-        );
+        flexibleStorage().setInteractionDelay(SETTING_INTERACTION_DELAY, _collateral, _interactionDelay);
         emit InteractionDelayUpdated(_interactionDelay);
     }
 
     function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, _collateral)),
-            _collapseFeeRate
-        );
+        flexibleStorage().setCollapseFeeRate(SETTING_COLLAPSE_FEE_RATE, _collateral, _collapseFeeRate);
         emit CollapseFeeRateUpdated(_collapseFeeRate);
+    }
+
+    function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
+        flexibleStorage().setAtomicMaxVolumePerBlock(SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
+        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
+    }
+
+    function setAtomicTwapWindow(uint _window) external onlyOwner {
+        flexibleStorage().setAtomicTwapWindow(SETTING_ATOMIC_TWAP_WINDOW, _window);
+        emit AtomicTwapWindowUpdated(_window);
+    }
+
+    function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
+        flexibleStorage().setAtomicEquivalentForDexPricing(
+            SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING,
+            _currencyKey,
+            _equivalent
+        );
+        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
+    }
+
+    function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate) external onlyOwner {
+        flexibleStorage().setAtomicExchangeFeeRate(SETTING_ATOMIC_EXCHANGE_FEE_RATE, _currencyKey, _exchangeFeeRate);
+        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
+    }
+
+    function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
+        flexibleStorage().setAtomicVolatilityConsiderationWindow(
+            SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+            _currencyKey,
+            _window
+        );
+        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
+    }
+
+    function setAtomicVolatilityUpdateThreshold(bytes32 _currencyKey, uint _threshold) external onlyOwner {
+        flexibleStorage().setAtomicVolatilityUpdateThreshold(
+            SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD,
+            _currencyKey,
+            _threshold
+        );
+        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
+    }
+
+    function setPureChainlinkPriceForAtomicSwapsEnabled(bytes32 _currencyKey, bool _enabled) external onlyOwner {
+        flexibleStorage().setPureChainlinkPriceForAtomicSwapsEnabled(
+            SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED,
+            _currencyKey,
+            _enabled
+        );
+        emit PureChainlinkPriceForAtomicSwapsEnabledUpdated(_currencyKey, _enabled);
+    }
+
+    function setCrossChainSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
+        flexibleStorage().setCrossChainSynthTransferEnabled(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, _currencyKey, _value);
+        emit CrossChainSynthTransferEnabledUpdated(_currencyKey, _value);
     }
 
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
+    event IssuanceRatioUpdated(uint newRatio);
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
-    event IssuanceRatioUpdated(uint newRatio);
     event FeePeriodDurationUpdated(uint newFeePeriodDuration);
     event TargetThresholdUpdated(uint newTargetThreshold);
     event LiquidationDelayUpdated(uint newDelay);
     event LiquidationRatioUpdated(uint newRatio);
+    event LiquidationEscrowDurationUpdated(uint newDuration);
     event LiquidationPenaltyUpdated(uint newPenalty);
+    event SnxLiquidationPenaltyUpdated(uint newPenalty);
+    event SelfLiquidationPenaltyUpdated(uint newPenalty);
+    event FlagRewardUpdated(uint newReward);
+    event LiquidateRewardUpdated(uint newReward);
     event RateStalePeriodUpdated(uint rateStalePeriod);
+    /* ========== Exchange Fees Related ========== */
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event ExchangeDynamicFeeThresholdUpdated(uint dynamicFeeThreshold);
+    event ExchangeDynamicFeeWeightDecayUpdated(uint dynamicFeeWeightDecay);
+    event ExchangeDynamicFeeRoundsUpdated(uint dynamicFeeRounds);
+    event ExchangeMaxDynamicFeeUpdated(uint maxDynamicFee);
+    /* ========== End Exchange Fees Related ========== */
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
@@ -442,8 +562,14 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
     event WrapperMintFeeRateUpdated(address wrapper, int rate);
     event WrapperBurnFeeRateUpdated(address wrapper, int rate);
-    event MinCratioRatioUpdated(uint minCratio);
-    event CollateralManagerUpdated(address newCollateralManager);
     event InteractionDelayUpdated(uint interactionDelay);
     event CollapseFeeRateUpdated(uint collapseFeeRate);
+    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
+    event AtomicTwapWindowUpdated(uint newWindow);
+    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
+    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
+    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
+    event PureChainlinkPriceForAtomicSwapsEnabledUpdated(bytes32 synthKey, bool enabled);
+    event CrossChainSynthTransferEnabledUpdated(bytes32 synthKey, uint value);
 }

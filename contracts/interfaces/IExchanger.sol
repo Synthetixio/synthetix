@@ -4,6 +4,27 @@ import "./IVirtualSynth.sol";
 
 // https://docs.synthetix.io/contracts/source/interfaces/iexchanger
 interface IExchanger {
+    struct ExchangeEntrySettlement {
+        bytes32 src;
+        uint amount;
+        bytes32 dest;
+        uint reclaim;
+        uint rebate;
+        uint srcRoundIdAtPeriodEnd;
+        uint destRoundIdAtPeriodEnd;
+        uint timestamp;
+    }
+
+    struct ExchangeEntry {
+        uint sourceRate;
+        uint destinationRate;
+        uint destinationAmount;
+        uint exchangeFeeRate;
+        uint exchangeDynamicFeeRate;
+        uint roundIdForSrc;
+        uint roundIdForDest;
+    }
+
     // Views
     function calculateAmountAfterSettlement(
         address from,
@@ -27,10 +48,12 @@ interface IExchanger {
 
     function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool);
 
-    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+    function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint);
+
+    function dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         external
         view
-        returns (uint exchangeFeeRate);
+        returns (uint feeRate, bool tooVolatile);
 
     function getAmountsForExchange(
         uint sourceAmount,
@@ -49,6 +72,8 @@ interface IExchanger {
 
     function waitingPeriodSecs() external view returns (uint);
 
+    function lastExchangeRate(bytes32 currencyKey) external view returns (uint);
+
     // Mutative functions
     function exchange(
         address exchangeForAddress,
@@ -62,6 +87,16 @@ interface IExchanger {
         bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
+    function exchangeAtomically(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bytes32 trackingCode,
+        uint minAmount
+    ) external returns (uint amountReceived);
+
     function settle(address from, bytes32 currencyKey)
         external
         returns (
@@ -69,8 +104,6 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
-
-    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }

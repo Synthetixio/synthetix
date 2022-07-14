@@ -23,6 +23,10 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 26;
 
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "SynthetixBridgeToOptimism";
+    }
+
     // ========== CONSTRUCTOR ==========
 
     constructor(address _owner, address _resolver) public BaseSynthetixBridge(_owner, _resolver) {}
@@ -51,6 +55,10 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     function hasZeroDebt() internal view {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
+    }
+
+    function counterpart() internal view returns (address) {
+        return synthetixBridgeToBase();
     }
 
     /* ========== VIEWS ========== */
@@ -102,12 +110,25 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    // invoked by Messenger on L1 after L2 waiting period elapses
-    function finalizeWithdrawal(address to, uint256 amount) external {
-        // ensure function only callable from L2 Bridge via messenger (aka relayer)
-        require(msg.sender == address(messenger()), "Only the relayer can call this");
-        require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
+    function closeFeePeriod(uint snxBackedAmount, uint totalDebtShares) external requireInitiationActive {
+        require(msg.sender == address(feePool()), "Only the fee pool can call this");
 
+        ISynthetixBridgeToBase bridgeToBase;
+        bytes memory messageData =
+            abi.encodeWithSelector(bridgeToBase.finalizeFeePeriodClose.selector, snxBackedAmount, totalDebtShares);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(
+            synthetixBridgeToBase(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.CloseFeePeriod))
+        );
+
+        emit FeePeriodClosed(snxBackedAmount, totalDebtShares);
+    }
+
+    // invoked by Messenger on L1 after L2 waiting period elapses
+    function finalizeWithdrawal(address to, uint256 amount) external onlyCounterpart {
         // transfer amount back to user
         synthetixERC20().transferFrom(synthetixBridgeEscrow(), to, amount);
 
@@ -220,4 +241,6 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     );
 
     event RewardDepositInitiated(address indexed account, uint256 amount);
+
+    event FeePeriodClosed(uint snxBackedDebt, uint totalDebtShares);
 }
