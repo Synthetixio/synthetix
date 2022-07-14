@@ -5,6 +5,13 @@
 {{=<% %>=}}
 resource_class: large
 steps:
+  # get foundry
+  - run: |
+      mkdir -p ~/.foundry/bin
+      curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
+      chmod +x ~/.foundry/foundryup
+      ~/.foundry/foundryup
+      echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
   - checkout
   - attach_workspace:
       at: .
@@ -22,6 +29,14 @@ steps:
       paths:
         - ./optimism
   - run:
+      name: Run isolated layer 1 integration tests
+      command: |
+        npx hardhat test:integration:l1 --deploy
+  - run:
+      name: Run isolated layer 2 integration tests
+      command: |
+        npx hardhat test:integration:l2 --deploy
+  - run:
       name: Start docker chains
       background: true
       command: |
@@ -31,14 +46,6 @@ steps:
       port: 8545
   - cmd-wait-for-port:
       port: 9545
-  - run:
-      name: Run isolated layer 1 integration tests
-      command: |
-        npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
-  - run:
-      name: Run isolated layer 2 integration tests
-      command: |
-        npx hardhat test:integration:l2 --compile --deploy
   - run:
       name: Run dual layer 1 and layer 2 integration tests
       command: |

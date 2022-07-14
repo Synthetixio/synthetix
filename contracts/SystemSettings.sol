@@ -72,7 +72,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getLiquidationRatio();
     }
 
-    // SIP-15 Liquidations
+    // SIP-97 Liquidations
     // penalty taken away from target of Collateral liquidation (with 18 decimals). E.g. 10% is 0.1e18
     function liquidationPenalty() external view returns (uint) {
         return getLiquidationPenalty();
@@ -317,7 +317,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         flexibleStorage().setLiquidationRatio(
             SETTING_LIQUIDATION_RATIO,
             _liquidationRatio,
-            getLiquidationPenalty(),
+            getSnxLiquidationPenalty(),
             getIssuanceRatio()
         );
         emit LiquidationRatioUpdated(_liquidationRatio);
