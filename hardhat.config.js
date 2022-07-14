@@ -78,10 +78,12 @@ module.exports = {
 		goerli: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545',
 			chainId: 5,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'goerli-ovm': {
 			url: process.env.GOERLI_OVM_PROVIDER_URL,
 			chainId: 420,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		rinkeby: {
 			url: process.env.PROVIDER_URL || '',

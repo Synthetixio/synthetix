@@ -282,7 +282,7 @@ class Deployer {
 		return deployedContract;
 	}
 
-	async _updateResults({ name, source, deployed, address }) {
+	async _updateResults({ name, source, deployed, address, constructorArgs }) {
 		let timestamp = new Date();
 		let txn = '';
 		if (this.config[name] && !this.config[name].deploy) {
@@ -302,6 +302,7 @@ class Deployer {
 			timestamp,
 			txn,
 			network: this.network,
+			constructorArgs,
 		};
 		if (deployed) {
 			// remove the output from the metadata (don't dupe the ABI)
@@ -379,6 +380,7 @@ class Deployer {
 			source: deployedContract.source,
 			deployed: deployedContract.justDeployed,
 			address: deployedContract.address,
+			constructorArgs: args,
 		});
 
 		return deployedContract;

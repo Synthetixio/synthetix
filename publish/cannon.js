@@ -33,11 +33,14 @@ async function deployInstance({
 		throw new Error(`cannon.js: no private key set for ${hre.network.name}`);
 	}
 
+	console.log(provider.connection.url);
+	console.log(process.env.PROVIDER_URL);
+	console.log(hre.network.config.url);
 	await commands.deploy({
 		addNewSynths,
 		buildPath,
 		concurrency: 1,
-		freshDeploy,
+		freshDeploy: true,
 		generateSolidity,
 		ignoreCustomParameters,
 		network,
