@@ -19,6 +19,7 @@ async function prepareDeploy(...args) {
 async function deployInstance({
 	addNewSynths,
 	buildPath,
+	signer,
 	freshDeploy,
 	generateSolidity = false,
 	ignoreCustomParameters = false,
@@ -28,12 +29,6 @@ async function deployInstance({
 	useOvm,
 	provider,
 }) {
-	const signers = await hre.ethers.getSigners();
-	if (!signers.length) {
-		throw new Error(`cannon.js: no private key set for ${hre.network.name}`);
-	}
-
-	console.log(signers[0].privateKey);
 	await commands.deploy({
 		addNewSynths,
 		buildPath,
@@ -42,7 +37,7 @@ async function deployInstance({
 		generateSolidity,
 		ignoreCustomParameters,
 		network,
-		signer: signers[0],
+		signer: signer,
 		skipFeedChecks,
 		useFork,
 		useOvm,
@@ -85,6 +80,7 @@ async function deploy(runtime, networkVariant) {
 		network,
 		freshDeploy: networkVariant.startsWith('local'),
 		provider: runtime.provider,
+		signer: await runtime.getDefaultSigner({}),
 	});
 
 	// pull deployed contract information

@@ -177,6 +177,7 @@ const deploy = async ({
 	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
+		account: signer ? await signer.getAddress() : null,
 		compiled,
 		config,
 		configFile,

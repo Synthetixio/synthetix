@@ -15,6 +15,7 @@ class Deployer {
 	 * @param {object} deployment An object with full combined contract name keys mapping to existing deployment addresses (if any)
 	 */
 	constructor({
+		account,
 		compiled,
 		config,
 		configFile,
@@ -60,7 +61,7 @@ class Deployer {
 		} else {
 			this.signer = new ethers.Wallet(privateKey, this.provider);
 		}
-		this.account = this.signer.address;
+		this.account = account || this.signer.address;
 		this.deployedContracts = {};
 		this.replacedContracts = {};
 		this._dryRunCounter = 0;
