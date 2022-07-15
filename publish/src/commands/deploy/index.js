@@ -66,7 +66,9 @@ const deploy = async ({
 	manageNonces,
 	network = DEFAULTS.network,
 	privateKey,
+	signer,
 	providerUrl,
+	provider,
 	skipFeedChecks = false,
 	specifyContracts,
 	useFork,
@@ -184,14 +186,20 @@ const deploy = async ({
 		maxPriorityFeePerGas,
 		network,
 		privateKey,
+		signer,
 		providerUrl,
+		provider,
 		dryRun,
 		useOvm,
 		useFork,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account, signer } = deployer;
+	const { account } = deployer;
+
+	if (!account) {
+		signer = deployer.signer;
+	}
 
 	nonceManager.provider = deployer.provider;
 	nonceManager.account = account;

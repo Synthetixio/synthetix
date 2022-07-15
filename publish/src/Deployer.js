@@ -26,7 +26,9 @@ class Deployer {
 		maxPriorityFeePerGas,
 		network,
 		providerUrl,
+		provider,
 		privateKey,
+		signer,
 		useFork,
 		useOvm,
 		nonceManager,
@@ -44,10 +46,13 @@ class Deployer {
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 
-		this.provider = new ethers.providers.JsonRpcProvider(providerUrl || 'http://127.0.0.1:8545');
+		this.provider = provider || new ethers.providers.JsonRpcProvider(providerUrl || 'http://127.0.0.1:8545');
 
+		if (signer) {
+			this.signer = signer;
+		}
 		// use the default owner when in a fork or in local mode and no private key supplied
-		if ((useFork || network === 'local') && !privateKey) {
+		else if ((useFork || network === 'local') && !privateKey) {
 			const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
 			this.signer = this.provider.getSigner(ownerAddress);
 			this.signer.address = ownerAddress;
