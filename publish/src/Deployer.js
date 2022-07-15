@@ -46,7 +46,8 @@ class Deployer {
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 
-		this.provider = provider || new ethers.providers.JsonRpcProvider(providerUrl || 'http://127.0.0.1:8545');
+		this.provider =
+			provider || new ethers.providers.JsonRpcProvider(providerUrl || 'http://127.0.0.1:8545');
 
 		if (signer) {
 			this.signer = signer;
