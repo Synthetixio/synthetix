@@ -9,6 +9,7 @@ const path = require('path');
 require('hardhat-interact');
 require('solidity-coverage');
 require('./hardhat');
+require('@nomiclabs/hardhat-etherscan');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('hardhat-gas-reporter');
@@ -106,10 +107,14 @@ module.exports = {
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
 		outputFile: 'test-gas-used.log',
 	},
-
 	mocha: {
 		timeout: 120e3, // 120s
 		retries: 1,
+	},
+	etherscan: {
+		apiKey: {
+			goerli: process.env.ETHERSCAN_KEY,
+		},
 	},
 	cannon: {
 		publisherPrivateKey: process.env.PRIVATE_KEY,

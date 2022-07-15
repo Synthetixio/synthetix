@@ -134,6 +134,7 @@
 		"webpack-cli": "^3.3.12"
 	},
 	"dependencies": {
+		"@nomiclabs/hardhat-etherscan": "^3.1.0",
 		"abi-decoder": "^2.3.0",
 		"commander": "^8.1.0",
 		"inquirer": "^6.5.2",

@@ -33,7 +33,7 @@ async function deployInstance({
 		addNewSynths,
 		buildPath,
 		concurrency: 1,
-		freshDeploy: true,
+		freshDeploy: freshDeploy,
 		generateSolidity,
 		ignoreCustomParameters,
 		network,
