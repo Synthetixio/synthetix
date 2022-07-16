@@ -68,10 +68,8 @@ async function deploy(runtime, networkVariant) {
 	const buildPath = path.join(__dirname, '..', synthetix.constants.BUILD_FOLDER);
 
 	// prepare the synths but skip preparing releases (as this isn't a fork)
-	const synthsToAdd = networkVariant.startsWith('local')
-		? [{ name: 'sREDEEMER', asset: 'USD' }]
-		: [];
-	// const synthsToAdd = [];
+	const synthsToAdd = [];
+
 	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 	await deployInstance({
 		addNewSynths: true,
