@@ -82,7 +82,7 @@ module.exports = {
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'goerli-ovm': {
-			url: process.env.GOERLI_OVM_PROVIDER_URL,
+			url: process.env.PROVIDER_URL || 'https://goerli.optimism.io/',
 			chainId: 420,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
