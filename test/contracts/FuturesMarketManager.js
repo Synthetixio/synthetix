@@ -22,7 +22,6 @@ contract('FuturesMarketManager', accounts => {
 		systemSettings,
 		exchangeRates,
 		circuitBreaker,
-		exchangeCircuitBreaker,
 		sUSD,
 		debtCache,
 		synthetix,
@@ -32,13 +31,12 @@ contract('FuturesMarketManager', accounts => {
 	const initialMint = toUnit('100000');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(exchangeRates, circuitBreaker, [asset], [price]);
-		// reset the last price to the new price, so that we don't trip the breaker
-		// on various tests that change prices beyond the allowed deviation
-		if (resetCircuitBreaker) {
-			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			resetCircuitBreaker ? circuitBreaker : null,
+			[asset],
+			[price]
+		);
 	}
 
 	before(async () => {
@@ -48,7 +46,6 @@ contract('FuturesMarketManager', accounts => {
 			// PerpsV2Settings: perpsSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
 			DebtCache: debtCache,
 			Synthetix: synthetix,
