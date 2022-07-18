@@ -26,6 +26,9 @@
 	"CircuitBreaker": {
 		"deploy": true
 	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
 	"Exchanger": {
 		"deploy": true
 	},

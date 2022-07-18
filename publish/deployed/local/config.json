@@ -53,6 +53,9 @@
 	"CircuitBreaker": {
 		"deploy": true
 	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
 	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
