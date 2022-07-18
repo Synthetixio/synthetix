@@ -132,7 +132,8 @@ const defaults = {
 		.div(w3utils.toBN(3))
 		.toString(), // 2/3 = 0.6666666667 // 150% ratio
 	LIQUIDATION_ESCROW_DURATION: (3600 * 24 * 365).toString(), // 1 year
-	LIQUIDATION_PENALTY: w3utils.toWei('0.3'), // 30% penalty
+	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty (used for Collateral liquidations)
+	SNX_LIQUIDATION_PENALTY: w3utils.toWei('0.3'), // 30% penalty (used for SNX Liquidations)
 	SELF_LIQUIDATION_PENALTY: w3utils.toWei('0.2'), // 20% penalty
 	FLAG_REWARD: w3utils.toWei('10'), // 10 SNX
 	LIQUIDATE_REWARD: w3utils.toWei('20'), // 20 SNX
@@ -207,7 +208,7 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 5 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: '0',
 
-	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('5'), // 5 sUSD min keeper fee
+	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('1'), // 1 sUSD min keeper fee
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
 	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('40'), // minimum initial margin for all markets
