@@ -36,6 +36,7 @@ contract('PerpsOrdersV2', accounts => {
 		futuresMarketManager,
 		perpsOrders,
 		perpsEngine,
+		perpsStorage,
 		exchangeRates,
 		exchanger,
 		exchangeCircuitBreaker,
@@ -65,8 +66,6 @@ contract('PerpsOrdersV2', accounts => {
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
-
-	const initialFundingIndex = toBN(0);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(exchangeRates, [asset], [price]);
@@ -106,6 +105,7 @@ contract('PerpsOrdersV2', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			PerpsOrdersV2: perpsOrders,
 			PerpsEngineV2: perpsEngine,
+			PerpsStorageV2: perpsStorage,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
@@ -824,18 +824,19 @@ contract('PerpsOrdersV2', accounts => {
 			assert.bnEqual(pos.margin, margin.sub(fee));
 			assert.bnEqual(pos.size, size);
 			assert.bnEqual(pos.lastPrice, price);
-			assert.bnEqual(pos.lastFundingIndex, initialFundingIndex.add(toBN(2))); // margin transfer and position modification
 
 			// Skew, size, entry notional sum, pending order value are updated.
-			assert.bnEqual(await perpsOrders.marketSkew(), size);
-			assert.bnEqual(await perpsOrders.marketSize(), size);
+
+			const summary = await perpsOrders.marketSummary(marketKey);
+			assert.bnEqual(summary.marketSkew, size);
+			assert.bnEqual(summary.marketSize, size);
 			assert.bnEqual(
-				await perpsOrders.entryDebtCorrection(),
+				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
 				margin.sub(fee).sub(multiplyDecimal(size, price))
 			);
 
 			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
 				event: 'Issued',
@@ -859,17 +860,17 @@ contract('PerpsOrdersV2', accounts => {
 			await setPrice(baseAsset, price);
 			const fee = (await perpsEngine.orderFee(marketKey, size, baseFee)).fee;
 			const trackingCode = toBytes32('code');
-			const tx = await perpsOrders.modifyPositionWithTracking(size, trackingCode, {
+			const tx = await perpsOrders.modifyPositionWithTracking(marketKey, size, trackingCode, {
 				from: trader,
 			});
 
 			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 			assert.equal(decodedLogs.length, 4); // funding, issued, tracking, pos-modified
 			decodedEventEqual({
 				event: 'Tracking',
 				emittedFrom: perpsEngine.address,
-				args: [trackingCode, baseAsset, marketKey, size, fee],
+				args: [trackingCode, marketKey, trader, size, fee],
 				log: decodedLogs[2],
 			});
 		});
@@ -884,7 +885,7 @@ contract('PerpsOrdersV2', accounts => {
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
-			const postDetails = await perpsOrders.postTradeDetails(size, trader);
+			const postDetails = await perpsEngine.postTradeDetails(marketKey, trader, size, baseFee);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(
@@ -924,7 +925,7 @@ contract('PerpsOrdersV2', accounts => {
 				perpsOrders.modifyPosition(marketKey, toBN('0'), { from: trader }),
 				'Cannot submit empty order'
 			);
-			const postDetails = await perpsOrders.postTradeDetails(toBN('0'), trader);
+			const postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toBN('0'), baseFee);
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
@@ -940,7 +941,7 @@ contract('PerpsOrdersV2', accounts => {
 			// User realises the price has crashed and tries to outrun their liquidation, but it fails
 
 			const sizeDelta = toUnit('-50');
-			const postDetails = await perpsOrders.postTradeDetails(sizeDelta, trader);
+			const postDetails = await perpsEngine.postTradeDetails(marketKey, trader, sizeDelta, baseFee);
 			assert.equal(postDetails.status, Status.CanLiquidate);
 
 			await assert.revert(
@@ -993,14 +994,19 @@ contract('PerpsOrdersV2', accounts => {
 				perpsOrders.modifyPosition(marketKey, toUnit('101'), { from: trader }),
 				'Max leverage exceeded'
 			);
-			let postDetails = await perpsOrders.postTradeDetails(toUnit('101'), trader);
+			let postDetails = await perpsEngine.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('101'),
+				baseFee
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await assert.revert(
 				perpsOrders.modifyPosition(marketKey, toUnit('-101'), { from: trader2 }),
 				'Max leverage exceeded'
 			);
-			postDetails = await perpsOrders.postTradeDetails(toUnit('-101'), trader2);
+			postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('-101'), baseFee);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			// But we actually allow up to 10.01x leverage to account for rounding issues.
@@ -1018,23 +1024,29 @@ contract('PerpsOrdersV2', accounts => {
 				'Insufficient margin'
 			);
 
-			let postDetails = await perpsOrders.postTradeDetails(toUnit('10'), trader);
+			let postDetails = await perpsEngine.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('10'),
+				baseFee
+			);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
 
 			// But it works after transferring the remaining $1
 			await perpsOrders.transferMargin(marketKey, toUnit('1'), { from: trader });
 
-			postDetails = await perpsOrders.postTradeDetails(toUnit('10'), trader);
+			postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('10'), baseFee);
+
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(toUnit('0.3')));
 			assert.bnEqual(postDetails.size, toUnit('10'));
-			assert.bnEqual(postDetails.price, toUnit('10'));
-			// liqMargin = max(20, 10*10*0.0035) + 10*10*0.0025 = 20.25
-			// 10 + (20.25 − (100 - 0.3))÷10 = 2.055
-			assert.bnEqual(postDetails.liqPrice, toUnit('2.055'));
 			assert.bnEqual(postDetails.fee, toUnit('0.3'));
 			assert.equal(postDetails.status, Status.Ok);
 
 			await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+
+			// liqMargin = max(20, 10*10*0.0035) + 10*10*0.0025 = 20.25
+			// 10 + (20.25 − (100 - 0.3))÷10 = 2.055
+			assert.bnEqual((await getPositionSummary(trader)).approxLiquidationPrice, toUnit('2.055'));
 		});
 
 		describe('Max market size constraints', () => {
@@ -1144,7 +1156,12 @@ contract('PerpsOrdersV2', accounts => {
 						});
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
 
-						const postDetails = await perpsOrders.postTradeDetails(tooBig, trader);
+						const postDetails = await perpsEngine.postTradeDetails(
+							marketKey,
+							trader,
+							tooBig,
+							baseFee
+						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 
 						await assert.revert(
@@ -1175,7 +1192,12 @@ contract('PerpsOrdersV2', accounts => {
 						await setPrice(baseAsset, toUnit('1.08'));
 
 						const sizeDelta = orderSize.div(toBN(100)).mul(toBN(25));
-						const postDetails = await perpsOrders.postTradeDetails(sizeDelta, trader);
+						const postDetails = await perpsEngine.postTradeDetails(
+							marketKey,
+							trader,
+							sizeDelta,
+							baseFee
+						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 						await assert.revert(
 							perpsOrders.modifyPosition(marketKey, sizeDelta, {
@@ -1232,10 +1254,14 @@ contract('PerpsOrdersV2', accounts => {
 				assert.bnEqual(pos.lastPrice, toUnit('199'));
 
 				// Skew, size, entry notional sum, debt are updated.
-				assert.bnEqual(await perpsOrders.marketSkew(), toUnit(0));
-				assert.bnEqual(await perpsOrders.marketSize(), toUnit(0));
-				assert.bnEqual((await perpsOrders.marketDebt())[0], remaining);
-				assert.bnEqual(await perpsOrders.entryDebtCorrection(), remaining);
+				const summary = await perpsOrders.marketSummary(marketKey);
+				assert.bnEqual(summary.marketSkew, toUnit(0));
+				assert.bnEqual(summary.marketSize, toUnit(0));
+				assert.bnEqual(summary.marketDebt, remaining);
+				assert.bnEqual(
+					(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
+					remaining
+				);
 			});
 
 			it('Cannot close a position if it is liquidating', async () => {
@@ -1285,7 +1311,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsOrders],
+					contracts: [futuresMarketManager, sUSD, perpsEngine],
 				});
 
 				assert.equal(decodedLogs.length, 3);
@@ -1321,11 +1347,13 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				const trackingCode = toBytes32('code');
-				const tx = await perpsOrders.closePositionWithTracking(trackingCode, { from: trader });
+				const tx = await perpsOrders.closePositionWithTracking(marketKey, trackingCode, {
+					from: trader,
+				});
 
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsOrders],
+					contracts: [futuresMarketManager, sUSD, perpsEngine],
 				});
 
 				assert.equal(decodedLogs.length, 4);
@@ -1334,7 +1362,7 @@ contract('PerpsOrdersV2', accounts => {
 				decodedEventEqual({
 					event: 'Tracking',
 					emittedFrom: perpsEngine.address,
-					args: [trackingCode, baseAsset, marketKey, size.neg(), fee],
+					args: [trackingCode, marketKey, trader, size.neg(), fee],
 					log: decodedLogs[2],
 					bnCloseVariance: toUnit('0.1'),
 				});
@@ -1344,35 +1372,35 @@ contract('PerpsOrdersV2', accounts => {
 				await setPrice(baseAsset, toUnit('100'));
 
 				// no positions
-				assert.equal(await perpsOrders.lastPositionId(), 0);
+				assert.equal((await perpsStorage.marketScalars(marketKey)).lastPositionId, 0);
 
 				// Trader 1 gets position id 1.
 				let tx = await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
-				assert.equal(decodedLogs[3].name, 'PositionModified');
-				assert.equal(decodedLogs[3].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[3].events[0].value, toBN('1'));
-				assert.equal(await perpsOrders.positionIdOwner(1), trader);
+				assert.equal(decodedLogs[4].name, 'PositionModified');
+				assert.equal(decodedLogs[4].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[4].events[1].value, toBN('1'));
+				assert.equal(await perpsStorage.positionIdToAccount(marketKey, 1), trader);
 
 				// next is 2
-				assert.equal(await perpsOrders.lastPositionId(), 1);
+				assert.equal((await perpsStorage.marketScalars(marketKey)).lastPositionId, 1);
 
 				// trader 2 gets 2
 				tx = await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
-				assert.equal(decodedLogs[3].name, 'PositionModified');
-				assert.equal(decodedLogs[3].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[3].events[0].value, toBN('2'));
-				assert.equal(await perpsOrders.positionIdOwner(2), trader2);
+				assert.equal(decodedLogs[4].name, 'PositionModified');
+				assert.equal(decodedLogs[4].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[4].events[1].value, toBN('2'));
+				assert.equal(await perpsStorage.positionIdToAccount(marketKey, 2), trader2);
 
 				// next is 3
-				assert.equal(await perpsOrders.lastPositionId(), 2);
+				assert.equal((await perpsStorage.marketScalars(marketKey)).lastPositionId, 2);
 
 				// And the ids have been modified
 				let positionId = (await getPosition(trader)).id;
@@ -1389,11 +1417,11 @@ contract('PerpsOrdersV2', accounts => {
 				let tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
 				let positionId = (await getPosition(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
@@ -1402,11 +1430,11 @@ contract('PerpsOrdersV2', accounts => {
 				tx = await perpsOrders.modifyPosition(marketKey, toUnit('-5'), { from: trader });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
 				// And the ids have been modified
 				positionId = (await getPosition(trader)).id;
@@ -1418,15 +1446,15 @@ contract('PerpsOrdersV2', accounts => {
 				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
 				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
 
-				// Close by closePosition
+				// close by closePosition
 				let tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
 				let positionId = (await getPosition(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
@@ -1434,11 +1462,11 @@ contract('PerpsOrdersV2', accounts => {
 				tx = await perpsOrders.closePosition(marketKey, { from: trader });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
 				positionId = (await getPosition(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
@@ -1447,11 +1475,11 @@ contract('PerpsOrdersV2', accounts => {
 				tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader2 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('2'));
 
 				positionId = (await getPosition(trader2)).id;
 				assert.bnEqual(positionId, toBN('2'));
@@ -1459,11 +1487,11 @@ contract('PerpsOrdersV2', accounts => {
 				tx = await perpsOrders.modifyPosition(marketKey, toUnit('-10'), { from: trader2 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('2'));
 			});
 
 			it('closing a position and opening one after should not increment the position id', async () => {
@@ -1482,48 +1510,53 @@ contract('PerpsOrdersV2', accounts => {
 
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 
 				// No fee => no fee minting log, so decodedLogs index == 1
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
 				tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
 
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [perpsOrders],
+					contracts: [perpsEngine],
 				});
 
 				assert.equal(decodedLogs[2].name, 'PositionModified');
-				assert.equal(decodedLogs[2].events[0].name, 'id');
-				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+				assert.equal(decodedLogs[2].events[1].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
 				const { id: newPositionId } = await getPosition(trader);
 				assert.bnEqual(newPositionId, toBN('1'));
 
-				assert.bnEqual(await perpsOrders.positionIdOwner(toBN('1')), trader);
+				assert.bnEqual(await perpsStorage.positionIdToAccount(marketKey, toBN('1')), trader);
 			});
 		});
 
 		describe('post-trade position details', async () => {
 			const getPositionDetails = async ({ account }) => {
 				const newPosition = await getPosition(account);
-				const { price: liquidationPrice } = await perpsOrders.approxLiquidationPriceAndFee(account);
+				const summary = await getPositionSummary(account);
 				return {
+					...summary,
 					...newPosition,
-					liquidationPrice,
 				};
 			};
 			const sizeDelta = toUnit('10');
 
 			it('can get position details for new position', async () => {
 				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await setPrice(await perpsOrders.baseAsset(marketKey), toUnit('240'));
+				await setPrice(baseAsset, toUnit('240'));
 
-				const expectedDetails = await perpsOrders.postTradeDetails(sizeDelta, trader);
+				const expectedDetails = await perpsEngine.postTradeDetails(
+					marketKey,
+					trader,
+					sizeDelta,
+					baseFee
+				);
 
 				// Now execute the trade.
 				await perpsOrders.modifyPosition(marketKey, sizeDelta, {
@@ -1534,8 +1567,6 @@ contract('PerpsOrdersV2', accounts => {
 
 				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
 				assert.bnEqual(expectedDetails.size, details.size);
-				assert.bnEqual(expectedDetails.price, details.lastPrice);
-				assert.bnClose(expectedDetails.liqPrice, details.liquidationPrice, toUnit(0.01));
 				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
 				assert.bnEqual(expectedDetails.status, Status.Ok);
 			});
@@ -1548,7 +1579,12 @@ contract('PerpsOrdersV2', accounts => {
 					sizeDelta,
 				});
 
-				const expectedDetails = await perpsOrders.postTradeDetails(sizeDelta, trader);
+				const expectedDetails = await perpsEngine.postTradeDetails(
+					marketKey,
+					trader,
+					sizeDelta,
+					baseFee
+				);
 
 				// Now execute the trade.
 				await perpsOrders.modifyPosition(marketKey, sizeDelta, {
@@ -1559,8 +1595,6 @@ contract('PerpsOrdersV2', accounts => {
 
 				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
 				assert.bnEqual(expectedDetails.size, details.size);
-				assert.bnEqual(expectedDetails.price, details.lastPrice);
-				assert.bnClose(expectedDetails.positionLiquidationPrice, details.liqPrice, toUnit(0.01));
 				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
 				assert.bnEqual(expectedDetails.status, Status.Ok);
 			});
@@ -2242,7 +2276,7 @@ contract('PerpsOrdersV2', accounts => {
 			const maxFundingRate = await perpsOrders.maxFundingRate();
 			// Market is 24 units long skewed (24 / 100000)
 			await perpsOrders.modifyPosition(marketKey, toUnit('24'), { from: trader });
-			let marketSkew = await perpsOrders.marketSkew();
+			let marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnEqual(
 				await perpsOrders.currentFundingRate(),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
@@ -2250,7 +2284,7 @@ contract('PerpsOrdersV2', accounts => {
 
 			// 50% the other way ()
 			await perpsOrders.modifyPosition(marketKey, toUnit('-32'), { from: trader });
-			marketSkew = await perpsOrders.marketSkew();
+			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnClose(
 				await perpsOrders.currentFundingRate(),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
@@ -2258,7 +2292,7 @@ contract('PerpsOrdersV2', accounts => {
 
 			// Market is 100% skewed
 			await perpsOrders.closePosition(marketKey, { from: trader });
-			marketSkew = await perpsOrders.marketSkew();
+			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnClose(
 				await perpsOrders.currentFundingRate(),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
@@ -2267,7 +2301,7 @@ contract('PerpsOrdersV2', accounts => {
 			// 100% the other way
 			await perpsOrders.modifyPosition(marketKey, toUnit('4'), { from: trader });
 			await perpsOrders.closePosition(marketKey, { from: trader2 });
-			marketSkew = await perpsOrders.marketSkew();
+			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnClose(
 				await perpsOrders.currentFundingRate(),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
@@ -2521,7 +2555,6 @@ contract('PerpsOrdersV2', accounts => {
 				// no skewScaleUSD
 				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
 
-				assert.bnEqual(await perpsOrders.fundingSequenceLength(), initialFundingIndex.add(toBN(6)));
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('100'));
 				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-6'), toUnit('0.01'));
@@ -2529,10 +2562,9 @@ contract('PerpsOrdersV2', accounts => {
 				await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
 				const time = await currentTime();
 
-				assert.bnEqual(await perpsOrders.fundingSequenceLength(), initialFundingIndex.add(toBN(7)));
 				assert.bnEqual(await perpsOrders.fundingLastRecomputed(), time);
 				assert.bnClose(
-					await perpsOrders.fundingSequence(initialFundingIndex.add(toBN(6))),
+					(await perpsStorage.lastFundingEntry(marketKey)).funding,
 					toUnit('-6'),
 					toUnit('0.01')
 				);
@@ -2541,8 +2573,6 @@ contract('PerpsOrdersV2', accounts => {
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('200'));
 				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-40'), toUnit('0.01'));
-
-				assert.bnEqual(await perpsOrders.fundingSequenceLength(), initialFundingIndex.add(toBN(7)));
 
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('300'));
@@ -2557,16 +2587,25 @@ contract('PerpsOrdersV2', accounts => {
 
 	describe('Market Debt', () => {
 		it('Basic debt movements', async () => {
-			assert.bnEqual(await perpsOrders.entryDebtCorrection(), toUnit('0'));
-			assert.bnEqual((await perpsOrders.marketDebt())[0], toUnit('0'));
+			assert.bnEqual(
+				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
+				toUnit('0')
+			);
+			assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketDebt, toUnit('0'));
 
 			await setPrice(baseAsset, toUnit('100'));
 			await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader }); // Debt correction: +1000
 			const fee1 = (await perpsEngine.orderFee(marketKey, toUnit('50'), baseFee)).fee;
 			await perpsOrders.modifyPosition(marketKey, toUnit('50'), { from: trader }); // Debt correction: -5000 - fee1
 
-			assert.bnEqual(await perpsOrders.entryDebtCorrection(), toUnit('-4000').sub(fee1));
-			assert.bnEqual((await perpsOrders.marketDebt())[0], toUnit('1000').sub(fee1));
+			assert.bnEqual(
+				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
+				toUnit('-4000').sub(fee1)
+			);
+			assert.bnEqual(
+				(await perpsOrders.marketSummary(marketKey)).marketDebt,
+				toUnit('1000').sub(fee1)
+			);
 
 			await setPrice(baseAsset, toUnit('120'));
 			await perpsOrders.transferMargin(marketKey, toUnit('600'), { from: trader2 }); // Debt correction: +600
@@ -2574,7 +2613,7 @@ contract('PerpsOrdersV2', accounts => {
 			await perpsOrders.modifyPosition(marketKey, toUnit('-35'), { from: trader2 }); // Debt correction: +4200 - fee2
 
 			assert.bnClose(
-				await perpsOrders.entryDebtCorrection(),
+				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
 				toUnit('800')
 					.sub(fee1)
 					.sub(fee2),
@@ -2583,7 +2622,7 @@ contract('PerpsOrdersV2', accounts => {
 
 			// 1600 margin, plus 1000 profit by trader1
 			assert.bnClose(
-				(await perpsOrders.marketDebt())[0],
+				(await perpsOrders.marketSummary(marketKey)).marketDebt,
 				toUnit('2600')
 					.sub(fee1)
 					.sub(fee2),
@@ -2595,16 +2634,27 @@ contract('PerpsOrdersV2', accounts => {
 				fillPrice: toUnit('110'),
 			});
 
-			assert.bnClose(await perpsOrders.entryDebtCorrection(), toUnit('4800'), toUnit('13'));
-			assert.bnClose((await perpsOrders.marketDebt())[0], toUnit('950'), toUnit('13'));
+			assert.bnClose(
+				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
+				toUnit('4800'),
+				toUnit('13')
+			);
+			assert.bnClose(
+				(await perpsOrders.marketSummary(marketKey)).marketDebt,
+				toUnit('950'),
+				toUnit('13')
+			);
 
 			await closePositionAndWithdrawMargin({
 				account: trader2,
 				fillPrice: toUnit('100'),
 			});
 
-			assert.bnEqual(await perpsOrders.entryDebtCorrection(), toUnit('0'));
-			assert.bnEqual((await perpsOrders.marketDebt())[0], toUnit('0'));
+			assert.bnEqual(
+				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
+				toUnit('0')
+			);
+			assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketDebt, toUnit('0'));
 		});
 
 		it.skip('Market debt is the sum of remaining margins', async () => {
@@ -2643,10 +2693,10 @@ contract('PerpsOrdersV2', accounts => {
 			assert.isTrue(false);
 		});
 
-		it('Market debt is reported as invalid when price is stale', async () => {
-			assert.isFalse((await perpsOrders.marketDebt())[1]);
+		it('Market price is reported as invalid when price is stale', async () => {
+			assert.isFalse((await perpsOrders.marketSummary(marketKey)).priceInvalid);
 			await fastForward(7 * 24 * 60 * 60);
-			assert.isTrue((await perpsOrders.marketDebt())[1]);
+			assert.isTrue((await perpsOrders.marketSummary(marketKey)).priceInvalid);
 		});
 
 		describe('Market debt is accurately reflected in total system debt', () => {
@@ -2932,9 +2982,9 @@ contract('PerpsOrdersV2', accounts => {
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
-				const size = await perpsOrders.marketSize();
+				const size = (await perpsOrders.marketSummary(marketKey)).marketSize;
 				const sizes = await perpsEngine.marketSizes(marketKey);
-				const skew = await perpsOrders.marketSkew();
+				const skew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 				const positionSize = (await getPosition(trader)).size;
 
 				assert.isFalse(await perpsOrders.canLiquidate(trader));
@@ -2947,18 +2997,28 @@ contract('PerpsOrdersV2', accounts => {
 
 				// Note at this point the true market debt should be $2000 ($1000 profit for the short trader, and two liquidated longs)
 				// However, the long positions are actually underwater and the negative contribution is not removed until liquidation
-				assert.bnClose((await perpsOrders.marketDebt())[0], toUnit('620'), toUnit('0.1'));
+				assert.bnClose(
+					(await perpsOrders.marketSummary(marketKey)).marketDebt,
+					toUnit('620'),
+					toUnit('0.1')
+				);
 				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-8'), toUnit('0.01'));
 
 				await perpsOrders.liquidatePosition(trader, { from: noBalance });
 
-				assert.bnEqual(await perpsOrders.marketSize(), size.sub(positionSize.abs()));
+				assert.bnEqual(
+					(await perpsOrders.marketSummary(marketKey)).marketSize,
+					size.sub(positionSize.abs())
+				);
 				let newSizes = await perpsEngine.marketSizes(marketKey);
 				assert.bnEqual(newSizes[0], sizes[0].sub(positionSize.abs()));
 				assert.bnEqual(newSizes[1], sizes[1]);
-				assert.bnEqual(await perpsOrders.marketSkew(), skew.sub(positionSize.abs()));
+				assert.bnEqual(
+					(await perpsOrders.marketSummary(marketKey)).marketSkew,
+					skew.sub(positionSize.abs())
+				);
 				assert.bnClose(
-					(await perpsOrders.marketDebt())[0],
+					(await perpsOrders.marketSummary(marketKey)).marketDebt,
 					toUnit('1990').sub(toUnit('20')),
 					toUnit('0.01')
 				);
@@ -2968,13 +3028,17 @@ contract('PerpsOrdersV2', accounts => {
 
 				await perpsOrders.liquidatePosition(trader2, { from: noBalance });
 
-				assert.bnEqual(await perpsOrders.marketSize(), toUnit('20'));
+				assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketSize, toUnit('20'));
 				newSizes = await perpsEngine.marketSizes(marketKey);
 				assert.bnEqual(newSizes[0], toUnit('0'));
 				assert.bnEqual(newSizes[1], toUnit('20'));
-				assert.bnEqual(await perpsOrders.marketSkew(), toUnit('-20'));
+				assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketSkew, toUnit('-20'));
 				// Market debt is now just the remaining position, plus the funding they've made.
-				assert.bnClose((await perpsOrders.marketDebt())[0], toUnit('2145'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsOrders.marketSummary(marketKey)).marketDebt,
+					toUnit('2145'),
+					toUnit('0.01')
+				);
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
@@ -2982,23 +3046,34 @@ contract('PerpsOrdersV2', accounts => {
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
-				const size = await perpsOrders.marketSize();
+				const size = (await perpsOrders.marketSummary(marketKey)).marketSize;
 				const sizes = await perpsEngine.marketSizes(marketKey);
 				const positionSize = (await getPosition(trader3)).size;
 
 				await setPrice(baseAsset, toUnit('350'));
 
-				assert.bnClose((await perpsOrders.marketDebt())[0], toUnit('5960'), toUnit('0.1'));
+				assert.bnClose(
+					(await perpsOrders.marketSummary(marketKey)).marketDebt[0],
+					toUnit('5960'),
+					toUnit('0.1')
+				);
 				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-24.5'), toUnit('0.01'));
 
 				await perpsOrders.liquidatePosition(trader3, { from: noBalance });
 
-				assert.bnEqual(await perpsOrders.marketSize(), size.sub(positionSize.abs()));
+				assert.bnEqual(
+					(await perpsOrders.marketSummary(marketKey)).marketSize,
+					size.sub(positionSize.abs())
+				);
 				const newSizes = await perpsEngine.marketSizes(marketKey);
 				assert.bnEqual(newSizes[0], sizes[0]);
 				assert.bnEqual(newSizes[1], toUnit(0));
-				assert.bnEqual(await perpsOrders.marketSkew(), toUnit('60'));
-				assert.bnClose((await perpsOrders.marketDebt())[0], toUnit('6485'), toUnit('0.1'));
+				assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketSkew, toUnit('60'));
+				assert.bnClose(
+					(await perpsOrders.marketSummary(marketKey)).marketDebt[0],
+					toUnit('6485'),
+					toUnit('0.1')
+				);
 
 				// Funding has been recorded by the liquidation.
 				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit(0), toUnit('0.01'));
@@ -3025,7 +3100,7 @@ contract('PerpsOrdersV2', accounts => {
 				assert.isFalse(await perpsOrders.canLiquidate(trader));
 				const pos = await getPosition(trader, { from: noBalance });
 				assert.bnEqual(pos.id, 1);
-				assert.bnEqual(await perpsOrders.positionIdOwner(1), trader);
+				assert.bnEqual(await perpsStorage.positionIdToAccount(marketKey, 1), trader);
 				assert.bnEqual(pos.margin, toUnit(0));
 				assert.bnEqual(pos.size, toUnit(0));
 
@@ -3035,7 +3110,7 @@ contract('PerpsOrdersV2', accounts => {
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 
 				assert.equal(decodedLogs.length, 4);
 
@@ -3092,7 +3167,7 @@ contract('PerpsOrdersV2', accounts => {
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
@@ -3127,7 +3202,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				const pos = await getPosition(trader3, { from: noBalance });
 				assert.bnEqual(pos.id, 3);
-				assert.bnEqual(await perpsOrders.positionIdOwner(3), trader3);
+				assert.bnEqual(await perpsStorage.positionIdToAccount(marketKey, 3), trader3);
 				assert.bnEqual(pos.margin, toUnit(0));
 				assert.bnEqual(pos.size, toUnit(0));
 
@@ -3138,7 +3213,7 @@ contract('PerpsOrdersV2', accounts => {
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 
 				assert.equal(decodedLogs.length, 4);
 				decodedEventEqual({
@@ -3193,7 +3268,7 @@ contract('PerpsOrdersV2', accounts => {
 				);
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
@@ -3235,7 +3310,7 @@ contract('PerpsOrdersV2', accounts => {
 				// Remaining margin = 250 + (125 - (1000 - 30)) / (40)= 228.875
 				assert.bnClose(price, toUnit(228.875), toUnit(0.1));
 
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsEngine.address,
@@ -3697,7 +3772,7 @@ contract('PerpsOrdersV2', accounts => {
 				const tx = await perpsOrders.modifyPosition(marketKey, orderSize, { from: trader });
 
 				// correct fee is properly recorded and deducted.
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [perpsOrders] });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [perpsEngine] });
 
 				decodedEventEqual({
 					event: 'PositionModified',

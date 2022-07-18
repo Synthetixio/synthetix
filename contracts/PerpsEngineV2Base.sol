@@ -385,10 +385,15 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         int marginDelta = transferAmount.sub(lockAmount);
 
         // new realized margin, ensuring that the result is positive and non liquidatable
-        (uint newMargin, Status status) = _realizedMarginAfterDelta(oldPosition, price, marginDelta, true, true);
+        (uint newMargin, Status status) = _realizedMarginAfterDelta(oldPosition, price, marginDelta, true);
 
         // check result
         _revertIfError(status);
+
+        // check min initial margin if position size is not 0
+        if (oldPosition.size != 0 && newMargin < _minInitialMargin()) {
+            _revertIfError(Status.InsufficientMargin);
+        }
 
         _updateStoredPosition(marketKey, account, newMargin, uint(newLocked), oldPosition.size, price);
 
@@ -698,15 +703,14 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         Position memory position,
         uint price,
         int marginDelta,
-        bool checkMinMargin,
         bool checkLeverage
-    ) internal view returns (uint margin, Status statusCode) {
+    ) internal view returns (uint newMargin, Status statusCode) {
         int newMarginInt = _marginPlusProfitFunding(position, price).add(marginDelta);
         if (newMarginInt < 0) {
             return (0, Status.InsufficientMargin);
         }
 
-        uint newMargin = uint(newMarginInt);
+        newMargin = uint(newMarginInt);
 
         int notional = _notionalValue(position.size, price);
         // position size is not 0 maybe check leverage and and liquidation margin
@@ -720,11 +724,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
             // check leverage if check is needed (skipped for trade fee deltas, and checked after trade)
             if (checkLeverage && _abs(curLeverage) > _maxLeverage(position.marketKey)) {
                 return (newMargin, Status.MaxLeverageExceeded);
-            }
-
-            // check that min margin is kept if check is needed (skipped for size decreasing trades)
-            if (checkMinMargin && newMargin < _minInitialMargin()) {
-                return (newMargin, Status.InsufficientMargin);
             }
         }
 
@@ -850,19 +849,11 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         // calculate the total fee for exchange
         fee = _orderFee(params);
 
-        // always allow to decrease a position, otherwise a margin of minInitialMargin can never
-        // decrease a position as the price goes against them.
-        // we also add the paid out fee for the minInitialMargin because otherwise minInitialMargin
-        // is never the actual minMargin, because the first trade will always deduct
-        // a fee (so the margin that otherwise would need to be transferred would have to include the future
-        // fee as well, making the UX and definition of min-margin confusing).
-        bool positionDecreasing = _sameSide(oldPos.size, newSize) && _abs(newSize) < _abs(oldPos.size);
-
         // Deduct the fee
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
         // min margin is only checked if position is increasing
         // leverage check is skipped because it's checked later for the position after the trade
-        (newMargin, status) = _realizedMarginAfterDelta(oldPos, params.price, -int(fee), !positionDecreasing, false);
+        (newMargin, status) = _realizedMarginAfterDelta(oldPos, params.price, -int(fee), false);
         if (_isError(status)) {
             return (oldMargin, oldSize, 0, status);
         }
@@ -875,15 +866,32 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
             return (oldMargin, oldSize, 0, Status.CanLiquidate);
         }
 
-        // Check that the maximum leverage is not exceeded when considering new margin including the paid fee.
-        // The paid fee is considered for the benefit of UX of allowed max leverage, otherwise, the actual
-        // max leverage is always below the max leverage parameter since the fee paid for a trade reduces the margin.
-        // We'll allow a little extra headroom for rounding errors.
+        // stack too deep
         {
-            // stack too deep
-            int leverage = newSize.multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
+            // consider leverage limit and min initial margin limit with the paid fees (for easier UX)
+            uint marginBeforeFee = newMargin.add(fee);
+
+            // Check that the maximum leverage is not exceeded when considering new margin including the paid fee.
+            // The paid fee is considered for the benefit of UX of allowed max leverage, otherwise, the actual
+            // max leverage is always below the max leverage parameter since the fee paid for a trade reduces the margin.
+            // We'll allow a little extra headroom for rounding errors.
+            int leverage = newSize.multiplyDecimal(int(params.price)).divideDecimal(int(marginBeforeFee));
             if (_maxLeverage(marketKey).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldMargin, oldSize, 0, Status.MaxLeverageExceeded);
+            }
+
+            // always allow to decrease a position, otherwise a margin of minInitialMargin can never
+            // decrease a position as the price goes against them.
+            // we also add the paid out fee for the minInitialMargin because otherwise minInitialMargin
+            // is never the actual minMargin, because the first trade will always deduct
+            // a fee (so the margin that otherwise would need to be transferred would have to include the future
+            // fee as well, making the UX and definition of min-margin confusing).
+            bool positionDecreasing = _sameSide(oldPos.size, newSize) && _abs(newSize) < _abs(oldPos.size);
+
+            // check that min margin is kept if position is non-zero and is not decreasing
+            bool checkMinMargin = newSize != 0 && !positionDecreasing;
+            if (checkMinMargin && marginBeforeFee < _minInitialMargin()) {
+                return (oldMargin, oldSize, 0, Status.InsufficientMargin);
             }
         }
 

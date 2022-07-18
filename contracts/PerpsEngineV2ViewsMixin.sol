@@ -57,7 +57,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         (uint price, bool isInvalid) = assetPrice(marketKey);
         Position memory position = _stateViews().positions(marketKey, account);
         uint liqPrice = _approxLiquidationPrice(position, price);
-        // if position cannot be liquidated at any price (no leverage), return 0 as possible fee
+        // if position cannot be liquidated at any price, return 0 as possible fee
         uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
         return
             PositionSummary({
