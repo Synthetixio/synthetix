@@ -186,7 +186,7 @@ function itCanTrade({ ctx }) {
 			});
 
 			it('number of markets and summaries', async () => {
-				assert.ok(allMarketsAddresses.length >= 3);
+				assert.ok(allMarketsAddresses.length >= 2);
 				assert.ok(allMarketsAddresses.length === allSummaries.length);
 			});
 
@@ -225,7 +225,7 @@ function itCanTrade({ ctx }) {
 			it(`global parameters make sense`, async () => {
 				// minKeeperFee
 				const minKeeperFee = await FuturesMarketSettings.minKeeperFee();
-				assert.bnGt(minKeeperFee, toUnit(1));
+				assert.bnGte(minKeeperFee, toUnit(1));
 				assert.bnLt(minKeeperFee, toUnit(100));
 
 				// minInitialMargin
