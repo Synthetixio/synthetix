@@ -26,43 +26,49 @@ module.exports = async ({
 		network,
 	});
 
+	const FUTURES_MIN_INITIAL_MARGIN = await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN');
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
 		read: 'minInitialMargin',
-		expected: input => input !== '0', // only change if zero
+		expected: input => input === FUTURES_MIN_INITIAL_MARGIN,
 		write: 'setMinInitialMargin',
-		writeArg: await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN'),
+		writeArg: FUTURES_MIN_INITIAL_MARGIN,
 		comment: 'Set the minimum margin to open a futures position (SIP-80)',
 	});
 
+	const FUTURES_LIQUIDATION_FEE_RATIO = await getDeployParameter('FUTURES_LIQUIDATION_FEE_RATIO');
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
 		read: 'liquidationFeeRatio',
-		expected: input => input !== '0', // only change if zero
+		expected: input => input === FUTURES_LIQUIDATION_FEE_RATIO,
 		write: 'setLiquidationFeeRatio',
-		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE_RATIO'),
+		writeArg: FUTURES_LIQUIDATION_FEE_RATIO,
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 
+	const FUTURES_LIQUIDATION_BUFFER_RATIO = await getDeployParameter(
+		'FUTURES_LIQUIDATION_BUFFER_RATIO'
+	);
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
 		read: 'liquidationBufferRatio',
-		expected: input => input !== '0', // only change if zero
+		expected: input => input === FUTURES_LIQUIDATION_BUFFER_RATIO,
 		write: 'setLiquidationBufferRatio',
-		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_BUFFER_RATIO'),
+		writeArg: FUTURES_LIQUIDATION_BUFFER_RATIO,
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 
+	const FUTURES_MIN_KEEPER_FEE = await getDeployParameter('FUTURES_MIN_KEEPER_FEE');
 	await runStep({
 		contract: 'FuturesMarketSettings',
 		target: futuresMarketSettings,
 		read: 'minKeeperFee',
-		expected: input => input !== '0', // only change if zero
+		expected: input => input === FUTURES_MIN_KEEPER_FEE,
 		write: 'setMinKeeperFee',
-		writeArg: await getDeployParameter('FUTURES_MIN_KEEPER_FEE'),
+		writeArg: FUTURES_MIN_KEEPER_FEE,
 		comment: 'Set the minimum reward for liquidating a futures position (SIP-80)',
 	});
 
