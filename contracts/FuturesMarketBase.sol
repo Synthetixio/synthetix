@@ -11,6 +11,7 @@ import "./SignedSafeDecimalMath.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
+import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -144,7 +145,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
@@ -194,15 +195,15 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        newAddresses[1] = CONTRACT_EXRATES;
+        newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[3] = CONTRACT_FUTURESMARKETSETTINGS;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
+    function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
     function _exchanger() internal view returns (IExchanger) {
@@ -621,7 +622,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      * Public because used both externally and internally
      */
     function assetPrice() public view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeRates().rateAndInvalid(baseAsset);
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
         // Ensure we catch uninitialised rates or suspended state / synth
         invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
         return (price, invalid);
@@ -641,16 +642,16 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(baseAsset);
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
-        // note: rateWithSafetyChecks (mutative) is used here instead of rateAndInvalid (view). This is
+        // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
-        //  This is in order to persist last-rate in circuitBreaker in the happy case
+        //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
-        (uint price, bool circuitBroken, bool invalid) = _exchangeRates().rateWithSafetyChecks(baseAsset);
+        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset);
         // revert if price is invalid or circuit was broken
         // note: we revert here, which means that circuit is not really broken (is not persisted), this is
         //  because the futures methods and interface are designed for reverts, and do not support no-op
         //  return values.
-        _revertIfError(circuitBroken || invalid, Status.InvalidPrice);
+        _revertIfError(circuitBroken, Status.InvalidPrice);
         return price;
     }
 

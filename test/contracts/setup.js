@@ -1019,7 +1019,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings', 'ExchangeCircuitBreaker'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1035,7 +1035,7 @@ const setupAllContracts = async ({
 				'FuturesMarketSettings',
 				'SystemStatus',
 				'FlexibleStorage',
-				'CircuitBreaker',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{
@@ -1046,7 +1046,7 @@ const setupAllContracts = async ({
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
 				'FlexibleStorage',
-				'CircuitBreaker',
+				'ExchangeCircuitBreaker',
 			],
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },

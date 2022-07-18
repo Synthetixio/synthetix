@@ -96,6 +96,8 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      * returns last rate and the current broken state, to prevent synths suspensions during maintenance.
      */
     function probeCircuitBreaker(address oracleAddress, uint value) external onlyProbers returns (bool circuitBroken) {
+        require(oracleAddress != address(0), "Oracle address is 0");
+
         // these conditional statements are ordered for short circuit (heh) efficiency to reduce gas usage
         // in the usual case of no circuit broken.
         if (
@@ -123,6 +125,7 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      */
     function resetLastValue(address[] calldata oracleAddresses, uint[] calldata values) external onlyOwner {
         for (uint i = 0; i < oracleAddresses.length; i++) {
+            require(oracleAddresses[i] != address(0), "Oracle address is 0");
             emit LastValueOverridden(oracleAddresses[i], _lastValue[oracleAddresses[i]], values[i]);
             _lastValue[oracleAddresses[i]] = values[i];
             _circuitBroken[oracleAddresses[i]] = false;
@@ -152,6 +155,8 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     function _isRateOutOfBounds(address oracleAddress, uint current) internal view returns (bool) {
         uint last = _lastValue[oracleAddress];
 
+        // `last == 0` indicates unset/unpopulated oracle. If we dont have any data on the previous oracle price,
+        // we should skip the deviation check and allow it to be populated.
         if (last > 0) {
             return _isDeviationAboveThreshold(last, current);
         }

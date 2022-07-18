@@ -72,18 +72,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
-    }
-
     function rateWithSafetyChecks(bytes32 currencyKey)
         external
         returns (
@@ -92,7 +80,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             bool staleOrInvalid
         )
     {
-        require(currencyKey == "sUSD" || address(aggregators[currencyKey]) != address(0), "No such synth");
+        address aggregatorAddress = address(aggregators[currencyKey]);
+        require(currencyKey == "sUSD" || aggregatorAddress != address(0), "No aggregator for asset");
 
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 
@@ -100,14 +89,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return (rateAndTime.rate, false, false);
         }
 
-        bool broken = circuitBreaker().probeCircuitBreaker(address(aggregators[currencyKey]), rateAndTime.rate);
-
-        return (
-            rateAndTime.rate,
-            broken,
+        rate = rateAndTime.rate;
+        broken = circuitBreaker().probeCircuitBreaker(aggregatorAddress, rateAndTime.rate);
+        staleOrInvalid =
             _rateIsStaleWithTime(getRateStalePeriod(), rateAndTime.time) ||
-                _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()))
-        );
+            _rateIsFlagged(currencyKey, FlagsInterface(getAggregatorWarningFlags()));
     }
 
     /* ========== VIEWS ========== */

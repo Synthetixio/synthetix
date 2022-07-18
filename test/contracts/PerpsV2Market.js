@@ -38,6 +38,7 @@ contract('PerpsV2Market', accounts => {
 		perpsMarket,
 		exchangeRates,
 		exchanger,
+		exchangeCircuitBreaker,
 		circuitBreaker,
 		addressResolver,
 		sUSD,
@@ -71,12 +72,13 @@ contract('PerpsV2Market', accounts => {
 	const initialFundingIndex = toBN(0);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(
-			exchangeRates,
-			resetCircuitBreaker ? circuitBreaker : null,
-			[asset],
-			[price]
-		);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, [asset], [price]);
+		// reset the last price to the new price, so that we don't trip the breaker
+		// on various tests that change prices beyond the allowed deviation
+		if (resetCircuitBreaker) {
+			// flag defaults to true because the circuit breaker is not tested in most tests
+			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
+		}
 	}
 
 	async function transferMarginAndModifyPosition({
@@ -107,6 +109,7 @@ contract('PerpsV2Market', accounts => {
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
+			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
 			Synthetix: synthetix,

@@ -358,7 +358,7 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 						it('when called with invalid synth, then reverts', async () => {
 							await assert.revert(
 								cicruitBreaker.rateWithBreakCircuit(toBytes32('XYZ')),
-								'No such synth'
+								'No aggregator'
 							);
 						});
 						describe('when called with a synth with no price', () => {
