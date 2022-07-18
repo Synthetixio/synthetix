@@ -19,7 +19,7 @@ import "./Proxyable.sol";
 /**
  * Compares current exchange rate to previous, and suspends a synth if the
  * difference is outside of deviation bounds.
- * 
+ *
  * This contract's functionality has been superseded by `CircuitBreaker`, and therefore its *deprecated*.
  * ExchangeCircuitBreaker is currently used within the system only as a compatibility measure for non-upgradable
  * contracts for the time being.
