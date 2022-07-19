@@ -59,13 +59,15 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         uint liqPrice = _approxLiquidationPrice(position, price);
         // if position cannot be liquidated at any price, return 0 as possible fee
         uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
+        uint remainingMargin = _remainingMargin(position, price);
         return
             PositionSummary({
                 position: position,
                 profitLoss: _profitLoss(position, price),
                 accruedFunding: _accruedFunding(position, price),
-                remainingMargin: _remainingMargin(position, price),
+                remainingMargin: remainingMargin,
                 accessibleMargin: _accessibleMargin(position, price),
+                currentLeverage: _currentLeverage(_notionalValue(position.size, price), remainingMargin),
                 canLiquidate: _canLiquidate(position, price),
                 approxLiquidationPrice: liqPrice,
                 approxLiquidationFee: liqFee,

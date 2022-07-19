@@ -63,6 +63,7 @@ interface IPerpsTypesV2 {
         int accruedFunding;
         uint remainingMargin;
         uint accessibleMargin;
+        int currentLeverage;
         bool canLiquidate;
         uint approxLiquidationPrice;
         uint approxLiquidationFee;

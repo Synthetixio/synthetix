@@ -1612,27 +1612,27 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			it('steady price', async () => {
-				assert.bnEqual((await perpsOrders.profitLoss(trader))[0], toBN(0));
-				assert.bnEqual((await perpsOrders.profitLoss(trader2))[0], toBN(0));
+				assert.bnEqual((await getPositionSummary(trader)).profitLoss, toBN(0));
+				assert.bnEqual((await getPositionSummary(trader2)).profitLoss, toBN(0));
 			});
 
 			it('price increase', async () => {
 				await setPrice(baseAsset, toUnit('150'));
-				assert.bnEqual((await perpsOrders.profitLoss(trader))[0], toUnit('2500'));
-				assert.bnEqual((await perpsOrders.profitLoss(trader2))[0], toUnit('-2000'));
+				assert.bnEqual((await getPositionSummary(trader)).profitLoss, toUnit('2500'));
+				assert.bnEqual((await getPositionSummary(trader2)).profitLoss, toUnit('-2000'));
 			});
 
 			it('price decrease', async () => {
 				await setPrice(baseAsset, toUnit('90'));
 
-				assert.bnEqual((await perpsOrders.profitLoss(trader))[0], toUnit('-500'));
-				assert.bnEqual((await perpsOrders.profitLoss(trader2))[0], toUnit('400'));
+				assert.bnEqual((await getPositionSummary(trader)).profitLoss, toUnit('-500'));
+				assert.bnEqual((await getPositionSummary(trader2)).profitLoss, toUnit('400'));
 			});
 
 			it('Reports invalid prices properly', async () => {
-				assert.isFalse((await perpsOrders.profitLoss(trader))[1]);
+				assert.isFalse((await getPositionSummary(trader)).priceInvalid);
 				await fastForward(7 * 24 * 60 * 60); // Stale the prices
-				assert.isTrue((await perpsOrders.profitLoss(trader))[1]);
+				assert.isTrue((await getPositionSummary(trader)).priceInvalid);
 			});
 
 			it.skip('Zero profit on a zero-size position', async () => {
@@ -1710,22 +1710,25 @@ contract('PerpsOrdersV2', accounts => {
 		});
 
 		describe('Accessible margin', async () => {
-			const withdrawAccessibleAndValidate = async account => {
-				let accessible = (await perpsOrders.accessibleMargin(account))[0];
+			const msgLeverage = 'Max leverage exceeded';
+			const msgMargin = 'Insufficient margin';
+			const withdrawAccessibleAndValidate = async (account, msg) => {
+				const summary = await getPositionSummary(account);
+				let accessible = toBN(summary.accessibleMargin);
 				await perpsOrders.transferMargin(marketKey, accessible.neg(), { from: account });
-				accessible = (await perpsOrders.accessibleMargin(account))[0];
+				accessible = (await getPositionSummary(account)).accessibleMargin;
 				assert.bnClose(accessible, toBN('0'), toUnit('1'));
 				await assert.revert(
 					perpsOrders.transferMargin(marketKey, toUnit('-1'), { from: account }),
-					'Insufficient margin'
+					msg
 				);
 			};
 
 			it('With no position, entire margin is accessible.', async () => {
 				const margin = toUnit('1234.56789');
 				await perpsOrders.transferMargin(marketKey, margin, { from: trader3 });
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader3))[0], margin);
-				await withdrawAccessibleAndValidate(trader3);
+				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, margin);
+				await withdrawAccessibleAndValidate(trader3, msgMargin);
 			});
 
 			it('With a tiny position, minimum margin requirement is enforced.', async () => {
@@ -1738,11 +1741,11 @@ contract('PerpsOrdersV2', accounts => {
 					sizeDelta: size,
 				});
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader3))[0],
+					toBN((await getPositionSummary(trader3)).accessibleMargin),
 					margin.sub(minInitialMargin),
 					toUnit('0.1')
 				);
-				await withdrawAccessibleAndValidate(trader3);
+				await withdrawAccessibleAndValidate(trader3, msgMargin);
 
 				await transferMarginAndModifyPosition({
 					account: trader2,
@@ -1751,11 +1754,11 @@ contract('PerpsOrdersV2', accounts => {
 					sizeDelta: size.neg(),
 				});
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader2))[0],
+					(await getPositionSummary(trader2)).accessibleMargin,
 					margin.sub(minInitialMargin),
 					toUnit('0.1')
 				);
-				await withdrawAccessibleAndValidate(trader2);
+				await withdrawAccessibleAndValidate(trader2, msgMargin);
 			});
 
 			it('At max leverage, no margin is accessible.', async () => {
@@ -1765,8 +1768,8 @@ contract('PerpsOrdersV2', accounts => {
 					marginDelta: toUnit('1234'),
 					sizeDelta: toUnit('123.4'),
 				});
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader3))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader3);
+				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3, msgLeverage);
 
 				await transferMarginAndModifyPosition({
 					account: trader2,
@@ -1774,8 +1777,8 @@ contract('PerpsOrdersV2', accounts => {
 					marginDelta: toUnit('1234'),
 					sizeDelta: toUnit('-123.4'),
 				});
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader2))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader2);
+				assert.bnEqual((await getPositionSummary(trader2)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader2, msgLeverage);
 			});
 
 			it('At above max leverage, no margin is accessible.', async () => {
@@ -1788,9 +1791,9 @@ contract('PerpsOrdersV2', accounts => {
 
 				await setPrice(baseAsset, toUnit('90'));
 
-				assert.bnGt((await perpsOrders.currentLeverage(trader3))[0], maxLeverage);
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader3))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader3);
+				assert.bnGt((await getPositionSummary(trader3)).currentLeverage, maxLeverage);
+				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3, msgLeverage);
 
 				await transferMarginAndModifyPosition({
 					account: trader2,
@@ -1802,9 +1805,9 @@ contract('PerpsOrdersV2', accounts => {
 
 				await setPrice(baseAsset, toUnit('110'));
 
-				assert.bnGt((await perpsOrders.currentLeverage(trader2))[0].neg(), maxLeverage);
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader2))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader2);
+				assert.bnGt(toBN((await getPositionSummary(trader2)).currentLeverage).neg(), maxLeverage);
+				assert.bnEqual((await getPositionSummary(trader2)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader2, msgLeverage);
 			});
 
 			it('If a position is subject to liquidation, no margin is accessible.', async () => {
@@ -1816,9 +1819,9 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				await setPrice(baseAsset, toUnit('80'));
-				assert.isTrue(await perpsOrders.canLiquidate(trader3));
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader3))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader3);
+				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
+				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3, msgMargin); // margin is negative
 
 				await transferMarginAndModifyPosition({
 					account: trader2,
@@ -1828,9 +1831,9 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				await setPrice(baseAsset, toUnit('120'));
-				assert.isTrue(await perpsOrders.canLiquidate(trader2));
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader2))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader2);
+				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
+				assert.bnEqual((await getPositionSummary(trader2)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader2, msgMargin); // margin is negative
 			});
 
 			it('If remaining margin is below minimum initial margin, no margin is accessible.', async () => {
@@ -1845,15 +1848,15 @@ contract('PerpsOrdersV2', accounts => {
 				// The price moves down, eating into the margin, but the leverage is reduced to acceptable levels
 				let price = toUnit('95');
 				await setPrice(baseAsset, price);
-				let remaining = (await getPositionSummary(trader3)).remainingMargin;
+				let remaining = toBN((await getPositionSummary(trader3)).remainingMargin);
 				const sizeFor9x = divideDecimal(remaining.mul(toBN('9')), price);
 				await perpsOrders.modifyPosition(marketKey, sizeFor9x.sub(size), { from: trader3 });
 
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader3))[0], toUnit('0'));
+				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
 
 				price = toUnit('100');
 				await setPrice(baseAsset, price);
-				remaining = (await getPositionSummary(trader3)).remainingMargin;
+				remaining = toBN((await getPositionSummary(trader3)).remainingMargin);
 				const sizeForNeg10x = divideDecimal(remaining.mul(toBN('-10')), price);
 
 				await transferMarginAndModifyPosition({
@@ -1866,14 +1869,14 @@ contract('PerpsOrdersV2', accounts => {
 				// The price moves up, eating into the margin, but the leverage is reduced to acceptable levels
 				price = toUnit('111');
 				await setPrice(baseAsset, price);
-				remaining = (await getPositionSummary(trader3)).remainingMargin;
+				remaining = toBN((await getPositionSummary(trader3)).remainingMargin);
 				const sizeForNeg9x = divideDecimal(remaining.mul(toBN('-9')), price);
 				await perpsOrders.modifyPosition(marketKey, sizeForNeg10x.sub(sizeForNeg9x), {
 					from: trader3,
 				});
 
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader3))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader3);
+				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3, msgMargin);
 			});
 
 			it('With a fraction of max leverage position, a complementary fraction of margin is accessible', async () => {
@@ -1892,17 +1895,17 @@ contract('PerpsOrdersV2', accounts => {
 
 				// Give fairly wide bands to account for fees
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader))[0],
+					(await getPositionSummary(trader)).accessibleMargin,
 					toUnit('500'),
 					toUnit('20')
 				);
-				await withdrawAccessibleAndValidate(trader);
+				await withdrawAccessibleAndValidate(trader, msgLeverage);
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader2))[0],
+					(await getPositionSummary(trader2)).accessibleMargin,
 					toUnit('800'),
 					toUnit('7')
 				);
-				await withdrawAccessibleAndValidate(trader2);
+				await withdrawAccessibleAndValidate(trader2, msgLeverage);
 			});
 
 			it('After some profit, more margin becomes accessible', async () => {
@@ -1920,11 +1923,11 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				// No margin is accessible at max leverage
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader))[0], toUnit('0'));
+				assert.bnEqual((await getPositionSummary(trader)).accessibleMargin, toUnit('0'));
 
 				// The more conservative trader has about half margin accessible
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader2))[0],
+					toBN((await getPositionSummary(trader2)).accessibleMargin),
 					toUnit('500'),
 					toUnit('16')
 				);
@@ -1934,22 +1937,22 @@ contract('PerpsOrdersV2', accounts => {
 
 				// At 10x, the trader makes 100% on their margin
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader))[0],
+					(await getPositionSummary(trader)).accessibleMargin,
 					toUnit('1000').sub(minInitialMargin),
 					toUnit('40')
 				);
-				await withdrawAccessibleAndValidate(trader);
+				await withdrawAccessibleAndValidate(trader, msgLeverage);
 
 				// Price goes down 10% relative to the original price
 				await setPrice(baseAsset, toUnit('90'));
 
 				// The 5x short trader makes 50% on their margin
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader2))[0],
+					(await getPositionSummary(trader2)).accessibleMargin,
 					toUnit('1000'), // no deduction of min initial margin because the trader would still be above the min at max leverage
 					toUnit('50')
 				);
-				await withdrawAccessibleAndValidate(trader2);
+				await withdrawAccessibleAndValidate(trader2, msgLeverage);
 			});
 
 			it('After a loss, less margin is accessible', async () => {
@@ -1968,14 +1971,14 @@ contract('PerpsOrdersV2', accounts => {
 
 				// The more conservative trader has about 80% margin accessible
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader))[0],
+					(await getPositionSummary(trader)).accessibleMargin,
 					toUnit('800'),
 					toUnit('10')
 				);
 
 				// The other, about 50% margin accessible
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader2))[0],
+					(await getPositionSummary(trader2)).accessibleMargin,
 					toUnit('500'),
 					toUnit('16')
 				);
@@ -1985,22 +1988,22 @@ contract('PerpsOrdersV2', accounts => {
 
 				// At 2x, the trader loses 20% of their margin
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader))[0],
+					(await getPositionSummary(trader)).accessibleMargin,
 					toUnit('600'),
 					toUnit('40')
 				);
-				await withdrawAccessibleAndValidate(trader);
+				await withdrawAccessibleAndValidate(trader, msgLeverage);
 
 				// Price goes up 5% relative to the original price
 				await setPrice(baseAsset, toUnit('105'));
 
 				// The 5x short trader loses 25% of their margin
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader2))[0],
+					(await getPositionSummary(trader2)).accessibleMargin,
 					toUnit('250'),
 					toUnit('50')
 				);
-				await withdrawAccessibleAndValidate(trader2);
+				await withdrawAccessibleAndValidate(trader2, msgLeverage);
 			});
 
 			it('Larger position', async () => {
@@ -2012,26 +2015,26 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				// No margin is accessible at max leverage
-				assert.bnEqual((await perpsOrders.accessibleMargin(trader))[0], toUnit('0'));
+				assert.bnEqual((await getPositionSummary(trader)).accessibleMargin, toUnit('0'));
 
 				// Price goes up 10%
 				await setPrice(baseAsset, toUnit('110'));
 
 				// At 10x, the trader makes 100% on their margin
 				assert.bnClose(
-					(await perpsOrders.accessibleMargin(trader))[0],
+					(await getPositionSummary(trader)).accessibleMargin,
 					toUnit('10000')
 						.sub(minInitialMargin)
 						.sub(toUnit('1200')),
 					toUnit('10')
 				);
-				await withdrawAccessibleAndValidate(trader);
+				await withdrawAccessibleAndValidate(trader, msgLeverage);
 			});
 
 			it('Accessible margin function properly reports invalid price', async () => {
-				assert.isFalse((await perpsOrders.accessibleMargin(trader))[1]);
+				assert.isFalse((await getPositionSummary(trader)).priceInvalid);
 				await fastForward(7 * 24 * 60 * 60);
-				assert.isTrue((await perpsOrders.accessibleMargin(trader))[1]);
+				assert.isTrue((await getPositionSummary(trader)).priceInvalid);
 			});
 
 			describe('withdrawAllMargin', () => {
@@ -2059,7 +2062,11 @@ contract('PerpsOrdersV2', accounts => {
 					await systemStatus.resumeSystem({ from: owner });
 					// should work now
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-					assert.bnClose((await perpsOrders.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+					assert.bnClose(
+						(await getPositionSummary(trader)).accessibleMargin,
+						toBN('0'),
+						toUnit('0.1')
+					);
 				});
 
 				it('allows users to withdraw all their margin', async () => {
@@ -2073,9 +2080,9 @@ contract('PerpsOrdersV2', accounts => {
 					await perpsOrders.modifyPosition(marketKey, toUnit('-1100'), { from: trader2 });
 					await perpsOrders.modifyPosition(marketKey, toUnit('9000'), { from: trader3 });
 
-					assert.bnGt((await perpsOrders.accessibleMargin(trader))[0], toBN('0'));
-					assert.bnGt((await perpsOrders.accessibleMargin(trader2))[0], toBN('0'));
-					assert.bnGt((await perpsOrders.accessibleMargin(trader3))[0], toBN('0'));
+					assert.bnGt((await getPositionSummary(trader)).accessibleMargin, toBN('0'));
+					assert.bnGt((await getPositionSummary(trader2)).accessibleMargin, toBN('0'));
+					assert.bnGt((await getPositionSummary(trader3)).accessibleMargin, toBN('0'));
 
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
 
@@ -2085,14 +2092,18 @@ contract('PerpsOrdersV2', accounts => {
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader2 });
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader3 });
 
-					assert.bnClose((await perpsOrders.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
 					assert.bnClose(
-						(await perpsOrders.accessibleMargin(trader2))[0],
+						(await getPositionSummary(trader)).accessibleMargin,
 						toBN('0'),
 						toUnit('0.1')
 					);
 					assert.bnClose(
-						(await perpsOrders.accessibleMargin(trader3))[0],
+						(await getPositionSummary(trader2)).accessibleMargin,
+						toBN('0'),
+						toUnit('0.1')
+					);
+					assert.bnClose(
+						(await getPositionSummary(trader3)).accessibleMargin,
 						toBN('0'),
 						toUnit('0.1')
 					);
@@ -2110,11 +2121,11 @@ contract('PerpsOrdersV2', accounts => {
 					await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
 
 					let margin = (await getPositionSummary(trader)).remainingMargin;
-					assert.bnEqual(margin[0], toUnit('1000'));
+					assert.bnEqual(margin, toUnit('1000'));
 
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
 					margin = (await getPositionSummary(trader)).remainingMargin;
-					assert.bnEqual(margin[0], toBN('0'));
+					assert.bnEqual(margin, toBN('0'));
 				});
 
 				it('Profit allows more to be withdrawn', async () => {
@@ -2124,12 +2135,20 @@ contract('PerpsOrdersV2', accounts => {
 					await perpsOrders.modifyPosition(marketKey, toUnit('-322'), { from: trader });
 
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-					assert.bnClose((await perpsOrders.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+					assert.bnClose(
+						(await getPositionSummary(trader)).accessibleMargin,
+						toBN('0'),
+						toUnit('0.1')
+					);
 					await setPrice(baseAsset, toUnit('1.777'));
-					assert.bnGt((await perpsOrders.accessibleMargin(trader))[0], toBN('0'));
+					assert.bnGt((await getPositionSummary(trader)).accessibleMargin, toBN('0'));
 
 					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-					assert.bnClose((await perpsOrders.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
+					assert.bnClose(
+						(await getPositionSummary(trader)).accessibleMargin,
+						toBN('0'),
+						toUnit('0.1')
+					);
 				});
 			});
 		});
@@ -2151,12 +2170,12 @@ contract('PerpsOrdersV2', accounts => {
 
 				// With no price motion and no funding rate, leverage should be unchanged.
 				assert.bnClose(
-					(await perpsOrders.currentLeverage(trader))[0],
+					(await getPositionSummary(trader)).currentLeverage,
 					lev(toUnit('5000'), toUnit('1000'), fee1),
 					toUnit(0.1)
 				);
 				assert.bnClose(
-					(await perpsOrders.currentLeverage(trader2))[0],
+					(await getPositionSummary(trader2)).currentLeverage,
 					lev(toUnit('-10000'), toUnit('1000'), fee2),
 					toUnit(0.1)
 				);
@@ -2168,12 +2187,12 @@ contract('PerpsOrdersV2', accounts => {
 				// long notional value 5000 -> 5250; long remaining margin 1000 -> 1250; leverage 5 -> 4.2
 				// short notional value -10000 -> -10500; short remaining margin 1000 -> 500; leverage 10 -> 21;
 				assert.bnClose(
-					(await perpsOrders.currentLeverage(trader))[0],
+					(await getPositionSummary(trader)).currentLeverage,
 					lev(toUnit('5250'), toUnit('1250'), fee1),
 					toUnit(0.1)
 				);
 				assert.bnClose(
-					(await perpsOrders.currentLeverage(trader2))[0],
+					(await getPositionSummary(trader2)).currentLeverage,
 					lev(toUnit('-10500'), toUnit('500'), fee2),
 					toUnit(0.1)
 				);
@@ -2188,26 +2207,32 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				assert.bnEqual((await getPosition(trader)).size, toUnit('5'));
-				assert.bnClose((await perpsOrders.currentLeverage(trader))[0], toUnit(0.5), toUnit(0.001));
+				assert.bnClose(
+					(await getPositionSummary(trader)).currentLeverage,
+					toUnit(0.5),
+					toUnit(0.001)
+				);
 
 				// The response of leverage to price with leverage < 1 is opposite to leverage > 1
 				// When leverage is fractional, increasing the price increases leverage
 				await setPrice(baseAsset, toUnit('300'));
-				assert.bnClose((await perpsOrders.currentLeverage(trader))[0], toUnit(0.75), toUnit(0.001));
+				assert.bnClose(
+					(await getPositionSummary(trader)).currentLeverage,
+					toUnit(0.75),
+					toUnit(0.001)
+				);
 				// ...while decreasing the price deleverages the position.
 				await setPrice(baseAsset, toUnit('100').div(toBN(3)));
-				assert.bnClose((await perpsOrders.currentLeverage(trader))[0], toUnit(0.25), toUnit(0.001));
+				assert.bnClose(
+					(await getPositionSummary(trader)).currentLeverage,
+					toUnit(0.25),
+					toUnit(0.001)
+				);
 			});
 
 			it('current leverage: no position', async () => {
-				const currentLeverage = await perpsOrders.currentLeverage(trader);
-				assert.bnEqual(currentLeverage[0], toBN('0'));
-			});
-
-			it('current leverage properly reports invalid prices', async () => {
-				assert.isFalse((await perpsOrders.currentLeverage(trader))[1]);
-				await fastForward(7 * 24 * 60 * 60);
-				assert.isTrue((await perpsOrders.currentLeverage(trader))[1]);
+				const currentLeverage = (await getPositionSummary(trader)).currentLeverage;
+				assert.bnEqual(currentLeverage, toBN('0'));
 			});
 		});
 	});
@@ -2557,7 +2582,11 @@ contract('PerpsOrdersV2', accounts => {
 
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('100'));
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-6'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit('-6'),
+					toUnit('0.01')
+				);
 
 				await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
 				const time = await currentTime();
@@ -2568,15 +2597,27 @@ contract('PerpsOrdersV2', accounts => {
 					toUnit('-6'),
 					toUnit('0.01')
 				);
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('0'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit('0'),
+					toUnit('0.01')
+				);
 
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('200'));
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-40'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit('-40'),
+					toUnit('0.01')
+				);
 
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('300'));
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-120'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit('-120'),
+					toUnit('0.01')
+				);
 			});
 		});
 
@@ -2938,12 +2979,12 @@ contract('PerpsOrdersV2', accounts => {
 				// price which liquidationPrice() uses. So it's exactly correct.
 				// So a keeper querrying canLiquidate() or simulating the liquidation
 				// tx would have the correct liquidation price, and canLiquidate() result.
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				await perpsOrders.liquidatePosition(trader);
 			});
 
 			it('Empty positions cannot be liquidated', async () => {
-				assert.isFalse(await perpsOrders.canLiquidate(trader));
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 			});
 
 			it('No liquidations while prices are invalid', async () => {
@@ -2952,9 +2993,9 @@ contract('PerpsOrdersV2', accounts => {
 				await perpsOrders.modifyPosition(marketKey, toUnit('20'), { from: trader });
 
 				await setPrice(baseAsset, toUnit('25'));
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
-				assert.isFalse(await perpsOrders.canLiquidate(trader));
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 			});
 		});
 
@@ -2987,13 +3028,13 @@ contract('PerpsOrdersV2', accounts => {
 				const skew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 				const positionSize = (await getPosition(trader)).size;
 
-				assert.isFalse(await perpsOrders.canLiquidate(trader));
-				assert.isFalse(await perpsOrders.canLiquidate(trader2));
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+				assert.isFalse((await getPositionSummary(trader2)).canLiquidate);
 
 				await setPrice(baseAsset, toUnit('200'));
 
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
-				assert.isTrue(await perpsOrders.canLiquidate(trader2));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
 
 				// Note at this point the true market debt should be $2000 ($1000 profit for the short trader, and two liquidated longs)
 				// However, the long positions are actually underwater and the negative contribution is not removed until liquidation
@@ -3002,7 +3043,11 @@ contract('PerpsOrdersV2', accounts => {
 					toUnit('620'),
 					toUnit('0.1')
 				);
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-8'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit('-8'),
+					toUnit('0.01')
+				);
 
 				await perpsOrders.liquidatePosition(trader, { from: noBalance });
 
@@ -3024,7 +3069,11 @@ contract('PerpsOrdersV2', accounts => {
 				);
 
 				// Funding has been recorded by the liquidation.
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit(0), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit(0),
+					toUnit('0.01')
+				);
 
 				await perpsOrders.liquidatePosition(trader2, { from: noBalance });
 
@@ -3057,7 +3106,11 @@ contract('PerpsOrdersV2', accounts => {
 					toUnit('5960'),
 					toUnit('0.1')
 				);
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit('-24.5'), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit('-24.5'),
+					toUnit('0.01')
+				);
 
 				await perpsOrders.liquidatePosition(trader3, { from: noBalance });
 
@@ -3076,14 +3129,18 @@ contract('PerpsOrdersV2', accounts => {
 				);
 
 				// Funding has been recorded by the liquidation.
-				assert.bnClose((await perpsOrders.unrecordedFunding())[0], toUnit(0), toUnit('0.01'));
+				assert.bnClose(
+					(await perpsEngine.unrecordedFunding(marketKey))[0],
+					toUnit(0),
+					toUnit('0.01')
+				);
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
 				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
 				// fee 40*250*0.003 = 30
 				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
-				assert.isFalse(await perpsOrders.canLiquidate(trader));
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 				const liqPrice = (await perpsOrders.approxLiquidationPriceAndFee(trader)).price;
 				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
 
@@ -3092,12 +3149,12 @@ contract('PerpsOrdersV2', accounts => {
 
 				const { size: positionSize, id: positionId } = await getPosition(trader);
 
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 
 				const remainingMargin = (await getPositionSummary(trader)).remainingMargin;
 				const tx = await perpsOrders.liquidatePosition(trader, { from: noBalance });
 
-				assert.isFalse(await perpsOrders.canLiquidate(trader));
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 				const pos = await getPosition(trader, { from: noBalance });
 				assert.bnEqual(pos.id, 1);
 				assert.bnEqual(await perpsStorage.positionIdToAccount(marketKey, 1), trader);
@@ -3156,7 +3213,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				const newPrice = liqPrice.sub(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 
 				const remainingMargin = (await getPositionSummary(trader)).remainingMargin;
 				const tx = await perpsOrders.liquidatePosition(trader, { from: noBalance });
@@ -3257,7 +3314,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				const newPrice = liqPrice.add(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
-				assert.isTrue(await perpsOrders.canLiquidate(trader3));
+				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
 
 				const remainingMargin = (await getPositionSummary(trader3)).remainingMargin;
 				const tx = await perpsOrders.liquidatePosition(trader3, { from: noBalance });
@@ -3293,12 +3350,12 @@ contract('PerpsOrdersV2', accounts => {
 
 				await setPrice(baseAsset, newPrice);
 
-				assert.isFalse(await perpsOrders.canLiquidate(trader));
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 
 				// raise the liquidation fee
 				await perpsSettings.setMinKeeperFee(toUnit('100'), { from: owner });
 
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				price = (await perpsOrders.approxLiquidationPriceAndFee(trader)).price;
 
 				// liquidate the position
@@ -3340,7 +3397,7 @@ contract('PerpsOrdersV2', accounts => {
 				assert.bnEqual(oldPositionId, toBN('1'));
 
 				await setPrice(baseAsset, toUnit('200'));
-				assert.isTrue(await perpsOrders.canLiquidate(trader));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				await perpsOrders.liquidatePosition(trader, { from: noBalance });
 
 				await transferMarginAndModifyPosition({

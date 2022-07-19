@@ -17,11 +17,4 @@ contract TestablePerpsEngineV2 is PerpsEngineV2 {
         (uint price, ) = assetPrice(marketKey);
         return _liquidationMargin(_notionalValue(position.size, price));
     }
-
-    function currentLeverage(bytes32 marketKey, address account) external view returns (int leverage, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice(marketKey);
-        Position memory position = _stateViews().positions(marketKey, account);
-        uint remainingMargin_ = _remainingMargin(position, price);
-        return (_currentLeverage(_notionalValue(position.size, price), remainingMargin_), isInvalid);
-    }
 }

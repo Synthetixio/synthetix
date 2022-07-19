@@ -364,9 +364,9 @@ module.exports = ({ web3 } = {}) => {
 	 *  @param expectedBN The BN.js amount you expected to receive, allowing a variance of +/- 100 units
 	 */
 	const assertBNClose = (actualBN, expectedBN, varianceParam = '10') => {
-		const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
-		const expected = BN.isBN(expectedBN) ? expectedBN : new BN(expectedBN);
-		const variance = BN.isBN(varianceParam) ? varianceParam : new BN(varianceParam);
+		const actual = toBN(actualBN);
+		const expected = toBN(expectedBN);
+		const variance = toBN(varianceParam);
 		const actualDelta = expected.sub(actual).abs();
 
 		assert.ok(
@@ -385,6 +385,8 @@ module.exports = ({ web3 } = {}) => {
 	 *  @param bBN The right operand BN.js instance
 	 */
 	const assertBNGreaterThan = (aBN, bBN) => {
+		aBN = toBN(aBN);
+		bBN = toBN(bBN);
 		assert.ok(aBN.gt(bBN), `${aBN.toString()} is not greater than ${bBN.toString()}`);
 	};
 
@@ -394,6 +396,8 @@ module.exports = ({ web3 } = {}) => {
 	 *  @param bBN The right operand BN.js instance
 	 */
 	const assertBNGreaterEqualThan = (aBN, bBN) => {
+		aBN = toBN(aBN);
+		bBN = toBN(bBN);
 		assert.ok(aBN.gte(bBN), `${aBN.toString()} is not greater than or equal to ${bBN.toString()}`);
 	};
 
@@ -403,6 +407,8 @@ module.exports = ({ web3 } = {}) => {
 	 *  @param bBN The right operand BN.js instance
 	 */
 	const assertBNLessThan = (aBN, bBN) => {
+		aBN = toBN(aBN);
+		bBN = toBN(bBN);
 		assert.ok(aBN.lt(bBN), `${aBN.toString()} is not less than ${bBN.toString()}`);
 	};
 
@@ -412,6 +418,8 @@ module.exports = ({ web3 } = {}) => {
 	 *  @param bBN The right operand BN.js instance
 	 */
 	const assertBNLessEqualThan = (aBN, bBN) => {
+		aBN = toBN(aBN);
+		bBN = toBN(bBN);
 		assert.ok(aBN.lte(bBN), `${aBN.toString()} is not less than or equal to ${bBN.toString()}`);
 	};
 
