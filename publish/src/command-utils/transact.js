@@ -93,7 +93,7 @@ const performTransactionalStep = async ({
 
 	// otherwise check the owner
 	const owner = await target.owner();
-	if (signer && (owner === signer.address || publiclyCallable)) {
+	if (signer && (owner === (await signer.getAddress()) || publiclyCallable)) {
 		// perform action
 		let hash;
 		let gasUsed = 0;

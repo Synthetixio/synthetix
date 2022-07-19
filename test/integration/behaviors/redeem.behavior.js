@@ -17,11 +17,9 @@ function itCanRedeem({ ctx }) {
 		let synth;
 
 		before('target contracts and users', () => {
-			const { addedSynths } = ctx;
-			// when no added synths, then just use another synth for testing (useful for the simulation)
 			// sETH and sBTC can't be removed because the debt may be too large for removeSynth to not underflow
 			// during debt update, so sLINK is used here
-			synth = addedSynths.length ? addedSynths[0].name : 'sLINK';
+			synth = 'sLINK';
 
 			({
 				Synthetix,
@@ -45,13 +43,12 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before(`ensure the user has some of the target synth`, async () => {
-			Synthetix = Synthetix.connect(someUser);
-			const tx = await Synthetix.exchange(
-				toBytes32('sUSD'),
-				ethers.utils.parseEther('50'),
-				toBytes32(synth)
-			);
-			await tx.wait();
+			await ensureBalance({
+				ctx,
+				symbol: synth,
+				user: someUser,
+				balance: ethers.utils.parseEther('100'),
+			});
 		});
 
 		before('skip waiting period', async () => {

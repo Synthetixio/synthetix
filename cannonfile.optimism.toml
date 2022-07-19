@@ -1,11 +1,11 @@
 name = "synthetix"
-version = "<%= package.version %>"
+version = "2.74.2-alpha"
 description = "Infinite liquidity is here."
 
 # overrides the deployed contracts used by the deployer
 # not to be confused with the cannon network
 [setting.network]
-defaultValue = "optimism"
+defaultValue = "local-ovm"
 
 # contracts will be owned by the specified address (defaults to the first known test address)
 [setting.owner]
@@ -49,7 +49,7 @@ options.salt = "btc"
 exec = "./publish/cannon.js"
 func = "deploy"
 args = ["<%= settings.network %>"]
-modified = ["contracts", "publish/src", "publish/deployed/local"]
+modified = ["contracts", "publish/src", "publish/deployed/local-ovm"]
 
 # "hack mint" by sending txn as if it is from the bridge
 [invoke.transfer_owner_snx]
@@ -58,6 +58,16 @@ target = ["Synthetix"]
 from = "<%= contracts.SynthetixBridgeToBase.address %>"
 func = "mintSecondary"
 args = ["<%= settings.owner %>", "100000000000000000000000000"]
+
+depends = ["run.synthetix"]
+
+[invoke.set_relay_owner]
+target = ["OwnerRelayOnOptimism"]
+
+func = "nominateNewOwner"
+args = ["<%= settings.owner %>"]
+
+fromCall.func = "temporaryOwner"
 
 depends = ["run.synthetix"]
 
@@ -115,7 +125,6 @@ fromCall.func = "owner"
 
 depends = ["run.synthetix"]
 
-
 [invoke.accept_ownership]
 target = [
     "AddressResolver",
@@ -140,6 +149,7 @@ target = [
     "LiquidatorRewards",
     "OneNetAggregatorDebtRatio",
     "OneNetAggregatorIssuedSynths",
+    "OwnerRelayOnOptimism",
     "ProxyFeePool",
     "ProxySynthetix",
     "ProxysUSD",
@@ -167,7 +177,7 @@ from = "<%= settings.owner %>"
 func = "acceptOwnership"
 args = []
 
-depends = ["invoke.set_ownership"]
+depends = ["invoke.set_relay_owner", "invoke.set_ownership"]
 
 [invoke.set_aggregator_snx]
 target = ["ExchangeRates"]

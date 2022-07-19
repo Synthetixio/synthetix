@@ -9,6 +9,7 @@ const path = require('path');
 require('hardhat-interact');
 require('solidity-coverage');
 require('./hardhat');
+require('@nomiclabs/hardhat-etherscan');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('hardhat-gas-reporter');
@@ -68,18 +69,22 @@ module.exports = {
 		mainnet: {
 			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
 			chainId: 1,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'mainnet-ovm': {
 			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
 			chainId: 10,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
-		kovan: {
+		goerli: {
 			url: process.env.PROVIDER_URL || 'http://localhost:8545',
-			chainId: 42,
+			chainId: 5,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
-		'kovan-ovm': {
-			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
-			chainId: 69,
+		'goerli-ovm': {
+			url: process.env.PROVIDER_URL || 'https://goerli.optimism.io/',
+			chainId: 420,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		rinkeby: {
 			url: process.env.PROVIDER_URL || '',
@@ -91,7 +96,7 @@ module.exports = {
 			url: 'http://localhost:8545/',
 		},
 		'local-ovm': {
-			url: process.env.OVM_PROVIDER_URL || 'http://localhost:9545/',
+			url: 'http://localhost:9545/',
 		},
 	},
 	gasReporter: {
@@ -102,10 +107,14 @@ module.exports = {
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
 		outputFile: 'test-gas-used.log',
 	},
-
 	mocha: {
 		timeout: 120e3, // 120s
 		retries: 1,
+	},
+	etherscan: {
+		apiKey: {
+			goerli: process.env.ETHERSCAN_KEY,
+		},
 	},
 	cannon: {
 		publisherPrivateKey: process.env.PRIVATE_KEY,
