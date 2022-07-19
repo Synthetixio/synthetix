@@ -24,5 +24,14 @@
 		"description": "Ether",
 		"name": "sETH",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"feed": "0x0",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Chainlink",
+		"name": "sLINK",
+		"subclass": "MultiCollateralSynth"
 	}
 ]

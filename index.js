@@ -5,12 +5,10 @@ const abiDecoder = require('abi-decoder');
 
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
-	kovan: require('./publish/deployed/kovan'),
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
-	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 };
 
@@ -18,7 +16,7 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'mainnet', 'goerli'];
+const networks = ['local', 'mainnet', 'goerli'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -26,9 +24,6 @@ const chainIdMapping = Object.entries({
 	},
 	5: {
 		network: 'goerli',
-	},
-	42: {
-		network: 'kovan',
 	},
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -39,10 +34,6 @@ const chainIdMapping = Object.entries({
 	// OVM networks: see https://github.com/ethereum-optimism/regenesis/
 	10: {
 		network: 'mainnet',
-		useOvm: true,
-	},
-	69: {
-		network: 'kovan',
 		useOvm: true,
 	},
 	'-1': {
@@ -153,19 +144,21 @@ const defaults = {
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
-		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
+		goerli: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
+		// TODO: get actual goerli address
 	},
 
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
-		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		// TODO: get actual goerli address
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-		kovan: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
-		'kovan-ovm': '0x4200000000000000000000000000000000000006',
+		'goerli-ovm': '0x4200000000000000000000000000000000000006',
+		// TODO: get actual goerli-ovm address
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
@@ -235,7 +228,7 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', useOvm = false, path
 	path.join(__dirname, 'publish', 'deployed', getFolderNameForNetwork({ network, useOvm }), file);
 
 // Pass in fs and path to avoid webpack wrapping those
-const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false }) => {
+const loadDeploymentFile = ({ network = 'mainnet', path, fs, deploymentPath, useOvm = false }) => {
 	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].deployment;
 	}
@@ -540,16 +533,10 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			marketClosure: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7',
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
-		kovan: Object.assign({}, base),
-		'kovan-ovm': Object.assign({}, base, {
-			owner: '0x7509FeAEE952F7dA93f746CF7134CFDE8f249C94',
-		}),
 		'mainnet-ovm': Object.assign({}, base, {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
 			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
 		}),
-		rinkeby: Object.assign({}, base),
-		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
 		local: Object.assign({}, base, {
