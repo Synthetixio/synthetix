@@ -125,6 +125,15 @@
 	"SynthsETH": {
 		"deploy": true
 	},
+	"TokenStatesLINK": {
+		"deploy": true
+	},
+	"ProxysLINK": {
+		"deploy": true
+	},
+	"SynthsLINK": {
+		"deploy": true
+	},
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},

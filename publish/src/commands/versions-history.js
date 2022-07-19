@@ -58,7 +58,7 @@ module.exports = {
 		program
 			.command('versions-history')
 			.description('Output version history of a network in a CSV format')
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
