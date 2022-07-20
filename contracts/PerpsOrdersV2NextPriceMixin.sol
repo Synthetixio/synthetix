@@ -16,6 +16,28 @@ import "./PerpsOrdersV2Base.sol";
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
+    ///// Events
+    event NextPriceOrderSubmitted(
+        bytes32 indexed marketKey,
+        address indexed account,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    );
+
+    event NextPriceOrderRemoved(
+        bytes32 indexed marketKey,
+        address indexed account,
+        uint curRoundId,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    );
+
     /// @dev Holds a mapping of [marketKey][account] to orders. Only one order per market & account is supported
     mapping(bytes32 => mapping(address => NextPriceOrder)) public nextPriceOrders;
 
@@ -25,6 +47,10 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
     function feeRateNextPrice(bytes32 marketKey) external view returns (uint) {
         return _feeRateNextPrice(marketKey);
+    }
+
+    function orderFeeNextPrice(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
+        return engineContract().orderFee(marketKey, sizeDelta, _feeRateNextPrice(marketKey));
     }
 
     function currentRoundId(bytes32 marketKey) public view returns (uint) {
@@ -253,26 +279,4 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // add to base fee
         return _baseFeeNextPrice(marketKey).add(_dynamicFeeRateChecked(marketKey));
     }
-
-    ///// Events
-    event NextPriceOrderSubmitted(
-        bytes32 indexed marketKey,
-        address indexed account,
-        int sizeDelta,
-        uint targetRoundId,
-        uint commitDeposit,
-        uint keeperDeposit,
-        bytes32 trackingCode
-    );
-
-    event NextPriceOrderRemoved(
-        bytes32 indexed marketKey,
-        address indexed account,
-        uint curRoundId,
-        int sizeDelta,
-        uint targetRoundId,
-        uint commitDeposit,
-        uint keeperDeposit,
-        bytes32 trackingCode
-    );
 }

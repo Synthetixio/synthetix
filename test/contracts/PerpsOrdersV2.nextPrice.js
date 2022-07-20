@@ -7,9 +7,12 @@ const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
-contract('PerpsV2Market mixin for next price orders', accounts => {
+contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 	let perpsSettings,
-		perpsMarket,
+		// futuresMarketManager,
+		perpsOrders,
+		perpsEngine,
+		// perpsStorage,
 		exchangeRates,
 		exchangeCircuitBreaker,
 		sUSD,
@@ -38,10 +41,21 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 		}
 	}
 
+	async function getPositionSummary(account) {
+		return perpsOrders.positionSummary(marketKey, account);
+	}
+
+	async function getPosition(account) {
+		return (await getPositionSummary(account)).position;
+	}
+
 	before(async () => {
 		({
 			PerpsSettingsV2: perpsSettings,
-			PerpsV2MarketpBTC: perpsMarket,
+			// FuturesMarketManager: futuresMarketManager,
+			PerpsOrdersV2: perpsOrders,
+			PerpsEngineV2: perpsEngine,
+			// PerpsStorageV2: perpsStorage,
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
@@ -52,10 +66,15 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			accounts,
 			synths: ['sUSD'],
 			feeds: ['BTC', 'ETH'],
+			perps: [
+				{ marketKey: 'pBTC', assetKey: 'BTC' },
+				{ marketKey: 'pETH', assetKey: 'ETH' },
+			],
 			contracts: [
 				'FuturesMarketManager',
 				'PerpsSettingsV2',
-				'PerpsV2MarketpBTC',
+				'PerpsEngineV2',
+				'PerpsOrdersV2',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -88,7 +107,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 	beforeEach(async () => {
 		// prepare basic order parameters
 		margin = toUnit('1000');
-		await perpsMarket.transferMargin(margin, { from: trader });
+		await perpsOrders.transferMargin(marketKey, margin, { from: trader });
 		size = toUnit('50');
 		price = toUnit('200');
 		await setPrice(baseAsset, price);
@@ -98,68 +117,71 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const spotFee = (await perpsMarket.orderFee(size))[0];
+			const spotFee = (await perpsOrders.orderFee(marketKey, size))[0];
 			const keeperFee = await perpsSettings.minKeeperFee();
-			const tx = await perpsMarket.submitNextPriceOrder(size, { from: trader });
+			const tx = await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 
 			// check order
-			const order = await perpsMarket.nextPriceOrders(trader);
+			const order = await perpsOrders.nextPriceOrders(marketKey, trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 
 			// check margin
-			const position = await perpsMarket.positions(trader);
+			const position = await getPosition(trader);
 			const expectedMargin = margin.sub(spotFee.add(keeperFee));
 			assert.bnEqual(position.margin, expectedMargin);
 
 			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [perpsMarket] });
-			assert.equal(decodedLogs.length, 3);
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [perpsEngine, perpsOrders],
+			});
+			assert.equal(decodedLogs.length, 4);
 			// PositionModified
 			decodedEventEqual({
 				event: 'PositionModified',
-				emittedFrom: perpsMarket.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
-				log: decodedLogs[1],
+				emittedFrom: perpsEngine.address,
+				args: [marketKey, toBN('1'), trader, expectedMargin, 0, 0, price, 0],
+				log: decodedLogs[2],
 			});
 			// NextPriceOrderSubmitted
 			decodedEventEqual({
 				event: 'NextPriceOrderSubmitted',
-				emittedFrom: perpsMarket.address,
-				args: [trader, size, roundId.add(toBN(1)), spotFee, keeperFee],
-				log: decodedLogs[2],
+				emittedFrom: perpsOrders.address,
+				args: [marketKey, trader, size, roundId.add(toBN(1)), spotFee, keeperFee, toBytes32('')],
+				log: decodedLogs[3],
 			});
 		});
 
 		describe('cannot submit an order when', () => {
 			it('zero size', async () => {
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(0, { from: trader }),
-					'Cannot submit empty order'
+					perpsOrders.submitNextPriceOrder(marketKey, 0, { from: trader }),
+					'order would fail as spot'
 				);
 			});
 
 			it('not enough margin', async () => {
-				await perpsMarket.withdrawAllMargin({ from: trader });
+				await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(size, { from: trader }),
-					'Insufficient margin'
+					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
+					'order would fail as spot'
 				);
 			});
 
 			it('too much leverage', async () => {
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(size.mul(toBN(10)), { from: trader }),
-					'Max leverage exceeded'
+					perpsOrders.submitNextPriceOrder(marketKey, size.mul(toBN(10)), { from: trader }),
+					'order would fail as spot'
 				);
 			});
 
 			it('previous order exists', async () => {
-				await perpsMarket.submitNextPriceOrder(size, { from: trader });
+				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(size, { from: trader }),
+					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
 					'previous order exists'
 				);
 			});
@@ -167,7 +189,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			it('if futures markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(size, { from: trader }),
+					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -175,7 +197,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			it('if market is suspended', async () => {
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(size, { from: trader }),
+					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
 					'Market suspended'
 				);
 			});
@@ -188,34 +210,36 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const spotFee = (await perpsMarket.orderFee(size))[0];
+			const spotFee = (await perpsOrders.orderFee(marketKey, size))[0];
 			const keeperFee = await perpsSettings.minKeeperFee();
-			const tx = await perpsMarket.submitNextPriceOrderWithTracking(size, trackingCode, {
+			const tx = await perpsOrders.submitNextPriceOrderWithTracking(marketKey, size, trackingCode, {
 				from: trader,
 			});
 
 			// check order
-			const order = await perpsMarket.nextPriceOrders(trader);
+			const order = await perpsOrders.nextPriceOrders(marketKey, trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsMarket] });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsOrders] });
 
 			// NextPriceOrderSubmitted
 			decodedEventEqual({
 				event: 'NextPriceOrderSubmitted',
-				emittedFrom: perpsMarket.address,
-				args: [trader, size, roundId.add(toBN(1)), spotFee, keeperFee, trackingCode],
-				log: decodedLogs[2],
+				emittedFrom: perpsOrders.address,
+				args: [marketKey, trader, size, roundId.add(toBN(1)), spotFee, keeperFee, trackingCode],
+				log: decodedLogs[3],
 			});
 		});
 
 		it('executing an order emits the tracking event', async () => {
 			// setup
-			await perpsMarket.submitNextPriceOrderWithTracking(size, trackingCode, { from: trader });
+			await perpsOrders.submitNextPriceOrderWithTracking(marketKey, size, trackingCode, {
+				from: trader,
+			});
 
 			// go to next round
 			await setPrice(baseAsset, price);
@@ -223,15 +247,15 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, baseFeeNextPrice));
 
 			// excute the order
-			const tx = await perpsMarket.executeNextPriceOrder(trader, { from: trader });
+			const tx = await perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader });
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsMarket] });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 
 			decodedEventEqual({
 				event: 'Tracking',
-				emittedFrom: perpsMarket.address,
-				args: [trackingCode, baseAsset, marketKey, size, expectedFee],
-				log: decodedLogs[3],
+				emittedFrom: perpsEngine.address,
+				args: [trackingCode, marketKey, trader, size, expectedFee],
+				log: decodedLogs[5],
 			});
 		});
 	});
@@ -240,12 +264,12 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 		it('cannot cancel when there is no order', async () => {
 			// account owner
 			await assert.revert(
-				perpsMarket.cancelNextPriceOrder(trader, { from: trader }),
+				perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader }),
 				'no previous order'
 			);
 			// keeper
 			await assert.revert(
-				perpsMarket.cancelNextPriceOrder(trader, { from: trader2 }),
+				perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
 				'no previous order'
 			);
 		});
@@ -255,34 +279,37 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 
 			// helper function to check cancellation tx effects
 			async function checkCancellation(from) {
-				const currentMargin = (await perpsMarket.positions(trader)).margin;
+				const currentMargin = toBN((await getPosition(trader)).margin);
 				// cancel the order
-				const tx = await perpsMarket.cancelNextPriceOrder(trader, { from: from });
+				const tx = await perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: from });
 
 				// check order is removed
-				const order = await perpsMarket.nextPriceOrders(trader);
+				const order = await perpsOrders.nextPriceOrders(marketKey, trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
 				assert.bnEqual(order.keeperDeposit, 0);
 
 				// The relevant events are properly emitted
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsMarket] });
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine, perpsOrders],
+				});
 
 				if (from === trader) {
 					// trader gets refunded
-					assert.equal(decodedLogs.length, 4);
+					assert.equal(decodedLogs.length, 5);
 					// keeper fee was refunded
 					// PositionModified
 					decodedEventEqual({
 						event: 'PositionModified',
-						emittedFrom: perpsMarket.address,
-						args: [toBN('1'), trader, currentMargin.add(keeperFee), 0, 0, price, toBN(2), 0],
-						log: decodedLogs[1],
+						emittedFrom: perpsEngine.address,
+						args: [marketKey, toBN('1'), trader, currentMargin.add(keeperFee), 0, 0, price, 0],
+						log: decodedLogs[2],
 					});
 				} else {
 					// keeper gets paid
-					assert.equal(decodedLogs.length, 3);
+					assert.equal(decodedLogs.length, 6);
 					decodedEventEqual({
 						event: 'Issued',
 						emittedFrom: sUSD.address,
@@ -301,30 +328,30 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 				// NextPriceOrderRemoved
 				decodedEventEqual({
 					event: 'NextPriceOrderRemoved',
-					emittedFrom: perpsMarket.address,
-					args: [trader, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
+					emittedFrom: perpsOrders.address,
+					args: [marketKey, trader, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
 				// transfer more margin
-				await perpsMarket.transferMargin(margin, { from: trader });
+				await perpsOrders.transferMargin(marketKey, margin, { from: trader });
 				// and can submit new order
-				await perpsMarket.submitNextPriceOrder(size, { from: trader });
-				const newOrder = await perpsMarket.nextPriceOrders(trader);
+				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
+				const newOrder = await perpsOrders.nextPriceOrders(marketKey, trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				spotFee = (await perpsMarket.orderFee(size))[0];
+				spotFee = (await perpsOrders.orderFee(marketKey, size))[0];
 				keeperFee = await perpsSettings.minKeeperFee();
-				await perpsMarket.submitNextPriceOrder(size, { from: trader });
+				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 			});
 
 			it('cannot cancel if futures markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					perpsMarket.cancelNextPriceOrder(trader, { from: trader }),
+					perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -332,7 +359,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			it('cannot cancel if market is suspended', async () => {
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					perpsMarket.cancelNextPriceOrder(trader, { from: trader }),
+					perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader }),
 					'Market suspended'
 				);
 			});
@@ -360,10 +387,10 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 					// go to next round
 					await setPrice(baseAsset, price);
 					// withdraw margin (will cause order to fail)
-					await perpsMarket.withdrawAllMargin({ from: trader });
+					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
 					// check execution would fail
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 						'Position can be liquidated'
 					);
 				});
@@ -385,28 +412,28 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 				it('cannot cancel before confirmation window is over', async () => {
 					// same round
 					await assert.revert(
-						perpsMarket.cancelNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// target round
 					await setPrice(baseAsset, price);
 					await assert.revert(
-						perpsMarket.cancelNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// next round after target round
 					await setPrice(baseAsset, price);
 					await assert.revert(
-						perpsMarket.cancelNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// next one after that (for 2 roundId)
 					await setPrice(baseAsset, price);
 					await assert.revert(
-						perpsMarket.cancelNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
@@ -422,12 +449,12 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 		it('cannot execute when there is no order', async () => {
 			// account owner
 			await assert.revert(
-				perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+				perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 				'no previous order'
 			);
 			// keeper
 			await assert.revert(
-				perpsMarket.executeNextPriceOrder(trader, { from: trader2 }),
+				perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
 				'no previous order'
 			);
 		});
@@ -438,22 +465,22 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				// commitFee is the fee that would be chanrged for a spot trade when order is submitted
-				commitFee = (await perpsMarket.orderFee(size))[0];
+				commitFee = (await perpsOrders.orderFee(marketKey, size))[0];
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await perpsSettings.minKeeperFee();
-				await perpsMarket.submitNextPriceOrder(size, { from: trader });
+				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 			});
 
 			describe('execution reverts', () => {
 				it('in same round', async () => {
 					// account owner
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 						'target roundId not reached'
 					);
 					// keeper
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'target roundId not reached'
 					);
 				});
@@ -468,12 +495,12 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 
 					// account owner
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 						'order too old, use cancel'
 					);
 					// keeper
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'order too old, use cancel'
 					);
 				});
@@ -482,19 +509,16 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 					// go to target round
 					await setPrice(baseAsset, price);
 					// withdraw margin (will cause order to fail)
-					await perpsMarket.withdrawAllMargin({ from: trader });
+					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
 
 					// account owner
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 						'Position can be liquidated'
 					);
-					// the difference in reverts is due to difference between refund into margin
-					// in case of account owner and transfer in case of keeper
-					// keeper
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader2 }),
-						'Insufficient margin'
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
+						'Position can be liquidated'
 					);
 				});
 
@@ -504,12 +528,12 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 
 					// account owner
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 						'Max leverage exceeded'
 					);
 					// keeper
 					await assert.revert(
-						perpsMarket.executeNextPriceOrder(trader, { from: trader2 }),
+						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
 						'Max leverage exceeded'
 					);
 				});
@@ -521,30 +545,33 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			// feeRate: expected exchange fee rate
 			// spotTradeDetails: trade details of the same trade if it would happen as spot
 			async function checkExecution(from, targetPrice, feeRate, spotTradeDetails) {
-				const currentMargin = (await perpsMarket.positions(trader)).margin;
+				const currentMargin = toBN((await getPosition(trader)).margin);
 				// excute the order
-				const tx = await perpsMarket.executeNextPriceOrder(trader, { from: from });
+				const tx = await perpsOrders.executeNextPriceOrder(marketKey, trader, { from: from });
 
 				// check order is removed now
-				const order = await perpsMarket.nextPriceOrders(trader);
+				const order = await perpsOrders.nextPriceOrders(marketKey, trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
 				assert.bnEqual(order.keeperDeposit, 0);
 
 				// The relevant events are properly emitted
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsMarket] });
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsOrders, perpsEngine],
+				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded
 				if (from === trader) {
 					// trader gets refunded keeperFee
 					expectedRefund = expectedRefund.add(keeperFee);
 					// no event for keeper payment
-					assert.equal(decodedLogs.length, 5);
-					// funding, position(refund), issued (exchange fee), position(trade), order removed
+					assert.equal(decodedLogs.length, 6);
+					// funding, margin(refund), position(refund), issued (exchange fee), position(trade), order removed
 				} else {
 					// keeper gets paid
-					assert.equal(decodedLogs.length, 6);
+					assert.equal(decodedLogs.length, 7);
 					// keeper fee, funding, position(refund), issued (exchange fee), position(trade), order removed
 					decodedEventEqual({
 						event: 'Issued',
@@ -557,11 +584,11 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 				// trader was refunded correctly
 				// PositionModified
 				let expectedMargin = currentMargin.add(expectedRefund);
-				const currentPrice = (await perpsMarket.assetPrice()).price;
+				const currentPrice = (await perpsEngine.assetPrice(marketKey)).price;
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: perpsMarket.address,
-					args: [toBN('1'), trader, expectedMargin, 0, 0, currentPrice, toBN(2), 0],
+					emittedFrom: perpsEngine.address,
+					args: [marketKey, toBN('1'), trader, expectedMargin, 0, 0, currentPrice, 0],
 					log: decodedLogs.slice(-4, -3)[0],
 				});
 
@@ -577,29 +604,38 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 
 				decodedEventEqual({
 					event: 'PositionModified',
-					emittedFrom: perpsMarket.address,
-					args: [toBN('1'), trader, expectedMargin, size, size, targetPrice, toBN(2), expectedFee],
+					emittedFrom: perpsEngine.address,
+					args: [
+						marketKey,
+						toBN('1'),
+						trader,
+						expectedMargin,
+						size,
+						size,
+						targetPrice,
+						expectedFee,
+					],
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
 				// NextPriceOrderRemoved
 				decodedEventEqual({
 					event: 'NextPriceOrderRemoved',
-					emittedFrom: perpsMarket.address,
-					args: [trader, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
+					emittedFrom: perpsOrders.address,
+					args: [marketKey, trader, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
 				// transfer more margin
-				await perpsMarket.transferMargin(margin, { from: trader });
+				await perpsOrders.transferMargin(marketKey, margin, { from: trader });
 				// and can submit new order
-				await perpsMarket.submitNextPriceOrder(size, { from: trader });
-				const newOrder = await perpsMarket.nextPriceOrders(trader);
+				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
+				const newOrder = await perpsOrders.nextPriceOrders(marketKey, trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
 			describe('execution results in correct views and events', () => {
-				let targetPrice, spotTradeDetails;
+				let targetPrice, spotTradeDetails, baseFee;
 
 				beforeEach(async () => {
 					targetPrice = multiplyDecimal(price, toUnit(0.9));
@@ -610,7 +646,13 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							spotTradeDetails = await perpsMarket.postTradeDetails(size, trader);
+							baseFee = await perpsOrders.baseFee(marketKey);
+							spotTradeDetails = await perpsEngine.postTradeDetails(
+								marketKey,
+								trader,
+								size,
+								baseFee
+							);
 						});
 
 						it('from account owner', async () => {
@@ -625,11 +667,16 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 					describe('maker trade', () => {
 						beforeEach(async () => {
 							// skew the other way
-							await perpsMarket.transferMargin(margin.mul(toBN(2)), { from: trader3 });
-							await perpsMarket.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
+							await perpsOrders.transferMargin(marketKey, margin.mul(toBN(2)), { from: trader3 });
+							await perpsOrders.modifyPosition(marketKey, size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							spotTradeDetails = await perpsMarket.postTradeDetails(size, trader);
+							spotTradeDetails = await perpsEngine.postTradeDetails(
+								marketKey,
+								trader,
+								size,
+								baseFee
+							);
 						});
 
 						it('from account owner', async () => {
@@ -645,7 +692,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						await setPrice(baseAsset, targetPrice);
 						await systemStatus.suspendFutures(toUnit(0), { from: owner });
 						await assert.revert(
-							perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+							perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 							'Futures markets are suspended'
 						);
 					});
@@ -654,7 +701,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 						await setPrice(baseAsset, targetPrice);
 						await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 						await assert.revert(
-							perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+							perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 							'Market suspended'
 						);
 					});
@@ -664,7 +711,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
-						spotTradeDetails = await perpsMarket.postTradeDetails(size, trader);
+						spotTradeDetails = await perpsEngine.postTradeDetails(marketKey, trader, size, baseFee);
 						// other rounds are back to old price
 						await setPrice(baseAsset, price);
 					});
@@ -687,8 +734,8 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 					describe('maker trade', () => {
 						beforeEach(async () => {
 							// skew the other way
-							await perpsMarket.transferMargin(margin.mul(toBN(2)), { from: trader3 });
-							await perpsMarket.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
+							await perpsOrders.transferMargin(marketKey, margin.mul(toBN(2)), { from: trader3 });
+							await perpsOrders.modifyPosition(marketKey, size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, price);
 						});
@@ -721,25 +768,25 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			const spikedPrice = multiplyDecimal(initialPrice, toUnit(1.1));
 			beforeEach(async () => {
 				// set up a healthy position
-				await perpsMarket.transferMargin(toUnit('1000'), { from: trader });
+				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
 
 				// submit an order
-				await perpsMarket.submitNextPriceOrder(size, { from: trader });
+				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 
 				// spike the price
 				await setPrice(baseAsset, spikedPrice);
 			});
 
 			it('canceling an order works', async () => {
-				await perpsMarket.cancelNextPriceOrder(trader, { from: trader });
+				await perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader });
 			});
 
 			it('submitting an order reverts', async () => {
 				// cancel existing
-				await perpsMarket.cancelNextPriceOrder(trader, { from: trader });
+				await perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader });
 
 				await assert.revert(
-					perpsMarket.submitNextPriceOrder(size, { from: trader }),
+					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
 					'Price too volatile'
 				);
 			});
@@ -749,7 +796,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 				await setPrice(baseAsset, spikedPrice);
 
 				await assert.revert(
-					perpsMarket.executeNextPriceOrder(trader, { from: trader }),
+					perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 					'Price too volatile'
 				);
 			});
