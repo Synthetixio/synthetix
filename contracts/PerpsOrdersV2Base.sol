@@ -80,6 +80,10 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return _feeRate(marketKey);
     }
 
+    function orderFee(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
+        return engineContract().orderFee(marketKey, sizeDelta, _feeRate(marketKey));
+    }
+
     function dynamicFeeRate(bytes32 marketKey) external view returns (uint rate, bool tooVolatile) {
         return _dynamicFeeRate(marketKey);
     }

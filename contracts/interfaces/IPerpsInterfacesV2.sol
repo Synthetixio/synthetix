@@ -202,11 +202,15 @@ interface IPerpsOrdersV2 {
 
     function feeRate(bytes32 marketKey) external view returns (uint);
 
+    function orderFee(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid);
+
     function dynamicFeeRate(bytes32 marketKey) external view returns (uint rate, bool tooVolatile);
 
     function baseFeeNextPrice(bytes32 marketKey) external view returns (uint);
 
     function feeRateNextPrice(bytes32 marketKey) external view returns (uint);
+
+    function orderFeeNextPrice(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid);
 
     function currentRoundId(bytes32 marketKey) external view returns (uint);
 

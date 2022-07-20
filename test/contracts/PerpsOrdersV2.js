@@ -3815,21 +3815,23 @@ contract('PerpsOrdersV2', accounts => {
 				assert.notOk(res.tooVolatile);
 			});
 
-			it('feeRate is calculated and applied correctly', async () => {
+			it('orderFee is calculated and applied correctly', async () => {
 				const orderSize = toUnit('1');
+
+				// expected fee is dynamic fee + base fee
+				const expectedFee = multiplyDecimal(spikedRate, expectedRate.add(baseFee));
 
 				// check view
 				const rate = await perpsOrders.feeRate(marketKey);
 				assert.bnClose(rate, expectedRate.add(baseFee), toUnit('0.0000001'));
+				const res = await perpsOrders.orderFee(marketKey, orderSize);
+				assert.bnClose(res.fee, expectedFee, toUnit('0.0000001'));
 
 				// check event from modifying a position
 				const tx = await perpsOrders.modifyPosition(marketKey, orderSize, { from: trader });
 
 				// correct fee is properly recorded and deducted.
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [perpsEngine] });
-
-				// expected fee is dynamic fee + base fee
-				const expectedFee = multiplyDecimal(spikedRate, expectedRate.add(baseFee));
 
 				decodedEventEqual({
 					event: 'PositionModified',
