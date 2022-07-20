@@ -2239,7 +2239,7 @@ contract('PerpsOrdersV2', accounts => {
 
 	describe('Funding', () => {
 		it('An empty market induces zero funding rate', async () => {
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 		});
 
 		it('A balanced market induces zero funding rate', async () => {
@@ -2254,7 +2254,7 @@ contract('PerpsOrdersV2', accounts => {
 					sizeDelta: toUnit(traderDetails[0]),
 				});
 			}
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 		});
 
 		it('A balanced market (with differing leverage) induces zero funding rate', async () => {
@@ -2269,12 +2269,12 @@ contract('PerpsOrdersV2', accounts => {
 					sizeDelta: toUnit(traderDetails[1]),
 				});
 			}
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 		});
 
 		it('Various skew rates', async () => {
 			// Market is balanced
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 
 			const price = toUnit(250);
 
@@ -2292,18 +2292,17 @@ contract('PerpsOrdersV2', accounts => {
 				sizeDelta: toUnit('-12'),
 			});
 
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 
 			const minScale = divideDecimal(
 				(await perpsSettings.parameters(marketKey)).skewScaleUSD,
 				price
 			);
-			const maxFundingRate = await perpsOrders.maxFundingRate();
 			// Market is 24 units long skewed (24 / 100000)
 			await perpsOrders.modifyPosition(marketKey, toUnit('24'), { from: trader });
 			let marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnEqual(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
@@ -2311,7 +2310,7 @@ contract('PerpsOrdersV2', accounts => {
 			await perpsOrders.modifyPosition(marketKey, toUnit('-32'), { from: trader });
 			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnClose(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
@@ -2319,7 +2318,7 @@ contract('PerpsOrdersV2', accounts => {
 			await perpsOrders.closePosition(marketKey, { from: trader });
 			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnClose(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
@@ -2328,14 +2327,14 @@ contract('PerpsOrdersV2', accounts => {
 			await perpsOrders.closePosition(marketKey, { from: trader2 });
 			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
 			assert.bnClose(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 		});
 
 		it('Altering the max funding has a proportional effect', async () => {
 			// 0, +-50%, +-100%
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 
 			await transferMarginAndModifyPosition({
 				account: trader,
@@ -2352,15 +2351,15 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			const expectedFunding = toUnit('-0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding rate
-			assert.bnEqual(await perpsOrders.currentFundingRate(), expectedFunding);
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), expectedFunding);
 
 			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
 			assert.bnEqual(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(expectedFunding, toUnit(2))
 			);
 			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0'), { from: owner });
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit('0'));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit('0'));
 		});
 
 		it('Altering the skewScaleUSD has a proportional effect', async () => {
@@ -2381,13 +2380,13 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			const expectedFunding = toUnit('0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding rate
-			assert.bnEqual(await perpsOrders.currentFundingRate(), expectedFunding);
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), expectedFunding);
 
 			await perpsSettings.setSkewScaleUSD(marketKey, toUnit(500 * initialPrice), {
 				from: owner,
 			});
 			assert.bnEqual(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(expectedFunding, toUnit('2'))
 			);
 
@@ -2395,7 +2394,7 @@ contract('PerpsOrdersV2', accounts => {
 				from: owner,
 			});
 			assert.bnEqual(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(expectedFunding, toUnit('4'))
 			);
 
@@ -2403,13 +2402,13 @@ contract('PerpsOrdersV2', accounts => {
 				from: owner,
 			});
 			assert.bnEqual(
-				await perpsOrders.currentFundingRate(),
+				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(expectedFunding, toUnit('0.5'))
 			);
 
 			// skewScaleUSD is below market size
 			await perpsSettings.setSkewScaleUSD(marketKey, toUnit(4 * price), { from: owner });
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit('0.1')); // max funding rate
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit('0.1')); // max funding rate
 		});
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
@@ -2431,7 +2430,7 @@ contract('PerpsOrdersV2', accounts => {
 
 					const expected = side === 'long' ? -maxFundingRate : maxFundingRate;
 
-					assert.bnEqual(await perpsOrders.currentFundingRate(), expected);
+					assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), expected);
 				});
 
 				it('Different skew rates induce proportional funding levels', async () => {
@@ -2474,7 +2473,11 @@ contract('PerpsOrdersV2', accounts => {
 								expected = maxFR;
 							}
 
-							assert.bnClose(await perpsOrders.currentFundingRate(), expected, toUnit('0.01'));
+							assert.bnClose(
+								await perpsEngine.currentFundingRate(marketKey),
+								expected,
+								toUnit('0.01')
+							);
 
 							if (size.abs().gt(toBN(0))) {
 								await perpsOrders.closePosition(marketKey, { from: trader2 });
@@ -2486,7 +2489,7 @@ contract('PerpsOrdersV2', accounts => {
 		}
 
 		it('Funding can be paused when market is paused', async () => {
-			assert.bnEqual(await perpsOrders.currentFundingRate(), toUnit(0));
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 
 			const price = toUnit('250');
 			await transferMarginAndModifyPosition({
@@ -2497,7 +2500,7 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			const fundingRate = toUnit('-0.003'); // 12 * 250 / 100_000 skew * 0.1 max funding rate
-			assert.bnEqual(await perpsOrders.currentFundingRate(), fundingRate);
+			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), fundingRate);
 
 			// 1 day
 			await fastForward(24 * 60 * 60);
@@ -2509,7 +2512,7 @@ contract('PerpsOrdersV2', accounts => {
 			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0'), { from: owner });
 
 			// check accrued
-			const accrued = (await perpsOrders.accruedFunding(trader))[0];
+			const accrued = toBN((await getPositionSummary(trader)).accruedFunding);
 			assert.bnClose(accrued, fundingRate.mul(toBN(250 * 12)), toUnit('0.01'));
 
 			// 2 days of pause
@@ -2517,7 +2520,7 @@ contract('PerpsOrdersV2', accounts => {
 			await setPrice(baseAsset, price);
 
 			// check no funding accrued
-			assert.bnEqual((await perpsOrders.accruedFunding(trader))[0], accrued);
+			assert.bnEqual((await getPositionSummary(trader)).accruedFunding, accrued);
 
 			// set funding rate to 0.1 again
 			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.1'), { from: owner });
@@ -2529,10 +2532,10 @@ contract('PerpsOrdersV2', accounts => {
 			await setPrice(baseAsset, price);
 
 			// check more funding accrued
-			assert.bnGt((await perpsOrders.accruedFunding(trader))[0].abs(), accrued.abs());
+			assert.bnGt(toBN((await getPositionSummary(trader)).accruedFunding).abs(), accrued.abs());
 		});
 
-		describe('Funding sequence', () => {
+		describe('last funding entry', () => {
 			const price = toUnit('100');
 			beforeEach(async () => {
 				// Set up some market skew so that funding is being incurred.
@@ -2552,31 +2555,31 @@ contract('PerpsOrdersV2', accounts => {
 				});
 			});
 
-			it.skip('Funding sequence is recomputed by order submission', async () => {
+			it.skip('Funding entry is recomputed by order submission', async () => {
 				assert.isTrue(false);
 			});
 
-			it.skip('Funding sequence is recomputed by order confirmation', async () => {
+			it.skip('Funding entry is recomputed by order confirmation', async () => {
 				assert.isTrue(false);
 			});
 
-			it.skip('Funding sequence is recomputed by order cancellation', async () => {
+			it.skip('Funding entry is recomputed by order cancellation', async () => {
 				assert.isTrue(false);
 			});
 
-			it.skip('Funding sequence is recomputed by position closure', async () => {
+			it.skip('Funding entry is recomputed by position closure', async () => {
 				assert.isTrue(false);
 			});
 
-			it.skip('Funding sequence is recomputed by liquidation', async () => {
+			it.skip('Funding entry is recomputed by liquidation', async () => {
 				assert.isTrue(false);
 			});
 
-			it.skip('Funding sequence is recomputed by margin transfers', async () => {
+			it.skip('Funding entry is recomputed by margin transfers', async () => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+			it('Funding entry is recomputed by setting funding rate parameters', async () => {
 				// no skewScaleUSD
 				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
 
@@ -2591,12 +2594,9 @@ contract('PerpsOrdersV2', accounts => {
 				await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
 				const time = await currentTime();
 
-				assert.bnEqual(await perpsOrders.fundingLastRecomputed(), time);
-				assert.bnClose(
-					(await perpsStorage.lastFundingEntry(marketKey)).funding,
-					toUnit('-6'),
-					toUnit('0.01')
-				);
+				const lastFundingEntry = await perpsStorage.lastFundingEntry(marketKey);
+				assert.bnEqual(lastFundingEntry.timestamp, time);
+				assert.bnClose(lastFundingEntry.funding, toUnit('-6'), toUnit('0.01'));
 				assert.bnClose(
 					(await perpsEngine.unrecordedFunding(marketKey))[0],
 					toUnit('0'),
@@ -2932,7 +2932,7 @@ contract('PerpsOrdersV2', accounts => {
 				assert.isTrue(lPrice.invalid);
 			});
 
-			it.skip('Liquidation price is accurate with funding with intervening funding sequence updates', async () => {
+			it.skip('Liquidation price is accurate with funding with intervening funding entry updates', async () => {
 				// TODO: confirm order -> a bunch of trades from other traders happen over a time period -> check the liquidation price given that most of the accrued funding is not unrecorded
 				assert.isTrue(false);
 			});
