@@ -326,9 +326,16 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
-        int newFundingAmount = _nextFundingAmount(marketKey, price);
-        _stateMutative().updateFunding(marketKey, newFundingAmount);
-        emit FundingUpdated(marketKey, newFundingAmount, block.timestamp);
+        uint lastUpdated = _stateViews().lastFundingEntry(marketKey).timestamp;
+        // only update once per block
+        // funding is recorded for the time-passed, and no time passes within the block (for same timestamp)
+        // note that updating only if funding amount changed is incorrect, because the fact that funding
+        // hasn't changed in a period is also important to record (recorded in the updated timestamp)
+        if (lastUpdated < block.timestamp) {
+            int newFundingAmount = _nextFundingAmount(marketKey, price);
+            _stateMutative().updateFunding(marketKey, newFundingAmount);
+            emit FundingUpdated(marketKey, newFundingAmount, block.timestamp);
+        }
     }
 
     function _transferMargin(
