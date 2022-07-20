@@ -125,7 +125,14 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return _postTradeDetails(position, params);
     }
 
-    /// helper methods calculates the approximate liquidation price
+    /// Approximations:
+    ///     1. Liquidation margin is assumed to be for current price instead of the liquidation price.
+    ///     this is because liq-margin is non linear because of the max(min-keeper-fee, liq-fee) component,
+    ///     so solving for it precisely is not straight forward.
+    ///     2. Funding accrued at some future time is unknown, and current funding is used to adjust the
+    ///     current margin.
+    /// During the actual liquidation this computation is not used, and instead the actual position margin
+    /// is calculated (using the profit loss and actual funding accrued.
     function _approxLiquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
         int positionSize = int(position.size);
 
@@ -136,7 +143,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
 
         int netFunding = _accruedFunding(position, currentPrice);
 
-        // minimum margin beyond which position can be liqudiated
+        // minimum margin beyond which position can be liquidated
         uint liqMargin = _liquidationMargin(_notionalValue(positionSize, currentPrice));
 
         // price = lastPrice + (liquidationMargin - margin) / positionSize - netFunding
@@ -147,10 +154,10 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         //     margin + profitLoss + funding = liquidationMargin
         //     substitute with: profitLoss = (price - last-price) * positionSize
         //     we get: margin + (price - last-price) * positionSize + netFunding =  liquidationMargin
-        //     moving around: price  = lastPrice + (liquidationMargin - margin - netFunding) / positionSize
+        //     moving around: price = lastPrice + (liquidationMargin - (margin + netFunding)) / positionSize
         int result =
             int(position.lastPrice).add(
-                int(liqMargin).sub(int(position.margin).sub(netFunding)).divideDecimal(positionSize)
+                int(liqMargin).sub(int(position.margin).add(netFunding)).divideDecimal(positionSize)
             );
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
