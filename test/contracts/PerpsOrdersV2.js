@@ -93,15 +93,11 @@ contract('PerpsOrdersV2', accounts => {
 				'PerpsEngineV2',
 				'PerpsOrdersV2',
 				'AddressResolver',
-				'FeePool',
 				'ExchangeRates',
-				'Exchanger',
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
-				'Synthetix',
-				'CollateralManager',
-				'DebtCache',
+				'FeePool',
 			],
 		}));
 

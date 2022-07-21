@@ -128,12 +128,10 @@ contract('PerpsEngineV2', accounts => {
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
-				'Exchanger',
 				'ExchangeCircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
-				'CollateralManager',
 				'DebtCache',
 			],
 		}));

@@ -958,6 +958,7 @@ const setupAllContracts = async ({
 				'SystemStatus',
 				'SynthetixDebtShare',
 				'AddressResolver',
+				'CollateralManager',
 			],
 		},
 		{
