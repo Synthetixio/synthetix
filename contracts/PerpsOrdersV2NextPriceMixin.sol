@@ -90,9 +90,11 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // check that a previous order doesn't exist
         require(nextPriceOrders[marketKey][account].sizeDelta == 0, "previous order exists");
 
-        // to prevent submitting bad orders in good faith and being charged commitDeposit for them
-        // simulate the order with current price and market and check that the order doesn't revert
-        uint feeRate = _baseFeeNextPrice(marketKey);
+        // To prevent submitting bad orders in good faith and being charged commitDeposit for them
+        // simulate the order with current price and market and check that the order doesn't revert.
+        // The spot rate is used because the commitDeposit will be deducted from margin on submission.
+        // Dynamic fee should be included because current dynamic fee is better approximation than 0
+        uint feeRate = _feeRate(marketKey);
         (, , , Status status) = engineContract().postTradeDetails(marketKey, account, sizeDelta, feeRate);
         require(status == Status.Ok, "order would fail as spot");
 
@@ -147,7 +149,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
         uint curRoundId = currentRoundId(marketKey);
 
-        uint burn = order.keeperDeposit;
+        uint burn = order.commitDeposit;
         uint refund = 0;
         if (account == keeper) {
             // this is account owner, so refund keeper fee to margin

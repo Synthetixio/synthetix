@@ -251,11 +251,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
 
+			// funding, margin (refund), position (refund), issued (keeper), tracking, position (trade)
 			decodedEventEqual({
 				event: 'Tracking',
 				emittedFrom: perpsEngine.address,
 				args: [trackingCode, marketKey, trader, size, expectedFee],
-				log: decodedLogs[5],
+				log: decodedLogs[4],
 			});
 		});
 	});
