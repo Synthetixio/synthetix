@@ -74,26 +74,44 @@ contract('PerpsEngineV2', accounts => {
 		}
 	}
 
-	async function transferMarginAndModifyPosition({ account, fillPrice, marginDelta, sizeDelta }) {
-		await perpsOrders.transferMargin(marketKey, marginDelta, { from: account });
-		await setPrice(baseAsset, fillPrice);
-		await perpsOrders.modifyPosition(marketKey, sizeDelta, {
-			from: account,
-		});
-	}
-
-	async function closePositionAndWithdrawMargin({ account, fillPrice }) {
-		await setPrice(baseAsset, fillPrice);
-		await perpsOrders.closePosition(marketKey, { from: account });
-		await perpsOrders.withdrawAllMargin(marketKey, { from: account });
-	}
-
 	async function getPositionSummary(account) {
 		return perpsEngine.positionSummary(marketKey, account);
 	}
 
 	async function getPosition(account) {
 		return (await getPositionSummary(account)).position;
+	}
+
+	async function transfer(marginDelta, account) {
+		return perpsOrders.transferMargin(marketKey, marginDelta, { from: account });
+	}
+
+	async function modify(sizeDelta, account) {
+		return perpsOrders.modifyPosition(marketKey, sizeDelta, { from: account });
+	}
+
+	async function close(account) {
+		return perpsOrders.closePosition(marketKey, { from: account });
+	}
+
+	async function withdraw(account) {
+		return perpsOrders.withdrawAllMargin(marketKey, { from: account });
+	}
+
+	async function transferAndModify({ account, fillPrice, marginDelta, sizeDelta }) {
+		await transfer(marginDelta, account);
+		await setPrice(baseAsset, fillPrice);
+		await modify(sizeDelta, account);
+	}
+
+	async function closeAndWithdraw({ account, fillPrice }) {
+		await setPrice(baseAsset, fillPrice);
+		await close(account);
+		await withdraw(account);
+	}
+
+	async function marketSummary() {
+		return perpsOrders.marketSummary(marketKey);
 	}
 
 	before(async () => {
@@ -209,14 +227,14 @@ contract('PerpsEngineV2', accounts => {
 			const minScale = (await perpsSettings.parameters(marketKey)).skewScaleUSD;
 			const price = 100;
 			let sizes = await perpsEngine.marketSizes(marketKey);
-			let summary = await perpsOrders.marketSummary(marketKey);
+			let summary = await marketSummary();
 
 			assert.bnEqual(sizes[0], toUnit('0'));
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(summary.marketSize, toUnit('0'));
 			assert.bnEqual(summary.marketSkew, toUnit('0'));
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit(price),
 				marginDelta: toUnit('1000'),
@@ -224,7 +242,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			sizes = await perpsEngine.marketSizes(marketKey);
-			summary = await perpsOrders.marketSummary(marketKey);
+			summary = await marketSummary();
 
 			assert.bnEqual(sizes[0], toUnit('50'));
 			assert.bnEqual(sizes[1], toUnit('0'));
@@ -235,7 +253,7 @@ contract('PerpsEngineV2', accounts => {
 				divideDecimal(multiplyDecimal(summary.marketSkew, toUnit(price)), minScale)
 			);
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader2,
 				fillPrice: toUnit(price * 1.2),
 				marginDelta: toUnit('600'),
@@ -243,7 +261,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			sizes = await perpsEngine.marketSizes(marketKey);
-			summary = await perpsOrders.marketSummary(marketKey);
+			summary = await marketSummary();
 			assert.bnEqual(sizes[0], toUnit('50'));
 			assert.bnEqual(sizes[1], toUnit('35'));
 			assert.bnEqual(summary.marketSize, toUnit('85'));
@@ -253,13 +271,13 @@ contract('PerpsEngineV2', accounts => {
 				divideDecimal(multiplyDecimal(summary.marketSkew, toUnit(price * 1.2)), minScale)
 			);
 
-			await closePositionAndWithdrawMargin({
+			await closeAndWithdraw({
 				account: trader,
 				fillPrice: toUnit(price * 1.1),
 			});
 
 			sizes = await perpsEngine.marketSizes(marketKey);
-			summary = await perpsOrders.marketSummary(marketKey);
+			summary = await marketSummary();
 
 			assert.bnEqual(sizes[0], toUnit('0'));
 			assert.bnEqual(sizes[1], toUnit('35'));
@@ -270,13 +288,13 @@ contract('PerpsEngineV2', accounts => {
 				divideDecimal(multiplyDecimal(summary.marketSkew, toUnit(price * 1.1)), minScale)
 			);
 
-			await closePositionAndWithdrawMargin({
+			await closeAndWithdraw({
 				account: trader2,
 				fillPrice: toUnit(price),
 			});
 
 			sizes = await perpsEngine.marketSizes(marketKey);
-			summary = await perpsOrders.marketSummary(marketKey);
+			summary = await marketSummary();
 			assert.bnEqual(sizes[0], toUnit('0'));
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(summary.marketSize, toUnit('0'));
@@ -295,36 +313,30 @@ contract('PerpsEngineV2', accounts => {
 		describe('sUSD balance', () => {
 			it(`Can't deposit more sUSD than owned`, async () => {
 				const preBalance = await sUSD.balanceOf(trader);
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, preBalance.add(toUnit('1')), { from: trader }),
-					'subtraction overflow'
-				);
+				await assert.revert(transfer(preBalance.add(toUnit('1')), trader), 'subtraction overflow');
 			});
 
 			it(`Can't withdraw more sUSD than is in the margin`, async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('-101'), { from: trader }),
-					'Insufficient margin'
-				);
+				await transfer(toUnit('100'), trader);
+				await assert.revert(transfer(toUnit('-101'), trader), 'Insufficient margin');
 			});
 
 			it('Positive delta -> burn sUSD', async () => {
 				const preBalance = await sUSD.balanceOf(trader);
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('1000')));
 			});
 
 			it('Negative delta -> mint sUSD', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 				const preBalance = await sUSD.balanceOf(trader);
-				await perpsOrders.transferMargin(marketKey, toUnit('-500'), { from: trader });
+				await transfer(toUnit('-500'), trader);
 				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.add(toUnit('500')));
 			});
 
 			it('Zero delta -> NOP', async () => {
 				const preBalance = await sUSD.balanceOf(trader);
-				await perpsOrders.transferMargin(marketKey, toUnit('0'), { from: trader });
+				await transfer(toUnit('0'), trader);
 				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('0')));
 			});
 
@@ -343,22 +355,20 @@ contract('PerpsEngineV2', accounts => {
 
 				// Set up a starting balance
 				const preBalance = await sUSD.balanceOf(trader);
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 
 				// Now set a reclamation event
 				await mockExchanger.setReclaim(toUnit('10'));
 				await mockExchanger.setNumEntries('1');
 
 				// Issuance works fine
-				await perpsOrders.transferMargin(marketKey, toUnit('-900'), { from: trader });
+				await transfer(toUnit('-900'), trader);
 				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('100')));
 
 				assert.bnEqual((await getPositionSummary(trader)).remainingMargin, toUnit('100'));
 
 				// But burning properly deducts the reclamation amount
-				await perpsOrders.transferMargin(marketKey, preBalance.sub(toUnit('100')), {
-					from: trader,
-				});
+				await transfer(preBalance.sub(toUnit('100')), trader);
 				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 				assert.bnEqual(
 					(await getPositionSummary(trader)).remainingMargin,
@@ -368,7 +378,7 @@ contract('PerpsEngineV2', accounts => {
 
 			it('events are emitted properly upon margin transfers', async () => {
 				// Deposit some balance
-				let tx = await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader3 });
+				let tx = await transfer(toUnit('1000'), trader3);
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, perpsEngine],
@@ -398,14 +408,14 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('1000'),
 						toBN('0'),
 						toBN('0'),
-						(await perpsOrders.marketSummary(marketKey)).price,
+						(await marketSummary()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[4],
 				});
 
 				// Zero delta means no PositionModified, MarginModified, or sUSD events
-				tx = await perpsOrders.transferMargin(marketKey, toUnit('0'), { from: trader3 });
+				tx = await transfer(toUnit('0'), trader3);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, perpsEngine],
@@ -414,7 +424,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.equal(decodedLogs[0].name, 'FundingUpdated');
 
 				// Now withdraw the margin back out
-				tx = await perpsOrders.transferMargin(marketKey, toUnit('-1000'), { from: trader3 });
+				tx = await transfer(toUnit('-1000'), trader3);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, perpsEngine],
@@ -444,7 +454,7 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('0'),
 						toBN('0'),
 						toBN('0'),
-						(await perpsOrders.marketSummary(marketKey)).price,
+						(await marketSummary()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[3],
@@ -453,29 +463,23 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		it('Reverts if the price is invalid', async () => {
-			await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+			await transfer(toUnit('1000'), trader);
 			await fastForward(7 * 24 * 60 * 60);
-			await assert.revert(
-				perpsOrders.transferMargin(marketKey, toUnit('-1000'), { from: trader }),
-				'Invalid price'
-			);
+			await assert.revert(transfer(toUnit('-1000'), trader), 'Invalid price');
 		});
 
 		it('Reverts if the system is suspended', async () => {
-			await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+			await transfer(toUnit('1000'), trader);
 
 			// suspend
 			await systemStatus.suspendSystem('3', { from: owner });
 			// should revert
-			await assert.revert(
-				perpsOrders.transferMargin(marketKey, toUnit('-1000'), { from: trader }),
-				'Synthetix is suspended'
-			);
+			await assert.revert(transfer(toUnit('-1000'), trader), 'Synthetix is suspended');
 
 			// resume
 			await systemStatus.resumeSystem({ from: owner });
 			// should work now
-			await perpsOrders.transferMargin(marketKey, toUnit('-1000'), { from: trader });
+			await transfer(toUnit('-1000'), trader);
 			const posSummary = await getPositionSummary(trader);
 			assert.bnClose(posSummary.accessibleMargin, toBN('0'), toUnit('0.1'));
 		});
@@ -483,38 +487,32 @@ contract('PerpsEngineV2', accounts => {
 		describe('No position', async () => {
 			it('New margin', async () => {
 				assert.bnEqual((await getPosition(trader)).margin, toBN(0));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 				assert.bnEqual((await getPosition(trader)).margin, toUnit('1000'));
 			});
 
 			it('Increase margin', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('1000'), trader);
 				assert.bnEqual((await getPosition(trader)).margin, toUnit('2000'));
 			});
 
 			it('Decrease margin', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('-500'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('-500'), trader);
 				assert.bnEqual((await getPosition(trader)).margin, toUnit('500'));
 			});
 
 			it('Abolish margin', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('-1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('-1000'), trader);
 				assert.bnEqual((await getPosition(trader)).margin, toUnit('0'));
 			});
 
 			it('Cannot decrease margin past zero.', async () => {
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('-1'), { from: trader }),
-					'Insufficient margin'
-				);
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('-2000'), { from: trader }),
-					'Insufficient margin'
-				);
+				await assert.revert(transfer(toUnit('-1'), trader), 'Insufficient margin');
+				await transfer(toUnit('1000'), trader);
+				await assert.revert(transfer(toUnit('-2000'), trader), 'Insufficient margin');
 			});
 		});
 
@@ -548,12 +546,12 @@ contract('PerpsEngineV2', accounts => {
 	describe('Modifying positions', () => {
 		it('can modify a position', async () => {
 			const margin = toUnit('1000');
-			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
+			await transfer(margin, trader);
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 			const fee = (await perpsEngine.orderFee(marketKey, size, baseFee)).fee;
-			const tx = await perpsOrders.modifyPosition(marketKey, size, { from: trader });
+			const tx = await modify(size, trader);
 
 			const pos = await getPosition(trader);
 			assert.bnEqual(pos.margin, margin.sub(fee));
@@ -562,7 +560,7 @@ contract('PerpsEngineV2', accounts => {
 
 			// Skew, size, entry notional sum, pending order value are updated.
 
-			const summary = await perpsOrders.marketSummary(marketKey);
+			const summary = await marketSummary();
 			assert.bnEqual(summary.marketSkew, size);
 			assert.bnEqual(summary.marketSize, size);
 			assert.bnEqual(
@@ -589,7 +587,7 @@ contract('PerpsEngineV2', accounts => {
 
 		it('modifyPositionWithTracking emits expected event', async () => {
 			const margin = toUnit('1000');
-			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
+			await transfer(margin, trader);
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
@@ -612,9 +610,9 @@ contract('PerpsEngineV2', accounts => {
 
 		it('Cannot modify a position if the price is invalid', async () => {
 			const margin = toUnit('1000');
-			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
+			await transfer(margin, trader);
 			const size = toUnit('10');
-			await perpsOrders.modifyPosition(marketKey, size, { from: trader });
+			await modify(size, trader);
 
 			await setPrice(baseAsset, toUnit('200'));
 
@@ -623,15 +621,12 @@ contract('PerpsEngineV2', accounts => {
 			const postDetails = await perpsEngine.postTradeDetails(marketKey, trader, size, baseFee);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, size, { from: trader }),
-				'Invalid price'
-			);
+			await assert.revert(modify(size, trader), 'Invalid price');
 		});
 
 		it('Cannot modify a position if the system is suspended', async () => {
 			const margin = toUnit('1000');
-			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
+			await transfer(margin, trader);
 			const size = toUnit('10');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
@@ -639,15 +634,12 @@ contract('PerpsEngineV2', accounts => {
 			// suspend
 			await systemStatus.suspendSystem('3', { from: owner });
 			// should revert modifying position
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, size, { from: trader }),
-				'Synthetix is suspended'
-			);
+			await assert.revert(modify(size, trader), 'Synthetix is suspended');
 
 			// resume
 			await systemStatus.resumeSystem({ from: owner });
 			// should work now
-			await perpsOrders.modifyPosition(marketKey, size, { from: trader });
+			await modify(size, trader);
 			const pos = await getPosition(trader);
 			assert.bnEqual(pos.size, size);
 			assert.bnEqual(pos.lastPrice, price);
@@ -655,17 +647,14 @@ contract('PerpsEngineV2', accounts => {
 
 		it('Empty orders fail', async () => {
 			const margin = toUnit('1000');
-			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, toBN('0'), { from: trader }),
-				'Cannot submit empty order'
-			);
+			await transfer(margin, trader);
+			await assert.revert(modify(toBN('0'), trader), 'Cannot submit empty order');
 			const postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toBN('0'), baseFee);
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
 		it('Cannot modify a position if it is liquidating', async () => {
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit('200'),
 				marginDelta: toUnit('1000'),
@@ -679,10 +668,7 @@ contract('PerpsEngineV2', accounts => {
 			const postDetails = await perpsEngine.postTradeDetails(marketKey, trader, sizeDelta, baseFee);
 			assert.equal(postDetails.status, Status.CanLiquidate);
 
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, sizeDelta, { from: trader }),
-				'Position can be liquidated'
-			);
+			await assert.revert(modify(sizeDelta, trader), 'Position can be liquidated');
 		});
 
 		it('Order modification properly records the exchange fee with the fee pool', async () => {
@@ -691,7 +677,7 @@ contract('PerpsEngineV2', accounts => {
 			const preDistribution = (await feePool.recentFeePeriods(0))[3];
 			await setPrice(baseAsset, toUnit('200'));
 			const fee = (await perpsEngine.orderFee(marketKey, toUnit('50'), baseFee)).fee;
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit('200'),
 				marginDelta: toUnit('1000'),
@@ -703,7 +689,7 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		it('Modifying a position without closing it should not change its id', async () => {
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit('200'),
 				marginDelta: toUnit('1000'),
@@ -711,7 +697,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 			const { id: oldPositionId } = await getPosition(trader);
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit('200'),
 				marginDelta: toUnit('1000'),
@@ -723,12 +709,9 @@ contract('PerpsEngineV2', accounts => {
 
 		it('max leverage cannot be exceeded', async () => {
 			await setPrice(baseAsset, toUnit('100'));
-			await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-			await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, toUnit('101'), { from: trader }),
-				'Max leverage exceeded'
-			);
+			await transfer(toUnit('1000'), trader);
+			await transfer(toUnit('1000'), trader2);
+			await assert.revert(modify(toUnit('101'), trader), 'Max leverage exceeded');
 			let postDetails = await perpsEngine.postTradeDetails(
 				marketKey,
 				trader,
@@ -737,27 +720,19 @@ contract('PerpsEngineV2', accounts => {
 			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, toUnit('-101'), { from: trader2 }),
-				'Max leverage exceeded'
-			);
+			await assert.revert(modify(toUnit('-101'), trader2), 'Max leverage exceeded');
 			postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('-101'), baseFee);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			// But we actually allow up to 10.01x leverage to account for rounding issues.
-			await perpsOrders.modifyPosition(marketKey, toUnit('100.09'), { from: trader });
-			await perpsOrders.modifyPosition(marketKey, toUnit('-100.09'), { from: trader2 });
+			await modify(toUnit('100.09'), trader);
+			await modify(toUnit('-100.09'), trader2);
 		});
 
 		it('min margin must be provided', async () => {
 			await setPrice(baseAsset, toUnit('10'));
-			await perpsOrders.transferMargin(marketKey, minInitialMargin.sub(toUnit('1')), {
-				from: trader,
-			});
-			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader }),
-				'Insufficient margin'
-			);
+			await transfer(minInitialMargin.sub(toUnit('1')), trader);
+			await assert.revert(modify(toUnit('10'), trader), 'Insufficient margin');
 
 			let postDetails = await perpsEngine.postTradeDetails(
 				marketKey,
@@ -768,7 +743,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.equal(postDetails.status, Status.InsufficientMargin);
 
 			// But it works after transferring the remaining $1
-			await perpsOrders.transferMargin(marketKey, toUnit('1'), { from: trader });
+			await transfer(toUnit('1'), trader);
 
 			postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('10'), baseFee);
 
@@ -777,7 +752,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnEqual(postDetails.fee, toUnit('0.3'));
 			assert.equal(postDetails.status, Status.Ok);
 
-			await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+			await modify(toUnit('10'), trader);
 
 			// liqMargin = max(20, 10*10*0.0035) + 10*10*0.0025 = 20.25
 			// 10 + (20.25 − (100 - 0.3))÷10 = 2.055
@@ -785,84 +760,86 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		describe('Max market size constraints', () => {
-			it('properly reports the max order size on each side', async () => {
-				let maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
+			const maxOrderSizes = () => perpsOrders.maxOrderSizes(marketKey);
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxSingleSideValueUSD, initialPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxSingleSideValueUSD, initialPrice));
+			it('properly reports the max order size on each side', async () => {
+				let maxSizes = await maxOrderSizes();
+
+				assert.bnEqual(maxSizes.long, divideDecimal(maxSingleSideValueUSD, initialPrice));
+				assert.bnEqual(maxSizes.short, divideDecimal(maxSingleSideValueUSD, initialPrice));
 
 				let newPrice = toUnit('193');
 				await setPrice(baseAsset, newPrice);
 
-				maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
+				maxSizes = await maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxSingleSideValueUSD, newPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxSingleSideValueUSD, newPrice));
+				assert.bnEqual(maxSizes.long, divideDecimal(maxSingleSideValueUSD, newPrice));
+				assert.bnEqual(maxSizes.short, divideDecimal(maxSingleSideValueUSD, newPrice));
 
 				// Submit order on one side, leaving part of what's left.
 
 				// 400 units submitted, out of 666.66.. available
 				newPrice = toUnit('150');
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: newPrice,
 					marginDelta: toUnit('10000'),
 					sizeDelta: toUnit('400'),
 				});
 
-				maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
+				maxSizes = await maxOrderSizes();
 				assert.bnEqual(
-					maxOrderSizes.long,
+					maxSizes.long,
 					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('400'))
 				);
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxSingleSideValueUSD, newPrice));
+				assert.bnEqual(maxSizes.short, divideDecimal(maxSingleSideValueUSD, newPrice));
 
 				// Submit order on the other side, removing all available supply.
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: newPrice,
 					marginDelta: toUnit('10001'),
 					sizeDelta: toUnit('-666.733'),
 				});
 
-				maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
+				maxSizes = await maxOrderSizes();
 				assert.bnEqual(
-					maxOrderSizes.long,
+					maxSizes.long,
 					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('400'))
 				); // Long side is unaffected
-				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
+				assert.bnEqual(maxSizes.short, toUnit('0'));
 
 				// An additional few units on the long side by another trader
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: newPrice,
 					marginDelta: toUnit('10000'),
 					sizeDelta: toUnit('200'),
 				});
 
-				maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
+				maxSizes = await maxOrderSizes();
 				assert.bnEqual(
-					maxOrderSizes.long,
+					maxSizes.long,
 					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('600'))
 				);
-				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
+				assert.bnEqual(maxSizes.short, toUnit('0'));
 
 				// Price increases - no more supply allowed.
 				await setPrice(baseAsset, newPrice.mul(toBN(2)));
-				maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
-				assert.bnEqual(maxOrderSizes.long, toUnit('0')); // Long side is unaffected
-				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
+				maxSizes = await maxOrderSizes();
+				assert.bnEqual(maxSizes.long, toUnit('0')); // Long side is unaffected
+				assert.bnEqual(maxSizes.short, toUnit('0'));
 
 				// Price decreases - more supply allowed again.
 				newPrice = newPrice.div(toBN(4));
 				await setPrice(baseAsset, newPrice);
-				maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
+				maxSizes = await maxOrderSizes();
 				assert.bnEqual(
-					maxOrderSizes.long,
+					maxSizes.long,
 					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('600'))
 				);
 				assert.bnClose(
-					maxOrderSizes.short,
+					maxSizes.short,
 					divideDecimal(maxSingleSideValueUSD, newPrice).sub(toUnit('666.73333')),
 					toUnit('0.001')
 				);
@@ -879,16 +856,14 @@ contract('PerpsEngineV2', accounts => {
 						});
 						await setPrice(baseAsset, toUnit('1'));
 
-						const maxOrderSizes = await perpsOrders.maxOrderSizes(marketKey);
-						maxSize = maxOrderSizes[side];
+						const maxSizes = await maxOrderSizes();
+						maxSize = maxSizes[side];
 						maxMargin = maxSize;
 						orderSize = side === 'long' ? maxSize : maxSize.neg();
 					});
 
 					it('Orders are blocked if they exceed max market size', async () => {
-						await perpsOrders.transferMargin(marketKey, maxMargin.add(toUnit('11')), {
-							from: trader,
-						});
+						await transfer(maxMargin.add(toUnit('11')), trader);
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
 
 						const postDetails = await perpsEngine.postTradeDetails(
@@ -899,29 +874,18 @@ contract('PerpsEngineV2', accounts => {
 						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 
-						await assert.revert(
-							perpsOrders.modifyPosition(marketKey, tooBig, {
-								from: trader,
-							}),
-							'Max market size exceeded'
-						);
+						await assert.revert(modify(tooBig, trader), 'Max market size exceeded');
 
 						// orders are allowed a bit over the formal limit to account for rounding etc.
-						await perpsOrders.modifyPosition(marketKey, orderSize.add(toBN('1')), { from: trader });
+						await modify(orderSize.add(toBN('1')), trader);
 					});
 
 					it('Orders are allowed a touch of extra size to account for price motion on confirmation', async () => {
 						// Ensure there's some existing order size for prices to shunt around.
-						await perpsOrders.transferMargin(marketKey, maxMargin, {
-							from: trader2,
-						});
-						await perpsOrders.modifyPosition(marketKey, orderSize.div(toBN(10)).mul(toBN(7)), {
-							from: trader2,
-						});
+						await transfer(maxMargin, trader2);
+						await modify(orderSize.div(toBN(10)).mul(toBN(7)), trader2);
 
-						await perpsOrders.transferMargin(marketKey, maxMargin, {
-							from: trader,
-						});
+						await transfer(maxMargin, trader);
 
 						// The price moves, so the value of the already-confirmed order shunts out the pending one.
 						await setPrice(baseAsset, toUnit('1.08'));
@@ -934,39 +898,28 @@ contract('PerpsEngineV2', accounts => {
 							baseFee
 						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
-						await assert.revert(
-							perpsOrders.modifyPosition(marketKey, sizeDelta, {
-								from: trader,
-							}),
-							'Max market size exceeded'
-						);
+						await assert.revert(modify(sizeDelta, trader), 'Max market size exceeded');
 
 						// Price moves back partially and allows the order to confirm
 						await setPrice(baseAsset, toUnit('1.04'));
-						await perpsOrders.modifyPosition(marketKey, orderSize.div(toBN(100)).mul(toBN(25)), {
-							from: trader,
-						});
+						await modify(orderSize.div(toBN(100)).mul(toBN(25)), trader);
 					});
 
 					it('Orders are allowed to reduce in size (or close) even if the result is still over the max', async () => {
 						const sideVar = leverage.div(leverage.abs());
 						const initialSize = orderSize.div(toBN('10')).mul(toBN('8'));
 
-						await perpsOrders.transferMargin(marketKey, maxMargin.mul(toBN('10')), {
-							from: trader,
-						});
-						await perpsOrders.modifyPosition(marketKey, initialSize, { from: trader });
+						await transfer(maxMargin.mul(toBN('10')), trader);
+						await modify(initialSize, trader);
 
 						// Now exceed max size (but price isn't so high that shorts would be liquidated)
 						await setPrice(baseAsset, toUnit('1.9'));
 
-						const sizes = await perpsOrders.maxOrderSizes(marketKey);
+						const sizes = await maxOrderSizes();
 						assert.bnEqual(sizes[leverage.gt(toBN('0')) ? 0 : 1], toBN('0'));
 
 						// Reduce the order size, even though we are above the maximum
-						await perpsOrders.modifyPosition(marketKey, toUnit('-1').mul(sideVar), {
-							from: trader,
-						});
+						await modify(toUnit('-1').mul(sideVar), trader);
 					});
 				});
 			}
@@ -975,12 +928,12 @@ contract('PerpsEngineV2', accounts => {
 		describe('Closing positions', () => {
 			it('can close an open position', async () => {
 				const margin = toUnit('1000');
-				await perpsOrders.transferMargin(marketKey, margin, { from: trader });
+				await transfer(margin, trader);
 				await setPrice(baseAsset, toUnit('200'));
-				await perpsOrders.modifyPosition(marketKey, toUnit('50'), { from: trader });
+				await modify(toUnit('50'), trader);
 
 				await setPrice(baseAsset, toUnit('199'));
-				await perpsOrders.closePosition(marketKey, { from: trader });
+				await close(trader);
 				const pos = await getPosition(trader);
 				const remaining = (await getPositionSummary(trader)).remainingMargin;
 
@@ -989,7 +942,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(pos.lastPrice, toUnit('199'));
 
 				// Skew, size, entry notional sum, debt are updated.
-				const summary = await perpsOrders.marketSummary(marketKey);
+				const summary = await marketSummary();
 				assert.bnEqual(summary.marketSkew, toUnit(0));
 				assert.bnEqual(summary.marketSize, toUnit(0));
 				assert.bnEqual(summary.marketDebt, remaining);
@@ -1000,7 +953,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('Cannot close a position if it is liquidating', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('200'),
 					marginDelta: toUnit('1000'),
@@ -1009,32 +962,26 @@ contract('PerpsEngineV2', accounts => {
 
 				await setPrice(baseAsset, toUnit('100'));
 
-				await assert.revert(
-					perpsOrders.closePosition(marketKey, { from: trader }),
-					'Position can be liquidated'
-				);
+				await assert.revert(close(trader), 'Position can be liquidated');
 			});
 
 			it('Cannot close an already-closed position', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('200'),
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('50'),
 				});
 
-				await perpsOrders.closePosition(marketKey, { from: trader });
+				await close(trader);
 				const { size } = await getPosition(trader);
 				assert.bnEqual(size, toUnit(0));
 
-				await assert.revert(
-					perpsOrders.closePosition(marketKey, { from: trader }),
-					'No position open'
-				);
+				await assert.revert(close(trader), 'No position open');
 			});
 
 			it('position closure emits the appropriate event', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1042,7 +989,7 @@ contract('PerpsEngineV2', accounts => {
 				});
 
 				await setPrice(baseAsset, toUnit('200'));
-				const tx = await perpsOrders.closePosition(marketKey, { from: trader });
+				const tx = await close(trader);
 
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -1064,7 +1011,7 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('2000').sub(fee),
 						toBN('0'),
 						toUnit('-10'),
-						(await perpsOrders.marketSummary(marketKey)).price,
+						(await marketSummary()).price,
 						multiplyDecimal(toUnit(2000), baseFee),
 					],
 					log: decodedLogs[2],
@@ -1074,7 +1021,7 @@ contract('PerpsEngineV2', accounts => {
 
 			it('closePositionWithTracking emits expected event', async () => {
 				const size = toUnit('10');
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('200'),
 					marginDelta: toUnit('1000'),
@@ -1110,7 +1057,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.equal((await perpsStorage.marketScalars(marketKey)).lastPositionId, 0);
 
 				// Trader 1 gets position id 1.
-				let tx = await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				let tx = await transfer(toUnit('1000'), trader);
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1124,7 +1071,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.equal((await perpsStorage.marketScalars(marketKey)).lastPositionId, 1);
 
 				// trader 2 gets 2
-				tx = await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
+				tx = await transfer(toUnit('1000'), trader2);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1146,10 +1093,10 @@ contract('PerpsEngineV2', accounts => {
 
 			it('modifying a position retains the same id', async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 
 				// Trader gets position id 1.
-				let tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+				let tx = await modify(toUnit('10'), trader);
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1162,7 +1109,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(positionId, toBN('1'));
 
 				// Modification (but not closure) does not alter the id
-				tx = await perpsOrders.modifyPosition(marketKey, toUnit('-5'), { from: trader });
+				tx = await modify(toUnit('-5'), trader);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1178,11 +1125,11 @@ contract('PerpsEngineV2', accounts => {
 
 			it('closing a position does not delete the id', async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('1000'), trader2);
 
 				// close by closePosition
-				let tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+				let tx = await modify(toUnit('10'), trader);
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1194,7 +1141,7 @@ contract('PerpsEngineV2', accounts => {
 				let positionId = (await getPosition(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
 
-				tx = await perpsOrders.closePosition(marketKey, { from: trader });
+				tx = await close(trader);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1207,7 +1154,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(positionId, toBN('1'));
 
 				// Close by modifyPosition
-				tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader2 });
+				tx = await modify(toUnit('10'), trader2);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1219,7 +1166,7 @@ contract('PerpsEngineV2', accounts => {
 				positionId = (await getPosition(trader2)).id;
 				assert.bnEqual(positionId, toBN('2'));
 
-				tx = await perpsOrders.modifyPosition(marketKey, toUnit('-10'), { from: trader2 });
+				tx = await modify(toUnit('-10'), trader2);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsEngine],
@@ -1230,7 +1177,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('closing a position and opening one after should not increment the position id', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1241,7 +1188,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(oldPositionId, toBN('1'));
 
 				await setPrice(baseAsset, toUnit('200'));
-				let tx = await perpsOrders.closePosition(marketKey, { from: trader });
+				let tx = await close(trader);
 
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -1253,7 +1200,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.equal(decodedLogs[2].events[1].name, 'id');
 				assert.bnEqual(decodedLogs[2].events[1].value, toBN('1'));
 
-				tx = await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+				tx = await modify(toUnit('10'), trader);
 
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -1283,7 +1230,7 @@ contract('PerpsEngineV2', accounts => {
 			const sizeDelta = toUnit('10');
 
 			it('can get position details for new position', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 				await setPrice(baseAsset, toUnit('240'));
 
 				const expectedDetails = await perpsEngine.postTradeDetails(
@@ -1294,9 +1241,7 @@ contract('PerpsEngineV2', accounts => {
 				);
 
 				// Now execute the trade.
-				await perpsOrders.modifyPosition(marketKey, sizeDelta, {
-					from: trader,
-				});
+				await modify(sizeDelta, trader);
 
 				const details = await getPositionDetails({ account: trader });
 
@@ -1307,7 +1252,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('uses the margin of an existing position', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('240'),
 					marginDelta: toUnit('1000'),
@@ -1322,9 +1267,7 @@ contract('PerpsEngineV2', accounts => {
 				);
 
 				// Now execute the trade.
-				await perpsOrders.modifyPosition(marketKey, sizeDelta, {
-					from: trader,
-				});
+				await modify(sizeDelta, trader);
 
 				const details = await getPositionDetails({ account: trader });
 
@@ -1340,10 +1283,10 @@ contract('PerpsEngineV2', accounts => {
 		describe('PnL', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('50'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('4000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-40'), { from: trader2 });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('50'), trader);
+				await transfer(toUnit('4000'), trader2);
+				await modify(toUnit('-40'), trader2);
 			});
 
 			it('steady price', async () => {
@@ -1381,11 +1324,11 @@ contract('PerpsEngineV2', accounts => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('100'));
 				fee = (await perpsEngine.orderFee(marketKey, toUnit('50'), baseFee)).fee;
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('50'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('50'), trader);
 				fee2 = (await perpsEngine.orderFee(marketKey, toUnit('-50'), baseFee)).fee;
-				await perpsOrders.transferMargin(marketKey, toUnit('5000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-50'), { from: trader2 });
+				await transfer(toUnit('5000'), trader2);
+				await modify(toUnit('-50'), trader2);
 			});
 
 			it('Remaining margin unchanged with no funding or profit', async () => {
@@ -1450,18 +1393,15 @@ contract('PerpsEngineV2', accounts => {
 			const withdrawAccessibleAndValidate = async (account, msg) => {
 				const summary = await getPositionSummary(account);
 				let accessible = toBN(summary.accessibleMargin);
-				await perpsOrders.transferMargin(marketKey, accessible.neg(), { from: account });
+				await transfer(accessible.neg(), account);
 				accessible = (await getPositionSummary(account)).accessibleMargin;
 				assert.bnClose(accessible, toBN('0'), toUnit('1'));
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('-1'), { from: account }),
-					msg
-				);
+				await assert.revert(transfer(toUnit('-1'), account), msg);
 			};
 
 			it('With no position, entire margin is accessible.', async () => {
 				const margin = toUnit('1234.56789');
-				await perpsOrders.transferMargin(marketKey, margin, { from: trader3 });
+				await transfer(margin, trader3);
 				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, margin);
 				await withdrawAccessibleAndValidate(trader3, msgMargin);
 			});
@@ -1469,7 +1409,7 @@ contract('PerpsEngineV2', accounts => {
 			it('With a tiny position, minimum margin requirement is enforced.', async () => {
 				const margin = toUnit('1234.56789');
 				const size = margin.div(toBN(10000));
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: toUnit('100'),
 					marginDelta: margin,
@@ -1482,7 +1422,7 @@ contract('PerpsEngineV2', accounts => {
 				);
 				await withdrawAccessibleAndValidate(trader3, msgMargin);
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: margin,
@@ -1497,7 +1437,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('At max leverage, no margin is accessible.', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1234'),
@@ -1506,7 +1446,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
 				await withdrawAccessibleAndValidate(trader3, msgLeverage);
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1234'),
@@ -1517,7 +1457,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('At above max leverage, no margin is accessible.', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1234'),
@@ -1530,7 +1470,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
 				await withdrawAccessibleAndValidate(trader3, msgLeverage);
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1234'),
@@ -1546,7 +1486,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('If a position is subject to liquidation, no margin is accessible.', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1234'),
@@ -1558,7 +1498,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
 				await withdrawAccessibleAndValidate(trader3, msgMargin); // margin is negative
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1234'),
@@ -1573,7 +1513,7 @@ contract('PerpsEngineV2', accounts => {
 
 			it('If remaining margin is below minimum initial margin, no margin is accessible.', async () => {
 				const size = toUnit('10.5');
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('105'),
@@ -1585,7 +1525,7 @@ contract('PerpsEngineV2', accounts => {
 				await setPrice(baseAsset, price);
 				let remaining = toBN((await getPositionSummary(trader3)).remainingMargin);
 				const sizeFor9x = divideDecimal(remaining.mul(toBN('9')), price);
-				await perpsOrders.modifyPosition(marketKey, sizeFor9x.sub(size), { from: trader3 });
+				await modify(sizeFor9x.sub(size), trader3);
 
 				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
 
@@ -1594,7 +1534,7 @@ contract('PerpsEngineV2', accounts => {
 				remaining = toBN((await getPositionSummary(trader3)).remainingMargin);
 				const sizeForNeg10x = divideDecimal(remaining.mul(toBN('-10')), price);
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader3,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('105'),
@@ -1606,22 +1546,20 @@ contract('PerpsEngineV2', accounts => {
 				await setPrice(baseAsset, price);
 				remaining = toBN((await getPositionSummary(trader3)).remainingMargin);
 				const sizeForNeg9x = divideDecimal(remaining.mul(toBN('-9')), price);
-				await perpsOrders.modifyPosition(marketKey, sizeForNeg10x.sub(sizeForNeg9x), {
-					from: trader3,
-				});
+				await modify(sizeForNeg10x.sub(sizeForNeg9x), trader3);
 
 				assert.bnEqual((await getPositionSummary(trader3)).accessibleMargin, toUnit('0'));
 				await withdrawAccessibleAndValidate(trader3, msgMargin);
 			});
 
 			it('With a fraction of max leverage position, a complementary fraction of margin is accessible', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('50'),
 				});
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1644,13 +1582,13 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('After some profit, more margin becomes accessible', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('100'),
 				});
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1691,13 +1629,13 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('After a loss, less margin is accessible', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('20'),
 				});
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1742,7 +1680,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('Larger position', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('10000'),
@@ -1774,29 +1712,23 @@ contract('PerpsEngineV2', accounts => {
 
 			describe('withdrawAllMargin', () => {
 				it('Reverts if the price is invalid', async () => {
-					await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+					await transfer(toUnit('1000'), trader);
 					await fastForward(7 * 24 * 60 * 60);
-					await assert.revert(
-						perpsOrders.withdrawAllMargin(marketKey, { from: trader }),
-						'Invalid price'
-					);
+					await assert.revert(withdraw(trader), 'Invalid price');
 				});
 
 				it('Reverts if the system is suspended', async () => {
-					await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+					await transfer(toUnit('1000'), trader);
 
 					// suspend
 					await systemStatus.suspendSystem('3', { from: owner });
 					// should revert
-					await assert.revert(
-						perpsOrders.withdrawAllMargin(marketKey, { from: trader }),
-						'Synthetix is suspended'
-					);
+					await assert.revert(withdraw(trader), 'Synthetix is suspended');
 
 					// resume
 					await systemStatus.resumeSystem({ from: owner });
 					// should work now
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await withdraw(trader);
 					assert.bnClose(
 						(await getPositionSummary(trader)).accessibleMargin,
 						toBN('0'),
@@ -1805,27 +1737,27 @@ contract('PerpsEngineV2', accounts => {
 				});
 
 				it('allows users to withdraw all their margin', async () => {
-					await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-					await perpsOrders.transferMargin(marketKey, toUnit('3000'), { from: trader2 });
-					await perpsOrders.transferMargin(marketKey, toUnit('10000'), { from: trader3 });
+					await transfer(toUnit('1000'), trader);
+					await transfer(toUnit('3000'), trader2);
+					await transfer(toUnit('10000'), trader3);
 
 					await setPrice(baseAsset, toUnit('10'));
 
-					await perpsOrders.modifyPosition(marketKey, toUnit('500'), { from: trader });
-					await perpsOrders.modifyPosition(marketKey, toUnit('-1100'), { from: trader2 });
-					await perpsOrders.modifyPosition(marketKey, toUnit('9000'), { from: trader3 });
+					await modify(toUnit('500'), trader);
+					await modify(toUnit('-1100'), trader2);
+					await modify(toUnit('9000'), trader3);
 
 					assert.bnGt((await getPositionSummary(trader)).accessibleMargin, toBN('0'));
 					assert.bnGt((await getPositionSummary(trader2)).accessibleMargin, toBN('0'));
 					assert.bnGt((await getPositionSummary(trader3)).accessibleMargin, toBN('0'));
 
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await withdraw(trader);
 
 					await setPrice(baseAsset, toUnit('11.4847'));
 
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader2 });
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader3 });
+					await withdraw(trader);
+					await withdraw(trader2);
+					await withdraw(trader3);
 
 					assert.bnClose(
 						(await getPositionSummary(trader)).accessibleMargin,
@@ -1847,29 +1779,29 @@ contract('PerpsEngineV2', accounts => {
 				it('Does nothing with an empty margin', async () => {
 					let margin = (await getPositionSummary(trader)).remainingMargin;
 					assert.bnEqual(margin, toBN('0'));
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await withdraw(trader);
 					margin = (await getPositionSummary(trader)).remainingMargin;
 					assert.bnEqual(margin, toBN('0'));
 				});
 
 				it('Withdraws everything with no position', async () => {
-					await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+					await transfer(toUnit('1000'), trader);
 
 					let margin = (await getPositionSummary(trader)).remainingMargin;
 					assert.bnEqual(margin, toUnit('1000'));
 
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await withdraw(trader);
 					margin = (await getPositionSummary(trader)).remainingMargin;
 					assert.bnEqual(margin, toBN('0'));
 				});
 
 				it('Profit allows more to be withdrawn', async () => {
-					await perpsOrders.transferMargin(marketKey, toUnit('1239.2487'), { from: trader });
+					await transfer(toUnit('1239.2487'), trader);
 
 					await setPrice(baseAsset, toUnit('15.53'));
-					await perpsOrders.modifyPosition(marketKey, toUnit('-322'), { from: trader });
+					await modify(toUnit('-322'), trader);
 
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await withdraw(trader);
 					assert.bnClose(
 						(await getPositionSummary(trader)).accessibleMargin,
 						toBN('0'),
@@ -1878,7 +1810,7 @@ contract('PerpsEngineV2', accounts => {
 					await setPrice(baseAsset, toUnit('1.777'));
 					assert.bnGt((await getPositionSummary(trader)).accessibleMargin, toBN('0'));
 
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await withdraw(trader);
 					assert.bnClose(
 						(await getPositionSummary(trader)).accessibleMargin,
 						toBN('0'),
@@ -1893,10 +1825,10 @@ contract('PerpsEngineV2', accounts => {
 				let price = toUnit(100);
 
 				await setPrice(baseAsset, price);
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('50'), { from: trader }); // 5x
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-100'), { from: trader2 }); // -10x
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('50'), trader); // 5x
+				await transfer(toUnit('1000'), trader2);
+				await modify(toUnit('-100'), trader2); // -10x
 
 				const fee1 = multiplyDecimal(toUnit('5000'), baseFee);
 				const fee2 = multiplyDecimal(toUnit('10000'), baseFee);
@@ -1934,7 +1866,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('current leverage can be less than 1', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1982,7 +1914,7 @@ contract('PerpsEngineV2', accounts => {
 				['100', trader],
 				['-100', trader2],
 			]) {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: traderDetails[1],
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -1997,7 +1929,7 @@ contract('PerpsEngineV2', accounts => {
 				['1000', '50', trader],
 				['2000', '-50', trader2],
 			]) {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: traderDetails[2],
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit(traderDetails[0]),
@@ -2013,14 +1945,14 @@ contract('PerpsEngineV2', accounts => {
 
 			const price = toUnit(250);
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: price,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('12'),
 			});
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader2,
 				fillPrice: price,
 				marginDelta: toUnit('1000'),
@@ -2034,33 +1966,33 @@ contract('PerpsEngineV2', accounts => {
 				price
 			);
 			// Market is 24 units long skewed (24 / 100000)
-			await perpsOrders.modifyPosition(marketKey, toUnit('24'), { from: trader });
-			let marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
+			await modify(toUnit('24'), trader);
+			let marketSkew = (await marketSummary()).marketSkew;
 			assert.bnEqual(
 				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// 50% the other way ()
-			await perpsOrders.modifyPosition(marketKey, toUnit('-32'), { from: trader });
-			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
+			await modify(toUnit('-32'), trader);
+			marketSkew = (await marketSummary()).marketSkew;
 			assert.bnClose(
 				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// Market is 100% skewed
-			await perpsOrders.closePosition(marketKey, { from: trader });
-			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
+			await close(trader);
+			marketSkew = (await marketSummary()).marketSkew;
 			assert.bnClose(
 				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
 			);
 
 			// 100% the other way
-			await perpsOrders.modifyPosition(marketKey, toUnit('4'), { from: trader });
-			await perpsOrders.closePosition(marketKey, { from: trader2 });
-			marketSkew = (await perpsOrders.marketSummary(marketKey)).marketSkew;
+			await modify(toUnit('4'), trader);
+			await close(trader2);
+			marketSkew = (await marketSummary()).marketSkew;
 			assert.bnClose(
 				await perpsEngine.currentFundingRate(marketKey),
 				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
@@ -2071,14 +2003,14 @@ contract('PerpsEngineV2', accounts => {
 			// 0, +-50%, +-100%
 			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit('250'),
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('12'),
 			});
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader2,
 				fillPrice: toUnit('250'),
 				marginDelta: toUnit('1000'),
@@ -2100,14 +2032,14 @@ contract('PerpsEngineV2', accounts => {
 		it('Altering the skewScaleUSD has a proportional effect', async () => {
 			const initialPrice = 100;
 			const price = 250;
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: toUnit(price),
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('-12'),
 			});
 
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader2,
 				fillPrice: toUnit(price),
 				marginDelta: toUnit('1000'),
@@ -2156,7 +2088,7 @@ contract('PerpsEngineV2', accounts => {
 					});
 				});
 				it('100% skew induces maximum funding rate', async () => {
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: toUnit('1'),
 						marginDelta: toUnit('1000000'),
@@ -2174,13 +2106,13 @@ contract('PerpsEngineV2', accounts => {
 					await perpsSettings.setSkewScaleUSD(marketKey, skewScaleUSD, { from: owner });
 
 					const traderPos = leverage.mul(toBN('10'));
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: toUnit('1000'),
 						sizeDelta: traderPos,
 					});
-					await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
+					await transfer(toUnit('1000'), trader2);
 
 					const points = 5;
 
@@ -2195,7 +2127,7 @@ contract('PerpsEngineV2', accounts => {
 							const oppLev = frac.neg();
 							const size = oppLev.mul(toBN('10'));
 							if (size.abs().gt(toBN('0'))) {
-								await perpsOrders.modifyPosition(marketKey, size, { from: trader2 });
+								await modify(size, trader2);
 							}
 
 							const skewUSD = multiplyDecimal(traderPos.add(size), toUnit('100'));
@@ -2215,7 +2147,7 @@ contract('PerpsEngineV2', accounts => {
 							);
 
 							if (size.abs().gt(toBN(0))) {
-								await perpsOrders.closePosition(marketKey, { from: trader2 });
+								await close(trader2);
 							}
 						}
 					}
@@ -2227,7 +2159,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnEqual(await perpsEngine.currentFundingRate(marketKey), toUnit(0));
 
 			const price = toUnit('250');
-			await transferMarginAndModifyPosition({
+			await transferAndModify({
 				account: trader,
 				fillPrice: price,
 				marginDelta: toUnit('1000'),
@@ -2275,14 +2207,14 @@ contract('PerpsEngineV2', accounts => {
 			beforeEach(async () => {
 				// Set up some market skew so that funding is being incurred.
 				// Proportional Skew = 0.5, so funding rate is 0.05 per day.
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: price,
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('90'),
 				});
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: price,
 					marginDelta: toUnit('1000'),
@@ -2367,26 +2299,23 @@ contract('PerpsEngineV2', accounts => {
 				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
 				toUnit('0')
 			);
-			assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketDebt, toUnit('0'));
+			assert.bnEqual((await marketSummary()).marketDebt, toUnit('0'));
 
 			await setPrice(baseAsset, toUnit('100'));
-			await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader }); // Debt correction: +1000
+			await transfer(toUnit('1000'), trader); // Debt correction: +1000
 			const fee1 = (await perpsEngine.orderFee(marketKey, toUnit('50'), baseFee)).fee;
-			await perpsOrders.modifyPosition(marketKey, toUnit('50'), { from: trader }); // Debt correction: -5000 - fee1
+			await modify(toUnit('50'), trader); // Debt correction: -5000 - fee1
 
 			assert.bnEqual(
 				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
 				toUnit('-4000').sub(fee1)
 			);
-			assert.bnEqual(
-				(await perpsOrders.marketSummary(marketKey)).marketDebt,
-				toUnit('1000').sub(fee1)
-			);
+			assert.bnEqual((await marketSummary()).marketDebt, toUnit('1000').sub(fee1));
 
 			await setPrice(baseAsset, toUnit('120'));
-			await perpsOrders.transferMargin(marketKey, toUnit('600'), { from: trader2 }); // Debt correction: +600
+			await transfer(toUnit('600'), trader2); // Debt correction: +600
 			const fee2 = (await perpsEngine.orderFee(marketKey, toUnit('-35'), baseFee)).fee;
-			await perpsOrders.modifyPosition(marketKey, toUnit('-35'), { from: trader2 }); // Debt correction: +4200 - fee2
+			await modify(toUnit('-35'), trader2); // Debt correction: +4200 - fee2
 
 			assert.bnClose(
 				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
@@ -2398,14 +2327,14 @@ contract('PerpsEngineV2', accounts => {
 
 			// 1600 margin, plus 1000 profit by trader1
 			assert.bnClose(
-				(await perpsOrders.marketSummary(marketKey)).marketDebt,
+				(await marketSummary()).marketDebt,
 				toUnit('2600')
 					.sub(fee1)
 					.sub(fee2),
 				toUnit('0.1')
 			);
 
-			await closePositionAndWithdrawMargin({
+			await closeAndWithdraw({
 				account: trader,
 				fillPrice: toUnit('110'),
 			});
@@ -2415,13 +2344,9 @@ contract('PerpsEngineV2', accounts => {
 				toUnit('4800'),
 				toUnit('13')
 			);
-			assert.bnClose(
-				(await perpsOrders.marketSummary(marketKey)).marketDebt,
-				toUnit('950'),
-				toUnit('13')
-			);
+			assert.bnClose((await marketSummary()).marketDebt, toUnit('950'), toUnit('13'));
 
-			await closePositionAndWithdrawMargin({
+			await closeAndWithdraw({
 				account: trader2,
 				fillPrice: toUnit('100'),
 			});
@@ -2430,7 +2355,7 @@ contract('PerpsEngineV2', accounts => {
 				(await perpsStorage.marketScalars(marketKey)).entryDebtCorrection,
 				toUnit('0')
 			);
-			assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketDebt, toUnit('0'));
+			assert.bnEqual((await marketSummary()).marketDebt, toUnit('0'));
 		});
 
 		it.skip('Market debt is the sum of remaining margins', async () => {
@@ -2470,29 +2395,29 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		it('Market price is reported as invalid when price is stale', async () => {
-			assert.isFalse((await perpsOrders.marketSummary(marketKey)).priceInvalid);
+			assert.isFalse((await marketSummary()).priceInvalid);
 			await fastForward(7 * 24 * 60 * 60);
-			assert.isTrue((await perpsOrders.marketSummary(marketKey)).priceInvalid);
+			assert.isTrue((await marketSummary()).priceInvalid);
 		});
 
 		describe('Market debt is accurately reflected in total system debt', () => {
 			it('Margin transfers do not alter total system debt', async () => {
 				const debt = (await debtCache.currentDebt())[0];
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 				assert.bnEqual((await debtCache.currentDebt())[0], debt);
-				await perpsOrders.transferMargin(marketKey, toUnit('-500'), { from: trader });
+				await transfer(toUnit('-500'), trader);
 				assert.bnEqual((await debtCache.currentDebt())[0], debt);
 			});
 
 			it('Prices altering market debt are reflected in total system debt', async () => {
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('100'),
 				});
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader2,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -2515,10 +2440,10 @@ contract('PerpsEngineV2', accounts => {
 		describe('Liquidation price', () => {
 			it('Liquidation price is accurate without funding', async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('100'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-100'), { from: trader2 });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('100'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await modify(toUnit('-100'), trader2);
 
 				let summary = await getPositionSummary(trader);
 
@@ -2539,10 +2464,10 @@ contract('PerpsEngineV2', accounts => {
 
 			it('Liquidation price is accurate if the liquidation margin changes', async () => {
 				await setPrice(baseAsset, toUnit('250'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('20'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-20'), { from: trader2 });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('20'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await modify(toUnit('-20'), trader2);
 
 				// fee = 250 * 20 * 0.003 = 15
 				// liqMargin = max(20, 250 * 20 *0.0035) + 250 * 20*0.0025 = 20 + 12.5 = 32.5
@@ -2627,10 +2552,10 @@ contract('PerpsEngineV2', accounts => {
 
 				await setPrice(baseAsset, toUnit('250'));
 				// Submit orders that induce -0.05 funding rate
-				await perpsOrders.transferMargin(marketKey, toUnit('1500'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('30'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('500'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-10'), { from: trader2 });
+				await transfer(toUnit('1500'), trader);
+				await modify(toUnit('30'), trader);
+				await transfer(toUnit('500'), trader2);
+				await modify(toUnit('-10'), trader2);
 
 				// One day of funding
 				await fastForward(24 * 60 * 60);
@@ -2666,8 +2591,8 @@ contract('PerpsEngineV2', accounts => {
 			it('Can liquidate an underwater position', async () => {
 				let price = toUnit('250');
 				await setPrice(baseAsset, price);
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('20'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('20'), trader);
 
 				price = toBN((await getPositionSummary(trader)).approxLiquidationPrice);
 				await setPrice(baseAsset, price.sub(toUnit(1)));
@@ -2706,8 +2631,8 @@ contract('PerpsEngineV2', accounts => {
 
 			it('No liquidations while prices are invalid', async () => {
 				await setPrice(baseAsset, toUnit('250'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('20'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('20'), trader);
 
 				await setPrice(baseAsset, toUnit('25'));
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
@@ -2724,12 +2649,12 @@ contract('PerpsEngineV2', accounts => {
 		describe('liquidatePosition', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('250'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader3 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('40'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('20'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-20'), { from: trader3 });
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await transfer(toUnit('1000'), trader3);
+				await modify(toUnit('40'), trader);
+				await modify(toUnit('20'), trader2);
+				await modify(toUnit('-20'), trader3);
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.003 = 60
 			});
 
@@ -2745,9 +2670,9 @@ contract('PerpsEngineV2', accounts => {
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
-				const size = toBN((await perpsOrders.marketSummary(marketKey)).marketSize);
+				const size = toBN((await marketSummary()).marketSize);
 				const sizes = await perpsEngine.marketSizes(marketKey);
-				const skew = toBN((await perpsOrders.marketSummary(marketKey)).marketSkew);
+				const skew = toBN((await marketSummary()).marketSkew);
 				const positionSize = toBN((await getPosition(trader)).size);
 
 				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
@@ -2760,11 +2685,7 @@ contract('PerpsEngineV2', accounts => {
 
 				// Note at this point the true market debt should be $2000 ($1000 profit for the short trader, and two liquidated longs)
 				// However, the long positions are actually underwater and the negative contribution is not removed until liquidation
-				assert.bnClose(
-					(await perpsOrders.marketSummary(marketKey)).marketDebt,
-					toUnit('620'),
-					toUnit('0.1')
-				);
+				assert.bnClose((await marketSummary()).marketDebt, toUnit('620'), toUnit('0.1'));
 				assert.bnClose(
 					(await perpsEngine.unrecordedFunding(marketKey))[0],
 					toUnit('-8'),
@@ -2773,19 +2694,13 @@ contract('PerpsEngineV2', accounts => {
 
 				await perpsEngine.liquidatePosition(marketKey, trader, liquidator);
 
-				assert.bnEqual(
-					(await perpsOrders.marketSummary(marketKey)).marketSize,
-					size.sub(positionSize.abs())
-				);
+				assert.bnEqual((await marketSummary()).marketSize, size.sub(positionSize.abs()));
 				let newSizes = await perpsEngine.marketSizes(marketKey);
 				assert.bnEqual(newSizes[0], sizes[0].sub(positionSize.abs()));
 				assert.bnEqual(newSizes[1], sizes[1]);
-				assert.bnEqual(
-					(await perpsOrders.marketSummary(marketKey)).marketSkew,
-					skew.sub(positionSize.abs())
-				);
+				assert.bnEqual((await marketSummary()).marketSkew, skew.sub(positionSize.abs()));
 				assert.bnClose(
-					(await perpsOrders.marketSummary(marketKey)).marketDebt,
+					(await marketSummary()).marketDebt,
 					toUnit('1990').sub(toUnit('20')),
 					toUnit('0.01')
 				);
@@ -2799,17 +2714,13 @@ contract('PerpsEngineV2', accounts => {
 
 				await perpsEngine.liquidatePosition(marketKey, trader2, liquidator);
 
-				assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketSize, toUnit('20'));
+				assert.bnEqual((await marketSummary()).marketSize, toUnit('20'));
 				newSizes = await perpsEngine.marketSizes(marketKey);
 				assert.bnEqual(newSizes[0], toUnit('0'));
 				assert.bnEqual(newSizes[1], toUnit('20'));
-				assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketSkew, toUnit('-20'));
+				assert.bnEqual((await marketSummary()).marketSkew, toUnit('-20'));
 				// Market debt is now just the remaining position, plus the funding they've made.
-				assert.bnClose(
-					(await perpsOrders.marketSummary(marketKey)).marketDebt,
-					toUnit('2145'),
-					toUnit('0.01')
-				);
+				assert.bnClose((await marketSummary()).marketDebt, toUnit('2145'), toUnit('0.01'));
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
@@ -2817,17 +2728,13 @@ contract('PerpsEngineV2', accounts => {
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
-				const size = toBN((await perpsOrders.marketSummary(marketKey)).marketSize);
+				const size = toBN((await marketSummary()).marketSize);
 				const sizes = await perpsEngine.marketSizes(marketKey);
 				const positionSize = toBN((await getPosition(trader3)).size);
 
 				await setPrice(baseAsset, toUnit('350'));
 
-				assert.bnClose(
-					(await perpsOrders.marketSummary(marketKey)).marketDebt,
-					toUnit('5960'),
-					toUnit('0.1')
-				);
+				assert.bnClose((await marketSummary()).marketDebt, toUnit('5960'), toUnit('0.1'));
 				assert.bnClose(
 					(await perpsEngine.unrecordedFunding(marketKey))[0],
 					toUnit('-24.5'),
@@ -2836,19 +2743,12 @@ contract('PerpsEngineV2', accounts => {
 
 				await perpsEngine.liquidatePosition(marketKey, trader3, liquidator);
 
-				assert.bnEqual(
-					(await perpsOrders.marketSummary(marketKey)).marketSize,
-					size.sub(positionSize.abs())
-				);
+				assert.bnEqual((await marketSummary()).marketSize, size.sub(positionSize.abs()));
 				const newSizes = await perpsEngine.marketSizes(marketKey);
 				assert.bnEqual(newSizes[0], sizes[0]);
 				assert.bnEqual(newSizes[1], toUnit(0));
-				assert.bnEqual((await perpsOrders.marketSummary(marketKey)).marketSkew, toUnit('60'));
-				assert.bnClose(
-					(await perpsOrders.marketSummary(marketKey)).marketDebt,
-					toUnit('6485'),
-					toUnit('0.1')
-				);
+				assert.bnEqual((await marketSummary()).marketSkew, toUnit('60'));
+				assert.bnClose((await marketSummary()).marketDebt, toUnit('6485'), toUnit('0.1'));
 
 				// Funding has been recorded by the liquidation.
 				assert.bnClose(
@@ -2910,7 +2810,7 @@ contract('PerpsEngineV2', accounts => {
 						toBN('0'),
 						toBN('0'),
 						toBN('0'),
-						(await perpsOrders.marketSummary(marketKey)).price,
+						(await marketSummary()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
@@ -3011,7 +2911,7 @@ contract('PerpsEngineV2', accounts => {
 						toBN('0'),
 						toBN('0'),
 						toBN('0'),
-						(await perpsOrders.marketSummary(marketKey)).price,
+						(await marketSummary()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
@@ -3100,7 +3000,7 @@ contract('PerpsEngineV2', accounts => {
 						toBN('0'),
 						toBN('0'),
 						toBN('0'),
-						(await perpsOrders.marketSummary(marketKey)).price,
+						(await marketSummary()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
@@ -3122,7 +3022,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				await perpsEngine.liquidatePosition(marketKey, trader, liquidator);
 
-				await transferMarginAndModifyPosition({
+				await transferAndModify({
 					account: trader,
 					fillPrice: toUnit('100'),
 					marginDelta: toUnit('1000'),
@@ -3137,15 +3037,15 @@ contract('PerpsEngineV2', accounts => {
 		describe('liquidation fee', () => {
 			it('accurate with position size and parameters', async () => {
 				await setPrice(baseAsset, toUnit('1000'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('2'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-2'), { from: trader2 });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader3 });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('2'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await modify(toUnit('-2'), trader2);
+				await transfer(toUnit('1000'), trader3);
 
 				// cannot be liquidated and so no fee
 				assert.bnEqual((await getPositionSummary(trader3)).approxLiquidationFee, 0);
-				await perpsOrders.modifyPosition(marketKey, toUnit('0.02'), { from: trader3 });
+				await modify(toUnit('0.02'), trader3);
 				// still cannot be liquidated and so no fee (because not leveraged)
 				assert.bnEqual((await getPositionSummary(trader3)).approxLiquidationFee, 0);
 
@@ -3192,10 +3092,10 @@ contract('PerpsEngineV2', accounts => {
 		describe('liquidationMargin', () => {
 			it('accurate with position size, price, and parameters', async () => {
 				await setPrice(baseAsset, toUnit('1000'));
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('2'), { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader2 });
-				await perpsOrders.modifyPosition(marketKey, toUnit('-2'), { from: trader2 });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('2'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await modify(toUnit('-2'), trader2);
 
 				// reverts for 0 position
 				await assert.revert(perpsEngine.liquidationMargin(marketKey, trader3), '0 size position');
@@ -3251,22 +3151,10 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('then mutative market actions revert', async () => {
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader }),
-					'Invalid price'
-				);
-				await assert.revert(
-					perpsOrders.withdrawAllMargin(marketKey, { from: trader }),
-					'Invalid price'
-				);
-				await assert.revert(
-					perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader }),
-					'Invalid price'
-				);
-				await assert.revert(
-					perpsOrders.closePosition(marketKey, { from: trader }),
-					'Invalid price'
-				);
+				await assert.revert(transfer(toUnit('1000'), trader), 'Invalid price');
+				await assert.revert(withdraw(trader), 'Invalid price');
+				await assert.revert(modify(toUnit('1'), trader), 'Invalid price');
+				await assert.revert(close(trader), 'Invalid price');
 				await assert.revert(
 					perpsEngine.liquidatePosition(marketKey, trader, liquidator, { from: trader }),
 					'Invalid price'
@@ -3276,8 +3164,8 @@ contract('PerpsEngineV2', accounts => {
 
 		describe('when price spikes over the allowed threshold', () => {
 			beforeEach(async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('1'), trader);
 				// base rate of sETH is 100 from shared setup above
 				await setPrice(baseAsset, toUnit('300'), false);
 			});
@@ -3287,8 +3175,8 @@ contract('PerpsEngineV2', accounts => {
 
 		describe('when price drops over the allowed threshold', () => {
 			beforeEach(async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('1'), trader);
 				// base rate of sETH is 100 from shared setup above
 				await setPrice(baseAsset, toUnit('30'), false);
 			});
@@ -3300,29 +3188,29 @@ contract('PerpsEngineV2', accounts => {
 			const newPrice = toUnit('110');
 
 			beforeEach(async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('1'), trader);
 				// base rate of sETH is 100 from shared setup above
 				await setPrice(baseAsset, newPrice, false);
 			});
 
 			it('after transferMargin', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
+				await transfer(toUnit('1000'), trader);
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after withdrawAllMargin', async () => {
-				await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+				await withdraw(trader);
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after modifyPosition', async () => {
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await modify(toUnit('1'), trader);
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
 			it('after closePosition', async () => {
-				await perpsOrders.closePosition(marketKey, { from: trader });
+				await close(trader);
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 		});
@@ -3331,19 +3219,10 @@ contract('PerpsEngineV2', accounts => {
 	describe('Suspension scenarios', () => {
 		function revertChecks(revertMessage) {
 			it('then mutative market actions revert', async () => {
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('-100'), { from: trader }),
-					revertMessage
-				);
-				await assert.revert(
-					perpsOrders.withdrawAllMargin(marketKey, { from: trader }),
-					revertMessage
-				);
-				await assert.revert(
-					perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader }),
-					revertMessage
-				);
-				await assert.revert(perpsOrders.closePosition(marketKey, { from: trader }), revertMessage);
+				await assert.revert(transfer(toUnit('-100'), trader), revertMessage);
+				await assert.revert(withdraw(trader), revertMessage);
+				await assert.revert(modify(toUnit('1'), trader), revertMessage);
+				await assert.revert(close(trader), revertMessage);
 				await assert.revert(
 					perpsEngine.liquidatePosition(marketKey, trader, liquidator, { from: trader }),
 					revertMessage
@@ -3372,8 +3251,8 @@ contract('PerpsEngineV2', accounts => {
 		describe('when markets are suspended', () => {
 			beforeEach(async () => {
 				// prepare a position
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('1'), trader);
 				// suspend
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 			});
@@ -3382,10 +3261,7 @@ contract('PerpsEngineV2', accounts => {
 			revertChecks('Futures markets are suspended');
 
 			it('Transfer margin fails for adding as well', async () => {
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader }),
-					'Futures markets are suspended'
-				);
+				await assert.revert(transfer(toUnit('100'), trader), 'Futures markets are suspended');
 			});
 
 			describe('when futures markets are resumed', () => {
@@ -3395,13 +3271,13 @@ contract('PerpsEngineV2', accounts => {
 				});
 
 				it('then mutative market actions work', async () => {
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-					await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
-					await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
-					await perpsOrders.closePosition(marketKey, { from: trader });
+					await withdraw(trader);
+					await transfer(toUnit('100'), trader);
+					await modify(toUnit('10'), trader);
+					await close(trader);
 
 					// set up for liquidation
-					await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+					await modify(toUnit('10'), trader);
 					await setPrice(baseAsset, toUnit('1'));
 					await perpsEngine.liquidatePosition(marketKey, trader, liquidator, { from: trader2 });
 				});
@@ -3411,8 +3287,8 @@ contract('PerpsEngineV2', accounts => {
 		describe('when specific market is suspended', () => {
 			beforeEach(async () => {
 				// prepare a position
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('1'), trader);
 				// suspend
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 			});
@@ -3421,11 +3297,8 @@ contract('PerpsEngineV2', accounts => {
 			revertChecks('Market suspended');
 
 			it('can add margin, but cannot remove', async () => {
-				await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
-				await assert.revert(
-					perpsOrders.transferMargin(marketKey, toUnit('-100'), { from: trader }),
-					'Market suspended'
-				);
+				await transfer(toUnit('100'), trader);
+				await assert.revert(transfer(toUnit('-100'), trader), 'Market suspended');
 			});
 
 			describe('when market is resumed', () => {
@@ -3435,13 +3308,13 @@ contract('PerpsEngineV2', accounts => {
 				});
 
 				it('then mutative market actions work', async () => {
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-					await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
-					await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
-					await perpsOrders.closePosition(marketKey, { from: trader });
+					await withdraw(trader);
+					await transfer(toUnit('100'), trader);
+					await modify(toUnit('10'), trader);
+					await close(trader);
 
 					// set up for liquidation
-					await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+					await modify(toUnit('10'), trader);
 					await setPrice(baseAsset, toUnit('1'));
 					await perpsEngine.liquidatePosition(marketKey, trader, liquidator, { from: trader2 });
 				});
@@ -3451,20 +3324,20 @@ contract('PerpsEngineV2', accounts => {
 		describe('when another market is suspended', () => {
 			beforeEach(async () => {
 				// prepare a position
-				await perpsOrders.transferMargin(marketKey, toUnit('1000'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('1'), { from: trader });
+				await transfer(toUnit('1000'), trader);
+				await modify(toUnit('1'), trader);
 				// suspend
 				await systemStatus.suspendFuturesMarket(toBytes32('sOTHER'), toUnit(0), { from: owner });
 			});
 
 			it('then mutative market actions work', async () => {
-				await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
-				await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
-				await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
-				await perpsOrders.closePosition(marketKey, { from: trader });
+				await withdraw(trader);
+				await transfer(toUnit('100'), trader);
+				await modify(toUnit('10'), trader);
+				await close(trader);
 
 				// set up for liquidation
-				await perpsOrders.modifyPosition(marketKey, toUnit('10'), { from: trader });
+				await modify(toUnit('10'), trader);
 				await setPrice(baseAsset, toUnit('1'));
 				await perpsEngine.liquidatePosition(marketKey, trader, liquidator, { from: trader2 });
 			});
