@@ -99,7 +99,7 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return IFuturesMarketManager(address(_manager())).marketSummariesV2(keys)[0];
     }
 
-    /// view for returning max possible order size that take into account existing orders
+    /// view for returning max possible order size that take into account existing positions
     function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short) {
         (uint price, ) = engineContract().assetPrice(marketKey);
         (uint longSize, uint shortSize) = engineContract().marketSizes(marketKey);
