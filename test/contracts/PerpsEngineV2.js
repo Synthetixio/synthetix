@@ -585,29 +585,6 @@ contract('PerpsEngineV2', accounts => {
 			});
 		});
 
-		it('modifyPositionWithTracking emits expected event', async () => {
-			const margin = toUnit('1000');
-			await transfer(margin, trader);
-			const size = toUnit('50');
-			const price = toUnit('200');
-			await setPrice(baseAsset, price);
-			const fee = (await perpsEngine.orderFee(marketKey, size, baseFee)).fee;
-			const trackingCode = toBytes32('code');
-			const tx = await perpsOrders.modifyPositionWithTracking(marketKey, size, trackingCode, {
-				from: trader,
-			});
-
-			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
-			assert.equal(decodedLogs.length, 4); // funding, issued, tracking, pos-modified
-			decodedEventEqual({
-				event: 'Tracking',
-				emittedFrom: perpsEngine.address,
-				args: [trackingCode, marketKey, trader, size, fee],
-				log: decodedLogs[2],
-			});
-		});
-
 		it('Cannot modify a position if the price is invalid', async () => {
 			const margin = toUnit('1000');
 			await transfer(margin, trader);
@@ -1014,37 +991,6 @@ contract('PerpsEngineV2', accounts => {
 						(await marketSummary()).price,
 						multiplyDecimal(toUnit(2000), baseFee),
 					],
-					log: decodedLogs[2],
-					bnCloseVariance: toUnit('0.1'),
-				});
-			});
-
-			it('closePositionWithTracking emits expected event', async () => {
-				const size = toUnit('10');
-				await transferAndModify({
-					account: trader,
-					fillPrice: toUnit('200'),
-					marginDelta: toUnit('1000'),
-					sizeDelta: size,
-				});
-
-				const trackingCode = toBytes32('code');
-				const tx = await perpsOrders.closePositionWithTracking(marketKey, trackingCode, {
-					from: trader,
-				});
-
-				const decodedLogs = await getDecodedLogs({
-					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsEngine],
-				});
-
-				assert.equal(decodedLogs.length, 4);
-				const fee = multiplyDecimal(toUnit(2000), baseFee);
-
-				decodedEventEqual({
-					event: 'Tracking',
-					emittedFrom: perpsEngine.address,
-					args: [trackingCode, marketKey, trader, size.neg(), fee],
 					log: decodedLogs[2],
 					bnCloseVariance: toUnit('0.1'),
 				});

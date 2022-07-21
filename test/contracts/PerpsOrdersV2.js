@@ -57,12 +57,10 @@ contract('PerpsOrdersV2', accounts => {
 		}
 	}
 
-	async function transferMarginAndModifyPosition({ account, fillPrice, marginDelta, sizeDelta }) {
+	async function transferAndModify({ account, fillPrice, marginDelta, sizeDelta }) {
 		await perpsOrders.transferMargin(marketKey, marginDelta, { from: account });
 		await setPrice(baseAsset, fillPrice);
-		await perpsOrders.modifyPosition(marketKey, sizeDelta, {
-			from: account,
-		});
+		await perpsOrders.modifyPosition(marketKey, sizeDelta, { from: account });
 	}
 
 	before(async () => {
@@ -213,7 +211,7 @@ contract('PerpsOrdersV2', accounts => {
 				it('Ensure that the order fee is correct when the order is actually submitted', async () => {
 					const price = toUnit('100');
 					const t2size = toUnit('70');
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader2,
 						fillPrice: price,
 						marginDelta: margin.mul(toBN(2)),
@@ -221,7 +219,7 @@ contract('PerpsOrdersV2', accounts => {
 					});
 
 					const t1size = toUnit('-35');
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: price,
 						marginDelta: margin,
@@ -268,7 +266,7 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				it('Submit a fresh order on the same side as the skew', async () => {
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
@@ -282,7 +280,7 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				it(`Submit a fresh order on the opposite side to the skew smaller than the skew`, async () => {
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
@@ -296,7 +294,7 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				it('Submit a fresh order on the opposite side to the skew larger than the skew', async () => {
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.div(toBN(2)),
@@ -313,7 +311,7 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				it('Increase an existing position on the side of the skew', async () => {
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
@@ -335,7 +333,7 @@ contract('PerpsOrdersV2', accounts => {
 				it('reduce an existing position on the side of the skew', async () => {
 					const price = toUnit(100);
 					const sizeDelta = multiplyDecimal(leverage, margin).div(price);
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: price,
 						marginDelta: margin,
@@ -350,7 +348,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				it('reduce an existing position opposite to the skew', async () => {
 					const sizeDelta1 = multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100));
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.mul(toBN(2)),
@@ -358,7 +356,7 @@ contract('PerpsOrdersV2', accounts => {
 					});
 
 					const sizeDelta2 = multiplyDecimal(leverage.neg(), margin).div(toBN(100));
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
@@ -372,7 +370,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				it('close an existing position on the side of the skew', async () => {
 					const sizeDelta = multiplyDecimal(leverage, margin).div(toBN(100));
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
@@ -386,7 +384,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				it('close an existing position opposite to the skew', async () => {
 					const sizeDelta1 = multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100));
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.mul(toBN(2)),
@@ -394,7 +392,7 @@ contract('PerpsOrdersV2', accounts => {
 					});
 
 					const sizeDelta2 = multiplyDecimal(leverage.neg(), margin).div(toBN(100));
-					await transferMarginAndModifyPosition({
+					await transferAndModify({
 						account: trader,
 						fillPrice: toUnit('100'),
 						marginDelta: margin,
@@ -537,6 +535,62 @@ contract('PerpsOrdersV2', accounts => {
 				await perpsSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
+			});
+		});
+	});
+
+	describe('withTracking emit expected event data', () => {
+		it('modifyPositionWithTracking emits expected event', async () => {
+			const margin = toUnit('1000');
+			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
+			const size = toUnit('50');
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+			const fee = (await perpsEngine.orderFee(marketKey, size, baseFee)).fee;
+			const trackingCode = toBytes32('code');
+			const tx = await perpsOrders.modifyPositionWithTracking(marketKey, size, trackingCode, {
+				from: trader,
+			});
+
+			// The relevant events are properly emitted
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
+			assert.equal(decodedLogs.length, 4); // funding, issued, tracking, pos-modified
+			decodedEventEqual({
+				event: 'Tracking',
+				emittedFrom: perpsEngine.address,
+				args: [trackingCode, marketKey, trader, size, fee],
+				log: decodedLogs[2],
+			});
+		});
+
+		it('closePositionWithTracking emits expected event', async () => {
+			const size = toUnit('10');
+			await transferAndModify({
+				account: trader,
+				fillPrice: toUnit('200'),
+				marginDelta: toUnit('1000'),
+				sizeDelta: size,
+			});
+
+			const trackingCode = toBytes32('code');
+			const tx = await perpsOrders.closePositionWithTracking(marketKey, trackingCode, {
+				from: trader,
+			});
+
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, perpsEngine],
+			});
+
+			assert.equal(decodedLogs.length, 4);
+			const fee = multiplyDecimal(toUnit(2000), baseFee);
+
+			decodedEventEqual({
+				event: 'Tracking',
+				emittedFrom: perpsEngine.address,
+				args: [trackingCode, marketKey, trader, size.neg(), fee],
+				log: decodedLogs[2],
+				bnCloseVariance: toUnit('0.1'),
 			});
 		});
 	});
