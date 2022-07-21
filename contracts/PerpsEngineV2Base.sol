@@ -18,7 +18,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
+contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV2Internal {
     /* ========== EVENTS ========== */
 
     event MarginModified(
@@ -214,15 +214,20 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         bytes32 marketKey,
         address account,
         int sizeDelta,
-        uint feeRate,
-        bytes32 trackingCode
+        ExecutionOptions calldata options
     ) external approvedRouterAndMarket(marketKey) {
-        uint price = _assetPriceRequireSystemChecks(marketKey);
-        _recomputeFunding(marketKey, price);
+        uint currentPrice = _assetPriceRequireSystemChecks(marketKey);
+        // recompute funding using current price
+        _recomputeFunding(marketKey, currentPrice);
         _trade(
             marketKey,
             account,
-            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: trackingCode})
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: _addDelta(currentPrice, options.priceDelta),
+                feeRate: options.feeRate,
+                trackingCode: options.trackingCode
+            })
         );
     }
 
@@ -912,6 +917,12 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     /* ---------- Utilities ---------- */
+
+    /// adds an int delta to a uint value, reverts if overflows / underflow
+    function _addDelta(uint value, int delta) internal pure returns (uint) {
+        // adjust price according to the input
+        return delta > 0 ? value.add(uint(delta)) : value.sub(uint(-delta));
+    }
 
     /*
      * Absolute value of the input, returned as a signed number.

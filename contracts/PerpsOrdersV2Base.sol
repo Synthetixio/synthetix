@@ -21,6 +21,7 @@ import "./interfaces/IERC20.sol";
 
 contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     using SafeMath for uint;
+    using SignedSafeMath for int;
     using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
@@ -126,13 +127,16 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
+    function _baseAsset(bytes32 marketKey) internal view returns (bytes32) {
+        return stateContract().marketScalars(marketKey).baseAsset;
+    }
+
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint rate, bool tooVolatile) {
-        bytes32 baseAsset = stateContract().marketScalars(marketKey).baseAsset;
-        return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
+        return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset(marketKey));
     }
 
     function _dynamicFeeRateChecked(bytes32 marketKey) internal view returns (uint) {
@@ -146,6 +150,13 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     function _feeRate(bytes32 marketKey) internal view returns (uint rate) {
         // add to base fee
         return _baseFee(marketKey).add(_dynamicFeeRateChecked(marketKey));
+    }
+
+    /// helper for getting `int priceDelta` for the `engine.trade()` interface for making a trade at price different
+    /// from current asset price (e.g. orders such as next price, limit, but also orders with slippage)
+    function _priceDeltaFromCurrent(bytes32 marketKey, uint targetPrice) internal view returns (int) {
+        (uint currentPrice, ) = engineContract().assetPrice(marketKey);
+        return int(targetPrice).sub(int(currentPrice));
     }
 
     // EXTERNAL MUTATIVE
@@ -210,7 +221,13 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         int sizeDelta,
         bytes32 trackingCode
     ) internal {
-        _engineInternal().trade(marketKey, msg.sender, sizeDelta, _feeRate(marketKey), trackingCode);
+        IPerpsEngineV2Internal.ExecutionOptions memory options =
+            IPerpsEngineV2Internal.ExecutionOptions({
+                priceDelta: 0,
+                feeRate: _feeRate(marketKey),
+                trackingCode: trackingCode
+            });
+        _engineInternal().trade(marketKey, msg.sender, sizeDelta, options);
     }
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {

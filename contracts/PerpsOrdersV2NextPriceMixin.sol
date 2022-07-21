@@ -234,8 +234,13 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // lockAmount = -refund because refund is unlocked back into margin
         _engineInternal().modifyLockedMargin(marketKey, account, -int(refund), burn);
 
-        uint feeRate = _feeRateNextPrice(marketKey);
-        _engineInternal().trade(marketKey, account, order.sizeDelta, feeRate, order.trackingCode);
+        IPerpsEngineV2Internal.ExecutionOptions memory options =
+            IPerpsEngineV2Internal.ExecutionOptions({
+                priceDelta: _priceDeltaForRoundId(marketKey, order.targetRoundId),
+                feeRate: _feeRateNextPrice(marketKey),
+                trackingCode: order.trackingCode
+            });
+        _engineInternal().trade(marketKey, account, order.sizeDelta, options);
 
         // remove stored order
         delete nextPriceOrders[marketKey][account];
@@ -250,6 +255,13 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
             order.keeperDeposit,
             order.trackingCode
         );
+    }
+
+    /// helper for getting `int priceDelta` for the `trade()` interface for a specific target roundId
+    /// from current asset price
+    function _priceDeltaForRoundId(bytes32 marketKey, uint targetRoundId) internal view returns (int) {
+        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(marketKey), targetRoundId);
+        return _priceDeltaFromCurrent(marketKey, pastPrice);
     }
 
     ///// Internal views

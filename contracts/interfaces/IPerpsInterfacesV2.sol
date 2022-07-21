@@ -120,6 +120,12 @@ interface IPerpsEngineV2External {
 }
 
 interface IPerpsEngineV2Internal {
+    struct ExecutionOptions {
+        int priceDelta;
+        uint feeRate;
+        bytes32 trackingCode;
+    }
+
     // internal mutative
 
     // only manager
@@ -148,8 +154,7 @@ interface IPerpsEngineV2Internal {
         bytes32 marketKey,
         address account,
         int sizeDelta,
-        uint feeRate,
-        bytes32 trackingCode
+        ExecutionOptions calldata options
     ) external;
 }
 

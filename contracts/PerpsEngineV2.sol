@@ -9,6 +9,6 @@ import "./PerpsEngineV2ViewsMixin.sol";
  * TODO: docs
  */
 
-contract PerpsEngineV2 is IPerpsEngineV2External, IPerpsEngineV2Internal, PerpsEngineV2Base, PerpsEngineV2ViewsMixin {
+contract PerpsEngineV2 is IPerpsEngineV2External, PerpsEngineV2Base, PerpsEngineV2ViewsMixin {
     constructor(address _resolver) public PerpsEngineV2Base(_resolver) {}
 }
