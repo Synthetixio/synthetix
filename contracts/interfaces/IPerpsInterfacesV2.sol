@@ -69,26 +69,43 @@ interface IPerpsTypesV2 {
         uint approxLiquidationFee;
         bool priceInvalid;
     }
+
+    struct MarketSummary {
+        bytes32 marketKey;
+        bytes32 baseAsset;
+        uint price;
+        uint marketSize;
+        int marketSkew;
+        uint marketDebt;
+        int currentFundingRate;
+        int unrecordedFunding;
+        uint marketSizeLong;
+        uint marketSizeShort;
+        bool priceInvalid;
+    }
 }
 
 interface IPerpsEngineV2External {
-    // views
-    function assetPrice(bytes32 marketKey) external view returns (uint price, bool invalid);
+    // market views
 
-    function stateContract() external view returns (IPerpsStorageV2External);
+    function assetPrice(bytes32 marketKey) external view returns (uint price, bool invalid);
 
     function marketSizes(bytes32 marketKey) external view returns (uint long, uint short);
 
     function marketDebt(bytes32 marketKey) external view returns (uint debt, bool invalid);
 
-    function currentFundingRate(bytes32 marketKey) external view returns (int);
+    function marketSummary(bytes32 marketKey) external view returns (IPerpsTypesV2.MarketSummary memory);
 
-    function unrecordedFunding(bytes32 marketKey) external view returns (int funding, bool invalid);
+    // position views
+
+    function accessibleMargin(bytes32 marketKey, address account) external view returns (uint);
 
     function positionSummary(bytes32 marketKey, address account)
         external
         view
         returns (IPerpsTypesV2.PositionSummary memory);
+
+    // trade views
 
     function orderFee(
         bytes32 marketKey,
@@ -110,6 +127,9 @@ interface IPerpsEngineV2External {
             uint fee,
             IPerpsTypesV2.Status status
         );
+
+    // low lever state contract (with more low level views)
+    function stateContract() external view returns (IPerpsStorageV2External);
 
     // mutative
     function liquidatePosition(
@@ -227,7 +247,7 @@ interface IPerpsOrdersV2 {
         view
         returns (IPerpsTypesV2.PositionSummary memory);
 
-    function marketSummary(bytes32 marketKey) external view returns (IFuturesMarketManager.MarketSummary memory);
+    function marketSummary(bytes32 marketKey) external view returns (IPerpsTypesV2.MarketSummary memory);
 
     // MUTATIVE
 

@@ -13,10 +13,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
      * Sizes of the long and short sides of the market (in sUSD)
      */
     function marketSizes(bytes32 marketKey) external view returns (uint long, uint short) {
-        MarketScalars memory market = _marketScalars(marketKey);
-        int size = int(market.marketSize);
-        int skew = market.marketSkew;
-        return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
+        return _sideSizes(_marketScalars(marketKey));
     }
 
     /*
@@ -29,21 +26,34 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     }
 
     /*
-     * The current funding rate as determined by the market skew; this is returned as a percentage per day.
-     * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
+     *
      */
-    function currentFundingRate(bytes32 marketKey) external view returns (int) {
-        (uint price, ) = assetPrice(marketKey);
-        return _currentFundingRate(marketKey, price);
+    function marketSummary(bytes32 marketKey) external view returns (MarketSummary memory) {
+        MarketScalars memory marketScalars = _stateViews().marketScalars(marketKey);
+        (uint price, bool invalid) = assetPrice(marketKey);
+        uint debt = _marketDebt(marketKey, price);
+        (uint long, uint short) = _sideSizes(marketScalars);
+        return
+            MarketSummary({
+                marketKey: marketKey,
+                baseAsset: marketScalars.baseAsset,
+                price: price,
+                marketSize: marketScalars.marketSize,
+                marketSkew: marketScalars.marketSkew,
+                marketSizeLong: long,
+                marketSizeShort: short,
+                marketDebt: debt,
+                currentFundingRate: _currentFundingRate(marketKey, price),
+                unrecordedFunding: _unrecordedFunding(marketKey, price),
+                priceInvalid: invalid
+            });
     }
 
-    /*
-     * The funding per base unit accrued since the funding rate was last recomputed, which has not yet
-     * been persisted in the funding sequence.
-     */
-    function unrecordedFunding(bytes32 marketKey) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice(marketKey);
-        return (_unrecordedFunding(marketKey, price), isInvalid);
+    /// this is a separate view (in addition to being part of position summary) because
+    /// is used on-chain to get withdrawable amount
+    function accessibleMargin(bytes32 marketKey, address account) external view returns (uint) {
+        (uint price, ) = assetPrice(marketKey);
+        return _accessibleMargin(_stateViews().positions(marketKey, account), price);
     }
 
     /*
@@ -125,7 +135,15 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return _postTradeDetails(position, params);
     }
 
-    /// Approximations:
+    ////// Helper views
+
+    function _sideSizes(MarketScalars memory marketScalars) internal view returns (uint long, uint short) {
+        int size = int(marketScalars.marketSize);
+        int skew = marketScalars.marketSkew;
+        return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
+    }
+
+    /// calculates approximate liquidation price, with the following approximations:
     ///     1. Liquidation margin is assumed to be for current price instead of the liquidation price.
     ///     this is because liq-margin is non linear because of the max(min-keeper-fee, liq-fee) component,
     ///     so solving for it precisely is not straight forward.

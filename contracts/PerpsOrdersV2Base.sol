@@ -93,10 +93,8 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
         return engineContract().positionSummary(marketKey, account);
     }
 
-    function marketSummary(bytes32 marketKey) external view returns (IFuturesMarketManager.MarketSummary memory) {
-        bytes32[] memory keys = new bytes32[](1);
-        keys[0] = marketKey;
-        return IFuturesMarketManager(address(_manager())).marketSummariesV2(keys)[0];
+    function marketSummary(bytes32 marketKey) external view returns (MarketSummary memory) {
+        return engineContract().marketSummary(marketKey);
     }
 
     /// view for returning max possible order size that take into account existing positions
@@ -177,9 +175,8 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
      */
     function withdrawAllMargin(bytes32 marketKey) external {
         address account = msg.sender;
-        PositionSummary memory posSummary = engineContract().positionSummary(marketKey, account);
-        int marginDelta = -int(posSummary.accessibleMargin);
-        _engineInternal().transferMargin(marketKey, account, marginDelta);
+        uint withdrawable = engineContract().accessibleMargin(marketKey, account);
+        _engineInternal().transferMargin(marketKey, account, -int(withdrawable));
     }
 
     /*

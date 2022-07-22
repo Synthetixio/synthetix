@@ -104,13 +104,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return (debtV1.add(debtV2), isInvalidV1 || isInvalidV2);
     }
 
-    function allMarketSummaries() external view returns (MarketSummary[] memory) {
-        MarketSummary[] memory v1 = allMarketSummariesV1();
-        MarketSummary[] memory v2 = allMarketSummariesV2();
+    function allMarketSummaries() external view returns (MarketSummaryV1[] memory) {
+        MarketSummaryV1[] memory v1 = allMarketSummariesV1();
+        MarketSummaryV1[] memory v2 = allMarketSummariesV2();
         uint n1 = v1.length;
         uint n2 = v2.length;
         // combine the summaries
-        MarketSummary[] memory combined = new MarketSummary[](n1 + n2);
+        MarketSummaryV1[] memory combined = new MarketSummaryV1[](n1 + n2);
         for (uint i; i < n1 + n2; i++) {
             if (i < n1) {
                 combined[i] = v1[i];
@@ -169,15 +169,15 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return _marketsV1.getPage(0, _marketsV1.elements.length);
     }
 
-    function allMarketSummariesV1() public view returns (MarketSummary[] memory) {
+    function allMarketSummariesV1() public view returns (MarketSummaryV1[] memory) {
         return _marketSummariesV1(allMarketsV1());
     }
 
-    function marketSummariesV1(address[] calldata addresses) external view returns (MarketSummary[] memory) {
+    function marketSummariesV1(address[] calldata addresses) external view returns (MarketSummaryV1[] memory) {
         return _marketSummariesV1(addresses);
     }
 
-    function marketSummariesForKeysV1(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
+    function marketSummariesForKeysV1(bytes32[] calldata marketKeys) external view returns (MarketSummaryV1[] memory) {
         return _marketSummariesV1(_addressesForKeysV1(marketKeys));
     }
 
@@ -212,11 +212,11 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return (total, anyIsInvalid);
     }
 
-    function allMarketSummariesV2() public view returns (MarketSummary[] memory) {
+    function allMarketSummariesV2() public view returns (MarketSummaryV1[] memory) {
         return _marketSummariesV2(allMarketsV2());
     }
 
-    function marketSummariesV2(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
+    function marketSummariesV2(bytes32[] calldata marketKeys) external view returns (MarketSummaryV1[] memory) {
         return _marketSummariesV2(marketKeys);
     }
 
@@ -264,9 +264,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return results;
     }
 
-    function _marketSummariesV1(address[] memory addresses) internal view returns (MarketSummary[] memory) {
+    function _marketSummariesV1(address[] memory addresses) internal view returns (MarketSummaryV1[] memory) {
         uint nMarkets = addresses.length;
-        MarketSummary[] memory summaries = new MarketSummary[](nMarkets);
+        MarketSummaryV1[] memory summaries = new MarketSummaryV1[](nMarkets);
         for (uint i; i < nMarkets; i++) {
             IFuturesMarket market = IFuturesMarket(addresses[i]);
             bytes32 marketKey = market.marketKey();
@@ -275,7 +275,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
             (uint price, bool invalid) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
-            summaries[i] = MarketSummary({
+            summaries[i] = MarketSummaryV1({
                 version: "V1",
                 market: address(market),
                 baseAsset: baseAsset,
@@ -293,29 +293,26 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     }
 
     ///// V2 helper views
-    function _marketSummariesV2(bytes32[] memory marketKeys) internal view returns (MarketSummary[] memory) {
+    function _marketSummariesV2(bytes32[] memory marketKeys) internal view returns (MarketSummaryV1[] memory) {
         uint nMarkets = marketKeys.length;
-        MarketSummary[] memory summaries = new MarketSummary[](nMarkets);
+        MarketSummaryV1[] memory summaries = new MarketSummaryV1[](nMarkets);
         IPerpsEngineV2External perpsEngine = _perpsEngineV2Views();
-        IPerpsStorageV2External perpsStorage = perpsEngine.stateContract();
         for (uint i; i < nMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
-            MarketScalars memory marketScalars = perpsStorage.marketScalars(marketKey);
-
-            (uint price, bool invalid) = perpsEngine.assetPrice(marketKey);
-            (uint debt, ) = perpsEngine.marketDebt(marketKey);
-
-            summaries[i] = MarketSummary({
+            // get the V2 summary
+            IPerpsTypesV2.MarketSummary memory summaryV2 = perpsEngine.marketSummary(marketKey);
+            // create a V1 summary from the V2 one
+            summaries[i] = MarketSummaryV1({
                 version: "V2",
                 market: address(perpsEngine),
-                baseAsset: marketScalars.baseAsset,
+                baseAsset: summaryV2.baseAsset,
                 marketKey: marketKey,
-                price: price,
-                marketSize: marketScalars.marketSize,
-                marketSkew: marketScalars.marketSkew,
-                marketDebt: debt,
-                currentFundingRate: perpsEngine.currentFundingRate(marketKey),
-                priceInvalid: invalid
+                price: summaryV2.price,
+                marketSize: summaryV2.marketSize,
+                marketSkew: summaryV2.marketSkew,
+                marketDebt: summaryV2.marketDebt,
+                currentFundingRate: summaryV2.currentFundingRate,
+                priceInvalid: summaryV2.priceInvalid
             });
         }
 

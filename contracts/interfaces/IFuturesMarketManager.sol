@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 /// external interface
 interface IFuturesMarketManager {
-    struct MarketSummary {
+    struct MarketSummaryV1 {
         string version;
         address market;
         bytes32 baseAsset;
@@ -21,7 +21,7 @@ interface IFuturesMarketManager {
 
     function totalDebt() external view returns (uint debt, bool isInvalid);
 
-    function allMarketSummaries() external view returns (MarketSummary[] memory);
+    function allMarketSummaries() external view returns (MarketSummaryV1[] memory);
 
     function isMarket(bytes32 marketKey) external view returns (bool);
 
@@ -43,11 +43,11 @@ interface IFuturesMarketManager {
 
     function marketsV1ForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory);
 
-    function allMarketSummariesV1() external view returns (MarketSummary[] memory);
+    function allMarketSummariesV1() external view returns (MarketSummaryV1[] memory);
 
-    function marketSummariesV1(address[] calldata addresses) external view returns (MarketSummary[] memory);
+    function marketSummariesV1(address[] calldata addresses) external view returns (MarketSummaryV1[] memory);
 
-    function marketSummariesForKeysV1(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory);
+    function marketSummariesForKeysV1(bytes32[] calldata marketKeys) external view returns (MarketSummaryV1[] memory);
 
     // V2
     function numMarketsV2() external view returns (uint);
@@ -60,9 +60,9 @@ interface IFuturesMarketManager {
 
     function totalDebtV2() external view returns (uint debt, bool isInvalid);
 
-    function allMarketSummariesV2() external view returns (MarketSummary[] memory);
+    function allMarketSummariesV2() external view returns (MarketSummaryV1[] memory);
 
-    function marketSummariesV2(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory);
+    function marketSummariesV2(bytes32[] calldata marketKeys) external view returns (MarketSummaryV1[] memory);
 }
 
 /// internal interface
