@@ -122,12 +122,6 @@ async function _setMissingRates({ ctx }) {
 			await addAggregatorAndSetRate({ ctx, currencyKey, rate: ethers.utils.parseEther('1') });
 		}
 	}
-
-	await addAggregatorAndSetRate({
-		ctx,
-		currencyKey: toBytes32('SNX'),
-		rate: ethers.utils.parseEther('1'),
-	});
 }
 
 async function _updateCache({ ctx }) {
