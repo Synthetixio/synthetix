@@ -55,12 +55,6 @@ jobs:
           key: foundry-bin-${foundry_locked_commit}
           paths:
             - ~/.foundry/bin
-      - run: |
-          mkdir -p ~/.foundry/bin
-          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-          chmod +x ~/.foundry/foundryup
-          ~/.foundry/foundryup
-          echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - checkout
       - attach_workspace:
           at: .
