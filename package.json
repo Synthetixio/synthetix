@@ -23,8 +23,8 @@
 		"test:deployments": "mocha test/deployments -- --timeout 100000",
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"anvil > /dev/null\" \"wait-port 127.0.0.1:8545 && mocha test/publish --bail --timeout 240000\"",
-		"test:integration:l1": "hardhat test:integration:l1 --build --deploy",
-		"test:integration:l2": "hardhat test:integration:l2 --build --deploy"
+		"test:integration:l1": "hardhat test:integration:l1 --compile --deploy",
+		"test:integration:l2": "hardhat test:integration:l2 --compile --deploy"
 	},
 	"husky": {
 		"hooks": {
@@ -106,7 +106,7 @@
 		"execa": "^4.1.0",
 		"fs-extra": "^9.0.1",
 		"hardhat": "^2.8.2",
-		"hardhat-cannon": "^1.0.4",
+		"hardhat-cannon": "^1.0.12",
 		"hardhat-gas-reporter": "^1.0.4",
 		"hardhat-interact": "^0.2.3",
 		"husky": "^4.3.0",
