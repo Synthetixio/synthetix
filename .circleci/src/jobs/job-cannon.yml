@@ -6,7 +6,7 @@ steps:
       keys:
         - foundry-${foundry_locked_commit}
   - rust/install: {}
-  - run: 
+  - run: |
       curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
       ./foundryup -C $foundry_locked_commit
       rm -rf *
