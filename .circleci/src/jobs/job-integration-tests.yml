@@ -14,8 +14,8 @@ steps:
       if [ ! -d ~/.foundry ]; then
         curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
         ./foundryup -C $foundry_locked_commit
-        rm -rf *
       fi
+      rm -rf *
       echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
 
   - save_cache:
