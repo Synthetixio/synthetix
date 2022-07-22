@@ -51,9 +51,9 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
 
     /// this is a separate view (in addition to being part of position summary) because
     /// is used on-chain to get withdrawable amount
-    function accessibleMargin(bytes32 marketKey, address account) external view returns (uint) {
+    function withdrawableMargin(bytes32 marketKey, address account) external view returns (uint) {
         (uint price, ) = assetPrice(marketKey);
-        return _accessibleMargin(_stateViews().positions(marketKey, account), price);
+        return _withdrawableMargin(_stateViews().positions(marketKey, account), price);
     }
 
     /*
@@ -76,7 +76,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
                 profitLoss: _profitLoss(position, price),
                 accruedFunding: _accruedFunding(position, price),
                 remainingMargin: remainingMargin,
-                accessibleMargin: _accessibleMargin(position, price),
+                withdrawableMargin: _withdrawableMargin(position, price),
                 currentLeverage: _currentLeverage(_notionalValue(position.size, price), remainingMargin),
                 canLiquidate: _canLiquidate(position, price),
                 approxLiquidationPrice: liqPrice,

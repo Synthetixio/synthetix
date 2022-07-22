@@ -62,7 +62,7 @@ interface IPerpsTypesV2 {
         int profitLoss;
         int accruedFunding;
         uint remainingMargin;
-        uint accessibleMargin;
+        uint withdrawableMargin;
         int currentLeverage;
         bool canLiquidate;
         uint approxLiquidationPrice;
@@ -98,7 +98,7 @@ interface IPerpsEngineV2External {
 
     // position views
 
-    function accessibleMargin(bytes32 marketKey, address account) external view returns (uint);
+    function withdrawableMargin(bytes32 marketKey, address account) external view returns (uint);
 
     function positionSummary(bytes32 marketKey, address account)
         external

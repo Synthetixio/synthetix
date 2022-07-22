@@ -770,7 +770,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
     }
 
     /// assumes position was initilized (has valid marketKey)
-    function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
+    function _withdrawableMargin(Position memory position, uint price) internal view returns (uint) {
         if (position.id == 0) {
             return 0; // The position does not exist -- no margin.
         }

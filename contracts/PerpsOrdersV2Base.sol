@@ -165,11 +165,11 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /*
      * Withdraws all accessible margin in a position. This will leave some remaining margin
-     * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
+     * in the account if the caller has a position open. Equivalent to `transferMargin(-withdrawableMargin(sender))`.
      */
     function withdrawAllMargin(bytes32 marketKey) external {
         address account = msg.sender;
-        uint withdrawable = engineContract().accessibleMargin(marketKey, account);
+        uint withdrawable = engineContract().withdrawableMargin(marketKey, account);
         _engineInternal().transferMargin(marketKey, account, -int(withdrawable));
     }
 
