@@ -176,6 +176,20 @@ interface IPerpsEngineV2Internal {
         int sizeDelta,
         ExecutionOptions calldata options
     ) external;
+
+    // only routers
+    function managerPayFee(
+        bytes32 marketKey,
+        uint amount,
+        bytes32 trackingCode
+    ) external;
+
+    // only routers
+    function managerIssueSUSD(
+        bytes32 marketKey,
+        address to,
+        uint amount
+    ) external;
 }
 
 interface IPerpsStorageV2External {

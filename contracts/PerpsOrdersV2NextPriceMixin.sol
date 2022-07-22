@@ -166,14 +166,14 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
             // burn keeper fee from locked margin
             burn += order.keeperDeposit;
             // send keeper fee to keeper
-            _manager().issueSUSD(keeper, order.keeperDeposit);
+            _engineInternal().managerIssueSUSD(marketKey, keeper, order.keeperDeposit);
         }
         // record the margin changes
         // lockAmount = -refund because refund is unlocked back into margin
         _engineInternal().modifyLockedMargin(marketKey, account, -int(refund), burn);
 
         // pay the commitDeposit as fee to the FeePool
-        _manager().payFee(order.commitDeposit, order.trackingCode);
+        _engineInternal().managerPayFee(marketKey, order.commitDeposit, order.trackingCode);
 
         // remove stored order
         delete nextPriceOrders[marketKey][account];
@@ -230,7 +230,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
             refund += order.keeperDeposit;
         } else {
             burn += order.keeperDeposit;
-            _manager().issueSUSD(keeper, order.keeperDeposit);
+            _engineInternal().managerIssueSUSD(marketKey, keeper, order.keeperDeposit);
         }
         // record the margin changes
         // lockAmount = -refund because refund is unlocked back into margin

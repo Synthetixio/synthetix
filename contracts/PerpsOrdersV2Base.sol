@@ -38,7 +38,6 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
     bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
@@ -55,13 +54,12 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
-        newAddresses[0] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[1] = CONTRACT_PERPSSETTINGSV2;
-        newAddresses[2] = CONTRACT_PERPSENGINEV2;
-        newAddresses[3] = CONTRACT_PERPSTORAGEV2;
-        newAddresses[4] = CONTRACT_EXCHANGERATES;
-        newAddresses[5] = CONTRACT_EXCHANGER;
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_PERPSSETTINGSV2;
+        newAddresses[1] = CONTRACT_PERPSENGINEV2;
+        newAddresses[2] = CONTRACT_PERPSTORAGEV2;
+        newAddresses[3] = CONTRACT_EXCHANGERATES;
+        newAddresses[4] = CONTRACT_EXCHANGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -108,10 +106,6 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
     }
 
     // INTERNAL
-
-    function _manager() internal view returns (IFuturesMarketManagerInternal) {
-        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
-    }
 
     function _engineInternal() internal view returns (IPerpsEngineV2Internal) {
         return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));

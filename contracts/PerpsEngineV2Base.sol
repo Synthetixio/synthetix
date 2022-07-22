@@ -231,6 +231,26 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
         );
     }
 
+    /// allows order routers to pay fees with their internal logic (e.g. from previously locked margin)
+    /// access controlled to only allowed routers for a market
+    function managerPayFee(
+        bytes32 marketKey,
+        uint amount,
+        bytes32 trackingCode
+    ) external approvedRouterAndMarket(marketKey) {
+        _manager().payFee(amount, trackingCode);
+    }
+
+    /// allows order routers to issue sUSD with their internal logic (e.g. from previously locked margin)
+    /// access controlled to only allowed routers for a market
+    function managerIssueSUSD(
+        bytes32 marketKey,
+        address to,
+        uint amount
+    ) external approvedRouterAndMarket(marketKey) {
+        _manager().issueSUSD(to, amount);
+    }
+
     /*
      * Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
      * `canLiquidate(account)` is true, and reverts otherwise.

@@ -196,6 +196,8 @@ contract('PerpsEngineV2', accounts => {
 					'transferMargin',
 					'modifyLockedMargin',
 					'trade',
+					'managerPayFee',
+					'managerIssueSUSD',
 					'liquidatePosition',
 				],
 			});
