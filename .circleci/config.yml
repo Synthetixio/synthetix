@@ -37,7 +37,22 @@ jobs:
     machine:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
-    steps:
+    environment:
+      foundry_locked_commit: '3c49efe'    steps:
+      - restore_cache:
+          keys:
+            - foundry-${foundry_locked_commit}
+      - rust/install: {}
+      - run: 
+          curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+          ./foundryup -C $foundry_locked_commit
+          rm -rf *
+          echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+      - save_cache:
+          key: foundry-${foundry_locked_commit}
+          paths:
+            - ~/.cargo
+            - ~/.foundry
       - run: |
           mkdir -p ~/.foundry/bin
           curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
@@ -120,14 +135,24 @@ jobs:
     machine:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
+    environment:
+      foundry_locked_commit: '3c49efe'
     resource_class: large
     steps:
-      - run: |
-          mkdir -p ~/.foundry/bin
-          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-          chmod +x ~/.foundry/foundryup
-          ~/.foundry/foundryup
+      - restore_cache:
+          keys:
+            - foundry-${foundry_locked_commit}
+      - rust/install: {}
+      - run: 
+          curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+          ./foundryup -C $foundry_locked_commit
+          rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+      - save_cache:
+          key: foundry-${foundry_locked_commit}
+          paths:
+            - ~/.cargo
+            - ~/.foundry
       - checkout
       - attach_workspace:
           at: .
@@ -282,15 +307,23 @@ jobs:
     machine:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
-    resource_class: large
+    environment:
+      foundry_locked_commit: '3c49efe'    resource_class: large
     steps:
-      - run: |
-          mkdir -p ~/.foundry/bin
-          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-          chmod +x ~/.foundry/foundryup
-          ~/.foundry/foundryup
+      - restore_cache:
+          keys:
+            - foundry-${foundry_locked_commit}
+      - rust/install: {}
+      - run: 
+          curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+          ./foundryup -C $foundry_locked_commit
+          rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
-      - checkout
+      - save_cache:
+          key: foundry-${foundry_locked_commit}
+          paths:
+            - ~/.cargo
+            - ~/.foundry
       - attach_workspace:
           at: .
       - run:

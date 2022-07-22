@@ -1,6 +1,23 @@
 # Builds a testing chain which is used for integration tests and downstream projects
 {{> job-header-machine.yml}}
 steps:
+  # get foundry
+  - restore_cache:
+      keys:
+        - foundry-${foundry_locked_commit}
+  - rust/install: {}
+  - run: 
+      curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+      ./foundryup -C $foundry_locked_commit
+      rm -rf *
+      echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+
+  - save_cache:
+      key: foundry-${foundry_locked_commit}
+      paths:
+        - ~/.cargo
+        - ~/.foundry
+
   - run: |
       mkdir -p ~/.foundry/bin
       curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup

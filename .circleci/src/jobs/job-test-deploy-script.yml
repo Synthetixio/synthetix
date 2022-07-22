@@ -3,13 +3,22 @@
 resource_class: large
 steps:
   # get foundry
-  - run: |
-      mkdir -p ~/.foundry/bin
-      curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-      chmod +x ~/.foundry/foundryup
-      ~/.foundry/foundryup
+  - restore_cache:
+      keys:
+        - foundry-${foundry_locked_commit}
+  - rust/install: {}
+  - run: 
+      curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+      ./foundryup -C $foundry_locked_commit
+      rm -rf *
       echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
-  - checkout
+
+  - save_cache:
+      key: foundry-${foundry_locked_commit}
+      paths:
+        - ~/.cargo
+        - ~/.foundry
+
   - attach_workspace:
       at: .
   - run:
