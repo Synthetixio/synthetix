@@ -52,14 +52,48 @@ args = ["<%= settings.network %>"]
 modified = ["contracts", "publish/src", "publish/deployed/local-ovm"]
 
 # "hack mint" by sending txn as if it is from the bridge
+[invoke.temp_set_bridge_owner]
+target = ["AddressResolver"]
+fromCall.func = "owner"
+func = "importAddresses"
+args = [
+    ["0x53796e746865746978427269646765546f426173650000000000000000000000"],
+    ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"]
+]
+
+depends = ["run.synthetix"]
+
+[invoke.temp_set_bridge_rebuild]
+target = ["Synthetix"]
+
+func = "rebuildCache"
+args = []
+
+depends = ["invoke.temp_set_bridge_owner"]
+
 [invoke.transfer_owner_snx]
 target = ["Synthetix"]
 
-from = "<%= contracts.SynthetixBridgeToBase.address %>"
+from = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 func = "mintSecondary"
 args = ["<%= settings.owner %>", "100000000000000000000000000"]
 
-depends = ["run.synthetix"]
+depends = ["invoke.temp_set_bridge_rebuild"]
+
+[invoke.temp_set_bridge_back]
+target = ["AddressResolver"]
+fromCall.func = "owner"
+func = "importAddresses"
+args = [
+    ["0x53796e746865746978427269646765546f426173650000000000000000000000"],
+    # TODO: cannon doesn't interpolate inside of arrays
+    # workaround is to put exact address in for now, but
+    # once cannon impls this fix need to put:
+    #["<%= contracts.SynthetixBridgeToBase.address %>"]
+    ["0x33eE99b4255A758E8dD02b51ffb12C4C9bFa8F78"]
+]
+
+depends = ["invoke.transfer_owner_snx"]
 
 [invoke.set_relay_owner]
 target = ["OwnerRelayOnOptimism"]
