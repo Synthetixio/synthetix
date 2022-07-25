@@ -30,19 +30,19 @@ defaultValue = "50000000000"
 [import.aggregator_snx]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_snx %>"
-options.timestamp = "100"
+options.timestamp = "1558469483"
 options.salt = "snx"
 
 [import.aggregator_eth]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_eth %>"
-options.timestamp = "100"
+options.timestamp = "1558469483"
 options.salt = "eth"
 
 [import.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
-options.timestamp = "100"
+options.timestamp = "1558469483"
 options.salt = "btc"
 
 [run.synthetix]
