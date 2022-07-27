@@ -36,6 +36,21 @@ async function loadUsers({ ctx }) {
 		ctx.users.owner.address = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 		ctx.users.deployer = ctx.users.owner;
 	}
+
+	// ensure all the users have eth
+	try {
+		await Promise.all(
+			Object.values(ctx.users).map(async account => {
+				// owner might not have eth when we impersonate them
+				await ctx.provider.send('hardhat_setBalance', [
+					account.address,
+					'0x10000000000000000000000',
+				]);
+			})
+		);
+	} catch (err) {
+		// if it gets here nothing needs to be done
+	}
 }
 
 function _getWallets({ ctx, provider }) {

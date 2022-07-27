@@ -22,7 +22,7 @@ const {
 const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
-	network: 'kovan',
+	network: 'goerli',
 	priorityGasPrice: '1',
 	batchSize: 15,
 };

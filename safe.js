@@ -90,7 +90,7 @@ const {
 	const signature = await safeSdk.signTransactionHash(txHash);
 
 	const safeService = new SafeServiceClient(
-		`https://safe-transaction${network === 'rinkeby' ? '.rinkeby' : ''}.gnosis.io`
+		`https://safe-transaction${network === 'goerli' ? '.goerli' : ''}.gnosis.io`
 	);
 	try {
 		await safeService.proposeTransaction(safeAddress, safeTransaction.data, txHash, signature);

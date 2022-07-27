@@ -47,7 +47,7 @@ const systemAndParameterCheck = require('./system-and-parameter-check');
 const DEFAULTS = {
 	priorityGasPrice: '1',
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
-	network: 'kovan',
+	network: 'goerli',
 	buildPath: path.join(__dirname, '..', '..', '..', '..', BUILD_FOLDER),
 };
 
@@ -66,7 +66,9 @@ const deploy = async ({
 	manageNonces,
 	network = DEFAULTS.network,
 	privateKey,
+	signer,
 	providerUrl,
+	provider,
 	skipFeedChecks = false,
 	specifyContracts,
 	useFork,
@@ -150,23 +152,11 @@ const deploy = async ({
 	console.log(gray('Loading the compiled contracts locally...'));
 	const { earliestCompiledTimestamp, compiled } = loadCompiledFiles({ buildPath });
 
-	const {
-		providerUrl: envProviderUrl,
-		privateKey: envPrivateKey,
-		explorerLinkPrefix,
-	} = loadConnections({
+	const { privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 		useFork,
 		useOvm,
 	});
-
-	if (!providerUrl) {
-		if (!envProviderUrl) {
-			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
-		}
-
-		providerUrl = envProviderUrl;
-	}
 
 	// Here we set a default private key for local-ovm deployment, as the
 	// OVM geth node has no notion of local/unlocked accounts.
@@ -187,6 +177,7 @@ const deploy = async ({
 	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
+		account: signer ? await signer.getAddress() : null,
 		compiled,
 		config,
 		configFile,
@@ -196,14 +187,20 @@ const deploy = async ({
 		maxPriorityFeePerGas,
 		network,
 		privateKey,
+		signer,
 		providerUrl,
+		provider,
 		dryRun,
 		useOvm,
 		useFork,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account, signer } = deployer;
+	const { account } = deployer;
+
+	if (!account) {
+		signer = deployer.signer;
+	}
 
 	nonceManager.provider = deployer.provider;
 	nonceManager.account = account;
@@ -228,10 +225,10 @@ const deploy = async ({
 		maxPriorityFeePerGas,
 		getDeployParameter,
 		network,
-		providerUrl,
 		skipFeedChecks,
 		feeds,
 		synths,
+		providerUrl,
 		useFork,
 		useOvm,
 		yes,

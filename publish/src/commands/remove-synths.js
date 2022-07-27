@@ -24,7 +24,7 @@ const {
 const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
-	network: 'kovan',
+	network: 'goerli',
 	gasLimit: 3e5,
 	priorityGasPrice: '1',
 };
@@ -295,7 +295,7 @@ module.exports = {
 				DEFAULTS.priorityGasPrice
 			)
 			.option('-l, --gas-limit <value>', 'Gas limit', 1e6)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
 			.option('-r, --dry-run', 'Dry run - no changes transacted')
 			.option(
 				'-k, --use-fork',

@@ -1,0 +1,13 @@
+name = "synthetix"
+description = "Infinite liquidity is here."
+
+# overrides the deployed contracts used by the deployer
+# not to be confused with the cannon network
+[setting.network]
+defaultValue = "goerli"
+
+[run.synthetix]
+exec = "./publish/cannon.js"
+func = "deploy"
+args = ["<%= settings.network %>"]
+modified = ["contracts", "publish/src", "publish/deployed/local"]
