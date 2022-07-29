@@ -69,8 +69,9 @@
 			},
 			"ExchangeRates": {
 				"address": "0x688E9e6F458167Dc653b24a8A41Cfd152e6A3922",
-				"status": "current",
-				"keccak256": "0x9fb8d0d51946d910dbfd56df99d6604955b629ebe88affd4eab5cac0801ce350"
+				"status": "replaced",
+				"keccak256": "0x9fb8d0d51946d910dbfd56df99d6604955b629ebe88affd4eab5cac0801ce350",
+				"replaced_in": "v2.75.0-alpha"
 			},
 			"RewardEscrow": {
 				"address": "0x249BCCbFD33FA6653Db02aE2349444EF25E9B41d",
@@ -331,6 +332,21 @@
 				"address": "0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c",
 				"status": "current",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
+			}
+		}
+	},
+	"v2.75.0-alpha": {
+		"tag": "v2.75.0-alpha",
+		"fulltag": "v2.75.0-alpha",
+		"release": "Tiaki",
+		"network": "goerli",
+		"date": "2022-07-27T15:11:04-04:00",
+		"commit": "5629f1c183f65a7059db2c169e4308a485d15d5f",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xC737F9609bd63658C6854b4c2779b9681931D206",
+				"status": "current",
+				"keccak256": "0xfec05faecf82227e8f3957c8c66047e96c24defa8fd9e92099bd63b7c905828d"
 			}
 		}
 	}
