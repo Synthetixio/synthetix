@@ -72,7 +72,6 @@ async function deploy(runtime, networkVariant) {
 
 	// get the signer that we want to have for the deployer
 	let signer = await runtime.getDefaultSigner({});
-	console.log('WOOT');
 	try {
 		// if cannon can give us the signer for the owner address, we should use that
 		const ownerAddress = synthetix.getUsers({ network, useOvm, user: 'owner' }).address;
