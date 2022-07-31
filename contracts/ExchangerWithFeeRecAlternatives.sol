@@ -137,7 +137,10 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
-        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        if (_probeRate(sourceCurrencyKey) || _probeRate(destinationCurrencyKey)) {
+            return (0, 0);
+        }
+
         require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
         require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
 
@@ -163,11 +166,6 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             systemSourceRate, // current system rate for src currency
             systemDestinationRate // current system rate for dest currency
         ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
-
-        // SIP-65: Decentralized Circuit Breaker (checking current system rates)
-        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0);
-        }
 
         // Sanity check atomic output's value against current system value (checking atomic rates)
         require(

@@ -348,11 +348,15 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         bool[] memory flagList = getFlagsForRates(currencyKeys);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
+            if (currencyKeys[i] == sUSD) {
+                continue;
+            }
+
             RateAndUpdatedTime memory rateEntry = _getRateAndUpdatedTime(currencyKeys[i]);
             if (
                 flagList[i] ||
                 _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) ||
-                _rateIsCircuitBroken(currencyKeys[i], rateEntry.time)
+                _rateIsCircuitBroken(currencyKeys[i], rateEntry.rate)
             ) {
                 return true;
             }
@@ -377,12 +381,19 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         bool[] memory flagList = getFlagsForRates(currencyKeys);
 
         for (uint i = 0; i < currencyKeys.length; i++) {
+            if (currencyKeys[i] == sUSD) {
+                continue;
+            }
+
             // NOTE: technically below `_rateIsStaleWithTime` is supposed to be called with the roundId timestamp in consideration, and `_rateIsCircuitBroken` is supposed to be
             // called with the current rate (or just not called at all)
             // but thats not how the functionality has worked prior to this change so that is why it works this way here
             // if you are adding new code taht calls this function and the rate is a long time ago, note that this function may resolve an invalid rate when its actually valid!
             (uint rate, uint time) = _getRateAndTimestampAtRound(currencyKeys[i], roundIds[i]);
-            if (flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, time) || _rateIsCircuitBroken(currencyKeys[i], rate)) {
+            if (flagList[i] || 
+                _rateIsStaleWithTime(_rateStalePeriod, time) || 
+                _rateIsCircuitBroken(currencyKeys[i], rate)
+            ) {
                 return true;
             }
         }
