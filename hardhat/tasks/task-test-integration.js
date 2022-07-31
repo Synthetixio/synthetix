@@ -123,8 +123,8 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 				await hre.run('cannon:build', { file: 'cannonfile.aggregator.toml' });
 				await hre.run('cannon:build', {
 					file: 'cannonfile.optimism.toml',
-					preset: 'optimism',
-					options: ['network=optimism'],
+					preset: 'local-ovm',
+					options: ['network=local-ovm'],
 				});
 			}
 			hre.config.addedSynths = synthsToAdd;

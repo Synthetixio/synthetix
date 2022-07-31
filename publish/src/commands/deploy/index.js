@@ -47,7 +47,7 @@ const systemAndParameterCheck = require('./system-and-parameter-check');
 const DEFAULTS = {
 	priorityGasPrice: '1',
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
-	network: 'kovan',
+	network: 'goerli',
 	buildPath: path.join(__dirname, '..', '..', '..', '..', BUILD_FOLDER),
 };
 
@@ -66,7 +66,9 @@ const deploy = async ({
 	manageNonces,
 	network = DEFAULTS.network,
 	privateKey,
+	signer,
 	providerUrl,
+	provider,
 	skipFeedChecks = false,
 	specifyContracts,
 	useFork,
@@ -175,6 +177,7 @@ const deploy = async ({
 	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
+		account: signer ? await signer.getAddress() : null,
 		compiled,
 		config,
 		configFile,
@@ -184,14 +187,20 @@ const deploy = async ({
 		maxPriorityFeePerGas,
 		network,
 		privateKey,
+		signer,
 		providerUrl,
+		provider,
 		dryRun,
 		useOvm,
 		useFork,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account, signer } = deployer;
+	const { account } = deployer;
+
+	if (!account) {
+		signer = deployer.signer;
+	}
 
 	nonceManager.provider = deployer.provider;
 	nonceManager.account = account;
@@ -219,6 +228,7 @@ const deploy = async ({
 		skipFeedChecks,
 		feeds,
 		synths,
+		providerUrl,
 		useFork,
 		useOvm,
 		yes,

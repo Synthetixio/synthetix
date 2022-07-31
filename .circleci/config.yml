@@ -37,13 +37,24 @@ jobs:
     machine:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
+    environment:
+      foundry_locked_commit: '3c49efe'
     steps:
+      - restore_cache:
+          keys:
+            - foundry-bin-${foundry_locked_commit}
+      - rust/install: {}
       - run: |
-          mkdir -p ~/.foundry/bin
-          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-          chmod +x ~/.foundry/foundryup
-          ~/.foundry/foundryup
+          if [ ! -d ~/.foundry ]; then
+            curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+            ./foundryup -C $foundry_locked_commit
+          fi
+          rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+      - save_cache:
+          key: foundry-bin-${foundry_locked_commit}
+          paths:
+            - ~/.foundry/bin
       - checkout
       - attach_workspace:
           at: .
@@ -120,14 +131,25 @@ jobs:
     machine:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
+    environment:
+      foundry_locked_commit: '3c49efe'
     resource_class: large
     steps:
+      - restore_cache:
+          keys:
+            - foundry-bin-${foundry_locked_commit}
+      - rust/install: {}
       - run: |
-          mkdir -p ~/.foundry/bin
-          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-          chmod +x ~/.foundry/foundryup
-          ~/.foundry/foundryup
+          if [ ! -d ~/.foundry ]; then
+            curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+            ./foundryup -C $foundry_locked_commit
+          fi
+          rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+      - save_cache:
+          key: foundry-bin-${foundry_locked_commit}
+          paths:
+            - ~/.foundry/bin
       - checkout
       - attach_workspace:
           at: .
@@ -282,14 +304,25 @@ jobs:
     machine:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
+    environment:
+      foundry_locked_commit: '3c49efe'
     resource_class: large
     steps:
+      - restore_cache:
+          keys:
+            - foundry-bin-${foundry_locked_commit}
+      - rust/install: {}
       - run: |
-          mkdir -p ~/.foundry/bin
-          curl https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup -o ~/.foundry/foundryup
-          chmod +x ~/.foundry/foundryup
-          ~/.foundry/foundryup
+          if [ ! -d ~/.foundry ]; then
+            curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+            ./foundryup -C $foundry_locked_commit
+          fi
+          rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+      - save_cache:
+          key: foundry-bin-${foundry_locked_commit}
+          paths:
+            - ~/.foundry/bin
       - checkout
       - attach_workspace:
           at: .
