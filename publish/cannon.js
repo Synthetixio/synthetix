@@ -80,7 +80,7 @@ async function deploy(runtime, networkVariant) {
 		// is going to complain that the address doesn't work
 		runtime.provider.send('hardhat_setCode', [ownerAddress, '0x']);
 		signer = await runtime.getSigner(ownerAddress);
-	} catch(err) {
+	} catch (err) {
 		// otherwise we want to use the cannon default signer, which is set above
 		console.log(err);
 	}
