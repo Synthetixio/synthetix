@@ -18,7 +18,7 @@ const {
 } = require('../util');
 
 const DEFAULTS = {
-	network: 'kovan',
+	network: 'goerli',
 };
 
 async function extractStakingBalances({

@@ -50,25 +50,13 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"Liquidations": {
-		"deploy": false
-	},
 	"Synthetix": {
 		"deploy": false
 	},
 	"SynthetixEscrow": {
 		"deploy": false
 	},
-	"RewardEscrow": {
-		"deploy": false
-	},
 	"RewardsDistribution": {
-		"deploy": false
-	},
-	"SynthetixState": {
 		"deploy": false
 	},
 	"SystemStatus": {
@@ -81,12 +69,6 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false
-	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
 		"deploy": false
 	},
 	"ProxyFeePool": {
@@ -108,6 +90,93 @@
 		"deploy": false
 	},
 	"TokenStatesUSD": {
+		"deploy": false
+	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
+	},
+	"TokenStatesETH": {
+		"deploy": false
+	},
+	"ProxysETH": {
+		"deploy": false
+	},
+	"SynthsETH": {
+		"deploy": false
+	},
+	"TokenStatesBTC": {
+		"deploy": false
+	},
+	"ProxysBTC": {
+		"deploy": false
+	},
+	"SynthsBTC": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralUtil": {
+		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": false
+	},
+	"WrapperFactory": {
+		"deploy": false
+	},
+	"OwnerRelayOnOptimism": {
+		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
+	},
+	"SynthetixDebtShare": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketSettings": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"FuturesMarketBTC": {
+		"deploy": false
+	},
+	"FuturesMarketETH": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
 		"deploy": false
 	}
 }

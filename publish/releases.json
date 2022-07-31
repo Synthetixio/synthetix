@@ -691,6 +691,11 @@
 			"layer": "both",
 			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
 			"released": "both"
+		},
+		{
+			"sip": 258,
+			"layer": "base",
+			"sources": ["ExchangeRates"]
 		}
 	],
 	"releases": [
@@ -1287,6 +1292,14 @@
 			},
 			"sips": [251],
 			"released": true
+		},
+		{
+			"name": "Tiaki",
+			"version": {
+				"major": 2,
+				"minor": 75
+			},
+			"sips": []
 		}
 	]
 }
