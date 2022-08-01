@@ -685,6 +685,11 @@
 		{
 			"sip": 257,
 			"layer": "both",
+      "sources": ["ExchangeRates"]
+    },
+    {
+			"sip": 258,
+			"layer": "base",
 			"sources": ["ExchangeRates"]
 		}
 	],
@@ -1282,6 +1287,14 @@
 			},
 			"sips": [251],
 			"released": true
+		},
+		{
+			"name": "Tiaki",
+			"version": {
+				"major": 2,
+				"minor": 75
+			},
+			"sips": []
 		}
 	]
 }
