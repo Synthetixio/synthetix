@@ -98,16 +98,10 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         withFallback
         returns (VestingEntries.VestingEntry memory entry)
     {
-        // read stored entry
-        StorageEntry memory stored = _vestingSchedules[account][entryId];
-        // convert to previous data size format
-        entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
-        // read from fallback if this entryId was created in the old contract and wasn't written locally
-        // this assumes that no new entries can be created with endTime = 0 (checked during addVestingEntry)
-        if (entryId < firstNonFallbackId && entry.endTime == 0) {
-            entry = fallbackRewardEscrow.vestingSchedules(account, entryId);
-        }
-        return entry;
+        bool needFallback;
+        // get local entry, and the flag for reading from fallback
+        (entry, needFallback) = _localEntryAndNeedFallback(account, entryId);
+        return needFallback ? fallbackRewardEscrow.vestingSchedules(account, entryId) : entry;
     }
 
     function accountVestingEntryIDs(address account, uint index) public view withFallback returns (uint) {
@@ -156,6 +150,85 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return _fallbackNumVestingEntries(account) + _accountVestingEntryIds[account].length;
     }
 
+    /// get an array of vesting schedules including their entryIDs
+    /// this combines values from both contracts by combining the entryIDs using getAccountVestingEntryIDs
+    /// and then using fallback's getVestingSchedules and reading local entries to build the correct array.
+    /// the purpose of this method is to be a more gas efficient alternative to getting many entries and their IDs
+    /// by requiring caller to make a single external call here, and also making fewer external calls (using only array
+    /// based external calls to fallback instead of single entry based calls).
+    function getVestingSchedules(
+        address account,
+        uint startIndex,
+        uint pageSize
+    ) public view withFallback returns (VestingEntries.VestingEntryWithID[] memory) {
+        uint endIndex = startIndex + pageSize;
+
+        // If index starts after the endIndex return no results
+        if (endIndex <= startIndex) {
+            return new VestingEntries.VestingEntryWithID[](0);
+        }
+
+        {
+            // If the page extends past the end of the numVestingEntries truncate it.
+            uint numEntries = numVestingEntries(account);
+            if (endIndex > numEntries) {
+                endIndex = numEntries;
+            }
+        }
+
+        uint n = endIndex - startIndex;
+        uint entryID;
+
+        // get the fallback schedules
+        // !!! these entries may contain stale data and _localEntryAndNeedFallback is used in the loop to invalidate them
+        VestingEntries.VestingEntryWithID[] memory fallBackSchedules =
+            fallbackRewardEscrow.getVestingSchedules(account, startIndex, pageSize);
+
+        // results array
+        VestingEntries.VestingEntryWithID[] memory vestingEntries = new VestingEntries.VestingEntryWithID[](n);
+        // variables used in loop
+        VestingEntries.VestingEntry memory entry;
+
+        uint numFallbackEntriesTotal = _fallbackNumVestingEntries(account);
+        // the first index of relevant entryID in new contract is either 0 if anything is being read from
+        // the old contract, or the startIndex if nothing is being read from the old contract
+        uint nonFallbackStartIndex = fallBackSchedules.length > 0 ? 0 : startIndex;
+        for (uint i; i < n; i++) {
+            // if this is on old contract
+            if (i < fallBackSchedules.length) {
+                // get the ID from the returned schedules (the IDs cannot be stale, only the amount can)
+                entryID = fallBackSchedules[i].entryID;
+
+                // get local entry, and the flag for reading from fallback
+                bool needFallback;
+                (entry, needFallback) = _localEntryAndNeedFallback(account, entryID);
+
+                // set the return values
+                vestingEntries[i].entryID = entryID;
+                // take the fallback value if needed, otherwise use the local entry
+                if (needFallback) {
+                    vestingEntries[i].endTime = fallBackSchedules[i].endTime;
+                    vestingEntries[i].escrowAmount = fallBackSchedules[i].escrowAmount;
+                } else {
+                    vestingEntries[i].endTime = entry.endTime;
+                    vestingEntries[i].escrowAmount = entry.escrowAmount;
+                }
+            } else {
+                // otherwise it is in the current contract, so get it directly from storage
+                entryID = _accountVestingEntryIds[account][nonFallbackStartIndex + (i - numFallbackEntriesTotal)];
+
+                // get local entry, and the flag for reading from fallback
+                (entry, ) = _localEntryAndNeedFallback(account, entryID);
+
+                // set the return values
+                vestingEntries[i].entryID = entryID;
+                vestingEntries[i].endTime = entry.endTime;
+                vestingEntries[i].escrowAmount = entry.escrowAmount;
+            }
+        }
+        return vestingEntries;
+    }
+
     /* ========== INTERNAL VIEWS ========== */
 
     function _fallbackNumVestingEntries(address account) internal view returns (uint) {
@@ -167,6 +240,21 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         } else {
             return uint(_readWithZeroPlaceholder(v));
         }
+    }
+
+    // this is a helper method since this logic is used in two places
+    function _localEntryAndNeedFallback(address account, uint entryId)
+        internal
+        view
+        returns (VestingEntries.VestingEntry memory entry, bool needFallback)
+    {
+        // read stored entry
+        StorageEntry memory stored = _vestingSchedules[account][entryId];
+        // convert to previous data size format
+        entry = VestingEntries.VestingEntry({endTime: stored.endTime, escrowAmount: stored.escrowAmount});
+        // fallback read is needed if this entryId was created in the old contract and wasn't written locally
+        // this assumes that no new entries can be created with endTime = 0 (checked during addVestingEntry)
+        needFallback = entryId < firstNonFallbackId && entry.endTime == 0;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -215,19 +303,18 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         require(numIds > 0, "no entries to iterate");
         require(startIndex < numIds, "startIndex too high");
 
-        uint entryID;
         uint i;
-        VestingEntries.VestingEntry memory entry;
+        VestingEntries.VestingEntryWithID[] memory schedules = getVestingSchedules(account, startIndex, numIds - startIndex);
+        VestingEntries.VestingEntryWithID memory entry;
         for (i = startIndex; i < numIds; i++) {
-            entryID = accountVestingEntryIDs(account, i);
-            entry = vestingSchedules(account, entryID);
+            entry = schedules[i - startIndex];
 
             // skip vested
             if (entry.escrowAmount > 0) {
                 total = total.add(entry.escrowAmount);
 
                 // set to zero, endTime is correct because vestingSchedules will use fallback if needed
-                _setZeroAmountWithEndTime(account, entryID, entry.endTime);
+                _setZeroAmountWithEndTime(account, entry.entryID, entry.endTime);
 
                 if (total >= targetAmount) {
                     break;
@@ -236,6 +323,21 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         }
         i = i == numIds ? i - 1 : i; // i was incremented one extra time if there was no break
         return (total, i, entry.endTime);
+    }
+
+    /// zeros out a single entry in local contract
+    function _setZeroAmount(
+        address account,
+        uint entryId,
+        uint endTime
+    ) internal {
+        // load storage entry
+        StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
+        // Impossible edge-case: checking that prevTime is not zero (in which case the entry will be
+        // read from fallback again). A zero endTime with non-zero amount is not possible in the old contract
+        // but it's better to check just for completeness still, and write current timestamp (vestable).
+        storedEntry.endTime = uint32(endTime != 0 ? endTime : block.timestamp);
+        storedEntry.escrowAmount = 0;
     }
 
     function updateEscrowAccountBalance(address account, int delta) external withFallback onlyAssociatedContract {

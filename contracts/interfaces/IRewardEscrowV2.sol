@@ -42,6 +42,12 @@ interface IRewardEscrowV2Storage {
 
     function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
 
+    function getVestingSchedules(
+        address account,
+        uint256 index,
+        uint256 pageSize
+    ) external view returns (VestingEntries.VestingEntryWithID[] memory);
+
     // setFallbackRewardEscrow is used for configuration but not used by contracts
 }
 

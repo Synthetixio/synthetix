@@ -132,34 +132,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint256 index,
         uint256 pageSize
     ) external view returns (VestingEntries.VestingEntryWithID[] memory) {
-        uint256 endIndex = index + pageSize;
-
-        // If index starts after the endIndex return no results
-        if (endIndex <= index) {
-            return new VestingEntries.VestingEntryWithID[](0);
-        }
-
-        // If the page extends past the end of the accountVestingEntryIDs, truncate it.
-        if (endIndex > numVestingEntries(account)) {
-            endIndex = numVestingEntries(account);
-        }
-
-        uint256 n = endIndex - index;
-        uint256 entryID;
-        VestingEntries.VestingEntry memory entry;
-        VestingEntries.VestingEntryWithID[] memory vestingEntries = new VestingEntries.VestingEntryWithID[](n);
-        for (uint256 i; i < n; i++) {
-            entryID = accountVestingEntryIDs(account, i + index);
-
-            entry = vestingSchedules(account, entryID);
-
-            vestingEntries[i] = VestingEntries.VestingEntryWithID({
-                endTime: uint64(entry.endTime),
-                escrowAmount: entry.escrowAmount,
-                entryID: entryID
-            });
-        }
-        return vestingEntries;
+        return state().getVestingSchedules(account, index, pageSize);
     }
 
     function getAccountVestingEntryIDs(
