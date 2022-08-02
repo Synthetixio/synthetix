@@ -175,18 +175,14 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     function setZeroAmount(address account, uint entryId) public withFallback onlyAssociatedContract {
         // load storage entry
         StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
+        // endTime is used for cache invalidation
+        uint endTime = storedEntry.endTime;
         // update endTime from fallback if this is first time this entry is written in this contract
-        if (storedEntry.endTime == 0) {
+        if (endTime == 0) {
             // entry should be in fallback, otherwise it would have endTime or be uninitialized
-            uint prevTime = fallbackRewardEscrow.vestingSchedules(account, entryId).endTime;
-            // Impossible edge-case: checking that prevTime is not zero (in which case the entry will be
-            // read from fallback again). A zero endTime with non-zero amount is not possible in the old contract
-            // but it's better to check just for completeness still, and write current timestamp (vestable).
-            storedEntry.endTime = uint32(prevTime != 0 ? prevTime : block.timestamp);
-            // storedEntry.escrowAmount is already 0, since it's uninitialized
-        } else {
-            storedEntry.escrowAmount = 0;
+            endTime = fallbackRewardEscrow.vestingSchedules(account, entryId).endTime;
         }
+        _setZeroAmountWithEndTime(account, entryId, endTime);
     }
 
     /// zero out multiple entries in order of accountVestingEntryIDs until target is reached (or entries exhausted)
@@ -230,8 +226,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
             if (entry.escrowAmount > 0) {
                 total = total.add(entry.escrowAmount);
 
-                // set to zero
-                setZeroAmount(account, entryID);
+                // set to zero, endTime is correct because vestingSchedules will use fallback if needed
+                _setZeroAmountWithEndTime(account, entryID, entry.endTime);
 
                 if (total >= targetAmount) {
                     break;
@@ -297,16 +293,22 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         return entryId;
     }
 
-    /* ========== INTERNAL ========== */
+    /* ========== INTERNAL MUTATIVE ========== */
 
-    function _writeWithZeroPlaceholder(int v) internal pure returns (int) {
-        // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
-        return v == 0 ? ZERO_PLACEHOLDER : v;
-    }
-
-    function _readWithZeroPlaceholder(int v) internal pure returns (int) {
-        // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
-        return v == ZERO_PLACEHOLDER ? 0 : v;
+    /// zeros out a single entry in local contract with provided time while ensuring
+    /// that endTime is not being stored as zero if it passed as zero
+    function _setZeroAmountWithEndTime(
+        address account,
+        uint entryId,
+        uint endTime
+    ) internal {
+        // load storage entry
+        StorageEntry storage storedEntry = _vestingSchedules[account][entryId];
+        // Impossible edge-case: checking that endTime is not zero (in which case the entry will be
+        // read from fallback again). A zero endTime with non-zero amount is not possible in the old contract
+        // but it's better to check just for completeness still, and write current timestamp (vestable).
+        storedEntry.endTime = uint32(endTime != 0 ? endTime : block.timestamp);
+        storedEntry.escrowAmount = 0;
     }
 
     /// this caching is done to prevent repeatedly calling the old contract for number of entries
@@ -318,6 +320,18 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
             // cache the value but don't write zero
             _fallbackCounts[account] = _writeWithZeroPlaceholder(fallbackCount);
         }
+    }
+
+    /* ========== HELPER ========== */
+
+    function _writeWithZeroPlaceholder(int v) internal pure returns (int) {
+        // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
+        return v == 0 ? ZERO_PLACEHOLDER : v;
+    }
+
+    function _readWithZeroPlaceholder(int v) internal pure returns (int) {
+        // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
+        return v == ZERO_PLACEHOLDER ? 0 : v;
     }
 
     /* ========== Modifier ========== */
