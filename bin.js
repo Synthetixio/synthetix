@@ -61,7 +61,7 @@ program
 	});
 
 program
-	.command('multisenddecode <txsdata> [target]')
+	.command('decode-multi-send <txsdata> [target]')
 	.description('Decode a data payload from a gnosis multi-send staged to Synthetix contracts')
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
@@ -69,22 +69,24 @@ program
 		if (txsdata.length <= 2) {
 			console.log('data too short');
 		}
+
 		const cleanData = txsdata.toLowerCase().startsWith('0x')
 			? txsdata.slice(2).toLowerCase()
 			: txsdata.toLowerCase();
 
 		const splitByLen = (s, len) => [s.slice(0, len), s.slice(len)];
 
-		let parts;
-		let rest = cleanData;
-		while (rest.length > 20) {
+		let parts = splitByLen(cleanData, 0);
+		const index = 1;
+		const decodedTransactions = [];
+		while (parts[1].length > 20) {
 			// operation type
-			parts = splitByLen(rest, 2);
+			parts = splitByLen(parts[1], 2);
 			const operationType = parts[0] === '00' ? 'Call' : 'DelegateCall';
 
 			// destination
 			parts = splitByLen(parts[1], 40);
-			const to = '0x' + parts[0];
+			const target = '0x' + parts[0];
 
 			// value
 			parts = splitByLen(parts[1], 64);
@@ -94,17 +96,22 @@ program
 			// data Len
 			parts = splitByLen(parts[1], 64);
 			const dataLen = parts[0];
-
 			const dataLenDecimal = parseInt(dataLen, 16);
 
-			// data Len
+			// data
 			parts = splitByLen(parts[1], dataLenDecimal * 2);
 			const data = dataLenDecimal.toString(16) + parts[0];
 
-			console.log(`Target: ${to} Calltype: ${operationType} Value: ${valueDecimal}`);
-			console.log(util.inspect(decode({ network, data, target, useOvm }), false, null, true));
-			rest = parts[1];
+			decodedTransactions.push({
+				index,
+				target,
+				operationType,
+				value: valueDecimal,
+				decoded: decode({ network, data, target, useOvm }),
+			});
 		}
+
+		console.log(util.inspect(decodedTransactions, false, null, true));
 	});
 
 program
