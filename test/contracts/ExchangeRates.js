@@ -1273,13 +1273,13 @@ contract('Exchange Rates', async accounts => {
 			it('reverts on src not having equivalent', async () => {
 				await assert.revert(
 					instance.effectiveAtomicValueAndRates(sUSD, toUnit('1'), sETH),
-					'No atomic equivalent for input'
+					'No atomic equivalent for source'
 				);
 			});
 			it('reverts on dest not having equivalent', async () => {
 				await assert.revert(
 					instance.effectiveAtomicValueAndRates(sETH, toUnit('1'), sUSD),
-					'No atomic equivalent for sUSD'
+					'No atomic equivalent for dest'
 				);
 			});
 		});
@@ -1617,7 +1617,7 @@ contract('Exchange Rates', async accounts => {
 				});
 
 				describe('sUSD -> sETH', () => {
-					const rate = '0.01';
+					const rate = '100';
 					// esETH has 8 decimals
 					const rateIn8 = convertToDecimals(rate, 8);
 
@@ -1640,7 +1640,7 @@ contract('Exchange Rates', async accounts => {
 							sethDexEquivalentToken.address,
 							'2'
 						);
-						const expectedOutput = multiplyDecimal(amountIn6, toUnit(rate)); // uses UNIT as decimal base to get 6 decimals (output token's decimals)
+						const expectedOutput = divideDecimal(amountIn6, toUnit(rate)); // uses UNIT as decimal base to get 6 decimals (output token's decimals)
 						const expectedOutputIn8 = convertToDecimals(expectedOutput, 2); // convert from 6 decimal to 8 decimal
 						assert.bnEqual(twapOutput, expectedOutputIn8);
 					});

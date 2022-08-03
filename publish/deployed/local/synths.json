@@ -1,147 +1,37 @@
 [
 	{
-		"name": "sUSD",
 		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sUSD",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sEUR",
-		"asset": "EUR"
-	},
-	{
-		"name": "sJPY",
-		"asset": "JPY"
-	},
-	{
-		"name": "sAUD",
-		"asset": "AUD"
-	},
-	{
-		"name": "sGBP",
-		"asset": "GBP",
-		"subclass": "PurgeableSynth"
-	},
-	{
-		"name": "sCHF",
-		"asset": "CHF",
-		"subclass": "PurgeableSynth"
-	},
-	{
-		"name": "sXAU",
-		"asset": "XAU",
-		"subclass": "PurgeableSynth"
-	},
-	{
-		"name": "sXAG",
-		"asset": "XAG"
-	},
-	{
-		"name": "sBTC",
+		"feed": "0x0",
 		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"description": "Bitcoin",
+		"name": "sBTC",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETH",
+		"feed": "0x0",
 		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"description": "Ether",
+		"name": "sETH",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sBNB",
-		"asset": "BNB"
-	},
-	{
-		"name": "sTRX",
-		"asset": "TRX"
-	},
-	{
-		"name": "sXTZ",
-		"asset": "XTZ"
-	},
-	{
-		"name": "sXRP",
-		"asset": "XRP"
-	},
-	{
-		"name": "sLTC",
-		"asset": "LTC",
-		"subclass": "PurgeableSynth"
-	},
-	{
+		"feed": "0x0",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Chainlink",
 		"name": "sLINK",
-		"asset": "LINK"
-	},
-	{
-		"name": "sEOS",
-		"asset": "EOS"
-	},
-	{
-		"name": "sBCH",
-		"asset": "BCH"
-	},
-	{
-		"name": "sETC",
-		"asset": "ETC"
-	},
-	{
-		"name": "sDASH",
-		"asset": "DASH"
-	},
-	{
-		"name": "sXMR",
-		"asset": "XMR"
-	},
-	{
-		"name": "sADA",
-		"asset": "ADA"
-	},
-	{
-		"name": "sCEX",
-		"asset": "CEX",
-		"index": [
-			{
-				"asset": "BNB",
-				"units": 12.88,
-				"weight": 29.15
-			},
-			{
-				"asset": "CRO",
-				"units": 1303.31,
-				"weight": 24.3
-			},
-			{
-				"asset": "LEO",
-				"units": 94.54,
-				"weight": 13.42
-			},
-			{
-				"asset": "HT",
-				"units": 23.06,
-				"weight": 11.73
-			},
-			{
-				"asset": "FTT",
-				"units": 9.36,
-				"weight": 3.56
-			},
-			{
-				"asset": "OKB",
-				"units": 25.72,
-				"weight": 16.97
-			},
-			{
-				"asset": "KCS",
-				"units": 9.18,
-				"weight": 0.87
-			}
-		],
-		"subclass": "PurgeableSynth"
-	},
-	{
-		"name": "sFTSE",
-		"asset": "FTSE100"
-	},
-	{
-		"name": "sNIKKEI",
-		"asset": "NIKKEI225"
+		"subclass": "MultiCollateralSynth"
 	}
 ]

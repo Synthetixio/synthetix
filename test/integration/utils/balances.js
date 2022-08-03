@@ -29,6 +29,8 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'sUSD') {
 		await _getsUSD({ ctx, user, amount });
+	} else if (symbol === 'sLINK') {
+		await _getSynth({ ctx, symbol, user, amount });
 	} else if (symbol === 'sETH') {
 		await _getSynth({ ctx, symbol, user, amount });
 	} else if (symbol === 'ETH') {

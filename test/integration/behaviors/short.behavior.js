@@ -16,7 +16,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
 		const amountOfsUSDRequired = parseEther('5000'); // sUSD
 		const amountToDeposit = parseEther('1000'); // sUSD
-		const amountToBorrow = parseEther('0.000001'); // sETH
+		const amountToBorrow = parseEther('0.00000000001'); // sETH
 		const amountToExchange = parseEther('100'); // sUSD
 
 		const shortableSynth = toBytes32('sETH');
