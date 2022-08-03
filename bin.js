@@ -77,7 +77,7 @@ program
 		const splitByLen = (s, len) => [s.slice(0, len), s.slice(len)];
 
 		let parts = splitByLen(cleanData, 0);
-		const index = 1;
+		let index = 1;
 		const decodedTransactions = [];
 		while (parts[1].length > 20) {
 			// operation type
@@ -86,7 +86,7 @@ program
 
 			// destination
 			parts = splitByLen(parts[1], 40);
-			const target = '0x' + parts[0];
+			const destAddress = '0x' + parts[0];
 
 			// value
 			parts = splitByLen(parts[1], 64);
@@ -100,15 +100,17 @@ program
 
 			// data
 			parts = splitByLen(parts[1], dataLenDecimal * 2);
-			const data = dataLenDecimal.toString(16) + parts[0];
+			const data = ('00' + dataLenDecimal.toString(16)).slice(0, 2) + parts[0];
 
 			decodedTransactions.push({
 				index,
-				target,
+				destAddress,
 				operationType,
 				value: valueDecimal,
 				decoded: decode({ network, data, target, useOvm }),
 			});
+
+			index++;
 		}
 
 		console.log(util.inspect(decodedTransactions, false, null, true));
