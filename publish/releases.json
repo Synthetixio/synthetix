@@ -685,7 +685,8 @@
 		{
 			"sip": 258,
 			"layer": "base",
-			"sources": ["ExchangeRates"]
+			"sources": ["ExchangeRates"],
+			"released": "base"
 		}
 	],
 	"releases": [
@@ -1289,7 +1290,8 @@
 				"major": 2,
 				"minor": 75
 			},
-			"sips": [258]
+			"sips": [258],
+			"released": true
 		}
 	]
 }
