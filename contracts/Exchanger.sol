@@ -546,7 +546,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
-    // calls `rateWithSafetyChecks` (which can triggre circuit breakers)
+    // calls `rateWithSafetyChecks` (which can trigger circuit breakers)
     // returns if there are any problems found with the rate of the given currencyKey
     function _probeRate(bytes32 currencyKey) internal returns (bool) {
         if (currencyKey == sUSD) {

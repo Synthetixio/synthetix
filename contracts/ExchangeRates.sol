@@ -81,7 +81,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         )
     {
         address aggregatorAddress = address(aggregators[currencyKey]);
-        require(currencyKey == "sUSD" || aggregatorAddress != address(0), "No aggregator for asset");
+        require(currencyKey == sUSD || aggregatorAddress != address(0), "No aggregator for asset");
 
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
 

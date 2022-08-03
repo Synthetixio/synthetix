@@ -18,8 +18,6 @@ import "./Proxyable.sol";
 // Chainlink
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 /**
  * Compares current exchange rate to previous, and suspends a synth if the
  * difference is outside of deviation bounds.

@@ -774,7 +774,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         bool issueMax
     ) internal {
-        // check breaker
         if (_verifyCircuitBreakers()) {
             return;
         }
@@ -807,7 +806,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         uint existingDebt
     ) internal returns (uint amountBurnt) {
-        // check breaker
         if (_verifyCircuitBreakers()) {
             return 0;
         }
@@ -836,7 +834,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint amount,
         bool burnToTarget
     ) internal {
-        // check breaker
         if (_verifyCircuitBreakers()) {
             return;
         }
