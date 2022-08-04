@@ -387,7 +387,7 @@ contract('PerpsEngineV2', accounts => {
 				let tx = await transfer(toUnit('1000'), trader3);
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine],
 				});
 
 				decodedEventEqual({
@@ -424,7 +424,7 @@ contract('PerpsEngineV2', accounts => {
 				tx = await transfer(toUnit('0'), trader3);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine],
 				});
 				assert.equal(decodedLogs.length, 1);
 				assert.equal(decodedLogs[0].name, 'FundingUpdated');
@@ -433,7 +433,7 @@ contract('PerpsEngineV2', accounts => {
 				tx = await transfer(toUnit('-1000'), trader3);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine],
 				});
 
 				decodedEventEqual({
@@ -975,7 +975,7 @@ contract('PerpsEngineV2', accounts => {
 
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [futuresMarketManager, sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine],
 				});
 
 				assert.equal(decodedLogs.length, 3);

@@ -575,7 +575,7 @@ contract('DebtCache', async accounts => {
 						],
 						skipPostDeploy: true,
 					});
-					await futuresMarketManager.addMarketsV1([market.address], { from: owner });
+					await futuresMarketManager.addMarkets([market.address], { from: owner });
 
 					await debtCache.takeDebtSnapshot();
 					const initialDebt = (await debtCache.cacheInfo()).debt;

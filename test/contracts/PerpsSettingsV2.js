@@ -15,7 +15,7 @@ const {
 const BN = require('bn.js');
 
 contract('PerpsSettingsV2', accounts => {
-	let futuresMarketManager, perpsSettings;
+	let perpsManager, perpsSettings;
 
 	const owner = accounts[1];
 
@@ -31,10 +31,7 @@ contract('PerpsSettingsV2', accounts => {
 	const skewScaleUSD = toUnit('10000');
 
 	before(async () => {
-		({
-			PerpsSettingsV2: perpsSettings,
-			FuturesMarketManager: futuresMarketManager,
-		} = await setupAllContracts({
+		({ PerpsSettingsV2: perpsSettings, PerpsManagerV2: perpsManager } = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			feeds: ['BTC'],
@@ -46,7 +43,7 @@ contract('PerpsSettingsV2', accounts => {
 		}));
 
 		// add the market to initialize it
-		await futuresMarketManager.addMarketsV2([marketKey], [asset], { from: owner });
+		await perpsManager.addMarkets([marketKey], [asset], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -361,7 +358,7 @@ contract('PerpsSettingsV2', accounts => {
 
 		before(async () => {
 			// add the market
-			await futuresMarketManager.addMarketsV2([secondMarketKey], [asset], { from: owner });
+			await perpsManager.addMarkets([secondMarketKey], [asset], { from: owner });
 		});
 
 		it('should be able to change parameters for both markets independently', async () => {

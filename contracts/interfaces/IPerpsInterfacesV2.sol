@@ -330,6 +330,39 @@ interface IPerpsSettingsV2 {
     function minInitialMargin() external view returns (uint);
 }
 
+interface IPerpsManagerV2 {
+    function numMarkets() external view returns (uint);
+
+    function totalDebt() external view returns (uint debt, bool isInvalid);
+
+    function isMarket(bytes32 marketKey) external view returns (bool);
+
+    function markets(uint index, uint pageSize) external view returns (bytes32[] memory);
+
+    function allMarkets() external view returns (bytes32[] memory);
+
+    function allMarketSummaries() external view returns (IPerpsTypesV2.MarketSummary[] memory);
+
+    function marketSummaries(bytes32[] calldata marketKeys) external view returns (IPerpsTypesV2.MarketSummary[] memory);
+}
+
+interface IPerpsManagerV2Internal {
+    // view
+    function approvedRouterAndMarket(address router, bytes32 marketKey) external view returns (bool approved);
+
+    // Mutative V2 owner actions
+    function addMarkets(bytes32[] calldata marketKeys, bytes32[] calldata assets) external;
+
+    function removeMarkets(bytes32[] calldata marketKeys) external;
+
+    // Mutative internal for engine & order methods
+    function issueSUSD(address account, uint amount) external;
+
+    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
+
+    function payFee(uint amount, bytes32 trackingCode) external;
+}
+
 // a contract / interface matching the filename is expected for compilation
 interface IPerpsInterfacesV2 {
     function noEmptyBlocks() external; // no empty blocks (post commit checks)

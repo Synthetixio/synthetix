@@ -295,7 +295,7 @@ const setupContract = async ({
 		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
-		// futures manager is manages both v1 & v2
+		// futures manager manages both v1 & v2 (via perps manager)
 		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		// legacy futures (V1)
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
@@ -311,6 +311,7 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
+		PerpsManagerV2: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsSettingsV2: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsStorageV2: [owner, ZERO_ADDRESS],
 		PerpsEngineV2: [tryGetAddressOf('AddressResolver')],
@@ -564,16 +565,6 @@ const setupContract = async ({
 				[true, true, true, true, true, true],
 				{ from: owner }
 			);
-		},
-		async FuturesMarketBTC() {
-			await Promise.all([
-				cache['FuturesMarketManager'].addMarketsV1([instance.address], { from: owner }),
-			]);
-		},
-		async FuturesMarketETH() {
-			await Promise.all([
-				cache['FuturesMarketManager'].addMarketsV1([instance.address], { from: owner }),
-			]);
 		},
 		async PerpsEngineV2() {
 			await cache['PerpsStorageV2'].setAssociatedContract(instance.address, { from: owner });
@@ -1000,14 +991,7 @@ const setupAllContracts = async ({
 		// "futures" & v2 "perps"
 		{
 			contract: 'FuturesMarketManager',
-			deps: [
-				'AddressResolver',
-				'Exchanger',
-				'FuturesMarketSettings',
-				'PerpsEngineV2',
-				'PerpsOrdersV2',
-				'FeePool',
-			],
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings', 'PerpsManagerV2', 'FeePool'],
 		},
 		// perps v1 - "futures"
 		{
@@ -1040,6 +1024,15 @@ const setupAllContracts = async ({
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 		// perps v2
 		{
+			contract: 'PerpsManagerV2',
+			deps: [
+				'AddressResolver',
+				// 'FuturesMarketManager', // needed but removed to avoid circular dependency
+				'PerpsEngineV2',
+				'PerpsOrdersV2',
+			],
+		},
+		{
 			contract: 'PerpsSettingsV2',
 			deps: ['AddressResolver', 'FlexibleStorage', 'PerpsEngineV2'],
 		},
@@ -1052,7 +1045,7 @@ const setupAllContracts = async ({
 			source: 'TestablePerpsEngineV2',
 			deps: [
 				'AddressResolver',
-				// 'FuturesMarketManager', // is also required, but creates a circular dependence, since both need each other
+				// 'PerpsManagerV2', // is also required, but creates a circular dependence, since both need each other
 				'PerpsStorageV2',
 				'SystemStatus',
 				'ExchangeCircuitBreaker',
@@ -1062,7 +1055,7 @@ const setupAllContracts = async ({
 			contract: 'PerpsOrdersV2',
 			deps: [
 				'AddressResolver',
-				// 'FuturesMarketManager', // is also required, but creates a circular dependence, since both need each other
+				// 'PerpsManagerV2', // is also required, but creates a circular dependence, since both need each other
 				'PerpsSettingsV2',
 				'PerpsEngineV2',
 				'Exchanger',
@@ -1378,9 +1371,23 @@ const setupAllContracts = async ({
 			};
 
 			if (returnObj['FuturesMarketBTC']) {
+				// add to manager
+				promises.push(
+					returnObj['FuturesMarketManager'].addMarkets([returnObj['FuturesMarketBTC'].address], {
+						from: owner,
+					})
+				);
+				// configure price feed and settings
 				promises.push(setupFuturesMarket(returnObj['FuturesMarketBTC']));
 			}
 			if (returnObj['FuturesMarketETH']) {
+				// add to manager
+				promises.push(
+					returnObj['FuturesMarketManager'].addMarkets([returnObj['FuturesMarketETH'].address], {
+						from: owner,
+					})
+				);
+				// configure price feed and settings
 				promises.push(setupFuturesMarket(returnObj['FuturesMarketETH']));
 			}
 
@@ -1388,7 +1395,7 @@ const setupAllContracts = async ({
 		}
 
 		// perps V2
-		if (returnObj['PerpsSettingsV2'] && returnObj['FuturesMarketManager']) {
+		if (returnObj['PerpsSettingsV2']) {
 			const promises = [
 				returnObj['PerpsSettingsV2'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
@@ -1413,7 +1420,7 @@ const setupAllContracts = async ({
 				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
 
 				// add the market
-				await returnObj['FuturesMarketManager'].addMarketsV2([marketKey], [assetKey], {
+				await returnObj['PerpsManagerV2'].addMarkets([marketKey], [assetKey], {
 					from: owner,
 				});
 

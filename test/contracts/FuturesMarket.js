@@ -1659,7 +1659,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
 				assert.bnEqual(expectedDetails.size, details.size);
 				assert.bnEqual(expectedDetails.price, details.lastPrice);
-				assert.bnClose(expectedDetails.positionLiquidationPrice, details.liqPrice, toUnit(0.01));
+				assert.bnClose(expectedDetails.liqPrice, details.liquidationPrice, toUnit(0.01));
 				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
 				assert.bnEqual(expectedDetails.status, Status.Ok);
 			});

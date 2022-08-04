@@ -77,7 +77,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
 
     // Address Resolver Configuration
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
-    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+    bytes32 internal constant CONTRACT_PERPSMANAGERV2 = "PerpsManagerV2";
     bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -116,7 +116,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
         bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[1] = CONTRACT_PERPSMANAGERV2;
         newAddresses[2] = CONTRACT_PERPSSETTINGSV2;
         newAddresses[3] = CONTRACT_PERPSTORAGEV2;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
@@ -543,8 +543,8 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function _manager() internal view returns (IFuturesMarketManagerInternal) {
-        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    function _manager() internal view returns (IPerpsManagerV2Internal) {
+        return IPerpsManagerV2Internal(requireAndGetAddress(CONTRACT_PERPSMANAGERV2));
     }
 
     function _stateMutative() internal view returns (IPerpsStorageV2Internal) {

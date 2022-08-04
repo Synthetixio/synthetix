@@ -196,7 +196,7 @@ contract FuturesMarketData {
     }
 
     function marketSummariesForKeys(bytes32[] calldata marketKeys) external view returns (MarketSummary[] memory) {
-        return _marketSummaries(_futuresMarketManager().marketsV1ForKeys(marketKeys));
+        return _marketSummaries(_futuresMarketManager().marketsForKeys(marketKeys));
     }
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
