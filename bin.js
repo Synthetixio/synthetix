@@ -56,8 +56,11 @@ program
 	.description('Decode a data payload from a Synthetix contract')
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.action(async (data, target, { network, useOvm }) => {
-		console.log(util.inspect(decode({ network, data, target, useOvm }), false, null, true));
+	.option('-m, --decode-migration', 'Target deployment for the OVM (Optimism).')
+	.action(async (data, target, { network, useOvm, decodeMigration }) => {
+		console.log(
+			util.inspect(decode({ network, data, target, useOvm, decodeMigration }), false, null, true)
+		);
 	});
 
 program
@@ -65,18 +68,36 @@ program
 	.description('Decode a data payload from a gnosis multi-send staged to Synthetix contracts')
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.action(async (txsdata, target, { network, useOvm }) => {
+	.option('-m, --decode-migration', 'Target deployment for the OVM (Optimism).')
+	.action(async (txsdata, target, { network, useOvm, decodeMigration }) => {
 		if (txsdata.length <= 2) {
 			console.log('data too short');
 		}
+
+		const splitByLen = (s, len) => [s.slice(0, len), s.slice(len)];
+
+		const cleanMultiSendRawData = raw => {
+			let parts = splitByLen(raw, 8);
+			if (parts[0] === '8d80ff0a') {
+				// is multisend raw data
+				// value
+				parts = splitByLen(parts[1], 64);
+				// length
+				parts = splitByLen(parts[1], 64);
+				const dataLen = parts[0];
+				const dataLenDecimal = parseInt(dataLen, 16);
+				parts = splitByLen(parts[1], dataLenDecimal * 2);
+				return parts[0];
+			} else {
+				return raw;
+			}
+		};
 
 		const cleanData = txsdata.toLowerCase().startsWith('0x')
 			? txsdata.slice(2).toLowerCase()
 			: txsdata.toLowerCase();
 
-		const splitByLen = (s, len) => [s.slice(0, len), s.slice(len)];
-
-		let parts = splitByLen(cleanData, 0);
+		let parts = splitByLen(cleanMultiSendRawData(cleanData), 0);
 		let index = 1;
 		const decodedTransactions = [];
 		while (parts[1].length > 20) {
@@ -107,7 +128,7 @@ program
 				destAddress,
 				operationType,
 				value: valueDecimal,
-				decoded: decode({ network, data, target, useOvm }),
+				decoded: decode({ network, data, target, useOvm, decodeMigration }),
 			});
 
 			index++;
