@@ -42,7 +42,7 @@ const chainIdMapping = Object.entries({
 	},
 	'-1': {
 		// no chain ID for this currently
-		network: 'goerli',
+		network: 'unknown',
 		useOvm: true,
 	},
 	// now append any defaults

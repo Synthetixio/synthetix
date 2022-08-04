@@ -70,22 +70,7 @@ async function deploy(runtime, networkVariant) {
 	// prepare the synths but skip preparing releases (as this isn't a fork)
 	const synthsToAdd = [];
 
-	// get the signer that we want to have for the deployer
-	let signer = await runtime.getDefaultSigner({});
-	try {
-		// if cannon can give us the signer for the owner address, we should use that
-		const ownerAddress = synthetix.getUsers({ network, useOvm, user: 'owner' }).address;
-
-		// need to reset any contract code at this address to nothing or else anvil
-		// is going to complain that the address doesn't work
-		runtime.provider.send('hardhat_setCode', [ownerAddress, '0x']);
-		signer = await runtime.getSigner(ownerAddress);
-	} catch (err) {
-		// otherwise we want to use the cannon default signer, which is set above
-		console.log(err);
-	}
-
-	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: true, useSips: false });
+	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 	await deployInstance({
 		addNewSynths: true,
 		buildPath,
@@ -93,7 +78,7 @@ async function deploy(runtime, networkVariant) {
 		network,
 		freshDeploy: networkVariant.startsWith('local'),
 		provider: runtime.provider,
-		signer,
+		signer: await runtime.getDefaultSigner({}),
 	});
 
 	// pull deployed contract information
@@ -101,13 +86,20 @@ async function deploy(runtime, networkVariant) {
 	const allTargets = synthetix.getTarget({ fs, path, network, useOvm });
 
 	const contracts = {};
-	Object.entries(allTargets).map(([name, target]) => {
-		contracts[name] = {
-			address: target.address,
-			abi: synthetix.getSource({ fs, path, network, useOvm, contract: target.source }).abi,
-			deployTxn: target.txn,
-		};
-	});
+	for (const [name, target] of Object.entries(allTargets)) {
+		try {
+			const artifactData = await runtime.getArtifact(target.source);
+			contracts[name] = {
+				address: target.address,
+				sourceName: artifactData.sourceName,
+				contractName: artifactData.contractName,
+				abi: synthetix.getSource({ fs, path, network, useOvm, contract: target.source }).abi,
+				deployTxn: target.txn,
+			};
+		} catch (e) {
+			console.log(e);
+		}
+	}
 
 	return { contracts };
 }
