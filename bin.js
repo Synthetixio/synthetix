@@ -56,7 +56,7 @@ program
 	.description('Decode a data payload from a Synthetix contract')
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.option('-m, --decode-migration', 'Target deployment for the OVM (Optimism).')
+	.option('-m, --decode-migration', 'Decodes a migration contract execution call')
 	.action(async (data, target, { network, useOvm, decodeMigration }) => {
 		console.log(
 			util.inspect(decode({ network, data, target, useOvm, decodeMigration }), false, null, true)
@@ -68,7 +68,7 @@ program
 	.description('Decode a data payload from a gnosis multi-send staged to Synthetix contracts')
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.option('-m, --decode-migration', 'Target deployment for the OVM (Optimism).')
+	.option('-m, --decode-migration', 'Decodes a migration contract execution call')
 	.action(async (txsdata, target, { network, useOvm, decodeMigration }) => {
 		if (txsdata.length <= 2) {
 			console.log('data too short');
