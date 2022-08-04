@@ -651,10 +651,31 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 	);
 };
 
-const decode = ({ network = 'mainnet', fs, path, data, target, useOvm = false } = {}) => {
+const decode = ({
+	network = 'mainnet',
+	fs,
+	path,
+	data,
+	target,
+	useOvm = false,
+	decodeMigration = false,
+} = {}) => {
 	const sources = getSource({ network, path, fs, useOvm });
 	for (const { abi } of Object.values(sources)) {
 		abiDecoder.addABI(abi);
+	}
+	if (decodeMigration) {
+		abiDecoder.addABI([
+			{
+				constant: false,
+				inputs: [],
+				name: 'migrate',
+				outputs: [],
+				payable: false,
+				stateMutability: 'nonpayable',
+				type: 'function',
+			},
+		]);
 	}
 	const targets = getTarget({ network, path, fs, useOvm });
 	let contract;
