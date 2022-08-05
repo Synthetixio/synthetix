@@ -390,11 +390,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // do not convert for 0 (part of implicit interface), and not needed for 18
         } else if (decimals < 18) {
             // increase precision to 18
-            uint multiplier = 10**SafeMath.sub(18, decimals);
+            uint multiplier = 10**(18 - decimals); // SafeMath not needed since decimals is small
             result = result.mul(multiplier);
         } else if (decimals > 18) {
             // decrease precision to 18
-            uint divisor = 10**SafeMath.sub(decimals, 18);
+            uint divisor = 10**(decimals - 18); // SafeMath not needed since decimals is small
             result = result.div(divisor);
         }
         return result;

@@ -538,11 +538,11 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					describe('when the aggregator price is set to set a specific number with 27 decimals', () => {
-						const newRate = 123.456;
+						const newRate = toBN('123123456789012345678901234567'); // 123.12.. with 27 decimals
 						let timestamp;
 						beforeEach(async () => {
 							timestamp = await currentTime();
-							await aggregatorDebtRatio.setLatestAnswer(convertToDecimals(newRate, 27), timestamp);
+							await aggregatorDebtRatio.setLatestAnswer(newRate, timestamp);
 						});
 
 						describe('when the price is fetched for debtRatio', () => {
@@ -550,7 +550,7 @@ contract('Exchange Rates', async accounts => {
 								const result = await instance.rateForCurrency(debtRatio, {
 									from: accountOne,
 								});
-								assert.bnEqual(result, toUnit(newRate.toString()));
+								assert.bnEqual(result, newRate.div(toBN('1000000000')));
 							});
 							it('and the timestamp is the latest', async () => {
 								const result = await instance.lastRateUpdateTimes(debtRatio, {
@@ -559,6 +559,10 @@ contract('Exchange Rates', async accounts => {
 								assert.bnEqual(result.toNumber(), timestamp);
 							});
 						});
+					});
+
+					it('re-adding aggregator with another number of decimals works', async () => {
+						await instance.addAggregator(debtRatio, aggregatorXTZ.address, { from: owner });
 					});
 				});
 
