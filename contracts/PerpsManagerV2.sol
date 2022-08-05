@@ -192,7 +192,7 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
         for (uint i; i < numOfMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
             // check it was added
-            require(_markets.contains(marketKey), "market not found");
+            require(_markets.contains(marketKey), "Unknown market");
 
             // remove
             // note that removing a market here still keeps its storage in PerpsStorageV2

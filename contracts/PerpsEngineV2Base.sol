@@ -577,13 +577,18 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
     function _proportionalSkew(bytes32 marketKey, uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
+        int skew = _marketScalars(marketKey).marketSkew;
+        if (skew == 0) {
+            return 0;
+        }
         uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-        return _marketScalars(marketKey).marketSkew.divideDecimal(int(skewScaleBaseAsset));
+        return skew.divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(bytes32 marketKey, uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(marketKey));
+        require(maxFundingRate > 0, "max funding rate 0"); // unconfigured market
         int propSkew = _proportionalSkew(marketKey, price);
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -propSkew), _UNIT).multiplyDecimal(maxFundingRate);
