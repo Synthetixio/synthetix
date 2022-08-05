@@ -37,6 +37,8 @@ interface ISystemStatus {
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 
+    function requireDirectIntegrationActive(address integration) external view;
+
     function systemSuspension() external view returns (bool suspended, uint248 reason);
 
     function issuanceSuspension() external view returns (bool suspended, uint248 reason);
@@ -50,6 +52,8 @@ interface ISystemStatus {
     function synthSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
 
     function futuresMarketSuspension(bytes32 marketKey) external view returns (bool suspended, uint248 reason);
+
+    function directIntegrationSuspension(address integration) external view returns (bool suspended, uint248 reason);
 
     function getSynthExchangeSuspensions(bytes32[] calldata synths)
         external
@@ -66,12 +70,19 @@ interface ISystemStatus {
         view
         returns (bool[] memory suspensions, uint256[] memory reasons);
 
+    function getDirectIntegrationSuspensions(address[] calldata integrations)
+        external
+        view
+        returns (bool[] memory suspensions, uint256[] memory reasons);
+
     // Restricted functions
     function suspendIssuance(uint256 reason) external;
 
     function suspendSynth(bytes32 currencyKey, uint256 reason) external;
 
     function suspendFuturesMarket(bytes32 marketKey, uint256 reason) external;
+
+    function suspendDirectIntegration(address integration, uint256 reason) external;
 
     function updateAccessControl(
         bytes32 section,
