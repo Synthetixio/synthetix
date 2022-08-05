@@ -166,11 +166,12 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
             bytes32 marketKey = marketKeys[i];
             bytes32 baseAsset = assets[i];
 
-            // check doesn't exist in v1 to prevent confusion between marketKeys (technically is possible)
-            require(!futuresManager.isMarketV1(marketKey), "Market key exists in V1");
-
             // check doesn't exist in v2
             require(!_markets.contains(marketKey), "Market key exists");
+
+            // check doesn't exist in v1 to prevent confusion between marketKeys (technically is possible)
+            // futuresManager.isMarket check both v1 and v2, but we checked v2 locally already
+            require(!futuresManager.isMarket(marketKey), "Market key exists in V1");
 
             // add to internal mapping
             _markets.add(marketKey);

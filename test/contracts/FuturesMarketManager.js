@@ -141,7 +141,7 @@ contract('FuturesMarketManager', accounts => {
 
 		it('Adding a single market', async () => {
 			const markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(markets.length));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(markets.length));
 			assert.equal(markets.length, 2);
 			assert.deepEqual(markets, addresses);
 
@@ -158,7 +158,7 @@ contract('FuturesMarketManager', accounts => {
 				skipPostDeploy: true,
 			});
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(3));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
 			assert.equal((await futuresMarketManager.markets(2, 1))[0], market.address);
 
 			assert.equal(await futuresMarketManager.marketForKey(toBytes32('sLINK')), market.address);
@@ -178,7 +178,7 @@ contract('FuturesMarketManager', accounts => {
 			);
 			const addresses = markets.map(m => m.address);
 			const tx = await futuresMarketManager.addMarkets(addresses, { from: owner });
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(4));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(4));
 			assert.deepEqual(await futuresMarketManager.markets(2, 2), addresses);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), addresses);
 
@@ -245,7 +245,7 @@ contract('FuturesMarketManager', accounts => {
 			await futuresMarketManager.removeMarkets([addresses[0]], { from: owner });
 
 			const markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(1));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
 			assert.deepEqual(markets, [addresses[1]]);
 
 			assert.equal(await futuresMarketManager.marketForKey(currencyKeys[0]), ZERO_ADDRESS);
@@ -254,7 +254,7 @@ contract('FuturesMarketManager', accounts => {
 		it('Removing multiple markets', async () => {
 			const tx = await futuresMarketManager.removeMarkets(addresses, { from: owner });
 			const markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(0));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
 			assert.deepEqual(markets, []);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(currencyKeys), [
 				ZERO_ADDRESS,
@@ -281,7 +281,7 @@ contract('FuturesMarketManager', accounts => {
 			await futuresMarketManager.removeMarketsByKey([toBytes32('sETH')], { from: owner });
 
 			let markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(1));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
 			assert.deepEqual(markets, [addresses[0]]);
 
 			const market = await setupContract({
@@ -302,7 +302,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 
 			markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarketsV1(), toBN(0));
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
 			assert.deepEqual(markets, []);
 		});
 
@@ -613,18 +613,15 @@ contract('FuturesMarketManager', accounts => {
 		});
 
 		it('For market keys', async () => {
-			const summaries = await futuresMarketManager.marketSummariesV1([
-				markets[0].address,
-				markets[1].address,
-			]);
+			const allSummaries = await futuresMarketManager.allMarketSummaries();
 			const summariesForKeys = await futuresMarketManager.marketSummariesForKeysV1(
 				marketKeys.slice(0, 2)
 			);
-			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForKeys));
+			assert.equal(JSON.stringify(allSummaries.slice(0, 2)), JSON.stringify(summariesForKeys));
 		});
 
 		it('All summaries', async () => {
-			const summaries = await futuresMarketManager.allMarketSummariesV1();
+			const summaries = await futuresMarketManager.allMarketSummaries();
 
 			const btcSummary = summaries.find(summary => summary.marketKey === toBytes32('sBTC'));
 			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('sETH'));
