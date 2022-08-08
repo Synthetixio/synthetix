@@ -192,6 +192,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     ///     the iteration stops
     /// @return total: total sum reached, may different from targetAmount (higher if sum is a bit more), lower
     ///     if target wasn't reached reaching the length of the array
+    /// @return endIndex: the index of the last revoked entry
+    /// @return lastEntryTime: the endTime of the last revoked entry
     function setZeroAmountUntilTarget(
         address account,
         uint startIndex,
