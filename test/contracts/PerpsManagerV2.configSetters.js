@@ -135,8 +135,8 @@ contract('PerpsManagerV2 PerpsConfigSettersV2Mixin', accounts => {
 					});
 				});
 
-				it('setParameters should set the params accordingly and emit the corresponding events', async () => {
-					const tx = await perpsManager.setParameters(marketKey, ...params.map(p => p[1]), {
+				it('setMarketConfig should set the params accordingly and emit the corresponding events', async () => {
+					const tx = await perpsManager.setMarketConfig(marketKey, ...params.map(p => p[1]), {
 						from: owner,
 					});
 					const decodedLogs = await getDecodedLogs({

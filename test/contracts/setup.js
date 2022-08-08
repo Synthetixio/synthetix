@@ -1421,7 +1421,7 @@ const setupAllContracts = async ({
 
 				// set its settings (can only be done after the market is added and initialized)
 				await Promise.all([
-					returnObj['PerpsManagerV2'].setParameters(
+					returnObj['PerpsManagerV2'].setMarketConfig(
 						marketKey,
 						toWei('0.003'), // 0.3% base fee
 						toWei('0.0005'), // 0.05% base fee next price

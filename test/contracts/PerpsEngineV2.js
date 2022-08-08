@@ -211,7 +211,7 @@ contract('PerpsEngineV2', accounts => {
 			const scalars = await perpsStorage.marketScalars(marketKey);
 			assert.equal(scalars.baseAsset, baseAsset);
 			// check settings
-			const parameters = await perpsManager.parameters(marketKey);
+			const parameters = await perpsManager.marketConfig(marketKey);
 			assert.bnEqual(parameters.baseFee, baseFee);
 			assert.bnEqual(parameters.baseFeeNextPrice, baseFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
@@ -230,7 +230,7 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		it('market size and skew', async () => {
-			const minScale = (await perpsManager.parameters(marketKey)).skewScaleUSD;
+			const minScale = (await perpsManager.marketConfig(marketKey)).skewScaleUSD;
 			const price = 100;
 			let sizes = await perpsEngine.marketSizes(marketKey);
 			let summary = await marketSummary();
@@ -1881,7 +1881,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnEqual((await marketSummary()).currentFundingRate, toUnit(0));
 
 			const minScale = divideDecimal(
-				(await perpsManager.parameters(marketKey)).skewScaleUSD,
+				(await perpsManager.marketConfig(marketKey)).skewScaleUSD,
 				price
 			);
 			// Market is 24 units long skewed (24 / 100000)
@@ -3026,7 +3026,7 @@ contract('PerpsEngineV2', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, {
+					perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 0, {
 						from: owner,
 					}),
 					'Invalid price'
@@ -3115,7 +3115,7 @@ contract('PerpsEngineV2', accounts => {
 			it('then settings parameter changes do not revert', async () => {
 				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
 				await perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+				await perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});
@@ -3123,7 +3123,7 @@ contract('PerpsEngineV2', accounts => {
 			it('settings parameter changes still revert if price is invalid', async () => {
 				await setPrice(baseAsset, toUnit('1'), false); // circuit breaker will revert
 				await assert.revert(
-					perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+					perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 						from: owner,
 					}),
 					'Invalid price'

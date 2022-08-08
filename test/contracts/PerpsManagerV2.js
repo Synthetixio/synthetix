@@ -114,7 +114,7 @@ contract('PerpsManagerV2', accounts => {
 					'setMaxSingleSideValueUSD',
 					'setMaxFundingRate',
 					'setSkewScaleUSD',
-					'setParameters',
+					'setMarketConfig',
 					'setMinKeeperFee',
 					'setLiquidationFeeRatio',
 					'setLiquidationBufferRatio',
@@ -457,7 +457,7 @@ contract('PerpsManagerV2', accounts => {
 				await setPrice(assetKey, toUnit(1000));
 
 				// Now that the market exists we can set the all its parameters
-				await perpsManager.setParameters(
+				await perpsManager.setMarketConfig(
 					marketKey,
 					toUnit('0.005'), // 0.5% base fee
 					toUnit('0.0005'), // 0.05% base fee next price

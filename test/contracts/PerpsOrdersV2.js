@@ -154,7 +154,7 @@ contract('PerpsOrdersV2', accounts => {
 			const summary = await perpsOrders.marketSummary(marketKey);
 			assert.equal(summary.baseAsset, baseAsset);
 			assert.equal(summary.marketKey, marketKey);
-			const parameters = await perpsManager.parameters(marketKey);
+			const parameters = await perpsManager.marketConfig(marketKey);
 			assert.bnEqual(parameters.baseFee, baseFee);
 			assert.bnEqual(parameters.baseFeeNextPrice, baseFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
@@ -458,7 +458,7 @@ contract('PerpsOrdersV2', accounts => {
 			it('settings parameter changes do not revert', async () => {
 				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
 				await perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+				await perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});
@@ -532,7 +532,7 @@ contract('PerpsOrdersV2', accounts => {
 			it('settings parameter changes do not revert', async () => {
 				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
 				await perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+				await perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});

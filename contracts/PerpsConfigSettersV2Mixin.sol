@@ -79,7 +79,7 @@ contract PerpsConfigSettersV2Mixin is Owned, PerpsConfigGettersV2Mixin, IPerpsCo
         return _skewScaleUSD(marketKey);
     }
 
-    function parameters(bytes32 marketKey) external view returns (MarketConfig memory) {
+    function marketConfig(bytes32 marketKey) external view returns (MarketConfig memory) {
         return
             MarketConfig({
                 baseFee: _baseFee(marketKey),
@@ -167,7 +167,7 @@ contract PerpsConfigSettersV2Mixin is Owned, PerpsConfigGettersV2Mixin, IPerpsCo
         _setParameter(marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
-    function setParameters(
+    function setMarketConfig(
         bytes32 marketKey,
         uint _baseFee,
         uint _baseFeeNextPrice,

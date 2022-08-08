@@ -319,7 +319,7 @@ interface IPerpsConfigSettersV2 {
 
     function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
 
-    function parameters(bytes32 _marketKey) external view returns (IPerpsTypesV2.MarketConfig memory);
+    function marketConfig(bytes32 _marketKey) external view returns (IPerpsTypesV2.MarketConfig memory);
 
     function minKeeperFee() external view returns (uint);
 
