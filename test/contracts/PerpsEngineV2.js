@@ -711,6 +711,27 @@ contract('PerpsEngineV2', accounts => {
 			await modify(toUnit('-100.09'), trader2);
 		});
 
+		it('can reduce leverage if goes above max', async () => {
+			await setPrice(baseAsset, toUnit('100'));
+			await transfer(toUnit('1000'), trader);
+			await modify(toUnit('100'), trader);
+
+			let postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('1'), baseFee);
+			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
+
+			await setPrice(baseAsset, toUnit('95')); // add a loss of half the margin, getting the leverage to 20x
+			// cannot reduce a little - because will be over max leverage
+			postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('-1'), baseFee);
+			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
+
+			// but can reduce by a lot into healthy leverage size
+			postDetails = await perpsEngine.postTradeDetails(marketKey, trader, toUnit('-55'), baseFee);
+			assert.equal(postDetails.status, Status.Ok);
+
+			// can reduce leverage by an arbitrary amount if transferring more margin
+			await transfer(toUnit('1'), trader);
+		});
+
 		it('min margin must be provided', async () => {
 			await setPrice(baseAsset, toUnit('10'));
 			await transfer(minInitialMargin.sub(toUnit('1')), trader);

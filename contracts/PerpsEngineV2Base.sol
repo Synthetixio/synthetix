@@ -416,8 +416,10 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
         // so marginDelta will increase if lockedDelta is negative
         int marginDelta = transferAmount.sub(lockAmount);
 
+        // allow to add (unlock) some margin even if resulting position is still above max leverage
+        bool checkLeverage = marginDelta < 0;
         // new realized margin, ensuring that the result is positive and non liquidatable
-        (uint newMargin, Status status) = _realizedMarginAfterDelta(oldPosition, price, marginDelta, true);
+        (uint newMargin, Status status) = _realizedMarginAfterDelta(oldPosition, price, marginDelta, checkLeverage);
 
         // check result
         _revertIfError(status);
