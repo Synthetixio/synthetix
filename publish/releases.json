@@ -693,9 +693,15 @@
 			"released": "both"
 		},
 		{
+			"sip": 257,
+			"layer": "both",
+      "sources": ["ExchangeRates"]
+    },
+    {
 			"sip": 258,
 			"layer": "base",
-			"sources": ["ExchangeRates"]
+			"sources": ["ExchangeRates"],
+			"released": "base"
 		}
 	],
 	"releases": [
@@ -1299,7 +1305,8 @@
 				"major": 2,
 				"minor": 75
 			},
-			"sips": []
+			"sips": [258],
+			"released": true
 		}
 	]
 }

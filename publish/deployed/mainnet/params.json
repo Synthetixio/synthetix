@@ -56,5 +56,18 @@
 	{
 		"name": "LIQUIDATION_RATIO",
 		"value": "666666666666666666"
+	},
+	{
+		"name": "COLLATERAL_ETH",
+		"value": {
+			"SYNTHS": ["sUSD", "sETH"],
+			"ISSUE_FEE_RATE": "0",
+			"MIN_CRATIO": "1300000000000000000",
+			"MIN_COLLATERAL": "2000000000000000000"
+		}
+	},
+	{
+		"name": "ETHER_WRAPPER_MAX_ETH",
+		"value": "0"
 	}
 ]
