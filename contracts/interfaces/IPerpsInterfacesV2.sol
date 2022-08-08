@@ -83,6 +83,16 @@ interface IPerpsTypesV2 {
         uint marketSizeShort;
         bool priceInvalid;
     }
+
+    struct MarketConfig {
+        uint baseFee;
+        uint baseFeeNextPrice;
+        uint nextPriceConfirmWindow;
+        uint maxLeverage;
+        uint maxSingleSideValueUSD;
+        uint maxFundingRate;
+        uint skewScaleUSD;
+    }
 }
 
 interface IPerpsEngineV2External {
@@ -294,17 +304,7 @@ interface IPerpsOrdersV2 {
     function closePositionWithTracking(bytes32 marketKey, bytes32 trackingCode) external;
 }
 
-interface IPerpsSettingsV2 {
-    struct Parameters {
-        uint baseFee;
-        uint baseFeeNextPrice;
-        uint nextPriceConfirmWindow;
-        uint maxLeverage;
-        uint maxSingleSideValueUSD;
-        uint maxFundingRate;
-        uint skewScaleUSD;
-    }
-
+interface IPerpsConfigSettersV2 {
     function baseFee(bytes32 _marketKey) external view returns (uint);
 
     function baseFeeNextPrice(bytes32 _marketKey) external view returns (uint);
@@ -319,7 +319,7 @@ interface IPerpsSettingsV2 {
 
     function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
 
-    function parameters(bytes32 _marketKey) external view returns (Parameters memory);
+    function parameters(bytes32 _marketKey) external view returns (IPerpsTypesV2.MarketConfig memory);
 
     function minKeeperFee() external view returns (uint);
 

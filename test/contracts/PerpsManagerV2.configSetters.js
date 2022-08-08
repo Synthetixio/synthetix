@@ -5,17 +5,12 @@ const { toUnit, toBN } = require('../utils')();
 
 const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
-const {
-	getDecodedLogs,
-	decodedEventEqual,
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-} = require('./helpers');
+const { getDecodedLogs, decodedEventEqual, onlyGivenAddressCanInvoke } = require('./helpers');
 
 const BN = require('bn.js');
 
-contract('PerpsSettingsV2', accounts => {
-	let perpsManager, perpsSettings;
+contract('PerpsManagerV2 PerpsConfigSettersV2Mixin', accounts => {
+	let perpsManager;
 
 	const owner = accounts[1];
 
@@ -31,12 +26,12 @@ contract('PerpsSettingsV2', accounts => {
 	const skewScaleUSD = toUnit('10000');
 
 	before(async () => {
-		({ PerpsSettingsV2: perpsSettings, PerpsManagerV2: perpsManager } = await setupAllContracts({
+		({ PerpsManagerV2: perpsManager } = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			feeds: ['BTC'],
 			contracts: [
-				'PerpsSettingsV2',
+				'PerpsManagerV2',
 				'FuturesMarketManager',
 				'LiquidatorRewards', // needed for Issuer, but can't be in deps b/c of circular dependency
 			],
@@ -44,31 +39,6 @@ contract('PerpsSettingsV2', accounts => {
 
 		// add the market to initialize it
 		await perpsManager.addMarkets([marketKey], [asset], { from: owner });
-	});
-
-	it('Only expected functions are mutative', () => {
-		ensureOnlyExpectedMutativeFunctions({
-			abi: perpsSettings.abi,
-			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: [
-				'setBaseFee',
-				'setBaseFeeNextPrice',
-				'setNextPriceConfirmWindow',
-				'setMaxLeverage',
-				'setMaxSingleSideValueUSD',
-				'setMaxFundingRate',
-				'setSkewScaleUSD',
-				'setParameters',
-				'setMinKeeperFee',
-				'setLiquidationFeeRatio',
-				'setLiquidationBufferRatio',
-				'setMinInitialMargin',
-			],
-		});
-	});
-
-	it('contract has CONTRACT_NAME getter', async () => {
-		assert.equal(await perpsSettings.CONTRACT_NAME(), toBytes32('PerpsSettingsV2'));
 	});
 
 	describe('Parameter setting', () => {
@@ -85,14 +55,14 @@ contract('PerpsSettingsV2', accounts => {
 				skewScaleUSD,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
-				return [key, val, perpsSettings[`set${capKey}`], perpsSettings[`${key}`]];
+				return [key, val, perpsManager[`set${capKey}`], perpsManager[`${key}`]];
 			});
 		});
 
 		describe('bounds checking', async () => {
 			it('should revert if base fee is greater than 1', async () => {
 				await assert.revert(
-					perpsSettings.setBaseFee(marketKey, toUnit('1').add(new BN(1)), {
+					perpsManager.setBaseFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'base fee greater than 1'
@@ -101,7 +71,7 @@ contract('PerpsSettingsV2', accounts => {
 
 			it('should revert if base fee next price is greater than 1', async () => {
 				await assert.revert(
-					perpsSettings.setBaseFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
+					perpsManager.setBaseFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'base fee greater than 1'
@@ -110,7 +80,7 @@ contract('PerpsSettingsV2', accounts => {
 
 			it('should revert if setSkewScaleUSD is 0', async () => {
 				await assert.revert(
-					perpsSettings.setSkewScaleUSD(marketKey, 0, {
+					perpsManager.setSkewScaleUSD(marketKey, 0, {
 						from: owner,
 					}),
 					'cannot set skew scale 0'
@@ -149,12 +119,12 @@ contract('PerpsSettingsV2', accounts => {
 
 							const decodedLogs = await getDecodedLogs({
 								hash: tx.tx,
-								contracts: [perpsSettings],
+								contracts: [perpsManager],
 							});
 							assert.equal(decodedLogs.length, 2);
 							decodedEventEqual({
 								event: 'ParameterUpdated',
-								emittedFrom: perpsSettings.address,
+								emittedFrom: perpsManager.address,
 								args: [marketKey, param, value],
 								log: decodedLogs[1],
 							});
@@ -166,12 +136,12 @@ contract('PerpsSettingsV2', accounts => {
 				});
 
 				it('setParameters should set the params accordingly and emit the corresponding events', async () => {
-					const tx = await perpsSettings.setParameters(marketKey, ...params.map(p => p[1]), {
+					const tx = await perpsManager.setParameters(marketKey, ...params.map(p => p[1]), {
 						from: owner,
 					});
 					const decodedLogs = await getDecodedLogs({
 						hash: tx.tx,
-						contracts: [perpsSettings],
+						contracts: [perpsManager],
 					});
 					assert.equal(
 						Object.values(decodedLogs).filter(l => l?.name === 'ParameterUpdated').length,
@@ -194,9 +164,9 @@ contract('PerpsSettingsV2', accounts => {
 		it('should be able to change min initial margin', async () => {
 			const initialMargin = toUnit('200');
 
-			const originalInitialMargin = await perpsSettings.minInitialMargin.call();
-			await perpsSettings.setMinInitialMargin(initialMargin, { from: owner });
-			const newInitialMargin = await perpsSettings.minInitialMargin.call();
+			const originalInitialMargin = await perpsManager.minInitialMargin.call();
+			await perpsManager.setMinInitialMargin(initialMargin, { from: owner });
+			const newInitialMargin = await perpsManager.minInitialMargin.call();
 			assert.bnEqual(newInitialMargin, initialMargin);
 			assert.bnNotEqual(newInitialMargin, originalInitialMargin);
 		});
@@ -205,7 +175,7 @@ contract('PerpsSettingsV2', accounts => {
 			const initialMargin = toUnit('200');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: perpsSettings.setMinInitialMargin,
+				fnc: perpsManager.setMinInitialMargin,
 				args: [initialMargin.toString()],
 				address: owner,
 				accounts,
@@ -216,7 +186,7 @@ contract('PerpsSettingsV2', accounts => {
 		it('should emit event on successful min initial margin change', async () => {
 			const initialMargin = toUnit('250');
 
-			const txn = await perpsSettings.setMinInitialMargin(initialMargin, {
+			const txn = await perpsManager.setMinInitialMargin(initialMargin, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'MinInitialMarginUpdated', {
@@ -228,15 +198,15 @@ contract('PerpsSettingsV2', accounts => {
 	describe('setMinKeeperFee()', () => {
 		let minInitialMargin;
 		beforeEach(async () => {
-			minInitialMargin = await perpsSettings.minInitialMargin.call();
+			minInitialMargin = await perpsManager.minInitialMargin.call();
 		});
 		it('should be able to change liquidation fee', async () => {
 			// fee <= minInitialMargin
 			const minKeeperFee = minInitialMargin;
 
-			const originalLiquidationFee = await perpsSettings.minKeeperFee.call();
-			await perpsSettings.setMinKeeperFee(minKeeperFee, { from: owner });
-			const newLiquidationFee = await perpsSettings.minKeeperFee.call();
+			const originalLiquidationFee = await perpsManager.minKeeperFee.call();
+			await perpsManager.setMinKeeperFee(minKeeperFee, { from: owner });
+			const newLiquidationFee = await perpsManager.minKeeperFee.call();
 			assert.bnEqual(newLiquidationFee, minKeeperFee);
 			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
 		});
@@ -245,7 +215,7 @@ contract('PerpsSettingsV2', accounts => {
 			const minKeeperFee = toUnit('100');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: perpsSettings.setMinKeeperFee,
+				fnc: perpsManager.setMinKeeperFee,
 				args: [minKeeperFee.toString()],
 				address: owner,
 				accounts,
@@ -255,15 +225,15 @@ contract('PerpsSettingsV2', accounts => {
 
 		it('should revert if the fee is greater than the min initial margin', async () => {
 			await assert.revert(
-				perpsSettings.setMinKeeperFee(minInitialMargin.add(new BN(1)), {
+				perpsManager.setMinKeeperFee(minInitialMargin.add(new BN(1)), {
 					from: owner,
 				}),
 				'min margin < liquidation fee'
 			);
 
-			const currentLiquidationFee = await perpsSettings.minKeeperFee.call();
+			const currentLiquidationFee = await perpsManager.minKeeperFee.call();
 			await assert.revert(
-				perpsSettings.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
+				perpsManager.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
 					from: owner,
 				}),
 				'min margin < liquidation fee'
@@ -274,7 +244,7 @@ contract('PerpsSettingsV2', accounts => {
 			// fee <= minInitialMargin
 			const minKeeperFee = minInitialMargin.sub(new BN(1));
 
-			const txn = await perpsSettings.setMinKeeperFee(minKeeperFee, {
+			const txn = await perpsManager.setMinKeeperFee(minKeeperFee, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'MinKeeperFeeUpdated', {
@@ -286,20 +256,20 @@ contract('PerpsSettingsV2', accounts => {
 	describe('setLiquidationFeeRatio()', () => {
 		let liquidationFeeRatio;
 		beforeEach(async () => {
-			liquidationFeeRatio = await perpsSettings.liquidationFeeRatio();
+			liquidationFeeRatio = await perpsManager.liquidationFeeRatio();
 		});
 		it('should be able to change liquidationFeeRatio', async () => {
-			const originalValue = await perpsSettings.liquidationFeeRatio();
-			await perpsSettings.setLiquidationFeeRatio(originalValue.mul(toUnit(0.0002)), {
+			const originalValue = await perpsManager.liquidationFeeRatio();
+			await perpsManager.setLiquidationFeeRatio(originalValue.mul(toUnit(0.0002)), {
 				from: owner,
 			});
-			const newValue = await perpsSettings.liquidationFeeRatio.call();
+			const newValue = await perpsManager.liquidationFeeRatio.call();
 			assert.bnEqual(newValue, originalValue.mul(toUnit(0.0002)));
 		});
 
 		it('only owner is permitted to change liquidationFeeRatio', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: perpsSettings.setLiquidationFeeRatio,
+				fnc: perpsManager.setLiquidationFeeRatio,
 				args: [liquidationFeeRatio.toString()],
 				address: owner,
 				accounts,
@@ -309,7 +279,7 @@ contract('PerpsSettingsV2', accounts => {
 
 		it('should emit event on successful liquidationFeeRatio change', async () => {
 			const newValue = toUnit(0.01);
-			const txn = await perpsSettings.setLiquidationFeeRatio(newValue, {
+			const txn = await perpsManager.setLiquidationFeeRatio(newValue, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'LiquidationFeeRatioUpdated', {
@@ -321,20 +291,20 @@ contract('PerpsSettingsV2', accounts => {
 	describe('setLiquidationBufferRatio()', () => {
 		let liquidationBufferRatio;
 		beforeEach(async () => {
-			liquidationBufferRatio = await perpsSettings.liquidationBufferRatio();
+			liquidationBufferRatio = await perpsManager.liquidationBufferRatio();
 		});
 		it('should be able to change liquidationBufferRatio', async () => {
-			const originalValue = await perpsSettings.liquidationBufferRatio();
-			await perpsSettings.setLiquidationBufferRatio(originalValue.mul(toUnit(0.0002)), {
+			const originalValue = await perpsManager.liquidationBufferRatio();
+			await perpsManager.setLiquidationBufferRatio(originalValue.mul(toUnit(0.0002)), {
 				from: owner,
 			});
-			const newValue = await perpsSettings.liquidationBufferRatio.call();
+			const newValue = await perpsManager.liquidationBufferRatio.call();
 			assert.bnEqual(newValue, originalValue.mul(toUnit(0.0002)));
 		});
 
 		it('only owner is permitted to change liquidationBufferRatio', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: perpsSettings.setLiquidationBufferRatio,
+				fnc: perpsManager.setLiquidationBufferRatio,
 				args: [liquidationBufferRatio.toString()],
 				address: owner,
 				accounts,
@@ -344,7 +314,7 @@ contract('PerpsSettingsV2', accounts => {
 
 		it('should emit event on successful liquidationBufferRatio change', async () => {
 			const newValue = toBN(100);
-			const txn = await perpsSettings.setLiquidationBufferRatio(newValue, {
+			const txn = await perpsManager.setLiquidationBufferRatio(newValue, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
@@ -364,10 +334,10 @@ contract('PerpsSettingsV2', accounts => {
 		it('should be able to change parameters for both markets independently', async () => {
 			const val1 = toUnit(0.1);
 			const val2 = toUnit(0.5);
-			await perpsSettings.setMaxFundingRate(marketKey, val1, { from: owner });
-			await perpsSettings.setMaxFundingRate(secondMarketKey, val2, { from: owner });
-			assert.bnEqual(await perpsSettings.maxFundingRate(marketKey), val1);
-			assert.bnEqual(await perpsSettings.maxFundingRate(secondMarketKey), val2);
+			await perpsManager.setMaxFundingRate(marketKey, val1, { from: owner });
+			await perpsManager.setMaxFundingRate(secondMarketKey, val2, { from: owner });
+			assert.bnEqual(await perpsManager.maxFundingRate(marketKey), val1);
+			assert.bnEqual(await perpsManager.maxFundingRate(secondMarketKey), val2);
 		});
 	});
 });

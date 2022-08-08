@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./PerpsConfigSettersV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
 // Libraries
@@ -13,7 +14,7 @@ import "./Bytes32SetLib.sol";
 // interfaces
 import "./interfaces/IFuturesMarketManager.sol";
 
-contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV2Internal, IPerpsTypesV2 {
+contract PerpsManagerV2 is PerpsConfigSettersV2Mixin, IPerpsManagerV2, IPerpsManagerV2Internal {
     using SafeMath for uint;
     using Bytes32SetLib for Bytes32SetLib.Bytes32Set;
 
@@ -34,28 +35,29 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
 
     bytes32 internal constant SUSD = "sUSD";
 
-    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
     bytes32 internal constant CONTRACT_PERPSORDERSEV2 = "PerpsOrdersV2";
     bytes32 internal constant CONTRACT_FUTURESMARKETSMANAGER = "FuturesMarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public PerpsConfigSettersV2Mixin(_owner, _resolver) {}
 
     /* ========== MODIFIERS ========== */
 
     modifier onlyEngine() {
-        require(msg.sender == address(_perpsEngineV2()), "Only engine");
+        require(msg.sender == address(_perpsEngineV2Views()), "Only engine");
         _;
     }
 
     /* ========== External views ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](3);
-        addresses[0] = CONTRACT_PERPSENGINEV2;
-        addresses[1] = CONTRACT_PERPSORDERSEV2;
-        addresses[2] = CONTRACT_FUTURESMARKETSMANAGER;
+        bytes32[] memory existingAddresses = PerpsConfigSettersV2Mixin.resolverAddressesRequired();
+        // engine is already required in PerpsConfigSettersV2Mixin
+        bytes32[] memory newAddresses = new bytes32[](2);
+        newAddresses[0] = CONTRACT_PERPSORDERSEV2;
+        newAddresses[1] = CONTRACT_FUTURESMARKETSMANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function numMarkets() external view returns (uint) {
@@ -66,7 +68,7 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
         uint total;
         bool anyIsInvalid;
         uint numOfMarkets = _markets.elements.length;
-        IPerpsEngineV2External perpsEngineV2 = _perpsEngineV2();
+        IPerpsEngineV2External perpsEngineV2 = _perpsEngineV2Views();
         for (uint i = 0; i < numOfMarkets; i++) {
             (uint marketDebt, bool invalid) = perpsEngineV2.marketDebt(_markets.elements[i]);
             total = total.add(marketDebt);
@@ -112,7 +114,7 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETSMANAGER));
     }
 
-    function _perpsEngineV2() internal view returns (IPerpsEngineV2External) {
+    function _perpsEngineV2Views() internal view returns (IPerpsEngineV2External) {
         return IPerpsEngineV2External(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
@@ -127,7 +129,7 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
     {
         uint nMarkets = marketKeys.length;
         summaries = new IPerpsTypesV2.MarketSummary[](nMarkets);
-        IPerpsEngineV2External perpsEngine = _perpsEngineV2();
+        IPerpsEngineV2External perpsEngine = _perpsEngineV2Views();
         for (uint i; i < nMarkets; i++) {
             summaries[i] = perpsEngine.marketSummary(marketKeys[i]);
         }
@@ -162,6 +164,7 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
         require(marketKeys.length == assets.length, "length of marketKeys != assets");
         IFuturesMarketManager futuresManager = IFuturesMarketManager(address(_futuresManager()));
         // iterate and add
+        IPerpsEngineV2Internal engineMutative = _perpsEngineV2Mutative();
         for (uint i; i < numOfMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
             bytes32 baseAsset = assets[i];
@@ -179,7 +182,6 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
             // initialize market in engine or check that it's already initialized with correct asset.
             // Note that this will add all preivous data for the stored market, so if this is not
             // the intention - a new marketKey should be used.
-            IPerpsEngineV2Internal engineMutative = IPerpsEngineV2Internal(address(_perpsEngineV2()));
             engineMutative.ensureInitialized(marketKey, baseAsset);
 
             emit MarketAdded(baseAsset, marketKey);
@@ -188,7 +190,7 @@ contract PerpsManagerV2 is Owned, MixinResolver, IPerpsManagerV2, IPerpsManagerV
 
     function removeMarkets(bytes32[] calldata marketKeys) external onlyOwner {
         uint numOfMarkets = marketKeys.length;
-        IPerpsStorageV2External perpsStorage = _perpsEngineV2().stateContract();
+        IPerpsStorageV2External perpsStorage = _perpsEngineV2Views().stateContract();
         for (uint i; i < numOfMarkets; i++) {
             bytes32 marketKey = marketKeys[i];
             // check it was added

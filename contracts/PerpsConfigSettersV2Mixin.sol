@@ -3,12 +3,19 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./PerpsSettingsV2Mixin.sol";
+import "./PerpsConfigGettersV2Mixin.sol";
 
 // Internal references
 import "./interfaces/IPerpsInterfacesV2.sol";
 
-contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
+/// This is a separate mixin because it can be separate for ease of development and testing.
+/// However it needs to be part of the manager because:
+/// 1. It's both owner controlled and has privileged (mutative) access to engine.
+/// 2. Updating the market configuration is part of managing the markets, and separating the
+///    two aspects (configs and marketKeys registry) doesn't make sense because than questions of "can an unconfigured
+///    market be added to manager?" Or "can a market not added in manager have its funding recomputed?" have
+///    no good answers.
+contract PerpsConfigSettersV2Mixin is Owned, PerpsConfigGettersV2Mixin, IPerpsConfigSettersV2, IPerpsTypesV2 {
     /* ========== EVENTS ========== */
     event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
     event MinKeeperFeeUpdated(uint sUSD);
@@ -16,26 +23,22 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
     event LiquidationBufferRatioUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
 
-    /* ========== CONSTANTS ========== */
-
-    bytes32 public constant CONTRACT_NAME = "PerpsSettingsV2";
-
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) PerpsSettingsV2Mixin(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) PerpsConfigGettersV2Mixin(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsConfigGettersV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_PERPSENGINEV2;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _engine() internal view returns (IPerpsEngineV2Internal) {
+    function _perpsEngineV2Mutative() internal view returns (IPerpsEngineV2Internal) {
         return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
@@ -76,9 +79,9 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
         return _skewScaleUSD(marketKey);
     }
 
-    function parameters(bytes32 marketKey) external view returns (Parameters memory) {
+    function parameters(bytes32 marketKey) external view returns (MarketConfig memory) {
         return
-            Parameters({
+            MarketConfig({
                 baseFee: _baseFee(marketKey),
                 baseFeeNextPrice: _baseFeeNextPrice(marketKey),
                 nextPriceConfirmWindow: _nextPriceConfirmWindow(marketKey),
@@ -150,7 +153,7 @@ contract PerpsSettingsV2 is Owned, PerpsSettingsV2Mixin, IPerpsSettingsV2 {
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
     // must be recomputed, otherwise already-accrued but unrecorded funding in the market can change.
     function _recomputeFunding(bytes32 marketKey) internal {
-        _engine().recomputeFunding(marketKey);
+        _perpsEngineV2Mutative().recomputeFunding(marketKey);
     }
 
     function setMaxFundingRate(bytes32 marketKey, uint _maxFundingRate) public onlyOwner {

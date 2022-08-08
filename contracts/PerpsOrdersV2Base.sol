@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsSettingsV2Mixin.sol";
+import "./PerpsConfigGettersV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
@@ -19,7 +19,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
+contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     using SafeMath for uint;
     using SignedSafeMath for int;
     using SafeDecimalMath for uint;
@@ -38,7 +38,6 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
     bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
@@ -46,20 +45,19 @@ contract PerpsOrdersV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public PerpsSettingsV2Mixin(_resolver) {}
+    constructor(address _resolver) public PerpsConfigGettersV2Mixin(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     /* ---------- External Contracts ---------- */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
-        newAddresses[0] = CONTRACT_PERPSSETTINGSV2;
-        newAddresses[1] = CONTRACT_PERPSENGINEV2;
-        newAddresses[2] = CONTRACT_PERPSTORAGEV2;
-        newAddresses[3] = CONTRACT_EXCHANGERATES;
-        newAddresses[4] = CONTRACT_EXCHANGER;
+        bytes32[] memory existingAddresses = PerpsConfigGettersV2Mixin.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](4);
+        newAddresses[0] = CONTRACT_PERPSENGINEV2;
+        newAddresses[1] = CONTRACT_PERPSTORAGEV2;
+        newAddresses[2] = CONTRACT_EXCHANGERATES;
+        newAddresses[3] = CONTRACT_EXCHANGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

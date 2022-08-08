@@ -312,7 +312,6 @@ const setupContract = async ({
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
 		PerpsManagerV2: [owner, tryGetAddressOf('AddressResolver')],
-		PerpsSettingsV2: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsStorageV2: [owner, ZERO_ADDRESS],
 		PerpsEngineV2: [tryGetAddressOf('AddressResolver')],
 		PerpsOrdersV2: [tryGetAddressOf('AddressResolver')],
@@ -1027,14 +1026,11 @@ const setupAllContracts = async ({
 			contract: 'PerpsManagerV2',
 			deps: [
 				'AddressResolver',
+				'FlexibleStorage',
 				// 'FuturesMarketManager', // needed but removed to avoid circular dependency
 				'PerpsEngineV2',
 				'PerpsOrdersV2',
 			],
-		},
-		{
-			contract: 'PerpsSettingsV2',
-			deps: ['AddressResolver', 'FlexibleStorage', 'PerpsEngineV2'],
 		},
 		{
 			contract: 'PerpsStorageV2',
@@ -1056,7 +1052,6 @@ const setupAllContracts = async ({
 			deps: [
 				'AddressResolver',
 				// 'PerpsManagerV2', // is also required, but creates a circular dependence, since both need each other
-				'PerpsSettingsV2',
 				'PerpsEngineV2',
 				'Exchanger',
 				'ExchangeRates',
@@ -1395,18 +1390,18 @@ const setupAllContracts = async ({
 		}
 
 		// perps V2
-		if (returnObj['PerpsSettingsV2']) {
+		if (returnObj['PerpsManagerV2']) {
 			const promises = [
-				returnObj['PerpsSettingsV2'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+				returnObj['PerpsManagerV2'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 					from: owner,
 				}),
-				returnObj['PerpsSettingsV2'].setMinKeeperFee(constantsOverrides.FUTURES_MIN_KEEPER_FEE, {
+				returnObj['PerpsManagerV2'].setMinKeeperFee(constantsOverrides.FUTURES_MIN_KEEPER_FEE, {
 					from: owner,
 				}),
-				returnObj['PerpsSettingsV2'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+				returnObj['PerpsManagerV2'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
-				returnObj['PerpsSettingsV2'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
+				returnObj['PerpsManagerV2'].setLiquidationBufferRatio(FUTURES_LIQUIDATION_BUFFER_RATIO, {
 					from: owner,
 				}),
 			];
@@ -1426,7 +1421,7 @@ const setupAllContracts = async ({
 
 				// set its settings (can only be done after the market is added and initialized)
 				await Promise.all([
-					returnObj['PerpsSettingsV2'].setParameters(
+					returnObj['PerpsManagerV2'].setParameters(
 						marketKey,
 						toWei('0.003'), // 0.3% base fee
 						toWei('0.0005'), // 0.05% base fee next price

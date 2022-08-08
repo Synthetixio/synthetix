@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsSettingsV2Mixin.sol";
+import "./PerpsConfigGettersV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
@@ -18,7 +18,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV2Internal {
+contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEngineV2Internal {
     /* ========== EVENTS ========== */
 
     event MarginModified(
@@ -78,7 +78,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
     // Address Resolver Configuration
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_PERPSMANAGERV2 = "PerpsManagerV2";
-    bytes32 internal constant CONTRACT_PERPSSETTINGSV2 = "PerpsSettingsV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
@@ -94,9 +93,14 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
         _;
     }
 
+    modifier onlyManger() {
+        _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
+        _;
+    }
+
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public PerpsSettingsV2Mixin(_resolver) {
+    constructor(address _resolver) public PerpsConfigGettersV2Mixin(_resolver) {
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
         _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
@@ -113,13 +117,12 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
     /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsSettingsV2Mixin.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory existingAddresses = PerpsConfigGettersV2Mixin.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
         newAddresses[1] = CONTRACT_PERPSMANAGERV2;
-        newAddresses[2] = CONTRACT_PERPSSETTINGSV2;
-        newAddresses[3] = CONTRACT_PERPSTORAGEV2;
-        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[2] = CONTRACT_PERPSTORAGEV2;
+        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -135,9 +138,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
 
     /* ========== EXTERNAL MUTATIVE METHODS ========== */
 
-    function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external {
-        // only manager can call
-        _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
+    function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external onlyManger {
         // load current stored market
         MarketScalars memory market = _stateViews().marketScalars(marketKey);
         if (market.baseAsset == bytes32(0)) {
@@ -153,14 +154,12 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
 
     /**
      * Updates funding entry with unrecorded funding.
-     * @dev Admin only method accessible to PerpsSettings. This is admin only because:
+     * @dev Admin only method accessible to PerpsManager. This is admin only because:
      * - When system parameters change, funding should be recomputed, but system may be paused
      *   during that time for any reason, so this method needs to work even if system is paused.
      *   But in that case, it shouldn't be accessible to external accounts.
      */
-    function recomputeFunding(bytes32 marketKey) external {
-        // only PerpsSettings is allowed to use this method
-        _revertIfError(msg.sender != _settings(), Status.NotPermitted);
+    function recomputeFunding(bytes32 marketKey) external onlyManger {
         if (_marketScalars(marketKey).marketSize == 0) {
             // short circuit in case of empty market (to avoid reverts on initial configuration)
             return;
@@ -555,10 +554,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
 
     function _stateViews() internal view returns (IPerpsStorageV2External) {
         return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
-    }
-
-    function _settings() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_PERPSSETTINGSV2);
     }
 
     /* ========== INTERNAL LOGIC VIEWS ========== */

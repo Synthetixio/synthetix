@@ -5,11 +5,10 @@ import "./MixinResolver.sol";
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/PerpsSettingsV2Mixin
-contract PerpsSettingsV2Mixin is MixinResolver {
+contract PerpsConfigGettersV2Mixin is MixinResolver {
     /* ========== CONSTANTS ========== */
 
-    bytes32 internal constant SETTING_CONTRACT_NAME = "PerpsSettingsV2";
+    bytes32 internal constant SETTING_CONTRACT_NAME = "PerpsManagerV2";
 
     /* ---------- Parameter Names ---------- */
 

@@ -16,7 +16,7 @@ const {
 } = require('./helpers');
 
 contract('PerpsOrdersV2', accounts => {
-	let perpsSettings,
+	let perpsManager,
 		// futuresMarketManager,
 		perpsOrders,
 		perpsEngine,
@@ -65,7 +65,7 @@ contract('PerpsOrdersV2', accounts => {
 
 	before(async () => {
 		({
-			PerpsSettingsV2: perpsSettings,
+			PerpsManagerV2: perpsManager,
 			// FuturesMarketManager: futuresMarketManager,
 			PerpsOrdersV2: perpsOrders,
 			PerpsEngineV2: perpsEngine,
@@ -87,7 +87,7 @@ contract('PerpsOrdersV2', accounts => {
 			],
 			contracts: [
 				'FuturesMarketManager',
-				'PerpsSettingsV2',
+				'PerpsManagerV2',
 				'PerpsEngineV2',
 				'PerpsOrdersV2',
 				'AddressResolver',
@@ -107,7 +107,7 @@ contract('PerpsOrdersV2', accounts => {
 		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 		// tests assume 100, but in actual deployment is different
-		await perpsSettings.setMinInitialMargin(minInitialMargin, { from: owner });
+		await perpsManager.setMinInitialMargin(minInitialMargin, { from: owner });
 
 		// Issue the trader some sUSD
 		for (const t of [trader, trader2, trader3]) {
@@ -154,7 +154,7 @@ contract('PerpsOrdersV2', accounts => {
 			const summary = await perpsOrders.marketSummary(marketKey);
 			assert.equal(summary.baseAsset, baseAsset);
 			assert.equal(summary.marketKey, marketKey);
-			const parameters = await perpsSettings.parameters(marketKey);
+			const parameters = await perpsManager.parameters(marketKey);
 			assert.bnEqual(parameters.baseFee, baseFee);
 			assert.bnEqual(parameters.baseFeeNextPrice, baseFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
@@ -456,9 +456,9 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			it('settings parameter changes do not revert', async () => {
-				await perpsSettings.setMaxFundingRate(marketKey, 0, { from: owner });
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await perpsSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
+				await perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});
@@ -530,9 +530,9 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			it('settings parameter changes do not revert', async () => {
-				await perpsSettings.setMaxFundingRate(marketKey, 0, { from: owner });
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await perpsSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
+				await perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});

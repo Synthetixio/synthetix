@@ -29,7 +29,7 @@ const Status = {
 };
 
 contract('PerpsEngineV2', accounts => {
-	let perpsSettings,
+	let perpsManager,
 		futuresMarketManager,
 		perpsOrders,
 		perpsEngine,
@@ -120,7 +120,7 @@ contract('PerpsEngineV2', accounts => {
 
 	before(async () => {
 		({
-			PerpsSettingsV2: perpsSettings,
+			PerpsManagerV2: perpsManager,
 			FuturesMarketManager: futuresMarketManager,
 			PerpsOrdersV2: perpsOrders,
 			PerpsEngineV2: perpsEngine,
@@ -144,7 +144,7 @@ contract('PerpsEngineV2', accounts => {
 			],
 			contracts: [
 				'FuturesMarketManager',
-				'PerpsSettingsV2',
+				'PerpsManagerV2',
 				'PerpsEngineV2',
 				'PerpsOrdersV2',
 				'AddressResolver',
@@ -166,7 +166,7 @@ contract('PerpsEngineV2', accounts => {
 		await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 		// tests assume 100, but in actual deployment is different
-		await perpsSettings.setMinInitialMargin(minInitialMargin, { from: owner });
+		await perpsManager.setMinInitialMargin(minInitialMargin, { from: owner });
 
 		// Issue the trader some sUSD
 		for (const t of [trader, trader2, trader3]) {
@@ -211,7 +211,7 @@ contract('PerpsEngineV2', accounts => {
 			const scalars = await perpsStorage.marketScalars(marketKey);
 			assert.equal(scalars.baseAsset, baseAsset);
 			// check settings
-			const parameters = await perpsSettings.parameters(marketKey);
+			const parameters = await perpsManager.parameters(marketKey);
 			assert.bnEqual(parameters.baseFee, baseFee);
 			assert.bnEqual(parameters.baseFeeNextPrice, baseFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
@@ -230,7 +230,7 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		it('market size and skew', async () => {
-			const minScale = (await perpsSettings.parameters(marketKey)).skewScaleUSD;
+			const minScale = (await perpsManager.parameters(marketKey)).skewScaleUSD;
 			const price = 100;
 			let sizes = await perpsEngine.marketSizes(marketKey);
 			let summary = await marketSummary();
@@ -854,7 +854,7 @@ contract('PerpsEngineV2', accounts => {
 					const leverage = side === 'long' ? toUnit('10') : toUnit('-10');
 
 					beforeEach(async () => {
-						await perpsSettings.setMaxSingleSideValueUSD(marketKey, toUnit('10000'), {
+						await perpsManager.setMaxSingleSideValueUSD(marketKey, toUnit('10000'), {
 							from: owner,
 						});
 						await setPrice(baseAsset, toUnit('1'));
@@ -1881,7 +1881,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnEqual((await marketSummary()).currentFundingRate, toUnit(0));
 
 			const minScale = divideDecimal(
-				(await perpsSettings.parameters(marketKey)).skewScaleUSD,
+				(await perpsManager.parameters(marketKey)).skewScaleUSD,
 				price
 			);
 			// Market is 24 units long skewed (24 / 100000)
@@ -1939,12 +1939,12 @@ contract('PerpsEngineV2', accounts => {
 			const expectedFunding = toUnit('-0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding rate
 			assert.bnEqual((await marketSummary()).currentFundingRate, expectedFunding);
 
-			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
+			await perpsManager.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
 			assert.bnEqual(
 				(await marketSummary()).currentFundingRate,
 				multiplyDecimal(expectedFunding, toUnit(2))
 			);
-			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0'), { from: owner });
+			await perpsManager.setMaxFundingRate(marketKey, toUnit('0'), { from: owner });
 			assert.bnEqual((await marketSummary()).currentFundingRate, toUnit('0'));
 		});
 
@@ -1968,7 +1968,7 @@ contract('PerpsEngineV2', accounts => {
 			const expectedFunding = toUnit('0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding rate
 			assert.bnEqual((await marketSummary()).currentFundingRate, expectedFunding);
 
-			await perpsSettings.setSkewScaleUSD(marketKey, toUnit(500 * initialPrice), {
+			await perpsManager.setSkewScaleUSD(marketKey, toUnit(500 * initialPrice), {
 				from: owner,
 			});
 			assert.bnEqual(
@@ -1976,7 +1976,7 @@ contract('PerpsEngineV2', accounts => {
 				multiplyDecimal(expectedFunding, toUnit('2'))
 			);
 
-			await perpsSettings.setSkewScaleUSD(marketKey, toUnit(250 * initialPrice), {
+			await perpsManager.setSkewScaleUSD(marketKey, toUnit(250 * initialPrice), {
 				from: owner,
 			});
 			assert.bnEqual(
@@ -1984,7 +1984,7 @@ contract('PerpsEngineV2', accounts => {
 				multiplyDecimal(expectedFunding, toUnit('4'))
 			);
 
-			await perpsSettings.setSkewScaleUSD(marketKey, toUnit(2000 * initialPrice), {
+			await perpsManager.setSkewScaleUSD(marketKey, toUnit(2000 * initialPrice), {
 				from: owner,
 			});
 			assert.bnEqual(
@@ -1993,7 +1993,7 @@ contract('PerpsEngineV2', accounts => {
 			);
 
 			// skewScaleUSD is below market size
-			await perpsSettings.setSkewScaleUSD(marketKey, toUnit(4 * price), { from: owner });
+			await perpsManager.setSkewScaleUSD(marketKey, toUnit(4 * price), { from: owner });
 			assert.bnEqual((await marketSummary()).currentFundingRate, toUnit('0.1')); // max funding rate
 		});
 
@@ -2002,7 +2002,7 @@ contract('PerpsEngineV2', accounts => {
 
 			describe(`${side}`, () => {
 				beforeEach(async () => {
-					await perpsSettings.setMaxSingleSideValueUSD(marketKey, toUnit('100000'), {
+					await perpsManager.setMaxSingleSideValueUSD(marketKey, toUnit('100000'), {
 						from: owner,
 					});
 				});
@@ -2022,7 +2022,7 @@ contract('PerpsEngineV2', accounts => {
 				it('Different skew rates induce proportional funding levels', async () => {
 					// skewScaleUSD is below actual skew
 					const skewScaleUSD = toUnit(100 * 100);
-					await perpsSettings.setSkewScaleUSD(marketKey, skewScaleUSD, { from: owner });
+					await perpsManager.setSkewScaleUSD(marketKey, skewScaleUSD, { from: owner });
 
 					const traderPos = leverage.mul(toBN('10'));
 					await transferAndModify({
@@ -2038,7 +2038,7 @@ contract('PerpsEngineV2', accounts => {
 					await setPrice(baseAsset, toUnit('100'));
 
 					for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
-						await perpsSettings.setMaxFundingRate(marketKey, maxFR, { from: owner });
+						await perpsManager.setMaxFundingRate(marketKey, maxFR, { from: owner });
 
 						for (let i = points; i >= 0; i--) {
 							// now lerp from leverage*k to leverage
@@ -2091,7 +2091,7 @@ contract('PerpsEngineV2', accounts => {
 			// pause the market
 			await systemStatus.suspendFuturesMarket(marketKey, '0', { from: owner });
 			// set funding rate to 0
-			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0'), { from: owner });
+			await perpsManager.setMaxFundingRate(marketKey, toUnit('0'), { from: owner });
 
 			// check accrued
 			const accrued = toBN((await getPositionSummary(trader)).accruedFunding);
@@ -2105,7 +2105,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnEqual((await getPositionSummary(trader)).accruedFunding, accrued);
 
 			// set funding rate to 0.1 again
-			await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.1'), { from: owner });
+			await perpsManager.setMaxFundingRate(marketKey, toUnit('0.1'), { from: owner });
 			// resume
 			await systemStatus.resumeFuturesMarket(marketKey, { from: owner });
 
@@ -2163,13 +2163,13 @@ contract('PerpsEngineV2', accounts => {
 
 			it('Funding entry is recomputed by setting funding rate parameters', async () => {
 				// no skewScaleUSD
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
 
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('100'));
 				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit('-6'), toUnit('0.01'));
 
-				await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
+				await perpsManager.setMaxFundingRate(marketKey, toUnit('0.2'), { from: owner });
 				const time = await currentTime();
 
 				const lastFundingEntry = await perpsStorage.lastFundingEntry(marketKey);
@@ -2384,7 +2384,7 @@ contract('PerpsEngineV2', accounts => {
 					toUnit('0.001')
 				);
 
-				await perpsSettings.setMinKeeperFee(toUnit('100'), { from: owner });
+				await perpsManager.setMinKeeperFee(toUnit('100'), { from: owner });
 
 				// liqMargin = max(100, 250 * 20 *0.0035) + 250 * 20*0.0025 = 100 + 12.5 = 112.5
 				// liqPrice = 250 + (112.5 − (1000 - 15))÷(20) = 206.375
@@ -2400,7 +2400,7 @@ contract('PerpsEngineV2', accounts => {
 					toUnit('0.001')
 				);
 
-				await perpsSettings.setLiquidationFeeRatio(toUnit('0.03'), { from: owner });
+				await perpsManager.setLiquidationFeeRatio(toUnit('0.03'), { from: owner });
 				// liqMargin = max(100, 250 * 20 *0.03) + 250 * 20*0.0025 = 150 + 12.5 = 162.5
 				// liqPrice = 250 + (162.5 − (1000 - 15))÷(20) = 208.875
 				assert.bnClose(
@@ -2415,7 +2415,7 @@ contract('PerpsEngineV2', accounts => {
 					toUnit('0.001')
 				);
 
-				await perpsSettings.setLiquidationBufferRatio(toUnit('0.03'), { from: owner });
+				await perpsManager.setLiquidationBufferRatio(toUnit('0.03'), { from: owner });
 				// liqMargin = max(100, 250 * 20 *0.03) + 250 * 20*0.0025 = 150 + 150 = 300
 				// liqPrice = 250 + (300 − (1000 - 15))÷(20) = 215.75
 				assert.bnClose(
@@ -2430,9 +2430,9 @@ contract('PerpsEngineV2', accounts => {
 					toUnit('0.001')
 				);
 
-				await perpsSettings.setMinKeeperFee(toUnit('0'), { from: owner });
-				await perpsSettings.setLiquidationFeeRatio(toUnit('0'), { from: owner });
-				await perpsSettings.setLiquidationBufferRatio(toUnit('0'), { from: owner });
+				await perpsManager.setMinKeeperFee(toUnit('0'), { from: owner });
+				await perpsManager.setLiquidationFeeRatio(toUnit('0'), { from: owner });
+				await perpsManager.setLiquidationBufferRatio(toUnit('0'), { from: owner });
 
 				assert.bnClose(
 					(await getPositionSummary(trader)).approxLiquidationPrice,
@@ -2447,7 +2447,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('Liquidation price is accurate with funding', async () => {
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
 
 				await setPrice(baseAsset, toUnit('250'));
 				// Submit orders that induce -0.05 funding rate
@@ -2565,7 +2565,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('Liquidation properly affects the overall market parameters (long case)', async () => {
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('20000'), { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('20000'), { from: owner });
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
@@ -2615,7 +2615,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('20000'), { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('20000'), { from: owner });
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
@@ -2667,7 +2667,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(pos.size, toUnit(0));
 
 				const liquidationFee = multiplyDecimal(
-					multiplyDecimal(await perpsSettings.liquidationFeeRatio(), newPrice),
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
 					toUnit(40) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
@@ -2724,7 +2724,7 @@ contract('PerpsEngineV2', accounts => {
 				const tx = await perpsEngine.liquidatePosition(marketKey, trader, liquidator);
 
 				const liquidationFee = multiplyDecimal(
-					multiplyDecimal(await perpsSettings.liquidationFeeRatio(), newPrice),
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
 					toUnit(40) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
@@ -2770,7 +2770,7 @@ contract('PerpsEngineV2', accounts => {
 
 				// in this case, proportional fee is smaller than minimum fee
 				const liquidationFee = multiplyDecimal(
-					multiplyDecimal(await perpsSettings.liquidationFeeRatio(), newPrice),
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
 					toUnit(20) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
@@ -2825,7 +2825,7 @@ contract('PerpsEngineV2', accounts => {
 				const tx = await perpsEngine.liquidatePosition(marketKey, trader3, liquidator);
 
 				const liquidationFee = multiplyDecimal(
-					multiplyDecimal(await perpsSettings.liquidationFeeRatio(), newPrice),
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
 					toUnit(20) // position size
 				);
 				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
@@ -2858,7 +2858,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 
 				// raise the liquidation fee
-				await perpsSettings.setMinKeeperFee(toUnit('100'), { from: owner });
+				await perpsManager.setMinKeeperFee(toUnit('100'), { from: owner });
 
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				price = (await getPositionSummary(trader)).approxLiquidationPrice;
@@ -2942,7 +2942,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual((await getPositionSummary(trader)).approxLiquidationFee, minKeeperFee);
 
 				// reduce minimum
-				await perpsSettings.setMinKeeperFee(toUnit(1), { from: owner });
+				await perpsManager.setMinKeeperFee(toUnit(1), { from: owner });
 				const res = await getPositionSummary(trader);
 				assert.bnEqual(
 					res.approxLiquidationFee,
@@ -2958,12 +2958,12 @@ contract('PerpsEngineV2', accounts => {
 					multiplyDecimal(res2.approxLiquidationPrice, toUnit(2 * 0.0035))
 				);
 				// increase minimum
-				await perpsSettings.setMinKeeperFee(toUnit(30), { from: owner });
+				await perpsManager.setMinKeeperFee(toUnit(30), { from: owner });
 				assert.bnEqual((await getPositionSummary(trader2)).approxLiquidationFee, toUnit(30));
 
 				// increase BPs
 				// minimum liquidation fee > 30, 0.02 * 1500 * 2 = 60
-				await perpsSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
+				await perpsManager.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
 				const res3 = await getPositionSummary(trader2);
 				assert.bnEqual(
 					res3.approxLiquidationFee,
@@ -2989,7 +2989,7 @@ contract('PerpsEngineV2', accounts => {
 
 				// reduce minimum
 				// max(1, 2 * 1000 * 0.0035) + 2 * 1000 * 0.0025 = 12
-				await perpsSettings.setMinKeeperFee(toUnit(1), { from: owner });
+				await perpsManager.setMinKeeperFee(toUnit(1), { from: owner });
 				assert.bnEqual(await perpsEngine.liquidationMargin(marketKey, trader), toUnit('12'));
 				assert.bnEqual(await perpsEngine.liquidationMargin(marketKey, trader2), toUnit('12'));
 
@@ -3001,13 +3001,13 @@ contract('PerpsEngineV2', accounts => {
 
 				// change fee BPs
 				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.0025 = 67.5
-				await perpsSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
+				await perpsManager.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
 				assert.bnEqual(await perpsEngine.liquidationMargin(marketKey, trader), toUnit('67.5'));
 				assert.bnEqual(await perpsEngine.liquidationMargin(marketKey, trader2), toUnit('67.5'));
 
 				// change buffer BPs
 				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.03 = 150
-				await perpsSettings.setLiquidationBufferRatio(toUnit(0.03), { from: owner });
+				await perpsManager.setLiquidationBufferRatio(toUnit(0.03), { from: owner });
 				assert.bnEqual(await perpsEngine.liquidationMargin(marketKey, trader), toUnit('150'));
 				assert.bnEqual(await perpsEngine.liquidationMargin(marketKey, trader2), toUnit('150'));
 			});
@@ -3018,15 +3018,15 @@ contract('PerpsEngineV2', accounts => {
 		const everythingReverts = async () => {
 			it('then settings parameter changes revert', async () => {
 				await assert.revert(
-					perpsSettings.setMaxFundingRate(marketKey, 0, { from: owner }),
+					perpsManager.setMaxFundingRate(marketKey, 0, { from: owner }),
 					'Invalid price'
 				);
 				await assert.revert(
-					perpsSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner }),
+					perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner }),
 					'Invalid price'
 				);
 				await assert.revert(
-					perpsSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, {
+					perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, {
 						from: owner,
 					}),
 					'Invalid price'
@@ -3113,9 +3113,9 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('then settings parameter changes do not revert', async () => {
-				await perpsSettings.setMaxFundingRate(marketKey, 0, { from: owner });
-				await perpsSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await perpsSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
+				await perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 					from: owner,
 				});
 			});
@@ -3123,7 +3123,7 @@ contract('PerpsEngineV2', accounts => {
 			it('settings parameter changes still revert if price is invalid', async () => {
 				await setPrice(baseAsset, toUnit('1'), false); // circuit breaker will revert
 				await assert.revert(
-					perpsSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
+					perpsManager.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 						from: owner,
 					}),
 					'Invalid price'

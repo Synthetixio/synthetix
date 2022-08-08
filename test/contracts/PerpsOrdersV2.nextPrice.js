@@ -8,7 +8,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
 contract('PerpsOrdersV2 mixin for next price orders', accounts => {
-	let perpsSettings,
+	let perpsManager,
 		// futuresMarketManager,
 		perpsOrders,
 		perpsEngine,
@@ -51,7 +51,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 
 	before(async () => {
 		({
-			PerpsSettingsV2: perpsSettings,
+			PerpsManagerV2: perpsManager,
 			// FuturesMarketManager: futuresMarketManager,
 			PerpsOrdersV2: perpsOrders,
 			PerpsEngineV2: perpsEngine,
@@ -72,7 +72,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			],
 			contracts: [
 				'FuturesMarketManager',
-				'PerpsSettingsV2',
+				'PerpsManagerV2',
 				'PerpsEngineV2',
 				'PerpsOrdersV2',
 				'AddressResolver',
@@ -118,7 +118,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsOrders.orderFee(marketKey, size))[0];
-			const keeperFee = await perpsSettings.minKeeperFee();
+			const keeperFee = await perpsManager.minKeeperFee();
 			const tx = await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 
 			// check order
@@ -211,7 +211,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsOrders.orderFee(marketKey, size))[0];
-			const keeperFee = await perpsSettings.minKeeperFee();
+			const keeperFee = await perpsManager.minKeeperFee();
 			const tx = await perpsOrders.submitNextPriceOrderWithTracking(marketKey, size, trackingCode, {
 				from: trader,
 			});
@@ -345,7 +345,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				spotFee = (await perpsOrders.orderFee(marketKey, size))[0];
-				keeperFee = await perpsSettings.minKeeperFee();
+				keeperFee = await perpsManager.minKeeperFee();
 				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 			});
 
@@ -468,7 +468,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 				// commitFee is the fee that would be chanrged for a spot trade when order is submitted
 				commitFee = (await perpsOrders.orderFee(marketKey, size))[0];
 				// keeperFee is the minimum keeperFee for the system
-				keeperFee = await perpsSettings.minKeeperFee();
+				keeperFee = await perpsManager.minKeeperFee();
 				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 			});
 

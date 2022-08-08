@@ -18,7 +18,6 @@ contract('PerpsManagerV2', accounts => {
 	let perpsManager,
 		futuresManager,
 		// v2
-		perpsSettings,
 		perpsStorage,
 		perpsEngine,
 		perpsOrders,
@@ -49,7 +48,6 @@ contract('PerpsManagerV2', accounts => {
 			FuturesMarketManager: futuresManager,
 			PerpsManagerV2: perpsManager,
 			// FuturesMarketSettings: futuresMarketSettings,
-			PerpsSettingsV2: perpsSettings,
 			PerpsStorageV2: perpsStorage,
 			PerpsEngineV2: perpsEngine,
 			PerpsOrdersV2: perpsOrders,
@@ -68,7 +66,6 @@ contract('PerpsManagerV2', accounts => {
 				'FuturesMarketManager',
 				// 'FuturesMarketSettings',
 				'PerpsManagerV2',
-				'PerpsSettingsV2',
 				// 'PerpsStorageV2',
 				// 'PerpsEngineV2',
 				// 'PerpsOrdersV2',
@@ -90,17 +87,12 @@ contract('PerpsManagerV2', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	// this makes the minimal configuration changes to allow margin operations
-	async function configureMarket(marketKey) {
-		await perpsSettings.setMaxFundingRate(marketKey, toUnit('0.1'), { from: owner });
-	}
-
 	describe('Basic parameters', () => {
 		it('requires expected contracts', async () => {
 			const actual = await perpsManager.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['PerpsEngineV2', 'PerpsOrdersV2', 'FuturesMarketManager'].map(toBytes32)
+				['FlexibleStorage', 'PerpsEngineV2', 'PerpsOrdersV2', 'FuturesMarketManager'].map(toBytes32)
 			);
 		});
 
@@ -108,7 +100,26 @@ contract('PerpsManagerV2', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsManager.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: ['addMarkets', 'removeMarkets', 'issueSUSD', 'burnSUSD', 'payFee'],
+				expected: [
+					'addMarkets',
+					'removeMarkets',
+					'issueSUSD',
+					'burnSUSD',
+					'payFee',
+					/// Config setters (tested in mixin tests file)
+					'setBaseFee',
+					'setBaseFeeNextPrice',
+					'setNextPriceConfirmWindow',
+					'setMaxLeverage',
+					'setMaxSingleSideValueUSD',
+					'setMaxFundingRate',
+					'setSkewScaleUSD',
+					'setParameters',
+					'setMinKeeperFee',
+					'setLiquidationFeeRatio',
+					'setLiquidationBufferRatio',
+					'setMinInitialMargin',
+				],
 			});
 		});
 
@@ -382,7 +393,6 @@ contract('PerpsManagerV2', accounts => {
 			beforeEach(async () => {
 				await perpsManager.addMarkets(marketKeys, assetKeys, { from: owner });
 				for (const key of marketKeys) {
-					await configureMarket(key);
 					await modifyDebt(key, individualDebt);
 				}
 			});
@@ -408,7 +418,6 @@ contract('PerpsManagerV2', accounts => {
 				// add another market
 				const marketKey = toBytes32('pLINK-2');
 				await perpsManager.addMarkets([marketKey], [toBytes32('LINK')], { from: owner });
-				await configureMarket(marketKey);
 				await modifyDebt(marketKey, toUnit('4000'));
 
 				assert.bnEqual((await perpsManager.totalDebt())[0], toUnit('6700'));
@@ -448,7 +457,7 @@ contract('PerpsManagerV2', accounts => {
 				await setPrice(assetKey, toUnit(1000));
 
 				// Now that the market exists we can set the all its parameters
-				await perpsSettings.setParameters(
+				await perpsManager.setParameters(
 					marketKey,
 					toUnit('0.005'), // 0.5% base fee
 					toUnit('0.0005'), // 0.05% base fee next price
