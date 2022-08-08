@@ -139,8 +139,8 @@ contract('PerpsManagerV2', accounts => {
 
 			// known to storage
 			assert.equal((await perpsStorage.marketScalars(marketKey)).baseAsset, baseAsset);
-			// known to engine but is misconfigured
-			await assert.revert(perpsEngine.marketSummary(marketKey), 'max funding rate 0');
+			// known to engine
+			assert.equal((await perpsEngine.marketSummary(marketKey)).baseAsset, baseAsset);
 			// approved for trading
 			assert.isTrue(await perpsManager.approvedRouterAndMarket(perpsOrders.address, marketKey));
 		}

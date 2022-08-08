@@ -588,7 +588,6 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
 
     function _currentFundingRate(bytes32 marketKey, uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(marketKey));
-        require(maxFundingRate > 0, "max funding rate 0"); // unconfigured market
         int propSkew = _proportionalSkew(marketKey, price);
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -propSkew), _UNIT).multiplyDecimal(maxFundingRate);
