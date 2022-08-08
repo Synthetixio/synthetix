@@ -147,7 +147,7 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
             // market was previously initialized, ensure it was initialized to the same baseAsset
             // this behavior is important in order to allow manager to add previously removed markets
             // or for adding markets to a new manager that will call this method.
-            require(market.baseAsset == baseAsset, "cannot init with different asset");
+            require(market.baseAsset == baseAsset, "initialized with different asset");
         }
     }
 
@@ -670,9 +670,15 @@ contract PerpsEngineV2Base is PerpsSettingsV2Mixin, IPerpsTypesV2, IPerpsEngineV
         int oldSize,
         int newSize
     ) internal view returns (bool) {
+        uint maxSizeUSD = _maxSingleSideValueUSD(marketKey);
+
         // Allow a bit of extra value in case of rounding errors.
-        uint roundingBuffer = 100 * uint(_UNIT); // 100 sUSD
-        uint maxSize = _maxSingleSideValueUSD(marketKey).add(roundingBuffer).divideDecimal(price);
+        // Do not add if max size is 0 (closed market)
+        if (maxSizeUSD > 0) {
+            maxSizeUSD += 100 * uint(_UNIT); // 100 sUSD
+        }
+
+        uint maxSize = maxSizeUSD.divideDecimal(price);
 
         // Allow users to reduce an order no matter the market conditions.
         if (_sameSide(oldSize, newSize) && _abs(newSize) <= _abs(oldSize)) {

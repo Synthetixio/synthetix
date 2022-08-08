@@ -143,6 +143,14 @@ contract('PerpsManagerV2', accounts => {
 			assert.equal((await perpsEngine.marketSummary(marketKey)).baseAsset, baseAsset);
 			// approved for trading
 			assert.isTrue(await perpsManager.approvedRouterAndMarket(perpsOrders.address, marketKey));
+
+			// trader can deposit
+			await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
+			// cannot open position of even 1 wei
+			await assert.revert(
+				perpsOrders.modifyPosition(marketKey, toBN(1), { from: trader }),
+				'Max market size exceeded'
+			);
 		}
 
 		it('Added the two initial markets', async () => {
