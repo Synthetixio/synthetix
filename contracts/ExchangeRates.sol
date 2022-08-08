@@ -46,7 +46,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
         require(aggregator.latestRound() >= 0, "Given Aggregator is invalid");
         uint8 decimals = aggregator.decimals();
-        require(decimals <= 18, "Aggregator decimals should be lower or equal to 18");
+        // This contract converts all external rates to 18 decimal rates, so adding external rates with
+        // higher precision will result in losing precision internally. 27 decimals will result in losing 9 decimal
+        // places, which should leave plenty precision for most things.
+        require(decimals <= 27, "Aggregator decimals should be lower or equal to 27");
         if (address(aggregators[currencyKey]) == address(0)) {
             aggregatorKeys.push(currencyKey);
         }
@@ -381,11 +384,20 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function _formatAggregatorAnswer(bytes32 currencyKey, int256 rate) internal view returns (uint) {
         require(rate >= 0, "Negative rate not supported");
-        if (currencyKeyDecimals[currencyKey] > 0) {
-            uint multiplier = 10**uint(SafeMath.sub(18, currencyKeyDecimals[currencyKey]));
-            return uint(uint(rate).mul(multiplier));
+        uint decimals = currencyKeyDecimals[currencyKey];
+        uint result = uint(rate);
+        if (decimals == 0 || decimals == 18) {
+            // do not convert for 0 (part of implicit interface), and not needed for 18
+        } else if (decimals < 18) {
+            // increase precision to 18
+            uint multiplier = 10**(18 - decimals); // SafeMath not needed since decimals is small
+            result = result.mul(multiplier);
+        } else if (decimals > 18) {
+            // decrease precision to 18
+            uint divisor = 10**(decimals - 18); // SafeMath not needed since decimals is small
+            result = result.div(divisor);
         }
-        return uint(rate);
+        return result;
     }
 
     function _getRateAndUpdatedTime(bytes32 currencyKey) internal view returns (RateAndUpdatedTime memory) {
