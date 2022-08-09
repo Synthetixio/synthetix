@@ -137,7 +137,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
 
     ////// Helper views
 
-    function _sideSizes(MarketScalars memory marketScalars) internal view returns (uint long, uint short) {
+    function _sideSizes(MarketScalars memory marketScalars) internal pure returns (uint long, uint short) {
         int size = int(marketScalars.marketSize);
         int skew = marketScalars.marketSkew;
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));

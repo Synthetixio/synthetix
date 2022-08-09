@@ -504,7 +504,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // get remaining margin for sending any leftover buffer to fee pool
         uint remMargin = _remainingMargin(prevPosition, price);
 
-        // store the new position, don't touch the locked margin
+        // store the new position, don't touch the locked margin because it was locked
+        // presumably for some other purpose by the orders-router (e.g. in next-price paying fees)
         _updateStoredPosition(marketKey, account, 0, prevPosition.lockedMargin, 0, price);
 
         // Issue the reward to the liquidator.

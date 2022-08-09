@@ -15,7 +15,7 @@ import "./interfaces/IPerpsInterfacesV2.sol";
 ///    two aspects (configs and marketKeys registry) doesn't make sense because than questions of "can an unconfigured
 ///    market be added to manager?" Or "can a market not added in manager have its funding recomputed?" have
 ///    no good answers.
-contract PerpsConfigSettersV2Mixin is Owned, PerpsConfigGettersV2Mixin, IPerpsConfigSettersV2, IPerpsTypesV2 {
+contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, IPerpsConfigSettersV2, IPerpsTypesV2 {
     /* ========== EVENTS ========== */
     event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
     event MinKeeperFeeUpdated(uint sUSD);

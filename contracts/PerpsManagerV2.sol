@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./PerpsConfigSettersV2Mixin.sol";
+import "./PerpsManagerV2ConfigSettersMixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
 // Libraries
@@ -14,7 +14,7 @@ import "./Bytes32SetLib.sol";
 // interfaces
 import "./interfaces/IFuturesMarketManager.sol";
 
-contract PerpsManagerV2 is PerpsConfigSettersV2Mixin, IPerpsManagerV2, IPerpsManagerV2Internal {
+contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IPerpsManagerV2Internal {
     using SafeMath for uint;
     using Bytes32SetLib for Bytes32SetLib.Bytes32Set;
 
@@ -40,7 +40,7 @@ contract PerpsManagerV2 is PerpsConfigSettersV2Mixin, IPerpsManagerV2, IPerpsMan
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public PerpsConfigSettersV2Mixin(_owner, _resolver) {}
+    constructor(address _owner, address _resolver) public PerpsManagerV2ConfigSettersMixin(_owner, _resolver) {}
 
     /* ========== MODIFIERS ========== */
 
@@ -52,7 +52,7 @@ contract PerpsManagerV2 is PerpsConfigSettersV2Mixin, IPerpsManagerV2, IPerpsMan
     /* ========== External views ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = PerpsConfigSettersV2Mixin.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = PerpsManagerV2ConfigSettersMixin.resolverAddressesRequired();
         // engine is already required in PerpsConfigSettersV2Mixin
         bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_PERPSORDERSEV2;

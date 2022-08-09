@@ -9,7 +9,7 @@ const { getDecodedLogs, decodedEventEqual, onlyGivenAddressCanInvoke } = require
 
 const BN = require('bn.js');
 
-contract('PerpsManagerV2 PerpsConfigSettersV2Mixin', accounts => {
+contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 	let perpsManager;
 
 	const owner = accounts[1];
