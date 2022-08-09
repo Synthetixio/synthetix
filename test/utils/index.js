@@ -430,13 +430,16 @@ module.exports = ({ web3 } = {}) => {
 	 */
 	const assertDeepEqual = (actual, expected, context) => {
 		// Check if it's a value type we can assert on straight away.
-		if (BN.isBN(actual) || BN.isBN(expected)) {
+		if (
+			BN.isBN(actual) ||
+			BN.isBN(expected) ||
+			typeof expected === 'number' ||
+			typeof actual === 'number'
+		) {
 			assertBNEqual(actual, expected, context);
 		} else if (
 			typeof expected === 'string' ||
 			typeof actual === 'string' ||
-			typeof expected === 'number' ||
-			typeof actual === 'number' ||
 			typeof expected === 'boolean' ||
 			typeof actual === 'boolean'
 		) {

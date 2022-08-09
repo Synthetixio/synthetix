@@ -203,7 +203,7 @@ interface IPerpsEngineV2Internal {
 }
 
 interface IPerpsStorageV2External {
-    // views only
+    // views only, mostly autogeneraged
     function marketScalars(bytes32 marketKey) external view returns (IPerpsTypesV2.MarketScalars memory);
 
     function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsTypesV2.FundingEntry memory);

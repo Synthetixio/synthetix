@@ -403,6 +403,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     ) internal {
         // prevent creating empty positions
         require(lockAmount != 0 || burnAmount != 0 || transferAmount != 0, "zero modification amounts");
+        // this ensures position is initialized so that it has the correct id (instead of zero) for events
         Position memory oldPosition = _stateMutative().positionWithInit(marketKey, account);
 
         // ensure we only burn as much as previously locked + newly locked
@@ -719,8 +720,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     }
 
     function _accruedFunding(Position memory position, uint price) internal view returns (int funding) {
-        if (position.id == 0) {
-            return 0; // The position does not exist -- no funding.
+        if (position.size == 0) {
+            return 0; // The position have no size
         }
         int startFunding = position.lastFundingEntry.funding;
         int net = _nextFundingAmount(position.marketKey, price).sub(startFunding);
@@ -781,8 +782,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     /// assumes position was initilized (has valid marketKey)
     function _withdrawableMargin(Position memory position, uint price) internal view returns (uint) {
-        if (position.id == 0) {
-            return 0; // The position does not exist -- no margin.
+        if (position.margin == 0) {
+            return 0; // there's no position
         }
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
