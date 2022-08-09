@@ -137,7 +137,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
-        if (_probeRate(sourceCurrencyKey) || _probeRate(destinationCurrencyKey)) {
+        if (!_ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount)) {
             return (0, 0);
         }
 

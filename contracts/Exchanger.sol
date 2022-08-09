@@ -433,9 +433,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             IVirtualSynth vSynth
         )
     {
-        require(sourceAmount > 0, "Zero amount");
-
-        if (_probeRate(sourceCurrencyKey) || _probeRate(destinationCurrencyKey)) {
+        if (!_ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount)) {
             return (0, 0, IVirtualSynth(0));
         }
 
@@ -546,20 +544,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
-    // calls `rateWithSafetyChecks` (which can trigger circuit breakers)
-    // returns if there are any problems found with the rate of the given currencyKey
-    function _probeRate(bytes32 currencyKey) internal returns (bool) {
-        if (currencyKey == sUSD) {
-            return false;
-        }
-
-        (, bool broken, bool staleOrInvalid) = exchangeRates().rateWithSafetyChecks(currencyKey);
-
-        require(!staleOrInvalid, "src/dest rate stale or flagged");
-
-        return broken;
-    }
-
     function _convert(
         bytes32 sourceCurrencyKey,
         address from,
@@ -615,6 +599,22 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
+    // runs basic checks and calls `rateWithSafetyChecks` (which can trigger circuit breakers)
+    // returns if there are any problems found with the rate of the given currencyKey but not reverted
+    function _ensureCanExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey, uint sourceAmount) internal returns (bool) {
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
+        require(sourceAmount > 0, "Zero amount");
+
+        (, bool srcBroken, bool srcStaleOrInvalid) = sourceCurrencyKey != sUSD ? exchangeRates().rateWithSafetyChecks(sourceCurrencyKey) : (0, false, false);
+        (, bool dstBroken, bool dstStaleOrInvalid) = destinationCurrencyKey != sUSD ? exchangeRates().rateWithSafetyChecks(destinationCurrencyKey) : (0, false, false);
+
+        require(!srcStaleOrInvalid, "src rate stale or flagged");
+        require(!dstStaleOrInvalid, "dest rate stale or flagged");
+
+        return !srcBroken && !dstBroken;
+    }
+
+    // runs additional checks to verify a rate is valid at a specific round`
     function _ensureCanExchangeAtRound(
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey,
