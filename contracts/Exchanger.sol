@@ -601,12 +601,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     // runs basic checks and calls `rateWithSafetyChecks` (which can trigger circuit breakers)
     // returns if there are any problems found with the rate of the given currencyKey but not reverted
-    function _ensureCanExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey, uint sourceAmount) internal returns (bool) {
+    function _ensureCanExchange(
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey,
+        uint sourceAmount
+    ) internal returns (bool) {
         require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
         require(sourceAmount > 0, "Zero amount");
 
-        (, bool srcBroken, bool srcStaleOrInvalid) = sourceCurrencyKey != sUSD ? exchangeRates().rateWithSafetyChecks(sourceCurrencyKey) : (0, false, false);
-        (, bool dstBroken, bool dstStaleOrInvalid) = destinationCurrencyKey != sUSD ? exchangeRates().rateWithSafetyChecks(destinationCurrencyKey) : (0, false, false);
+        (, bool srcBroken, bool srcStaleOrInvalid) =
+            sourceCurrencyKey != sUSD ? exchangeRates().rateWithSafetyChecks(sourceCurrencyKey) : (0, false, false);
+        (, bool dstBroken, bool dstStaleOrInvalid) =
+            destinationCurrencyKey != sUSD
+                ? exchangeRates().rateWithSafetyChecks(destinationCurrencyKey)
+                : (0, false, false);
 
         require(!srcStaleOrInvalid, "src rate stale or flagged");
         require(!dstStaleOrInvalid, "dest rate stale or flagged");
@@ -913,13 +921,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        require(sourceCurrencyKey == sUSD || 
-            !exchangeRates().rateIsInvalid(sourceCurrencyKey)
-        , "src synth rate invalid");
+        require(sourceCurrencyKey == sUSD || !exchangeRates().rateIsInvalid(sourceCurrencyKey), "src synth rate invalid");
 
-        require(destinationCurrencyKey == sUSD || 
-            !exchangeRates().rateIsInvalid(destinationCurrencyKey)
-        , "dest synth rate invalid");
+        require(
+            destinationCurrencyKey == sUSD || !exchangeRates().rateIsInvalid(destinationCurrencyKey),
+            "dest synth rate invalid"
+        );
 
         // The checks are added for consistency with the checks performed in _exchange()
         // The reverts (instead of no-op returns) are used order to prevent incorrect usage in calling contracts
