@@ -1,5 +1,4 @@
 name = "synthetix"
-version = "2.74.2-alpha"
 description = "Infinite liquidity is here."
 
 # overrides the deployed contracts used by the deployer

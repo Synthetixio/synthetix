@@ -5,7 +5,7 @@ const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
-const { currentTime, toUnit } = require('../utils')();
+const { currentTime, toUnit, toBN } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
@@ -65,6 +65,15 @@ async function updateAggregatorRates(
 				from: await circuitBreaker.owner(),
 			});
 		}
+	}
+}
+
+function convertToDecimals(val, decimals) {
+	if (decimals <= 18) {
+		return web3.utils.toBN(Math.round(val * Math.pow(10, decimals)));
+	} else {
+		/// JS can't handle large decimals, convert to 18 first, and add decimals as BN.mul
+		return convertToDecimals(val, 18).mul(toBN(10).pow(toBN(decimals - 18)));
 	}
 }
 
@@ -215,9 +224,7 @@ module.exports = {
 		return web3.utils.toBN(Math.round(val * 1e8));
 	},
 
-	convertToDecimals(val, decimals) {
-		return web3.utils.toBN(Math.round(val * Math.pow(10, decimals)));
-	},
+	convertToDecimals,
 
 	ensureOnlyExpectedMutativeFunctions({
 		abi,
