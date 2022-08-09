@@ -326,7 +326,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 anyRateInvalid =
                     flagList[i] ||
                     _rateIsStaleWithTime(_rateStalePeriod, rateEntry.time) ||
-                    _rateIsCircuitBroken(currencyKeys[i], rateEntry.time);
+                    _rateIsCircuitBroken(currencyKeys[i], rateEntry.rate);
             }
         }
     }
