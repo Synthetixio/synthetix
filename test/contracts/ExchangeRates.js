@@ -35,7 +35,7 @@ const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, dexPriceAggregator, accountOne, accountTwo] = accounts;
-	const [SNX, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, GOLD, fastGasPrice] = [
+	const [SNX, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, GOLD, fastGasPrice, debtRatio] = [
 		'SNX',
 		'sJPY',
 		'sETH',
@@ -46,11 +46,13 @@ contract('Exchange Rates', async accounts => {
 		'sAUD',
 		'GOLD',
 		'fastGasPrice',
+		'DebtRatio',
 	].map(toBytes32);
 	let instance;
 	let systemSettings;
 	let aggregatorJPY;
 	let aggregatorXTZ;
+	let aggregatorDebtRatio;
 	let aggregatorFastGasPrice;
 	let mockFlagsInterface;
 
@@ -485,15 +487,15 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 
-				describe('When an aggregator with more than 18 decimals is added', () => {
-					it('an aggregator should return a value with 18 decimals or less', async () => {
+				describe('When an aggregator with more than 27 decimals is added', () => {
+					it('an aggregator should return a value with 27 decimals or less', async () => {
 						const newAggregator = await MockAggregator.new({ from: owner });
-						await newAggregator.setDecimals('19');
+						await newAggregator.setDecimals('28');
 						await assert.revert(
 							instance.addAggregator(sJPY, newAggregator.address, {
 								from: owner,
 							}),
-							'Aggregator decimals should be lower or equal to 18'
+							'Aggregator decimals should be lower or equal to 27'
 						);
 					});
 				});
@@ -526,6 +528,42 @@ contract('Exchange Rates', async accounts => {
 				it('currenciesUsingAggregator for a rate returns an empty', async () => {
 					assert.deepEqual(await instance.currenciesUsingAggregator(aggregatorJPY.address), []);
 					assert.deepEqual(await instance.currenciesUsingAggregator(ZERO_ADDRESS), []);
+				});
+
+				describe('when the owner adds DebtRatio with 27 decimals added as an aggregator', () => {
+					beforeEach(async () => {
+						await instance.addAggregator(debtRatio, aggregatorDebtRatio.address, {
+							from: owner,
+						});
+					});
+
+					describe('when the aggregator price is set to set a specific number with 27 decimals', () => {
+						const newRate = toBN('123123456789012345678901234567'); // 123.12.. with 27 decimals
+						let timestamp;
+						beforeEach(async () => {
+							timestamp = await currentTime();
+							await aggregatorDebtRatio.setLatestAnswer(newRate, timestamp);
+						});
+
+						describe('when the price is fetched for debtRatio', () => {
+							it('the specific number is returned with 18 decimals', async () => {
+								const result = await instance.rateForCurrency(debtRatio, {
+									from: accountOne,
+								});
+								assert.bnEqual(result, newRate.div(toBN('1000000000')));
+							});
+							it('and the timestamp is the latest', async () => {
+								const result = await instance.lastRateUpdateTimes(debtRatio, {
+									from: accountOne,
+								});
+								assert.bnEqual(result.toNumber(), timestamp);
+							});
+						});
+					});
+
+					it('re-adding aggregator with another number of decimals works', async () => {
+						await instance.addAggregator(debtRatio, aggregatorXTZ.address, { from: owner });
+					});
 				});
 
 				describe('when the owner adds sJPY added as an aggregator', () => {
@@ -1952,10 +1990,12 @@ contract('Exchange Rates', async accounts => {
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });
+			aggregatorDebtRatio = await MockAggregator.new({ from: owner });
 			aggregatorFastGasPrice = await MockAggregator.new({ from: owner });
 
 			aggregatorJPY.setDecimals('8');
 			aggregatorXTZ.setDecimals('8');
+			aggregatorDebtRatio.setDecimals('27');
 			aggregatorFastGasPrice.setDecimals('0');
 
 			// create but don't connect up the mock flags interface yet

@@ -694,6 +694,11 @@
 			]
     },
 		{
+			"sip": 257,
+			"layer": "both",
+      "sources": ["ExchangeRates"]
+    },
+    {
 			"sip": 258,
 			"layer": "base",
 			"sources": ["ExchangeRates"],
