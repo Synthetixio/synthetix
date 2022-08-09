@@ -393,10 +393,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // but thats not how the functionality has worked prior to this change so that is why it works this way here
             // if you are adding new code taht calls this function and the rate is a long time ago, note that this function may resolve an invalid rate when its actually valid!
             (uint rate, uint time) = _getRateAndTimestampAtRound(currencyKeys[i], roundIds[i]);
-            if (flagList[i] || 
-                _rateIsStaleWithTime(_rateStalePeriod, time) || 
-                _rateIsCircuitBroken(currencyKeys[i], rate)
-            ) {
+            if (flagList[i] || _rateIsStaleWithTime(_rateStalePeriod, time) || _rateIsCircuitBroken(currencyKeys[i], rate)) {
                 return true;
             }
         }
