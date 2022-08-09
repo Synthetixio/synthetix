@@ -401,6 +401,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint burnAmount,
         uint price
     ) internal {
+        // prevent creating empty positions
+        require(lockAmount != 0 || burnAmount != 0 || transferAmount != 0, "zero modification amounts");
         Position memory oldPosition = _stateMutative().positionWithInit(marketKey, account);
 
         // ensure we only burn as much as previously locked + newly locked
@@ -449,7 +451,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address account,
         TradeParams memory params
     ) internal {
-        Position memory oldPosition = _stateMutative().positionWithInit(marketKey, account);
+        Position memory oldPosition = _stateViews().positions(marketKey, account);
 
         // Compute the new position after performing the trade
         (uint newMargin, int newSize, uint fee, Status status) = _postTradeDetails(oldPosition, params);
@@ -494,7 +496,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint price,
         address liquidator
     ) internal {
-        Position memory prevPosition = _stateMutative().positionWithInit(marketKey, account);
+        Position memory prevPosition = _stateViews().positions(marketKey, account);
 
         // check can actually liquidate
         _revertIfError(!_canLiquidate(prevPosition, price), Status.CannotLiquidate);
