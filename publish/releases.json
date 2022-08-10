@@ -635,6 +635,16 @@
 			"released": "both"
 		},
 		{
+			"sip": 230,
+			"layer": "both",
+			"sources": [
+				"CircuitBreaker",
+				"ExchangeRates",
+				"Exchanger",
+				"Issuer"
+			]
+		},
+		{
 			"sip": 235,
 			"layer": "both",
 			"sources": ["Issuer"],

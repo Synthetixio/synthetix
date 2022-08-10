@@ -47,6 +47,7 @@ contract('Liquidator', accounts => {
 
 	let addressResolver,
 		exchangeRates,
+		circuitBreaker,
 		liquidator,
 		liquidatorRewards,
 		synthetix,
@@ -66,6 +67,7 @@ contract('Liquidator', accounts => {
 		({
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
+			CircuitBreaker: circuitBreaker,
 			Liquidator: liquidator,
 			LiquidatorRewards: liquidatorRewards,
 			Synthetix: synthetix,
@@ -84,6 +86,7 @@ contract('Liquidator', accounts => {
 			contracts: [
 				'AddressResolver',
 				'ExchangeRates',
+				'CircuitBreaker',
 				'Exchanger', // required for Synthetix to check if exchanger().hasWaitingPeriodOrSettlementOwing
 				'FeePool',
 				'DebtCache',
@@ -122,7 +125,7 @@ contract('Liquidator', accounts => {
 	};
 
 	const updateSNXPrice = async rate => {
-		await updateAggregatorRates(exchangeRates, [SNX], [rate].map(toUnit));
+		await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], [rate].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 	};
 

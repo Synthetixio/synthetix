@@ -50,6 +50,9 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"CircuitBreaker": {
+		"deploy": true
+	},
 	"ExchangeCircuitBreaker": {
 		"deploy": true
 	},

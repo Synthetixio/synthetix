@@ -67,7 +67,7 @@ contract('NativeEtherWrapper', async accounts => {
 		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
 
 		// Depot requires ETH rates
-		await updateAggregatorRates(exchangeRates, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

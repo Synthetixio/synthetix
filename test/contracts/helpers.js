@@ -43,7 +43,13 @@ async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
 /// @param keys array of bytes32 currency keys
 /// @param rates array of BN rates
 /// @param timestamp optional timestamp for the update, currentTime() is used by default
-async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = undefined) {
+async function updateAggregatorRates(
+	exchangeRates,
+	circuitBreaker,
+	keys,
+	rates,
+	timestamp = undefined
+) {
 	timestamp = timestamp || (await currentTime());
 	for (let i = 0; i < keys.length; i++) {
 		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
@@ -53,6 +59,12 @@ async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = und
 		const aggregator = await MockAggregator.at(aggregatorAddress);
 		// set the rate
 		await aggregator.setLatestAnswer(rates[i], timestamp);
+
+		if (circuitBreaker) {
+			await circuitBreaker.resetLastValue([aggregatorAddress], [rates[i]], {
+				from: await circuitBreaker.owner(),
+			});
+		}
 	}
 }
 
@@ -148,13 +160,13 @@ module.exports = {
 
 	updateAggregatorRates,
 
-	async updateRatesWithDefaults({ exchangeRates, owner, debtCache }) {
+	async updateRatesWithDefaults({ exchangeRates, circuitBreaker, owner, debtCache }) {
 		const keys = ['SNX', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
 		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
 		// set up any missing aggregators
 		await setupMissingPriceAggregators(exchangeRates, owner, keys);
 
-		await updateAggregatorRates(exchangeRates, keys, rates);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 
