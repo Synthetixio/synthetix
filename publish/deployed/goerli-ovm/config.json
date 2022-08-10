@@ -178,5 +178,8 @@
 	},
 	"LiquidatorRewards": {
 		"deploy": false
+	},
+	"CircuitBreaker": {
+		"deploy": false
 	}
 }

@@ -69,7 +69,9 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		const sBTC = toBytes32('sBTC');
+
+		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const setupShort = async () => {
@@ -882,7 +884,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(50)]);
 
 				// simulate buying sETH for 50 susd.
 				await sUSDSynth.transfer(owner, toUnit(50), { from: account1 });
@@ -904,7 +906,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(150)]);
 
 				// simulate buying sETH for 150 susd.
 				await sUSDSynth.transfer(owner, toUnit(150), { from: account1 });
@@ -965,7 +967,7 @@ contract('CollateralShort', async accounts => {
 				const currentEthRate = toUnit(110);
 				const currentDebt = multiplyDecimal(initialLoan, currentEthRate);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [currentEthRate]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [currentEthRate]);
 
 				const {
 					liquidatedCollateral,
@@ -1030,7 +1032,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(150)]);
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
@@ -1071,7 +1073,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(150)]);
 
 				// 111100 + 50 - (2 * 50) = 111,050
 
@@ -1115,7 +1117,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(50)]);
 
 				// 111100 - 50 + (2 * 50) = 111,150
 

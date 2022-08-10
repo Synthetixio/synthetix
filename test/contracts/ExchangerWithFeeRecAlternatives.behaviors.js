@@ -30,6 +30,7 @@ module.exports = function({ accounts }) {
 
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			contracts: [
+				'CircuitBreaker',
 				'DebtCache',
 				'DelegateApprovals',
 				'ExchangeRates',
@@ -106,7 +107,11 @@ module.exports = function({ accounts }) {
 		whenMockedWithExchangeRatesValidity: ({ valid = true }, cb) => {
 			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.anyRateIsInvalid.will.return.with(!valid);
+					this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with([
+						0,
+						false,
+						!valid,
+					]);
 				});
 				cb();
 			});

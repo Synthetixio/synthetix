@@ -218,6 +218,13 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'CircuitBreaker',
+		source: 'CircuitBreaker',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
 		name: 'ExchangeCircuitBreaker',
 		source: 'ExchangeCircuitBreaker',
 		deps: ['AddressResolver'],

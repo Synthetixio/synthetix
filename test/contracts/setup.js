@@ -197,6 +197,7 @@ const setupContract = async ({
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		CircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
@@ -729,8 +730,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
-			mocks: ['ExchangeCircuitBreaker'],
+			deps: ['AddressResolver', 'SystemSettings', 'CircuitBreaker'],
 		},
 		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
@@ -829,6 +829,11 @@ const setupAllContracts = async ({
 			],
 		},
 		{
+			contract: 'CircuitBreaker',
+			mocks: ['Issuer', 'ExchangeRates'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
+		},
+		{
 			contract: 'ExchangeCircuitBreaker',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
@@ -844,18 +849,25 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
 			contract: 'ExchangeRatesWithDexPricing',
 			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
+			deps: ['AddressResolver', 'CircuitBreaker', 'SystemSettings'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
 			resolverAlias: 'Exchanger',
-			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
+			mocks: [
+				'Synthetix',
+				'CircuitBreaker',
+				'ExchangeRates',
+				'FeePool',
+				'DelegateApprovals',
+				'VirtualSynthMastercopy',
+			],
 			deps: [
 				'AddressResolver',
 				'TradingRewards',
@@ -864,7 +876,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
@@ -1007,7 +1019,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings', 'ExchangeCircuitBreaker'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1362,7 +1374,7 @@ const setupAllContracts = async ({
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
-				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], null, [assetKey], [toUnit('1')]);
 				await Promise.all([
 					returnObj['FuturesMarketSettings'].setParameters(
 						marketKey,
@@ -1411,7 +1423,12 @@ const setupAllContracts = async ({
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
-				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await updateAggregatorRates(
+					returnObj['ExchangeRates'],
+					returnObj['CircuitBreaker'],
+					[assetKey],
+					[toUnit('1')]
+				);
 				await Promise.all([
 					returnObj['PerpsV2Settings'].setParameters(
 						marketKey,
@@ -1450,7 +1467,12 @@ const setupAllContracts = async ({
 		const keys = ['SNX', ...(feeds || [])].map(toBytes32);
 		const prices = ['0.2', ...(feeds || []).map(() => '1.0')].map(toUnit);
 		await setupPriceAggregators(returnObj['ExchangeRates'], owner, keys);
-		await updateAggregatorRates(returnObj['ExchangeRates'], keys, prices);
+		await updateAggregatorRates(
+			returnObj['ExchangeRates'],
+			returnObj['CircuitBreaker'],
+			keys,
+			prices
+		);
 	}
 
 	return returnObj;

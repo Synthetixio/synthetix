@@ -18,14 +18,22 @@ async function exchangeSomething({ ctx }) {
 }
 
 async function exchangeSynths({ ctx, src, dest, amount, user }) {
-	let { Synthetix, ExchangeCircuitBreaker } = ctx.contracts;
+	let { Synthetix, CircuitBreaker } = ctx.contracts;
+	const { ExchangeRates } = ctx.contracts;
 	Synthetix = Synthetix.connect(user);
-	ExchangeCircuitBreaker = ExchangeCircuitBreaker.connect(ctx.users.owner);
+	CircuitBreaker = CircuitBreaker.connect(ctx.users.owner);
 
 	await ensureBalance({ ctx, symbol: src, user, balance: amount });
 
-	// ensure that circuit breaker wont get int he way
-	let tx = await ExchangeCircuitBreaker.resetLastExchangeRate([toBytes32(src), toBytes32(dest)]);
+	// ensure that circuit breaker wont get in he way
+	const oracles = [
+		await ExchangeRates.aggregators(toBytes32(src)),
+		await ExchangeRates.aggregators(toBytes32(dest)),
+	].filter(o => o !== ethers.constants.AddressZero);
+	let tx = await CircuitBreaker.resetLastValue(
+		oracles,
+		oracles.map(() => 0)
+	);
 
 	tx = await Synthetix.exchange(toBytes32(src), amount, toBytes32(dest));
 	await tx.wait();

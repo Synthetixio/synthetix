@@ -37,7 +37,7 @@ contract('FeePool', async accounts => {
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sAUD, SNX], ['0.5', '0.1'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sAUD, SNX], ['0.5', '0.1'].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 	};
 
@@ -1286,7 +1286,7 @@ contract('FeePool', async accounts => {
 
 				// Increase the price so we start well and truly within our 20% ratio.
 				const newRate = (await exchangeRates.rateForCurrency(SNX)).add(web3.utils.toBN('1'));
-				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				assert.equal(await feePool.isFeesClaimable(owner), true);
@@ -1300,7 +1300,7 @@ contract('FeePool', async accounts => {
 				const newRate = (await exchangeRates.rateForCurrency(SNX)).add(
 					step.mul(web3.utils.toBN('1'))
 				);
-				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				const issuanceRatio = fromUnit(await feePool.issuanceRatio());
@@ -1322,7 +1322,7 @@ contract('FeePool', async accounts => {
 
 					// Bump the rate down.
 					const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(step);
-					await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+					await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 					await debtCache.takeDebtSnapshot();
 				}
 			});
@@ -1354,7 +1354,7 @@ contract('FeePool', async accounts => {
 				const currentRate = await exchangeRates.rateForCurrency(SNX);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
-				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
@@ -1394,7 +1394,7 @@ contract('FeePool', async accounts => {
 				const currentRate = await exchangeRates.rateForCurrency(SNX);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
-				await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
