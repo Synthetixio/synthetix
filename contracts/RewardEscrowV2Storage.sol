@@ -134,7 +134,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         if (v == 0) {
             return fallbackRewardEscrow.totalEscrowedAccountBalance(account);
         } else {
-            return uint(_readWithZeroPlaceholder(v));
+            return _readWithZeroPlaceholder(v);
         }
     }
 
@@ -146,7 +146,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         if (v == 0) {
             return fallbackRewardEscrow.totalVestedAccountBalance(account);
         } else {
-            return uint(_readWithZeroPlaceholder(v));
+            return _readWithZeroPlaceholder(v);
         }
     }
 
@@ -165,7 +165,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
             // uninitialized
             return fallbackRewardEscrow.numVestingEntries(account);
         } else {
-            return uint(_readWithZeroPlaceholder(v));
+            return _readWithZeroPlaceholder(v);
         }
     }
 
@@ -246,7 +246,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         require(total >= 0, "updateEscrowAccountBalance: balance must be positive");
         // zero value must never be written, because it is used to signal uninitialized
         //  writing an actual 0 will result in stale value being read from fallback
-        _totalEscrowedAccountBalance[account] = _writeWithZeroPlaceholder(total);
+        // casting is safe because checked above
+        _totalEscrowedAccountBalance[account] = _writeWithZeroPlaceholder(uint(total));
 
         // update the global total
         updateTotalEscrowedBalance(delta);
@@ -258,7 +259,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
         require(total >= 0, "updateVestedAccountBalance: balance must be positive");
         // zero value must never be written, because it is used to signal uninitialized
         //  writing an actual 0 will result in stale value being read from fallback
-        _totalVestedAccountBalance[account] = _writeWithZeroPlaceholder(total);
+        // casting is safe because checked above
+        _totalVestedAccountBalance[account] = _writeWithZeroPlaceholder(uint(total));
     }
 
     /// this method is unused in contracts (because updateEscrowAccountBalance uses it), but it is here
@@ -316,9 +318,8 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     /// this caching is done to prevent repeatedly calling the old contract for number of entries
     /// during looping
     function _cacheFallbackIDCount(address account) internal {
-        int fallbackCount = _fallbackCounts[account];
-        if (fallbackCount == 0) {
-            fallbackCount = int(fallbackRewardEscrow.numVestingEntries(account));
+        if (_fallbackCounts[account] == 0) {
+            uint fallbackCount = fallbackRewardEscrow.numVestingEntries(account);
             // cache the value but don't write zero
             _fallbackCounts[account] = _writeWithZeroPlaceholder(fallbackCount);
         }
@@ -326,14 +327,14 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
 
     /* ========== HELPER ========== */
 
-    function _writeWithZeroPlaceholder(int v) internal pure returns (int) {
+    function _writeWithZeroPlaceholder(uint v) internal pure returns (int) {
         // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
-        return v == 0 ? ZERO_PLACEHOLDER : v;
+        return v == 0 ? ZERO_PLACEHOLDER : int(v);
     }
 
-    function _readWithZeroPlaceholder(int v) internal pure returns (int) {
+    function _readWithZeroPlaceholder(int v) internal pure returns (uint) {
         // 0 is uninitialized value, so a special value is used to store an actual 0 (that is initialized)
-        return v == ZERO_PLACEHOLDER ? 0 : v;
+        return uint(v == ZERO_PLACEHOLDER ? 0 : v);
     }
 
     /* ========== Modifier ========== */
