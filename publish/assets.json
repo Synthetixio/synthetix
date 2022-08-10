@@ -452,5 +452,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Axie Infinity"
+	},
+	"DebtRatio": {
+		"asset": "DebtRatio",
+		"category": "crypto",
+		"sign": "",
+		"description": "Synthetix Aggregator Debt Ratio"
 	}
 }
