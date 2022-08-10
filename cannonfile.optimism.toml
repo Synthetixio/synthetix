@@ -107,6 +107,7 @@ depends = ["run.synthetix"]
 [invoke.set_ownership]
 target = [
     "AddressResolver",
+    "CircuitBreaker",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
@@ -161,6 +162,7 @@ depends = ["run.synthetix"]
 [invoke.accept_ownership]
 target = [
     "AddressResolver",
+    "CircuitBreaker",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",

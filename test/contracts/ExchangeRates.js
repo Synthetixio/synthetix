@@ -49,6 +49,7 @@ contract('Exchange Rates', async accounts => {
 		'DebtRatio',
 	].map(toBytes32);
 	let instance;
+	let circuitBreaker;
 	let systemSettings;
 	let aggregatorJPY;
 	let aggregatorXTZ;
@@ -57,7 +58,7 @@ contract('Exchange Rates', async accounts => {
 	let mockFlagsInterface;
 
 	const itIncludesCorrectMutativeFunctions = contract => {
-		const baseFunctions = ['addAggregator', 'removeAggregator'];
+		const baseFunctions = ['addAggregator', 'removeAggregator', 'rateWithSafetyChecks'];
 		const withDexPricingFunctions = baseFunctions.concat(['setDexPriceAggregator']);
 
 		it('only expected functions should be mutative', () => {
@@ -178,15 +179,15 @@ contract('Exchange Rates', async accounts => {
 					const updatedTime1 = await currentTime();
 					await updateRates(encodedRateKeys1, encodedRateValues1, updatedTime1);
 
-					await fastForward(5);
+					await fastForward(30);
 					const updatedTime2 = await currentTime();
 					await updateRates(encodedRateKeys2, encodedRateValues2, updatedTime2);
 
-					await fastForward(5);
+					await fastForward(1);
 					const updatedTime3 = await currentTime();
 					await updateRates(encodedRateKeys3, encodedRateValues3, updatedTime3);
 
-					await fastForward(12);
+					await fastForward(1);
 					const rateIsInvalid = await instance.anyRateIsInvalid([
 						...encodedRateKeys2,
 						...encodedRateKeys3,
@@ -1973,16 +1974,20 @@ contract('Exchange Rates', async accounts => {
 
 	// utility function update rates for aggregators that are already set up
 	async function updateRates(keys, rates, timestamp = undefined) {
-		await updateAggregatorRates(instance, keys, rates, timestamp);
+		await updateAggregatorRates(instance, circuitBreaker, keys, rates, timestamp);
 	}
 
 	describe('Using ExchangeRates', () => {
 		const exchangeRatesContract = 'ExchangeRates';
 
 		before(async () => {
-			({ ExchangeRates: instance, SystemSettings: systemSettings } = await setupAllContracts({
+			({
+				ExchangeRates: instance,
+				CircuitBreaker: circuitBreaker,
+				SystemSettings: systemSettings,
+			} = await setupAllContracts({
 				accounts,
-				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
+				contracts: [exchangeRatesContract, 'CircuitBreaker', 'SystemSettings', 'AddressResolver'],
 			}));
 
 			// remove the pre-configured aggregator
@@ -2027,9 +2032,13 @@ contract('Exchange Rates', async accounts => {
 		const exchangeRatesContract = 'ExchangeRatesWithDexPricing';
 
 		before(async () => {
-			({ ExchangeRates: instance, SystemSettings: systemSettings } = await setupAllContracts({
+			({
+				ExchangeRates: instance,
+				CircuitBreaker: circuitBreaker,
+				SystemSettings: systemSettings,
+			} = await setupAllContracts({
 				accounts,
-				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
+				contracts: [exchangeRatesContract, 'CircuitBreaker', 'SystemSettings', 'AddressResolver'],
 			}));
 
 			// remove the pre-configured aggregator

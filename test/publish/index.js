@@ -817,6 +817,38 @@ describe('publish scripts', () => {
 									'Balance should match'
 								);
 							});
+
+							describe('synth suspension', () => {
+								let CircuitBreaker;
+								describe('when one synth has a price well outside of range, triggering price deviation', () => {
+									beforeEach(async () => {
+										CircuitBreaker = getContract({ target: 'CircuitBreaker' });
+										console.error(
+											'BUHFORE',
+											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
+										);
+										await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
+									});
+									it('when exchange occurs into that synth, the synth is suspended', async () => {
+										const tx = await Synthetix.exchange(
+											sUSD,
+											ethers.utils.parseEther('1'),
+											sETH,
+											overrides
+										);
+										await tx.wait();
+										console.error(
+											'AFTA',
+											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
+										);
+
+										const suspended = await CircuitBreaker.circuitBroken(
+											aggregators['ETH'].address
+										);
+										assert.strictEqual(suspended, true);
+									});
+								});
+							});
 						});
 						describe('when user1 exchange 1000 sUSD for sBTC', () => {
 							let sBTCBalanceAfterExchange;
@@ -923,28 +955,6 @@ describe('publish scripts', () => {
 											);
 										});
 									});
-								});
-							});
-						});
-						describe('synth suspension', () => {
-							let SystemStatus;
-							describe('when one synth has a price well outside of range, triggering price deviation', () => {
-								beforeEach(async () => {
-									SystemStatus = getContract({ target: 'SystemStatus' });
-									await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
-								});
-								it('when exchange occurs into that synth, the synth is suspended', async () => {
-									const tx = await Synthetix.exchange(
-										sUSD,
-										ethers.utils.parseEther('1'),
-										sETH,
-										overrides
-									);
-									await tx.wait();
-
-									const { suspended, reason } = await SystemStatus.synthSuspension(sETH);
-									assert.strictEqual(suspended, true);
-									assert.strictEqual(reason.toString(), '65');
 								});
 							});
 						});
