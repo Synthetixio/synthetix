@@ -63,8 +63,8 @@ contract('RewardEscrowV2', async accounts => {
 		});
 	});
 
-	describe('There are no escrow entries initially', async () => {
-		it('then numVestingEntries should return 0', async () => {
+	describe('There are two escrow entries initially', async () => {
+		it('then numVestingEntries should return 2', async () => {
 			assert.equal(2, await rewardEscrowV2.numVestingEntries(user1));
 		});
 	});

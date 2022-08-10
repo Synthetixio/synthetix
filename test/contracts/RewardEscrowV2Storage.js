@@ -16,7 +16,6 @@ const {
 } = require('../..');
 
 contract('RewardEscrowV2Storage', async accounts => {
-	// const WEEK = 7 * 86400;
 	const entry1Amount = toUnit(1);
 
 	const [, owner, writeAccount, user1, user2, user3, user4] = accounts;
