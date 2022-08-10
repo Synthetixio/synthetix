@@ -191,7 +191,8 @@ contract('PerpsManagerV2', accounts => {
 				hash: tx.tx,
 				contracts: [perpsStorage, perpsManager],
 			});
-			assert.equal(decodedLogs.length, 4);
+			assert.equal(decodedLogs.length, 6);
+			// init, funding, added, init, funding, added
 			decodedEventEqual({
 				event: 'MarketInitialised',
 				emittedFrom: perpsStorage.address,
@@ -202,13 +203,13 @@ contract('PerpsManagerV2', accounts => {
 				event: 'MarketAdded',
 				emittedFrom: perpsManager.address,
 				args: [assets[0], keys[0]],
-				log: decodedLogs[1],
+				log: decodedLogs[2],
 			});
 			decodedEventEqual({
 				event: 'MarketAdded',
 				emittedFrom: perpsManager.address,
 				args: [assets[1], keys[1]],
-				log: decodedLogs[3],
+				log: decodedLogs[5],
 			});
 		});
 

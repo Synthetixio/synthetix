@@ -31,8 +31,8 @@ interface IPerpsTypesV2 {
         // and minting sUSD without tracking the amounts, and in order to only allow locking/unlocking
         // correct amounts of already transferred amounts
         uint lockedMargin;
-        uint lastPrice;
         int size;
+        uint lastPrice;
     }
 
     // next-price order storage

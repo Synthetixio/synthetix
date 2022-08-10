@@ -52,8 +52,6 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     event Tracking(bytes32 indexed trackingCode, bytes32 marketKey, address account, int sizeDelta, uint fee);
 
-    event FundingUpdated(bytes32 indexed marketKey, int funding, uint timestamp);
-
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -358,7 +356,6 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         if (lastUpdated < block.timestamp) {
             int newFundingAmount = _nextFundingAmount(marketKey, price);
             _stateMutative().updateFunding(marketKey, newFundingAmount);
-            emit FundingUpdated(marketKey, newFundingAmount, block.timestamp);
         }
     }
 

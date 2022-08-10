@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "./MixinResolver.sol";
 import "./State.sol";
 
 import "./interfaces/IPerpsInterfacesV2.sol";
@@ -10,6 +9,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     /* ========== Events ========== */
     event MarketInitialised(bytes32 marketKey, bytes32 baseAsset);
     event PositionInitialised(bytes32 indexed marketKey, uint id, address account);
+    event FundingUpdated(bytes32 indexed marketKey, int funding, uint timestamp);
 
     /* ========== PUBLIC STATE ========== */
     // storage is split between multiple variables instead of nesting in a single e.g. Market
@@ -27,11 +27,12 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     bytes32 public constant CONTRACT_NAME = "PerpsStorageV2";
 
     ////// Internal state
+
     mapping(bytes32 => mapping(address => Position)) internal _positions;
 
     /* ========== MODIFIERS ========== */
 
-    modifier requireInit(bytes32 marketKey) {
+    modifier withMarket(bytes32 marketKey) {
         require(marketScalars[marketKey].baseAsset != bytes32(0), "market not initialised");
         _;
     }
@@ -75,7 +76,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     function positionWithInit(bytes32 marketKey, address account)
         public
         onlyAssociatedContract
-        requireInit(marketKey)
+        withMarket(marketKey)
         returns (Position memory position)
     {
         position = positions(marketKey, account);
@@ -88,6 +89,9 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
             // user positions start from 1 to avoid clashing with default empty position
             uint id = marketScalars[marketKey].lastPositionId;
             position.id = id;
+
+            // update funding entry according to current latest entry
+            position.lastFundingEntry = lastFundingEntry[marketKey];
 
             // update owner mapping
             positionIdToAccount[marketKey][id] = account;
@@ -102,8 +106,9 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         return position;
     }
 
-    function updateFunding(bytes32 marketKey, int funding) public onlyAssociatedContract requireInit(marketKey) {
+    function updateFunding(bytes32 marketKey, int funding) public onlyAssociatedContract withMarket(marketKey) {
         lastFundingEntry[marketKey] = FundingEntry(funding, block.timestamp);
+        emit FundingUpdated(marketKey, funding, block.timestamp);
     }
 
     function storePosition(
@@ -113,11 +118,11 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         uint newLocked,
         int newSize,
         uint price
-    ) external onlyAssociatedContract requireInit(marketKey) returns (Position memory) {
-        // ensure it's initialized, return is ignored because is memory, but storage is needed
-        positionWithInit(marketKey, account);
+    ) external onlyAssociatedContract withMarket(marketKey) returns (Position memory) {
         // load the storage
         Position storage position = _positions[marketKey][account];
+        // ensure is initialized
+        require(position.id != 0, "position not initialized");
         // update values according to inputs
         position.margin = newMargin;
         position.lockedMargin = newLocked;
@@ -133,7 +138,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         uint marketSize,
         int marketSkew,
         int entryDebtCorrection
-    ) external onlyAssociatedContract requireInit(marketKey) {
+    ) external onlyAssociatedContract withMarket(marketKey) {
         MarketScalars storage market = marketScalars[marketKey];
         market.marketSize = marketSize;
         market.marketSkew = marketSkew;

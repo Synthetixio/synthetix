@@ -424,7 +424,7 @@ contract('PerpsEngineV2', accounts => {
 				tx = await transfer(toUnit('0'), trader3);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine, perpsStorage],
 				});
 				assert.equal(decodedLogs.length, 1);
 				assert.equal(decodedLogs[0].name, 'FundingUpdated');
