@@ -367,15 +367,14 @@ module.exports = ({ web3 } = {}) => {
 		const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
 		const expected = BN.isBN(expectedBN) ? expectedBN : new BN(expectedBN);
 		const variance = BN.isBN(varianceParam) ? varianceParam : new BN(varianceParam);
-		const actualDelta = expected.sub(actual).abs();
 
 		assert.ok(
 			actual.gte(expected.sub(variance)),
-			`Number is too small to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()}`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
 		);
 		assert.ok(
 			actual.lte(expected.add(variance)),
-			`Number is too large to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
 		);
 	};
 
