@@ -25,6 +25,7 @@ contract('PerpsManagerV2', accounts => {
 		exchangeRates,
 		exchangeCircuitBreaker,
 		sUSD,
+		feePool,
 		debtCache,
 		synthetix,
 		addressResolver;
@@ -54,6 +55,7 @@ contract('PerpsManagerV2', accounts => {
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
+			FeePool: feePool,
 			DebtCache: debtCache,
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
@@ -96,7 +98,7 @@ contract('PerpsManagerV2', accounts => {
 			);
 		});
 
-		it('only expected functions are mutable', () => {
+		it('only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsManager.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
@@ -322,6 +324,12 @@ contract('PerpsManagerV2', accounts => {
 			);
 		});
 
+		it('payFee', async () => {
+			await perpsManager.payFee(toUnit('10'), toBytes32(''), { from: mockEngine });
+			assert.bnEqual(await sUSD.balanceOf(await feePool.FEE_ADDRESS()), toUnit('10'));
+			assert.bnEqual((await feePool.recentFeePeriods(0)).feesToDistribute, toUnit('10'));
+		});
+
 		it('burning respects settlement', async () => {
 			// Set up a mock exchanger
 			const mockExchanger = await MockExchanger.new(synthetix.address);
@@ -346,7 +354,7 @@ contract('PerpsManagerV2', accounts => {
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 		});
 
-		it('only engine is permitted to issue or burn sUSD', async () => {
+		it('only engine is permitted to issue, burn, or payFee', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsManager.issueSUSD,
 				args: [owner, toUnit('1')],
@@ -358,6 +366,14 @@ contract('PerpsManagerV2', accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsManager.burnSUSD,
 				args: [owner, toUnit('1')],
+				accounts,
+				address: mockEngine,
+				skipPassCheck: true,
+				reason: 'Only engine',
+			});
+			await onlyGivenAddressCanInvoke({
+				fnc: perpsManager.payFee,
+				args: [toUnit('1'), toBytes32('')],
 				accounts,
 				address: mockEngine,
 				skipPassCheck: true,

@@ -48,7 +48,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     function positions(bytes32 marketKey, address account) public view returns (Position memory position) {
         position = _positions[marketKey][account];
         // ensure returned position always has the right market key as requested
-        // even if position is not initialized (or even market are not initialized)
+        // even if position or market are not initialized
         position.marketKey = marketKey;
     }
 

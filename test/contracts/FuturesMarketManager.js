@@ -16,7 +16,7 @@ const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesMarketManager', accounts => {
-	let futuresMarketManager,
+	let instance,
 		// v1
 		futuresMarketSettings,
 		// v2
@@ -28,11 +28,13 @@ contract('FuturesMarketManager', accounts => {
 		exchangeRates,
 		exchangeCircuitBreaker,
 		sUSD,
+		feePool,
 		debtCache,
 		synthetix,
 		addressResolver;
 	const owner = accounts[1];
 	const trader = accounts[2];
+	const mockPerpsManager = accounts[3];
 	const initialMint = toUnit('100000');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
@@ -47,7 +49,7 @@ contract('FuturesMarketManager', accounts => {
 
 	before(async () => {
 		({
-			FuturesMarketManager: futuresMarketManager,
+			FuturesMarketManager: instance,
 			FuturesMarketSettings: futuresMarketSettings,
 			// PerpsManagerV2: perpsManager,
 			// PerpsSettingsV2: perpsSettings,
@@ -57,6 +59,7 @@ contract('FuturesMarketManager', accounts => {
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
+			FeePool: feePool,
 			DebtCache: debtCache,
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
@@ -93,7 +96,7 @@ contract('FuturesMarketManager', accounts => {
 
 	describe('Basic parameters', () => {
 		it('requires expected contracts', async () => {
-			const actual = await futuresMarketManager.resolverAddressesRequired();
+			const actual = await instance.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
 				['SynthsUSD', 'FeePool', 'Exchanger', 'PerpsManagerV2'].map(toBytes32)
@@ -102,7 +105,7 @@ contract('FuturesMarketManager', accounts => {
 
 		it('only expected functions are mutable', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: futuresMarketManager.abi,
+				abi: instance.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: [
 					'addMarkets',
@@ -116,7 +119,7 @@ contract('FuturesMarketManager', accounts => {
 		});
 
 		it('contract has CONTRACT_NAME getter', async () => {
-			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('FuturesMarketManager'));
+			assert.equal(await instance.CONTRACT_NAME(), toBytes32('FuturesMarketManager'));
 		});
 	});
 
@@ -129,39 +132,33 @@ contract('FuturesMarketManager', accounts => {
 					setupContract({
 						accounts,
 						contract: 'MockFuturesMarket',
-						args: [futuresMarketManager.address, k, k, toUnit('1000'), false],
+						args: [instance.address, k, k, toUnit('1000'), false],
 						skipPostDeploy: true,
 					})
 				)
 			);
 
 			addresses = markets.map(m => m.address);
-			await futuresMarketManager.addMarkets(addresses, { from: owner });
+			await instance.addMarkets(addresses, { from: owner });
 		});
 
 		it('Adding a single market', async () => {
-			const markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(markets.length));
+			const markets = await instance.allMarketsV1();
+			assert.bnEqual(await instance.numMarkets(), toBN(markets.length));
 			assert.equal(markets.length, 2);
 			assert.deepEqual(markets, addresses);
 
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					toBytes32('sLINK'),
-					toBytes32('sLINK'),
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, toBytes32('sLINK'), toBytes32('sLINK'), toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
-			assert.equal((await futuresMarketManager.markets(2, 1))[0], market.address);
+			await instance.addMarkets([market.address], { from: owner });
+			assert.bnEqual(await instance.numMarkets(), toBN(3));
+			assert.equal((await instance.markets(2, 1))[0], market.address);
 
-			assert.equal(await futuresMarketManager.marketForKey(toBytes32('sLINK')), market.address);
+			assert.equal(await instance.marketForKey(toBytes32('sLINK')), market.address);
 		});
 
 		it('Adding multiple markets', async () => {
@@ -171,28 +168,28 @@ contract('FuturesMarketManager', accounts => {
 					setupContract({
 						accounts,
 						contract: 'MockFuturesMarket',
-						args: [futuresMarketManager.address, k, k, toUnit('1000'), false],
+						args: [instance.address, k, k, toUnit('1000'), false],
 						skipPostDeploy: true,
 					})
 				)
 			);
 			const addresses = markets.map(m => m.address);
-			const tx = await futuresMarketManager.addMarkets(addresses, { from: owner });
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(4));
-			assert.deepEqual(await futuresMarketManager.markets(2, 2), addresses);
-			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), addresses);
+			const tx = await instance.addMarkets(addresses, { from: owner });
+			assert.bnEqual(await instance.numMarkets(), toBN(4));
+			assert.deepEqual(await instance.markets(2, 2), addresses);
+			assert.deepEqual(await instance.marketsForKeys(keys), addresses);
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [instance] });
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'MarketAdded',
-				emittedFrom: futuresMarketManager.address,
+				emittedFrom: instance.address,
 				args: [addresses[0], keys[0], keys[0]],
 				log: decodedLogs[0],
 			});
 			decodedEventEqual({
 				event: 'MarketAdded',
-				emittedFrom: futuresMarketManager.address,
+				emittedFrom: instance.address,
 				args: [addresses[1], keys[1], keys[1]],
 				log: decodedLogs[1],
 			});
@@ -202,17 +199,11 @@ contract('FuturesMarketManager', accounts => {
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					toBytes32('sETH'),
-					toBytes32('sETH'),
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, toBytes32('sETH'), toBytes32('sETH'), toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
 			await assert.revert(
-				futuresMarketManager.addMarkets([market.address], { from: owner }),
+				instance.addMarkets([market.address], { from: owner }),
 				'Market already exists'
 			);
 		});
@@ -225,107 +216,86 @@ contract('FuturesMarketManager', accounts => {
 			const market2 = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					await market1.baseAsset(),
-					secondKey,
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, await market1.baseAsset(), secondKey, toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market2.address], { from: owner });
+			await instance.addMarkets([market2.address], { from: owner });
 
 			// check correcr addresses returned
-			assert.equal(await futuresMarketManager.marketForKey(secondKey), market2.address);
-			assert.equal(await futuresMarketManager.marketForKey(firstKey), market1.address);
+			assert.equal(await instance.marketForKey(secondKey), market2.address);
+			assert.equal(await instance.marketForKey(firstKey), market1.address);
 		});
 
 		it('Removing a single market', async () => {
-			await futuresMarketManager.removeMarkets([addresses[0]], { from: owner });
+			await instance.removeMarkets([addresses[0]], { from: owner });
 
-			const markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
+			const markets = await instance.allMarketsV1();
+			assert.bnEqual(await instance.numMarkets(), toBN(1));
 			assert.deepEqual(markets, [addresses[1]]);
 
-			assert.equal(await futuresMarketManager.marketForKey(currencyKeys[0]), ZERO_ADDRESS);
+			assert.equal(await instance.marketForKey(currencyKeys[0]), ZERO_ADDRESS);
 		});
 
 		it('Removing multiple markets', async () => {
-			const tx = await futuresMarketManager.removeMarkets(addresses, { from: owner });
-			const markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
+			const tx = await instance.removeMarkets(addresses, { from: owner });
+			const markets = await instance.allMarketsV1();
+			assert.bnEqual(await instance.numMarkets(), toBN(0));
 			assert.deepEqual(markets, []);
-			assert.deepEqual(await futuresMarketManager.marketsForKeys(currencyKeys), [
-				ZERO_ADDRESS,
-				ZERO_ADDRESS,
-			]);
+			assert.deepEqual(await instance.marketsForKeys(currencyKeys), [ZERO_ADDRESS, ZERO_ADDRESS]);
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [instance] });
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'MarketRemoved',
-				emittedFrom: futuresMarketManager.address,
+				emittedFrom: instance.address,
 				args: [addresses[0], currencyKeys[0]],
 				log: decodedLogs[0],
 			});
 			decodedEventEqual({
 				event: 'MarketRemoved',
-				emittedFrom: futuresMarketManager.address,
+				emittedFrom: instance.address,
 				args: [addresses[1], currencyKeys[1]],
 				log: decodedLogs[1],
 			});
 		});
 
 		it('Removing markets by key', async () => {
-			await futuresMarketManager.removeMarketsByKey([toBytes32('sETH')], { from: owner });
+			await instance.removeMarketsByKey([toBytes32('sETH')], { from: owner });
 
-			let markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
+			let markets = await instance.allMarketsV1();
+			assert.bnEqual(await instance.numMarkets(), toBN(1));
 			assert.deepEqual(markets, [addresses[0]]);
 
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					toBytes32('sLINK'),
-					toBytes32('sLINK'),
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, toBytes32('sLINK'), toBytes32('sLINK'), toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
-			await futuresMarketManager.removeMarketsByKey(['sBTC', 'sLINK'].map(toBytes32), {
+			await instance.addMarkets([market.address], { from: owner });
+			await instance.removeMarketsByKey(['sBTC', 'sLINK'].map(toBytes32), {
 				from: owner,
 			});
 
-			markets = await futuresMarketManager.allMarketsV1();
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
+			markets = await instance.allMarketsV1();
+			assert.bnEqual(await instance.numMarkets(), toBN(0));
 			assert.deepEqual(markets, []);
 		});
 
 		it('Cannot remove a market which does not exist', async () => {
 			await assert.revert(
-				futuresMarketManager.removeMarketsByKey([toBytes32('sLINK')], { from: owner }),
+				instance.removeMarketsByKey([toBytes32('sLINK')], { from: owner }),
 				'Unknown market'
 			);
 
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					toBytes32('sLINK'),
-					toBytes32('sLINK'),
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, toBytes32('sLINK'), toBytes32('sLINK'), toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
 			await assert.revert(
-				futuresMarketManager.removeMarkets([market.address], { from: owner }),
+				instance.removeMarkets([market.address], { from: owner }),
 				'Unknown market'
 			);
 		});
@@ -334,20 +304,14 @@ contract('FuturesMarketManager', accounts => {
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					toBytes32('sLINK'),
-					toBytes32('sLINK'),
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, toBytes32('sLINK'), toBytes32('sLINK'), toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
 
 			const revertReason = 'Only the contract owner may perform this action';
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.addMarkets,
+				fnc: instance.addMarkets,
 				args: [[market.address]],
 				accounts,
 				address: owner,
@@ -356,7 +320,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.removeMarkets,
+				fnc: instance.removeMarkets,
 				args: [[market.address]],
 				accounts,
 				address: owner,
@@ -365,7 +329,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.removeMarketsByKey,
+				fnc: instance.removeMarketsByKey,
 				args: [['sETH', 'sBTC'].map(toBytes32)],
 				accounts,
 				address: owner,
@@ -381,16 +345,10 @@ contract('FuturesMarketManager', accounts => {
 			market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
-				args: [
-					futuresMarketManager.address,
-					toBytes32('sLINK'),
-					toBytes32('sLINK'),
-					toUnit('1000'),
-					false,
-				],
+				args: [instance.address, toBytes32('sLINK'), toBytes32('sLINK'), toUnit('1000'), false],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
+			await instance.addMarkets([market.address], { from: owner });
 		});
 
 		it('issuing/burning sUSD', async () => {
@@ -414,7 +372,7 @@ contract('FuturesMarketManager', accounts => {
 				from: owner,
 			});
 			await synthetix.rebuildCache();
-			await futuresMarketManager.rebuildCache();
+			await instance.rebuildCache();
 
 			await mockExchanger.setReclaim(toUnit('10'));
 			await mockExchanger.setNumEntries('1');
@@ -428,20 +386,70 @@ contract('FuturesMarketManager', accounts => {
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 		});
 
+		it('payFee from market', async () => {
+			await market.payFee(toUnit('10'));
+			assert.bnEqual(await sUSD.balanceOf(await feePool.FEE_ADDRESS()), toUnit('10'));
+			assert.bnEqual((await feePool.recentFeePeriods(0)).feesToDistribute, toUnit('10'));
+		});
+
 		it('only markets are permitted to issue or burn sUSD', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.issueSUSD,
+				fnc: instance.issueSUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
 				reason: 'Only markets or perps',
 			});
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.burnSUSD,
+				fnc: instance.burnSUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
 				reason: 'Only markets or perps',
+			});
+			await onlyGivenAddressCanInvoke({
+				fnc: instance.payFee,
+				args: [toUnit('1')],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Only markets or perps',
+			});
+		});
+
+		describe('with mock perps manager', () => {
+			beforeEach(async () => {
+				// replace with EOA
+				await addressResolver.importAddresses(
+					['PerpsManagerV2'].map(toBytes32),
+					[mockPerpsManager],
+					{
+						from: owner,
+					}
+				);
+				await instance.rebuildCache();
+			});
+
+			it('issuing/burning sUSD', async () => {
+				await instance.issueSUSD(owner, toUnit('10'), { from: mockPerpsManager });
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('10'));
+
+				await instance.burnSUSD(owner, toUnit('5'), { from: mockPerpsManager });
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('5'));
+
+				await instance.issueSUSD(owner, toUnit('2'), { from: mockPerpsManager });
+				await instance.burnSUSD(owner, toUnit('7'), { from: mockPerpsManager });
+
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
+				await assert.revert(
+					instance.burnSUSD(owner, toUnit('1'), { from: mockPerpsManager }),
+					'SafeMath: subtraction overflow'
+				);
+			});
+
+			it('payFee', async () => {
+				await instance.payFee(toUnit('10'), { from: mockPerpsManager });
+				assert.bnEqual(await sUSD.balanceOf(await feePool.FEE_ADDRESS()), toUnit('10'));
+				assert.bnEqual((await feePool.recentFeePeriods(0)).feesToDistribute, toUnit('10'));
 			});
 		});
 	});
@@ -467,12 +475,12 @@ contract('FuturesMarketManager', accounts => {
 						setupContract({
 							accounts,
 							contract: 'MockFuturesMarket',
-							args: [futuresMarketManager.address, k, k, individualDebt, false],
+							args: [instance.address, k, k, individualDebt, false],
 							skipPostDeploy: true,
 						})
 					)
 				);
-				await futuresMarketManager.addMarkets(
+				await instance.addMarkets(
 					markets.map(m => m.address),
 					{ from: owner }
 				);
@@ -481,49 +489,43 @@ contract('FuturesMarketManager', accounts => {
 			it('Aggregated debt updates properly as the debt values change', async () => {
 				const initialSystemDebt = (await debtCache.currentDebt())[0];
 
-				assert.bnEqual((await futuresMarketManager.totalDebt())[0], individualDebt.mul(toBN(3)));
+				assert.bnEqual((await instance.totalDebt())[0], individualDebt.mul(toBN(3)));
 				assert.bnEqual(initialSystemDebt, individualDebt.mul(toBN(3)).add(initialMint));
 				await markets[0].setMarketDebt(toUnit('2500'));
 				await markets[1].setMarketDebt(toUnit('200'));
-				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('3700'));
+				assert.bnEqual((await instance.totalDebt())[0], toUnit('3700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('700')));
 
-				await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
-				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('2700'));
+				await instance.removeMarkets([markets[2].address], { from: owner });
+				assert.bnEqual((await instance.totalDebt())[0], toUnit('2700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.sub(toUnit('300')));
 				const market = await setupContract({
 					accounts,
 					contract: 'MockFuturesMarket',
-					args: [
-						futuresMarketManager.address,
-						toBytes32('sLINK'),
-						toBytes32('sLINK'),
-						toUnit('4000'),
-						false,
-					],
+					args: [instance.address, toBytes32('sLINK'), toBytes32('sLINK'), toUnit('4000'), false],
 					skipPostDeploy: true,
 				});
-				await futuresMarketManager.addMarkets([market.address], { from: owner });
+				await instance.addMarkets([market.address], { from: owner });
 
-				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
+				assert.bnEqual((await instance.totalDebt())[0], toUnit('6700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('3700')));
 			});
 
 			it('Aggregated debt validity updates properly with the individual markets', async () => {
-				assert.isFalse((await futuresMarketManager.totalDebt())[1]);
+				assert.isFalse((await instance.totalDebt())[1]);
 				assert.isFalse((await debtCache.currentDebt())[1]);
 
 				await markets[0].setInvalid(true);
-				assert.isTrue((await futuresMarketManager.totalDebt())[1]);
+				assert.isTrue((await instance.totalDebt())[1]);
 				assert.isTrue((await debtCache.currentDebt())[1]);
 
 				await markets[0].setInvalid(false);
 				await markets[2].setInvalid(true);
-				assert.isTrue((await futuresMarketManager.totalDebt())[1]);
+				assert.isTrue((await instance.totalDebt())[1]);
 				assert.isTrue((await debtCache.currentDebt())[1]);
 
-				await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
-				assert.isFalse((await futuresMarketManager.totalDebt())[1]);
+				await instance.removeMarkets([markets[2].address], { from: owner });
+				assert.isFalse((await instance.totalDebt())[1]);
 				assert.isFalse((await debtCache.currentDebt())[1]);
 			});
 		});
@@ -557,7 +559,7 @@ contract('FuturesMarketManager', accounts => {
 
 				await addressResolver.rebuildCaches([market.address], { from: owner });
 
-				await futuresMarketManager.addMarkets([market.address], { from: owner });
+				await instance.addMarkets([market.address], { from: owner });
 
 				await setPrice(assetKey, toUnit(1000));
 
@@ -599,7 +601,7 @@ contract('FuturesMarketManager', accounts => {
 			const market = markets[1];
 			const assetKey = toBytes32(assets[1]);
 			const marketKey = marketKeys[1];
-			const summary = (await futuresMarketManager.marketSummariesForKeysV1([marketKey]))[0];
+			const summary = (await instance.marketSummariesForKeysV1([marketKey]))[0];
 
 			const { price } = await market.assetPrice();
 
@@ -613,15 +615,13 @@ contract('FuturesMarketManager', accounts => {
 		});
 
 		it('For market keys', async () => {
-			const allSummaries = await futuresMarketManager.allMarketSummaries();
-			const summariesForKeys = await futuresMarketManager.marketSummariesForKeysV1(
-				marketKeys.slice(0, 2)
-			);
+			const allSummaries = await instance.allMarketSummaries();
+			const summariesForKeys = await instance.marketSummariesForKeysV1(marketKeys.slice(0, 2));
 			assert.equal(JSON.stringify(allSummaries.slice(0, 2)), JSON.stringify(summariesForKeys));
 		});
 
 		it('All summaries', async () => {
-			const summaries = await futuresMarketManager.allMarketSummaries();
+			const summaries = await instance.allMarketSummaries();
 
 			const btcSummary = summaries.find(summary => summary.marketKey === toBytes32('sBTC'));
 			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('sETH'));
@@ -643,7 +643,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
 
-			assert.equal(linkSummary.market, await futuresMarketManager.marketForKey(toBytes32('sLINK')));
+			assert.equal(linkSummary.market, await instance.marketForKey(toBytes32('sLINK')));
 			assert.equal(linkSummary.baseAsset, toBytes32('LINK'));
 			assert.equal(linkSummary.price, toUnit(1000));
 			assert.equal(linkSummary.marketSize, toUnit(0));

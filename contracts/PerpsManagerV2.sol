@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
 import "./PerpsManagerV2ConfigSettersMixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
@@ -29,11 +28,11 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
     // V2 markets are keys into a single contract
     Bytes32SetLib.Bytes32Set internal _markets;
 
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-
     bytes32 public constant CONTRACT_NAME = "PerpsManagerV2";
 
     bytes32 internal constant SUSD = "sUSD";
+
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 internal constant CONTRACT_PERPSORDERSEV2 = "PerpsOrdersV2";
     bytes32 internal constant CONTRACT_FUTURESMARKETSMANAGER = "FuturesMarketManager";
