@@ -148,12 +148,18 @@ contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 						7
 					); // 7 params changes
 
+					const marketConfig = await perpsManager.marketConfig(marketKey);
+
 					// check values
 					for (const p of params) {
+						const key = p[0];
 						const value = p[1];
 						const getter = p[3];
 						// And the parameter was actually set properly
+						// check specific getter
 						assert.bnEqual(await getter(marketKey), value.toString());
+						// check marketConfig view
+						assert.bnEqual(marketConfig[key], value.toString());
 					}
 				});
 			});
