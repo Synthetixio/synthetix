@@ -17,6 +17,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 contract('PerpsManagerV2', accounts => {
 	let perpsManager,
 		futuresManager,
+		futuresV1Market,
 		// v2
 		perpsStorage,
 		perpsEngine,
@@ -48,6 +49,7 @@ contract('PerpsManagerV2', accounts => {
 		({
 			FuturesMarketManager: futuresManager,
 			PerpsManagerV2: perpsManager,
+			FuturesMarketBTC: futuresV1Market,
 			// FuturesMarketSettings: futuresMarketSettings,
 			PerpsStorageV2: perpsStorage,
 			PerpsEngineV2: perpsEngine,
@@ -66,6 +68,7 @@ contract('PerpsManagerV2', accounts => {
 			feeds: ['BTC', 'ETH', 'LINK'],
 			contracts: [
 				'FuturesMarketManager',
+				'FuturesMarketBTC',
 				// 'FuturesMarketSettings',
 				'PerpsManagerV2',
 				// 'PerpsStorageV2',
@@ -136,6 +139,13 @@ contract('PerpsManagerV2', accounts => {
 
 		beforeEach(async () => {
 			await perpsManager.addMarkets(marketKeys, baseAssets, { from: owner });
+		});
+
+		it('Must provide same length of keys', async () => {
+			await assert.revert(
+				perpsManager.addMarkets(marketKeys, [baseAssets[0]], { from: owner }),
+				'length of marketKeys'
+			);
 		});
 
 		async function checkSingleMarketAdded(marketKey, baseAsset) {
@@ -215,10 +225,19 @@ contract('PerpsManagerV2', accounts => {
 			});
 		});
 
-		it('Cannot add more than one market for the same key.', async () => {
+		it('Cannot add more than one market for the same key in V2', async () => {
 			await assert.revert(
 				perpsManager.addMarkets([marketKeys[0]], [baseAssets[0]], { from: owner }),
 				'Market key exists'
+			);
+		});
+
+		it('Cannot add market for a key in V1', async () => {
+			await assert.revert(
+				perpsManager.addMarkets([await futuresV1Market.marketKey()], [baseAssets[0]], {
+					from: owner,
+				}),
+				'Market key exists in V1'
 			);
 		});
 

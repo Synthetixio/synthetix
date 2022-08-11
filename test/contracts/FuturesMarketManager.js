@@ -20,6 +20,7 @@ contract('FuturesMarketManager', accounts => {
 		// v1
 		futuresMarketSettings,
 		// v2
+		perpsManager,
 		// perpsSettings,
 		// perpsStorage,
 		// perpsEngine,
@@ -51,7 +52,7 @@ contract('FuturesMarketManager', accounts => {
 		({
 			FuturesMarketManager: instance,
 			FuturesMarketSettings: futuresMarketSettings,
-			// PerpsManagerV2: perpsManager,
+			PerpsManagerV2: perpsManager,
 			// PerpsSettingsV2: perpsSettings,
 			// PerpsStorageV2: perpsStorage,
 			// PerpsEngineV2: perpsEngine,
@@ -195,6 +196,13 @@ contract('FuturesMarketManager', accounts => {
 			});
 		});
 
+		it('Cannot add market twice', async () => {
+			await assert.revert(
+				instance.addMarkets([markets[0].address], { from: owner }),
+				'Market already exists'
+			);
+		});
+
 		it('Cannot add more than one market for the same key.', async () => {
 			const market = await setupContract({
 				accounts,
@@ -204,7 +212,25 @@ contract('FuturesMarketManager', accounts => {
 			});
 			await assert.revert(
 				instance.addMarkets([market.address], { from: owner }),
-				'Market already exists'
+				'Market already exists for key'
+			);
+		});
+
+		it('Cannot add V1 market for a key in V2', async () => {
+			const someV2Key = toBytes32('SomeV2Key');
+			// add in V2 first
+			await perpsManager.addMarkets([someV2Key], [currencyKeys[0]], { from: owner });
+
+			const market = await setupContract({
+				accounts,
+				contract: 'MockFuturesMarket',
+				args: [instance.address, toBytes32('sETH'), someV2Key, toUnit('1000'), false],
+				skipPostDeploy: true,
+			});
+
+			await assert.revert(
+				instance.addMarkets([market.address], { from: owner }),
+				'Market key exists in V2'
 			);
 		});
 
