@@ -573,12 +573,12 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
      * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
      */
     function _proportionalSkew(bytes32 marketKey, uint price) internal view returns (int) {
-        // marketSize is in baseAsset units so we need to convert from USD units
-        require(price > 0, "price can't be zero");
         int skew = _marketScalars(marketKey).marketSkew;
         if (skew == 0) {
             return 0;
         }
+        // marketSize is in baseAsset units so we need to convert from USD units
+        require(price > 0, "price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
         return skew.divideDecimal(int(skewScaleBaseAsset));

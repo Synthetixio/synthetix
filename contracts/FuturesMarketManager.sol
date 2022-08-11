@@ -83,7 +83,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     /// V1 + V2 all summaries in V1 format
     function allMarketSummaries() external view returns (MarketSummaryV1[] memory) {
         MarketSummaryV1[] memory v1 = _allMarketSummariesV1();
-        MarketSummaryV1[] memory v2 = _marketSummariesV2asV1(_perpsManagerV2().allMarkets());
+        MarketSummaryV1[] memory v2 = _allMarketSummariesV2asV1();
         uint n1 = v1.length;
         uint n2 = v2.length;
         // combine the summaries
@@ -213,10 +213,11 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     ///// V2 helper views
 
     /// market summaries for V2 markets in the common V1 format (that also includes market version)
-    function _marketSummariesV2asV1(bytes32[] memory marketKeys) internal view returns (MarketSummaryV1[] memory) {
+    function _allMarketSummariesV2asV1() internal view returns (MarketSummaryV1[] memory) {
+        IPerpsManagerV2 perpsManager = _perpsManagerV2();
+        bytes32[] memory marketKeys = _perpsManagerV2().allMarkets();
         uint nMarkets = marketKeys.length;
         // V2 format
-        IPerpsManagerV2 perpsManager = _perpsManagerV2();
         IPerpsTypesV2.MarketSummary[] memory summariesV2 = perpsManager.marketSummaries(marketKeys);
         // V1 format
         MarketSummaryV1[] memory summaries = new MarketSummaryV1[](nMarkets);

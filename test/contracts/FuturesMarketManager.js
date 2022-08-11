@@ -24,7 +24,7 @@ contract('FuturesMarketManager', accounts => {
 		// perpsSettings,
 		// perpsStorage,
 		// perpsEngine,
-		// perpsOrders,
+		perpsOrders,
 		systemSettings,
 		exchangeRates,
 		exchangeCircuitBreaker,
@@ -56,7 +56,7 @@ contract('FuturesMarketManager', accounts => {
 			// PerpsSettingsV2: perpsSettings,
 			// PerpsStorageV2: perpsStorage,
 			// PerpsEngineV2: perpsEngine,
-			// PerpsOrdersV2: perpsOrders,
+			PerpsOrdersV2: perpsOrders,
 			ExchangeRates: exchangeRates,
 			ExchangeCircuitBreaker: exchangeCircuitBreaker,
 			SynthsUSD: sUSD,
@@ -124,7 +124,7 @@ contract('FuturesMarketManager', accounts => {
 		});
 	});
 
-	describe('Market management V1', () => {
+	describe('Market management', () => {
 		const currencyKeys = ['sBTC', 'sETH'].map(toBytes32);
 		let markets, addresses;
 		beforeEach(async () => {
@@ -363,6 +363,37 @@ contract('FuturesMarketManager', accounts => {
 				reason: revertReason,
 			});
 		});
+
+		describe('with a perps market in perps manager', () => {
+			const marketKey = toBytes32('pBTC');
+			const assetKey = toBytes32('BTC');
+			beforeEach(async () => {
+				await perpsManager.addMarkets([marketKey], [assetKey], { from: owner });
+			});
+
+			it('numMarkets', async () => {
+				// futures knows counts perps
+				assert.bnEqual(await instance.numMarkets(), 3);
+				// perps doesn't count futures
+				assert.bnEqual(await perpsManager.numMarkets(), 1);
+			});
+
+			it('isMarket', async () => {
+				// futures checks perps keys
+				assert.bnEqual(await instance.isMarket(marketKey), true);
+				assert.bnEqual(await instance.isMarket(currencyKeys[0]), true);
+				// perps doesn't check perps keys (for isMarket) it does for addMarkets though
+				assert.bnEqual(await perpsManager.isMarket(marketKey), true);
+				assert.bnEqual(await perpsManager.isMarket(currencyKeys[0]), false);
+			});
+
+			it('allMarketsV1', async () => {
+				// futures doesn't count perps
+				assert.bnEqual((await instance.allMarketsV1()).length, 2);
+				// perps doesn't count futures
+				assert.bnEqual((await perpsManager.allMarkets()).length, 1);
+			});
+		});
 	});
 
 	describe('sUSD issuance', () => {
@@ -554,6 +585,39 @@ contract('FuturesMarketManager', accounts => {
 				assert.isFalse((await instance.totalDebt())[1]);
 				assert.isFalse((await debtCache.currentDebt())[1]);
 			});
+
+			describe('with a perps market in perps manager', () => {
+				const marketKey = toBytes32('pBTC');
+				const assetKey = toBytes32('BTC');
+				const futuresDebt = individualDebt.mul(toBN(3));
+				const perpsDebt = toUnit(100);
+				beforeEach(async () => {
+					// add debt to perps
+					await perpsManager.addMarkets([marketKey], [assetKey], { from: owner });
+					await perpsOrders.transferMargin(marketKey, perpsDebt, { from: trader });
+				});
+
+				it('totalDebt includes perps debt', async () => {
+					// futures counts perps' debt
+					assert.bnEqual((await instance.totalDebt())[0], futuresDebt.add(perpsDebt));
+					assert.bnEqual((await instance.totalDebt())[1], false);
+					// perps debt as expected
+					assert.bnEqual((await perpsManager.totalDebt())[0], perpsDebt);
+					assert.bnEqual((await perpsManager.totalDebt())[1], false);
+					// system debt counts both
+					// perps debt is out of total mint (so their sum is total mint
+					assert.bnEqual((await debtCache.currentDebt())[0], initialMint.add(futuresDebt));
+					assert.bnEqual((await debtCache.currentDebt())[1], false);
+				});
+
+				it('totalDebt includes perps price validity', async () => {
+					const noSuchFeed = toBytes32('noSuchFeed');
+					await perpsManager.addMarkets([noSuchFeed], [noSuchFeed], { from: owner });
+					assert.bnEqual((await instance.totalDebt())[1], true);
+					assert.bnEqual((await perpsManager.totalDebt())[1], true);
+					assert.bnEqual((await debtCache.currentDebt())[1], true);
+				});
+			});
 		});
 	});
 
@@ -648,33 +712,75 @@ contract('FuturesMarketManager', accounts => {
 
 		it('All summaries', async () => {
 			const summaries = await instance.allMarketSummaries();
+			assert.equal(summaries.length, 3);
 
 			const btcSummary = summaries.find(summary => summary.marketKey === toBytes32('sBTC'));
 			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('sETH'));
 			const linkSummary = summaries.find(summary => summary.marketKey === toBytes32('sLINK'));
 
+			assert.equal(btcSummary.version, 'V1');
 			assert.equal(btcSummary.market, markets[0].address);
 			assert.equal(btcSummary.baseAsset, toBytes32(assets[0]));
 			let price = await markets[0].assetPrice();
 			assert.equal(btcSummary.price, price.price);
+			assert.equal(btcSummary.priceInvalid, false);
 			assert.equal(btcSummary.marketSize, await markets[0].marketSize());
 			assert.equal(btcSummary.marketSkew, await markets[0].marketSkew());
 			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
 
+			assert.equal(ethSummary.version, 'V1');
 			assert.equal(ethSummary.market, markets[1].address);
 			assert.equal(ethSummary.baseAsset, toBytes32(assets[1]));
 			price = await markets[1].assetPrice();
 			assert.equal(ethSummary.price, price.price);
+			assert.equal(ethSummary.priceInvalid, false);
 			assert.equal(ethSummary.marketSize, await markets[1].marketSize());
 			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
 
+			assert.equal(linkSummary.version, 'V1');
 			assert.equal(linkSummary.market, await instance.marketForKey(toBytes32('sLINK')));
 			assert.equal(linkSummary.baseAsset, toBytes32('LINK'));
 			assert.equal(linkSummary.price, toUnit(1000));
+			assert.equal(linkSummary.priceInvalid, false);
 			assert.equal(linkSummary.marketSize, toUnit(0));
 			assert.equal(linkSummary.marketSkew, toUnit(0));
 			assert.equal(linkSummary.currentFundingRate, toUnit(0));
+		});
+
+		describe('with a perps market in perps manager', () => {
+			const marketKey = toBytes32('pBTC');
+			const assetKey = toBytes32('BTC');
+			const noSuchFeed = toBytes32('noSuchFeed');
+			beforeEach(async () => {
+				await perpsManager.addMarkets([marketKey], [assetKey], { from: owner });
+				await perpsManager.addMarkets([noSuchFeed], [noSuchFeed], { from: owner });
+			});
+
+			it('allMarketSummaries', async () => {
+				const summaries = await instance.allMarketSummaries();
+				assert.equal(summaries.length, 5);
+
+				const perpsSummary1 = summaries.find(summary => summary.marketKey === marketKey);
+				assert.equal(perpsSummary1.version, 'V2');
+				assert.equal(perpsSummary1.market, perpsManager.address);
+				assert.equal(perpsSummary1.baseAsset, assetKey);
+				assert.equal(perpsSummary1.price, (await markets[0].assetPrice())[0]);
+				assert.equal(perpsSummary1.priceInvalid, false);
+				assert.equal(perpsSummary1.marketSize, toUnit(0));
+				assert.equal(perpsSummary1.marketSkew, toUnit(0));
+				assert.equal(perpsSummary1.currentFundingRate, toUnit(0));
+
+				const perpsSummary2 = summaries.find(summary => summary.marketKey === noSuchFeed);
+				assert.equal(perpsSummary2.version, 'V2');
+				assert.equal(perpsSummary2.market, perpsManager.address);
+				assert.equal(perpsSummary2.baseAsset, noSuchFeed);
+				assert.equal(perpsSummary2.price, 0);
+				assert.equal(perpsSummary2.priceInvalid, true);
+				assert.equal(perpsSummary2.marketSize, toUnit(0));
+				assert.equal(perpsSummary2.marketSkew, toUnit(0));
+				assert.equal(perpsSummary2.currentFundingRate, toUnit(0));
+			});
 		});
 	});
 });
