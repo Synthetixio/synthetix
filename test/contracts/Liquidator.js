@@ -30,7 +30,7 @@ const {
 		LIQUIDATION_DELAY,
 		LIQUIDATION_RATIO,
 		LIQUIDATION_ESCROW_DURATION,
-		LIQUIDATION_PENALTY,
+		SNX_LIQUIDATION_PENALTY,
 		SELF_LIQUIDATION_PENALTY,
 		FLAG_REWARD,
 		LIQUIDATE_REWARD,
@@ -186,7 +186,7 @@ contract('Liquidator', accounts => {
 		});
 		it('liquidation penalty ', async () => {
 			const liquidationPenalty = await liquidator.liquidationPenalty();
-			assert.bnEqual(liquidationPenalty, LIQUIDATION_PENALTY);
+			assert.bnEqual(liquidationPenalty, SNX_LIQUIDATION_PENALTY);
 		});
 		it('self liquidation penalty ', async () => {
 			const selfLiquidationPenalty = await liquidator.selfLiquidationPenalty();
@@ -336,7 +336,7 @@ contract('Liquidator', accounts => {
 				describe('given liquidation penalty is 10%', () => {
 					beforeEach(async () => {
 						penalty = toUnit('0.1');
-						await systemSettings.setLiquidationPenalty(penalty, { from: owner });
+						await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
 					});
 					it('calculates sUSD to fix ratio from 200%, with $600 SNX collateral and $300 debt', async () => {
 						const expectedAmount = toUnit('260.869565217391304347');
@@ -652,7 +652,7 @@ contract('Liquidator', accounts => {
 					assert.bnClose(await liquidator.liquidationCollateralRatio(), toUnit('1.5'));
 				});
 				it('and liquidation penalty is 10%', async () => {
-					assert.bnEqual(await liquidator.liquidationPenalty(), LIQUIDATION_PENALTY);
+					assert.bnEqual(await liquidator.liquidationPenalty(), SNX_LIQUIDATION_PENALTY);
 				});
 				it('and liquidation delay is 3 days', async () => {
 					assert.bnEqual(await liquidator.liquidationDelay(), LIQUIDATION_DELAY);

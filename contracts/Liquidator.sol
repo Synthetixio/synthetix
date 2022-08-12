@@ -95,7 +95,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     function liquidationPenalty() external view returns (uint) {
-        return getLiquidationPenalty();
+        // SIP-251: use getSnxLiquidationPenalty instead of getLiquidationPenalty
+        // which is used for loans / shorts (collateral contracts).
+        // Keeping the view name because it makes sense in the context of this contract.
+        return getSnxLiquidationPenalty();
     }
 
     function selfLiquidationPenalty() external view returns (uint) {
