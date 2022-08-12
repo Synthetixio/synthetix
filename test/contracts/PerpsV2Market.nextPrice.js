@@ -11,7 +11,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 	let perpsSettings,
 		perpsMarket,
 		exchangeRates,
-		exchangeCircuitBreaker,
+		circuitBreaker,
 		sUSD,
 		systemSettings,
 		systemStatus,
@@ -29,13 +29,12 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 	const initialPrice = toUnit('100');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(exchangeRates, [asset], [price]);
-		// reset the last price to the new price, so that we don't trip the breaker
-		// on various tests that change prices beyond the allowed deviation
-		if (resetCircuitBreaker) {
-			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			resetCircuitBreaker ? circuitBreaker : null,
+			[asset],
+			[price]
+		);
 	}
 
 	before(async () => {
@@ -43,7 +42,7 @@ contract('PerpsV2Market mixin for next price orders', accounts => {
 			PerpsV2Settings: perpsSettings,
 			PerpsV2MarketpBTC: perpsMarket,
 			ExchangeRates: exchangeRates,
-			ExchangeCircuitBreaker: exchangeCircuitBreaker,
+			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
 			FeePool: feePool,
 			SystemSettings: systemSettings,

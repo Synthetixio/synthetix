@@ -4267,8 +4267,9 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xb4dc5ced63C2918c89E491D19BF1C0e92845de7C",
-				"status": "current",
-				"keccak256": "0x87564ce6ba744b9ccd9f4c1295332ebbe5392196baa76c39a125ead78e941cab"
+				"status": "replaced",
+				"keccak256": "0x87564ce6ba744b9ccd9f4c1295332ebbe5392196baa76c39a125ead78e941cab",
+				"replaced_in": "v2.75.2"
 			},
 			"Synthetix": {
 				"address": "0x639032d3900875a4cf4960aD6b9ee441657aA93C",
@@ -4505,6 +4506,21 @@
 				"address": "0x4A9a8B1B596Fe1096cD75a588fD559968ca64259",
 				"status": "current",
 				"keccak256": "0xc4e328478f9c625bb34c4f019040afd62b9dfb8f03882727e39888d3173f09a9"
+			}
+		}
+	},
+	"v2.75.2": {
+		"tag": "v2.75.2",
+		"fulltag": "v2.75.2",
+		"release": "Tiaki",
+		"network": "mainnet",
+		"date": "2022-08-03T17:41:13-04:00",
+		"commit": "da846da503afdb39fed2f88df648a3ca5181fa95",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x9729415A58b210b2b8f69cFa5d6C3A7D68c9D217",
+				"status": "current",
+				"keccak256": "0xfec05faecf82227e8f3957c8c66047e96c24defa8fd9e92099bd63b7c905828d"
 			}
 		}
 	}

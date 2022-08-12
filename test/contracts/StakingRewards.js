@@ -44,7 +44,7 @@ contract('StakingRewards', accounts => {
 
 		await systemSettings.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
 		await setupPriceAggregators(exchangeRates, owner, [tokenKey]);
-		await updateAggregatorRates(exchangeRates, [tokenKey], [toUnit('2')]);
+		await updateAggregatorRates(exchangeRates, null, [tokenKey], [toUnit('2')]);
 		assert.equal(await exchangeRates.rateIsStale(tokenKey), false);
 	};
 

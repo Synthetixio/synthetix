@@ -109,7 +109,7 @@ contract('TradingRewards', accounts => {
 		});
 
 		before('set exchange rates', async () => {
-			await updateAggregatorRates(exchangeRates, [sETH, sBTC, SNX], Object.values(rates));
+			await updateAggregatorRates(exchangeRates, null, [sETH, sBTC, SNX], Object.values(rates));
 
 			await setExchangeFeeRateForSynths({
 				owner,

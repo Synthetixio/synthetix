@@ -147,7 +147,7 @@ contract('CollateralEth', async accounts => {
 	};
 
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
 	};
 
 	const fastForwardAndUpdateRates = async seconds => {
@@ -217,19 +217,19 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('when the price falls by 25% our c ratio is 150%', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(75)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(75)]);
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
 			it('when the price increases by 100% our c ratio is 400%', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(200)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(200)]);
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(4));
 			});
 
 			it('when the price falls by 50% our cratio is 100%', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(50)]);
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1));
 			});
@@ -250,7 +250,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('price changes should not change the cratio', async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(75)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(75)]);
 				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
@@ -777,7 +777,7 @@ contract('CollateralEth', async accounts => {
 			let liquidationAmount;
 
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(90)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(90)]);
 				await issuesUSDToAccount(toUnit(1000), account2);
 
 				liquidatorEthBalBefore = new BN(await getEthBalance(account2));
@@ -836,7 +836,7 @@ contract('CollateralEth', async accounts => {
 			let liquidatorEthBalBefore;
 
 			beforeEach(async () => {
-				await updateAggregatorRates(exchangeRates, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(50)]);
 				loan = await ceth.loans(id);
 
 				await issuesUSDToAccount(toUnit(1000), account2);

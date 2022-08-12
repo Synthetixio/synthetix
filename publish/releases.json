@@ -635,6 +635,16 @@
 			"released": "both"
 		},
 		{
+			"sip": 230,
+			"layer": "both",
+			"sources": [
+				"CircuitBreaker",
+				"ExchangeRates",
+				"Exchanger",
+				"Issuer"
+			]
+		},
+		{
 			"sip": 235,
 			"layer": "both",
 			"sources": ["Issuer"],
@@ -683,9 +693,15 @@
 			"released": "both"
 		},
 		{
+			"sip": 257,
+			"layer": "both",
+      "sources": ["ExchangeRates"]
+    },
+    {
 			"sip": 258,
 			"layer": "base",
-			"sources": ["ExchangeRates"]
+			"sources": ["ExchangeRates"],
+			"released": "base"
 		}
 	],
 	"releases": [
@@ -1289,7 +1305,8 @@
 				"major": 2,
 				"minor": 75
 			},
-			"sips": []
+			"sips": [258],
+			"released": true
 		}
 	]
 }

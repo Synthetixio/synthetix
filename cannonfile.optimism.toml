@@ -1,5 +1,4 @@
 name = "synthetix"
-version = "2.74.2-alpha"
 description = "Infinite liquidity is here."
 
 # overrides the deployed contracts used by the deployer
@@ -108,6 +107,7 @@ depends = ["run.synthetix"]
 [invoke.set_ownership]
 target = [
     "AddressResolver",
+    "CircuitBreaker",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
@@ -162,6 +162,7 @@ depends = ["run.synthetix"]
 [invoke.accept_ownership]
 target = [
     "AddressResolver",
+    "CircuitBreaker",
     "CollateralManager",
     "CollateralManagerState",
     "CollateralShort",
