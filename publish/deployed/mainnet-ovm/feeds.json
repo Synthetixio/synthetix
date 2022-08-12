@@ -62,5 +62,13 @@
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x94A178f2c480D14F8CdDa908D173d7a73F779cb7"
+	},
+	"BNB": {
+		"asset": "BNB",
+		"feed": "0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c"
+	},
+	"OP": {
+		"asset": "OP",
+		"feed": "0x0D276FC14719f9292D5C1eA2198673d1f4269246"
 	}
 }
