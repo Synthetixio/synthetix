@@ -458,5 +458,17 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Synthetix Aggregator Debt Ratio"
+	},
+	"OP": {
+		"asset": "OP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Optimism"
+	},
+	"DOGE": {
+		"asset": "DOGE",
+		"category": "crypto",
+		"sign": "Ɖ",
+		"description": "Dogecoin"
 	}
 }
