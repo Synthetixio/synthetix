@@ -327,17 +327,11 @@ contract('Liquidator', accounts => {
 			describe('given target ratio of 800%, collateral of $600, debt of $300', () => {
 				beforeEach(async () => {
 					ratio = toUnit('0.125');
-
-					await systemSettings.setIssuanceRatio(ratio, { from: owner });
-
 					collateralBefore = toUnit('600');
 					debtBefore = toUnit('300');
+					penalty = toUnit('0.1');
 				});
 				describe('given liquidation penalty is 10%', () => {
-					beforeEach(async () => {
-						penalty = toUnit('0.1');
-						await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
-					});
 					it('calculates sUSD to fix ratio from 200%, with $600 SNX collateral and $300 debt', async () => {
 						const expectedAmount = toUnit('260.869565217391304347');
 
