@@ -70,5 +70,13 @@
 	"OP": {
 		"asset": "OP",
 		"feed": "0x0D276FC14719f9292D5C1eA2198673d1f4269246"
+	},
+	"XMR": {
+		"asset": "XMR",
+		"feed": "0x2a8D91686A048E98e6CCF1A89E82f40D14312672"
+	},
+	"DOGE": {
+		"asset": "DOGE",
+		"feed": "0xC6066533917f034Cf610c08e1fe5e9c7eADe0f54"
 	}
 }
