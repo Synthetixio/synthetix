@@ -113,6 +113,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 		await setPrice(baseAsset, price);
 	});
 
+	describe('fee views', () => {
+		it('are as expected', async () => {
+			assert.bnEqual(await perpsOrders.baseFeeNextPrice(marketKey), baseFeeNextPrice);
+		});
+	});
+
 	describe('submitNextPriceOrder()', () => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
@@ -245,6 +251,9 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			await setPrice(baseAsset, price);
 
 			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, baseFeeNextPrice));
+
+			// check view
+			assert.bnEqual((await perpsOrders.orderFeeNextPrice(marketKey, size))[0], expectedFee);
 
 			// excute the order
 			const tx = await perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader });
@@ -800,6 +809,9 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
 					'Price too volatile'
 				);
+
+				// fee rate order reverts
+				await assert.revert(perpsOrders.feeRateNextPrice(marketKey), 'Price too volatile');
 			});
 		});
 	});

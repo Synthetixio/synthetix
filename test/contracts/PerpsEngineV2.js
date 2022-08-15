@@ -207,6 +207,10 @@ contract('PerpsEngineV2', accounts => {
 			assert.equal(await perpsEngine.CONTRACT_NAME(), toBytes32('PerpsEngineV2'));
 		});
 
+		it('state contract getter', async () => {
+			assert.equal(await perpsEngine.stateContract(), perpsStorage.address);
+		});
+
 		it('static parameters are set properly after construction', async () => {
 			const scalars = await perpsStorage.marketScalars(marketKey);
 			assert.equal(scalars.baseAsset, baseAsset);

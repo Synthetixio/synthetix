@@ -629,7 +629,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             = sum ( margin-deposits + q * price - q * last-price + q * (funding - initial-funding) )
             = sum( q * price ) + sum( q * funding ) + sum( margin-deposits - q * last-price - q * initial-funding )
             = skew * price + skew * funding + sum( margin-deposits - q * ( last-price + initial-funding ) )
-            = skew (price + funding) + sum( margin-deposits - q * ( last-price + initial-funding ) )
+            = skew (price + funding) + sum( margin-deposit - q * ( last-price + initial-funding ) )
 
         The last term: sum( margin-deposits - q * ( last-price + initial-funding ) ) being the position debt correction
             that is tracked with each position change using this method. 
