@@ -761,8 +761,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
-        // Note: While redeemTarget takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
-        // Therefore, it is correct to add the penalty modification below to the redeemTarget.
+        // Note: While calculateAmountToFixCollateral takes the penalty into account,
+        // it only calculates the debt to be repaid (so that c-ratio is reached). The penalty still needs to be
+        // applied on the collateral side (SNX) correctly. Which is why redeemTarget needs to be multiplied by 1 + penalty
+        // to get the SNX amount calculateAmountToFixCollateral was using for its calculation.
         // This is a "target" because it may not be available, so will be adjusted
         uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 

@@ -195,10 +195,19 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /**
      * r = target issuance ratio
-     * D = debt balance
-     * V = Collateral
+     * D = debt value
+     * V = collateral value
      * P = liquidation penalty
+     * S = debt amount to redeem
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     *
+     * Derivation of the formula:
+     *   Collateral "sold" with penalty: collateral-sold = S * (1 + P)
+     *   After liquidation: new-debt = D - S, new-collateral = V - collateral-sold = V - S * (1 + P)
+     *   Because we fixed the c-ratio, new-debt / new-collateral = c-ratio: (D - S) / (V - S * (1 + P)) = r
+     *   After solving for S we get: S = (D - V * r) / (1 - (1 + P) * r)
+     * Note: this only returns the amount of debt to remove "assuming the penalty", the penalty still needs to be
+     * correctly applied when removing collateral.
      */
     function calculateAmountToFixCollateral(
         uint debtBalance,
