@@ -41,6 +41,8 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /// @dev Holds a mapping of [marketKey][account] to orders. Only one order per market & account is supported
     mapping(bytes32 => mapping(address => NextPriceOrder)) public nextPriceOrders;
 
+    ///// Views
+
     function baseFeeNextPrice(bytes32 marketKey) external view returns (uint) {
         return _baseFeeNextPrice(marketKey);
     }

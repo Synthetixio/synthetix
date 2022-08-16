@@ -138,6 +138,8 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			const position = await getPosition(trader);
 			const expectedMargin = margin.sub(spotFee.add(keeperFee));
 			assert.bnEqual(position.margin, expectedMargin);
+			// locked margin is as expected
+			assert.bnEqual(position.lockedMargin, spotFee.add(keeperFee));
 
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
@@ -299,6 +301,13 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
 				assert.bnEqual(order.keeperDeposit, 0);
+
+				// check margin
+				const position = await getPosition(trader);
+				const expectedMargin = from === trader ? currentMargin.add(keeperFee) : currentMargin;
+				assert.bnEqual(position.margin, expectedMargin);
+				// locked margin is as expected
+				assert.bnEqual(position.lockedMargin, 0);
 
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
@@ -611,6 +620,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					.add(spotTradeDetails.fee)
 					.sub(expectedFee)
 					.add(expectedRefund);
+
+				// check margin stored
+				const position = await getPosition(trader);
+				assert.bnEqual(position.margin, expectedMargin);
+				// locked margin is as expected
+				assert.bnEqual(position.lockedMargin, 0);
 
 				decodedEventEqual({
 					event: 'PositionModified',
