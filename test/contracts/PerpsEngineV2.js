@@ -339,6 +339,68 @@ contract('PerpsEngineV2', accounts => {
 				// check after being removed
 				await checkReverts();
 			});
+
+			it('unconfigured market for existing asset does not allow trading', async () => {
+				const newKey = toBytes32('pNew');
+				await perpsManager.addMarkets([newKey], [baseAsset], { from: owner });
+
+				// can deposit margin
+				await instance.transferMargin(newKey, trader, toUnit('1000'), { from: mockOrders });
+
+				// can lock
+				await instance.modifyLockedMargin(newKey, trader, toUnit('1'), toUnit('0'), {
+					from: mockOrders,
+				});
+				// can unlock
+				await instance.modifyLockedMargin(newKey, trader, toUnit('-1'), toUnit('0'), {
+					from: mockOrders,
+				});
+
+				// fails on leverage check
+				await assert.revert(
+					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+						from: mockOrders,
+					}),
+					'Max leverage exceeded'
+				);
+				// after configuring leverage
+				await perpsManager.setMaxLeverage(newKey, toUnit('10'), {
+					from: owner,
+				});
+				// fails on market size check
+				await assert.revert(
+					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+						from: mockOrders,
+					}),
+					'Max market size exceeded'
+				);
+
+				// can withdraw
+				await instance.transferMargin(newKey, trader, toUnit('-1000'), { from: mockOrders });
+			});
+
+			it('unconfigured market for asset without price feed does not work', async () => {
+				const newKey = toBytes32('pNew');
+				await perpsManager.addMarkets([newKey], [toBytes32('nope')], { from: owner });
+				const revertReason = 'Invalid price';
+
+				await assert.revert(
+					instance.transferMargin(newKey, trader, toUnit('1000'), { from: mockOrders }),
+					revertReason
+				);
+				await assert.revert(
+					instance.modifyLockedMargin(newKey, trader, toUnit('1'), toUnit('0'), {
+						from: mockOrders,
+					}),
+					revertReason
+				);
+				await assert.revert(
+					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+						from: mockOrders,
+					}),
+					revertReason
+				);
+			});
 		});
 
 		it('contract has CONTRACT_NAME getter', async () => {
