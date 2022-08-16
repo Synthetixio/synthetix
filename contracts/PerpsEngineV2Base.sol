@@ -751,7 +751,12 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         int marginDelta,
         bool checkLeverage
     ) internal view returns (uint newMargin, Status statusCode) {
-        int newMarginInt = _marginPlusProfitFunding(position, price).add(marginDelta);
+        int realizedMargin = _marginPlusProfitFunding(position, price);
+        if (realizedMargin < 0) {
+            return (0, Status.CanLiquidate);
+        }
+
+        int newMarginInt = realizedMargin.add(marginDelta);
         if (newMarginInt < 0) {
             return (0, Status.InsufficientMargin);
         }

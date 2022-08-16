@@ -540,12 +540,6 @@ contract('PerpsEngineV2', accounts => {
 	});
 
 	describe('Transferring margin', () => {
-		it.skip('Transferring margin updates margin, last price, funding index, but not size', async () => {
-			// We'll need to distinguish between the size = 0 case, when last price and index are not altered,
-			// and the size > 0 case, when last price and index ARE altered.
-			assert.isTrue(false);
-		});
-
 		describe('sUSD balance', () => {
 			it(`Can't deposit more sUSD than owned`, async () => {
 				const preBalance = await sUSD.balanceOf(trader);
@@ -752,6 +746,10 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		describe('Existing position', () => {
+			it.skip('Transferring margin updates margin, last price, funding index, but not size', async () => {
+				assert.isTrue(false);
+			});
+
 			it.skip('Increase margin', async () => {
 				assert.isTrue(false);
 			});
@@ -760,20 +758,143 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue(false);
 			});
 
-			it.skip('Cannot decrease margin past liquidation point', async () => {
-				assert.isTrue(false);
-			});
-
-			it.skip('Cannot decrease margin past liquidation point', async () => {
-				assert.isTrue(false);
-			});
-
-			it.skip('Cannot decrease margin past max leverage', async () => {
-				assert.isTrue(false);
-			});
-
 			it.skip('Transferring margin realises profit and funding', async () => {
 				assert.isTrue(false);
+			});
+		});
+
+		describe('modifyLockedMargin', () => {
+			it('events are emitted properly', async () => {
+				const margin = toUnit('1000');
+				await transfer(margin, trader3);
+
+				const tx = await instance.modifyLockedMargin(marketKey, trader3, toUnit('100'), toBN(0), {
+					from: mockOrders,
+				});
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, instance, perpsStorage],
+				});
+				assert.equal(decodedLogs.length, 3);
+				assert.equal(decodedLogs[0].name, 'FundingUpdated');
+
+				decodedEventEqual({
+					event: 'MarginModified',
+					emittedFrom: instance.address,
+					args: [marketKey, trader3, toUnit('-100'), 0, toUnit('100'), 0],
+					log: decodedLogs[1],
+				});
+
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: instance.address,
+					args: [
+						marketKey,
+						toBN('1'),
+						trader3,
+						toUnit('900'),
+						toBN('0'),
+						toBN('0'),
+						(await marketSummary()).price,
+						toBN('0'),
+					],
+					log: decodedLogs[2],
+				});
+			});
+
+			it('reverts as for zero amounts', async () => {
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toBN(0), toBN(0), { from: mockOrders }),
+					'zero modification amounts'
+				);
+			});
+
+			it('reverts for negative locked', async () => {
+				const revertMsg = 'new locked margin negative';
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toBN(0), toBN('1'), {
+						from: mockOrders,
+					}),
+					revertMsg
+				);
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toBN('1'), toBN('2'), {
+						from: mockOrders,
+					}),
+					revertMsg
+				);
+			});
+
+			it('reverts for margin checks if position size is not zero', async () => {
+				const margin = toUnit('1000');
+				await transfer(margin, trader);
+				await trade(toUnit('1'), trader);
+				// min margin
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toUnit('900'), toBN(0), {
+						from: mockOrders,
+					}),
+					'Insufficient margin'
+				);
+				// leverage
+				await trade(toUnit('99'), trader);
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toUnit('10'), toBN(0), {
+						from: mockOrders,
+					}),
+					'Max leverage exceeded'
+				);
+				// liquidatable
+				await setPrice(baseAsset, toUnit('90'));
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toUnit('10'), toBN(0), {
+						from: mockOrders,
+					}),
+					'Position can be liquidated'
+				);
+			});
+
+			it('locking and burning', async () => {
+				const margin = toBN('1000');
+				// lock some
+				await transfer(margin, trader);
+				let position = await getPosition(trader);
+				assert.bnEqual(toBN(position.margin), margin);
+				assert.bnEqual(position.lockedMargin, 0);
+				// lock
+				const locked = toBN('10');
+				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
+				position = await getPosition(trader);
+				assert.bnEqual(toBN(position.margin), margin.sub(locked));
+				assert.bnEqual(toBN(position.lockedMargin), locked);
+				// cannot burn more than locked
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, 0, toBN('20'), { from: mockOrders }),
+					'new locked margin negative'
+				);
+				// can burn locked
+				await instance.modifyLockedMargin(marketKey, trader, 0, locked, { from: mockOrders });
+				position = await getPosition(trader);
+				assert.bnEqual(toBN(position.margin), margin.sub(locked));
+				assert.bnEqual(toBN(position.lockedMargin), 0);
+			});
+
+			it('locking and unlocking', async () => {
+				const margin = toBN('1000');
+				// lock some
+				await transfer(margin, trader);
+				const locked = toBN('10');
+				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
+				// cannot unlock more than locked
+				await assert.revert(
+					instance.modifyLockedMargin(marketKey, trader, toBN('-11'), 0, { from: mockOrders }),
+					'new locked margin negative'
+				);
+				// can burn locked
+				await instance.modifyLockedMargin(marketKey, trader, locked.neg(), 0, { from: mockOrders });
+				const position = await getPosition(trader);
+				assert.bnEqual(toBN(position.margin), margin);
+				assert.bnEqual(toBN(position.lockedMargin), 0);
 			});
 		});
 	});
@@ -1577,13 +1698,15 @@ contract('PerpsEngineV2', accounts => {
 		describe('Withdrawable margin', async () => {
 			const msgLeverage = 'Max leverage exceeded';
 			const msgMargin = 'Insufficient margin';
-			const withdrawMaxAndValidate = async (account, msg) => {
+			const msgLiquidatable = 'Position can be liquidated';
+
+			async function withdrawMaxAndValidate(account, msg) {
 				let withdrawable = toBN(await withdrawableMargin(account));
 				await transfer(withdrawable.neg(), account);
 				withdrawable = await withdrawableMargin(account);
 				assert.bnClose(withdrawable, toBN('0'), toUnit('1'));
 				await assert.revert(transfer(toUnit('-1'), account), msg);
-			};
+			}
 
 			it('With no position, entire margin is withdrawable.', async () => {
 				const margin = toUnit('1234.56789');
@@ -1672,6 +1795,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('If a position is subject to liquidation, no margin is withdrawable.', async () => {
+				// long
 				await transferAndTrade({
 					account: trader3,
 					fillPrice: toUnit('100'),
@@ -1682,8 +1806,9 @@ contract('PerpsEngineV2', accounts => {
 				await setPrice(baseAsset, toUnit('80'));
 				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
-				await withdrawMaxAndValidate(trader3, msgMargin); // margin is negative
+				await withdrawMaxAndValidate(trader3, msgLiquidatable); // margin is negative
 
+				// short
 				await transferAndTrade({
 					account: trader2,
 					fillPrice: toUnit('100'),
@@ -1694,7 +1819,7 @@ contract('PerpsEngineV2', accounts => {
 				await setPrice(baseAsset, toUnit('120'));
 				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
 				assert.bnEqual(await withdrawableMargin(trader2), toUnit('0'));
-				await withdrawMaxAndValidate(trader2, msgMargin); // margin is negative
+				await withdrawMaxAndValidate(trader2, msgLiquidatable); // margin is negative
 			});
 
 			it('If remaining margin is below minimum initial margin, no margin is withdrawable.', async () => {
