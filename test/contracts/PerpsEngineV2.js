@@ -228,7 +228,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 		});
 
-		describe('access control for mutative methods', () => {
+		describe('access control & basic validation for mutative methods', () => {
 			const revertReason = 'Not permitted for this address';
 
 			it('only the manager can access ensureInitialized & recomputeFunding', async () => {
@@ -296,6 +296,44 @@ contract('PerpsEngineV2', accounts => {
 					address: mockOrders,
 					reason: revertReason,
 				});
+			});
+
+			it('orders methods revert for markets not in manager', async () => {
+				const badKey = toBytes32('nope');
+				async function checkReverts() {
+					await assert.revert(
+						instance.transferMargin(badKey, trader, toUnit('1000'), { from: mockOrders }),
+						revertReason
+					);
+					await assert.revert(
+						instance.modifyLockedMargin(badKey, trader, toUnit('1'), toUnit('0'), {
+							from: mockOrders,
+						}),
+						revertReason
+					);
+					await assert.revert(
+						instance.trade(badKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+							from: mockOrders,
+						}),
+						revertReason
+					);
+					await assert.revert(
+						instance.managerPayFee(badKey, toUnit('1'), toBytes32(''), { from: mockOrders }),
+						revertReason
+					);
+					await assert.revert(
+						instance.managerIssueSUSD(badKey, trader, toUnit('1'), { from: mockOrders }),
+						revertReason
+					);
+				}
+
+				// check before is added
+				await checkReverts();
+
+				await perpsManager.addMarkets([badKey], [baseAsset], { from: owner });
+				await perpsManager.removeMarkets([badKey], { from: owner });
+				// check after being removed
+				await checkReverts();
 			});
 		});
 
