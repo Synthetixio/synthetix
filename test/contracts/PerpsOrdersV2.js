@@ -171,6 +171,12 @@ contract('PerpsOrdersV2', accounts => {
 			assert.bnEqual(summary.price, price);
 			assert.isFalse(summary.priceInvalid);
 		});
+
+		it('maxOrderSizes is as in engine', async () => {
+			const res = await perpsOrders.maxOrderSizes(marketKey);
+			const resEngine = await perpsEngine.maxOrderSizes(marketKey);
+			assert.deepEqual(res, resEngine);
+		});
 	});
 
 	describe('order fees', () => {
@@ -434,6 +440,16 @@ contract('PerpsOrdersV2', accounts => {
 				assert.ok(
 					(await exchanger.dynamicFeeRateForExchange(toBytes32('sUSD'), baseAsset)).tooVolatile
 				);
+			});
+
+			it('dynamicFeeRate view', async () => {
+				const exchangerResult = await exchanger.dynamicFeeRateForExchange(
+					toBytes32('sUSD'),
+					baseAsset
+				);
+				const ownResult = await perpsOrders.dynamicFeeRate(marketKey);
+				assert.bnEqual(exchangerResult.feeRate, ownResult.rate);
+				assert.equal(exchangerResult.tooVolatile, ownResult.tooVolatile);
 			});
 
 			it('position modifying actions revert', async () => {
