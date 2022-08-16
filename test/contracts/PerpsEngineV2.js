@@ -232,7 +232,6 @@ contract('PerpsEngineV2', accounts => {
 			const revertReason = 'Not permitted for this address';
 
 			it('only the manager can access ensureInitialized & recomputeFunding', async () => {
-				// grant mockOrders the permission to make engine calls
 				await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
 					from: owner,
 				});
@@ -407,6 +406,98 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnEqual(summary.marketSize, toUnit('0'));
 			assert.bnEqual(summary.marketSkew, toUnit('0'));
 			assert.bnEqual(await instance.proportionalSkew(marketKey), toUnit('0'));
+		});
+	});
+
+	describe('ensureInitialized', () => {
+		beforeEach(async () => {
+			// switch to mock manager
+			await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
+				from: owner,
+			});
+			await instance.rebuildCache();
+		});
+
+		it('cam rerun if already initialized', async () => {
+			await instance.ensureInitialized(marketKey, baseAsset, { from: mockManager });
+		});
+
+		it('reverts in expected cases', async () => {
+			// cannot init to another asset
+			await assert.revert(
+				instance.ensureInitialized(marketKey, toBytes32('other asset'), { from: mockManager }),
+				'initialized with different asset'
+			);
+
+			// cannot init to empty marketKey
+			await assert.revert(
+				instance.ensureInitialized(toBytes32(''), toBytes32('new'), { from: mockManager }),
+				'market key cannot be empty'
+			);
+
+			// cannot init to empty asset
+			await assert.revert(
+				instance.ensureInitialized(toBytes32('pNew'), toBytes32(''), { from: mockManager }),
+				'asset key cannot be empty'
+			);
+		});
+	});
+
+	describe('recomputeFunding', () => {
+		it('short circuits for no market size', async () => {
+			// switch to mock manager
+			await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
+				from: owner,
+			});
+			await instance.rebuildCache();
+
+			const lastFundingBefore = await perpsStorage.lastFundingEntry(marketKey);
+			// doesn't revert
+			await instance.recomputeFunding(marketKey, { from: mockManager });
+
+			// has no effect
+			const lastFundingEntry = await perpsStorage.lastFundingEntry(marketKey);
+			assert.deepEqual(lastFundingBefore, lastFundingEntry);
+		});
+
+		describe('with existing market size', () => {
+			beforeEach(async () => {
+				// ensure market has OI
+				await transferAndTrade({
+					account: trader,
+					fillPrice: initialPrice,
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('1'),
+				});
+				// switch to mock manager
+				await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
+					from: owner,
+				});
+				await instance.rebuildCache();
+			});
+
+			it('updates the latest funding entry', async () => {
+				const lastFundingBefore = await perpsStorage.lastFundingEntry(marketKey);
+
+				await instance.recomputeFunding(marketKey, { from: mockManager });
+
+				const lastFundingEntry = await perpsStorage.lastFundingEntry(marketKey);
+				// funding accrued is negative (and larger) due to skew being long
+				assert.bnLt(toBN(lastFundingEntry.funding), toBN(0));
+				assert.bnLt(toBN(lastFundingEntry.funding), toBN(lastFundingBefore.funding));
+				assert.bnGt(toBN(lastFundingEntry.timestamp), toBN(lastFundingBefore.timestamp));
+				assert.bnEqual(toBN(lastFundingEntry.timestamp), await currentTime());
+			});
+
+			it('reverts in for invalid price', async () => {
+				// set invalid price
+				await setPrice(baseAsset, toBN(0));
+				// reverts on invalid price
+				await assert.revert(
+					instance.recomputeFunding(marketKey, { from: mockManager }),
+					'Invalid price'
+				);
+			});
 		});
 	});
 
