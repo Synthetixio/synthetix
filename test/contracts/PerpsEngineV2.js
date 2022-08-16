@@ -962,6 +962,21 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(toBN(position.margin), margin);
 				assert.bnEqual(toBN(position.lockedMargin), 0);
 			});
+
+			it('debt accounting of locking and burning', async () => {
+				const margin = toBN('1000');
+				await transfer(margin, trader);
+				const debtBefore = await instance.marketDebt(marketKey);
+				// lock
+				const locked = toBN('10');
+				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
+				// debt should stay the same
+				assert.bnEqual(debtBefore.debt, (await instance.marketDebt(marketKey)).debt);
+				// burn
+				await instance.modifyLockedMargin(marketKey, trader, 0, locked, { from: mockOrders });
+				// debt should have changed
+				assert.bnEqual(debtBefore.debt.sub((await instance.marketDebt(marketKey)).debt), locked);
+			});
 		});
 	});
 
@@ -3322,6 +3337,17 @@ contract('PerpsEngineV2', accounts => {
 
 				const { id: newPositionId } = await getPosition(trader);
 				assert.bnGte(newPositionId, oldPositionId);
+			});
+
+			it('liquidation does not change locked margin', async () => {
+				const locked = toBN('10');
+				await setPrice(baseAsset, toUnit('260'));
+				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
+				await setPrice(baseAsset, toUnit('50'));
+				await instance.liquidatePosition(marketKey, trader, liquidator);
+				const position = await getPosition(trader);
+				assert.bnEqual(toBN(position.margin), 0);
+				assert.bnEqual(position.lockedMargin, locked);
 			});
 		});
 
