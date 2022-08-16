@@ -612,30 +612,36 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
      */
     function _positionDebtCorrection(Position memory position) internal pure returns (int) {
         /**
-        This method only returns the correction term for the debt calculation of the position, and not it's 
-        debt. This is needed for keeping track of the _marketDebt() in an efficient manner to allow O(1) marketDebt
-        calculation in _marketDebt().
+        This method only returns the per position correction term for the debt calculation, and not it's
+        the position full debt.
+        This correction is part of tracking the total market to allow O(1) marketDebt calculation in _marketDebt().
 
         Explanation of the full market debt calculation from the SIP https://sips.synthetix.io/sips/sip-80/:
 
-        The overall market debt is the sum of the remaining margin in all positions. The intuition is that
-        the debt of a single position is the value withdrawn upon closing that position.
+        The overall market debt is the sum of the remaining margin in all positions.
+        The debt of a single position is the value withdrawn upon closing that position (+any fees paid):
 
-        single position remaining margin = margin-deposits + profit-loss + accrued-funding =
-            = margin-deposits + q * (price - last-price) + q * funding-accrued-per-unit
-            = margin-deposits + q * price - q * last-price + q * (funding - initial-funding)
+        single-position-remaining-margin [note: q = position-size below]:
+            = margin-deposit + profit-loss + accrued-funding
+            = margin-deposit + q * (price - last-price) + q * funding-accrued-per-unit
+            = margin-deposit + q * price - q * last-price + q * (funding - initial-funding)
 
-        Total debt = sum ( position remaining margins )
-            = sum ( margin-deposits + q * price - q * last-price + q * (funding - initial-funding) )
-            = sum( q * price ) + sum( q * funding ) + sum( margin-deposits - q * last-price - q * initial-funding )
-            = skew * price + skew * funding + sum( margin-deposits - q * ( last-price + initial-funding ) )
-            = skew (price + funding) + sum( margin-deposit - q * ( last-price + initial-funding ) )
+        total-debt = sum ( single-position-remaining-margin ) when `sum` is over all the positions:
+            = sum ( margin-deposit + q * price - q * last-price + q * (funding - initial-funding) )
+            = sum( q * price ) + sum( q * funding ) + sum( margin-deposit - q * last-price - q * initial-funding )
+            = sum( q ) * price + sum( q ) * funding + sum( margin-deposit - q * last-price - q * initial-funding )
 
-        The last term: sum( margin-deposits - q * ( last-price + initial-funding ) ) being the position debt correction
-            that is tracked with each position change using this method. 
+        Because sum( q ) = skew, we continue: total-debt =
+            = skew * price + skew * funding + sum( margin-deposit - q * ( last-price + initial-funding ) )
+            = skew * (price + funding) + sum( margin-deposit - q * ( last-price + initial-funding ) )
+
+        The last term: sum( margin-deposit - q * ( last-price + initial-funding ) ) being the position debt correction
+            that is tracked with each position change using this method.
         
-        The first term and the full debt calculation using current skew, price, and funding is calculated globally in _marketDebt().
-         */
+        The first term ( skew * (price + funding) ) and total debt calculation using current skew, price, and funding
+        is calculated globally in _marketDebt().
+
+        */
         int initialFunding = position.lastFundingEntry.funding;
         // both position margin and locked margin are counted as debt, since both can be withdrawn unless lost
         int marginDeposits = int(position.margin.add(position.lockedMargin));
