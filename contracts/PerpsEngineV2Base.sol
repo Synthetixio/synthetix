@@ -91,7 +91,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         _;
     }
 
-    modifier onlyManger() {
+    modifier onlyManager() {
         _revertIfError(msg.sender != address(_manager()), Status.NotPermitted);
         _;
     }
@@ -136,7 +136,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     /* ========== EXTERNAL MUTATIVE METHODS ========== */
 
-    function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external onlyManger {
+    function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external onlyManager {
         // load current stored market
         MarketScalars memory market = _stateViews().marketScalars(marketKey);
         if (market.baseAsset == bytes32(0)) {
@@ -157,7 +157,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
      *   during that time for any reason, so this method needs to work even if system is paused.
      *   But in that case, it shouldn't be accessible to external accounts.
      */
-    function recomputeFunding(bytes32 marketKey) external onlyManger {
+    function recomputeFunding(bytes32 marketKey) external onlyManager {
         if (_marketScalars(marketKey).marketSize == 0) {
             // short circuit in case of empty market (to avoid reverts on initial configuration)
             return;

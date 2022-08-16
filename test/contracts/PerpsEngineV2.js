@@ -10,6 +10,7 @@ const {
 	decodedEventEqual,
 	ensureOnlyExpectedMutativeFunctions,
 	updateAggregatorRates,
+	onlyGivenAddressCanInvoke,
 } = require('./helpers');
 
 const MockExchanger = artifacts.require('MockExchanger');
@@ -51,6 +52,7 @@ contract('PerpsEngineV2', accounts => {
 	const noBalance = accounts[5];
 	const liquidator = accounts[6];
 	const mockOrders = accounts[7]; // orders router
+	const mockManager = accounts[8];
 	const traderInitialBalance = toUnit(1000000);
 
 	const marketKey = toBytes32('pBTC');
@@ -211,15 +213,90 @@ contract('PerpsEngineV2', accounts => {
 				abi: instance.abi,
 				ignoreParents: ['MixinResolver'],
 				expected: [
+					// only manager
 					'ensureInitialized',
 					'recomputeFunding',
+					// only orders router
 					'transferMargin',
 					'modifyLockedMargin',
 					'trade',
 					'managerPayFee',
 					'managerIssueSUSD',
+					// anyone
 					'liquidatePosition',
 				],
+			});
+		});
+
+		describe('access control for mutative methods', () => {
+			const revertReason = 'Not permitted for this address';
+
+			it('only the manager can access ensureInitialized & recomputeFunding', async () => {
+				// grant mockOrders the permission to make engine calls
+				await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
+					from: owner,
+				});
+				await instance.rebuildCache();
+
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.ensureInitialized,
+					args: [marketKey, baseAsset],
+					accounts,
+					address: mockManager,
+					reason: revertReason,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.recomputeFunding,
+					args: [marketKey],
+					accounts,
+					address: mockManager,
+					reason: revertReason,
+				});
+			});
+
+			it('only the orders router can access position modifying methods', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.transferMargin,
+					args: [marketKey, trader, toUnit('1000')],
+					accounts,
+					address: mockOrders,
+					reason: revertReason,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.modifyLockedMargin,
+					args: [marketKey, trader, toUnit('1'), toUnit('0')],
+					accounts,
+					address: mockOrders,
+					reason: revertReason,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.trade,
+					args: [marketKey, trader, toUnit('1'), [0, 0, toBytes32('')]],
+					accounts,
+					address: mockOrders,
+					reason: revertReason,
+				});
+			});
+
+			it('only the orders router can access manager sUSD methods', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.managerPayFee,
+					args: [marketKey, toUnit('1'), toBytes32('')],
+					accounts,
+					address: mockOrders,
+					reason: revertReason,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: instance.managerIssueSUSD,
+					args: [marketKey, trader, toUnit('1')],
+					accounts,
+					address: mockOrders,
+					reason: revertReason,
+				});
 			});
 		});
 
