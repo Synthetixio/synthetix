@@ -131,6 +131,10 @@ contract('PerpsEngineV2', accounts => {
 		return instance.marketSummary(marketKey);
 	}
 
+	async function assetPrice() {
+		return instance.assetPrice(marketKey);
+	}
+
 	async function withdrawableMargin(account) {
 		return instance.withdrawableMargin(marketKey, account);
 	}
@@ -638,7 +642,7 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('1000'),
 						toBN('0'),
 						toBN('0'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[4],
@@ -684,7 +688,7 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('0'),
 						toBN('0'),
 						toBN('0'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[3],
@@ -795,7 +799,7 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('900'),
 						toBN('0'),
 						toBN('0'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
@@ -1350,7 +1354,7 @@ contract('PerpsEngineV2', accounts => {
 						toUnit('2000').sub(fee),
 						toBN('0'),
 						toUnit('-10'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						multiplyDecimal(toUnit(2000), baseFee),
 					],
 					log: decodedLogs[2],
@@ -2635,8 +2639,10 @@ contract('PerpsEngineV2', accounts => {
 
 		it('Market price is reported as invalid when price is stale', async () => {
 			assert.isFalse((await marketSummary()).priceInvalid);
+			assert.isFalse((await assetPrice()).invalid);
 			await fastForward(7 * 24 * 60 * 60);
 			assert.isTrue((await marketSummary()).priceInvalid);
+			assert.isTrue((await assetPrice()).invalid);
 		});
 
 		describe('Market debt is accurately reflected in total system debt', () => {
@@ -3033,7 +3039,7 @@ contract('PerpsEngineV2', accounts => {
 						toBN('0'),
 						toBN('0'),
 						toBN('0'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
@@ -3134,7 +3140,7 @@ contract('PerpsEngineV2', accounts => {
 						toBN('0'),
 						toBN('0'),
 						toBN('0'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
@@ -3223,7 +3229,7 @@ contract('PerpsEngineV2', accounts => {
 						toBN('0'),
 						toBN('0'),
 						toBN('0'),
-						(await marketSummary()).price,
+						(await assetPrice()).price,
 						toBN('0'),
 					],
 					log: decodedLogs[2],
