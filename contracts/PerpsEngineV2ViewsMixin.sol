@@ -12,8 +12,18 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
-    function marketSizes(bytes32 marketKey) external view returns (uint long, uint short) {
+    function marketSizes(bytes32 marketKey) public view returns (uint long, uint short) {
         return _sideSizes(_marketScalars(marketKey));
+    }
+
+    /// view for returning max possible order size that take into account existing positions
+    function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short) {
+        (uint price, ) = assetPrice(marketKey);
+        (uint longSize, uint shortSize) = marketSizes(marketKey);
+        uint sizeLimit = _maxSingleSideValueUSD(marketKey).divideDecimal(price);
+        long = longSize < sizeLimit ? sizeLimit.sub(longSize) : 0;
+        short = shortSize < sizeLimit ? sizeLimit.sub(shortSize) : 0;
+        return (long, short);
     }
 
     /*

@@ -95,12 +95,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
 
     /// view for returning max possible order size that take into account existing positions
     function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short) {
-        (uint price, ) = engineContract().assetPrice(marketKey);
-        (uint longSize, uint shortSize) = engineContract().marketSizes(marketKey);
-        uint sizeLimit = _maxSingleSideValueUSD(marketKey).divideDecimal(price);
-        long = longSize < sizeLimit ? sizeLimit.sub(longSize) : 0;
-        short = shortSize < sizeLimit ? sizeLimit.sub(shortSize) : 0;
-        return (long, short);
+        return engineContract().maxOrderSizes(marketKey);
     }
 
     // INTERNAL

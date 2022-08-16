@@ -102,6 +102,8 @@ interface IPerpsEngineV2External {
 
     function marketSizes(bytes32 marketKey) external view returns (uint long, uint short);
 
+    function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short);
+
     function marketDebt(bytes32 marketKey) external view returns (uint debt, bool invalid);
 
     function marketSummary(bytes32 marketKey) external view returns (IPerpsTypesV2.MarketSummary memory);
