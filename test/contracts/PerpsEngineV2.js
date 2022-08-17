@@ -249,6 +249,7 @@ contract('PerpsEngineV2', accounts => {
 
 		describe('access control & basic validation for mutative methods', () => {
 			const revertReason = revertMsg.NotPermitted;
+			const nullExecParams = [0, 0, toBytes32('')];
 
 			it('only the manager can access ensureInitialized & recomputeFunding', async () => {
 				await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
@@ -292,7 +293,7 @@ contract('PerpsEngineV2', accounts => {
 
 				await onlyGivenAddressCanInvoke({
 					fnc: instance.trade,
-					args: [marketKey, trader, toUnit('1'), [0, 0, toBytes32('')]],
+					args: [marketKey, trader, toUnit('1'), nullExecParams],
 					accounts,
 					address: mockOrders,
 					reason: revertReason,
@@ -331,7 +332,7 @@ contract('PerpsEngineV2', accounts => {
 						revertReason
 					);
 					await assert.revert(
-						instance.trade(badKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+						instance.trade(badKey, trader, toUnit('1'), nullExecParams, {
 							from: mockOrders,
 						}),
 						revertReason
@@ -373,7 +374,7 @@ contract('PerpsEngineV2', accounts => {
 
 				// fails on leverage check
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+					instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
 						from: mockOrders,
 					}),
 					revertMsg.MaxLeverageExceeded
@@ -384,14 +385,29 @@ contract('PerpsEngineV2', accounts => {
 				});
 				// fails on market size check
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+					instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
 						from: mockOrders,
 					}),
 					revertMsg.MaxMarketSizeExceeded
 				);
-
-				// can withdraw
+				// can still withdraw deposit
 				await instance.transferMargin(newKey, trader, toUnit('-1000'), { from: mockOrders });
+
+				// after setting caps only
+				await perpsManager.setMaxSingleSideValueUSD(newKey, toUnit('10000'), {
+					from: owner,
+				});
+				// can trade once
+				await instance.transferMargin(newKey, trader, toUnit('1000'), { from: mockOrders });
+				await instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
+					from: mockOrders,
+				});
+				// but after that the market is still broken due to skewScale being 0
+				await assert.revert(instance.proportionalSkew(newKey), 'skewScale is zero');
+				await assert.revert(
+					instance.trade(newKey, trader, toUnit('1'), nullExecParams, { from: mockOrders }),
+					'skewScale is zero'
+				);
 			});
 
 			it('unconfigured market for asset without price feed does not work', async () => {
@@ -409,11 +425,15 @@ contract('PerpsEngineV2', accounts => {
 					revertMsg.InvalidPrice
 				);
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
+					instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
 						from: mockOrders,
 					}),
 					revertMsg.InvalidPrice
 				);
+			});
+
+			it('uninitialized market fails baseAsset check', async () => {
+				await assert.revert(instance.assetPrice(toBytes32('pNew')), 'market not initialised');
 			});
 		});
 
