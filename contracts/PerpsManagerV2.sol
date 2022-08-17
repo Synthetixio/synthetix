@@ -160,7 +160,7 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
     /// Note: checks V1 markets and ensures that it doesn't add a colliding marketKey
     function addMarkets(bytes32[] calldata marketKeys, bytes32[] calldata assets) external onlyOwner {
         uint numOfMarkets = marketKeys.length;
-        require(marketKeys.length == assets.length, "length of marketKeys != assets");
+        require(marketKeys.length == assets.length, "Length of marketKeys != assets");
         IFuturesMarketManager futuresManager = IFuturesMarketManager(address(_futuresManager()));
         // iterate and add
         IPerpsEngineV2Internal engineMutative = _perpsEngineV2Mutative();

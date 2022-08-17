@@ -8,7 +8,7 @@ import "./PerpsOrdersV2Base.sol";
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
- the risk to the debt pool, and funding rate for traders. 
+ the risk to the debt pool, and funding rate for traders.
  The fees can be reduced when comitting to next price, because front-running (MEV and oracle delay)
  is less of a risk when committing to next price.
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
@@ -90,17 +90,18 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     ) internal {
         address account = msg.sender;
         // check that a previous order doesn't exist
-        require(nextPriceOrders[marketKey][account].sizeDelta == 0, "previous order exists");
+        require(nextPriceOrders[marketKey][account].sizeDelta == 0, "Previous order exists");
 
         // To prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert.
         // The spot rate is used because the commitDeposit will be deducted from margin on submission.
         // Dynamic fee should be included because current dynamic fee is better approximation than 0
         uint feeRate = _feeRate(marketKey);
+
         // trackingCode is not important in execution options here since is used for check only
         (, , , Status status) =
             engineContract().postTradeDetails(marketKey, account, sizeDelta, _defaultExecutionOptions(feeRate));
-        require(status == Status.Ok, "order would fail as spot");
+        require(status == Status.Ok, "Order would fail as spot");
 
         // deduct fees from margin
         uint commitDeposit = _nextPriceCommitDeposit(marketKey, sizeDelta);
@@ -149,7 +150,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // important!! order of the account, not the msg.sender
         NextPriceOrder memory order = nextPriceOrders[marketKey][account];
         // check that a previous order exists
-        require(order.sizeDelta != 0, "no previous order");
+        require(order.sizeDelta != 0, "No previous order");
 
         uint curRoundId = currentRoundId(marketKey);
 
@@ -164,7 +165,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
             // otherwise someone might try to grief an account by cancelling for the keeper fee
             require(
                 _confirmationWindowOver(marketKey, curRoundId, order.targetRoundId),
-                "cannot be cancelled by keeper yet"
+                "Cannot be cancelled by keeper yet"
             );
 
             // burn keeper fee from locked margin
@@ -212,18 +213,18 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // important!: order  of the account, not the sender!
         NextPriceOrder memory order = nextPriceOrders[marketKey][account];
         // check that a previous order exists
-        require(order.sizeDelta != 0, "no previous order");
+        require(order.sizeDelta != 0, "No previous order");
 
         // check round-Id
         uint curRoundId = currentRoundId(marketKey);
-        require(order.targetRoundId <= curRoundId, "target roundId not reached");
+        require(order.targetRoundId <= curRoundId, "Target roundId not reached");
 
         // check order is not too old to execute
         // we cannot allow executing old orders because otherwise perps knowledge
         // can be used to trigger failures of orders that are more profitable
         // then the commitFee that was charged, or can be used to confirm
         // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(!_confirmationWindowOver(marketKey, curRoundId, order.targetRoundId), "order too old, use cancel");
+        require(!_confirmationWindowOver(marketKey, curRoundId, order.targetRoundId), "Order too old, use cancel");
 
         // handle the fees and refunds according to the mechanism rules
         uint refund = order.commitDeposit; // refund the commitment deposit
