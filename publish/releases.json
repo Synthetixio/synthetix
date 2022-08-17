@@ -682,6 +682,11 @@
 			"released": "ovm"
 		},
 		{
+			"sip": 249,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 251,
 			"layer": "both",
 			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
@@ -697,6 +702,16 @@
 			"layer": "base",
 			"sources": ["ExchangeRates"],
 			"released": "base"
+		},
+		{
+			"sip": 262,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 269,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1318,7 +1333,7 @@
 				"major": 2,
 				"minor": 76
 			},
-			"sips": [230, 257]
+			"sips": [230, 249, 257, 262, 269]
 		}
 	]
 }
