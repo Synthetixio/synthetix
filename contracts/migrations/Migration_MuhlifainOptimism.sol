@@ -200,8 +200,7 @@ contract Migration_MuhlifainOptimism is BaseMigration {
         futuresmarketsettings_i.setMaxMarketValueUSD("sDebtRatio", 1000000000000000000000000);
         futuresmarketsettings_i.setMaxFundingRate("sDebtRatio", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sDebtRatio", 5000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sDebtRatio", 80);
+
         futuresmarketsettings_i.setTakerFee("sBNB", 4000000000000000);
         futuresmarketsettings_i.setMakerFee("sBNB", 3500000000000000);
         futuresmarketsettings_i.setTakerFeeNextPrice("sBNB", 3000000000000000);
@@ -211,8 +210,7 @@ contract Migration_MuhlifainOptimism is BaseMigration {
         futuresmarketsettings_i.setMaxMarketValueUSD("sBNB", 1000000000000000000000000);
         futuresmarketsettings_i.setMaxFundingRate("sBNB", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sBNB", 50000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sBNB", 80);
+
         futuresmarketsettings_i.setTakerFee("sOP", 4000000000000000);
         futuresmarketsettings_i.setMakerFee("sOP", 3500000000000000);
         futuresmarketsettings_i.setTakerFeeNextPrice("sOP", 3000000000000000);
@@ -222,8 +220,7 @@ contract Migration_MuhlifainOptimism is BaseMigration {
         futuresmarketsettings_i.setMaxMarketValueUSD("sOP", 1000000000000000000000000);
         futuresmarketsettings_i.setMaxFundingRate("sOP", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sOP", 50000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sOP", 80);
+
         futuresmarketsettings_i.setTakerFee("sXMR", 4000000000000000);
         futuresmarketsettings_i.setMakerFee("sXMR", 3500000000000000);
         futuresmarketsettings_i.setTakerFeeNextPrice("sXMR", 3000000000000000);
@@ -233,8 +230,7 @@ contract Migration_MuhlifainOptimism is BaseMigration {
         futuresmarketsettings_i.setMaxMarketValueUSD("sXMR", 1000000000000000000000000);
         futuresmarketsettings_i.setMaxFundingRate("sXMR", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sXMR", 50000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sXMR", 80);
+
         futuresmarketsettings_i.setTakerFee("sDOGE", 4000000000000000);
         futuresmarketsettings_i.setMakerFee("sDOGE", 3500000000000000);
         futuresmarketsettings_i.setTakerFeeNextPrice("sDOGE", 3000000000000000);
@@ -244,8 +240,6 @@ contract Migration_MuhlifainOptimism is BaseMigration {
         futuresmarketsettings_i.setMaxMarketValueUSD("sDOGE", 1000000000000000000000000);
         futuresmarketsettings_i.setMaxFundingRate("sDOGE", 100000000000000000);
         futuresmarketsettings_i.setSkewScaleUSD("sDOGE", 50000000000000000000000000);
-        // Ensure futures market is paused according to config;
-        systemstatus_i.suspendFuturesMarket("sDOGE", 80);
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         nominateAll();
