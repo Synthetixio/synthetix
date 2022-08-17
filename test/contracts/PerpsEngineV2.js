@@ -92,13 +92,17 @@ contract('PerpsEngineV2', accounts => {
 	async function trade(
 		sizeDelta,
 		account,
-		options = { priceDelta: 0, feeRate: baseFee, trackingCode: toBytes32('') }
+		options = { priceDelta: null, feeRate: null, trackingCode: null }
 	) {
 		return instance.trade(
 			marketKey,
 			account,
 			sizeDelta,
-			[toBN(options.priceDelta), toBN(options.feeRate), options.trackingCode],
+			[
+				toBN(options.priceDelta || 0),
+				toBN(options.feeRate || baseFee),
+				options.trackingCode || toBytes32(''),
+			],
 			{
 				from: mockOrders,
 			}
@@ -981,7 +985,7 @@ contract('PerpsEngineV2', accounts => {
 	});
 
 	describe('Modifying positions', () => {
-		it('can modify a position', async () => {
+		it('modifying changes position state, market state, and emits event ', async () => {
 			const margin = toUnit('1000');
 			await transfer(margin, trader);
 			const size = toUnit('50');
@@ -1006,8 +1010,13 @@ contract('PerpsEngineV2', accounts => {
 			);
 
 			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, instance] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, instance, perpsStorage],
+			});
 			assert.equal(decodedLogs.length, 3);
+			// funding, fee, position modified
+			assert.equal(decodedLogs[0].name, 'FundingUpdated');
 			decodedEventEqual({
 				event: 'Issued',
 				emittedFrom: sUSD.address,
@@ -1019,6 +1028,51 @@ contract('PerpsEngineV2', accounts => {
 				emittedFrom: instance.address,
 				args: [marketKey, toBN('1'), trader, margin.sub(fee), size, size, price, fee],
 				log: decodedLogs[2],
+			});
+		});
+
+		it('custom execution options used: tracking code, price delta, fee rate', async () => {
+			const margin = toUnit('1000');
+			await transfer(margin, trader);
+			const marketPrice = toUnit('200');
+			await setPrice(baseAsset, marketPrice);
+			const size = toUnit('50');
+
+			// custom options
+			const feeRate = toUnit('0.042');
+			const priceDelta = toUnit('-1');
+			const trackingCode = toBytes32('tracking');
+
+			const tradePrice = marketPrice.add(priceDelta);
+			// TODO: refactor orderFee to accept execution params
+			// const fee = (await instance.orderFee(marketKey, size, feeRate)).fee;
+			const fee = multiplyDecimal(multiplyDecimal(tradePrice, size), feeRate);
+			const tx = await trade(size, trader, { priceDelta, feeRate, trackingCode });
+
+			// The relevant events are properly emitted
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, instance, perpsStorage],
+			});
+			assert.equal(decodedLogs.length, 4);
+			assert.equal(decodedLogs[0].name, 'FundingUpdated');
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSD.address,
+				args: [await feePool.FEE_ADDRESS(), fee],
+				log: decodedLogs[1],
+			});
+			decodedEventEqual({
+				event: 'Tracking',
+				emittedFrom: instance.address,
+				args: [trackingCode, marketKey, trader, size, fee],
+				log: decodedLogs[2],
+			});
+			decodedEventEqual({
+				event: 'PositionModified',
+				emittedFrom: instance.address,
+				args: [marketKey, toBN('1'), trader, margin.sub(fee), size, size, tradePrice, fee],
+				log: decodedLogs[3],
 			});
 		});
 
@@ -1067,7 +1121,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
-		it('Cannot modify a position if it is liquidating', async () => {
+		it('Cannot modify a position if it is liquidatable', async () => {
 			await transferAndTrade({
 				account: trader,
 				fillPrice: toUnit('200'),
@@ -1136,6 +1190,22 @@ contract('PerpsEngineV2', accounts => {
 			// But we actually allow up to 10.01x leverage to account for rounding issues.
 			await trade(toUnit('100.09'), trader);
 			await trade(toUnit('-100.09'), trader2);
+		});
+
+		it('old position is checked for after fee deduction', async () => {
+			await setPrice(baseAsset, toUnit('100'));
+			await transfer(toUnit('1000'), trader);
+			// trade fee is so large that old position becomes liquidatable when fee is subtracted
+			// and fails liquidation check (before reaching the leverage check)
+			await assert.revert(trade(toUnit('10000'), trader), 'Insufficient margin');
+		});
+
+		it('new position is checked to be not be under liquidation margin', async () => {
+			await setPrice(baseAsset, toUnit('100'));
+			await transfer(toUnit('1000'), trader);
+			// trade size is so large that new margin (after fee) is already below liquidation margin
+			// for the new trade size
+			await assert.revert(trade(toUnit('2000'), trader), 'Position can be liquidated');
 		});
 
 		it('can reduce leverage if goes above max', async () => {
@@ -1884,6 +1954,15 @@ contract('PerpsEngineV2', accounts => {
 					sizeDelta: toUnit('12.34').mul(toBN('8')),
 				});
 
+				// 88 does not go into negative margin, but only into liquidation margin
+				// this is needed to check that liquidation margin check is triggered correctly
+				await setPrice(baseAsset, toUnit('88'));
+				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
+				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
+				// check and trigger old position liquidatable check
+				await assert.revert(transfer(toUnit('-1'), trader3), msgLiquidatable);
+
+				// this price causes the position to go into negative margin
 				await setPrice(baseAsset, toUnit('80'));
 				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
