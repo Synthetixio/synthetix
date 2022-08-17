@@ -144,7 +144,7 @@ contract('PerpsManagerV2', accounts => {
 		it('Must provide same length of keys', async () => {
 			await assert.revert(
 				perpsManager.addMarkets(marketKeys, [baseAssets[0]], { from: owner }),
-				'length of marketKeys'
+				'Length of marketKeys'
 			);
 		});
 
@@ -152,7 +152,7 @@ contract('PerpsManagerV2', accounts => {
 			// check it's not known to storage
 			assert.equal((await perpsStorage.marketScalars(marketKey)).baseAsset, toBytes32(''));
 			// engine doesn't know about it
-			await assert.revert(perpsEngine.marketSummary(marketKey), 'market not initialised');
+			await assert.revert(perpsEngine.marketSummary(marketKey), 'Market not initialised');
 			// not approved for trading
 			assert.isFalse(await perpsManager.approvedRouterAndMarket(perpsOrders.address, marketKey));
 
