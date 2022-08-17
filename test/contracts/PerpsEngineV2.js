@@ -2643,6 +2643,17 @@ contract('PerpsEngineV2', accounts => {
 			assert.bnGt(toBN((await getPositionSummary(trader)).accruedFunding).abs(), accrued.abs());
 		});
 
+		it('0 price reverts in proportional skew when there is non zero skew', async () => {
+			await transferAndTrade({
+				account: trader,
+				fillPrice: toUnit(100),
+				sizeDelta: toUnit(1),
+				marginDelta: toUnit(1000),
+			});
+			await setPrice(baseAsset, toUnit('0'));
+			await assert.revert(instance.proportionalSkew(marketKey), "price can't be zero");
+		});
+
 		describe('last funding entry', () => {
 			const price = toUnit('100');
 			beforeEach(async () => {
