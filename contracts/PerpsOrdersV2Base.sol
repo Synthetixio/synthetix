@@ -78,7 +78,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     }
 
     function orderFee(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
-        return engineContract().orderFee(marketKey, sizeDelta, _feeRate(marketKey));
+        return engineContract().orderFee(marketKey, sizeDelta, _defaultExecutionOptions(_feeRate(marketKey)));
     }
 
     function dynamicFeeRate(bytes32 marketKey) external view returns (uint rate, bool tooVolatile) {
@@ -144,6 +144,10 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         return int(targetPrice).sub(int(currentPrice));
     }
 
+    function _defaultExecutionOptions(uint feeRate) internal pure returns (ExecutionOptions memory) {
+        return ExecutionOptions({feeRate: feeRate, priceDelta: 0, trackingCode: bytes32(0)});
+    }
+
     // EXTERNAL MUTATIVE
 
     /*
@@ -205,13 +209,12 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         int sizeDelta,
         bytes32 trackingCode
     ) internal {
-        IPerpsEngineV2Internal.ExecutionOptions memory options =
-            IPerpsEngineV2Internal.ExecutionOptions({
-                priceDelta: 0,
-                feeRate: _feeRate(marketKey),
-                trackingCode: trackingCode
-            });
-        _engineInternal().trade(marketKey, msg.sender, sizeDelta, options);
+        _engineInternal().trade(
+            marketKey,
+            msg.sender,
+            sizeDelta,
+            ExecutionOptions({feeRate: _feeRate(marketKey), priceDelta: 0, trackingCode: trackingCode})
+        );
     }
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {

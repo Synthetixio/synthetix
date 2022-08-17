@@ -660,10 +660,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			}
 
 			describe('execution results in correct views and events', () => {
-				let targetPrice, spotTradeDetails, baseFee;
+				let targetPrice, spotTradeDetails, baseFee, defaultExecOptions;
 
 				beforeEach(async () => {
 					targetPrice = multiplyDecimal(price, toUnit(0.9));
+					baseFee = await perpsOrders.baseFee(marketKey);
+					defaultExecOptions = [baseFee, 0, toBytes32('')];
 				});
 
 				describe('during target round', () => {
@@ -671,12 +673,11 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							baseFee = await perpsOrders.baseFee(marketKey);
 							spotTradeDetails = await perpsEngine.postTradeDetails(
 								marketKey,
 								trader,
 								size,
-								baseFee
+								defaultExecOptions
 							);
 						});
 
@@ -700,7 +701,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 								marketKey,
 								trader,
 								size,
-								baseFee
+								defaultExecOptions
 							);
 						});
 
@@ -736,7 +737,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
-						spotTradeDetails = await perpsEngine.postTradeDetails(marketKey, trader, size, baseFee);
+						spotTradeDetails = await perpsEngine.postTradeDetails(
+							marketKey,
+							trader,
+							size,
+							defaultExecOptions
+						);
 						// other rounds are back to old price
 						await setPrice(baseAsset, price);
 					});

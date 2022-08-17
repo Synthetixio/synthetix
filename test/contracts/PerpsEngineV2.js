@@ -77,6 +77,7 @@ contract('PerpsEngineV2', accounts => {
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
+	const defaultExecOptions = [baseFee, toBN(0), toBytes32('')];
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(exchangeRates, [asset], [price]);
@@ -103,15 +104,15 @@ contract('PerpsEngineV2', accounts => {
 	async function trade(
 		sizeDelta,
 		account,
-		options = { priceDelta: null, feeRate: null, trackingCode: null }
+		options = { feeRate: null, priceDelta: null, trackingCode: null }
 	) {
 		return instance.trade(
 			marketKey,
 			account,
 			sizeDelta,
 			[
-				toBN(options.priceDelta || 0),
 				toBN(options.feeRate || baseFee),
+				toBN(options.priceDelta || 0),
 				options.trackingCode || toBytes32(''),
 			],
 			{
@@ -249,7 +250,6 @@ contract('PerpsEngineV2', accounts => {
 
 		describe('access control & basic validation for mutative methods', () => {
 			const revertReason = revertMsg.NotPermitted;
-			const nullExecParams = [0, 0, toBytes32('')];
 
 			it('only the manager can access ensureInitialized & recomputeFunding', async () => {
 				await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
@@ -293,7 +293,7 @@ contract('PerpsEngineV2', accounts => {
 
 				await onlyGivenAddressCanInvoke({
 					fnc: instance.trade,
-					args: [marketKey, trader, toUnit('1'), nullExecParams],
+					args: [marketKey, trader, toUnit('1'), defaultExecOptions],
 					accounts,
 					address: mockOrders,
 					reason: revertReason,
@@ -332,7 +332,7 @@ contract('PerpsEngineV2', accounts => {
 						revertReason
 					);
 					await assert.revert(
-						instance.trade(badKey, trader, toUnit('1'), nullExecParams, {
+						instance.trade(badKey, trader, toUnit('1'), defaultExecOptions, {
 							from: mockOrders,
 						}),
 						revertReason
@@ -374,7 +374,7 @@ contract('PerpsEngineV2', accounts => {
 
 				// fails on leverage check
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
+					instance.trade(newKey, trader, toUnit('1'), defaultExecOptions, {
 						from: mockOrders,
 					}),
 					revertMsg.MaxLeverageExceeded
@@ -385,7 +385,7 @@ contract('PerpsEngineV2', accounts => {
 				});
 				// fails on market size check
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
+					instance.trade(newKey, trader, toUnit('1'), defaultExecOptions, {
 						from: mockOrders,
 					}),
 					revertMsg.MaxMarketSizeExceeded
@@ -399,13 +399,13 @@ contract('PerpsEngineV2', accounts => {
 				});
 				// can trade once
 				await instance.transferMargin(newKey, trader, toUnit('1000'), { from: mockOrders });
-				await instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
+				await instance.trade(newKey, trader, toUnit('1'), defaultExecOptions, {
 					from: mockOrders,
 				});
 				// but after that the market is still broken due to skewScale being 0
 				await assert.revert(instance.proportionalSkew(newKey), 'skewScale is zero');
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), nullExecParams, { from: mockOrders }),
+					instance.trade(newKey, trader, toUnit('1'), defaultExecOptions, { from: mockOrders }),
 					'skewScale is zero'
 				);
 			});
@@ -425,7 +425,7 @@ contract('PerpsEngineV2', accounts => {
 					revertMsg.InvalidPrice
 				);
 				await assert.revert(
-					instance.trade(newKey, trader, toUnit('1'), nullExecParams, {
+					instance.trade(newKey, trader, toUnit('1'), defaultExecOptions, {
 						from: mockOrders,
 					}),
 					revertMsg.InvalidPrice
@@ -1021,7 +1021,7 @@ contract('PerpsEngineV2', accounts => {
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fee = (await instance.orderFee(marketKey, size, baseFee)).fee;
+			const fee = (await instance.orderFee(marketKey, size, defaultExecOptions)).fee;
 			const tx = await trade(size, trader);
 
 			const pos = await getPosition(trader);
@@ -1074,10 +1074,9 @@ contract('PerpsEngineV2', accounts => {
 			const trackingCode = toBytes32('tracking');
 
 			const tradePrice = marketPrice.add(priceDelta);
-			// TODO: refactor orderFee to accept execution params
-			// const fee = (await instance.orderFee(marketKey, size, feeRate)).fee;
-			const fee = multiplyDecimal(multiplyDecimal(tradePrice, size), feeRate);
-			const tx = await trade(size, trader, { priceDelta, feeRate, trackingCode });
+			const execOptions = [feeRate, priceDelta, trackingCode];
+			const fee = (await instance.orderFee(marketKey, size, execOptions)).fee;
+			const tx = await trade(size, trader, { feeRate, priceDelta, trackingCode });
 
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
@@ -1116,7 +1115,12 @@ contract('PerpsEngineV2', accounts => {
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
-			const postDetails = await instance.postTradeDetails(marketKey, trader, size, baseFee);
+			const postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				size,
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(trade(size, trader), revertMsg.InvalidPrice);
@@ -1147,7 +1151,12 @@ contract('PerpsEngineV2', accounts => {
 			const margin = toUnit('1000');
 			await transfer(margin, trader);
 			await assert.revert(trade(toBN('0'), trader), revertMsg.NilOrder);
-			const postDetails = await instance.postTradeDetails(marketKey, trader, toBN('0'), baseFee);
+			const postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toBN('0'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
@@ -1163,7 +1172,12 @@ contract('PerpsEngineV2', accounts => {
 			// User realises the price has crashed and tries to outrun their liquidation, but it fails
 
 			const sizeDelta = toUnit('-50');
-			const postDetails = await instance.postTradeDetails(marketKey, trader, sizeDelta, baseFee);
+			const postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				sizeDelta,
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.CanLiquidate);
 
 			await assert.revert(trade(sizeDelta, trader), revertMsg.CanLiquidate);
@@ -1174,7 +1188,7 @@ contract('PerpsEngineV2', accounts => {
 			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
 			const preDistribution = (await feePool.recentFeePeriods(0))[3];
 			await setPrice(baseAsset, toUnit('200'));
-			const fee = (await instance.orderFee(marketKey, toUnit('50'), baseFee)).fee;
+			const fee = (await instance.orderFee(marketKey, toUnit('50'), defaultExecOptions)).fee;
 			await transferAndTrade({
 				account: trader,
 				fillPrice: toUnit('200'),
@@ -1210,11 +1224,21 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(toUnit('1000'), trader);
 			await transfer(toUnit('1000'), trader2);
 			await assert.revert(trade(toUnit('101'), trader), revertMsg.MaxLeverageExceeded);
-			let postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('101'), baseFee);
+			let postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('101'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await assert.revert(trade(toUnit('-101'), trader2), revertMsg.MaxLeverageExceeded);
-			postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('-101'), baseFee);
+			postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('-101'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			// But we actually allow up to 10.01x leverage to account for rounding issues.
@@ -1243,16 +1267,31 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(toUnit('1000'), trader);
 			await trade(toUnit('100'), trader);
 
-			let postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('1'), baseFee);
+			let postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('1'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await setPrice(baseAsset, toUnit('95')); // add a loss of half the margin, getting the leverage to 20x
 			// cannot reduce a little - because will be over max leverage
-			postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('-1'), baseFee);
+			postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('-1'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			// but can reduce by a lot into healthy leverage size
-			postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('-55'), baseFee);
+			postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('-55'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.Ok);
 
 			// can reduce leverage by an arbitrary amount if transferring more margin
@@ -1264,13 +1303,23 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(minInitialMargin.sub(toUnit('1')), trader);
 			await assert.revert(trade(toUnit('10'), trader), revertMsg.InsufficientMargin);
 
-			let postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('10'), baseFee);
+			let postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('10'),
+				defaultExecOptions
+			);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
 
 			// But it works after transferring the remaining $1
 			await transfer(toUnit('1'), trader);
 
-			postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('10'), baseFee);
+			postDetails = await instance.postTradeDetails(
+				marketKey,
+				trader,
+				toUnit('10'),
+				defaultExecOptions
+			);
 
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(toUnit('0.3')));
 			assert.bnEqual(postDetails.size, toUnit('10'));
@@ -1391,7 +1440,12 @@ contract('PerpsEngineV2', accounts => {
 						await transfer(maxMargin.add(toUnit('11')), trader);
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
 
-						const postDetails = await instance.postTradeDetails(marketKey, trader, tooBig, baseFee);
+						const postDetails = await instance.postTradeDetails(
+							marketKey,
+							trader,
+							tooBig,
+							defaultExecOptions
+						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 
 						await assert.revert(trade(tooBig, trader), revertMsg.MaxMarketSizeExceeded);
@@ -1415,7 +1469,7 @@ contract('PerpsEngineV2', accounts => {
 							marketKey,
 							trader,
 							sizeDelta,
-							baseFee
+							defaultExecOptions
 						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 						await assert.revert(trade(sizeDelta, trader), revertMsg.MaxMarketSizeExceeded);
@@ -1726,7 +1780,7 @@ contract('PerpsEngineV2', accounts => {
 					marketKey,
 					trader,
 					sizeDelta,
-					baseFee
+					defaultExecOptions
 				);
 
 				// Now execute the trade.
@@ -1752,7 +1806,7 @@ contract('PerpsEngineV2', accounts => {
 					marketKey,
 					trader,
 					sizeDelta,
-					baseFee
+					defaultExecOptions
 				);
 
 				// Now execute the trade.
@@ -1812,10 +1866,10 @@ contract('PerpsEngineV2', accounts => {
 
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				fee = (await instance.orderFee(marketKey, toUnit('50'), baseFee)).fee;
+				fee = (await instance.orderFee(marketKey, toUnit('50'), defaultExecOptions)).fee;
 				await transfer(toUnit('1000'), trader);
 				await trade(toUnit('50'), trader);
-				fee2 = (await instance.orderFee(marketKey, toUnit('-50'), baseFee)).fee;
+				fee2 = (await instance.orderFee(marketKey, toUnit('-50'), defaultExecOptions)).fee;
 				await transfer(toUnit('5000'), trader2);
 				await trade(toUnit('-50'), trader2);
 			});
@@ -2739,7 +2793,7 @@ contract('PerpsEngineV2', accounts => {
 
 			await setPrice(baseAsset, toUnit('100'));
 			await transfer(toUnit('1000'), trader); // Debt correction: +1000
-			const fee1 = (await instance.orderFee(marketKey, toUnit('50'), baseFee)).fee;
+			const fee1 = (await instance.orderFee(marketKey, toUnit('50'), defaultExecOptions)).fee;
 			await trade(toUnit('50'), trader); // Debt correction: -5000 - fee1
 
 			assert.bnEqual(
@@ -2750,7 +2804,7 @@ contract('PerpsEngineV2', accounts => {
 
 			await setPrice(baseAsset, toUnit('120'));
 			await transfer(toUnit('600'), trader2); // Debt correction: +600
-			const fee2 = (await instance.orderFee(marketKey, toUnit('-35'), baseFee)).fee;
+			const fee2 = (await instance.orderFee(marketKey, toUnit('-35'), defaultExecOptions)).fee;
 			await trade(toUnit('-35'), trader2); // Debt correction: +4200 - fee2
 
 			assert.bnClose(

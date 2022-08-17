@@ -92,6 +92,12 @@ interface IPerpsTypesV2 {
         uint maxFundingRate;
         uint skewScaleUSD;
     }
+
+    struct ExecutionOptions {
+        uint feeRate;
+        int priceDelta;
+        bytes32 trackingCode;
+    }
 }
 
 interface IPerpsEngineV2External {
@@ -121,14 +127,14 @@ interface IPerpsEngineV2External {
     function orderFee(
         bytes32 marketKey,
         int sizeDelta,
-        uint feeRate
+        IPerpsTypesV2.ExecutionOptions calldata options
     ) external view returns (uint fee, bool invalid);
 
     function postTradeDetails(
         bytes32 marketKey,
         address account,
         int sizeDelta,
-        uint feeRate
+        IPerpsTypesV2.ExecutionOptions calldata options
     )
         external
         view
@@ -151,12 +157,6 @@ interface IPerpsEngineV2External {
 }
 
 interface IPerpsEngineV2Internal {
-    struct ExecutionOptions {
-        int priceDelta;
-        uint feeRate;
-        bytes32 trackingCode;
-    }
-
     // internal mutative
 
     // only manager
@@ -185,7 +185,7 @@ interface IPerpsEngineV2Internal {
         bytes32 marketKey,
         address account,
         int sizeDelta,
-        ExecutionOptions calldata options
+        IPerpsTypesV2.ExecutionOptions calldata options
     ) external;
 
     // only routers

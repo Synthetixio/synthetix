@@ -107,11 +107,10 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     function orderFee(
         bytes32 marketKey,
         int sizeDelta,
-        uint feeRate
+        ExecutionOptions calldata options
     ) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = assetPrice(marketKey);
-        TradeParams memory params =
-            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: bytes32(0)});
+        TradeParams memory params = _executionOptionsToTradeParams(sizeDelta, price, options);
         return (_orderFee(params), isInvalid);
     }
 
@@ -122,7 +121,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         bytes32 marketKey,
         address account,
         int sizeDelta,
-        uint feeRate
+        ExecutionOptions calldata options
     )
         external
         view
@@ -139,9 +138,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         }
 
         Position memory position = _stateViews().positions(marketKey, account);
-
-        TradeParams memory params =
-            TradeParams({sizeDelta: sizeDelta, price: price, feeRate: feeRate, trackingCode: bytes32(0)});
+        TradeParams memory params = _executionOptionsToTradeParams(sizeDelta, price, options);
         return _postTradeDetails(position, params);
     }
 

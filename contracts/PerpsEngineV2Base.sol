@@ -215,16 +215,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint currentPrice = _assetPriceRequireSystemChecks(marketKey);
         // recompute funding using current price
         _recomputeFunding(marketKey, currentPrice);
-        _trade(
-            marketKey,
-            account,
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: _addDelta(currentPrice, options.priceDelta),
-                feeRate: options.feeRate,
-                trackingCode: options.trackingCode
-            })
-        );
+        _trade(marketKey, account, _executionOptionsToTradeParams(sizeDelta, currentPrice, options));
     }
 
     /// allows order routers to pay fees with their internal logic (e.g. from previously locked margin)
@@ -955,6 +946,21 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     }
 
     /* ---------- Utilities ---------- */
+
+    // helper method to translate the external struct to internal struct in a consistent way
+    function _executionOptionsToTradeParams(
+        int sizeDelta,
+        uint currentPrice,
+        ExecutionOptions memory options
+    ) internal pure returns (TradeParams memory) {
+        return
+            TradeParams({
+                sizeDelta: sizeDelta,
+                price: _addDelta(currentPrice, options.priceDelta),
+                feeRate: options.feeRate,
+                trackingCode: options.trackingCode
+            });
+    }
 
     /// adds an int delta to a uint value, reverts if overflows / underflow
     function _addDelta(uint value, int delta) internal pure returns (uint) {
