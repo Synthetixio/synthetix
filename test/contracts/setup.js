@@ -795,6 +795,7 @@ const setupAllContracts = async ({
 				'WrapperFactory',
 				'EtherWrapper',
 				'SynthRedeemer',
+				'LiquidatorRewards',
 			],
 			deps: [
 				'OneNetAggregatorIssuedSynths',
