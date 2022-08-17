@@ -1076,6 +1076,9 @@ contract('PerpsEngineV2', accounts => {
 			const tradePrice = marketPrice.add(priceDelta);
 			const execOptions = [feeRate, priceDelta, trackingCode];
 			const fee = (await instance.orderFee(marketKey, size, execOptions)).fee;
+			// check fee from view as expected
+			assert.bnEqual(fee, multiplyDecimal(multiplyDecimal(tradePrice, size), feeRate));
+
 			const tx = await trade(size, trader, { feeRate, priceDelta, trackingCode });
 
 			// The relevant events are properly emitted
