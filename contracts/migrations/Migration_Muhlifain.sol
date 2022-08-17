@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -29,7 +28,8 @@ contract Migration_Muhlifain is BaseMigration {
     // https://etherscan.io/address/0x696c905F8F8c006cA46e9808fE7e00049507798F
     SystemStatus public constant systemstatus_i = SystemStatus(0x696c905F8F8c006cA46e9808fE7e00049507798F);
     // https://etherscan.io/address/0x9F1C2f0071Bc3b31447AEda9fA3A68d651eB4632
-    ExchangeRatesWithDexPricing public constant exchangerates_i = ExchangeRatesWithDexPricing(0x9F1C2f0071Bc3b31447AEda9fA3A68d651eB4632);
+    ExchangeRatesWithDexPricing public constant exchangerates_i =
+        ExchangeRatesWithDexPricing(0x9F1C2f0071Bc3b31447AEda9fA3A68d651eB4632);
     // https://etherscan.io/address/0x8D1201b074EeF198D5e6957F4574e2e4FC5Ba9Cf
     Issuer public constant issuer_i = Issuer(0x8D1201b074EeF198D5e6957F4574e2e4FC5Ba9Cf);
 
@@ -50,18 +50,30 @@ contract Migration_Muhlifain is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](5);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(exchangestate_i);
-        contracts[2]= address(systemstatus_i);
-        contracts[3]= address(exchangerates_i);
-        contracts[4]= address(issuer_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(exchangestate_i);
+        contracts[2] = address(systemstatus_i);
+        contracts[3] = address(exchangerates_i);
+        contracts[4] = address(issuer_i);
     }
 
     function migrate() external onlyOwner {
-        require(ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRatesWithDexPricing", "Invalid contract supplied for ExchangeRates");
-        require(ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives", "Invalid contract supplied for Exchanger");
-        require(ISynthetixNamedContract(new_CircuitBreaker_contract).CONTRACT_NAME() == "CircuitBreaker", "Invalid contract supplied for CircuitBreaker");
-        require(ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer", "Invalid contract supplied for Issuer");
+        require(
+            ISynthetixNamedContract(new_ExchangeRates_contract).CONTRACT_NAME() == "ExchangeRatesWithDexPricing",
+            "Invalid contract supplied for ExchangeRates"
+        );
+        require(
+            ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "ExchangerWithFeeRecAlternatives",
+            "Invalid contract supplied for Exchanger"
+        );
+        require(
+            ISynthetixNamedContract(new_CircuitBreaker_contract).CONTRACT_NAME() == "CircuitBreaker",
+            "Invalid contract supplied for CircuitBreaker"
+        );
+        require(
+            ISynthetixNamedContract(new_Issuer_contract).CONTRACT_NAME() == "Issuer",
+            "Invalid contract supplied for Issuer"
+        );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -154,7 +166,6 @@ contract Migration_Muhlifain is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](4);
         addressresolver_importAddresses_names_0_0[0] = bytes32("ExchangeRates");
@@ -166,10 +177,12 @@ contract Migration_Muhlifain is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[1] = address(new_Exchanger_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_CircuitBreaker_contract);
         addressresolver_importAddresses_destinations_0_1[3] = address(new_Issuer_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x0e5fe1b05612581576e9A3dB048416d0B1E3C425);
@@ -195,7 +208,6 @@ contract Migration_Muhlifain is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
-    
     function addressresolver_rebuildCaches_2() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](16);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xE1cc2332852B2Ac0dA59A1f9D3051829f4eF3c1C);
@@ -217,7 +229,6 @@ contract Migration_Muhlifain is BaseMigration {
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    
     function issuer_addSynths_36() internal {
         ISynth[] memory issuer_addSynths_synthsToAdd_36_0 = new ISynth[](14);
         issuer_addSynths_synthsToAdd_36_0[0] = ISynth(0x10A5F7D9D65bCc2734763444D4940a31b109275f);
