@@ -18,15 +18,26 @@ const MockExchanger = artifacts.require('MockExchanger');
 const Status = {
 	Ok: 0,
 	InvalidPrice: 1,
-	PriceOutOfBounds: 2,
-	CanLiquidate: 3,
-	CannotLiquidate: 4,
-	MaxMarketSizeExceeded: 5,
-	MaxLeverageExceeded: 6,
-	InsufficientMargin: 7,
-	NotPermitted: 8,
-	NilOrder: 9,
-	NoPositionOpen: 10,
+	CanLiquidate: 2,
+	CannotLiquidate: 3,
+	MaxMarketSizeExceeded: 4,
+	MaxLeverageExceeded: 5,
+	InsufficientMargin: 6,
+	NotPermitted: 7,
+	NilOrder: 8,
+	NoPositionOpen: 9,
+};
+
+const revertMsg = {
+	InvalidPrice: 'Invalid price',
+	CanLiquidate: 'Position can be liquidated',
+	CannotLiquidate: 'Position cannot be liquidated',
+	MaxMarketSizeExceeded: 'Max market size exceeded',
+	MaxLeverageExceeded: 'Max leverage exceeded',
+	InsufficientMargin: 'Insufficient margin',
+	NotPermitted: 'Not permitted for this address',
+	NilOrder: 'Cannot submit empty order',
+	NoPositionOpen: 'No position open', // unused (NilOrder is triggered on empty orders)
 };
 
 contract('PerpsEngineV2', accounts => {
@@ -237,7 +248,7 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		describe('access control & basic validation for mutative methods', () => {
-			const revertReason = 'Not permitted for this address';
+			const revertReason = revertMsg.NotPermitted;
 
 			it('only the manager can access ensureInitialized & recomputeFunding', async () => {
 				await addressResolver.importAddresses(['PerpsManagerV2'].map(toBytes32), [mockManager], {
@@ -365,7 +376,7 @@ contract('PerpsEngineV2', accounts => {
 					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
 						from: mockOrders,
 					}),
-					'Max leverage exceeded'
+					revertMsg.MaxLeverageExceeded
 				);
 				// after configuring leverage
 				await perpsManager.setMaxLeverage(newKey, toUnit('10'), {
@@ -376,7 +387,7 @@ contract('PerpsEngineV2', accounts => {
 					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
 						from: mockOrders,
 					}),
-					'Max market size exceeded'
+					revertMsg.MaxMarketSizeExceeded
 				);
 
 				// can withdraw
@@ -386,23 +397,22 @@ contract('PerpsEngineV2', accounts => {
 			it('unconfigured market for asset without price feed does not work', async () => {
 				const newKey = toBytes32('pNew');
 				await perpsManager.addMarkets([newKey], [toBytes32('nope')], { from: owner });
-				const revertReason = 'Invalid price';
 
 				await assert.revert(
 					instance.transferMargin(newKey, trader, toUnit('1000'), { from: mockOrders }),
-					revertReason
+					revertMsg.InvalidPrice
 				);
 				await assert.revert(
 					instance.modifyLockedMargin(newKey, trader, toUnit('1'), toUnit('0'), {
 						from: mockOrders,
 					}),
-					revertReason
+					revertMsg.InvalidPrice
 				);
 				await assert.revert(
 					instance.trade(newKey, trader, toUnit('1'), [0, 0, toBytes32('')], {
 						from: mockOrders,
 					}),
-					revertReason
+					revertMsg.InvalidPrice
 				);
 			});
 		});
@@ -603,7 +613,7 @@ contract('PerpsEngineV2', accounts => {
 				// reverts on invalid price
 				await assert.revert(
 					instance.recomputeFunding(marketKey, { from: mockManager }),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 			});
 		});
@@ -618,7 +628,7 @@ contract('PerpsEngineV2', accounts => {
 
 			it(`Can't withdraw more sUSD than is in the margin`, async () => {
 				await transfer(toUnit('100'), trader);
-				await assert.revert(transfer(toUnit('-101'), trader), 'Insufficient margin');
+				await assert.revert(transfer(toUnit('-101'), trader), revertMsg.InsufficientMargin);
 			});
 
 			it('Positive delta -> burn sUSD', async () => {
@@ -765,7 +775,7 @@ contract('PerpsEngineV2', accounts => {
 		it('Reverts if the price is invalid', async () => {
 			await transfer(toUnit('1000'), trader);
 			await fastForward(7 * 24 * 60 * 60);
-			await assert.revert(transfer(toUnit('-1000'), trader), 'Invalid price');
+			await assert.revert(transfer(toUnit('-1000'), trader), revertMsg.InvalidPrice);
 		});
 
 		it('Reverts if the system is suspended', async () => {
@@ -809,9 +819,9 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('Cannot decrease margin past zero.', async () => {
-				await assert.revert(transfer(toUnit('-1'), trader), 'Insufficient margin');
+				await assert.revert(transfer(toUnit('-1'), trader), revertMsg.InsufficientMargin);
 				await transfer(toUnit('1000'), trader);
-				await assert.revert(transfer(toUnit('-2000'), trader), 'Insufficient margin');
+				await assert.revert(transfer(toUnit('-2000'), trader), revertMsg.InsufficientMargin);
 			});
 		});
 
@@ -904,7 +914,7 @@ contract('PerpsEngineV2', accounts => {
 					instance.modifyLockedMargin(marketKey, trader, toUnit('900'), toBN(0), {
 						from: mockOrders,
 					}),
-					'Insufficient margin'
+					revertMsg.InsufficientMargin
 				);
 				// leverage
 				await trade(toUnit('99'), trader);
@@ -912,7 +922,7 @@ contract('PerpsEngineV2', accounts => {
 					instance.modifyLockedMargin(marketKey, trader, toUnit('10'), toBN(0), {
 						from: mockOrders,
 					}),
-					'Max leverage exceeded'
+					revertMsg.MaxLeverageExceeded
 				);
 				// liquidatable
 				await setPrice(baseAsset, toUnit('90'));
@@ -920,7 +930,7 @@ contract('PerpsEngineV2', accounts => {
 					instance.modifyLockedMargin(marketKey, trader, toUnit('10'), toBN(0), {
 						from: mockOrders,
 					}),
-					'Position can be liquidated'
+					revertMsg.CanLiquidate
 				);
 			});
 
@@ -1089,7 +1099,7 @@ contract('PerpsEngineV2', accounts => {
 			const postDetails = await instance.postTradeDetails(marketKey, trader, size, baseFee);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
-			await assert.revert(trade(size, trader), 'Invalid price');
+			await assert.revert(trade(size, trader), revertMsg.InvalidPrice);
 		});
 
 		it('Cannot modify a position if the system is suspended', async () => {
@@ -1116,7 +1126,7 @@ contract('PerpsEngineV2', accounts => {
 		it('Empty orders fail', async () => {
 			const margin = toUnit('1000');
 			await transfer(margin, trader);
-			await assert.revert(trade(toBN('0'), trader), 'Cannot submit empty order');
+			await assert.revert(trade(toBN('0'), trader), revertMsg.NilOrder);
 			const postDetails = await instance.postTradeDetails(marketKey, trader, toBN('0'), baseFee);
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
@@ -1136,7 +1146,7 @@ contract('PerpsEngineV2', accounts => {
 			const postDetails = await instance.postTradeDetails(marketKey, trader, sizeDelta, baseFee);
 			assert.equal(postDetails.status, Status.CanLiquidate);
 
-			await assert.revert(trade(sizeDelta, trader), 'Position can be liquidated');
+			await assert.revert(trade(sizeDelta, trader), revertMsg.CanLiquidate);
 		});
 
 		it('Order modification properly records the exchange fee with the fee pool', async () => {
@@ -1179,11 +1189,11 @@ contract('PerpsEngineV2', accounts => {
 			await setPrice(baseAsset, toUnit('100'));
 			await transfer(toUnit('1000'), trader);
 			await transfer(toUnit('1000'), trader2);
-			await assert.revert(trade(toUnit('101'), trader), 'Max leverage exceeded');
+			await assert.revert(trade(toUnit('101'), trader), revertMsg.MaxLeverageExceeded);
 			let postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('101'), baseFee);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
-			await assert.revert(trade(toUnit('-101'), trader2), 'Max leverage exceeded');
+			await assert.revert(trade(toUnit('-101'), trader2), revertMsg.MaxLeverageExceeded);
 			postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('-101'), baseFee);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
@@ -1197,7 +1207,7 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(toUnit('1000'), trader);
 			// trade fee is so large that old position becomes liquidatable when fee is subtracted
 			// and fails liquidation check (before reaching the leverage check)
-			await assert.revert(trade(toUnit('10000'), trader), 'Insufficient margin');
+			await assert.revert(trade(toUnit('10000'), trader), revertMsg.InsufficientMargin);
 		});
 
 		it('new position is checked to be not be under liquidation margin', async () => {
@@ -1205,7 +1215,7 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(toUnit('1000'), trader);
 			// trade size is so large that new margin (after fee) is already below liquidation margin
 			// for the new trade size
-			await assert.revert(trade(toUnit('2000'), trader), 'Position can be liquidated');
+			await assert.revert(trade(toUnit('2000'), trader), revertMsg.CanLiquidate);
 		});
 
 		it('can reduce leverage if goes above max', async () => {
@@ -1232,7 +1242,7 @@ contract('PerpsEngineV2', accounts => {
 		it('min margin must be provided', async () => {
 			await setPrice(baseAsset, toUnit('10'));
 			await transfer(minInitialMargin.sub(toUnit('1')), trader);
-			await assert.revert(trade(toUnit('10'), trader), 'Insufficient margin');
+			await assert.revert(trade(toUnit('10'), trader), revertMsg.InsufficientMargin);
 
 			let postDetails = await instance.postTradeDetails(marketKey, trader, toUnit('10'), baseFee);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
@@ -1364,7 +1374,7 @@ contract('PerpsEngineV2', accounts => {
 						const postDetails = await instance.postTradeDetails(marketKey, trader, tooBig, baseFee);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 
-						await assert.revert(trade(tooBig, trader), 'Max market size exceeded');
+						await assert.revert(trade(tooBig, trader), revertMsg.MaxMarketSizeExceeded);
 
 						// orders are allowed a bit over the formal limit to account for rounding etc.
 						await trade(orderSize.add(toBN('1')), trader);
@@ -1388,7 +1398,7 @@ contract('PerpsEngineV2', accounts => {
 							baseFee
 						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
-						await assert.revert(trade(sizeDelta, trader), 'Max market size exceeded');
+						await assert.revert(trade(sizeDelta, trader), revertMsg.MaxMarketSizeExceeded);
 
 						// Price moves back partially and allows the order to confirm
 						await setPrice(baseAsset, toUnit('1.04'));
@@ -1452,7 +1462,7 @@ contract('PerpsEngineV2', accounts => {
 
 				await setPrice(baseAsset, toUnit('100'));
 
-				await assert.revert(close(trader), 'Position can be liquidated');
+				await assert.revert(close(trader), revertMsg.CanLiquidate);
 			});
 
 			it('Cannot close an already-closed position', async () => {
@@ -1467,7 +1477,7 @@ contract('PerpsEngineV2', accounts => {
 				const { size } = await getPosition(trader);
 				assert.bnEqual(size, toUnit(0));
 
-				await assert.revert(close(trader), 'Cannot submit empty order');
+				await assert.revert(close(trader), revertMsg.NilOrder);
 			});
 
 			it('position closure emits the appropriate event', async () => {
@@ -1847,10 +1857,6 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		describe('Withdrawable margin', async () => {
-			const msgLeverage = 'Max leverage exceeded';
-			const msgMargin = 'Insufficient margin';
-			const msgLiquidatable = 'Position can be liquidated';
-
 			async function withdrawMaxAndValidate(account, msg) {
 				let withdrawable = toBN(await withdrawableMargin(account));
 				await transfer(withdrawable.neg(), account);
@@ -1863,7 +1869,7 @@ contract('PerpsEngineV2', accounts => {
 				const margin = toUnit('1234.56789');
 				await transfer(margin, trader3);
 				assert.bnEqual(await withdrawableMargin(trader3), margin);
-				await withdrawMaxAndValidate(trader3, msgMargin);
+				await withdrawMaxAndValidate(trader3, revertMsg.InsufficientMargin);
 			});
 
 			it('With a tiny position, minimum margin requirement is enforced.', async () => {
@@ -1880,7 +1886,7 @@ contract('PerpsEngineV2', accounts => {
 					margin.sub(minInitialMargin),
 					toUnit('0.1')
 				);
-				await withdrawMaxAndValidate(trader3, msgMargin);
+				await withdrawMaxAndValidate(trader3, revertMsg.InsufficientMargin);
 
 				await transferAndTrade({
 					account: trader2,
@@ -1893,7 +1899,7 @@ contract('PerpsEngineV2', accounts => {
 					margin.sub(minInitialMargin),
 					toUnit('0.1')
 				);
-				await withdrawMaxAndValidate(trader2, msgMargin);
+				await withdrawMaxAndValidate(trader2, revertMsg.InsufficientMargin);
 			});
 
 			it('At max leverage, no margin is withdrawable.', async () => {
@@ -1904,7 +1910,7 @@ contract('PerpsEngineV2', accounts => {
 					sizeDelta: toUnit('123.4'),
 				});
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
-				await withdrawMaxAndValidate(trader3, msgLeverage);
+				await withdrawMaxAndValidate(trader3, revertMsg.MaxLeverageExceeded);
 
 				await transferAndTrade({
 					account: trader2,
@@ -1913,7 +1919,7 @@ contract('PerpsEngineV2', accounts => {
 					sizeDelta: toUnit('-123.4'),
 				});
 				assert.bnEqual(await withdrawableMargin(trader2), toUnit('0'));
-				await withdrawMaxAndValidate(trader2, msgLeverage);
+				await withdrawMaxAndValidate(trader2, revertMsg.MaxLeverageExceeded);
 			});
 
 			it('At above max leverage, no margin is withdrawable.', async () => {
@@ -1928,7 +1934,7 @@ contract('PerpsEngineV2', accounts => {
 
 				assert.bnGt((await getPositionSummary(trader3)).currentLeverage, maxLeverage);
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
-				await withdrawMaxAndValidate(trader3, msgLeverage);
+				await withdrawMaxAndValidate(trader3, revertMsg.MaxLeverageExceeded);
 
 				await transferAndTrade({
 					account: trader2,
@@ -1942,7 +1948,7 @@ contract('PerpsEngineV2', accounts => {
 
 				assert.bnGt(toBN((await getPositionSummary(trader2)).currentLeverage).neg(), maxLeverage);
 				assert.bnEqual(await withdrawableMargin(trader2), toUnit('0'));
-				await withdrawMaxAndValidate(trader2, msgLeverage);
+				await withdrawMaxAndValidate(trader2, revertMsg.MaxLeverageExceeded);
 			});
 
 			it('If a position is subject to liquidation, no margin is withdrawable.', async () => {
@@ -1960,13 +1966,13 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
 				// check and trigger old position liquidatable check
-				await assert.revert(transfer(toUnit('-1'), trader3), msgLiquidatable);
+				await assert.revert(transfer(toUnit('-1'), trader3), revertMsg.CanLiquidate);
 
 				// this price causes the position to go into negative margin
 				await setPrice(baseAsset, toUnit('80'));
 				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
-				await withdrawMaxAndValidate(trader3, msgLiquidatable); // margin is negative
+				await withdrawMaxAndValidate(trader3, revertMsg.CanLiquidate); // margin is negative
 
 				// short
 				await transferAndTrade({
@@ -1979,7 +1985,7 @@ contract('PerpsEngineV2', accounts => {
 				await setPrice(baseAsset, toUnit('120'));
 				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
 				assert.bnEqual(await withdrawableMargin(trader2), toUnit('0'));
-				await withdrawMaxAndValidate(trader2, msgLiquidatable); // margin is negative
+				await withdrawMaxAndValidate(trader2, revertMsg.CanLiquidate); // margin is negative
 			});
 
 			it('If remaining margin is below minimum initial margin, no margin is withdrawable.', async () => {
@@ -2020,7 +2026,7 @@ contract('PerpsEngineV2', accounts => {
 				await trade(sizeForNeg10x.sub(sizeForNeg9x), trader3);
 
 				assert.bnEqual(await withdrawableMargin(trader3), toUnit('0'));
-				await withdrawMaxAndValidate(trader3, msgMargin);
+				await withdrawMaxAndValidate(trader3, revertMsg.InsufficientMargin);
 			});
 
 			it('With a fraction of max leverage position, a complementary fraction of margin is withdrawable', async () => {
@@ -2039,9 +2045,9 @@ contract('PerpsEngineV2', accounts => {
 
 				// Give fairly wide bands to account for fees
 				assert.bnClose(await withdrawableMargin(trader), toUnit('500'), toUnit('20'));
-				await withdrawMaxAndValidate(trader, msgLeverage);
+				await withdrawMaxAndValidate(trader, revertMsg.MaxLeverageExceeded);
 				assert.bnClose(await withdrawableMargin(trader2), toUnit('800'), toUnit('7'));
-				await withdrawMaxAndValidate(trader2, msgLeverage);
+				await withdrawMaxAndValidate(trader2, revertMsg.MaxLeverageExceeded);
 			});
 
 			it('After some profit, more margin becomes withdrawable', async () => {
@@ -2073,7 +2079,7 @@ contract('PerpsEngineV2', accounts => {
 					toUnit('1000').sub(minInitialMargin),
 					toUnit('40')
 				);
-				await withdrawMaxAndValidate(trader, msgLeverage);
+				await withdrawMaxAndValidate(trader, revertMsg.MaxLeverageExceeded);
 
 				// Price goes down 10% relative to the original price
 				await setPrice(baseAsset, toUnit('90'));
@@ -2084,7 +2090,7 @@ contract('PerpsEngineV2', accounts => {
 					toUnit('1000'), // no deduction of min initial margin because the trader would still be above the min at max leverage
 					toUnit('50')
 				);
-				await withdrawMaxAndValidate(trader2, msgLeverage);
+				await withdrawMaxAndValidate(trader2, revertMsg.MaxLeverageExceeded);
 			});
 
 			it('After a loss, less margin is withdrawable', async () => {
@@ -2112,14 +2118,14 @@ contract('PerpsEngineV2', accounts => {
 
 				// At 2x, the trader loses 20% of their margin
 				assert.bnClose(await withdrawableMargin(trader), toUnit('600'), toUnit('40'));
-				await withdrawMaxAndValidate(trader, msgLeverage);
+				await withdrawMaxAndValidate(trader, revertMsg.MaxLeverageExceeded);
 
 				// Price goes up 5% relative to the original price
 				await setPrice(baseAsset, toUnit('105'));
 
 				// The 5x short trader loses 25% of their margin
 				assert.bnClose(await withdrawableMargin(trader2), toUnit('250'), toUnit('50'));
-				await withdrawMaxAndValidate(trader2, msgLeverage);
+				await withdrawMaxAndValidate(trader2, revertMsg.MaxLeverageExceeded);
 			});
 
 			it('Larger position', async () => {
@@ -2144,7 +2150,7 @@ contract('PerpsEngineV2', accounts => {
 						.sub(toUnit('1200')),
 					toUnit('10')
 				);
-				await withdrawMaxAndValidate(trader, msgLeverage);
+				await withdrawMaxAndValidate(trader, revertMsg.MaxLeverageExceeded);
 			});
 
 			it('withdrawable margin function properly reports invalid price', async () => {
@@ -2157,7 +2163,7 @@ contract('PerpsEngineV2', accounts => {
 				it('Reverts if the price is invalid', async () => {
 					await transfer(toUnit('1000'), trader);
 					await fastForward(7 * 24 * 60 * 60);
-					await assert.revert(withdraw(trader), 'Invalid price');
+					await assert.revert(withdraw(trader), revertMsg.InvalidPrice);
 				});
 
 				it('Reverts if the system is suspended', async () => {
@@ -3042,7 +3048,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader)).priceInvalid);
 				await assert.revert(
 					instance.liquidatePosition(marketKey, trader, liquidator),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 			});
 		});
@@ -3059,10 +3065,14 @@ contract('PerpsEngineV2', accounts => {
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.003 = 60
 			});
 
-			it('Cannot liquidate nonexistent positions', async () => {
+			it('Cannot liquidate position that does not exist or not underwater', async () => {
 				await assert.revert(
 					instance.liquidatePosition(marketKey, noBalance, liquidator),
-					'Position cannot be liquidated'
+					revertMsg.CannotLiquidate
+				);
+				await assert.revert(
+					instance.liquidatePosition(marketKey, trader, liquidator),
+					revertMsg.CannotLiquidate
 				);
 			});
 
@@ -3532,28 +3542,28 @@ contract('PerpsEngineV2', accounts => {
 			it('then settings parameter changes revert', async () => {
 				await assert.revert(
 					perpsManager.setMaxFundingRate(marketKey, 0, { from: owner }),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 				await assert.revert(
 					perpsManager.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner }),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 				await assert.revert(
 					perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 0, {
 						from: owner,
 					}),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 			});
 
 			it('then mutative market actions revert', async () => {
-				await assert.revert(transfer(toUnit('1000'), trader), 'Invalid price');
-				await assert.revert(withdraw(trader), 'Invalid price');
-				await assert.revert(trade(toUnit('1'), trader), 'Invalid price');
-				await assert.revert(close(trader), 'Invalid price');
+				await assert.revert(transfer(toUnit('1000'), trader), revertMsg.InvalidPrice);
+				await assert.revert(withdraw(trader), revertMsg.InvalidPrice);
+				await assert.revert(trade(toUnit('1'), trader), revertMsg.InvalidPrice);
+				await assert.revert(close(trader), revertMsg.InvalidPrice);
 				await assert.revert(
 					instance.liquidatePosition(marketKey, trader, liquidator, { from: trader }),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 			});
 		};
@@ -3639,7 +3649,7 @@ contract('PerpsEngineV2', accounts => {
 					perpsManager.setMarketConfig(marketKey, 0, 0, 0, 0, 0, 0, 1, {
 						from: owner,
 					}),
-					'Invalid price'
+					revertMsg.InvalidPrice
 				);
 			});
 		}

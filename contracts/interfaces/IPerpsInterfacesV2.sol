@@ -8,7 +8,6 @@ interface IPerpsTypesV2 {
     enum Status {
         Ok,
         InvalidPrice,
-        PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,
         MaxMarketSizeExceeded,
