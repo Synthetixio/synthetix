@@ -5,39 +5,28 @@ import "./IERC20.sol";
 
 // https://docs.synthetix.io/contracts/source/interfaces/IDirectIntegration
 interface IDirectIntegrationManager {
-    struct ParameterOverride {
-        bytes32 paramName;
-        bytes overriddenValue;
+    struct ParameterOverrides {
+        // A list of parameters that can be configured for direct integrations.
+        // https://sips.synthetix.io/sips/sip-267/#parameters-involved
+        address dexPriceAggregator;
+        uint atomicExchangeFeeRate;
+        uint atomicMaxTwapDelta;
+        uint atomicMaxVolumePerBlock;
+        uint atomicVolatilityConsiderationWindow;
+        uint atomicVolatilityTwapSeconds;
+        uint atomicVolatilityUpdateThreshold;
+        uint exchangeFeeRate;
+        uint exchangeMaxDynamicFee;
+        uint exchangeDynamicFeeRounds;
+        uint exchangeDynamicFeeThreshold;
+        uint exchangeDynamicFeeWeightDecay;
+        // TODO: Add other parameters that affect execution timing (circuit breakers) and price,
+        // since they should also be configurable via the DirectIntegration contract
     }
 
-    function getIntegrationParameterOverrides(address integration)
-        external
-        view
-        returns (ParameterOverride[] memory overrides);
+    function getParameterOverrides(address integration) external view returns (ParameterOverrides memory overrides);
 
-    function addIntegration(address integration) external;
+    function setParameterOverrides(address integration, ParameterOverrides calldata params) external;
 
-    function addIntegrations(address[] calldata integrations) external;
-
-    function removeIntegration(address integration) external;
-
-    function removeIntegrations(address[] calldata integrations) external;
-
-    function setOverride(address integration, ParameterOverride[] calldata params) external;
-
-    function setOverrides(address[] calldata integrations, ParameterOverride[] calldata params) external;
-
-    function addParameter(bytes32 paramName) external;
-
-    function addParameters(bytes32[] calldata paramNames) external;
-
-    function removeParameter(bytes32 paramName) external;
-
-    function removeParameters(bytes32[] calldata paramNames) external;
-
-    // TODO: Add a new direct integration `address` parameter to existing exchange functions
-    // (uses ZERO_ADDR for regular calls without an integration)
-
-    // TODO: move all the getters for the exchange params involved  https://sips.synthetix.io/sips/sip-267/#parameters-involved
-    /// move them to direct integration interface and remove from SystemSettings
+    // TODO: Consider moving all related parameters from SystemSettings to the DirectIntegrationManager.
 }
