@@ -1699,7 +1699,7 @@ contract('PerpsEngineV2', accounts => {
 				positionId = (await getPosition(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
 
-				// Close by modifyPosition
+				// Close by trade
 				tx = await trade(toUnit('10'), trader2);
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -2236,7 +2236,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader)).priceInvalid);
 			});
 
-			describe('withdrawAllMargin', () => {
+			describe('withdrawMaxMargin', () => {
 				it('Reverts if the price is invalid', async () => {
 					await transfer(toUnit('1000'), trader);
 					await fastForward(7 * 24 * 60 * 60);
@@ -3693,12 +3693,12 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
-			it('after withdrawAllMargin', async () => {
+			it('after withdrawMaxMargin', async () => {
 				await withdraw(trader);
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});
 
-			it('after modifyPosition', async () => {
+			it('after trade', async () => {
 				await trade(toUnit('1'), trader);
 				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
 			});

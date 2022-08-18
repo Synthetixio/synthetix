@@ -36,7 +36,7 @@ interface IPerpsTypesV2 {
 
     // next-price order storage
     struct NextPriceOrder {
-        int128 sizeDelta; // difference in position to pass to modifyPosition
+        int128 sizeDelta; // difference in position to pass to trade()
         uint128 targetRoundId; // price oracle roundId using which price this order needs to exucted
         uint128 commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds
         uint128 keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
@@ -278,11 +278,11 @@ interface IPerpsOrdersV2 {
 
     function transferMargin(bytes32 marketKey, int marginDelta) external;
 
-    function withdrawAllMargin(bytes32 marketKey) external;
+    function withdrawMaxMargin(bytes32 marketKey) external;
 
-    function modifyPosition(bytes32 marketKey, int sizeDelta) external;
+    function trade(bytes32 marketKey, int sizeDelta) external;
 
-    function modifyPositionWithTracking(
+    function tradeWithTracking(
         bytes32 marketKey,
         int sizeDelta,
         bytes32 trackingCode

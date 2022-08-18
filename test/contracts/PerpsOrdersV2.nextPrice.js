@@ -172,7 +172,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			});
 
 			it('not enough margin', async () => {
-				await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+				await perpsOrders.withdrawMaxMargin(marketKey, { from: trader });
 				await assert.revert(
 					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
 					'Order would fail as spot'
@@ -406,7 +406,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					// go to next round
 					await setPrice(baseAsset, price);
 					// withdraw margin (will cause order to fail)
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await perpsOrders.withdrawMaxMargin(marketKey, { from: trader });
 					// check execution would fail
 					await assert.revert(
 						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
@@ -528,7 +528,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					// go to target round
 					await setPrice(baseAsset, price);
 					// withdraw margin (will cause order to fail)
-					await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
+					await perpsOrders.withdrawMaxMargin(marketKey, { from: trader });
 
 					// account owner
 					await assert.revert(
@@ -694,7 +694,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						beforeEach(async () => {
 							// skew the other way
 							await perpsOrders.transferMargin(marketKey, margin.mul(toBN(2)), { from: trader3 });
-							await perpsOrders.modifyPosition(marketKey, size.mul(toBN(-2)), { from: trader3 });
+							await perpsOrders.trade(marketKey, size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
 							spotTradeDetails = await perpsEngine.postTradeDetails(
@@ -766,7 +766,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						beforeEach(async () => {
 							// skew the other way
 							await perpsOrders.transferMargin(marketKey, margin.mul(toBN(2)), { from: trader3 });
-							await perpsOrders.modifyPosition(marketKey, size.mul(toBN(-2)), { from: trader3 });
+							await perpsOrders.trade(marketKey, size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, price);
 						});

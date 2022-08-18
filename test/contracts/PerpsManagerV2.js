@@ -171,7 +171,7 @@ contract('PerpsManagerV2', accounts => {
 			await perpsOrders.transferMargin(marketKey, toUnit('100'), { from: trader });
 			// cannot open position of even 1 wei
 			await assert.revert(
-				perpsOrders.modifyPosition(marketKey, toBN(1), { from: trader }),
+				perpsOrders.trade(marketKey, toBN(1), { from: trader }),
 				'Max market size exceeded'
 			);
 		}
@@ -517,10 +517,10 @@ contract('PerpsManagerV2', accounts => {
 
 			// The traders take positions on market
 			await perpsOrders.transferMargin(marketKeys[0], toUnit('1000'), { from: trader });
-			await perpsOrders.modifyPosition(marketKeys[0], toUnit('5'), { from: trader });
+			await perpsOrders.trade(marketKeys[0], toUnit('5'), { from: trader });
 
 			await perpsOrders.transferMargin(marketKeys[1], toUnit('3000'), { from: trader });
-			await perpsOrders.modifyPosition(marketKeys[1], toUnit('4'), { from: trader });
+			await perpsOrders.trade(marketKeys[1], toUnit('4'), { from: trader });
 			await setPrice(assetKeys[1], toUnit('1000'));
 		});
 

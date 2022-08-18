@@ -80,7 +80,7 @@ contract('PerpsStorageV2', async accounts => {
 			);
 		});
 
-		it('withMarket: all fail for storage owner if market is not initialized', async () => {
+		it('all write methods fail for storage owner if market is not initialized', async () => {
 			const revertMsg = 'Market not initialised';
 			await assert.revert(
 				instance.positionWithInit(marketKey, user1, { from: writeAccount }),

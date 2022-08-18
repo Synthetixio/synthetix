@@ -4,19 +4,22 @@ pragma solidity ^0.5.16;
 import "./PerpsOrdersV2Base.sol";
 
 /**
- Mixin that implements NextPrice orders mechanism for the perps market.
+ Mixin that implements NextPrice orders mechanism for the PerpsOrderV2.
+
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
- arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
- the risk to the debt pool, and funding rate for traders.
- The fees can be reduced when comitting to next price, because front-running (MEV and oracle delay)
- is less of a risk when committing to next price.
+ arb is profitable for smaller skews / shorter durations. This in turn serves the protocol by reducing
+ the skew, and so the risk to the debt pool, and funding rate for traders.
+
+ The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
+ is less of a risk when execution is delayed until the next oracle update is available.
+
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
-    ///// Events
+    /* ========== EVENTS ========== */
     event NextPriceOrderSubmitted(
         bytes32 indexed marketKey,
         address indexed account,
@@ -38,56 +41,49 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         bytes32 trackingCode
     );
 
-    /// @dev Holds a mapping of [marketKey][account] to orders. Only one order per market & account is supported
+    /// Holds a mapping of [marketKey][account] to orders. Only one order per market & account is supported
+    /// orders are removed when executed or cancelled
     mapping(bytes32 => mapping(address => NextPriceOrder)) public nextPriceOrders;
 
-    ///// Views
+    /* ========== EXTERNAL VIEWS ========== */
 
+    /// the fixed fee rate component in 18 decimals
     function baseFeeNextPrice(bytes32 marketKey) external view returns (uint) {
         return _baseFeeNextPrice(marketKey);
     }
 
+    /// the fee rate including fixed and dynamic fees in 18 decimals
     function feeRateNextPrice(bytes32 marketKey) external view returns (uint) {
         return _feeRateNextPrice(marketKey);
     }
 
+    /// the fee amount for an order of sizeDelta in sUSD 18 decimals
     function orderFeeNextPrice(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
         return engineContract().orderFee(marketKey, sizeDelta, _defaultExecutionOptions(_feeRateNextPrice(marketKey)));
     }
 
+    /// current oracle roundId for the price feed of the baseAsset of the market
     function currentRoundId(bytes32 marketKey) public view returns (uint) {
         bytes32 baseAsset = stateContract().marketScalars(marketKey).baseAsset;
         return _exchangeRates().getCurrentRoundId(baseAsset);
     }
 
-    ///// Mutative methods
+    /* ========== EXTERNAL MUTATIVE ========== */
 
     /**
-     * @notice submits an order to be filled at a price of the next oracle update.
+     * submits an order to be filled at a price of the next oracle update.
      * Reverts if a previous order still exists (wasn't executed or cancelled).
      * Reverts if the order cannot be filled at current price to prevent witholding commitFee for
      * incorrectly submitted orders (that cannot be filled).
-     * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
+     * @param marketKey marketKey
+     * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `trade` interface
+     * @param trackingCode code to emit during execution for volume source fee integrations
      */
-    function submitNextPriceOrder(bytes32 marketKey, int sizeDelta) external {
-        _submitNextPriceOrder(marketKey, sizeDelta, bytes32(0));
-    }
-
-    /// same as submitNextPriceOrder but emits an event with the tracking code
-    /// to allow volume source fee sharing for integrations
     function submitNextPriceOrderWithTracking(
         bytes32 marketKey,
         int sizeDelta,
         bytes32 trackingCode
-    ) external {
-        _submitNextPriceOrder(marketKey, sizeDelta, trackingCode);
-    }
-
-    function _submitNextPriceOrder(
-        bytes32 marketKey,
-        int sizeDelta,
-        bytes32 trackingCode
-    ) internal {
+    ) public {
         address account = msg.sender;
         // check that a previous order doesn't exist
         require(nextPriceOrders[marketKey][account].sizeDelta == 0, "Previous order exists");
@@ -132,6 +128,11 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         nextPriceOrders[marketKey][account] = order;
     }
 
+    /// as submitNextPriceOrderWithTracking but with default empty tracking code (cheaper calldata)
+    function submitNextPriceOrder(bytes32 marketKey, int sizeDelta) external {
+        submitNextPriceOrderWithTracking(marketKey, sizeDelta, bytes32(0));
+    }
+
     /**
      * @notice Cancels an existing order for an account.
      * Anyone can call this method for any account, but only the account owner
@@ -142,6 +143,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
      * - commitFee (deducted during submission) is sent to the fee pool.
      * - keeperFee (deducted during submission) is refunded into margin if it's the account holder,
      *  or send to the msg.sender if it's not the account holder.
+     * @param marketKey marketKey
      * @param account the account for which the stored order should be cancelled
      */
     function cancelNextPriceOrder(bytes32 marketKey, address account) external {
@@ -206,6 +208,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
      * Anyone can call this method for any account.
      * If this is called by the account holder - the keeperFee is refunded into margin,
      *  otherwise it sent to the msg.sender.
+     * @param marketKey marketKey
      * @param account address of the account for which to try to execute a next-price order
      */
     function executeNextPriceOrder(bytes32 marketKey, address account) external {
@@ -264,14 +267,14 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         );
     }
 
+    /* ========== INTERNAL VIEWS ========== */
+
     /// helper for getting `int priceDelta` for the `trade()` interface for a specific target roundId
     /// from current asset price
     function _priceDeltaForRoundId(bytes32 marketKey, uint targetRoundId) internal view returns (int) {
         (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(marketKey), targetRoundId);
         return _priceDeltaFromCurrent(marketKey, pastPrice);
     }
-
-    ///// Internal views
 
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
     // rounds after target roundId
@@ -294,6 +297,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         return fee;
     }
 
+    /// the fee rate including fixed and dynamic fees in 18 decimals
     function _feeRateNextPrice(bytes32 marketKey) internal view returns (uint feeRate) {
         // add to base fee
         return _baseFeeNextPrice(marketKey).add(_dynamicFeeRateChecked(marketKey));

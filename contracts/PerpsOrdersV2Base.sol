@@ -4,37 +4,36 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsConfigGettersV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
-import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SignedSafeMath.sol";
-import "./SignedSafeDecimalMath.sol";
-import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeCircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IERC20.sol";
 
+/*
+ User facing contract for Perps V2 that handles logic related to orders and fees (as opposed to main
+ execution logic that's handled by PerpsEngineV2).
+
+ Main responsibilities: auth, determining the fee rates (fixed, dynamic, etc), and price deltas,
+ convenience methods (e.g. methods that are combinations of other methods), handling and storing temporary order data.
+
+ Has some state, but is meant to hold only temporary state (not yet executed orders), so that upgrades
+ are still possible (allowing an overlap of order contracts and ability to pause new orders acceptance on the contract).
+
+ Highest risk for this contract are due its responsibility for auth, and execution params (such as fees, rates,
+ price deltas) etc and its privileged access to engine.
+*/
 contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     using SafeMath for uint;
     using SignedSafeMath for int;
-    using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
 
-    // This is the same unit as used inside `SignedSafeDecimalMath`.
-    int private constant _UNIT = int(10**uint(18));
-
     //slither-disable-next-line naming-convention
     bytes32 internal constant sUSD = "sUSD";
-
-    /* ========== STATE VARIABLES ========== */
-
-    bytes32 public constant CONTRACT_NAME = "PerpsOrdersV2";
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -43,13 +42,15 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     bytes32 internal constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
 
+    /* ========== PUBLIC CONSTANTS ========== */
+
+    bytes32 public constant CONTRACT_NAME = "PerpsOrdersV2";
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _resolver) public PerpsConfigGettersV2Mixin(_resolver) {}
 
-    /* ========== VIEWS ========== */
-
-    /* ---------- External Contracts ---------- */
+    /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsConfigGettersV2Mixin.resolverAddressesRequired();
@@ -61,57 +62,71 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
+    /* ---------- External Contracts ---------- */
+
+    /// PerpsEngineV2 contract (with its external interface - for accessing views)
     function engineContract() public view returns (IPerpsEngineV2External) {
         return IPerpsEngineV2External(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
+    /// PerpsStorageV2 contract for accessing low level views (with its external interface - views only)
     function stateContract() public view returns (IPerpsStorageV2External) {
         return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
+    /// the fixed fee rate component in 18 decimals
     function baseFee(bytes32 marketKey) external view returns (uint) {
         return _baseFee(marketKey);
     }
 
+    /// the fee rate including fixed and dynamic fees in 18 decimals
     function feeRate(bytes32 marketKey) external view returns (uint) {
         return _feeRate(marketKey);
     }
 
+    /// the fee amount for an order of sizeDelta in sUSD 18 decimals
     function orderFee(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
         return engineContract().orderFee(marketKey, sizeDelta, _defaultExecutionOptions(_feeRate(marketKey)));
     }
 
+    /// the dynamic fee rate component for current round in 18 decimals
     function dynamicFeeRate(bytes32 marketKey) external view returns (uint rate, bool tooVolatile) {
         return _dynamicFeeRate(marketKey);
     }
 
+    /// position summary struct passed from the engine
     function positionSummary(bytes32 marketKey, address account) external view returns (PositionSummary memory) {
         return engineContract().positionSummary(marketKey, account);
     }
 
+    /// markets summary struct passed from the engine
     function marketSummary(bytes32 marketKey) external view returns (MarketSummary memory) {
         return engineContract().marketSummary(marketKey);
     }
 
-    /// view for returning max possible order size that take into account existing positions
+    /// view for returning max possible order size that take into account existing positions (passed from engine)
     function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short) {
         return engineContract().maxOrderSizes(marketKey);
     }
 
-    // INTERNAL
+    /* ========== INTERNAL VIEWS ========== */
 
+    /// PerpsEngineV2 with internal mutative interface
     function _engineInternal() internal view returns (IPerpsEngineV2Internal) {
         return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
 
+    /// ExchangeRates contract for accessing price feed methods
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
     }
 
+    /// Exchanger contract for accessing dynamic fee rate
     function _exchanger() internal view returns (IExchanger) {
         return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
+    /// baseAsset view that uses storage contract directly
     function _baseAsset(bytes32 marketKey) internal view returns (bytes32) {
         return stateContract().marketScalars(marketKey).baseAsset;
     }
@@ -119,11 +134,12 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
+    ///   of past rates from oracle. Shouldn't be much of an issue on L2 though.
     function _dynamicFeeRate(bytes32 marketKey) internal view returns (uint rate, bool tooVolatile) {
         return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset(marketKey));
     }
 
+    /// returns dynamic fee value but reverts if it's tooVolatile for exchange (as returned by exchanger)
     function _dynamicFeeRateChecked(bytes32 marketKey) internal view returns (uint) {
         // get the dynamic fee rate SIP-184
         (uint _rate, bool tooVolatile) = _dynamicFeeRate(marketKey);
@@ -132,6 +148,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         return _rate;
     }
 
+    /// the fee rate including fixed and dynamic fees in 18 decimals
     function _feeRate(bytes32 marketKey) internal view returns (uint rate) {
         // add to base fee
         return _baseFee(marketKey).add(_dynamicFeeRateChecked(marketKey));
@@ -144,15 +161,16 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         return int(targetPrice).sub(int(currentPrice));
     }
 
+    /// helper for building an ExecutionOptions that only includes feeRate, and defaults ot 0 for other fields
     function _defaultExecutionOptions(uint feeRate) internal pure returns (ExecutionOptions memory) {
         return ExecutionOptions({feeRate: feeRate, priceDelta: 0, trackingCode: bytes32(0)});
     }
 
-    // EXTERNAL MUTATIVE
+    /* ========== EXTERNAL MUTATIVE ========== */
 
     /*
      * Alter the amount of margin in a position. A positive input triggers a deposit; a negative one, a
-     * withdrawal. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
+     * withdrawal. The sUSD will be burnt or issued directly into/out of the caller's wallet.
      * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
@@ -164,7 +182,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
      * Withdraws all accessible margin in a position. This will leave some remaining margin
      * in the account if the caller has a position open. Equivalent to `transferMargin(-withdrawableMargin(sender))`.
      */
-    function withdrawAllMargin(bytes32 marketKey) external {
+    function withdrawMaxMargin(bytes32 marketKey) external {
         address account = msg.sender;
         uint withdrawable = engineContract().withdrawableMargin(marketKey, account);
         _engineInternal().transferMargin(marketKey, account, -int(withdrawable));
@@ -174,20 +192,20 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
      * Adjust the sender's position size.
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
-    function modifyPosition(bytes32 marketKey, int sizeDelta) external {
-        _modifyPosition(marketKey, sizeDelta, bytes32(0));
+    function trade(bytes32 marketKey, int sizeDelta) external {
+        _trade(marketKey, sizeDelta, bytes32(0));
     }
 
     /*
-     * Same as modifyPosition, but emits an event with the passed tracking code to
+     * Same as trade, but emits an event with the passed tracking code to
      * allow off chain calculations for fee sharing with originating integrations
      */
-    function modifyPositionWithTracking(
+    function tradeWithTracking(
         bytes32 marketKey,
         int sizeDelta,
         bytes32 trackingCode
     ) external {
-        _modifyPosition(marketKey, sizeDelta, trackingCode);
+        _trade(marketKey, sizeDelta, trackingCode);
     }
 
     /*
@@ -202,9 +220,9 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         _closePosition(marketKey, trackingCode);
     }
 
-    // INTERNAL MUTATIVE
+    /* ========== INTERNAL MUTATIVE ========== */
 
-    function _modifyPosition(
+    function _trade(
         bytes32 marketKey,
         int sizeDelta,
         bytes32 trackingCode
@@ -219,6 +237,6 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {
         int size = stateContract().positions(marketKey, msg.sender).size;
-        _modifyPosition(marketKey, -size, trackingCode);
+        _trade(marketKey, -size, trackingCode);
     }
 }
