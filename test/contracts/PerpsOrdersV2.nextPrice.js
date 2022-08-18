@@ -167,7 +167,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			it('zero size', async () => {
 				await assert.revert(
 					perpsOrders.submitNextPriceOrder(marketKey, 0, { from: trader }),
-					'order would fail as spot'
+					'Order would fail as spot'
 				);
 			});
 
@@ -175,14 +175,14 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 				await perpsOrders.withdrawAllMargin(marketKey, { from: trader });
 				await assert.revert(
 					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
-					'order would fail as spot'
+					'Order would fail as spot'
 				);
 			});
 
 			it('too much leverage', async () => {
 				await assert.revert(
 					perpsOrders.submitNextPriceOrder(marketKey, size.mul(toBN(10)), { from: trader }),
-					'order would fail as spot'
+					'Order would fail as spot'
 				);
 			});
 
@@ -190,7 +190,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 				await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 				await assert.revert(
 					perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader }),
-					'previous order exists'
+					'Previous order exists'
 				);
 			});
 
@@ -277,12 +277,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// account owner
 			await assert.revert(
 				perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader }),
-				'no previous order'
+				'No previous order'
 			);
 			// keeper
 			await assert.revert(
 				perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
-				'no previous order'
+				'No previous order'
 			);
 		});
 
@@ -432,28 +432,28 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					// same round
 					await assert.revert(
 						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
+						'Cannot be cancelled by keeper yet'
 					);
 
 					// target round
 					await setPrice(baseAsset, price);
 					await assert.revert(
 						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
+						'Cannot be cancelled by keeper yet'
 					);
 
 					// next round after target round
 					await setPrice(baseAsset, price);
 					await assert.revert(
 						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
+						'Cannot be cancelled by keeper yet'
 					);
 
 					// next one after that (for 2 roundId)
 					await setPrice(baseAsset, price);
 					await assert.revert(
 						perpsOrders.cancelNextPriceOrder(marketKey, trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
+						'Cannot be cancelled by keeper yet'
 					);
 
 					// ok now
@@ -469,12 +469,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// account owner
 			await assert.revert(
 				perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
-				'no previous order'
+				'No previous order'
 			);
 			// keeper
 			await assert.revert(
 				perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
-				'no previous order'
+				'No previous order'
 			);
 		});
 
@@ -495,12 +495,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					// account owner
 					await assert.revert(
 						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
-						'target roundId not reached'
+						'Target roundId not reached'
 					);
 					// keeper
 					await assert.revert(
 						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
-						'target roundId not reached'
+						'Target roundId not reached'
 					);
 				});
 
@@ -515,12 +515,12 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					// account owner
 					await assert.revert(
 						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader }),
-						'order too old, use cancel'
+						'Order too old, use cancel'
 					);
 					// keeper
 					await assert.revert(
 						perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader2 }),
-						'order too old, use cancel'
+						'Order too old, use cancel'
 					);
 				});
 

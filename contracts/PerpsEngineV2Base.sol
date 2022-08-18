@@ -145,7 +145,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             // market was previously initialized, ensure it was initialized to the same baseAsset
             // this behavior is important in order to allow manager to add previously removed markets
             // or for adding markets to a new manager that will call this method.
-            require(market.baseAsset == baseAsset, "initialized with different asset");
+            require(market.baseAsset == baseAsset, "Initialized with different asset");
         }
     }
 
@@ -389,7 +389,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint price
     ) internal {
         // prevent creating empty positions
-        require(lockAmount != 0 || burnAmount != 0 || transferAmount != 0, "zero modification amounts");
+        require(lockAmount != 0 || burnAmount != 0 || transferAmount != 0, "Zero modification amounts");
         // this ensures position is initialized so that it has the correct id (instead of zero) for events
         Position memory oldPosition = _stateMutative().positionWithInit(marketKey, account);
 
@@ -398,7 +398,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // but the old + delta - burn must be positive. If it's negative we're either unlocking
         // too much, or burning too much.
         int newLocked = int(oldPosition.lockedMargin).add(lockAmount).sub(int(burnAmount));
-        require(newLocked >= 0, "new locked margin negative");
+        require(newLocked >= 0, "New locked margin negative");
 
         // adding the unlocked margin to the margin delta
         // subtraction because lockedDelta is w.r.t to locked margin, so is negative w.r.t to margin
@@ -551,7 +551,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     function _marketScalars(bytes32 marketKey) internal view returns (MarketScalars memory market) {
         market = _stateViews().marketScalars(marketKey);
-        require(market.baseAsset != bytes32(0), "market not initialised");
+        require(market.baseAsset != bytes32(0), "Market not initialised");
         return market;
     }
 
@@ -568,9 +568,9 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             return 0;
         }
         // marketSize is in baseAsset units so we need to convert from USD units
-        require(price > 0, "price can't be zero");
+        require(price > 0, "Price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
-        require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
+        require(skewScaleBaseAsset != 0, "Skew scale is zero"); // don't divide by zero
         return skew.divideDecimal(int(skewScaleBaseAsset));
     }
 
@@ -627,7 +627,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         The last term: sum( margin-deposit - q * ( last-price + initial-funding ) ) being the position debt correction
             that is tracked with each position change using this method.
-        
+
         The first term ( skew * (price + funding) ) and total debt calculation using current skew, price, and funding
         is calculated globally in _marketDebt().
 

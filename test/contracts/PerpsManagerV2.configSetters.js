@@ -65,7 +65,7 @@ contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 					perpsManager.setBaseFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
-					'base fee greater than 1'
+					'Base fee greater than 1'
 				);
 			});
 
@@ -74,7 +74,7 @@ contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 					perpsManager.setBaseFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
-					'base fee greater than 1'
+					'Base fee greater than 1'
 				);
 			});
 
@@ -83,7 +83,7 @@ contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 					perpsManager.setSkewScaleUSD(marketKey, 0, {
 						from: owner,
 					}),
-					'cannot set skew scale 0'
+					'Cannot set skew scale 0'
 				);
 			});
 		});
@@ -234,7 +234,7 @@ contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 				perpsManager.setMinKeeperFee(minInitialMargin.add(new BN(1)), {
 					from: owner,
 				}),
-				'min margin < liquidation fee'
+				'Min margin < liquidation fee'
 			);
 
 			const currentLiquidationFee = await perpsManager.minKeeperFee.call();
@@ -242,7 +242,7 @@ contract('PerpsManagerV2 ConfigSettersMixin', accounts => {
 				perpsManager.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
 					from: owner,
 				}),
-				'min margin < liquidation fee'
+				'Min margin < liquidation fee'
 			);
 		});
 

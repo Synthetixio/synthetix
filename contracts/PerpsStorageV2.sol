@@ -33,7 +33,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     /* ========== MODIFIERS ========== */
 
     modifier withMarket(bytes32 marketKey) {
-        require(marketScalars[marketKey].baseAsset != bytes32(0), "market not initialised");
+        require(marketScalars[marketKey].baseAsset != bytes32(0), "Market not initialised");
         _;
     }
 
@@ -56,15 +56,15 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
 
     function initMarket(bytes32 marketKey, bytes32 baseAsset) external onlyAssociatedContract {
         // validate input
-        require(marketKey != bytes32(0), "market key cannot be empty");
-        require(baseAsset != bytes32(0), "asset key cannot be empty");
+        require(marketKey != bytes32(0), "Market key cannot be empty");
+        require(baseAsset != bytes32(0), "Asset key cannot be empty");
         // load market
         MarketScalars storage market = marketScalars[marketKey];
         // check is not initialized already (can only be initialized once)
         // (it should be ok to re-initialize if no positions were created yet, but
         // this would only be needed if baseAsset was incorrectly set the first time, so is
         // an edge case that doesn't justify any added side effects concerns for a less strict check)
-        require(market.baseAsset == bytes32(0), "already initialized");
+        require(market.baseAsset == bytes32(0), "Already initialized");
         // set asset
         market.baseAsset = baseAsset;
         // event
@@ -122,7 +122,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         // load the storage
         Position storage position = _positions[marketKey][account];
         // ensure is initialized
-        require(position.id != 0, "position not initialized");
+        require(position.id != 0, "Position not initialized");
         // update values according to inputs
         position.margin = newMargin;
         position.lockedMargin = newLocked;

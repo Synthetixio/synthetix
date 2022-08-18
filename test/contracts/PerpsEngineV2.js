@@ -403,10 +403,10 @@ contract('PerpsEngineV2', accounts => {
 					from: mockOrders,
 				});
 				// but after that the market is still broken due to skewScale being 0
-				await assert.revert(instance.proportionalSkew(newKey), 'skewScale is zero');
+				await assert.revert(instance.proportionalSkew(newKey), 'Skew scale is zero');
 				await assert.revert(
 					instance.trade(newKey, trader, toUnit('1'), defaultExecOptions, { from: mockOrders }),
-					'skewScale is zero'
+					'Skew scale is zero'
 				);
 			});
 
@@ -433,7 +433,7 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('uninitialized market fails baseAsset check', async () => {
-				await assert.revert(instance.assetPrice(toBytes32('pNew')), 'market not initialised');
+				await assert.revert(instance.assetPrice(toBytes32('pNew')), 'Market not initialised');
 			});
 		});
 
@@ -564,19 +564,19 @@ contract('PerpsEngineV2', accounts => {
 			// cannot init to another asset
 			await assert.revert(
 				instance.ensureInitialized(marketKey, toBytes32('other asset'), { from: mockManager }),
-				'initialized with different asset'
+				'Initialized with different asset'
 			);
 
 			// cannot init to empty marketKey
 			await assert.revert(
 				instance.ensureInitialized(toBytes32(''), toBytes32('new'), { from: mockManager }),
-				'market key cannot be empty'
+				'Market key cannot be empty'
 			);
 
 			// cannot init to empty asset
 			await assert.revert(
 				instance.ensureInitialized(toBytes32('pNew'), toBytes32(''), { from: mockManager }),
-				'asset key cannot be empty'
+				'Asset key cannot be empty'
 			);
 		});
 	});
@@ -905,12 +905,12 @@ contract('PerpsEngineV2', accounts => {
 			it('reverts as for zero amounts', async () => {
 				await assert.revert(
 					instance.modifyLockedMargin(marketKey, trader, toBN(0), toBN(0), { from: mockOrders }),
-					'zero modification amounts'
+					'Zero modification amounts'
 				);
 			});
 
 			it('reverts for negative locked', async () => {
-				const revertMsg = 'new locked margin negative';
+				const revertMsg = 'New locked margin negative';
 				await assert.revert(
 					instance.modifyLockedMargin(marketKey, trader, toBN(0), toBN('1'), {
 						from: mockOrders,
@@ -970,7 +970,7 @@ contract('PerpsEngineV2', accounts => {
 				// cannot burn more than locked
 				await assert.revert(
 					instance.modifyLockedMargin(marketKey, trader, 0, toBN('20'), { from: mockOrders }),
-					'new locked margin negative'
+					'New locked margin negative'
 				);
 				// can burn locked
 				await instance.modifyLockedMargin(marketKey, trader, 0, locked, { from: mockOrders });
@@ -988,7 +988,7 @@ contract('PerpsEngineV2', accounts => {
 				// cannot unlock more than locked
 				await assert.revert(
 					instance.modifyLockedMargin(marketKey, trader, toBN('-11'), 0, { from: mockOrders }),
-					'new locked margin negative'
+					'New locked margin negative'
 				);
 				// can burn locked
 				await instance.modifyLockedMargin(marketKey, trader, locked.neg(), 0, { from: mockOrders });
@@ -2708,7 +2708,7 @@ contract('PerpsEngineV2', accounts => {
 				marginDelta: toUnit(1000),
 			});
 			await setPrice(baseAsset, toUnit('0'));
-			await assert.revert(instance.proportionalSkew(marketKey), "price can't be zero");
+			await assert.revert(instance.proportionalSkew(marketKey), "Price can't be zero");
 		});
 
 		describe('last funding entry', () => {

@@ -81,7 +81,7 @@ contract('PerpsStorageV2', async accounts => {
 		});
 
 		it('withMarket: all fail for storage owner if market is not initialized', async () => {
-			const revertMsg = 'market not initialised';
+			const revertMsg = 'Market not initialised';
 			await assert.revert(
 				instance.positionWithInit(marketKey, user1, { from: writeAccount }),
 				revertMsg
@@ -119,15 +119,15 @@ contract('PerpsStorageV2', async accounts => {
 		it('reverts for bad input', async () => {
 			await assert.revert(
 				instance.initMarket(emptyBytes32, baseAsset, { from: writeAccount }),
-				'market key cannot be empty'
+				'Market key cannot be empty'
 			);
 			await assert.revert(
 				instance.initMarket(marketKey, emptyBytes32, { from: writeAccount }),
-				'asset key cannot be empty'
+				'Asset key cannot be empty'
 			);
 			await assert.revert(
 				instance.initMarket(marketKey, baseAsset, { from: writeAccount }),
-				'already initialized'
+				'Already initialized'
 			);
 		});
 
@@ -258,7 +258,7 @@ contract('PerpsStorageV2', async accounts => {
 					instance.storePosition(marketKey, user1, margin, lockedMargin, size, lastPrice, {
 						from: writeAccount,
 					}),
-					'position not initialized'
+					'Position not initialized'
 				);
 			});
 

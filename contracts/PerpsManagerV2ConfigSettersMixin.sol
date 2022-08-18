@@ -129,12 +129,12 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
     }
 
     function setBaseFee(bytes32 marketKey, uint _baseFee) public onlyOwner {
-        require(_baseFee <= 1e18, "base fee greater than 1");
+        require(_baseFee <= 1e18, "Base fee greater than 1");
         _setParameter(marketKey, PARAMETER_BASE_FEE, _baseFee);
     }
 
     function setBaseFeeNextPrice(bytes32 marketKey, uint _baseFeeNextPrice) public onlyOwner {
-        require(_baseFeeNextPrice <= 1e18, "base fee greater than 1");
+        require(_baseFeeNextPrice <= 1e18, "Base fee greater than 1");
         _setParameter(marketKey, PARAMETER_BASE_FEE_NEXT_PRICE, _baseFeeNextPrice);
     }
 
@@ -162,7 +162,7 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
     }
 
     function setSkewScaleUSD(bytes32 marketKey, uint _skewScaleUSD) public onlyOwner {
-        require(_skewScaleUSD > 0, "cannot set skew scale 0");
+        require(_skewScaleUSD > 0, "Cannot set skew scale 0");
         _recomputeFunding(marketKey);
         _setParameter(marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
@@ -187,7 +187,7 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {
-        require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
+        require(_sUSD <= _minInitialMargin(), "Min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE, _sUSD);
         emit MinKeeperFeeUpdated(_sUSD);
     }
@@ -203,7 +203,7 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
     }
 
     function setMinInitialMargin(uint _minMargin) external onlyOwner {
-        require(_minKeeperFee() <= _minMargin, "min margin < liquidation fee");
+        require(_minKeeperFee() <= _minMargin, "Min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
         emit MinInitialMarginUpdated(_minMargin);
     }
