@@ -194,5 +194,61 @@
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "5000000",
 		"paused": true
+	},
+	{
+		"marketKey": "sBNB",
+		"asset": "BNB",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
+		"takerFeeNextPrice": "0.003",
+		"makerFeeNextPrice": "0.003",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "50000000",
+		"paused": true
+	},
+	{
+		"marketKey": "sOP",
+		"asset": "OP",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
+		"takerFeeNextPrice": "0.003",
+		"makerFeeNextPrice": "0.003",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "50000000",
+		"paused": true
+	},
+	{
+		"marketKey": "sXMR",
+		"asset": "XMR",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
+		"takerFeeNextPrice": "0.003",
+		"makerFeeNextPrice": "0.003",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "50000000",
+		"paused": true
+	},
+	{
+		"marketKey": "sDOGE",
+		"asset": "DOGE",
+		"takerFee": "0.0040",
+		"makerFee": "0.0035",
+		"takerFeeNextPrice": "0.003",
+		"makerFeeNextPrice": "0.003",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "10",
+		"maxMarketValueUSD": "1000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "50000000",
+		"paused": true
 	}
 ]
