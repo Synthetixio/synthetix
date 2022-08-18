@@ -392,7 +392,7 @@ const owner = async ({
 			const batchData = OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
 				batchActions.map(({ target }) => target),
 				batchActions.map(({ data }) => data),
-				ethers.BigNumber.from('10000000'),
+				ethers.BigNumber.from('12000000'),
 			]);
 			if (safeBatchSubmitter) {
 				await safeBatchSubmitter.appendTransaction({

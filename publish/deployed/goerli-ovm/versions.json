@@ -64,8 +64,9 @@
 			},
 			"ExchangeRates": {
 				"address": "0xd90690084Cc97F87214f373a6835A2748C5bedd5",
-				"status": "current",
-				"keccak256": "0x253041b06ed79c4041c3dbd8ead751adeddc59f542563ac5adf7e897deb487a2"
+				"status": "replaced",
+				"keccak256": "0x253041b06ed79c4041c3dbd8ead751adeddc59f542563ac5adf7e897deb487a2",
+				"replaced_in": "v2.76.0-alpha"
 			},
 			"RewardEscrowV2": {
 				"address": "0x6dd94459B5A844a6739c2b38a9E6d6b165cE45D9",
@@ -149,8 +150,9 @@
 			},
 			"Exchanger": {
 				"address": "0xcFAd59957537e62FB11E70d25c654e1538cC31C2",
-				"status": "current",
-				"keccak256": "0x879db1015167df4a2488ebdebcb5d2336d4ba456b480431560be4cabf467ccdd"
+				"status": "replaced",
+				"keccak256": "0x879db1015167df4a2488ebdebcb5d2336d4ba456b480431560be4cabf467ccdd",
+				"replaced_in": "v2.76.0-alpha"
 			},
 			"ExchangeCircuitBreaker": {
 				"address": "0xFdb50671276DbC9D24D68b272B54dE4a87aaCc6c",
@@ -164,8 +166,9 @@
 			},
 			"Issuer": {
 				"address": "0xd054361Cc8DeE60A32bDaF4B0d1c610326c29FE5",
-				"status": "current",
-				"keccak256": "0x269831f8c2f3fe01a4d4a7a2cdfa2642fa93aa7d024ec05506b19b971a5dff81"
+				"status": "replaced",
+				"keccak256": "0x269831f8c2f3fe01a4d4a7a2cdfa2642fa93aa7d024ec05506b19b971a5dff81",
+				"replaced_in": "v2.76.0-alpha"
 			},
 			"TradingRewards": {
 				"address": "0x08fb827Ee5A00232aDe347964225Ba4344665eD5",
@@ -306,6 +309,36 @@
 				"address": "0x4259a2004A1E110A86564ff1441c37F1461F344F",
 				"status": "current",
 				"keccak256": "0xf9e5dcfe099cb2ff62a5b4caf4b7902a7ef1fc64c325f69423c3dd825ccd8a86"
+			}
+		}
+	},
+	"v2.76.0-alpha": {
+		"tag": "v2.76.0-alpha",
+		"fulltag": "v2.76.0-alpha",
+		"release": "Muhlifain",
+		"network": "goerli",
+		"date": "2022-08-10T16:30:16-04:00",
+		"commit": "76dae71b79a67f9b96c5c0be859f41ba8afa2dee",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x280E5dFaA78CE685a846830bAe5F2FD21d6A3D89",
+				"status": "current",
+				"keccak256": "0x3898ac05c8e31b7a6ea707cd3f18e094d8fe6e3789dd9a564814a9e6591d1ff4"
+			},
+			"Exchanger": {
+				"address": "0x601A1Cf1a34d9cF0020dCCD361c155Fe54CE24fB",
+				"status": "current",
+				"keccak256": "0x3561c57db4da45a7926d94eade122a491e8dea6e213b463a2a6d50acd7e44c2f"
+			},
+			"Issuer": {
+				"address": "0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034",
+				"status": "current",
+				"keccak256": "0x22f9559ff51ab99f76eab53c2b1842334692d255b6b2f78ae76b4c689c659bb8"
+			},
+			"CircuitBreaker": {
+				"address": "0x5cB8210159f486dFE8Dc779357ee5A15B8f233bC",
+				"status": "current",
+				"keccak256": "0x73c5c888b94317948d43dc70a2424ea4963649c19272588fc02135692b7cde30"
 			}
 		}
 	}
