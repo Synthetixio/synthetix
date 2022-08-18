@@ -93,9 +93,51 @@ module.exports = async ({
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
+	const tokenStateSynthetix = await deployer.deployContract({
+		name: 'TokenStateSynthetix',
+		source: 'LegacyTokenState',
+		args: [account, account],
+	});
+
+	const proxySynthetix = await deployer.deployContract({
+		name: 'ProxySynthetix',
+		source: 'ProxyERC20',
+		args: [account],
+	});
+
+	await deployer.deployContract({
+		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
+		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
+		args: [
+			addressOf(proxySynthetix),
+			addressOf(tokenStateSynthetix),
+			account,
+			currentSynthetixSupply,
+			addressOf(readProxyForResolver),
+		],
+	});
+
 	await deployer.deployContract({
 		name: 'RewardEscrow',
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
+	});
+
+	// SIP-252: frozen V2 escrow for migration to new escrow
+	// this is actually deployed in integration tests, but it shouldn't be deployed (should only be configured)
+	// for fork-tests & actual deployment (by not specifying RewardEscrowV2Frozen in config and releases)
+	await deployer.deployContract({
+		name: 'RewardEscrowV2Frozen',
+		source: useOvm ? 'ImportableRewardEscrowV2Frozen' : 'RewardEscrowV2Frozen',
+		args: [account, addressOf(readProxyForResolver)],
+		deps: ['AddressResolver'],
+	});
+
+	// SIP-252: storage contract for RewardEscrowV2
+	await deployer.deployContract({
+		name: 'RewardEscrowV2Storage',
+		args: [account, ZERO_ADDRESS],
+		deps: ['AddressResolver'],
 	});
 
 	const rewardEscrowV2 = await deployer.deployContract({
@@ -176,31 +218,6 @@ module.exports = async ({
 			ZERO_ADDRESS, // Synthetix Proxy
 			addressOf(rewardEscrowV2),
 			addressOf(proxyFeePool),
-		],
-	});
-
-	const tokenStateSynthetix = await deployer.deployContract({
-		name: 'TokenStateSynthetix',
-		source: 'LegacyTokenState',
-		args: [account, account],
-	});
-
-	const proxySynthetix = await deployer.deployContract({
-		name: 'ProxySynthetix',
-		source: 'ProxyERC20',
-		args: [account],
-	});
-
-	await deployer.deployContract({
-		name: 'Synthetix',
-		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
-		deps: ['ProxySynthetix', 'TokenStateSynthetix', 'AddressResolver'],
-		args: [
-			addressOf(proxySynthetix),
-			addressOf(tokenStateSynthetix),
-			account,
-			currentSynthetixSupply,
-			addressOf(readProxyForResolver),
 		],
 	});
 

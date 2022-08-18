@@ -695,6 +695,17 @@
 			"released": "both"
 		},
 		{
+			"sip": 252,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"RewardEscrowV2",
+				"Synthetix",
+				"Liquidator",
+				"RewardEscrowV2Storage"
+			]
+    },
+		{
 			"sip": 257,
 			"layer": "both",
 			"sources": ["ExchangeRates"],

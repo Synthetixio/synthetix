@@ -23,6 +23,7 @@ const {
 
 const addSynthsToProtocol = require('./add-synths-to-protocol');
 const configureLegacySettings = require('./configure-legacy-settings');
+const configureRewardEscrow = require('./configure-reward-escrow');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
@@ -354,6 +355,12 @@ const deploy = async ({
 		network,
 		runStep,
 		useOvm,
+	});
+
+	await configureRewardEscrow({
+		addressOf,
+		deployer,
+		runStep,
 	});
 
 	await importFeePeriods({

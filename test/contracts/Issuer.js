@@ -232,7 +232,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -240,7 +240,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
@@ -248,7 +248,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynths,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -256,7 +256,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynthsOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
@@ -264,7 +264,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -272,7 +272,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
@@ -280,7 +280,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('liquidateAccount() cannot be invoked directly by a user', async () => {
@@ -288,7 +288,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.liquidateAccount,
 				args: [account1, false],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -296,7 +296,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
@@ -886,7 +886,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							// Assert that we can't remove the synth now
 							await assert.revert(
 								issuer.removeSynth(currencyKey, { from: owner }),
-								'Cannot remove synth to redeem without rate'
+								'Cannot remove without rate'
 							);
 						});
 						describe('when the synth has a rate', () => {
@@ -2879,7 +2879,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						fnc: issuer.burnForRedemption,
 						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
 						accounts,
-						reason: 'Issuer: Only the SynthRedeemer contract can perform this action',
+						reason: 'Issuer: Only SynthRedeemer',
 					});
 				});
 				describe('when a user has 100 sETH', () => {

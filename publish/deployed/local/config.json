@@ -101,6 +101,12 @@
 	"RewardEscrowV2": {
 		"deploy": true
 	},
+	"RewardEscrowV2Storage": {
+		"deploy": true
+	},
+	"RewardEscrowV2Frozen": {
+		"deploy": true
+	},
 	"RewardsDistribution": {
 		"deploy": true
 	},
