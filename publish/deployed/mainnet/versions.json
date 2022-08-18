@@ -4324,8 +4324,9 @@
 			},
 			"Exchanger": {
 				"address": "0xD64D83829D92B5bdA881f6f61A4e4E27Fc185387",
-				"status": "current",
-				"keccak256": "0x249092f47e4e7db34b013bbb56027462cd27bc2f1bf79dca4e99a9bf1e0ac6bf"
+				"status": "replaced",
+				"keccak256": "0x249092f47e4e7db34b013bbb56027462cd27bc2f1bf79dca4e99a9bf1e0ac6bf",
+				"replaced_in": "v2.76.1"
 			},
 			"Issuer": {
 				"address": "0x0689b1F72930Eb25cACB99f790d2778E713a2c33",
@@ -4494,8 +4495,9 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0xc9380E4A1570cce7b99eeD107aC42C754c4CE3Bf",
-				"status": "current",
-				"keccak256": "0x9820f36cf8ee40e9cfb286cae173e716e009ebe5594e921afac85a40f103c71b"
+				"status": "replaced",
+				"keccak256": "0x9820f36cf8ee40e9cfb286cae173e716e009ebe5594e921afac85a40f103c71b",
+				"replaced_in": "v2.76.1"
 			},
 			"SystemSettings": {
 				"address": "0x5ad055A1F8C936FB0deb7024f1539Bb3eAA8dc3E",
@@ -4519,8 +4521,39 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x9729415A58b210b2b8f69cFa5d6C3A7D68c9D217",
+				"status": "replaced",
+				"keccak256": "0xfec05faecf82227e8f3957c8c66047e96c24defa8fd9e92099bd63b7c905828d",
+				"replaced_in": "v2.76.1"
+			}
+		}
+	},
+	"v2.76.1": {
+		"tag": "v2.76.1",
+		"fulltag": "v2.76.1",
+		"release": "Muhlifain",
+		"network": "mainnet",
+		"date": "2022-08-18T08:09:06-04:00",
+		"commit": "1b935f1e41d850dbd424b490a396d30783e3f2cb",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x9F1C2f0071Bc3b31447AEda9fA3A68d651eB4632",
 				"status": "current",
-				"keccak256": "0xfec05faecf82227e8f3957c8c66047e96c24defa8fd9e92099bd63b7c905828d"
+				"keccak256": "0x5625d1e6a40dc71ebaa3efe42e1e49d7dd1d276b04cea623c294aa51b6c2f167"
+			},
+			"Exchanger": {
+				"address": "0x3Ed04CEfF4c91872F19b1da35740C0Be9CA21558",
+				"status": "current",
+				"keccak256": "0xb0af8af52010eab91eb61e5a55bf179816006ce2de90f790f8d149ab4ae791be"
+			},
+			"Issuer": {
+				"address": "0x8D1201b074EeF198D5e6957F4574e2e4FC5Ba9Cf",
+				"status": "current",
+				"keccak256": "0x22f9559ff51ab99f76eab53c2b1842334692d255b6b2f78ae76b4c689c659bb8"
+			},
+			"CircuitBreaker": {
+				"address": "0x9f231dBE53D460f359B2B8CC47574493caA5B7Bf",
+				"status": "current",
+				"keccak256": "0x73c5c888b94317948d43dc70a2424ea4963649c19272588fc02135692b7cde30"
 			}
 		}
 	}
