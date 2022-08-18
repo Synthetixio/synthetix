@@ -14,7 +14,7 @@ const { setupAllContracts } = require('./setup');
 
 contract('SynthUtil', accounts => {
 	const [, ownerAccount, , account2] = accounts;
-	let synthUtil, sUSDContract, synthetix, exchangeRates, systemSettings, debtCache;
+	let synthUtil, sUSDContract, synthetix, exchangeRates, systemSettings, debtCache, circuitBreaker;
 
 	const [sUSD, sBTC, iBTC, SNX] = ['sUSD', 'sBTC', 'iBTC', 'SNX'].map(toBytes32);
 	const synthKeys = [sUSD, sBTC, iBTC];
@@ -27,6 +27,7 @@ contract('SynthUtil', accounts => {
 			Synthetix: synthetix,
 			ExchangeRates: exchangeRates,
 			SystemSettings: systemSettings,
+			CircuitBreaker: circuitBreaker,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
@@ -43,6 +44,7 @@ contract('SynthUtil', accounts => {
 				'Issuer',
 				'LiquidatorRewards',
 				'CollateralManager',
+				'CircuitBreaker',
 				'RewardEscrowV2', // required for issuer._collateral to read collateral
 			],
 		}));
@@ -55,6 +57,7 @@ contract('SynthUtil', accounts => {
 	beforeEach(async () => {
 		await updateAggregatorRates(
 			exchangeRates,
+			circuitBreaker,
 			[sBTC, iBTC, SNX],
 			['5000', '5000', '0.2'].map(toUnit)
 		);

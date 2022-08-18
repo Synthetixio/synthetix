@@ -246,7 +246,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							it('reverts when either rate is invalid', async () => {
 								await assert.revert(
 									this.instance.exchange(...getExchangeArgs()),
-									'src/dest rate stale or flagged'
+									'rate stale or flagged'
 								);
 							});
 						});
@@ -420,7 +420,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 							it('reverts when either rate is invalid', async () => {
 								await assert.revert(
 									this.instance.exchangeAtomically(...getExchangeArgs()),
-									'src/dest rate stale or flagged'
+									'rate stale or flagged'
 								);
 							});
 						});
@@ -512,11 +512,11 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 												},
 												() => {
 													beforeEach('attempt exchange', async () => {
-														this.mocks.ExchangeCircuitBreaker.smocked.rateWithBreakCircuit.will.return.with(
+														this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
 															currencyKey =>
 																currencyKey === sETH
-																	? [badRate.toString(), true]
-																	: [lastRate.toString(), false]
+																	? [badRate.toString(), true, false]
+																	: [lastRate.toString(), false, false]
 														);
 														await this.instance.exchangeAtomically(...getExchangeArgs());
 													});
@@ -539,11 +539,11 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 												},
 												() => {
 													beforeEach('attempt exchange', async () => {
-														this.mocks.ExchangeCircuitBreaker.smocked.rateWithBreakCircuit.will.return.with(
+														this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
 															currencyKey =>
 																currencyKey === sETH
-																	? [badRate.toString(), true]
-																	: [lastRate.toString(), false]
+																	? [badRate.toString(), true, false]
+																	: [lastRate.toString(), false, false]
 														);
 														await this.instance.exchangeAtomically(
 															...getExchangeArgs({
@@ -576,7 +576,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 															value: maxAtomicValuePerBlock,
 															type: 'uint',
 														});
-														this.mocks.ExchangeCircuitBreaker.smocked.isDeviationAboveThreshold.will.return.with(
+														this.mocks.CircuitBreaker.smocked.isDeviationAboveThreshold.will.return.with(
 															true
 														);
 														await assert.revert(

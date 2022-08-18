@@ -635,6 +635,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 230,
+			"layer": "both",
+			"sources": ["CircuitBreaker", "ExchangeRates", "Exchanger", "Issuer"]
+		},
+		{
 			"sip": 235,
 			"layer": "both",
 			"sources": ["Issuer"],
@@ -677,16 +682,36 @@
 			"released": "ovm"
 		},
 		{
+			"sip": 249,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 251,
 			"layer": "both",
 			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
 			"released": "both"
 		},
 		{
+			"sip": 257,
+			"layer": "both",
+			"sources": ["ExchangeRates"]
+		},
+		{
 			"sip": 258,
 			"layer": "base",
 			"sources": ["ExchangeRates"],
 			"released": "base"
+		},
+		{
+			"sip": 262,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 269,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1292,6 +1317,23 @@
 			},
 			"sips": [258],
 			"released": true
+		},
+		{
+			"name": "Muhlifain",
+			"version": {
+				"major": 2,
+				"minor": 76
+			},
+			"sips": [230, 257]
+		},
+		{
+			"name": "Muhlifain (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 76
+			},
+			"sips": [230, 249, 257, 262, 269]
 		}
 	]
 }
