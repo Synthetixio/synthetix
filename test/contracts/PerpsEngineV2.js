@@ -1982,6 +1982,51 @@ contract('PerpsEngineV2', accounts => {
 				await withdrawMaxAndValidate(trader2, revertMsg.InsufficientMargin);
 			});
 
+			it('With infinite leverage, liquidation margin requirement is enforced.', async () => {
+				// degen god mode
+				await perpsManager.setMaxLeverage(marketKey, toUnit('1000000'), {
+					from: owner,
+				});
+				// funding screws with calculation precision in this test
+				await perpsManager.setMaxFundingRate(marketKey, toUnit('0'), {
+					from: owner,
+				});
+				const margin = toUnit('123456.78');
+				const size = toUnit('1000');
+				const price = toUnit('100');
+				const fee = multiplyDecimal(baseFee, multiplyDecimal(size, price));
+				await transferAndTrade({
+					account: trader3,
+					fillPrice: price,
+					marginDelta: margin,
+					sizeDelta: size,
+				});
+				// max(20, 100*1000 * 0.0035) + 100*1000 * 0.0025 = 600
+				let liqMargin = await instance.liquidationMargin(marketKey, trader3);
+				assert.bnEqual(liqMargin, toUnit('600'));
+				assert.bnClose(
+					toBN(await withdrawableMargin(trader3)),
+					margin.sub(fee.add(liqMargin)),
+					toUnit('0.1')
+				);
+				await withdrawMaxAndValidate(trader3, revertMsg.CanLiquidate);
+
+				await transferAndTrade({
+					account: trader2,
+					fillPrice: price,
+					marginDelta: margin,
+					sizeDelta: size.neg(),
+				});
+				liqMargin = await instance.liquidationMargin(marketKey, trader2);
+				assert.bnEqual(liqMargin, toUnit('600'));
+				assert.bnClose(
+					toBN(await withdrawableMargin(trader2)),
+					margin.sub(fee.add(liqMargin)),
+					toUnit('0.1')
+				);
+				await withdrawMaxAndValidate(trader2, revertMsg.CanLiquidate);
+			});
+
 			it('At max leverage, no margin is withdrawable.', async () => {
 				await transferAndTrade({
 					account: trader3,

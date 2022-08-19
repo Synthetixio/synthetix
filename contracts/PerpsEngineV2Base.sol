@@ -777,33 +777,44 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return uint(_max(0, remaining));
     }
 
-    /// assumes position was initilized (has valid marketKey)
+    /// max margin amount that is allowed to be withdrawed from the remaining margin (to-be-realized margin)
+    /// considers leverage limit, min margin limit, liquidation margin
     function _withdrawableMargin(Position memory position, uint price) internal view returns (uint) {
         if (position.margin == 0) {
-            return 0; // there's no position
+            return 0; // there's no margin
         }
+        uint remaining = _remainingMargin(position, price);
+        if (position.size == 0) {
+            return remaining; // there's no position, all margin is accessible
+        }
+
+        int notional = _notionalValue(position.size, price);
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
         int maxLeverage = int(_maxLeverage(position.marketKey).sub(milli));
-        uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
-        // If the user has a position open, we'll enforce a min initial margin requirement.
-        if (0 < inaccessible) {
-            uint minInitialMargin = _minInitialMargin();
-            if (inaccessible < minInitialMargin) {
-                inaccessible = minInitialMargin;
-            }
-            inaccessible = inaccessible.add(milli);
+        // calculate inaccessible as limited by max leverage
+        uint inaccessible = _abs(notional.divideDecimal(maxLeverage));
+
+        // check if maybe initial margin requirement is higher
+        uint minInitialMargin = _minInitialMargin();
+        if (inaccessible < minInitialMargin) {
+            inaccessible = minInitialMargin;
         }
 
-        uint remaining = _remainingMargin(position, price);
-        if (remaining <= inaccessible) {
-            return 0;
+        // check if maybe liquidation margin requirement is higher
+        uint liquidationMargin = _liquidationMargin(notional);
+        if (inaccessible < liquidationMargin) {
+            inaccessible = liquidationMargin;
         }
 
-        return remaining.sub(inaccessible);
+        // another rounding buffer
+        inaccessible = inaccessible.add(milli);
+
+        // accessible = max(remaining - inaccessible, 0)
+        return remaining <= inaccessible ? 0 : remaining.sub(inaccessible);
     }
 
     /**
