@@ -1,5 +1,8 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 const { toBN } = web3.utils;
 const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 
@@ -3153,7 +3156,7 @@ contract('PerpsEngineV2', accounts => {
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.003 = 60
 			});
 
-			it('Cannot liquidate position that does not exist or not underwater', async () => {
+			it('reverts for empty position, not underwater, or if liquidator address not set', async () => {
 				await assert.revert(
 					instance.liquidatePosition(marketKey, noBalance, liquidator),
 					revertMsg.CannotLiquidate
@@ -3161,6 +3164,10 @@ contract('PerpsEngineV2', accounts => {
 				await assert.revert(
 					instance.liquidatePosition(marketKey, trader, liquidator),
 					revertMsg.CannotLiquidate
+				);
+				await assert.revert(
+					instance.liquidatePosition(marketKey, trader, ZERO_ADDRESS),
+					'Empty liquidator address'
 				);
 			});
 

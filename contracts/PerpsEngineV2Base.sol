@@ -238,16 +238,15 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         _manager().issueSUSD(to, amount);
     }
 
-    /*
-     * Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
-     * `canLiquidate(account)` is true, and reverts otherwise.
-     * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
-     */
+    /// Liquidate a position if its remaining margin is below the liquidation margin.
+    /// Reverts if account should not be liquidated.
+    /// Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
     function liquidatePosition(
         bytes32 marketKey,
         address account,
         address liquidator
     ) external {
+        require(liquidator != address(0), "Empty liquidator address");
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
         _liquidatePosition(marketKey, account, price, liquidator);
