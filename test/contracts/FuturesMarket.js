@@ -38,7 +38,7 @@ contract('FuturesMarket', accounts => {
 		futuresMarket,
 		exchangeRates,
 		exchanger,
-		exchangeCircuitBreaker,
+		circuitBreaker,
 		addressResolver,
 		sUSD,
 		synthetix,
@@ -73,13 +73,12 @@ contract('FuturesMarket', accounts => {
 	const initialFundingIndex = toBN(0);
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(exchangeRates, [asset], [price]);
-		// reset the last price to the new price, so that we don't trip the breaker
-		// on various tests that change prices beyond the allowed deviation
-		if (resetCircuitBreaker) {
-			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			resetCircuitBreaker ? circuitBreaker : null,
+			[asset],
+			[price]
+		);
 	}
 
 	async function transferMarginAndModifyPosition({
@@ -109,7 +108,7 @@ contract('FuturesMarket', accounts => {
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			ExchangeCircuitBreaker: exchangeCircuitBreaker,
+			CircuitBreaker: circuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
 			Synthetix: synthetix,
@@ -128,7 +127,7 @@ contract('FuturesMarket', accounts => {
 				'FeePool',
 				'ExchangeRates',
 				'Exchanger',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
@@ -3653,37 +3652,6 @@ contract('FuturesMarket', accounts => {
 			});
 
 			everythingReverts();
-		});
-
-		describe('exchangeCircuitBreaker.lastExchangeRate is updated after transactions', () => {
-			const newPrice = toUnit('110');
-
-			beforeEach(async () => {
-				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
-				// base rate of sETH is 100 from shared setup above
-				await setPrice(baseAsset, newPrice, false);
-			});
-
-			it('after transferMargin', async () => {
-				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
-			});
-
-			it('after withdrawAllMargin', async () => {
-				await futuresMarket.withdrawAllMargin({ from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
-			});
-
-			it('after modifyPosition', async () => {
-				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
-			});
-
-			it('after closePosition', async () => {
-				await futuresMarket.closePosition({ from: trader });
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
-			});
 		});
 	});
 

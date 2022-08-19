@@ -9,9 +9,12 @@ const path = require('path');
 require('hardhat-interact');
 require('solidity-coverage');
 require('./hardhat');
+require('@nomiclabs/hardhat-etherscan');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('hardhat-gas-reporter');
+
+require('hardhat-cannon');
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
@@ -58,27 +61,44 @@ module.exports = {
 			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
 		},
+		localhost9545: {
+			gas: 12e6,
+			blockGasLimit: 12e6,
+			url: 'http://localhost:9545',
+		},
 		mainnet: {
-			url: process.env.PROVIDER_URL_MAINNET || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL.replace('network', 'mainnet') || 'http://localhost:8545',
 			chainId: 1,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'mainnet-ovm': {
 			url: process.env.OVM_PROVIDER_URL || 'https://mainnet.optimism.io/',
 			chainId: 10,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
-		kovan: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545',
-			chainId: 42,
+		goerli: {
+			url: process.env.PROVIDER_URL.replace('network', 'goerli') || 'http://localhost:8545',
+			chainId: 5,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
-		'kovan-ovm': {
-			url: process.env.OVM_PROVIDER_URL || 'https://kovan.optimism.io/',
-			chainId: 69,
+		'goerli-ovm': {
+			url:
+				process.env.PROVIDER_URL.replace('network', 'optimism-goerli') ||
+				'https://goerli.optimism.io/',
+			chainId: 420,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+		},
+		rinkeby: {
+			url: process.env.PROVIDER_URL.replace('network', 'rinkeby') || '',
+			chainId: 4,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		local: {
-			url: process.env.PROVIDER_URL || 'http://localhost:8545/',
+			chainId: 31337,
+			url: 'http://localhost:8545/',
 		},
 		'local-ovm': {
-			url: process.env.OVM_PROVIDER_URL || 'http://localhost:9545/',
+			url: 'http://localhost:9545/',
 		},
 	},
 	gasReporter: {
@@ -89,9 +109,26 @@ module.exports = {
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
 		outputFile: 'test-gas-used.log',
 	},
-
 	mocha: {
 		timeout: 120e3, // 120s
 		retries: 1,
+	},
+	etherscan: {
+		apiKey: {
+			goerli: process.env.ETHERSCAN_KEY,
+		},
+	},
+	cannon: {
+		publisherPrivateKey: process.env.PRIVATE_KEY,
+		ipfsConnection: {
+			protocol: 'https',
+			host: 'ipfs.infura.io',
+			port: 5001,
+			headers: {
+				authorization: `Basic ${Buffer.from(
+					process.env.INFURA_IPFS_ID + ':' + process.env.INFURA_IPFS_SECRET
+				).toString('base64')}`,
+			},
+		},
 	},
 };

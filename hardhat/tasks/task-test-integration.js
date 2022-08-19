@@ -30,7 +30,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
-		const providerUrl = (hre.config.providerUrl = 'http://localhost');
+		const providerUrl = (hre.config.providerUrl = 'http://127.0.0.1');
 		const providerPort = (hre.config.providerPort = taskArguments.providerPort);
 		const useOvm = false;
 		const buildPath = path.join(__dirname, '..', '..', BUILD_FOLDER);
@@ -61,16 +61,8 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			} else {
-				const network = 'local';
-				// prepare the synths but skip preparing releases (as this isn't a fork)
-				await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
-				await deployInstance({
-					addNewSynths: true,
-					buildPath,
-					providerPort,
-					providerUrl,
-					useOvm,
-				});
+				await hre.run('cannon:build', { file: 'cannonfile.aggregator.toml' });
+				await hre.run('cannon:build');
 			}
 			hre.config.addedSynths = synthsToAdd;
 		}
@@ -96,7 +88,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
-		const providerUrl = (hre.config.providerUrl = 'http://localhost');
+		const providerUrl = (hre.config.providerUrl = 'http://127.0.0.1');
 		hre.config.providerPortL1 = '9545';
 		const providerPortL2 = (hre.config.providerPortL2 = taskArguments.providerPort);
 		const useOvm = true;
@@ -128,15 +120,11 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				const network = 'local';
-				await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
-				await deployInstance({
-					addNewSynths: true,
-					buildPath,
-					network,
-					providerPort: providerPortL2,
-					providerUrl,
-					useOvm,
+				await hre.run('cannon:build', { file: 'cannonfile.aggregator.toml' });
+				await hre.run('cannon:build', {
+					file: 'cannonfile.optimism.toml',
+					preset: 'local-ovm',
+					options: ['network=local-ovm'],
 				});
 			}
 			hre.config.addedSynths = synthsToAdd;

@@ -87,7 +87,7 @@ contract('MultiCollateralSynth', accounts => {
 		}));
 
 		await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -241,7 +241,7 @@ contract('MultiCollateralSynth', accounts => {
 			beforeEach(async () => {
 				const sXYZ = toBytes32('sXYZ');
 				await setupPriceAggregators(exchangeRates, owner, [sXYZ]);
-				await updateAggregatorRates(exchangeRates, [sXYZ], [toUnit(5)]);
+				await updateAggregatorRates(exchangeRates, null, [sXYZ], [toUnit(5)]);
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {

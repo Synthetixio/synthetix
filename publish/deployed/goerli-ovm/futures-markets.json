@@ -1,1 +1,30 @@
-[]
+[
+	{
+		"marketKey": "sBTC",
+		"asset": "sBTC",
+		"takerFee": "0.003",
+		"makerFee": "0.0025",
+		"takerFeeNextPrice": "0.002",
+		"makerFeeNextPrice": "0.002",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "25",
+		"maxMarketValueUSD": "3000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "300000000",
+		"paused": false
+	},
+	{
+		"marketKey": "sETH",
+		"asset": "sETH",
+		"takerFee": "0.0035",
+		"makerFee": "0.0030",
+		"takerFeeNextPrice": "0.002",
+		"makerFeeNextPrice": "0.002",
+		"nextPriceConfirmWindow": "2",
+		"maxLeverage": "25",
+		"maxMarketValueUSD": "25000000",
+		"maxFundingRate": "0.1",
+		"skewScaleUSD": "300000000",
+		"paused": false
+	}
+]

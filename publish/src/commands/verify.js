@@ -71,6 +71,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 			},
 		});
 
+		await new Promise(resolve => setTimeout(resolve, 5000));
+
 		if (result.data.result === 'Contract source code not verified') {
 			const { source } = deployment.targets[name];
 			console.log(
@@ -275,7 +277,7 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(verify),
 };

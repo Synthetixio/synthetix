@@ -5,7 +5,7 @@ const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
-const { currentTime, toUnit } = require('../utils')();
+const { currentTime, toUnit, toBN } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
@@ -43,7 +43,13 @@ async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
 /// @param keys array of bytes32 currency keys
 /// @param rates array of BN rates
 /// @param timestamp optional timestamp for the update, currentTime() is used by default
-async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = undefined) {
+async function updateAggregatorRates(
+	exchangeRates,
+	circuitBreaker,
+	keys,
+	rates,
+	timestamp = undefined
+) {
 	timestamp = timestamp || (await currentTime());
 	for (let i = 0; i < keys.length; i++) {
 		const aggregatorAddress = await exchangeRates.aggregators(keys[i]);
@@ -53,6 +59,21 @@ async function updateAggregatorRates(exchangeRates, keys, rates, timestamp = und
 		const aggregator = await MockAggregator.at(aggregatorAddress);
 		// set the rate
 		await aggregator.setLatestAnswer(rates[i], timestamp);
+
+		if (circuitBreaker) {
+			await circuitBreaker.resetLastValue([aggregatorAddress], [rates[i]], {
+				from: await circuitBreaker.owner(),
+			});
+		}
+	}
+}
+
+function convertToDecimals(val, decimals) {
+	if (decimals <= 18) {
+		return web3.utils.toBN(Math.round(val * Math.pow(10, decimals)));
+	} else {
+		/// JS can't handle large decimals, convert to 18 first, and add decimals as BN.mul
+		return convertToDecimals(val, 18).mul(toBN(10).pow(toBN(decimals - 18)));
 	}
 }
 
@@ -139,13 +160,13 @@ module.exports = {
 
 	updateAggregatorRates,
 
-	async updateRatesWithDefaults({ exchangeRates, owner, debtCache }) {
+	async updateRatesWithDefaults({ exchangeRates, circuitBreaker, owner, debtCache }) {
 		const keys = ['SNX', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
 		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
 		// set up any missing aggregators
 		await setupMissingPriceAggregators(exchangeRates, owner, keys);
 
-		await updateAggregatorRates(exchangeRates, keys, rates);
+		await updateAggregatorRates(exchangeRates, circuitBreaker, keys, rates);
 		await debtCache.takeDebtSnapshot();
 	},
 
@@ -203,9 +224,7 @@ module.exports = {
 		return web3.utils.toBN(Math.round(val * 1e8));
 	},
 
-	convertToDecimals(val, decimals) {
-		return web3.utils.toBN(Math.round(val * Math.pow(10, decimals)));
-	},
+	convertToDecimals,
 
 	ensureOnlyExpectedMutativeFunctions({
 		abi,

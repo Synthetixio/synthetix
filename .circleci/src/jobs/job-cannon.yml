@@ -1,0 +1,34 @@
+# Builds a testing chain which is used for integration tests and downstream projects
+{{> job-header-machine.yml}}
+steps:
+  # get foundry
+  - restore_cache:
+      keys:
+        - foundry-bin-${foundry_locked_commit}
+  - rust/install: {}
+  - run: |
+      if [ ! -d ~/.foundry ]; then
+        curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
+        ./foundryup -C $foundry_locked_commit
+      fi
+      rm -rf *
+      echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+
+  - save_cache:
+      key: foundry-bin-${foundry_locked_commit}
+      paths:
+        - ~/.foundry/bin
+
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npx hardhat compile --optimizer --fail-oversize
+  - run: node publish build --test-helpers
+  - run: npx hardhat cannon:build --file cannonfile.aggregator.toml
+  - run: npx hardhat cannon:build
+  - persist_to_workspace:
+      root: .
+      paths:
+        - build
+        - cannon
+        - publish/deployed
