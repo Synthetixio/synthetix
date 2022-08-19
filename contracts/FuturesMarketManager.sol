@@ -115,6 +115,11 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return _markets.getPage(0, _markets.elements.length);
     }
 
+    /// backwards compatibility for already deployed FuturesMarketData
+    function allMarkets() public view returns (address[] memory) {
+        return allMarketsV1();
+    }
+
     /// market addresses (V1) for a given set of market key strings
     function marketsForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory) {
         return _addressesForKeys(marketKeys);
