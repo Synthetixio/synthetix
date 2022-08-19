@@ -97,6 +97,20 @@ interface IExchanger {
         uint minAmount
     ) external returns (uint amountReceived);
 
+    function exchangeAtomically(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bytes32 trackingCode,
+        uint minAmount,
+        address directIntegrationIn,
+        bytes calldata payloadIn,
+        address directIntegrationOut,
+        bytes calldata payloadOut
+    ) external returns (uint amountReceived);
+
     function settle(address from, bytes32 currencyKey)
         external
         returns (

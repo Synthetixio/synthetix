@@ -105,6 +105,18 @@ interface ISynthetix {
         uint minAmount
     ) external returns (uint amountReceived);
 
+    function exchangeAtomically(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode,
+        uint minAmount,
+        address directIntegrationIn,
+        bytes calldata payloadIn,
+        address directIntegrationOut,
+        bytes calldata payloadOut
+    ) external returns (uint amountReceived);
+
     function issueMaxSynths() external;
 
     function issueMaxSynthsOnBehalf(address issueForAddress) external;

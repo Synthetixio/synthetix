@@ -9,13 +9,13 @@ interface IDirectIntegrationManager {
         // A list of parameters that can be configured for direct integrations.
         // https://sips.synthetix.io/sips/sip-267/#parameters-involved
         address dexPriceAggregator;
-        uint atomicExchangeFeeRate;
+        uint atomicExchangeFeeRate; // TODO: create list to handle multiple synths
         uint atomicMaxTwapDelta;
         uint atomicMaxVolumePerBlock;
         uint atomicVolatilityConsiderationWindow;
         uint atomicVolatilityTwapSeconds;
         uint atomicVolatilityUpdateThreshold;
-        uint exchangeFeeRate;
+        uint exchangeFeeRate; // TODO: create list to handle multiple synths
         uint exchangeMaxDynamicFee;
         uint exchangeDynamicFeeRounds;
         uint exchangeDynamicFeeThreshold;
