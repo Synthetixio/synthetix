@@ -12,7 +12,7 @@ contract TestablePerpsEngineV2 is PerpsEngineV2 {
     }
 
     function liquidationMargin(bytes32 marketKey, address account) external view returns (uint lMargin) {
-        Position memory position = _stateViews().positions(marketKey, account);
+        Position memory position = _stateViews().position(marketKey, account);
         require(position.size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
         (uint price, ) = assetPrice(marketKey);
         return _liquidationMargin(_notionalValue(position.size, price));

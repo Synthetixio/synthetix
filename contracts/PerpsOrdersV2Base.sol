@@ -162,8 +162,8 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     }
 
     /// helper for building an ExecutionOptions that only includes feeRate, and defaults ot 0 for other fields
-    function _defaultExecutionOptions(uint feeRate) internal pure returns (ExecutionOptions memory) {
-        return ExecutionOptions({feeRate: feeRate, priceDelta: 0, trackingCode: bytes32(0)});
+    function _defaultExecutionOptions(uint _rate) internal pure returns (ExecutionOptions memory) {
+        return ExecutionOptions({feeRate: _rate, priceDelta: 0, trackingCode: bytes32(0)});
     }
 
     /* ========== EXTERNAL MUTATIVE ========== */
@@ -236,7 +236,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     }
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {
-        int size = stateContract().positions(marketKey, msg.sender).size;
+        int size = stateContract().position(marketKey, msg.sender).size;
         _trade(marketKey, -size, trackingCode);
     }
 }

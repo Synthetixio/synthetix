@@ -60,7 +60,7 @@ contract('PerpsStorageV2', async accounts => {
 
 		it('positions view returns correct marketKey even without init', async () => {
 			const expected = [marketKey, 0, [0, 0], 0, 0, 0, 0];
-			assert.deepEqual(await instance.positions(marketKey, user1), expected);
+			assert.deepEqual(await instance.position(marketKey, user1), expected);
 		});
 	});
 
@@ -175,7 +175,7 @@ contract('PerpsStorageV2', async accounts => {
 			it('views and events are correct for new position', async () => {
 				// positions view returns id and last funding entry
 				const expected = [marketKey, expectedId, [0, timestamp], 0, 0, 0, 0];
-				assert.deepEqual(await instance.positions(marketKey, user1), expected);
+				assert.deepEqual(await instance.position(marketKey, user1), expected);
 
 				// events are emitted
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [instance] });
@@ -199,7 +199,7 @@ contract('PerpsStorageV2', async accounts => {
 
 				// positions view unchanged
 				const expected = [marketKey, expectedId, [0, timestamp], 0, 0, 0, 0];
-				assert.deepEqual(await instance.positions(marketKey, user1), expected);
+				assert.deepEqual(await instance.position(marketKey, user1), expected);
 
 				// no event is emitted
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [instance] });
@@ -216,7 +216,7 @@ contract('PerpsStorageV2', async accounts => {
 				const position = await instance.positionWithInit.call(marketKey, user1, {
 					from: writeAccount,
 				});
-				const expected = await instance.positions(marketKey, user1);
+				const expected = await instance.position(marketKey, user1);
 				assert.deepEqual(position, expected);
 			});
 		});
@@ -283,7 +283,7 @@ contract('PerpsStorageV2', async accounts => {
 						lastPrice,
 					};
 
-					assert.deepEqual(await instance.positions(marketKey, user1), expectedPosition);
+					assert.deepEqual(await instance.position(marketKey, user1), expectedPosition);
 
 					// lastPositionId is as expected
 					assert.equal((await instance.marketScalars(marketKey)).lastPositionId, expectedId);
@@ -303,7 +303,7 @@ contract('PerpsStorageV2', async accounts => {
 							from: writeAccount,
 						}
 					);
-					assert.deepEqual(position, await instance.positions(marketKey, user1));
+					assert.deepEqual(position, await instance.position(marketKey, user1));
 				});
 			});
 		});

@@ -718,7 +718,7 @@ contract('FuturesMarketManager', accounts => {
 			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('sETH'));
 			const linkSummary = summaries.find(summary => summary.marketKey === toBytes32('sLINK'));
 
-			assert.equal(btcSummary.version, 'V1');
+			assert.equal(btcSummary.version, 1);
 			assert.equal(btcSummary.market, markets[0].address);
 			assert.equal(btcSummary.baseAsset, toBytes32(assets[0]));
 			let price = await markets[0].assetPrice();
@@ -728,7 +728,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(btcSummary.marketSkew, await markets[0].marketSkew());
 			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
 
-			assert.equal(ethSummary.version, 'V1');
+			assert.equal(ethSummary.version, 1);
 			assert.equal(ethSummary.market, markets[1].address);
 			assert.equal(ethSummary.baseAsset, toBytes32(assets[1]));
 			price = await markets[1].assetPrice();
@@ -738,7 +738,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
 
-			assert.equal(linkSummary.version, 'V1');
+			assert.equal(linkSummary.version, 1);
 			assert.equal(linkSummary.market, await instance.marketForKey(toBytes32('sLINK')));
 			assert.equal(linkSummary.baseAsset, toBytes32('LINK'));
 			assert.equal(linkSummary.price, toUnit(1000));
@@ -762,7 +762,7 @@ contract('FuturesMarketManager', accounts => {
 				assert.equal(summaries.length, 5);
 
 				const perpsSummary1 = summaries.find(summary => summary.marketKey === marketKey);
-				assert.equal(perpsSummary1.version, 'V2');
+				assert.equal(perpsSummary1.version, 2);
 				assert.equal(perpsSummary1.market, perpsManager.address);
 				assert.equal(perpsSummary1.baseAsset, assetKey);
 				assert.equal(perpsSummary1.price, (await markets[0].assetPrice())[0]);
@@ -772,7 +772,7 @@ contract('FuturesMarketManager', accounts => {
 				assert.equal(perpsSummary1.currentFundingRate, toUnit(0));
 
 				const perpsSummary2 = summaries.find(summary => summary.marketKey === noSuchFeed);
-				assert.equal(perpsSummary2.version, 'V2');
+				assert.equal(perpsSummary2.version, 2);
 				assert.equal(perpsSummary2.market, perpsManager.address);
 				assert.equal(perpsSummary2.baseAsset, noSuchFeed);
 				assert.equal(perpsSummary2.price, 0);

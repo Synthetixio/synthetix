@@ -74,7 +74,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     mapping(uint8 => string) internal _errorMessages;
 
     // Address Resolver Configuration
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 internal constant CONTRACT_EXCHANGECIRCUITBREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_PERPSMANAGERV2 = "PerpsManagerV2";
     bytes32 internal constant CONTRACT_PERPSTORAGEV2 = "PerpsStorageV2";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -116,7 +116,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsConfigGettersV2Mixin.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[0] = CONTRACT_EXCHANGECIRCUITBREAKER;
         newAddresses[1] = CONTRACT_PERPSMANAGERV2;
         newAddresses[2] = CONTRACT_PERPSTORAGEV2;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
@@ -274,7 +274,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint price
     ) internal {
         // get previous values
-        Position memory oldPosition = _stateViews().positions(marketKey, account);
+        Position memory oldPosition = _stateViews().position(marketKey, account);
         // update position and ger the new state
         Position memory newPosition =
             _stateMutative().storePosition(marketKey, account, newMargin, newLocked, newSize, price);
@@ -439,7 +439,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address account,
         TradeParams memory params
     ) internal {
-        Position memory oldPosition = _stateViews().positions(marketKey, account);
+        Position memory oldPosition = _stateViews().position(marketKey, account);
 
         // Compute the new position after performing the trade
         (uint newMargin, int newSize, uint fee, Status status) = _postTradeDetails(oldPosition, params);
@@ -484,7 +484,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint price,
         address liquidator
     ) internal {
-        Position memory prevPosition = _stateViews().positions(marketKey, account);
+        Position memory prevPosition = _stateViews().position(marketKey, account);
 
         // check can actually liquidate
         _revertIfError(!_canLiquidate(prevPosition, price), Status.CannotLiquidate);
@@ -528,7 +528,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     /* ========== INTERNAL VIEWS ========== */
 
     function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_EXCHANGECIRCUITBREAKER));
     }
 
     function _systemStatus() internal view returns (ISystemStatus) {

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 interface IFuturesMarketManager {
     // summary format that can combine top level details from both V1 and V2
     struct MarketSummaryV1 {
-        string version;
+        uint8 version;
         address market;
         bytes32 baseAsset;
         bytes32 marketKey;

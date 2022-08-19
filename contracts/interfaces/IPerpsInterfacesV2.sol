@@ -209,7 +209,7 @@ interface IPerpsStorageV2External {
 
     function lastFundingEntry(bytes32 marketKey) external view returns (IPerpsTypesV2.FundingEntry memory);
 
-    function positions(bytes32 marketKey, address account) external view returns (IPerpsTypesV2.Position memory);
+    function position(bytes32 marketKey, address account) external view returns (IPerpsTypesV2.Position memory);
 
     function positionIdToAccount(bytes32 marketKey, uint positionId) external view returns (address account);
 }

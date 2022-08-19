@@ -64,11 +64,11 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     /// last stored position state for market and account
     /// ensures marketKey is set correctly even if position is not initialized
     /// because marketKey may be used in views using this result (even possibly before a position is stored)
-    function positions(bytes32 marketKey, address account) public view returns (Position memory position) {
-        position = _positions[marketKey][account];
+    function position(bytes32 marketKey, address account) public view returns (Position memory _position) {
+        _position = _positions[marketKey][account];
         // ensure returned position always has the right market key as requested
         // even if position or market are not initialized
-        position.marketKey = marketKey;
+        _position.marketKey = marketKey;
     }
 
     /* ========== EXTERNAL MUTATIVE ========== */
@@ -102,33 +102,33 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         public
         onlyAssociatedContract
         requireInit(marketKey)
-        returns (Position memory position)
+        returns (Position memory _position)
     {
-        position = positions(marketKey, account);
+        _position = position(marketKey, account);
 
         // if position has no id, it wasn't initialized, initialize it:
-        if (position.id == 0) {
+        if (_position.id == 0) {
             // id
             marketScalars[marketKey].lastPositionId++; // increment position id
 
             // user positions start from 1 to avoid clashing with default empty position
             uint id = marketScalars[marketKey].lastPositionId;
-            position.id = id;
+            _position.id = id;
 
             // update funding entry according to current latest entry
-            position.lastFundingEntry = lastFundingEntry[marketKey];
+            _position.lastFundingEntry = lastFundingEntry[marketKey];
 
             // update owner mapping
             positionIdToAccount[marketKey][id] = account;
 
             // store it
-            _positions[marketKey][account] = position;
+            _positions[marketKey][account] = _position;
 
             // event
             emit PositionInitialised(marketKey, id, account);
         }
 
-        return position;
+        return _position;
     }
 
     /// updates the latest funding entry (stores with latest block timestamp)
@@ -149,17 +149,17 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         uint price
     ) external onlyAssociatedContract requireInit(marketKey) returns (Position memory) {
         // load the storage
-        Position storage position = _positions[marketKey][account];
+        Position storage _position = _positions[marketKey][account];
         // ensure is initialized
-        require(position.id != 0, "Position not initialized");
+        require(_position.id != 0, "Position not initialized");
         // update values according to inputs
-        position.margin = newMargin;
-        position.lockedMargin = newLocked;
-        position.size = newSize;
-        position.lastPrice = price;
+        _position.margin = newMargin;
+        _position.lockedMargin = newLocked;
+        _position.size = newSize;
+        _position.lastPrice = price;
         // update funding entry to last entry
-        position.lastFundingEntry = lastFundingEntry[marketKey];
-        return position; // returns memory
+        _position.lastFundingEntry = lastFundingEntry[marketKey];
+        return _position; // returns memory
     }
 
     /// stores the market aggregate scalars passed in as is

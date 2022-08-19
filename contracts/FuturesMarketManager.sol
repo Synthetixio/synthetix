@@ -194,7 +194,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
             (uint debt, ) = market.marketDebt();
 
             summaries[i] = MarketSummaryV1({
-                version: "V1",
+                version: 1,
                 market: address(market),
                 baseAsset: baseAsset,
                 marketKey: marketKey,
@@ -224,7 +224,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         for (uint i; i < nMarkets; i++) {
             // create a V1 summary from the V2 one
             summaries[i] = MarketSummaryV1({
-                version: "V2",
+                version: 2,
                 market: address(perpsManager),
                 baseAsset: summariesV2[i].baseAsset,
                 marketKey: marketKeys[i],

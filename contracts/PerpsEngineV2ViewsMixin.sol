@@ -63,7 +63,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     /// is used on-chain to get withdrawable amount
     function withdrawableMargin(bytes32 marketKey, address account) external view returns (uint) {
         (uint price, ) = assetPrice(marketKey);
-        return _withdrawableMargin(_stateViews().positions(marketKey, account), price);
+        return _withdrawableMargin(_stateViews().position(marketKey, account), price);
     }
 
     /*
@@ -75,7 +75,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
      */
     function positionSummary(bytes32 marketKey, address account) external view returns (PositionSummary memory) {
         (uint price, bool isInvalid) = assetPrice(marketKey);
-        Position memory position = _stateViews().positions(marketKey, account);
+        Position memory position = _stateViews().position(marketKey, account);
         uint liqPrice = _approxLiquidationPrice(position, price);
         // if position cannot be liquidated at any price, return 0 as possible fee
         uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
@@ -137,7 +137,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
             return (0, 0, 0, Status.InvalidPrice);
         }
 
-        Position memory position = _stateViews().positions(marketKey, account);
+        Position memory position = _stateViews().position(marketKey, account);
         TradeParams memory params = _executionOptionsToTradeParams(sizeDelta, price, options);
         return _postTradeDetails(position, params);
     }
