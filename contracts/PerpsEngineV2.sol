@@ -5,10 +5,8 @@ pragma experimental ABIEncoderV2;
 import "./PerpsEngineV2Base.sol";
 import "./PerpsEngineV2ViewsMixin.sol";
 
-/**
- * TODO: docs
- */
-
+/// main comments in PerpsEngineV2Base.sol
+/// views specific comments in PerpsEngineV2ViewsMixin.sol
 contract PerpsEngineV2 is IPerpsEngineV2External, PerpsEngineV2Base, PerpsEngineV2ViewsMixin {
     constructor(address _resolver) public PerpsEngineV2Base(_resolver) {}
 }

@@ -53,7 +53,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
                 marketSizeLong: long,
                 marketSizeShort: short,
                 marketDebt: debt,
-                currentFundingRate: _currentFundingRate(marketKey, price),
+                currentFundingRate: _currentFundingRatePerDay(marketKey, price),
                 unrecordedFunding: _unrecordedFunding(marketKey, price),
                 priceInvalid: invalid
             });

@@ -1098,7 +1098,7 @@ contract('PerpsEngineV2', accounts => {
 				log: decodedLogs[1],
 			});
 			decodedEventEqual({
-				event: 'Tracking',
+				event: 'FeeSourceTracking',
 				emittedFrom: instance.address,
 				args: [trackingCode, marketKey, trader, size, fee],
 				log: decodedLogs[2],

@@ -264,7 +264,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 
 			// funding, margin (refund), position (refund), issued (keeper), tracking, position (trade)
 			decodedEventEqual({
-				event: 'Tracking',
+				event: 'FeeSourceTracking',
 				emittedFrom: perpsEngine.address,
 				args: [trackingCode, marketKey, trader, size, expectedFee],
 				log: decodedLogs[4],

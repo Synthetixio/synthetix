@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsConfigGettersV2Mixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
-import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -14,11 +13,40 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeCircuitBreaker.sol";
-import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IERC20.sol";
 
+/*
+ Internal stateless contract for accounting for Perps V2.
+
+ Contract interactions:
+ - from PerpsOrderV2 (auth via PerpsManagerV2): executing orders (user initiated operation)
+ - from PerpsManagerV2: intialize a new market in storage (PerpsStorageV2), and recompute funding on settings changes
+ - to PerpsManagerV2: asking approval for orders router (PerpsOrderV2) auth and market existence, sUSD issuing, burning
+ and paying fees
+ - to PerpsStorageV2: storing state changes for positions and market aggregates
+ - to SystemStatus: market and system suspension status
+ - to ExchangeCircuitBreaker: rates
+
+ User interactions:
+ - any user: only liquidation methods
+
+ Inheritance:
+ - PerpsConfigGettersV2Mixin: calls FlexibleStorage to get configuration values set by manager (PerpsManagerV2)
+
+ Main responsibilities: checking and executing orders coming from orders router, storing state changes in storage,
+ calculating funding, debt, position and market aggregate updates.
+
+ State & upgradability: has no state.
+
+ Risks: complex logic for checks and updates, reliance on auth on other contracts, state update
+ correctness & consistency.
+*/
 contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEngineV2Internal {
+    using SafeMath for uint;
+    using SignedSafeMath for int;
+    using SignedSafeDecimalMath for int;
+    using SafeDecimalMath for uint;
+
     /* ========== EVENTS ========== */
 
     event MarginModified(
@@ -50,14 +78,13 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint fee
     );
 
-    event Tracking(bytes32 indexed trackingCode, bytes32 marketKey, address account, int sizeDelta, uint fee);
-
-    /* ========== LIBRARIES ========== */
-
-    using SafeMath for uint;
-    using SignedSafeMath for int;
-    using SignedSafeDecimalMath for int;
-    using SafeDecimalMath for uint;
+    event FeeSourceTracking(
+        bytes32 indexed trackingCode,
+        bytes32 indexed marketKey,
+        address indexed account,
+        int sizeDelta,
+        uint fee
+    );
 
     /* ========== PUBLIC CONSTANTS ========== */
 
@@ -81,7 +108,10 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     /* ========== MODIFIERS ========== */
 
-    modifier approvedRouterAndMarket(bytes32 marketKey) {
+    /// checks whether manager approves of the orders router (the msg.sender) to make
+    /// modifications to the market under marketKey.
+    /// At the very least this means marketKey and msg.sender being the PerpsOrdersV2 contract are known to the manager
+    modifier onlyOrdersRouter(bytes32 marketKey) {
         // msg.sender is the calling order routers contract.
         // both the router and the marketKey (and possibly their combination)
         // need to be approved by the manager to ensure e.g. market amd routers were not removed, and router is
@@ -123,18 +153,17 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    /*
-     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
-     * Public because used both externally and internally
-     */
+    /// The current baseAsset price from the oracle for the, and whether that price was invalid (e.g. 0).
+    /// Public because used both externally and internally
     function assetPrice(bytes32 marketKey) public view returns (uint price, bool invalid) {
         bytes32 baseAsset = _marketScalars(marketKey).baseAsset;
         (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
         return (price, invalid);
     }
 
-    /* ========== EXTERNAL MUTATIVE METHODS ========== */
+    /* ========== EXTERNAL MUTATIVE ========== */
 
+    /// check whether marketKey is initialized already to that correct baseAsset, and if not initialize it
     function ensureInitialized(bytes32 marketKey, bytes32 baseAsset) external onlyManager {
         // load current stored market
         MarketScalars memory market = _stateViews().marketScalars(marketKey);
@@ -150,8 +179,9 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     }
 
     /**
-     * Updates funding entry with unrecorded funding.
-     * @dev Admin only method accessible to PerpsManager. This is admin only because:
+     * Updates funding entry with unrecorded funding in order to allow changing funding related
+     * settings by PerpsManagerV2.
+     * This is admin only because:
      * - When system parameters change, funding should be recomputed, but system may be paused
      *   during that time for any reason, so this method needs to work even if system is paused.
      *   But in that case, it shouldn't be accessible to external accounts.
@@ -165,7 +195,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
         // This is because this method is used by system settings when changing funding related
         // parameters, so needs to function even when system / market is paused. E.g. to facilitate
-        // market migration.
+        // market migration / settings changes.
         (uint price, bool invalid) = assetPrice(marketKey);
         // A check for a valid price is still in place, to ensure that a system settings action
         // doesn't take place when the price is invalid (e.g. some oracle issue).
@@ -183,7 +213,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         bytes32 marketKey,
         address account,
         int amount
-    ) external approvedRouterAndMarket(marketKey) {
+    ) external onlyOrdersRouter(marketKey) {
         // allow topping up margin if this specific market is paused.
         // will still revert on all other checks (system, exchange, futures in general)
         bool allowMarketPaused = amount > 0;
@@ -200,7 +230,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address account,
         int lockAmount,
         uint burnAmount
-    ) external approvedRouterAndMarket(marketKey) {
+    ) external onlyOrdersRouter(marketKey) {
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
         _modifyMargin(marketKey, account, 0, lockAmount, burnAmount, price);
@@ -211,7 +241,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address account,
         int sizeDelta,
         ExecutionOptions calldata options
-    ) external approvedRouterAndMarket(marketKey) {
+    ) external onlyOrdersRouter(marketKey) {
         uint currentPrice = _assetPriceRequireSystemChecks(marketKey);
         // recompute funding using current price
         _recomputeFunding(marketKey, currentPrice);
@@ -224,7 +254,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         bytes32 marketKey,
         uint amount,
         bytes32 trackingCode
-    ) external approvedRouterAndMarket(marketKey) {
+    ) external onlyOrdersRouter(marketKey) {
         _manager().payFee(amount, trackingCode);
     }
 
@@ -234,7 +264,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         bytes32 marketKey,
         address to,
         uint amount
-    ) external approvedRouterAndMarket(marketKey) {
+    ) external onlyOrdersRouter(marketKey) {
         _manager().issueSUSD(to, amount);
     }
 
@@ -262,8 +292,9 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         bytes32 trackingCode; // tracking code for volume source fee sharing
     }
 
-    /* ========== INTERNAL MUTATIVE LOGIC METHODS ========== */
+    /* ========== INTERNAL MUTATIVE ========== */
 
+    /// updates the position and market aggregates (debt correction, skew, market size)
     function _updateStoredPosition(
         bytes32 marketKey,
         address account,
@@ -336,6 +367,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return _assetPriceRequireSystemChecks(marketKey, false);
     }
 
+    /// update funding to record the unrecorded funding up until now
+    /// will only make changes once per block (when lastFundingEntry timestamp is different form block timestamp)
     function _recomputeFunding(bytes32 marketKey, uint price) internal {
         uint lastUpdated = _stateViews().lastFundingEntry(marketKey).timestamp;
         // only update once per block
@@ -371,6 +404,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             _manager().issueSUSD(account, absDelta);
         }
 
+        // note this is done after fee-rec because it's possible that transferDelta was not zero initially
         if (transferDelta == 0) {
             return; // no-op (side effect: maybe settles reclamation)
         } else {
@@ -454,7 +488,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             _manager().payFee(fee, params.trackingCode);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                emit Tracking({
+                emit FeeSourceTracking({
                     trackingCode: params.trackingCode,
                     marketKey: marketKey,
                     account: account,
@@ -546,15 +580,13 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return IPerpsStorageV2External(requireAndGetAddress(CONTRACT_PERPSTORAGEV2));
     }
 
-    /* ========== INTERNAL LOGIC VIEWS ========== */
+    /* ---------- Market Details ---------- */
 
     function _marketScalars(bytes32 marketKey) internal view returns (MarketScalars memory market) {
         market = _stateViews().marketScalars(marketKey);
         require(market.baseAsset != bytes32(0), "Market not initialised");
         return market;
     }
-
-    /* ---------- Market Details ---------- */
 
     /*
      * The size of the skew relative to the size of the market skew scaler.
@@ -573,7 +605,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return skew.divideDecimal(int(skewScaleBaseAsset));
     }
 
-    function _currentFundingRate(bytes32 marketKey, uint price) internal view returns (int) {
+    function _currentFundingRatePerDay(bytes32 marketKey, uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(marketKey));
         int propSkew = _proportionalSkew(marketKey, price);
         // Note the minus sign: funding flows in the opposite direction to the skew.
@@ -584,21 +616,16 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint lastTimestamp = _stateViews().lastFundingEntry(marketKey).timestamp;
         int elapsed = int(block.timestamp.sub(lastTimestamp));
         // The current funding rate, rescaled to a percentage per second.
-        int currentFundingRatePerSecond = _currentFundingRate(marketKey, price) / 1 days;
+        int currentFundingRatePerSecond = _currentFundingRatePerDay(marketKey, price) / 1 days;
         return currentFundingRatePerSecond.multiplyDecimal(int(price)).mul(elapsed);
     }
 
-    /*
-     * The funding is updated when recomputed. It is the sum of the
-     * last entry and the unrecorded funding, so the last entry accumulates the running total over the market's lifetime.
-     */
+    /// sum of last entry and the unrecorded funding (so it's always the running total of lifetime funding)
     function _nextFundingAmount(bytes32 marketKey, uint price) internal view returns (int funding) {
         return (_stateViews().lastFundingEntry(marketKey).funding).add(_unrecordedFunding(marketKey, price));
     }
 
-    /*
-     * The impact of a given position on the debt correction.
-     */
+    /// The impact of a given position on the debt correction.
     function _positionDebtCorrection(Position memory position) internal pure returns (int) {
         /**
         This method only returns the per position correction term for the debt calculation, and not it's
@@ -637,6 +664,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return marginDeposits.sub(position.size.multiplyDecimal(int(position.lastPrice).add(initialFunding)));
     }
 
+    /// total debt of the market w.r.t to Synthetix debt pool, which is the total withdrawable sUSD
+    /// calculation logic is explained in _positionDebtCorrection method
     function _marketDebt(bytes32 marketKey, uint price) internal view returns (uint) {
         MarketScalars memory market = _marketScalars(marketKey);
         // short circuit and also convenient during setup
@@ -652,9 +681,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     /* ---------- Position Details ---------- */
 
-    /*
-     * Determines whether a change in a position's size would violate the max market value constraint.
-     */
+    /// Determines whether a change in a position's size would violate the max market value constraint.
     function _orderSizeTooLarge(
         bytes32 marketKey,
         uint price,
@@ -706,11 +733,13 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return positionSize.multiplyDecimal(int(price));
     }
 
+    // profit and loss w.r.t. to price difference (but without considering funding)
     function _profitLoss(Position memory position, uint price) internal pure returns (int pnl) {
         int priceShift = int(price).sub(int(position.lastPrice));
         return position.size.multiplyDecimal(priceShift);
     }
 
+    // funding accrued but not not realized in stored margin amount
     function _accruedFunding(Position memory position, uint price) internal view returns (int funding) {
         if (position.size == 0) {
             return 0; // The position have no size
@@ -720,9 +749,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return position.size.multiplyDecimal(net);
     }
 
-    /*
-     * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
-     */
+    /// The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
     function _marginPlusProfitFunding(Position memory position, uint price) internal view returns (int) {
         int funding = _accruedFunding(position, price);
         return int(position.margin).add(_profitLoss(position, price)).add(funding);
@@ -756,6 +783,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // position size is not 0 maybe check leverage and and liquidation margin
         if (notional != 0) {
             // minimum margin beyond which position can be liquidated
+
             if (newMargin <= _liquidationMargin(notional)) {
                 return (newMargin, Status.CanLiquidate);
             }
@@ -770,6 +798,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return (newMargin, Status.Ok);
     }
 
+    /// margin if PnL and funding were to be realized; current value of the position
     function _remainingMargin(Position memory position, uint price) internal view returns (uint) {
         int remaining = _marginPlusProfitFunding(position, price);
 
@@ -978,16 +1007,12 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return delta > 0 ? value.add(uint(delta)) : value.sub(uint(-delta));
     }
 
-    /*
-     * Absolute value of the input, returned as a signed number.
-     */
+    /// Absolute value of the input, returned as a signed number
     function _signedAbs(int x) internal pure returns (int) {
         return x < 0 ? -x : x;
     }
 
-    /*
-     * Absolute value of the input, returned as an unsigned number.
-     */
+    /// Absolute value of the input, returned as an unsigned number.
     function _abs(int x) internal pure returns (uint) {
         return uint(_signedAbs(x));
     }
@@ -1000,31 +1025,25 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return x < y ? x : y;
     }
 
-    // True if and only if two positions a and b are on the same side of the market;
-    // that is, if they have the same sign, or either of them is zero.
+    /// True if and only if two positions a and b are on the same side of the market;
+    /// that is, if they have the same sign, or either of them is zero.
     function _sameSide(int a, int b) internal pure returns (bool) {
         return (a >= 0) == (b >= 0);
     }
 
-    /*
-     * True if and only if the given status indicates an error.
-     */
+    /// True if and only if the given status indicates an error.
     function _isError(Status status) internal pure returns (bool) {
         return status != Status.Ok;
     }
 
-    /*
-     * Revert with an appropriate message if the first argument is true.
-     */
+    /// Revert with an appropriate message if the first argument is true.
     function _revertIfError(bool isError, Status status) internal view {
         if (isError) {
             revert(_errorMessages[uint8(status)]);
         }
     }
 
-    /*
-     * Revert with an appropriate message if the input is an error.
-     */
+    /// Revert with an appropriate message if the input is an error.
     function _revertIfError(Status status) internal view {
         if (_isError(status)) {
             revert(_errorMessages[uint8(status)]);
