@@ -754,7 +754,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         newMargin = uint(newMarginInt);
 
         int notional = _notionalValue(position.size, price);
-        // position size is not 0 maybe check leverage and and liquidation margin
+        // position size is not 0 maybe check leverage and liquidation margin
         if (notional != 0) {
             // minimum margin beyond which position can be liquidated
             if (newMargin <= _liquidationMargin(notional)) {

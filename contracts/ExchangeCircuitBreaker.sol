@@ -103,7 +103,7 @@ contract ExchangeCircuitBreaker is Owned, MixinSystemSettings, IExchangeCircuitB
     /**
      * Checks rate deviation from previous and its "invalid" oracle state (stale rate, of flagged by oracle).
      * if it's valid and within deviation bounds, stores it and returns it and "false" (circuit not broken).
-     * If rate is invalid or outside of deviation bounds - doesn't store it, suspends the the synth, and returns
+     * If rate is invalid or outside of deviation bounds - doesn't store it, suspends the synth, and returns
      * last rate and "true" (circuit broken).
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
      * returns last rate and "false" (not broken), to prevent synths suspensions during maintenance.
