@@ -115,7 +115,7 @@ contract('PerpsEngineV2', accounts => {
 			sizeDelta,
 			[
 				toBN(options.feeRate || baseFee),
-				toBN(options.priceDelta || 0),
+				toBN(options.priceDelta || toUnit('0')),
 				options.trackingCode || toBytes32(''),
 			],
 			{
@@ -1109,6 +1109,38 @@ contract('PerpsEngineV2', accounts => {
 				args: [marketKey, toBN('1'), trader, margin.sub(fee), size, size, tradePrice, fee],
 				log: decodedLogs[3],
 			});
+		});
+
+		it('zero fee execution can trade in and out without losing any margin value', async () => {
+			// no funding to lose
+			await perpsManager.setMaxFundingRate(marketKey, toUnit('0'), {
+				from: owner,
+			});
+			const margin = toUnit('1000');
+			await transfer(margin, trader);
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
+			const size = toUnit('50');
+
+			const tx = await trade(size, trader, { feeRate: toBN(0) });
+
+			// The relevant events are properly emitted
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [instance, perpsStorage],
+			});
+			assert.equal(decodedLogs.length, 2);
+			assert.equal(decodedLogs[0].name, 'FundingUpdated');
+			decodedEventEqual({
+				event: 'PositionModified',
+				emittedFrom: instance.address,
+				args: [marketKey, toBN('1'), trader, margin, size, size, price, 0],
+				log: decodedLogs[1],
+			});
+			// trade out
+			await trade(size.neg(), trader, { feeRate: toBN(0) });
+			// same margin out
+			assert.bnEqual(toBN((await getPosition(trader)).margin), margin);
 		});
 
 		it('Cannot modify a position if the price is invalid', async () => {
