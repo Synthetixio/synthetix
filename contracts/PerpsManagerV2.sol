@@ -65,8 +65,9 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
     /* ========== MODIFIERS ========== */
 
     /// methods accessible only to PerpsEngineV2
-    modifier onlyEngine() {
+    modifier onlyEngineAndIsMarket(bytes32 marketKey) {
         require(msg.sender == address(_perpsEngineV2Views()), "Only engine");
+        require(isMarket(marketKey), "Unknown market");
         _;
     }
 
@@ -101,7 +102,7 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
     }
 
     /// is this a supported marketKey in the Perps V2 system
-    function isMarket(bytes32 marketKey) external view returns (bool) {
+    function isMarket(bytes32 marketKey) public view returns (bool) {
         return _markets.contains(marketKey);
     }
 
@@ -171,18 +172,30 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
     ///// Mutative (engine)
 
     /// Allows a market to issue sUSD to an account when it withdraws margin
-    function issueSUSD(address account, uint amount) external onlyEngine {
+    function issueSUSD(
+        bytes32 marketKey,
+        address account,
+        uint amount
+    ) external onlyEngineAndIsMarket(marketKey) {
         // No settlement is required to issue synths into the target account.
         return _futuresManager().issueSUSD(account, amount);
     }
 
     /// Allows a market to burn sUSD from an account when it deposits margin
-    function burnSUSD(address account, uint amount) external onlyEngine returns (uint postReclamationAmount) {
+    function burnSUSD(
+        bytes32 marketKey,
+        address account,
+        uint amount
+    ) external onlyEngineAndIsMarket(marketKey) returns (uint postReclamationAmount) {
         return _futuresManager().burnSUSD(account, amount);
     }
 
     /// Allows market to issue exchange fees into the fee pool and notify it that this occurred
-    function payFee(uint amount, bytes32 trackingCode) external onlyEngine {
+    function payFee(
+        bytes32 marketKey,
+        uint amount,
+        bytes32 trackingCode
+    ) external onlyEngineAndIsMarket(marketKey) {
         delete trackingCode; // unused for now, will be used after SIP 203
         return _futuresManager().payFee(amount);
     }

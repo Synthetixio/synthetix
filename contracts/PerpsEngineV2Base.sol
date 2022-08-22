@@ -255,7 +255,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint amount,
         bytes32 trackingCode
     ) external onlyOrdersRouter(marketKey) {
-        _manager().payFee(amount, trackingCode);
+        _manager().payFee(marketKey, amount, trackingCode);
     }
 
     /// allows order routers to issue sUSD with their internal logic (e.g. from previously locked margin)
@@ -265,7 +265,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address to,
         uint amount
     ) external onlyOrdersRouter(marketKey) {
-        _manager().issueSUSD(to, amount);
+        _manager().issueSUSD(marketKey, to, amount);
     }
 
     /// Liquidate a position if its remaining margin is below the liquidation margin.
@@ -399,7 +399,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // if trying to add margin, handle reclamation
         if (transferDelta > 0) {
             // Ensure we handle reclamation when burning tokens.
-            uint postReclamationAmount = _manager().burnSUSD(account, absDelta);
+            uint postReclamationAmount = _manager().burnSUSD(marketKey, account, absDelta);
             if (postReclamationAmount != absDelta) {
                 // If balance was insufficient, the actual delta will be smaller
                 transferDelta = int(postReclamationAmount);
@@ -407,7 +407,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         } else if (transferDelta < 0) {
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their sUSD balance, and debited from their margin account.
-            _manager().issueSUSD(account, absDelta);
+            _manager().issueSUSD(marketKey, account, absDelta);
         }
 
         // note this is done after fee-rec because it's possible that transferDelta was not zero initially
@@ -491,7 +491,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         // Send the fee to the fee pool
         if (0 < fee) {
-            _manager().payFee(fee, params.trackingCode);
+            _manager().payFee(marketKey, fee, params.trackingCode);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
                 emit FeeSourceTracking({
@@ -537,11 +537,11 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         // Issue the reward to the liquidator.
         uint liqFee = _liquidationFee(_notionalValue(prevPosition.size, price));
-        _manager().issueSUSD(liquidator, liqFee);
+        _manager().issueSUSD(marketKey, liquidator, liqFee);
 
         // Send any positive margin buffer to the fee pool
         if (remMargin > liqFee) {
-            _manager().payFee(remMargin.sub(liqFee), bytes32(0));
+            _manager().payFee(marketKey, remMargin.sub(liqFee), bytes32(0));
         }
 
         emit PositionModified({

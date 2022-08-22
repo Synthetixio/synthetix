@@ -355,11 +355,23 @@ interface IPerpsManagerV2Internal {
     function removeMarkets(bytes32[] calldata marketKeys) external;
 
     // Mutative internal for engine & order methods
-    function issueSUSD(address account, uint amount) external;
+    function issueSUSD(
+        bytes32 marketKey,
+        address account,
+        uint amount
+    ) external;
 
-    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
+    function burnSUSD(
+        bytes32 marketKey,
+        address account,
+        uint amount
+    ) external returns (uint postReclamationAmount);
 
-    function payFee(uint amount, bytes32 trackingCode) external;
+    function payFee(
+        bytes32 marketKey,
+        uint amount,
+        bytes32 trackingCode
+    ) external;
 }
 
 // a contract / interface matching the filename is expected for compilation
