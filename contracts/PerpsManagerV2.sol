@@ -179,7 +179,7 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
             _markets.add(marketKey);
 
             // initialize market in engine or check that it's already initialized with correct asset.
-            // Note that this will add all preivous data for the stored market, so if this is not
+            // Note that this will add all previous data for the stored market, so if this is not
             // the intention - a new marketKey should be used.
             engineMutative.ensureInitialized(marketKey, baseAsset);
 

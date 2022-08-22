@@ -107,11 +107,11 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         _position = position(marketKey, account);
 
         // if position has no id, it wasn't initialized, initialize it:
-        if (position.id == 0) {
+        if (_position.id == 0) {
             uint id = ++marketScalars[marketKey].lastPositionId; // increment position id and return
 
             // user positions start from 1 to avoid clashing with default empty position
-            position.id = id;
+            _position.id = id;
 
             // update funding entry according to current latest entry
             _position.lastFundingEntry = lastFundingEntry[marketKey];
@@ -156,8 +156,8 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
         _position.size = newSize;
         _position.lastPrice = price;
         // update funding entry to last entry
-        position.lastFundingEntry = lastFundingEntry[marketKey];
-        return position;
+        _position.lastFundingEntry = lastFundingEntry[marketKey];
+        return _position;
     }
 
     /// stores the market aggregate scalars passed in as is

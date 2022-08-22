@@ -333,7 +333,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     function _assetPriceRequireSystemChecks(bytes32 marketKey, bool allowMarketPaused) internal returns (uint) {
         // check that market isn't suspended, revert with appropriate message
         if (allowMarketPaused) {
-            // this will check system acivbe, exchange active, futures active
+            // this will check system active, exchange active, futures active
             _systemStatus().requireFuturesActive();
         } else {
             // this will check all of the above + that specific market is active
@@ -390,7 +390,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // Transfer no tokens if transferDelta is 0
         uint absDelta = _abs(transferDelta);
 
-        // if trying to add margin, handle reclamantion
+        // if trying to add margin, handle reclamation
         if (transferDelta > 0) {
             // Ensure we handle reclamation when burning tokens.
             uint postReclamationAmount = _manager().burnSUSD(account, absDelta);
@@ -589,9 +589,9 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     }
 
     /*
-     * The size of the skew relative to the size of the market skew scaler.
+     * The size of the skew relative to the size of the market skew scalar.
      * This value can be outside of [-1, 1] values.
-     * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
+     * Scalar used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
      */
     function _proportionalSkew(bytes32 marketKey, uint price) internal view returns (int) {
         int skew = _marketScalars(marketKey).marketSkew;
@@ -848,7 +848,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     /**
      * The fee charged from the margin during liquidation. Fee is proportional to position size
-     * but is at least the _minKeeperFee() of sUSD to prevent underincentivising
+     * but is at least the _minKeeperFee() of sUSD to prevent under incentivising
      * liquidations of small positions.
      * @param notionalValue value of position
      * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
@@ -866,7 +866,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
      * @param notionalValue USD value of size of position in fixed point decimal baseAsset units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      * @dev The liquidation margin contains a buffer that is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * size. The buffer should prevent liquidation happening at negative margin (due to next price being worse)
      * so that stakers would not leak value to liquidators through minting rewards that are not from the
      * account's margin.
      */
