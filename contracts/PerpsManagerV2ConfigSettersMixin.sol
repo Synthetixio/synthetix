@@ -8,13 +8,29 @@ import "./PerpsConfigGettersV2Mixin.sol";
 // Internal references
 import "./interfaces/IPerpsInterfacesV2.sol";
 
-/// This is a separate mixin because it can be separate for ease of development and testing.
-/// However it needs to be part of the manager because:
-/// 1. It's both owner controlled and has privileged (mutative) access to engine.
-/// 2. Updating the market configuration is part of managing the markets, and separating the
-///    two aspects (configs and marketKeys registry) doesn't make sense because than questions of "can an unconfigured
-///    market be added to manager?" Or "can a market not added in manager have its funding recomputed?" have
-///    no good answers.
+/**
+ Updates long term storage FlexibleStorage with configuration values (that are used by other perps contract
+ via the PerpsConfigGettersV2Mixin).
+
+ Contract interactions:
+ - to FlexibleStorage: update config values
+ - to PerpsEngineV2: recompute funding when config values that impact funding are changed
+
+ User interactions:
+ - from owner: all mutative methods
+
+ Inheritance:
+ - PerpsConfigGettersV2Mixin: constants, getter methods
+ - Owner: ownership
+
+ This is a separate mixin because it can be separated for ease of development and testing.
+ However it still should be part of the manager because:
+ 1. It's both owner controlled and has privileged (mutative) access to engine.
+ 2. Updating the market configuration is part of managing the markets, and separating the
+    two aspects (configs and marketKeys registry) doesn't make sense because than questions of "can an unconfigured
+    market be added to manager?" Or "can a market not added in manager have its funding recomputed?" have
+    no good answers.
+*/
 contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, IPerpsConfigSettersV2, IPerpsTypesV2 {
     /* ========== EVENTS ========== */
     event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
@@ -23,13 +39,15 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
     event LiquidationBufferRatioUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
 
+    /* ========== CONSTANTS ========== */
+
+    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _resolver) public Owned(_owner) PerpsConfigGettersV2Mixin(_resolver) {}
 
-    /* ========== VIEWS ========== */
-
-    bytes32 internal constant CONTRACT_PERPSENGINEV2 = "PerpsEngineV2";
+    /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsConfigGettersV2Mixin.resolverAddressesRequired();
@@ -37,12 +55,6 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
         newAddresses[0] = CONTRACT_PERPSENGINEV2;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
-
-    function _perpsEngineV2Mutative() internal view returns (IPerpsEngineV2Internal) {
-        return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
-    }
-
-    /* ---------- Getters ---------- */
 
     /// The static fee charged when opening a position
     function baseFee(bytes32 marketKey) external view returns (uint) {
@@ -79,6 +91,7 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
         return _skewScaleUSD(marketKey);
     }
 
+    /// all the per-market config values in one struct
     function marketConfig(bytes32 marketKey) external view returns (MarketConfig memory) {
         return
             MarketConfig({
@@ -92,19 +105,19 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
             });
     }
 
-    /// The minimum amount of sUSD paid to a liquidator when they successfully liquidate a position.
+    /// The minimum amount of sUSD paid to a keeper for a successful keeper operation.
     /// This quantity must be no greater than `minInitialMargin`.
     function minKeeperFee() external view returns (uint) {
         return _minKeeperFee();
     }
 
-    /// Liquidation fee percent (as ratio) paid to liquidator.
+    /// Liquidation fee (as ratio, 18 decimals) paid to liquidator.
     /// Use together with minKeeperFee() to calculate the actual fee paid.
     function liquidationFeeRatio() external view returns (uint) {
         return _liquidationFeeRatio();
     }
 
-    /// Liquidation price buffer percent (as ratio) to prevent negative margin on liquidation.
+    /// Liquidation price buffer (as ratio, 18 decimals) to prevent negative margin on liquidation.
     function liquidationBufferRatio() external view returns (uint) {
         return _liquidationBufferRatio();
     }
@@ -115,18 +128,13 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
         return _minInitialMargin();
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== INTERNAL VIEWS ========== */
 
-    /* ---------- Setters --------- */
-
-    function _setParameter(
-        bytes32 marketKey,
-        bytes32 key,
-        uint value
-    ) internal {
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(marketKey, key)), value);
-        emit ParameterUpdated(marketKey, key, value);
+    function _perpsEngineV2Mutative() internal view returns (IPerpsEngineV2Internal) {
+        return IPerpsEngineV2Internal(requireAndGetAddress(CONTRACT_PERPSENGINEV2));
     }
+
+    /* ========== EXTERNAL MUTATIVE ========== */
 
     function setBaseFee(bytes32 marketKey, uint _baseFee) public onlyOwner {
         require(_baseFee <= 1e18, "Base fee greater than 1");
@@ -148,12 +156,6 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
 
     function setMaxSingleSideValueUSD(bytes32 marketKey, uint _maxSingleSideValueUSD) public onlyOwner {
         _setParameter(marketKey, PARAMETER_MAX_SINGLE_SIDE_VALUE, _maxSingleSideValueUSD);
-    }
-
-    // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
-    // must be recomputed, otherwise already-accrued but unrecorded funding in the market can change.
-    function _recomputeFunding(bytes32 marketKey) internal {
-        _perpsEngineV2Mutative().recomputeFunding(marketKey);
     }
 
     function setMaxFundingRate(bytes32 marketKey, uint _maxFundingRate) public onlyOwner {
@@ -206,5 +208,22 @@ contract PerpsManagerV2ConfigSettersMixin is Owned, PerpsConfigGettersV2Mixin, I
         require(_minKeeperFee() <= _minMargin, "Min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
         emit MinInitialMarginUpdated(_minMargin);
+    }
+
+    /* ========== INTERNAL MUTATIVE ========== */
+
+    function _setParameter(
+        bytes32 marketKey,
+        bytes32 key,
+        uint value
+    ) internal {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(marketKey, key)), value);
+        emit ParameterUpdated(marketKey, key, value);
+    }
+
+    // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
+    // should be recomputed, otherwise already-accrued but unrecorded funding in the market can change.
+    function _recomputeFunding(bytes32 marketKey) internal {
+        _perpsEngineV2Mutative().recomputeFunding(marketKey);
     }
 }

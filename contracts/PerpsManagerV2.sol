@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./Owned.sol";
 import "./PerpsManagerV2ConfigSettersMixin.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
@@ -13,6 +12,30 @@ import "./Bytes32SetLib.sol";
 // interfaces
 import "./interfaces/IFuturesMarketManager.sol";
 
+/*
+ Internal contract for managing Perps V2 (supported markets and their configuration)
+
+ Contract interactions:
+ - from PerpsEngineV2 (auth via resolver): sUSD operations (issue, burn, payFee), approvedRouterAndMarket
+ for all engine operations (as requested by the orders router).
+ - from FuturesMarketManager: totalDebt() and the rest of global views (num markets, keys etc)
+ - to FuturesMarketManager: sUSD methods (issue, burn, payFee), check if marketKey exists in V1 when adding
+ - to PerpsEngineV2: views like debt and summary values, storage contract address
+
+ User interactions:
+ - from owner: all mutative methods like add and remove markets and setting parameters (global and per market)
+
+ Inheritance:
+ - PerpsManagerV2ConfigSettersMixin: setters and getters (via PerpsConfigGettersV2Mixin) for long
+ term key-value configuration values
+
+ State & upgradability: holds state of currently supported markets (added), so these need to be added when
+ this contract is redeployed. Other configuration (per market and global parameters) is long terms
+ stored in FlexibleStorage by the getters mixin.
+
+ Risks: approving engine operations (sUSD operations), mistakes in configuration management, incorrect debt
+ reporting (e.g. over or underreporting markets)
+*/
 contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IPerpsManagerV2Internal {
     using SafeMath for uint;
     using Bytes32SetLib for Bytes32SetLib.Bytes32Set;
@@ -23,19 +46,17 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
 
     event MarketRemoved(bytes32 indexed asset, bytes32 indexed marketKey);
 
-    /* ========== STATE VARIABLES ========== */
+    /* ========== INTERNAL STATE ========== */
 
-    // V2 markets are keys into a single contract
+    // V2 markets are just keys used by the perps contracts to separate state between markets
     Bytes32SetLib.Bytes32Set internal _markets;
 
-    bytes32 public constant CONTRACT_NAME = "PerpsManagerV2";
-
     bytes32 internal constant SUSD = "sUSD";
-
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-
     bytes32 internal constant CONTRACT_PERPSORDERSEV2 = "PerpsOrdersV2";
     bytes32 internal constant CONTRACT_FUTURESMARKETSMANAGER = "FuturesMarketManager";
+
+    /* ========== EXTERNAL STATE ========== */
+    bytes32 public constant CONTRACT_NAME = "PerpsManagerV2";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -43,12 +64,13 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
 
     /* ========== MODIFIERS ========== */
 
+    /// methods accessible only to PerpsEngineV2
     modifier onlyEngine() {
         require(msg.sender == address(_perpsEngineV2Views()), "Only engine");
         _;
     }
 
-    /* ========== External views ========== */
+    /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = PerpsManagerV2ConfigSettersMixin.resolverAddressesRequired();
@@ -59,10 +81,12 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
+    /// number of currently supported markets
     function numMarkets() external view returns (uint) {
         return _markets.elements.length;
     }
 
+    /// total debt of currently supported markets, as queried from engine
     function totalDebt() external view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
@@ -76,39 +100,47 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
         return (total, anyIsInvalid);
     }
 
+    /// is this a supported marketKey in the Perps V2 system
     function isMarket(bytes32 marketKey) external view returns (bool) {
         return _markets.contains(marketKey);
     }
 
+    /// view for the stored keys
     function markets(uint index, uint pageSize) external view returns (bytes32[] memory) {
         return _markets.getPage(index, pageSize);
     }
 
+    /// all the stored keys
     function allMarkets() public view returns (bytes32[] memory) {
         return _markets.getPage(0, _markets.elements.length);
     }
 
+    /// summaries for all supported markets (as returned by engine)
     function allMarketSummaries() external view returns (IPerpsTypesV2.MarketSummary[] memory) {
         return _marketSummaries(allMarkets());
     }
 
+    /// summaries for specific marketKeys (as returned by engine)
     function marketSummaries(bytes32[] calldata marketKeys) external view returns (IPerpsTypesV2.MarketSummary[] memory) {
         return _marketSummaries(marketKeys);
     }
 
+    /// is the combination of router (source of request) and marketKey approved for engine operations
     function approvedRouterAndMarket(address router, bytes32 marketKey) external view returns (bool approved) {
         // currently only the default orders router (PerpsOrdersV2) is approved
         // for any V2 market, in future upgrades additional order routers might be supported
         return router == _perpsOrdersV2() && _markets.contains(marketKey);
     }
 
-    /* ========== Internal views ========== */
+    /* ========== INTERNAL VIEWS ========== */
 
-    /// V1 futures manager is the contact point between the rest of Synthetix and the perps system
-    /// this is to simplify the interaction point for debt and issuance to a single contract
-    /// When V1 system will be deprecated, the PerpsManager will be that contact point, which will require
-    /// DebtCache (BaseDebtCache.sol) to use .totalDebt() from this contract, and sUSD (Synth.sol) to allow .issue()
-    /// requests from this contract
+    /**
+     V1 futures manager is the contact point between the rest of Synthetix and the perps system
+     this is to simplify the interaction point for debt and issuance to a single contract
+     When V1 system will be deprecated, the PerpsManager will be that contact point, which will require
+     DebtCache (BaseDebtCache.sol) to use .totalDebt() from this contract, and sUSD (Synth.sol)
+     to allow .issue() requests from this contract
+    */
     function _futuresManager() internal view returns (IFuturesMarketManagerInternal) {
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETSMANAGER));
     }
@@ -157,7 +189,10 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
 
     ///// Mutative (owner)
 
-    /// Note: checks V1 markets and ensures that it doesn't add a colliding marketKey
+    /**
+     Adds markets, and initialises them if not yet initialized (through engine).
+     Checks V1 markets and ensures that it doesn't add a colliding marketKey.
+    */
     function addMarkets(bytes32[] calldata marketKeys, bytes32[] calldata assets) external onlyOwner {
         uint numOfMarkets = marketKeys.length;
         require(marketKeys.length == assets.length, "Length of marketKeys != assets");
@@ -187,6 +222,8 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
         }
     }
 
+    /// removes a previously added market from this manager
+    /// note: the state of the markets and positions remain as they were in PerpsStorageV2 contract
     function removeMarkets(bytes32[] calldata marketKeys) external onlyOwner {
         uint numOfMarkets = marketKeys.length;
         IPerpsStorageV2External perpsStorage = _perpsEngineV2Views().stateContract();

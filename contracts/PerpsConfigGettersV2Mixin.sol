@@ -5,6 +5,8 @@ import "./MixinResolver.sol";
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
+/// A mixin for accessing configuration parameters that were set by perps manager
+/// in (in PerpsManagerV2ConfigSettersMixin)
 contract PerpsConfigGettersV2Mixin is MixinResolver {
     /* ========== CONSTANTS ========== */
 
@@ -22,7 +24,7 @@ contract PerpsConfigGettersV2Mixin is MixinResolver {
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
 
     // Global settings
-    // minimum liquidation fee payable to liquidator
+    // minimum keeper fee payable to keepers
     bytes32 internal constant SETTING_MIN_KEEPER_FEE = "minKeeperFee";
     // liquidation fee basis points payed to liquidator
     bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "liquidationFeeRatio";

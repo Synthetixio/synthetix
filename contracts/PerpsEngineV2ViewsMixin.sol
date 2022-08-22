@@ -6,8 +6,8 @@ import "./PerpsEngineV2Base.sol";
 
 /**
  A mixin that implements various useful views that are used externally but
- aren't used inside the core contract (so don't need to clutter the contract file)
- */
+ aren't used inside the base contract (so don't need to clutter the contract file)
+*/
 contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     /// view for returning max possible order size in baseAsset terms
     /// that take into account existing positions (and the per side OI caps in sUSD terms)
