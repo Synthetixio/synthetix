@@ -97,7 +97,7 @@ contract PerpsStorageV2 is IPerpsStorageV2External, IPerpsStorageV2Internal, IPe
     /// initialize or just get the initialized position
     /// intended for mutative methods that may create a new position
     /// Position init increments the markets position counter, updates position's id, last funding entry
-    /// account, and update the reverse ids => accounts mappsing
+    /// account, and update the reverse ids => accounts mapping
     function positionWithInit(bytes32 marketKey, address account)
         public
         onlyAssociatedContract

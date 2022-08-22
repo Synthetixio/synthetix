@@ -73,7 +73,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /**
      * submits an order to be filled at a price of the next oracle update.
      * Reverts if a previous order still exists (wasn't executed or cancelled).
-     * Reverts if the order cannot be filled at current price to prevent witholding commitFee for
+     * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
      * incorrectly submitted orders (that cannot be filled).
      * @param marketKey marketKey
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `trade` interface

@@ -151,7 +151,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
 
     ///// V1 helper views
 
-    /// these are not exposed as external since can be duduced from the
+    /// these are not exposed as external since can be deduced from the
     /// existing views and the perpsManager views
 
     function _numMarketsV1() internal view returns (uint) {
@@ -289,8 +289,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
 
     /// Add a list of new markets (V1). Reverts if some market key already has a market in V1 or V2.
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
-        uint numOfMarkets = marketsToAdd.length;
-        for (uint i; i < numOfMarkets; i++) {
+        for (uint i; i < marketsToAdd.length; i++) {
             address market = marketsToAdd[i];
             // check doesn't exist in v1
             require(!_markets.contains(market), "Market already exists");
@@ -322,8 +321,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     /* ========== MUTATIVE INTERNAL ========== */
 
     function _removeMarketsV1(address[] memory marketsToRemove) internal {
-        uint numOfMarkets = marketsToRemove.length;
-        for (uint i; i < numOfMarkets; i++) {
+        for (uint i; i < marketsToRemove.length; i++) {
             address market = marketsToRemove[i];
             require(market != address(0), "Unknown market");
 

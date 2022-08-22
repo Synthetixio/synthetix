@@ -149,7 +149,7 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
         return _futuresManager().burnSUSD(account, amount);
     }
 
-    /// Allows markets to issue exchange fees into the fee pool and notify it that this occurred
+    /// Allows market to issue exchange fees into the fee pool and notify it that this occurred
     function payFee(uint amount, bytes32 trackingCode) external onlyEngine {
         delete trackingCode; // unused for now, will be used after SIP 203
         return _futuresManager().payFee(amount);
@@ -179,7 +179,7 @@ contract PerpsManagerV2 is PerpsManagerV2ConfigSettersMixin, IPerpsManagerV2, IP
             _markets.add(marketKey);
 
             // initialize market in engine or check that it's already initialized with correct asset.
-            // Note that this will add all preivous data for the stored market, so if this is not
+            // Note that this will add all previous data for the stored market, so if this is not
             // the intention - a new marketKey should be used.
             engineMutative.ensureInitialized(marketKey, baseAsset);
 
