@@ -165,8 +165,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     function _totalDebtV1() internal view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
-        uint numOfMarkets = _markets.elements.length;
-        for (uint i = 0; i < numOfMarkets; i++) {
+        for (uint i = 0; i < _markets.elements.length; i++) {
             (uint marketDebt, bool invalid) = IFuturesMarket(_markets.elements[i]).marketDebt();
             total = total.add(marketDebt);
             anyIsInvalid = anyIsInvalid || invalid;
@@ -289,8 +288,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
 
     /// Add a list of new markets (V1). Reverts if some market key already has a market in V1 or V2.
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
-        uint numOfMarkets = marketsToAdd.length;
-        for (uint i; i < numOfMarkets; i++) {
+        for (uint i; i < marketsToAdd.length; i++) {
             address market = marketsToAdd[i];
             // check doesn't exist in v1
             require(!_markets.contains(market), "Market already exists");
@@ -322,8 +320,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     /* ========== MUTATIVE INTERNAL ========== */
 
     function _removeMarketsV1(address[] memory marketsToRemove) internal {
-        uint numOfMarkets = marketsToRemove.length;
-        for (uint i; i < numOfMarkets; i++) {
+        for (uint i; i < marketsToRemove.length; i++) {
             address market = marketsToRemove[i];
             require(market != address(0), "Unknown market");
 
