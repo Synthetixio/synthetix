@@ -20,7 +20,7 @@ import "./interfaces/ISystemStatus.sol";
 
  Contract interactions:
  - from PerpsOrderV2 (auth via PerpsManagerV2): executing orders (user initiated operation)
- - from PerpsManagerV2: intialize a new market in storage (PerpsStorageV2), and recompute funding on settings changes
+ - from PerpsManagerV2: initialize a new market in storage (PerpsStorageV2), and recompute funding on settings changes
  - to PerpsManagerV2: asking approval for orders router (PerpsOrderV2) auth and market existence, sUSD issuing, burning
  and paying fees
  - to PerpsStorageV2: storing state changes for positions and market aggregates
