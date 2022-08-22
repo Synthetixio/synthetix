@@ -3223,18 +3223,26 @@ contract('PerpsEngineV2', accounts => {
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.003 = 60
 			});
 
-			it('reverts for empty position, not underwater, or if liquidator address not set', async () => {
+			it('reverts as expected for bad input', async () => {
+				// empty position
 				await assert.revert(
 					instance.liquidatePosition(marketKey, noBalance, liquidator),
 					revertMsg.CannotLiquidate
 				);
+				// not underwater
 				await assert.revert(
 					instance.liquidatePosition(marketKey, trader, liquidator),
 					revertMsg.CannotLiquidate
 				);
+				// empty address
 				await assert.revert(
 					instance.liquidatePosition(marketKey, trader, ZERO_ADDRESS),
 					'Empty liquidator address'
+				);
+				// non existent / removed market
+				await assert.revert(
+					instance.liquidatePosition(toBytes32('nope'), trader, liquidator),
+					'Unknown market'
 				);
 			});
 

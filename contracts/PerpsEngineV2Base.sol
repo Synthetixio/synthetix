@@ -276,7 +276,13 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address account,
         address liquidator
     ) external {
+        // check that market is supported by manager
+        // this is needed in case market was removed, since this method is not guarded by
+        // onlyOrdersRouter so doesn't check approvedRouterAndMarket on manager
+        require(IPerpsManagerV2(address(_manager())).isMarket(marketKey), "Unknown market");
+
         require(liquidator != address(0), "Empty liquidator address");
+
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
         _liquidatePosition(marketKey, account, price, liquidator);
