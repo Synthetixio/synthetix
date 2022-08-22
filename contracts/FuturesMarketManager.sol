@@ -151,7 +151,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
 
     ///// V1 helper views
 
-    /// these are not exposed as external since can be duduced from the
+    /// these are not exposed as external since can be deduced from the
     /// existing views and the perpsManager views
 
     function _numMarketsV1() internal view returns (uint) {
@@ -165,7 +165,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     function _totalDebtV1() internal view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
-        for (uint i = 0; i < _markets.elements.length; i++) {
+        uint numOfMarkets = _markets.elements.length;
+        for (uint i = 0; i < numOfMarkets; i++) {
             (uint marketDebt, bool invalid) = IFuturesMarket(_markets.elements[i]).marketDebt();
             total = total.add(marketDebt);
             anyIsInvalid = anyIsInvalid || invalid;
