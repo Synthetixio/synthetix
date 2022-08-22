@@ -26,6 +26,16 @@ module.exports = async ({
 
 	console.log(gray(`\n------ DEPLOY FUTURES MARKETS ------\n`));
 
+	if (useOvm) {
+		// deploy an empty perps manager for futures manager to query for perps debt
+		await deployer.deployContract({
+			name: 'PerpsManagerV2',
+			source: 'EmptyPerpsManagerV2',
+			args: [],
+			deps: [],
+		});
+	}
+
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
 		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',

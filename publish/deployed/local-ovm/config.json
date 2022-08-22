@@ -176,6 +176,9 @@
 	"FuturesMarketData": {
 		"deploy": true
 	},
+	"PerpsManagerV2": {
+		"deploy": true
+	},
 	"WrapperFactory": {
 		"deploy": true
 	},
