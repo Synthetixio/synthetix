@@ -18,7 +18,26 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/IPerpsInterfacesV2.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesMarketManager
+/*
+ Internal contract for managing both Futures V1 and Perps V2 supported markets.
+
+ Contract interactions:
+ - from DebtCache: totalDebt()
+ - from PerpsManagerV2: sUSD methods (issue, burn, payFee), check if marketKey exists in V1 when adding
+ - to SynthsUSD: issue & burn operations
+ - to FeePool: get fee pool transfer address
+
+ User interactions:
+ - from owner: adding and removing V1 markets
+
+ Inheritance: Owned: MixinResolver
+
+ State & upgradability: holds state of currently supported V1 markets (added), so these need to be added when
+ this contract is redeployed.
+
+ Risks: approving sUSD operations (to markets or perps manager), mistakes in market management, incorrect debt
+ reporting (e.g. over or underreporting markets / perps debt)
+*/
 contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IFuturesMarketManagerInternal {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
@@ -33,11 +52,6 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
 
     // V1 markets are independent contracts
     AddressSetLib.AddressSet internal _markets;
-    mapping(bytes32 => address) public marketForKey;
-
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-
-    bytes32 public constant CONTRACT_NAME = "FuturesMarketManager";
 
     bytes32 internal constant SUSD = "sUSD";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
@@ -45,18 +59,25 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_PERPSMANAGERV2 = "PerpsManagerV2";
 
+    /* ========== EXTERNAL STATE ========== */
+    bytes32 public constant CONTRACT_NAME = "FuturesMarketManager";
+
+    mapping(bytes32 => address) public marketForKey;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== MODIFIERS ========== */
 
+    /// methods only accessible to V1 markets or to PerpsManagerV2
     modifier onlyMarketsOrPerpsManager() {
-        require(_markets.contains(msg.sender) || msg.sender == address(_perpsManagerV2()), "Only markets or perps manager");
+        bool fromMarketOrPerps = _markets.contains(msg.sender) || msg.sender == address(_perpsManagerV2());
+        require(fromMarketOrPerps, "Only markets or perps manager");
         _;
     }
 
-    /* ========== External views ========== */
+    /* ========== EXTERNAL VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](4);
@@ -66,7 +87,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         addresses[3] = CONTRACT_PERPSMANAGERV2;
     }
 
-    ///// V1 + V2 views
+    /* ---------- V1 + V2 views ---------- */
 
     /// The number of V1 + V2 markets known to the manager
     function numMarkets() external view returns (uint) {
@@ -80,7 +101,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return (debtV1.add(debtV2), isInvalidV1 || isInvalidV2);
     }
 
-    /// V1 + V2 all summaries in V1 format
+    /// V1 + V2 summaries in V1 format
     function allMarketSummaries() external view returns (MarketSummaryV1[] memory) {
         MarketSummaryV1[] memory v1 = _allMarketSummariesV1();
         MarketSummaryV1[] memory v2 = _allMarketSummariesV2asV1();
@@ -103,14 +124,14 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return _isMarketV1(marketKey) || _perpsManagerV2().isMarket(marketKey);
     }
 
-    ///// V1 specific views
+    /* ---------- V1 specific views ---------- */
 
     /// Returns slices of the list of all V1 markets
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
         return _markets.getPage(index, pageSize);
     }
 
-    /// list of all V1 markets
+    /// array of all V1 markets
     function allMarketsV1() public view returns (address[] memory) {
         return _markets.getPage(0, _markets.elements.length);
     }
@@ -130,9 +151,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         return _marketSummariesV1(_addressesForKeys(marketKeys));
     }
 
-    /* ========== Internal views ========== */
+    /* ========== INTERNAL VIEWS ========== */
 
-    ///// Addresses
     function _sUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
@@ -247,7 +267,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
 
     /* ========== MUTATIVE EXTERNAL ========== */
 
-    ///// Mutative, allowed for markets V1 or perps manager (V2)
+    /* ---------- allowed for markets V1 or perps manager (V2) ---------- */
 
     /// Allows a market to issue sUSD to an account when it withdraws margin.
     function issueSUSD(address account, uint amount) external onlyMarketsOrPerpsManager {
@@ -285,7 +305,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager, IF
         pool.recordFeePaid(amount);
     }
 
-    ///// Mutative, allowed to owner
+    /* ---------- allowed to owner ---------- */
 
     /// Add a list of new markets (V1). Reverts if some market key already has a market in V1 or V2.
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
