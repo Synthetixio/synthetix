@@ -17,14 +17,25 @@ import "./interfaces/IExchanger.sol";
  User facing contract for Perps V2 that handles logic related to orders and fees (as opposed to main
  execution logic that's handled by PerpsEngineV2).
 
+ Contract interactions:
+ - to PerpsEngineV2: calling mutative operations (transfer and margin changes, trades, manager sUSD operations),
+   using market and posistion views
+ - to PerpsStorageV2: getting low level market (e.g. baseAsset) and position (e.g. size) details
+ - to ExchangeRates: rates
+ - to Exchanger: dynamic fees
+
+ User interactions:
+ - any user: can manage their own account's positions in any market
+
+ Inheritance:
+ - PerpsConfigGettersV2Mixin: calls FlexibleStorage to get configuration values set by manager (PerpsManagerV2)
+
  Main responsibilities: auth, determining the fee rates (fixed, dynamic, etc), and price deltas,
  convenience methods (e.g. methods that are combinations of other methods), handling and storing temporary order data.
 
- Has some state, but is meant to hold only temporary state (not yet executed orders), so that upgrades
- are still possible (allowing an overlap of order contracts and ability to pause new orders acceptance on the contract).
+ State & upgradability: can have some short-lived state due to unprocessed async orders (e.g. in next-price mixin).
 
- Highest risk for this contract are due its responsibility for auth, and execution params (such as fees, rates,
- price deltas) etc and its privileged access to engine.
+ Risks: auth, bad execution params (such as fees, rates, price deltas) etc, privileged access to engine.
 */
 contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     using SafeMath for uint;

@@ -673,7 +673,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							spotTradeDetails = await perpsEngine.postTradeDetails(
+							spotTradeDetails = await perpsEngine.simulateTrade(
 								marketKey,
 								trader,
 								size,
@@ -697,7 +697,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 							await perpsOrders.trade(marketKey, size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							spotTradeDetails = await perpsEngine.postTradeDetails(
+							spotTradeDetails = await perpsEngine.simulateTrade(
 								marketKey,
 								trader,
 								size,
@@ -737,7 +737,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
-						spotTradeDetails = await perpsEngine.postTradeDetails(
+						spotTradeDetails = await perpsEngine.simulateTrade(
 							marketKey,
 							trader,
 							size,

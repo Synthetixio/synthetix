@@ -105,8 +105,6 @@ interface IPerpsEngineV2External {
 
     function assetPrice(bytes32 marketKey) external view returns (uint price, bool invalid);
 
-    function marketSizes(bytes32 marketKey) external view returns (uint long, uint short);
-
     function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short);
 
     function marketDebt(bytes32 marketKey) external view returns (uint debt, bool invalid);
@@ -130,7 +128,7 @@ interface IPerpsEngineV2External {
         IPerpsTypesV2.ExecutionOptions calldata options
     ) external view returns (uint fee, bool invalid);
 
-    function postTradeDetails(
+    function simulateTrade(
         bytes32 marketKey,
         address account,
         int sizeDelta,

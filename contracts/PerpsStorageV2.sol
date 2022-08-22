@@ -8,8 +8,19 @@ import "./interfaces/IPerpsInterfacesV2.sol";
 /*
  Immutable storage contract for Perps V2 positions and market states.
 
- Write access is only by PerpsEngineV2 (which in turn is charge of correctly managing this state) -
- assigned by address by system owner (and not through address resolver).
+ Contract / User interactions:
+ - from associatedContract (assumed to be PerpsEngineV2): all write operations
+
+ Inheritance:
+ - State: stores and manages associatedContract (the only address with write access) by being Owned
+
+ Main responsibilities: store long term position and market data for use of the rest of the perps contracts.
+
+ State & upgradability: stateful and non upgradable. Any additional long term state should be stored
+ in additional contracts.
+
+ Risks: auth, input validation, inconsistency, inability to "fix" state that was incorrectly stored if write methods
+ do not support the "fix".
 
  Contains mostly the minimal setters and getters and input validation.
 */

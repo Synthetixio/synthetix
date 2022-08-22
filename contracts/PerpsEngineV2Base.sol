@@ -475,7 +475,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         Position memory oldPosition = _stateViews().position(marketKey, account);
 
         // Compute the new position after performing the trade
-        (uint newMargin, int newSize, uint fee, Status status) = _postTradeDetails(oldPosition, params);
+        (uint newMargin, int newSize, uint fee, Status status) = _tradeResults(oldPosition, params);
 
         // check result
         _revertIfError(status);
@@ -900,7 +900,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return _abs(notionalDiff.multiplyDecimal(int(params.feeRate)));
     }
 
-    function _postTradeDetails(Position memory oldPos, TradeParams memory params)
+    function _tradeResults(Position memory oldPos, TradeParams memory params)
         internal
         view
         returns (

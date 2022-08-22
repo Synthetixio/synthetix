@@ -473,11 +473,10 @@ contract('PerpsEngineV2', accounts => {
 		it('market size and skew', async () => {
 			const minScale = (await perpsManager.marketConfig(marketKey)).skewScaleUSD;
 			const price = 100;
-			let sizes = await instance.marketSizes(marketKey);
 			let summary = await marketSummary();
 
-			assert.bnEqual(sizes[0], toUnit('0'));
-			assert.bnEqual(sizes[1], toUnit('0'));
+			assert.bnEqual(summary.marketSizeLong, toUnit('0'));
+			assert.bnEqual(summary.marketSizeShort, toUnit('0'));
 			assert.bnEqual(summary.marketSize, toUnit('0'));
 			assert.bnEqual(summary.marketSkew, toUnit('0'));
 
@@ -488,11 +487,10 @@ contract('PerpsEngineV2', accounts => {
 				sizeDelta: toUnit('50'),
 			});
 
-			sizes = await instance.marketSizes(marketKey);
 			summary = await marketSummary();
 
-			assert.bnEqual(sizes[0], toUnit('50'));
-			assert.bnEqual(sizes[1], toUnit('0'));
+			assert.bnEqual(summary.marketSizeLong, toUnit('50'));
+			assert.bnEqual(summary.marketSizeShort, toUnit('0'));
 			assert.bnEqual(summary.marketSize, toUnit('50'));
 			assert.bnEqual(summary.marketSkew, toUnit('50'));
 			assert.bnEqual(
@@ -507,10 +505,9 @@ contract('PerpsEngineV2', accounts => {
 				sizeDelta: toUnit('-35'),
 			});
 
-			sizes = await instance.marketSizes(marketKey);
 			summary = await marketSummary();
-			assert.bnEqual(sizes[0], toUnit('50'));
-			assert.bnEqual(sizes[1], toUnit('35'));
+			assert.bnEqual(summary.marketSizeLong, toUnit('50'));
+			assert.bnEqual(summary.marketSizeShort, toUnit('35'));
 			assert.bnEqual(summary.marketSize, toUnit('85'));
 			assert.bnEqual(summary.marketSkew, toUnit('15'));
 			assert.bnClose(
@@ -523,11 +520,10 @@ contract('PerpsEngineV2', accounts => {
 				fillPrice: toUnit(price * 1.1),
 			});
 
-			sizes = await instance.marketSizes(marketKey);
 			summary = await marketSummary();
 
-			assert.bnEqual(sizes[0], toUnit('0'));
-			assert.bnEqual(sizes[1], toUnit('35'));
+			assert.bnEqual(summary.marketSizeLong, toUnit('0'));
+			assert.bnEqual(summary.marketSizeShort, toUnit('35'));
 			assert.bnEqual(summary.marketSize, toUnit('35'));
 			assert.bnEqual(summary.marketSkew, toUnit('-35'));
 			assert.bnClose(
@@ -540,10 +536,9 @@ contract('PerpsEngineV2', accounts => {
 				fillPrice: toUnit(price),
 			});
 
-			sizes = await instance.marketSizes(marketKey);
 			summary = await marketSummary();
-			assert.bnEqual(sizes[0], toUnit('0'));
-			assert.bnEqual(sizes[1], toUnit('0'));
+			assert.bnEqual(summary.marketSizeLong, toUnit('0'));
+			assert.bnEqual(summary.marketSizeShort, toUnit('0'));
 			assert.bnEqual(summary.marketSize, toUnit('0'));
 			assert.bnEqual(summary.marketSkew, toUnit('0'));
 			assert.bnEqual(await instance.proportionalSkew(marketKey), toUnit('0'));
@@ -1153,12 +1148,7 @@ contract('PerpsEngineV2', accounts => {
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
-			const postDetails = await instance.postTradeDetails(
-				marketKey,
-				trader,
-				size,
-				defaultExecOptions
-			);
+			const postDetails = await instance.simulateTrade(marketKey, trader, size, defaultExecOptions);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(trade(size, trader), revertMsg.InvalidPrice);
@@ -1189,7 +1179,7 @@ contract('PerpsEngineV2', accounts => {
 			const margin = toUnit('1000');
 			await transfer(margin, trader);
 			await assert.revert(trade(toBN('0'), trader), revertMsg.NilOrder);
-			const postDetails = await instance.postTradeDetails(
+			const postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toBN('0'),
@@ -1210,7 +1200,7 @@ contract('PerpsEngineV2', accounts => {
 			// User realises the price has crashed and tries to outrun their liquidation, but it fails
 
 			const sizeDelta = toUnit('-50');
-			const postDetails = await instance.postTradeDetails(
+			const postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				sizeDelta,
@@ -1262,7 +1252,7 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(toUnit('1000'), trader);
 			await transfer(toUnit('1000'), trader2);
 			await assert.revert(trade(toUnit('101'), trader), revertMsg.MaxLeverageExceeded);
-			let postDetails = await instance.postTradeDetails(
+			let postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('101'),
@@ -1271,7 +1261,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await assert.revert(trade(toUnit('-101'), trader2), revertMsg.MaxLeverageExceeded);
-			postDetails = await instance.postTradeDetails(
+			postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('-101'),
@@ -1305,7 +1295,7 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(toUnit('1000'), trader);
 			await trade(toUnit('100'), trader);
 
-			let postDetails = await instance.postTradeDetails(
+			let postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('1'),
@@ -1315,7 +1305,7 @@ contract('PerpsEngineV2', accounts => {
 
 			await setPrice(baseAsset, toUnit('95')); // add a loss of half the margin, getting the leverage to 20x
 			// cannot reduce a little - because will be over max leverage
-			postDetails = await instance.postTradeDetails(
+			postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('-1'),
@@ -1324,7 +1314,7 @@ contract('PerpsEngineV2', accounts => {
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			// but can reduce by a lot into healthy leverage size
-			postDetails = await instance.postTradeDetails(
+			postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('-55'),
@@ -1341,7 +1331,7 @@ contract('PerpsEngineV2', accounts => {
 			await transfer(minInitialMargin.sub(toUnit('1')), trader);
 			await assert.revert(trade(toUnit('10'), trader), revertMsg.InsufficientMargin);
 
-			let postDetails = await instance.postTradeDetails(
+			let postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('10'),
@@ -1352,7 +1342,7 @@ contract('PerpsEngineV2', accounts => {
 			// But it works after transferring the remaining $1
 			await transfer(toUnit('1'), trader);
 
-			postDetails = await instance.postTradeDetails(
+			postDetails = await instance.simulateTrade(
 				marketKey,
 				trader,
 				toUnit('10'),
@@ -1478,7 +1468,7 @@ contract('PerpsEngineV2', accounts => {
 						await transfer(maxMargin.add(toUnit('11')), trader);
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
 
-						const postDetails = await instance.postTradeDetails(
+						const postDetails = await instance.simulateTrade(
 							marketKey,
 							trader,
 							tooBig,
@@ -1503,7 +1493,7 @@ contract('PerpsEngineV2', accounts => {
 						await setPrice(baseAsset, toUnit('1.08'));
 
 						const sizeDelta = orderSize.div(toBN(100)).mul(toBN(25));
-						const postDetails = await instance.postTradeDetails(
+						const postDetails = await instance.simulateTrade(
 							marketKey,
 							trader,
 							sizeDelta,
@@ -1814,7 +1804,7 @@ contract('PerpsEngineV2', accounts => {
 				await transfer(toUnit('1000'), trader);
 				await setPrice(baseAsset, toUnit('240'));
 
-				const expectedDetails = await instance.postTradeDetails(
+				const expectedDetails = await instance.simulateTrade(
 					marketKey,
 					trader,
 					sizeDelta,
@@ -1840,7 +1830,7 @@ contract('PerpsEngineV2', accounts => {
 					sizeDelta,
 				});
 
-				const expectedDetails = await instance.postTradeDetails(
+				const expectedDetails = await instance.simulateTrade(
 					marketKey,
 					trader,
 					sizeDelta,
@@ -3253,9 +3243,9 @@ contract('PerpsEngineV2', accounts => {
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
-				const size = toBN((await marketSummary()).marketSize);
-				const sizes = await instance.marketSizes(marketKey);
-				const skew = toBN((await marketSummary()).marketSkew);
+				const summary = await marketSummary();
+				const size = toBN(summary.marketSize);
+				const skew = toBN(summary.marketSkew);
 				const positionSize = toBN((await getPosition(trader)).size);
 
 				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
@@ -3273,29 +3263,27 @@ contract('PerpsEngineV2', accounts => {
 
 				await instance.liquidatePosition(marketKey, trader, liquidator);
 
-				assert.bnEqual((await marketSummary()).marketSize, size.sub(positionSize.abs()));
-				let newSizes = await instance.marketSizes(marketKey);
-				assert.bnEqual(newSizes[0], sizes[0].sub(positionSize.abs()));
-				assert.bnEqual(newSizes[1], sizes[1]);
-				assert.bnEqual((await marketSummary()).marketSkew, skew.sub(positionSize.abs()));
-				assert.bnClose(
-					(await marketSummary()).marketDebt,
-					toUnit('1990').sub(toUnit('20')),
-					toUnit('0.01')
+				let newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, size.sub(positionSize.abs()));
+				assert.bnEqual(
+					newSummary.marketSizeLong,
+					toBN(summary.marketSizeLong).sub(positionSize.abs())
 				);
+				assert.bnEqual(newSummary.marketSizeShort, summary.marketSizeShort);
+				assert.bnEqual(newSummary.marketSkew, skew.sub(positionSize.abs()));
+				assert.bnClose(newSummary.marketDebt, toUnit('1990').sub(toUnit('20')), toUnit('0.01'));
 
 				// Funding has been recorded by the liquidation.
 				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit(0), toUnit('0.01'));
 
 				await instance.liquidatePosition(marketKey, trader2, liquidator);
-
-				assert.bnEqual((await marketSummary()).marketSize, toUnit('20'));
-				newSizes = await instance.marketSizes(marketKey);
-				assert.bnEqual(newSizes[0], toUnit('0'));
-				assert.bnEqual(newSizes[1], toUnit('20'));
-				assert.bnEqual((await marketSummary()).marketSkew, toUnit('-20'));
+				newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, toUnit('20'));
+				assert.bnEqual(newSummary.marketSizeLong, toUnit('0'));
+				assert.bnEqual(newSummary.marketSizeShort, toUnit('20'));
+				assert.bnEqual(newSummary.marketSkew, toUnit('-20'));
 				// Market debt is now just the remaining position, plus the funding they've made.
-				assert.bnClose((await marketSummary()).marketDebt, toUnit('2145'), toUnit('0.01'));
+				assert.bnClose(newSummary.marketDebt, toUnit('2145'), toUnit('0.01'));
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
@@ -3303,8 +3291,8 @@ contract('PerpsEngineV2', accounts => {
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
-				const size = toBN((await marketSummary()).marketSize);
-				const sizes = await instance.marketSizes(marketKey);
+				const summary = await marketSummary();
+				const size = toBN(summary.marketSize);
 				const positionSize = toBN((await getPosition(trader3)).size);
 
 				await setPrice(baseAsset, toUnit('350'));
@@ -3314,15 +3302,15 @@ contract('PerpsEngineV2', accounts => {
 
 				await instance.liquidatePosition(marketKey, trader3, liquidator);
 
-				assert.bnEqual((await marketSummary()).marketSize, size.sub(positionSize.abs()));
-				const newSizes = await instance.marketSizes(marketKey);
-				assert.bnEqual(newSizes[0], sizes[0]);
-				assert.bnEqual(newSizes[1], toUnit(0));
-				assert.bnEqual((await marketSummary()).marketSkew, toUnit('60'));
-				assert.bnClose((await marketSummary()).marketDebt, toUnit('6485'), toUnit('0.1'));
+				const newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, size.sub(positionSize.abs()));
+				assert.bnEqual(newSummary.marketSizeLong, summary.marketSizeLong);
+				assert.bnEqual(newSummary.marketSizeShort, toUnit('0'));
+				assert.bnEqual(newSummary.marketSkew, toUnit('60'));
+				assert.bnClose(newSummary.marketDebt, toUnit('6485'), toUnit('0.1'));
 
 				// Funding has been recorded by the liquidation.
-				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit(0), toUnit('0.01'));
+				assert.bnClose(newSummary.unrecordedFunding, toUnit(0), toUnit('0.01'));
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
