@@ -633,11 +633,21 @@ contract('PerpsManagerV2', accounts => {
 	});
 
 	describe('EmptyPerpsManagerV2', () => {
-		it('returns totalDebt', async () => {
+		it('views as expected', async () => {
 			const emptyManager = await artifacts.require('EmptyPerpsManagerV2').new();
+
+			// total debt
 			const res = await emptyManager.totalDebt();
 			assert.bnEqual(res.debt, 0);
 			assert.bnEqual(res.isInvalid, false);
+
+			// rest of views
+			assert.bnEqual(await emptyManager.numMarkets(), 0);
+			assert.deepEqual(await emptyManager.allMarkets(), []);
+			assert.deepEqual(await emptyManager.allMarketSummaries(), []);
+			assert.deepEqual(await emptyManager.marketSummaries([]), []);
+			assert.deepEqual(await emptyManager.markets(0, 0), []);
+			assert.deepEqual(await emptyManager.isMarket(toBytes32('anything')), false);
 		});
 	});
 });

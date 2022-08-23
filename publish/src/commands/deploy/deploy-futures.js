@@ -36,7 +36,7 @@ module.exports = async ({
 		});
 	}
 
-	const futuresMarketManager = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'FuturesMarketManager',
 		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
 		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
@@ -78,45 +78,5 @@ module.exports = async ({
 		}
 	}
 
-	// Now replace the relevant markets in the manager (if any)
-
-	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
-		const numManagerKnownMarkets = await futuresMarketManager.numMarkets();
-		const managerKnownMarkets = Array.from(
-			await futuresMarketManager.markets(0, numManagerKnownMarkets)
-		).sort();
-
-		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));
-		const toKeep = managerKnownMarkets
-			.filter(market => deployedFuturesMarkets.includes(market))
-			.sort();
-		if (toRemove.length > 0) {
-			await runStep({
-				contract: `FuturesMarketManager`,
-				target: futuresMarketManager,
-				read: 'markets',
-				readArg: [0, numManagerKnownMarkets],
-				expected: markets => JSON.stringify(markets.slice().sort()) === JSON.stringify(toKeep),
-				write: 'removeMarkets',
-				writeArg: [toRemove],
-			});
-		}
-
-		const toAdd = deployedFuturesMarkets.filter(market => !managerKnownMarkets.includes(market));
-
-		if (toAdd.length > 0) {
-			await runStep({
-				contract: `FuturesMarketManager`,
-				target: futuresMarketManager,
-				read: 'markets',
-				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],
-				expected: markets =>
-					JSON.stringify(markets.slice().sort()) ===
-					JSON.stringify(deployedFuturesMarkets.slice().sort()),
-				write: 'addMarkets',
-				writeArg: [toAdd],
-				gasLimit: 150e3 * toAdd.length, // extra gas per market
-			});
-		}
-	}
+	return deployedFuturesMarkets;
 };

@@ -300,7 +300,7 @@ const deploy = async ({
 		useOvm,
 	});
 
-	await deployFutures({
+	const deployedFuturesMarkets = await deployFutures({
 		account,
 		addressOf,
 		getDeployParameter,
@@ -439,6 +439,7 @@ const deploy = async ({
 		freshDeploy,
 		deploymentPath,
 		network,
+		deployedFuturesMarkets,
 	});
 
 	// await takeDebtSnapshotWhenRequired({

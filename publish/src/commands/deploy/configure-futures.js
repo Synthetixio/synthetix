@@ -14,18 +14,27 @@ module.exports = async ({
 	freshDeploy,
 	deploymentPath,
 	network,
+	deployedFuturesMarkets,
 }) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
 	if (!useOvm) return;
 
-	const { FuturesMarketSettings: futuresMarketSettings, SystemStatus } = deployer.deployedContracts;
+	const {
+		FuturesMarketSettings: futuresMarketSettings,
+		SystemStatus,
+		FuturesMarketManager: futuresMarketManager,
+	} = deployer.deployedContracts;
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
 
+	// ensure markets deployed in deploy-futures are added to manager
+	await ensureManagerHasCorrectMarkets({ deployedFuturesMarkets, futuresMarketManager, runStep });
+
+	// configure FuturesMarketSettings
 	const FUTURES_MIN_INITIAL_MARGIN = await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN');
 	await runStep({
 		contract: 'FuturesMarketSettings',
@@ -165,3 +174,47 @@ module.exports = async ({
 		}
 	}
 };
+
+async function ensureManagerHasCorrectMarkets({
+	deployedFuturesMarkets,
+	futuresMarketManager,
+	runStep,
+}) {
+	// replace the relevant markets in the manager (if any)
+	if (deployedFuturesMarkets.length > 0) {
+		const managerKnownMarkets = await futuresMarketManager.allMarkets(); // alias for allMarketsV1 only V1 markets
+		const numManagerKnownMarkets = managerKnownMarkets.length;
+		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));
+		const toKeep = managerKnownMarkets
+			.filter(market => deployedFuturesMarkets.includes(market))
+			.sort();
+		if (toRemove.length > 0) {
+			await runStep({
+				contract: `FuturesMarketManager`,
+				target: futuresMarketManager,
+				read: 'markets',
+				readArg: [0, numManagerKnownMarkets],
+				expected: markets => JSON.stringify(markets.slice().sort()) === JSON.stringify(toKeep),
+				write: 'removeMarkets',
+				writeArg: [toRemove],
+			});
+		}
+
+		const toAdd = deployedFuturesMarkets.filter(market => !managerKnownMarkets.includes(market));
+
+		if (toAdd.length > 0) {
+			await runStep({
+				contract: `FuturesMarketManager`,
+				target: futuresMarketManager,
+				read: 'markets',
+				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],
+				expected: markets =>
+					JSON.stringify(markets.slice().sort()) ===
+					JSON.stringify(deployedFuturesMarkets.slice().sort()),
+				write: 'addMarkets',
+				writeArg: [toAdd],
+				gasLimit: 150e3 * toAdd.length, // extra gas per market
+			});
+		}
+	}
+}
