@@ -221,7 +221,7 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "50000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sXMR",
