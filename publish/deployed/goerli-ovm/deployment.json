@@ -48,7 +48,9 @@
 			"timestamp": "2022-07-16T12:41:52.000Z",
 			"txn": "https://goerli-explorer.optimism.io/tx/0x493e47c9211324f90a00db0efd85688007c3645babcf2d63ea740abc89487da4",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"ReadProxyAddressResolver": {
 			"name": "ReadProxyAddressResolver",
@@ -58,7 +60,9 @@
 			"timestamp": "2022-07-16T12:41:52.000Z",
 			"txn": "https://goerli-explorer.optimism.io/tx/0x904597857518e05455104dfeb65875d46806a9767d73484371541841d2c96262",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"OneNetAggregatorIssuedSynths": {
 			"name": "OneNetAggregatorIssuedSynths",
@@ -68,7 +72,9 @@
 			"timestamp": "2022-07-16T12:44:04.857Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"OneNetAggregatorDebtRatio": {
 			"name": "OneNetAggregatorDebtRatio",
@@ -78,7 +84,9 @@
 			"timestamp": "2022-07-16T12:44:07.136Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"FlexibleStorage": {
 			"name": "FlexibleStorage",
@@ -88,7 +96,9 @@
 			"timestamp": "2022-07-16T12:44:13.716Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"SystemSettings": {
 			"name": "SystemSettings",
@@ -111,7 +121,9 @@
 			"timestamp": "2022-07-16T12:44:23.219Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
@@ -173,7 +185,9 @@
 			"timestamp": "2022-07-16T12:44:43.075Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"DelegateApprovalsEternalStorage": {
 			"name": "DelegateApprovalsEternalStorage",
@@ -304,7 +318,9 @@
 			"timestamp": "2022-07-16T12:45:31.950Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"Synthetix": {
 			"name": "Synthetix",
@@ -409,7 +425,9 @@
 			"timestamp": "2022-07-16T12:46:12.990Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0xFaFd00D0CaA6D5cd5161c5C1F18AaB24942aCAFA"]
+			"constructorArgs": [
+				"0xFaFd00D0CaA6D5cd5161c5C1F18AaB24942aCAFA"
+			]
 		},
 		"SynthetixBridgeToBase": {
 			"name": "SynthetixBridgeToBase",
@@ -446,7 +464,9 @@
 			"timestamp": "2022-07-16T12:46:42.059Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"WrapperFactory": {
 			"name": "WrapperFactory",
@@ -482,7 +502,9 @@
 			"timestamp": "2022-07-16T12:47:02.113Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
@@ -524,7 +546,9 @@
 			"timestamp": "2022-07-16T12:47:17.688Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
@@ -566,7 +590,9 @@
 			"timestamp": "2022-07-16T12:47:28.699Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
@@ -605,7 +631,9 @@
 			"timestamp": "2022-07-16T12:47:44.265Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"CollateralManagerState": {
 			"name": "CollateralManagerState",
@@ -693,7 +721,9 @@
 			"timestamp": "2022-07-16T12:48:20.998Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"FuturesMarketSettings": {
 			"name": "FuturesMarketSettings",
@@ -744,7 +774,9 @@
 			"timestamp": "2022-07-16T12:48:51.283Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x9Fc84992dF5496797784374B810E04238728743d"]
+			"constructorArgs": [
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		},
 		"DappMaintenance": {
 			"name": "DappMaintenance",
@@ -754,7 +786,9 @@
 			"timestamp": "2022-07-16T12:48:57.896Z",
 			"txn": "",
 			"network": "goerli",
-			"constructorArgs": ["0x73570075092502472E4b61A7058Df1A4a1DB12f2"]
+			"constructorArgs": [
+				"0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+			]
 		},
 		"CircuitBreaker": {
 			"name": "CircuitBreaker",

@@ -28,7 +28,9 @@
 			"timestamp": "2021-01-15T05:40:45.820Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"ReadProxyAddressResolver": {
 			"name": "ReadProxyAddressResolver",
@@ -38,7 +40,9 @@
 			"timestamp": "2021-01-15T05:40:47.164Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"FlexibleStorage": {
 			"name": "FlexibleStorage",
@@ -48,7 +52,9 @@
 			"timestamp": "2021-01-15T05:40:50.897Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"SystemSettings": {
 			"name": "SystemSettings",
@@ -71,7 +77,9 @@
 			"timestamp": "2022-03-17T20:55:12.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x1755e73d6d414cc63b135a0625b82c20b5d3d640a7ae3090ff14a74cf4ac127d",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
@@ -133,7 +141,9 @@
 			"timestamp": "2021-01-15T05:41:06.241Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"DelegateApprovalsEternalStorage": {
 			"name": "DelegateApprovalsEternalStorage",
@@ -263,7 +273,9 @@
 			"timestamp": "2021-01-15T05:41:26.674Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"DebtCache": {
 			"name": "DebtCache",
@@ -339,7 +351,9 @@
 			"timestamp": "2021-01-15T05:41:56.647Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x06C6D063896ac733673c4474E44d9268f2402A55"]
+			"constructorArgs": [
+				"0x06C6D063896ac733673c4474E44d9268f2402A55"
+			]
 		},
 		"TokenStatesUSD": {
 			"name": "TokenStatesUSD",
@@ -362,7 +376,9 @@
 			"timestamp": "2021-01-15T05:42:06.522Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"ProxyERC20sUSD": {
 			"name": "ProxyERC20sUSD",
@@ -449,7 +465,9 @@
 			"timestamp": "2021-01-15T05:42:19.657Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"DappMaintenance": {
 			"name": "DappMaintenance",
@@ -459,7 +477,9 @@
 			"timestamp": "2021-01-15T05:42:21.010Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"EtherWrapper": {
 			"name": "EtherWrapper",
@@ -492,7 +512,9 @@
 			"timestamp": "2021-07-28T17:33:44.476Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
@@ -534,7 +556,9 @@
 			"timestamp": "2021-07-28T17:34:21.044Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
@@ -576,7 +600,9 @@
 			"timestamp": "2021-07-28T17:34:59.812Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsLINK": {
 			"name": "SynthsLINK",
@@ -605,7 +631,9 @@
 			"timestamp": "2021-10-12T21:06:52.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x834046a0d1c1f1554f68fbec14625d6e4fd6a780a4e29d3808ed389cfa94abbe",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"CollateralUtil": {
 			"name": "CollateralUtil",
@@ -615,7 +643,9 @@
 			"timestamp": "2021-10-12T21:06:52.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x7f9b991d0e39d9d4acb97e97dd8e030d69d0c54fc98f3eb81bd0c9c08ac20e83",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"CollateralManagerState": {
 			"name": "CollateralManagerState",
@@ -753,7 +783,9 @@
 			"timestamp": "2022-02-14T20:28:32.000Z",
 			"txn": "https://explorer.optimism.io/tx/0xb7b6b52eacf82c40e8fd76a4a8a413f4358d391c616b88772814f610634b747d",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsSOL": {
 			"name": "SynthsSOL",
@@ -795,7 +827,9 @@
 			"timestamp": "2022-02-23T23:35:31.230Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsAVAX": {
 			"name": "SynthsAVAX",
@@ -837,7 +871,9 @@
 			"timestamp": "2022-02-23T23:35:48.038Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsMATIC": {
 			"name": "SynthsMATIC",
@@ -879,7 +915,9 @@
 			"timestamp": "2022-02-23T23:36:05.775Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsEUR": {
 			"name": "SynthsEUR",
@@ -918,7 +956,9 @@
 			"timestamp": "2022-03-17T20:54:56.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x9c87a560ac15ac9720820b41ce580175303897ad1817e24e6f5b30c39cd5b33a",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"OneNetAggregatorDebtRatio": {
 			"name": "OneNetAggregatorDebtRatio",
@@ -928,7 +968,9 @@
 			"timestamp": "2022-03-17T20:54:56.000Z",
 			"txn": "https://explorer.optimism.io/tx/0xa74caca4a3ca2b47d00cb62124026fd1ebe110eaad3ad81365d15648d977b48b",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"ExchangeCircuitBreaker": {
 			"name": "ExchangeCircuitBreaker",
@@ -964,7 +1006,9 @@
 			"timestamp": "2022-03-17T21:02:28.085Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsAAVE": {
 			"name": "SynthsAAVE",
@@ -1006,7 +1050,9 @@
 			"timestamp": "2022-03-17T21:02:43.204Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsUNI": {
 			"name": "SynthsUNI",
@@ -1048,7 +1094,9 @@
 			"timestamp": "2022-03-17T21:03:08.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x804037170846adf1906b3211bdfb8c966f04c30d7edc3cd303da26909c58078f",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"FuturesMarketSettings": {
 			"name": "FuturesMarketSettings",
@@ -1238,7 +1286,9 @@
 			"timestamp": "2022-05-10T20:18:24.536Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"]
+			"constructorArgs": [
+				"0x819aDDc3Dd780704aE85eA12c18252f7020C24D0"
+			]
 		},
 		"SynthsINR": {
 			"name": "SynthsINR",
