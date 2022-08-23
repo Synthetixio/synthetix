@@ -246,6 +246,7 @@ contract('PerpsEngineV2', accounts => {
 					'managerIssueSUSD',
 					// anyone
 					'liquidatePositions',
+					'liquidatePosition',
 				],
 			});
 		});
@@ -3225,12 +3226,12 @@ contract('PerpsEngineV2', accounts => {
 			it('reverts as expected for bad input', async () => {
 				// empty position
 				await assert.revert(
-					instance.liquidatePositions(marketKey, [noBalance], liquidator),
+					instance.liquidatePosition(marketKey, noBalance, { from: liquidator }),
 					revertMsg.CannotLiquidate
 				);
 				// not underwater
 				await assert.revert(
-					instance.liquidatePositions(marketKey, [trader], liquidator),
+					instance.liquidatePosition(marketKey, trader, { from: liquidator }),
 					revertMsg.CannotLiquidate
 				);
 				// empty address

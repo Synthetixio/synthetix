@@ -273,9 +273,9 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     /// Upon liquidation, the positions will be closed, and the liquidation fees minted into the liquidator's account.
     function liquidatePositions(
         bytes32 marketKey,
-        address[] calldata accounts,
+        address[] memory accounts,
         address liquidator
-    ) external returns (bool[] memory liquidated) {
+    ) public returns (bool[] memory liquidated) {
         // check that market is supported by manager
         // this is needed in case market was removed, since this method is not guarded by
         // onlyOrdersRouter so doesn't check approvedRouterAndMarket on manager
@@ -293,6 +293,17 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         }
 
         return liquidated;
+    }
+
+    /// backwards compatible liquidatePositon where a single position is liquidated by msg.sender
+    function liquidatePosition(bytes32 marketKey, address account) external {
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+        bool[] memory result = liquidatePositions(marketKey, accounts, msg.sender);
+
+        if (!result[0]) {
+            revert(_errorMessages[uint8(Status.CannotLiquidate)]);
+        }
     }
 
     /* ========== INTERNAL TYPES ========== */
