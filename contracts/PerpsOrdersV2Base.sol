@@ -174,7 +174,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     /// helper for getting `int priceDelta` for the `engine.trade()` interface for making a trade at price different
     /// from current asset price (e.g. orders such as next price, limit, but also orders with slippage)
     function _priceDeltaFromCurrent(bytes32 marketKey, uint targetPrice) internal view returns (int) {
-        (uint currentPrice, ) = engineContract().assetPrice(marketKey);
+        (uint currentPrice,) = engineContract().assetPrice(marketKey);
         return int(targetPrice).sub(int(currentPrice));
     }
 
@@ -217,7 +217,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     function withdrawMaxMargin(bytes32 marketKey) external {
         address account = msg.sender;
         uint withdrawable = engineContract().withdrawableMargin(marketKey, account);
-        _engineInternal().transferMargin(marketKey, account, -int(withdrawable));
+        _engineInternal().transferMargin(marketKey, account, - int(withdrawable));
     }
 
     /*
@@ -252,6 +252,18 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         _closePosition(marketKey, trackingCode);
     }
 
+    /// Shortcut method to transfer margin and trade in a single tx.
+    function transferAndTrade(bytes32 marketKey, int marginDelta, int sizeDelta, bytes32 trackingCode) external {
+        _engineInternal().transferMargin(marketKey, msg.sender, marginDelta);
+        _trade(marketKey, sizeDelta, trackingCode);
+    }
+
+    /// Shortcut method to trade and transfer margin in a single tx (inverse of transferAndTrade).
+    function tradeAndTransfer(bytes32 marketKey, int marginDelta, int sizeDelta, bytes32 trackingCode) external {
+        _trade(marketKey, sizeDelta, trackingCode);
+        _engineInternal().transferMargin(marketKey, msg.sender, marginDelta);
+    }
+
     /* ========== INTERNAL MUTATIVE ========== */
 
     function _trade(
@@ -270,6 +282,6 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {
         int size = stateContract().position(marketKey, msg.sender).size;
-        _trade(marketKey, -size, trackingCode);
+        _trade(marketKey, - size, trackingCode);
     }
 }
