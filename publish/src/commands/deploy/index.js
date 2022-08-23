@@ -439,6 +439,7 @@ const deploy = async ({
 		freshDeploy,
 		deploymentPath,
 		network,
+		generateSolidity,
 	});
 
 	// await takeDebtSnapshotWhenRequired({
