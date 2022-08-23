@@ -367,15 +367,14 @@ module.exports = ({ web3 } = {}) => {
 		const actual = toBN(actualBN);
 		const expected = toBN(expectedBN);
 		const variance = toBN(varianceParam);
-		const actualDelta = expected.sub(actual).abs();
 
 		assert.ok(
 			actual.gte(expected.sub(variance)),
-			`Number is too small to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()}`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
 		);
 		assert.ok(
 			actual.lte(expected.add(variance)),
-			`Number is too large to be close (actual is ${actualDelta.toString()}, but variance was only ${variance.toString()})`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
 		);
 	};
 
@@ -554,14 +553,20 @@ module.exports = ({ web3 } = {}) => {
 
 	// create a factory to deploy mock price aggregators
 	const createMockAggregatorFactory = async account => {
+		const { abi, bytecode } = getCompiledArtifacts('MockAggregatorV2V3');
+		return new ethers.ContractFactory(abi, bytecode, account);
+	};
+
+	// load artifacts needed for contract instances
+	const getCompiledArtifacts = contract => {
 		const { compiled } = loadCompiledFiles({ buildPath });
 		const {
 			abi,
 			evm: {
 				bytecode: { object: bytecode },
 			},
-		} = compiled['MockAggregatorV2V3'];
-		return new ethers.ContractFactory(abi, bytecode, account);
+		} = compiled[contract];
+		return { abi, bytecode };
 	};
 
 	const setupProvider = ({ providerUrl, privateKey, publicKey }) => {
@@ -643,6 +648,7 @@ module.exports = ({ web3 } = {}) => {
 
 		loadLocalUsers,
 		isCompileRequired,
+		getCompiledArtifacts,
 		createMockAggregatorFactory,
 
 		setupProvider,

@@ -50,7 +50,7 @@ contract('PerpsEngineV2', accounts => {
 		instance,
 		perpsStorage,
 		exchangeRates,
-		exchangeCircuitBreaker,
+		circuitBreaker,
 		addressResolver,
 		sUSD,
 		synthetix,
@@ -83,13 +83,12 @@ contract('PerpsEngineV2', accounts => {
 	const defaultExecOptions = [baseFee, toBN(0), toBytes32('')];
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(exchangeRates, [asset], [price]);
-		// reset the last price to the new price, so that we don't trip the breaker
-		// on various tests that change prices beyond the allowed deviation
-		if (resetCircuitBreaker) {
-			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			resetCircuitBreaker ? circuitBreaker : null,
+			[asset],
+			[price]
+		);
 	}
 
 	async function getPositionSummary(account) {
@@ -166,7 +165,7 @@ contract('PerpsEngineV2', accounts => {
 			PerpsEngineV2: instance,
 			PerpsStorageV2: perpsStorage,
 			ExchangeRates: exchangeRates,
-			ExchangeCircuitBreaker: exchangeCircuitBreaker,
+			CircuitBreaker: circuitBreaker,
 			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
 			Synthetix: synthetix,
@@ -3758,10 +3757,12 @@ contract('PerpsEngineV2', accounts => {
 			everythingReverts();
 		});
 
-		describe('exchangeCircuitBreaker.lastExchangeRate is updated after transactions', () => {
+		describe('circuitBreaker was probed during transactions', () => {
+			let aggregator;
 			const newPrice = toUnit('110');
 
 			beforeEach(async () => {
+				aggregator = await exchangeRates.aggregators(baseAsset);
 				await transfer(toUnit('1000'), trader);
 				await trade(toUnit('1'), trader);
 				// base rate of sETH is 100 from shared setup above
@@ -3770,22 +3771,22 @@ contract('PerpsEngineV2', accounts => {
 
 			it('after transferMargin', async () => {
 				await transfer(toUnit('1000'), trader);
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(aggregator), newPrice);
 			});
 
 			it('after withdrawMaxMargin', async () => {
 				await withdraw(trader);
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(aggregator), newPrice);
 			});
 
 			it('after trade', async () => {
 				await trade(toUnit('1'), trader);
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(aggregator), newPrice);
 			});
 
 			it('after closePosition', async () => {
 				await close(trader);
-				assert.bnEqual(await exchangeCircuitBreaker.lastExchangeRate(baseAsset), newPrice);
+				assert.bnEqual(await circuitBreaker.lastValue(aggregator), newPrice);
 			});
 		});
 	});

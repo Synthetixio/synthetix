@@ -640,7 +640,7 @@ contract('Rewards Integration Tests', accounts => {
 			);
 
 			// Increase sBTC price by 100%
-			await updateAggregatorRates(exchangeRates, [sBTC], ['10000'].map(toUnit));
+			await updateAggregatorRates(exchangeRates, null, [sBTC], ['10000'].map(toUnit));
 			await debtCache.takeDebtSnapshot();
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
@@ -957,7 +957,7 @@ contract('Rewards Integration Tests', accounts => {
 			const currentRate = await exchangeRates.rateForCurrency(SNX);
 			const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.009')));
 
-			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+			await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 
 			// we will be able to claim fees
 			assert.equal(await feePool.isFeesClaimable(account1), true);
@@ -979,7 +979,7 @@ contract('Rewards Integration Tests', accounts => {
 		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
 			// But if the price of SNX decreases a lot...
 			const newRate = (await exchangeRates.rateForCurrency(SNX)).sub(toUnit('0.09'));
-			await updateAggregatorRates(exchangeRates, [SNX], [newRate]);
+			await updateAggregatorRates(exchangeRates, null, [SNX], [newRate]);
 			// we will fall into the >100% bracket
 			assert.equal(await feePool.isFeesClaimable(account1), false);
 

@@ -24,7 +24,7 @@ contract('PerpsManagerV2', accounts => {
 		perpsOrders,
 		systemSettings,
 		exchangeRates,
-		exchangeCircuitBreaker,
+		circuitBreaker,
 		sUSD,
 		feePool,
 		debtCache,
@@ -36,13 +36,12 @@ contract('PerpsManagerV2', accounts => {
 	const initialMint = toUnit('100000');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
-		await updateAggregatorRates(exchangeRates, [asset], [price]);
-		// reset the last price to the new price, so that we don't trip the breaker
-		// on various tests that change prices beyond the allowed deviation
-		if (resetCircuitBreaker) {
-			// flag defaults to true because the circuit breaker is not tested in most tests
-			await exchangeCircuitBreaker.resetLastExchangeRate([asset], { from: owner });
-		}
+		await updateAggregatorRates(
+			exchangeRates,
+			resetCircuitBreaker ? circuitBreaker : null,
+			[asset],
+			[price]
+		);
 	}
 
 	before(async () => {
@@ -55,7 +54,7 @@ contract('PerpsManagerV2', accounts => {
 			PerpsEngineV2: perpsEngine,
 			PerpsOrdersV2: perpsOrders,
 			ExchangeRates: exchangeRates,
-			ExchangeCircuitBreaker: exchangeCircuitBreaker,
+			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
 			FeePool: feePool,
 			DebtCache: debtCache,
@@ -630,6 +629,15 @@ contract('PerpsManagerV2', accounts => {
 			assert.equal(linkSummary.marketSkew, toUnit(0));
 			assert.equal(linkSummary.currentFundingRate, toUnit(0));
 			assert.equal(linkSummary.marketDebt, toUnit(0));
+		});
+	});
+
+	describe('EmptyPerpsManagerV2', () => {
+		it('returns totalDebt', async () => {
+			const emptyManager = await artifacts.require('EmptyPerpsManagerV2').new();
+			const res = await emptyManager.totalDebt();
+			assert.bnEqual(res.debt, 0);
+			assert.bnEqual(res.isInvalid, false);
 		});
 	});
 });

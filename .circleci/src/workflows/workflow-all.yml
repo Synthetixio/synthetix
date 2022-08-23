@@ -7,7 +7,7 @@ jobs:
       {{> require-audit.yml}}
   - job-lint:
       {{> require-prepare.yml}}
-  - job-compile:
+  - job-cannon:
       {{> require-prepare.yml}}
   - job-static-analysis:
       {{> require-prepare.yml}}
@@ -30,9 +30,9 @@ jobs:
   # Fork tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-fork-tests:
-      {{> require-prepare.yml}}
+      {{> require-cannon.yml}}
   - job-fork-tests-ovm:
-      {{> require-prepare.yml}}
+      {{> require-cannon.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Simulate release on fork & test
@@ -45,7 +45,7 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-integration-tests:
       name: job-integration-tests
-      {{> require-prepare.yml}}
+      {{> require-cannon.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Packaging

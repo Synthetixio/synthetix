@@ -40,7 +40,7 @@ const performTransactionalStep = async ({
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
-		arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
+		typeof arg === 'string' && arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
 	)})`;
 
 	// check to see if action required
@@ -93,7 +93,7 @@ const performTransactionalStep = async ({
 
 	// otherwise check the owner
 	const owner = await target.owner();
-	if (signer && (owner === signer.address || publiclyCallable)) {
+	if (signer && (owner === (await signer.getAddress()) || publiclyCallable)) {
 		// perform action
 		let hash;
 		let gasUsed = 0;

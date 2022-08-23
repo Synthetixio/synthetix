@@ -7,5 +7,10 @@
 		"name": "sETH",
 		"asset": "ETH",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sBTC",
+		"asset": "BTC",
+		"subclass": "MultiCollateralSynth"
 	}
 ]

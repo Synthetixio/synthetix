@@ -59,7 +59,7 @@ module.exports = async ({
 
 	const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-	// update all synths with 0 current rate
+	// update all synths with 0 current rate, except sUSD
 	const synthsRatesToUpdate = synths
 		.map((synth, i) =>
 			Object.assign(
@@ -70,7 +70,8 @@ module.exports = async ({
 				synth
 			)
 		)
-		.filter(({ currentRate }) => currentRate === '0');
+		.filter(({ currentRate }) => currentRate === '0')
+		.filter(({ name }) => name !== 'sUSD'); // SCCP-190: sUSD rate is 0 despite it being in forex category
 
 	console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
@@ -210,7 +211,19 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(liquidationPenalty),
 		write: 'setLiquidationPenalty',
 		writeArg: liquidationPenalty,
-		comment: 'Set the penalty amount a liquidator receives from a liquidated account',
+		comment: 'Set the penalty amount a liquidator receives from a liquidated Collateral loan',
+	});
+
+	const snxLiquidationPenalty = await getDeployParameter('SNX_LIQUIDATION_PENALTY');
+	await runStep({
+		contract: 'SystemSettings',
+		target: SystemSettings,
+		read: 'snxLiquidationPenalty',
+		readTarget: previousSystemSettings,
+		expected: allowZeroOrUpdateIfNonZero(snxLiquidationPenalty),
+		write: 'setSnxLiquidationPenalty',
+		writeArg: snxLiquidationPenalty,
+		comment: 'Set the penalty amount of SNX from a liquidated account',
 	});
 
 	if (SystemSettings.selfLiquidationPenalty) {

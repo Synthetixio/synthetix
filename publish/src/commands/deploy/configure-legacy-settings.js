@@ -27,7 +27,6 @@ module.exports = async ({
 		ProxyFeePool,
 		ProxySynthetix,
 		RewardEscrow,
-		RewardEscrowV2,
 		RewardsDistribution,
 		SupplySchedule,
 		Synthetix,
@@ -237,19 +236,6 @@ module.exports = async ({
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(ProxySynthetix),
 			comment: 'Ensure the RewardsDistribution can find the Synthetix proxy to read and transfer',
-		});
-	}
-
-	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
-	if (RewardEscrowV2 && RewardsDistribution) {
-		await runStep({
-			contract: 'RewardsDistribution',
-			target: RewardsDistribution,
-			read: 'rewardEscrow',
-			expected: input => input === addressOf(RewardEscrowV2),
-			write: 'setRewardEscrow',
-			writeArg: addressOf(RewardEscrowV2),
-			comment: 'Ensure the RewardsDistribution can read the RewardEscrowV2 address',
 		});
 	}
 

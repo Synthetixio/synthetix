@@ -29,7 +29,7 @@ node publish deploy # "--help" for options
 - `-a, --add-new-synths` Whether or not any new synths in the synths.json file should be deployed if there is no entry in the config file.
 - `-b, --build-path [value]` Path for built files to go. (default of `./build` - relative to the root of this repo). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
 - `-c, --contract-deployment-gas-limit <value>` Contract deployment gas limit (default: 7000000 (7m))
-- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/rinkeby/config.json)):
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/goerli/config.json)):
 
   ```javascript
   // config.json
@@ -46,7 +46,7 @@ node publish deploy # "--help" for options
 
 - `-g, --gas-price <value>` Gas price in GWEI (default: "1")
 - `-m, --method-call-gas-limit <value>` Method call gas limit (default: 150000)
-- `-n, --network <value>` The network to run off. One of mainnet, kovan, rinkeby, rospen. (default: "kovan")
+- `-n, --network <value>` The network to run off. Either mainnet or goerli. (default: "goerli")
 - `-o, --oracle <value>` The address of the oracle to use. (default: `0xac1e8b385230970319906c03a1d8567e3996d1d5` - used for all testnets)
 - `-f, --fee-auth <value>` The address of the fee Authority to use for feePool. (default:
   `0xfee056f4d9d63a63d6cf16707d49ffae7ff3ff01` - used for all testnets)
@@ -55,10 +55,8 @@ node publish deploy # "--help" for options
 ### Examples
 
 ```bash
-# deploy to rinkeby with 8 gwei gas
-node publish deploy -n ropsten -d publish/deployed/ropsten -g 20
-node publish deploy -n rinkeby -d publish/deployed/rinkeby -g 20
-node publish deploy -n kovan -d publish/deployed/kovan -g 8
+# deploy to goerli with 20 gwei gas
+node publish deploy -n goerli -d publish/deployed/goerli -g 20
 node publish deploy -n local -d publish/deployed/local -g 8
 ```
 
@@ -76,10 +74,8 @@ node publish verify # "--help" for options
 ### Examples
 
 ```bash
-# verify on rinkeby.etherscan
-node publish verify -n ropsten -d publish/deployed/ropsten
-node publish verify -n rinkeby -d publish/deployed/rinkeby
-node publish verify -n kovan -d publish/deployed/kovan
+# verify on goerli.etherscan
+node publish verify -n goerli -d publish/deployed/goerli
 ```
 
 ## 4. Nominate New Owner
@@ -93,8 +89,8 @@ node publish nominate # "--help" for options
 ### Example
 
 ```bash
-node publish nominate -n rinkeby -d publish/deployed/rinkeby -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
-node publish nominate -o 0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882 -n kovan -c ProxysUSD -d publish/deployed/kovan -g 20
+node publish nominate -n goerli -d publish/deployed/goerli -g 3 -c Synthetix -c ProxysUSD -o 0x0000000000000000000000000000000000000000
+node publish nominate -o 0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882 -n goerli -c ProxysUSD -d publish/deployed/goerli -g 20
 ```
 
 ## 5. Owner Actions
@@ -116,7 +112,7 @@ node publish remove-synths # "--help" for options
 ### Example
 
 ```bash
-node publish remove-synths -n rinkeby -d publish/deployed/rinkeby -g 3 -s sRUB -s sETH
+node publish remove-synths -n goerli -d publish/deployed/goerli -g 3 -s sRUB -s sETH
 ```
 
 ## 7. Replace Synths
@@ -154,7 +150,7 @@ node publish deploy-staking-rewards # "--help" for options
 ### Examples
 
 ```bash
-node publish deploy-staking-rewards -n kovan -d publish/deployed/kovan -t iBTC --dry-run
+node publish deploy-staking-rewards -n goerli -d publish/deployed/goerli -t sBTC --dry-run
 node publish deploy-staking-rewards -n local -d publish/deployed/local
 
 ```
@@ -169,12 +165,10 @@ node publish release --version 2.22.0 --branch master --release Altair
 
 For `synthetix` repo, we are using the following branch mapping:
 
-- `alpha` is `KOVAN`
-- `beta` is `RINKEBY`
-- `rc` is `ROPSTEN`
+- `alpha` is `GOERLI`
 - `master` is `MAINNET`
 
-PRs should start being merged into `develop` then deployed onto `KOVAN`, then merged into `staging` once deployed for releasing onto `rinkeby` and `ropsten` for staging into a `mainnet` release. These can be done multiple times for each branch, as long as we keep these up to date.
+PRs should start being merged into `develop` then deployed onto `GOERLI`, then merged into `staging` once deployed for releasing onto `goerli` for staging into a `mainnet` release. These can be done multiple times for each branch, as long as we keep these up to date.
 
 ### Versioning
 
@@ -184,16 +178,12 @@ Using semantic versioning ([semver](https://semver.org/)): `v[MAJOR].[MINOR].[PA
 - `MINOR` are any changes to the underlying Solidity contracts
 - `PATCH` are for any JavaScript or deployed contract JSON changes
 - `ADDITIONAL` are for testnet deployments
-  - `-alpha` is for `Kovan`
-  - `-beta` follows alpha, and contains `Rinkeby` .
-  - `-rc[N]` follows beta, and contrains `Ropsten`. `N` starts at `0` and can be incremented until we are ready to release without the suffix.
+  - `-alpha` is for `Goerli`
 
 ### Examples
 
 - Say `v3.1.8` is a mainnet release
-- `v3.1.9-alpha` is a Kovan deployment of new synths (no contract changes)
-- `v3.1.9-beta` is additionally a Rinkeby deployment of new synths
-- `v3.1.9-rc3` is the fourth release of a release candidate with all testnets having the deployment
+- `v3.1.9-alpha` is a Goerli deployment of new synths (no contract changes)
 - `v3.1.9` is the mainnet release with all environments
 
 ### Example
@@ -219,7 +209,7 @@ node publish release --version 2.22.0 --branch master --release Altair
 ## How and when to update in PRs
 
 - Any PRs that involve a SIP must always add an entry to `sips` list.
-- However they should never allocate a SIP to a release (in `releases` list) - this is done once we are ready to promote a release to kovan (and thus staging), this way, your PRs are disconnected from releases as they should be.
+- However they should never allocate a SIP to a release (in `releases` list) - this is done once we are ready to promote a release to Goerli (and thus staging), this way, your PRs are disconnected from releases as they should be.
 
 ## Testing
 

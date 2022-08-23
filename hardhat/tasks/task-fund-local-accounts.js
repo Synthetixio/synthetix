@@ -66,8 +66,6 @@ const defaultAccounts = [
 	// Hardhat account #1 (deployer)
 	// '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 
-	// kovan-ovm-futures deployer
-	'0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882',
 	// futures keeper
 	'0x96D6C55a500782ba07aefb4f620dF2a94CDc7bA7',
 	// faucet
