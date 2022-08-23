@@ -859,11 +859,6 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
 		},
 		{
-			contract: 'CircuitBreaker',
-			mocks: ['Issuer', 'ExchangeRates'],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
-		},
-		{
 			contract: 'ExchangeCircuitBreaker',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
