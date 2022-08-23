@@ -387,9 +387,11 @@ contract('FuturesMarketManager', accounts => {
 				assert.bnEqual(await perpsManager.isMarket(currencyKeys[0]), false);
 			});
 
-			it('allMarketsV1', async () => {
+			it('allMarketsV1 & allMarkets', async () => {
 				// futures doesn't count perps
 				assert.bnEqual((await instance.allMarketsV1()).length, 2);
+				// backwards compatibility for FuturesMarketData
+				assert.deepEqual(await instance.allMarkets(), await instance.allMarketsV1());
 				// perps doesn't count futures
 				assert.bnEqual((await perpsManager.allMarkets()).length, 1);
 			});

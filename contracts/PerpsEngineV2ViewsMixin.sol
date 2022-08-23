@@ -5,39 +5,29 @@ pragma experimental ABIEncoderV2;
 import "./PerpsEngineV2Base.sol";
 
 /**
- * A mixin that implements vairous useful views that are used externally but
- * aren't used inside the core contract (so don't need to clutter the contract file)
- */
+ A mixin that implements various useful views that are used externally but
+ aren't used inside the base contract (so don't need to clutter the contract file)
+*/
 contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
-    /*
-     * Sizes of the long and short sides of the market (in sUSD)
-     */
-    function marketSizes(bytes32 marketKey) public view returns (uint long, uint short) {
-        return _sideSizes(_marketScalars(marketKey));
-    }
-
-    /// view for returning max possible order size that take into account existing positions
+    /// view for returning max possible order size in baseAsset terms
+    /// that take into account existing positions (and the per side OI caps in sUSD terms)
     function maxOrderSizes(bytes32 marketKey) external view returns (uint long, uint short) {
         (uint price, ) = assetPrice(marketKey);
-        (uint longSize, uint shortSize) = marketSizes(marketKey);
+        (uint longSize, uint shortSize) = _sideSizes(_marketScalars(marketKey));
         uint sizeLimit = _maxSingleSideValueUSD(marketKey).divideDecimal(price);
         long = longSize < sizeLimit ? sizeLimit.sub(longSize) : 0;
         short = shortSize < sizeLimit ? sizeLimit.sub(shortSize) : 0;
         return (long, short);
     }
 
-    /*
-     * The debt contributed by this market to the overall system.
-     * The total market debt is equivalent to the sum of remaining margins in all open positions.
-     */
+    /// The debt contributed by this market to the overall system.
+    /// The total market debt is equivalent to the sum of remaining margins in all open positions.
     function marketDebt(bytes32 marketKey) external view returns (uint debt, bool invalid) {
         (uint price, bool isInvalid) = assetPrice(marketKey);
         return (_marketDebt(marketKey, price), isInvalid);
     }
 
-    /*
-     *
-     */
+    /// Summary view of a market
     function marketSummary(bytes32 marketKey) external view returns (MarketSummary memory) {
         MarketScalars memory marketScalars = _stateViews().marketScalars(marketKey);
         (uint price, bool invalid) = assetPrice(marketKey);
@@ -59,6 +49,31 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
             });
     }
 
+    /// Summary view of a position
+    function positionSummary(bytes32 marketKey, address account) external view returns (PositionSummary memory) {
+        (uint curPrice, bool isInvalid) = assetPrice(marketKey);
+        Position memory position = _stateViews().position(marketKey, account);
+        uint liqPrice = _approxLiquidationPrice(position, curPrice);
+        // _liquidationFee is taking _notionalValue calculated using liqPrice and not curPrice.
+        // This is not accurate (because liqPrice itself is an estimate, but is more accurate than using curPrice)
+        // If position cannot be liquidated at any price, return 0 as possible fee
+        uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
+        uint remainingMargin = _remainingMargin(position, curPrice);
+        return
+            PositionSummary({
+                position: position,
+                profitLoss: _profitLoss(position, curPrice),
+                accruedFunding: _accruedFunding(position, curPrice),
+                remainingMargin: remainingMargin,
+                withdrawableMargin: _withdrawableMargin(position, curPrice),
+                currentLeverage: _currentLeverage(_notionalValue(position.size, curPrice), remainingMargin),
+                canLiquidate: _canLiquidate(position, curPrice),
+                approxLiquidationPrice: liqPrice,
+                approxLiquidationFee: liqFee,
+                priceInvalid: isInvalid
+            });
+    }
+
     /// this is a separate view (in addition to being part of position summary) because
     /// is used on-chain to get withdrawable amount
     function withdrawableMargin(bytes32 marketKey, address account) external view returns (uint) {
@@ -66,35 +81,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return _withdrawableMargin(_stateViews().position(marketKey, account), price);
     }
 
-    /*
-     * The price at which a position is subject to liquidation, and the expected liquidation fees at that price; o
-     * When they have just enough margin left to pay a liquidator, then they are liquidated.
-     * If a position is long, then it is safe as long as the current price is above the liquidation price; if it is
-     * short, then it is safe whenever the current price is below the liquidation price.
-     * A position's accurate liquidation price can move around slightly due to accrued funding.
-     */
-    function positionSummary(bytes32 marketKey, address account) external view returns (PositionSummary memory) {
-        (uint price, bool isInvalid) = assetPrice(marketKey);
-        Position memory position = _stateViews().position(marketKey, account);
-        uint liqPrice = _approxLiquidationPrice(position, price);
-        // if position cannot be liquidated at any price, return 0 as possible fee
-        uint liqFee = liqPrice > 0 ? _liquidationFee(_notionalValue(int(position.size), liqPrice)) : 0;
-        uint remainingMargin = _remainingMargin(position, price);
-        return
-            PositionSummary({
-                position: position,
-                profitLoss: _profitLoss(position, price),
-                accruedFunding: _accruedFunding(position, price),
-                remainingMargin: remainingMargin,
-                withdrawableMargin: _withdrawableMargin(position, price),
-                currentLeverage: _currentLeverage(_notionalValue(position.size, price), remainingMargin),
-                canLiquidate: _canLiquidate(position, price),
-                approxLiquidationPrice: liqPrice,
-                approxLiquidationFee: liqFee,
-                priceInvalid: isInvalid
-            });
-    }
-
+    // view that returns the storage contract (that contains additional useful data views)
     function stateContract() external view returns (IPerpsStorageV2External) {
         return _stateViews();
     }
@@ -102,7 +89,7 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     /**
      * Reports the fee for submitting an order of a given size.
      * @param sizeDelta size of the order in baseAsset units (negative numbers for shorts / selling)
-     * @return fee in sUSD decimal, and invalid boolean flag for invalid rates.
+     * @return fee in sUSD 18 decimal, and invalid boolean flag for invalid rates.
      */
     function orderFee(
         bytes32 marketKey,
@@ -114,10 +101,8 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return (_orderFee(params), isInvalid);
     }
 
-    /*
-     * Returns all new position details if a given order from `sender` was confirmed at the current price.
-     */
-    function postTradeDetails(
+    /// simulates a trade including checks and results (as it would be done in trade())
+    function simulateTrade(
         bytes32 marketKey,
         address account,
         int sizeDelta,
@@ -139,11 +124,12 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
 
         Position memory position = _stateViews().position(marketKey, account);
         TradeParams memory params = _executionOptionsToTradeParams(sizeDelta, price, options);
-        return _postTradeDetails(position, params);
+        return _tradeResults(position, params);
     }
 
     ////// Helper views
 
+    // converts from marketSize & marketSkew to marketSizeLong & marketSizeShort
     function _sideSizes(MarketScalars memory marketScalars) internal pure returns (uint long, uint short) {
         int size = int(marketScalars.marketSize);
         int skew = marketScalars.marketSkew;
@@ -153,11 +139,11 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
     /// calculates approximate liquidation price, with the following approximations:
     ///     1. Liquidation margin is assumed to be for current price instead of the liquidation price.
     ///     this is because liq-margin is non linear because of the max(min-keeper-fee, liq-fee) component,
-    ///     so solving for it precisely is not straight forward.
+    ///     so solving for it precisely is not worth the complexity and coupling.
     ///     2. Funding accrued at some future time is unknown, and current funding is used to adjust the
     ///     current margin.
     /// During the actual liquidation this computation is not used, and instead the actual position margin
-    /// is calculated (using the profit loss and actual funding accrued.
+    /// is calculated using the profit loss and actual funding accrued.
     function _approxLiquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
         int positionSize = int(position.size);
 
@@ -166,10 +152,11 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
             return 0;
         }
 
-        int netFunding = _accruedFunding(position, currentPrice);
-
-        // minimum margin beyond which position can be liquidated
+        // liquidation margin at current price
         uint liqMargin = _liquidationMargin(_notionalValue(positionSize, currentPrice));
+
+        // accrued funding with current price and market funding
+        int netFunding = _accruedFunding(position, currentPrice);
 
         // price = lastPrice + (liquidationMargin - margin) / positionSize - netFunding
         // A position can be liquidated whenever:

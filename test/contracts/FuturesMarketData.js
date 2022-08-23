@@ -246,38 +246,35 @@ contract('FuturesMarketData', accounts => {
 	});
 
 	describe('Market summaries', () => {
-		/// underlying manager interface used in marketSummariesForKeys is not supported
-		/// in updated manager contract since market summaries functionality moved
-		/// to manager from FuturesMarketsData (which won't be updated or used in subsequent releases)
-		//		it('For markets', async () => {
-		//			const sETHSummary = (await futuresMarketData.marketSummariesForKeys([newMarketKey]))[0];
-		//
-		//			const params = await futuresMarketData.parameters(newMarketKey); // sETH
-		//
-		//			assert.equal(sETHSummary.market, sethMarket.address);
-		//			assert.equal(sETHSummary.asset, newAssetKey);
-		//			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
-		//			const price = await sethMarket.assetPrice();
-		//			assert.equal(sETHSummary.price, price.price);
-		//			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
-		//			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
-		//			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-		//			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
-		//			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
-		//			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
-		//			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
-		//		});
+		it('For markets', async () => {
+			const sETHSummary = (await futuresMarketData.marketSummariesForKeys([newMarketKey]))[0];
 
-		//		it('For market keys', async () => {
-		//			const summaries = await futuresMarketData.marketSummaries([
-		//				futuresMarket.address,
-		//				sethMarket.address,
-		//			]);
-		//			const summariesForAsset = await futuresMarketData.marketSummariesForKeys(
-		//				['sBTC', 'sETH' + keySuffix].map(toBytes32)
-		//			);
-		//			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForAsset));
-		//		});
+			const params = await futuresMarketData.parameters(newMarketKey); // sETH
+
+			assert.equal(sETHSummary.market, sethMarket.address);
+			assert.equal(sETHSummary.asset, newAssetKey);
+			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
+			const price = await sethMarket.assetPrice();
+			assert.equal(sETHSummary.price, price.price);
+			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
+			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
+			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
+			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
+			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
+			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
+		});
+
+		it('For market keys', async () => {
+			const summaries = await futuresMarketData.marketSummaries([
+				futuresMarket.address,
+				sethMarket.address,
+			]);
+			const summariesForAsset = await futuresMarketData.marketSummariesForKeys(
+				['sBTC', 'sETH' + keySuffix].map(toBytes32)
+			);
+			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForAsset));
+		});
 
 		it('All summaries', async () => {
 			const summaries = await futuresMarketData.allMarketSummaries();

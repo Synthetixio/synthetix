@@ -6,17 +6,26 @@ import "./PerpsOrdersV2Base.sol";
 /**
  Mixin that implements NextPrice orders mechanism for the PerpsOrderV2.
 
- The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
- of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
- arb is profitable for smaller skews / shorter durations. This in turn serves the protocol by reducing
- the skew, and so the risk to the debt pool, and funding rate for traders.
+ Contract interactions + User interactions: covered in PerpsOrderV2
 
- The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
- is less of a risk when execution is delayed until the next oracle update is available.
+ Inheritance:
+ - PerpsOrdersV2Base: the base contract that allows the functionality in this mixin
 
- The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
- without either introducing free (or cheap) optionality to cause cancellations, and without large
- sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
+ State & upgradability: adds state for storing not-yet executed orders. This state needs to be accounted for
+ during upgrades (via pausing submission of new orders, functionality TBA)
+
+ Mechanism notes:
+     The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
+     of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
+     arb is profitable for smaller skews / shorter durations. This in turn serves the protocol by reducing
+     the skew, and so the risk to the debt pool, and funding rate for traders.
+
+     The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
+     is less of a risk when execution is delayed until the next oracle update is available.
+
+     The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
+     without either introducing free (or cheap) optionality to cause cancellations, and without large
+     sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /* ========== EVENTS ========== */
@@ -73,7 +82,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /**
      * submits an order to be filled at a price of the next oracle update.
      * Reverts if a previous order still exists (wasn't executed or cancelled).
-     * Reverts if the order cannot be filled at current price to prevent witholding commitFee for
+     * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
      * incorrectly submitted orders (that cannot be filled).
      * @param marketKey marketKey
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `trade` interface
@@ -96,7 +105,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
         // trackingCode is not important in execution options here since is used for check only
         (, , , Status status) =
-            engineContract().postTradeDetails(marketKey, account, sizeDelta, _defaultExecutionOptions(feeRate));
+            engineContract().simulateTrade(marketKey, account, sizeDelta, _defaultExecutionOptions(feeRate));
         require(status == Status.Ok, "Order would fail as spot");
 
         // deduct fees from margin

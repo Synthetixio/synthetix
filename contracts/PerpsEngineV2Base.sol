@@ -20,7 +20,7 @@ import "./interfaces/ISystemStatus.sol";
 
  Contract interactions:
  - from PerpsOrderV2 (auth via PerpsManagerV2): executing orders (user initiated operation)
- - from PerpsManagerV2: intialize a new market in storage (PerpsStorageV2), and recompute funding on settings changes
+ - from PerpsManagerV2: initialize a new market in storage (PerpsStorageV2), and recompute funding on settings changes
  - to PerpsManagerV2: asking approval for orders router (PerpsOrderV2) auth and market existence, sUSD issuing, burning
  and paying fees
  - to PerpsStorageV2: storing state changes for positions and market aggregates
@@ -255,7 +255,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         uint amount,
         bytes32 trackingCode
     ) external onlyOrdersRouter(marketKey) {
-        _manager().payFee(amount, trackingCode);
+        _manager().payFee(marketKey, amount, trackingCode);
     }
 
     /// allows order routers to issue sUSD with their internal logic (e.g. from previously locked margin)
@@ -265,7 +265,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address to,
         uint amount
     ) external onlyOrdersRouter(marketKey) {
-        _manager().issueSUSD(to, amount);
+        _manager().issueSUSD(marketKey, to, amount);
     }
 
     /// Liquidate a position if its remaining margin is below the liquidation margin.
@@ -276,7 +276,13 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         address account,
         address liquidator
     ) external {
+        // check that market is supported by manager
+        // this is needed in case market was removed, since this method is not guarded by
+        // onlyOrdersRouter so doesn't check approvedRouterAndMarket on manager
+        require(IPerpsManagerV2(address(_manager())).isMarket(marketKey), "Unknown market");
+
         require(liquidator != address(0), "Empty liquidator address");
+
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
         _liquidatePosition(marketKey, account, price, liquidator);
@@ -333,7 +339,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     function _assetPriceRequireSystemChecks(bytes32 marketKey, bool allowMarketPaused) internal returns (uint) {
         // check that market isn't suspended, revert with appropriate message
         if (allowMarketPaused) {
-            // this will check system acivbe, exchange active, futures active
+            // this will check system active, exchange active, futures active
             _systemStatus().requireFuturesActive();
         } else {
             // this will check all of the above + that specific market is active
@@ -390,10 +396,10 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // Transfer no tokens if transferDelta is 0
         uint absDelta = _abs(transferDelta);
 
-        // if trying to add margin, handle reclamantion
+        // if trying to add margin, handle reclamation
         if (transferDelta > 0) {
             // Ensure we handle reclamation when burning tokens.
-            uint postReclamationAmount = _manager().burnSUSD(account, absDelta);
+            uint postReclamationAmount = _manager().burnSUSD(marketKey, account, absDelta);
             if (postReclamationAmount != absDelta) {
                 // If balance was insufficient, the actual delta will be smaller
                 transferDelta = int(postReclamationAmount);
@@ -401,7 +407,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         } else if (transferDelta < 0) {
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their sUSD balance, and debited from their margin account.
-            _manager().issueSUSD(account, absDelta);
+            _manager().issueSUSD(marketKey, account, absDelta);
         }
 
         // note this is done after fee-rec because it's possible that transferDelta was not zero initially
@@ -475,7 +481,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         Position memory oldPosition = _stateViews().position(marketKey, account);
 
         // Compute the new position after performing the trade
-        (uint newMargin, int newSize, uint fee, Status status) = _postTradeDetails(oldPosition, params);
+        (uint newMargin, int newSize, uint fee, Status status) = _tradeResults(oldPosition, params);
 
         // check result
         _revertIfError(status);
@@ -485,7 +491,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         // Send the fee to the fee pool
         if (0 < fee) {
-            _manager().payFee(fee, params.trackingCode);
+            _manager().payFee(marketKey, fee, params.trackingCode);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
                 emit FeeSourceTracking({
@@ -531,11 +537,11 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         // Issue the reward to the liquidator.
         uint liqFee = _liquidationFee(_notionalValue(prevPosition.size, price));
-        _manager().issueSUSD(liquidator, liqFee);
+        _manager().issueSUSD(marketKey, liquidator, liqFee);
 
         // Send any positive margin buffer to the fee pool
         if (remMargin > liqFee) {
-            _manager().payFee(remMargin.sub(liqFee), bytes32(0));
+            _manager().payFee(marketKey, remMargin.sub(liqFee), bytes32(0));
         }
 
         emit PositionModified({
@@ -589,9 +595,9 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     }
 
     /*
-     * The size of the skew relative to the size of the market skew scaler.
+     * The size of the skew relative to the size of the market skew scalar.
      * This value can be outside of [-1, 1] values.
-     * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
+     * Scalar used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
      */
     function _proportionalSkew(bytes32 marketKey, uint price) internal view returns (int) {
         int skew = _marketScalars(marketKey).marketSkew;
@@ -780,7 +786,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         newMargin = uint(newMarginInt);
 
         int notional = _notionalValue(position.size, price);
-        // position size is not 0 maybe check leverage and and liquidation margin
+        // position size is not 0 maybe check leverage and liquidation margin
         if (notional != 0) {
             // minimum margin beyond which position can be liquidated
 
@@ -848,7 +854,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
     /**
      * The fee charged from the margin during liquidation. Fee is proportional to position size
-     * but is at least the _minKeeperFee() of sUSD to prevent underincentivising
+     * but is at least the _minKeeperFee() of sUSD to prevent under incentivising
      * liquidations of small positions.
      * @param notionalValue value of position
      * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
@@ -866,7 +872,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
      * @param notionalValue USD value of size of position in fixed point decimal baseAsset units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      * @dev The liquidation margin contains a buffer that is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * size. The buffer should prevent liquidation happening at negative margin (due to next price being worse)
      * so that stakers would not leak value to liquidators through minting rewards that are not from the
      * account's margin.
      */
@@ -900,7 +906,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return _abs(notionalDiff.multiplyDecimal(int(params.feeRate)));
     }
 
-    function _postTradeDetails(Position memory oldPos, TradeParams memory params)
+    function _tradeResults(Position memory oldPos, TradeParams memory params)
         internal
         view
         returns (

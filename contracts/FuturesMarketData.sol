@@ -200,7 +200,7 @@ contract FuturesMarketData {
     }
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
-        return _marketSummaries(_futuresMarketManager().allMarketsV1());
+        return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
     function _fundingParameters(IFuturesMarketSettings.Parameters memory params)

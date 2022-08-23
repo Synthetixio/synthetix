@@ -317,7 +317,10 @@ contract('PerpsManagerV2', accounts => {
 	});
 
 	describe('sUSD issuance', () => {
+		const marketKey = toBytes32('pBTC');
 		beforeEach(async () => {
+			// add a market
+			await perpsManager.addMarkets([marketKey], [toBytes32('BTC')], { from: owner });
 			// grant mockEngine the permission to call sUSD methods
 			await addressResolver.importAddresses(['PerpsEngineV2'].map(toBytes32), [mockEngine], {
 				from: owner,
@@ -326,24 +329,24 @@ contract('PerpsManagerV2', accounts => {
 		});
 
 		it('issuing/burning sUSD', async () => {
-			await perpsManager.issueSUSD(owner, toUnit('10'), { from: mockEngine });
+			await perpsManager.issueSUSD(marketKey, owner, toUnit('10'), { from: mockEngine });
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('10'));
 
-			await perpsManager.burnSUSD(owner, toUnit('5'), { from: mockEngine });
+			await perpsManager.burnSUSD(marketKey, owner, toUnit('5'), { from: mockEngine });
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('5'));
 
-			await perpsManager.issueSUSD(owner, toUnit('2'), { from: mockEngine });
-			await perpsManager.burnSUSD(owner, toUnit('7'), { from: mockEngine });
+			await perpsManager.issueSUSD(marketKey, owner, toUnit('2'), { from: mockEngine });
+			await perpsManager.burnSUSD(marketKey, owner, toUnit('7'), { from: mockEngine });
 
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 			await assert.revert(
-				perpsManager.burnSUSD(owner, toUnit('1'), { from: mockEngine }),
+				perpsManager.burnSUSD(marketKey, owner, toUnit('1'), { from: mockEngine }),
 				'SafeMath: subtraction overflow'
 			);
 		});
 
 		it('payFee', async () => {
-			await perpsManager.payFee(toUnit('10'), toBytes32(''), { from: mockEngine });
+			await perpsManager.payFee(marketKey, toUnit('10'), toBytes32(''), { from: mockEngine });
 			assert.bnEqual(await sUSD.balanceOf(await feePool.FEE_ADDRESS()), toUnit('10'));
 			assert.bnEqual((await feePool.recentFeePeriods(0)).feesToDistribute, toUnit('10'));
 		});
@@ -364,18 +367,18 @@ contract('PerpsManagerV2', accounts => {
 			await mockExchanger.setNumEntries('1');
 
 			// Issuance works fine
-			await perpsManager.issueSUSD(owner, toUnit('100'), { from: mockEngine });
+			await perpsManager.issueSUSD(marketKey, owner, toUnit('100'), { from: mockEngine });
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('100'));
 
 			// But burning properly deducts the reclamation amount
-			await perpsManager.burnSUSD(owner, toUnit('90'), { from: mockEngine });
+			await perpsManager.burnSUSD(marketKey, owner, toUnit('90'), { from: mockEngine });
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 		});
 
 		it('only engine is permitted to issue, burn, or payFee', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsManager.issueSUSD,
-				args: [owner, toUnit('1')],
+				args: [marketKey, owner, toUnit('1')],
 				accounts,
 				address: mockEngine,
 				skipPassCheck: true,
@@ -383,7 +386,7 @@ contract('PerpsManagerV2', accounts => {
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsManager.burnSUSD,
-				args: [owner, toUnit('1')],
+				args: [marketKey, owner, toUnit('1')],
 				accounts,
 				address: mockEngine,
 				skipPassCheck: true,
@@ -391,11 +394,65 @@ contract('PerpsManagerV2', accounts => {
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsManager.payFee,
-				args: [toUnit('1'), toBytes32('')],
+				args: [marketKey, toUnit('1'), toBytes32('')],
 				accounts,
 				address: mockEngine,
 				skipPassCheck: true,
 				reason: 'Only engine',
+			});
+		});
+
+		describe('sUSD actions revert', () => {
+			const msg = 'Unknown market';
+
+			it('for non-existent market', async () => {
+				const badKey = toBytes32('sETH');
+				await assert.revert(
+					perpsManager.issueSUSD(badKey, owner, toUnit('1'), { from: mockEngine }),
+					msg
+				);
+				await assert.revert(
+					perpsManager.burnSUSD(badKey, owner, toUnit('1'), { from: mockEngine }),
+					msg
+				);
+				await assert.revert(
+					perpsManager.payFee(badKey, toUnit('1'), toBytes32(''), { from: mockEngine }),
+					msg
+				);
+			});
+
+			it('for removed market', async () => {
+				// need actual engine to remove a market
+				await addressResolver.importAddresses(
+					['PerpsEngineV2'].map(toBytes32),
+					[perpsEngine.address],
+					{
+						from: owner,
+					}
+				);
+				await perpsManager.rebuildCache();
+
+				// after removing an existing market
+				await perpsManager.removeMarkets([marketKey], { from: owner });
+
+				// add back the mock engine so we can call it
+				await addressResolver.importAddresses(['PerpsEngineV2'].map(toBytes32), [mockEngine], {
+					from: owner,
+				});
+				await perpsManager.rebuildCache();
+
+				await assert.revert(
+					perpsManager.issueSUSD(marketKey, owner, toUnit('1'), { from: mockEngine }),
+					msg
+				);
+				await assert.revert(
+					perpsManager.burnSUSD(marketKey, owner, toUnit('1'), { from: mockEngine }),
+					msg
+				);
+				await assert.revert(
+					perpsManager.payFee(marketKey, toUnit('1'), toBytes32(''), { from: mockEngine }),
+					msg
+				);
 			});
 		});
 	});
