@@ -574,4 +574,13 @@ contract('PerpsManagerV2', accounts => {
 			assert.equal(linkSummary.marketDebt, toUnit(0));
 		});
 	});
+
+	describe('EmptyPerpsManagerV2', () => {
+		it('returns totalDebt', async () => {
+			const emptyManager = await artifacts.require('EmptyPerpsManagerV2').new();
+			const res = await emptyManager.totalDebt();
+			assert.bnEqual(res.debt, 0);
+			assert.bnEqual(res.isInvalid, false);
+		});
+	});
 });

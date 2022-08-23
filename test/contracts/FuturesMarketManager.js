@@ -783,4 +783,13 @@ contract('FuturesMarketManager', accounts => {
 			});
 		});
 	});
+
+	describe('EmptyFuturesMarketManager', () => {
+		it('returns totalDebt', async () => {
+			const emptyManager = await artifacts.require('EmptyFuturesMarketManager').new();
+			const res = await emptyManager.totalDebt();
+			assert.bnEqual(res.debt, 0);
+			assert.bnEqual(res.isInvalid, false);
+		});
+	});
 });
