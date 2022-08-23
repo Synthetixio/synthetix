@@ -467,7 +467,7 @@ contract('PerpsOrdersV2', accounts => {
 			});
 
 			it('liquidations do not revert', async () => {
-				await perpsEngine.liquidatePosition(marketKey, trader2, liquidator, { from: trader });
+				await perpsEngine.liquidatePositions(marketKey, [trader2], liquidator, { from: trader });
 			});
 
 			it('settings parameter changes do not revert', async () => {

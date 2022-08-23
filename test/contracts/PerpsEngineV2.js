@@ -245,7 +245,7 @@ contract('PerpsEngineV2', accounts => {
 					'managerPayFee',
 					'managerIssueSUSD',
 					// anyone
-					'liquidatePosition',
+					'liquidatePositions',
 				],
 			});
 		});
@@ -3186,7 +3186,7 @@ contract('PerpsEngineV2', accounts => {
 				// So a keeper relying on canLiquidate or simulating the liquidation
 				// tx would have the correct liquidation price, and canLiquidate result.
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
-				await instance.liquidatePosition(marketKey, trader, liquidator);
+				await instance.liquidatePositions(marketKey, [trader], liquidator);
 			});
 
 			it('Empty positions cannot be liquidated', async () => {
@@ -3204,13 +3204,13 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 				assert.isTrue((await getPositionSummary(trader)).priceInvalid);
 				await assert.revert(
-					instance.liquidatePosition(marketKey, trader, liquidator),
+					instance.liquidatePositions(marketKey, [trader], liquidator),
 					revertMsg.InvalidPrice
 				);
 			});
 		});
 
-		describe('liquidatePosition', () => {
+		describe('liquidatePositions', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await transfer(toUnit('1000'), trader);
@@ -3225,22 +3225,22 @@ contract('PerpsEngineV2', accounts => {
 			it('reverts as expected for bad input', async () => {
 				// empty position
 				await assert.revert(
-					instance.liquidatePosition(marketKey, noBalance, liquidator),
+					instance.liquidatePositions(marketKey, [noBalance], liquidator),
 					revertMsg.CannotLiquidate
 				);
 				// not underwater
 				await assert.revert(
-					instance.liquidatePosition(marketKey, trader, liquidator),
+					instance.liquidatePositions(marketKey, [trader], liquidator),
 					revertMsg.CannotLiquidate
 				);
 				// empty address
 				await assert.revert(
-					instance.liquidatePosition(marketKey, trader, ZERO_ADDRESS),
+					instance.liquidatePositions(marketKey, [trader], ZERO_ADDRESS),
 					'Empty liquidator address'
 				);
 				// non existent / removed market
 				await assert.revert(
-					instance.liquidatePosition(toBytes32('nope'), trader, liquidator),
+					instance.liquidatePositions(toBytes32('nope'), [trader], liquidator),
 					'Unknown market'
 				);
 			});
@@ -3268,7 +3268,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnClose((await marketSummary()).marketDebt, toUnit('620'), toUnit('0.1'));
 				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit('-8'), toUnit('0.01'));
 
-				await instance.liquidatePosition(marketKey, trader, liquidator);
+				await instance.liquidatePositions(marketKey, [trader], liquidator);
 
 				let newSummary = await marketSummary();
 				assert.bnEqual(newSummary.marketSize, size.sub(positionSize.abs()));
@@ -3283,7 +3283,7 @@ contract('PerpsEngineV2', accounts => {
 				// Funding has been recorded by the liquidation.
 				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit(0), toUnit('0.01'));
 
-				await instance.liquidatePosition(marketKey, trader2, liquidator);
+				await instance.liquidatePositions(marketKey, [trader2], liquidator);
 				newSummary = await marketSummary();
 				assert.bnEqual(newSummary.marketSize, toUnit('20'));
 				assert.bnEqual(newSummary.marketSizeLong, toUnit('0'));
@@ -3307,7 +3307,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnClose((await marketSummary()).marketDebt, toUnit('5960'), toUnit('0.1'));
 				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit('-24.5'), toUnit('0.01'));
 
-				await instance.liquidatePosition(marketKey, trader3, liquidator);
+				await instance.liquidatePositions(marketKey, [trader3], liquidator);
 
 				const newSummary = await marketSummary();
 				assert.bnEqual(newSummary.marketSize, size.sub(positionSize.abs()));
@@ -3336,7 +3336,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 
 				const remainingMargin = (await getPositionSummary(trader)).remainingMargin;
-				const tx = await instance.liquidatePosition(marketKey, trader, liquidator);
+				const tx = await instance.liquidatePositions(marketKey, [trader], liquidator);
 
 				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
 				const pos = await getPosition(trader);
@@ -3400,7 +3400,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
 
 				const remainingMargin = toBN((await getPositionSummary(trader)).remainingMargin);
-				const tx = await instance.liquidatePosition(marketKey, trader, liquidator);
+				const tx = await instance.liquidatePositions(marketKey, [trader], liquidator);
 
 				const liquidationFee = multiplyDecimal(
 					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
@@ -3439,7 +3439,7 @@ contract('PerpsEngineV2', accounts => {
 				const { size: positionSize, id: positionId } = await getPosition(trader3);
 
 				const remainingMargin = (await getPositionSummary(trader3)).remainingMargin;
-				const tx = await instance.liquidatePosition(marketKey, trader3, liquidator);
+				const tx = await instance.liquidatePositions(marketKey, [trader3], liquidator);
 
 				const pos = await getPosition(trader3);
 				assert.bnEqual(pos.id, 3);
@@ -3501,7 +3501,7 @@ contract('PerpsEngineV2', accounts => {
 				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
 
 				const remainingMargin = toBN((await getPositionSummary(trader3)).remainingMargin);
-				const tx = await instance.liquidatePosition(marketKey, trader3, liquidator);
+				const tx = await instance.liquidatePositions(marketKey, [trader3], liquidator);
 
 				const liquidationFee = multiplyDecimal(
 					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
@@ -3543,7 +3543,7 @@ contract('PerpsEngineV2', accounts => {
 				price = (await getPositionSummary(trader)).approxLiquidationPrice;
 
 				// liquidate the position
-				const tx = await instance.liquidatePosition(marketKey, trader, liquidator);
+				const tx = await instance.liquidatePositions(marketKey, [trader], liquidator);
 
 				// check that the liquidation price was correct.
 				// liqMargin = max(100, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 125
@@ -3582,7 +3582,7 @@ contract('PerpsEngineV2', accounts => {
 
 				await setPrice(baseAsset, toUnit('200'));
 				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
-				await instance.liquidatePosition(marketKey, trader, liquidator);
+				await instance.liquidatePositions(marketKey, [trader], liquidator);
 
 				await transferAndTrade({
 					account: trader,
@@ -3600,7 +3600,7 @@ contract('PerpsEngineV2', accounts => {
 				await setPrice(baseAsset, toUnit('260'));
 				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
 				await setPrice(baseAsset, toUnit('50'));
-				await instance.liquidatePosition(marketKey, trader, liquidator);
+				await instance.liquidatePositions(marketKey, [trader], liquidator);
 				const position = await getPosition(trader);
 				assert.bnEqual(toBN(position.margin), 0);
 				assert.bnEqual(position.lockedMargin, locked);
@@ -3729,7 +3729,7 @@ contract('PerpsEngineV2', accounts => {
 				await assert.revert(trade(toUnit('1'), trader), revertMsg.InvalidPrice);
 				await assert.revert(close(trader), revertMsg.InvalidPrice);
 				await assert.revert(
-					instance.liquidatePosition(marketKey, trader, liquidator, { from: trader }),
+					instance.liquidatePositions(marketKey, [trader], liquidator, { from: trader }),
 					revertMsg.InvalidPrice
 				);
 			});
@@ -3799,7 +3799,7 @@ contract('PerpsEngineV2', accounts => {
 				await assert.revert(trade(toUnit('1'), trader), revertMessage);
 				await assert.revert(close(trader), revertMessage);
 				await assert.revert(
-					instance.liquidatePosition(marketKey, trader, liquidator, { from: trader }),
+					instance.liquidatePositions(marketKey, [trader], liquidator, { from: trader }),
 					revertMessage
 				);
 			});
@@ -3854,7 +3854,7 @@ contract('PerpsEngineV2', accounts => {
 					// set up for liquidation
 					await trade(toUnit('10'), trader);
 					await setPrice(baseAsset, toUnit('1'));
-					await instance.liquidatePosition(marketKey, trader, liquidator, { from: trader2 });
+					await instance.liquidatePositions(marketKey, [trader], liquidator, { from: trader2 });
 				});
 			});
 		});
@@ -3891,7 +3891,7 @@ contract('PerpsEngineV2', accounts => {
 					// set up for liquidation
 					await trade(toUnit('10'), trader);
 					await setPrice(baseAsset, toUnit('1'));
-					await instance.liquidatePosition(marketKey, trader, liquidator, { from: trader2 });
+					await instance.liquidatePositions(marketKey, [trader], liquidator, { from: trader2 });
 				});
 			});
 		});
@@ -3914,7 +3914,7 @@ contract('PerpsEngineV2', accounts => {
 				// set up for liquidation
 				await trade(toUnit('10'), trader);
 				await setPrice(baseAsset, toUnit('1'));
-				await instance.liquidatePosition(marketKey, trader, liquidator, { from: trader2 });
+				await instance.liquidatePositions(marketKey, [trader], liquidator, { from: trader2 });
 			});
 		});
 	});

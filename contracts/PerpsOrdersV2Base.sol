@@ -120,6 +120,11 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         return engineContract().maxOrderSizes(marketKey);
     }
 
+    /// position summary struct passed from the engine
+    function canLiquidate(bytes32 marketKey, address[] calldata accounts) external view returns (bool[] memory) {
+        return engineContract().canLiquidate(marketKey, accounts);
+    }
+
     /* ========== INTERNAL VIEWS ========== */
 
     /// PerpsEngineV2 with internal mutative interface

@@ -86,6 +86,22 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return _stateViews();
     }
 
+    /// view that returns an array of bools indication for each account if can be liquidated
+    function canLiquidate(bytes32 marketKey, address[] calldata accounts)
+        external
+        view
+        returns (bool[] memory liquidatables)
+    {
+        (uint price, bool isInvalid) = assetPrice(marketKey);
+        liquidatables = new bool[](accounts.length);
+
+        for (uint i = 0; i < accounts.length; i++) {
+            Position memory position = _stateViews().position(marketKey, accounts[i]);
+            liquidatables[i] = !isInvalid && _canLiquidate(position, price);
+        }
+        return liquidatables;
+    }
+
     /**
      * Reports the fee for submitting an order of a given size.
      * @param sizeDelta size of the order in baseAsset units (negative numbers for shorts / selling)

@@ -268,14 +268,14 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         _manager().issueSUSD(marketKey, to, amount);
     }
 
-    /// Liquidate a position if its remaining margin is below the liquidation margin.
-    /// Reverts if account should not be liquidated.
-    /// Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
-    function liquidatePosition(
+    /// Liquidate a group of position if for each, its remaining margin is below the liquidation margin.
+    /// Reverts if any account should not be liquidated.
+    /// Upon liquidation, the positions will be closed, and the liquidation fees minted into the liquidator's account.
+    function liquidatePositions(
         bytes32 marketKey,
-        address account,
+        address[] calldata accounts,
         address liquidator
-    ) external {
+    ) external returns (bool[] memory liquidated) {
         // check that market is supported by manager
         // this is needed in case market was removed, since this method is not guarded by
         // onlyOrdersRouter so doesn't check approvedRouterAndMarket on manager
@@ -285,7 +285,14 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         uint price = _assetPriceRequireSystemChecks(marketKey);
         _recomputeFunding(marketKey, price);
-        _liquidatePosition(marketKey, account, price, liquidator);
+
+        liquidated = new bool[](accounts.length);
+
+        for (uint i = 0; i < accounts.length; i++) {
+            liquidated[i] = _liquidatePosition(marketKey, accounts[i], price, liquidator);
+        }
+
+        return liquidated;
     }
 
     /* ========== INTERNAL TYPES ========== */
@@ -517,16 +524,19 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         });
     }
 
+    /// Returns false if position cannot be liquidated
     function _liquidatePosition(
         bytes32 marketKey,
         address account,
         uint price,
         address liquidator
-    ) internal {
+    ) internal returns (bool) {
         Position memory prevPosition = _stateViews().position(marketKey, account);
 
         // check can actually liquidate
-        _revertIfError(!_canLiquidate(prevPosition, price), Status.CannotLiquidate);
+        if (!_canLiquidate(prevPosition, price)) {
+            return false;
+        }
 
         // get remaining margin for sending any leftover buffer to fee pool
         uint remMargin = _remainingMargin(prevPosition, price);
@@ -562,6 +572,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             price: price,
             fee: liqFee
         });
+
+        return true;
     }
 
     /* ========== INTERNAL VIEWS ========== */

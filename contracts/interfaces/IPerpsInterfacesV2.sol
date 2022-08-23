@@ -146,12 +146,14 @@ interface IPerpsEngineV2External {
     // low lever state contract (with more low level views)
     function stateContract() external view returns (IPerpsStorageV2External);
 
+    function canLiquidate(bytes32 marketKey, address[] calldata accounts) external view returns (bool[] memory);
+
     // mutative
-    function liquidatePosition(
+    function liquidatePositions(
         bytes32 marketKey,
-        address account,
+        address[] calldata accounts,
         address liquidator
-    ) external;
+    ) external returns (bool[] memory);
 }
 
 interface IPerpsEngineV2Internal {
