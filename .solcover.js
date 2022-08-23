@@ -11,6 +11,8 @@ module.exports = {
 		'RewardEscrowV2Frozen',
 		'EscrowChecker.sol',
 		'EmptyEtherWrapper.sol',
+		'EmptyFuturesMarketManager.sol',
+		'EmptyPerpsManagerV2.sol',
 	],
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)
