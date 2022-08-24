@@ -174,8 +174,13 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     /// helper for getting `int priceDelta` for the `engine.trade()` interface for making a trade at price different
     /// from current asset price (e.g. orders such as next price, limit, but also orders with slippage)
     function _priceDeltaFromCurrent(bytes32 marketKey, uint targetPrice) internal view returns (int) {
-        (uint currentPrice,) = engineContract().assetPrice(marketKey);
+        (uint currentPrice, ) = engineContract().assetPrice(marketKey);
         return int(targetPrice).sub(int(currentPrice));
+    }
+
+    /// helper for building an ExecutionOptions that only includes feeRate, and defaults ot 0 for other fields
+    function _defaultExecutionOptions(uint _rate) internal pure returns (ExecutionOptions memory) {
+        return ExecutionOptions({feeRate: _rate, priceDelta: 0, trackingCode: bytes32(0)});
     }
 
     /// calculate fee amount using current asset price and given rate and order size
@@ -217,7 +222,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     function withdrawMaxMargin(bytes32 marketKey) external {
         address account = msg.sender;
         uint withdrawable = engineContract().withdrawableMargin(marketKey, account);
-        _engineInternal().transferMargin(marketKey, account, - int(withdrawable));
+        _engineInternal().transferMargin(marketKey, account, -int(withdrawable));
     }
 
     /*
