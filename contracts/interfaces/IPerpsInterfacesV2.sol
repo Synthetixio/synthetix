@@ -94,7 +94,7 @@ interface IPerpsTypesV2 {
     }
 
     struct ExecutionOptions {
-        uint feeRate;
+        uint feeAmount;
         int priceDelta;
         bytes32 trackingCode;
     }
@@ -122,12 +122,6 @@ interface IPerpsEngineV2External {
 
     // trade views
 
-    function orderFee(
-        bytes32 marketKey,
-        int sizeDelta,
-        IPerpsTypesV2.ExecutionOptions calldata options
-    ) external view returns (uint fee, bool invalid);
-
     function simulateTrade(
         bytes32 marketKey,
         address account,
@@ -139,7 +133,6 @@ interface IPerpsEngineV2External {
         returns (
             uint margin,
             int size,
-            uint fee,
             IPerpsTypesV2.Status status
         );
 

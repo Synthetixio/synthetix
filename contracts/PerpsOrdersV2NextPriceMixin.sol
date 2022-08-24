@@ -68,7 +68,9 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
     /// the fee amount for an order of sizeDelta in sUSD 18 decimals
     function orderFeeNextPrice(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
-        return engineContract().orderFee(marketKey, sizeDelta, _defaultExecutionOptions(_feeRateNextPrice(marketKey)));
+        uint curPrice;
+        (curPrice, invalid) = engineContract().assetPrice(marketKey);
+        return (_feeAmountForPrice(sizeDelta, curPrice, _feeRateNextPrice(marketKey)), invalid);
     }
 
     /// current oracle roundId for the price feed of the baseAsset of the market
@@ -99,13 +101,19 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
         // To prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert.
-        // The spot rate is used because the commitDeposit will be deducted from margin on submission.
-        // Dynamic fee should be included because current dynamic fee is better approximation than 0
-        uint feeRate = _feeRate(marketKey);
+        // The spot rate and current price are used because the commitDeposit will be deducted from
+        // margin on submission. Dynamic fee should be included (as opposed to _nextPriceCommitDeposit)
+        // because current dynamic fee is better approximation than 0
+        uint feeAmountSpot = _feeAmountCurrentPrice(marketKey, sizeDelta, _feeRate(marketKey));
 
         // trackingCode is not important in execution options here since is used for check only
-        (, , , Status status) =
-            engineContract().simulateTrade(marketKey, account, sizeDelta, _defaultExecutionOptions(feeRate));
+        (, , Status status) =
+            engineContract().simulateTrade(
+                marketKey,
+                account,
+                sizeDelta,
+                ExecutionOptions({feeAmount: feeAmountSpot, priceDelta: 0, trackingCode: bytes32(0)})
+            );
         require(status == Status.Ok, "Order would fail as spot");
 
         // deduct fees from margin
@@ -253,13 +261,9 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // lockAmount = -refund because refund is unlocked back into margin
         _engineInternal().modifyLockedMargin(marketKey, account, -int(refund), burn);
 
-        ExecutionOptions memory options =
-            ExecutionOptions({
-                feeRate: _feeRateNextPrice(marketKey),
-                priceDelta: _priceDeltaForRoundId(marketKey, order.targetRoundId),
-                trackingCode: order.trackingCode
-            });
-        _engineInternal().trade(marketKey, account, order.sizeDelta, options);
+        // apply correct execution options (priceDelta and feeAmount) for the past(!) round
+        // with correct rates applied
+        _engineInternal().trade(marketKey, account, order.sizeDelta, _executionOptionsForPastRoundId(marketKey, order));
 
         // remove stored order
         delete nextPriceOrders[marketKey][account];
@@ -285,6 +289,21 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         return _priceDeltaFromCurrent(marketKey, pastPrice);
     }
 
+    /// calculate the correct execution options for the past round
+    function _executionOptionsForPastRoundId(bytes32 marketKey, NextPriceOrder memory order)
+        internal
+        view
+        returns (ExecutionOptions memory)
+    {
+        // the past price during the target round
+        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(marketKey), order.targetRoundId);
+        // price delta for the execution struct
+        int priceDelta = _priceDeltaFromCurrent(marketKey, pastPrice);
+        // fee amount using next-price rate and past price
+        uint feeAmount = _feeAmountForPrice(order.sizeDelta, pastPrice, _feeRateNextPrice(marketKey));
+        return ExecutionOptions({feeAmount: feeAmount, priceDelta: priceDelta, trackingCode: order.trackingCode});
+    }
+
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
     // rounds after target roundId
     function _confirmationWindowOver(
@@ -302,8 +321,8 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
         // it is not important since at the time of order execution it will be refunded and the correct
         // dynamic fee will be charged.
-        (uint fee, ) = engineContract().orderFee(marketKey, sizeDelta, _defaultExecutionOptions(_baseFee(marketKey)));
-        return fee;
+        uint feeAmountSpot = _feeAmountCurrentPrice(marketKey, sizeDelta, _baseFee(marketKey));
+        return feeAmountSpot;
     }
 
     /// the fee rate including fixed and dynamic fees in 18 decimals

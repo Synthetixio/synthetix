@@ -8,6 +8,8 @@ import "./interfaces/IPerpsInterfacesV2.sol";
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SignedSafeMath.sol";
+import "./SignedSafeDecimalMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
@@ -40,6 +42,8 @@ import "./interfaces/IExchanger.sol";
 contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     using SafeMath for uint;
     using SignedSafeMath for int;
+    using SignedSafeDecimalMath for int;
+    using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
 
@@ -97,7 +101,9 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
 
     /// the fee amount for an order of sizeDelta in sUSD 18 decimals
     function orderFee(bytes32 marketKey, int sizeDelta) external view returns (uint fee, bool invalid) {
-        return engineContract().orderFee(marketKey, sizeDelta, _defaultExecutionOptions(_feeRate(marketKey)));
+        uint curPrice;
+        (curPrice, invalid) = engineContract().assetPrice(marketKey);
+        return (_feeAmountForPrice(sizeDelta, curPrice, _feeRate(marketKey)), invalid);
     }
 
     /// the dynamic fee rate component for current round in 18 decimals
@@ -172,9 +178,24 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         return int(targetPrice).sub(int(currentPrice));
     }
 
-    /// helper for building an ExecutionOptions that only includes feeRate, and defaults ot 0 for other fields
-    function _defaultExecutionOptions(uint _rate) internal pure returns (ExecutionOptions memory) {
-        return ExecutionOptions({feeRate: _rate, priceDelta: 0, trackingCode: bytes32(0)});
+    /// calculate fee amount using current asset price and given rate and order size
+    function _feeAmountCurrentPrice(
+        bytes32 marketKey,
+        int sizeDelta,
+        uint feeRate
+    ) internal view returns (uint fee) {
+        (uint curPrice, ) = engineContract().assetPrice(marketKey);
+        return _feeAmountForPrice(sizeDelta, curPrice, feeRate);
+    }
+
+    /// calculate fee amount using given price, rate, and order size
+    function _feeAmountForPrice(
+        int sizeDelta,
+        uint price,
+        uint feeRate
+    ) internal pure returns (uint fee) {
+        uint absSizeDelta = uint(sizeDelta > 0 ? sizeDelta : -sizeDelta);
+        return absSizeDelta.multiplyDecimal(price).multiplyDecimal(feeRate);
     }
 
     /* ========== EXTERNAL MUTATIVE ========== */
@@ -238,12 +259,13 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         int sizeDelta,
         bytes32 trackingCode
     ) internal {
-        _engineInternal().trade(
-            marketKey,
-            msg.sender,
-            sizeDelta,
-            ExecutionOptions({feeRate: _feeRate(marketKey), priceDelta: 0, trackingCode: trackingCode})
-        );
+        ExecutionOptions memory options =
+            ExecutionOptions({
+                feeAmount: _feeAmountCurrentPrice(marketKey, sizeDelta, _feeRate(marketKey)),
+                priceDelta: 0,
+                trackingCode: trackingCode
+            });
+        _engineInternal().trade(marketKey, msg.sender, sizeDelta, options);
     }
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {

@@ -562,7 +562,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// targetPrice: the price that the order should be executed at
 			// feeRate: expected exchange fee rate
 			// spotTradeDetails: trade details of the same trade if it would happen as spot
-			async function checkExecution(from, targetPrice, feeRate, spotTradeDetails) {
+			async function checkExecution(from, targetPrice, feeRate, noFeeTradeResults) {
 				const currentMargin = toBN((await getPosition(trader)).margin);
 				// excute the order
 				const tx = await perpsOrders.executeNextPriceOrder(marketKey, trader, { from: from });
@@ -611,14 +611,10 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 				});
 
 				// trade was executed correctly
-				// PositionModified
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
 
 				// calculate the expected margin after trade
-				expectedMargin = spotTradeDetails.margin
-					.add(spotTradeDetails.fee)
-					.sub(expectedFee)
-					.add(expectedRefund);
+				expectedMargin = noFeeTradeResults.margin.sub(expectedFee).add(expectedRefund);
 
 				// check margin stored
 				const position = await getPosition(trader);
@@ -659,12 +655,11 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			}
 
 			describe('execution results in correct views and events', () => {
-				let targetPrice, spotTradeDetails, baseFee, defaultExecOptions;
+				let targetPrice, noFeeTradeResults, noFeeExecOptions;
 
 				beforeEach(async () => {
 					targetPrice = multiplyDecimal(price, toUnit(0.9));
-					baseFee = await perpsOrders.baseFee(marketKey);
-					defaultExecOptions = [baseFee, 0, toBytes32('')];
+					noFeeExecOptions = [0, 0, toBytes32('')];
 				});
 
 				describe('during target round', () => {
@@ -672,20 +667,20 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							spotTradeDetails = await perpsEngine.simulateTrade(
+							noFeeTradeResults = await perpsEngine.simulateTrade(
 								marketKey,
 								trader,
 								size,
-								defaultExecOptions
+								noFeeExecOptions
 							);
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 					});
 
@@ -696,20 +691,20 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 							await perpsOrders.trade(marketKey, size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							spotTradeDetails = await perpsEngine.simulateTrade(
+							noFeeTradeResults = await perpsEngine.simulateTrade(
 								marketKey,
 								trader,
 								size,
-								defaultExecOptions
+								noFeeExecOptions
 							);
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 					});
 
@@ -736,11 +731,11 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
-						spotTradeDetails = await perpsEngine.simulateTrade(
+						noFeeTradeResults = await perpsEngine.simulateTrade(
 							marketKey,
 							trader,
 							size,
-							defaultExecOptions
+							noFeeExecOptions
 						);
 						// other rounds are back to old price
 						await setPrice(baseAsset, price);
@@ -753,11 +748,11 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 					});
 
@@ -771,11 +766,11 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, baseFeeNextPrice, spotTradeDetails);
+							await checkExecution(trader2, targetPrice, baseFeeNextPrice, noFeeTradeResults);
 						});
 					});
 				});
