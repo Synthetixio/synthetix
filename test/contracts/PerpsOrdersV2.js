@@ -1,7 +1,7 @@
 const { contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toBN } = web3.utils;
-const { toUnit, multiplyDecimal } = require('../utils')();
+const { toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 
 const {
 	setupAllContracts,
@@ -34,7 +34,7 @@ contract('PerpsOrdersV2', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const liquidator = accounts[5];
-	const traderInitialBalance = toUnit(1000000);
+	const traderInitialBalance = toUnit('1000000');
 
 	const marketKey = toBytes32('pBTC');
 	const baseAsset = toBytes32('BTC');
@@ -135,6 +135,8 @@ contract('PerpsOrdersV2', accounts => {
 					'withdrawMaxMargin',
 					'trade',
 					'tradeWithTracking',
+					'tradeAndTransfer',
+					'transferAndTrade',
 					'closePosition',
 					'closePositionWithTracking',
 					'submitNextPriceOrder',
@@ -557,6 +559,7 @@ contract('PerpsOrdersV2', accounts => {
 	describe('withTracking emit expected event data', () => {
 		it('tradeWithTracking emits expected event', async () => {
 			const margin = toUnit('1000');
+
 			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
 			const size = toUnit('50');
 			const price = toUnit('200');
@@ -607,6 +610,117 @@ contract('PerpsOrdersV2', accounts => {
 				log: decodedLogs[2],
 				bnCloseVariance: toUnit('0.1'),
 			});
+		});
+	});
+
+	describe('trading using shortcut methods', () => {
+		describe('on transferAndTrade', () => {
+			const executeTransferAndTradeWithFee = async (margin, size) => {
+				const fee = (await perpsEngine.orderFee(marketKey, size, [baseFee, 0, toBytes32('')])).fee;
+				const tx = await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					from: trader,
+				});
+				return [fee, tx];
+			};
+
+			it('should succeed on valid invocation params', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('50');
+				const price = toUnit('200');
+
+				await setPrice(baseAsset, price);
+
+				const [fee] = await executeTransferAndTradeWithFee(margin, size);
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.equal(position.id, '1');
+				assert.bnEqual(position.margin, margin.sub(fee), 'Margin does not match expected');
+				assert.bnEqual(position.size, size, 'Size does not match expected');
+			});
+
+			it('should succeed when an existing position is open', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('5');
+				const price = toUnit('200');
+
+				await setPrice(baseAsset, price);
+
+				// 1000 margin, size 5.
+				const [fee1] = await executeTransferAndTradeWithFee(margin, size); // 1000 margin, size 5.
+
+				const originalPositionId = (await perpsOrders.positionSummary(marketKey, trader)).position.id
+
+				// Increase margin by 1000 (2x), no change in size.
+				//
+				// margin = 2000, price = 200, size = 2000/200 = 10
+				const [fee2] = await executeTransferAndTradeWithFee(margin, size);
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.equal(position.id, originalPositionId); // Existing position modified.
+				assert.bnEqual(
+					position.size,
+					divideDecimal(margin.add(margin), price),
+					'Size does not match expected'
+				);
+				assert.bnClose(
+					position.margin,
+					margin
+						.add(margin)
+						.sub(fee1)
+						.sub(fee2),
+					toUnit('0.1') // 10c USD variance
+				);
+			});
+
+			it('should revert when transferring with zero margin', async () => {
+				const margin = toUnit('0'); // zero margin.
+				const size = toUnit('100');
+				const price = toUnit('500');
+
+				await setPrice(baseAsset, price);
+
+				await assert.revert(
+					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+						from: trader,
+					})
+				);
+			});
+
+			it('should revert when zero size is provided', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('0'); // zero size.
+				const price = toUnit('500');
+
+				await setPrice(baseAsset, price);
+
+				await assert.revert(
+					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32('code'), {
+						from: trader,
+					})
+				);
+			});
+
+			it('should revert when size exceed max leverage on transferred margin', async () => {
+				const margin = toUnit('100');
+				const size = toUnit('100');
+				const price = toUnit('50');
+
+				await setPrice(baseAsset, price);
+
+				await assert.revert(
+					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+						from: trader,
+					})
+				);
+			});
+		});
+
+		describe('on tradeAndTransfer', () => {
+			it('should succeed on valid invocation params');
+			it('should succeed when transferring zero margin');
+			it('should revert when no position is available');
+			it('should revert when transfer amount exceeds remaining');
 		});
 	});
 });
