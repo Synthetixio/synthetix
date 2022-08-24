@@ -441,6 +441,7 @@ const deploy = async ({
 		network,
 		deployedFuturesMarkets,
 		generateSolidity,
+		yes,
 	});
 
 	// await takeDebtSnapshotWhenRequired({

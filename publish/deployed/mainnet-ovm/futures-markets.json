@@ -184,16 +184,16 @@
 	{
 		"marketKey": "sBNB",
 		"asset": "BNB",
-		"takerFee": "0.0040",
-		"makerFee": "0.0035",
-		"takerFeeNextPrice": "0.003",
-		"makerFeeNextPrice": "0.003",
+		"takerFee": "0.0035",
+		"makerFee": "0.0030",
+		"takerFeeNextPrice": "0.0025",
+		"makerFeeNextPrice": "0.0020",
 		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "10",
+		"maxLeverage": "25",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "50000000",
-		"paused": true
+		"paused": false
 	},
 	{
 		"marketKey": "sOP",
@@ -228,13 +228,13 @@
 		"asset": "DOGE",
 		"takerFee": "0.0040",
 		"makerFee": "0.0035",
-		"takerFeeNextPrice": "0.003",
-		"makerFeeNextPrice": "0.003",
+		"takerFeeNextPrice": "0.0030",
+		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "50000000",
-		"paused": true
+		"paused": false
 	}
 ]
