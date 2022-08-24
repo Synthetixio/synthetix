@@ -282,6 +282,6 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
 
     function _closePosition(bytes32 marketKey, bytes32 trackingCode) internal {
         int size = stateContract().position(marketKey, msg.sender).size;
-        _trade(marketKey, - size, trackingCode);
+        _trade(marketKey, -size, trackingCode);
     }
 }
