@@ -178,11 +178,6 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
         return int(targetPrice).sub(int(currentPrice));
     }
 
-    /// helper for building an ExecutionOptions that only includes feeRate, and defaults ot 0 for other fields
-    function _defaultExecutionOptions(uint _rate) internal pure returns (ExecutionOptions memory) {
-        return ExecutionOptions({feeRate: _rate, priceDelta: 0, trackingCode: bytes32(0)});
-    }
-
     /// calculate fee amount using current asset price and given rate and order size
     function _feeAmountCurrentPrice(
         bytes32 marketKey,

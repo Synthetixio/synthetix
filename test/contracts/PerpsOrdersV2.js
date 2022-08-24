@@ -719,11 +719,82 @@ contract('PerpsOrdersV2', accounts => {
 		});
 
 		describe('on tradeAndTransfer', () => {
-			it('should succeed on valid invocation params');
-			it('should succeed when closing and withdrawing all remaining margin');
-			it('should succeed when transferring zero margin');
-			it('should revert when no position is available');
-			it('should revert when transfer amount exceeds remaining');
+			it('should succeed when closing and withdrawing all remaining margin', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('50');
+				const price = toUnit('10');
+
+				await setPrice(baseAsset, price);
+
+				// Transfer margin and open position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					from: trader,
+				});
+
+				const withdrawableMargin = await perpsEngine.withdrawableMargin(marketKey, trader);
+				await perpsOrders.tradeAndTransfer(
+					marketKey,
+					withdrawableMargin.neg(),
+					size.neg(),
+					toBytes32(''),
+					{
+						from: trader,
+					}
+				);
+
+				const updatedPosition = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(updatedPosition.size, '0');
+			});
+
+			it('should revert when no position is available', async () => {
+				const margin = toUnit('100');
+				const size = toUnit('100');
+				const price = toUnit('50');
+
+				await setPrice(baseAsset, price);
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(position.id, '0');
+
+				// No prior transfer means there's nothing to trade (i.e. no position).
+				await assert.revert(
+					perpsOrders.tradeAndTransfer(marketKey, margin, size, toBytes32(''), {
+						from: trader,
+					})
+				);
+			});
+
+			it('should revert when transfer amount exceeds remaining', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('50');
+				const price = toUnit('10');
+
+				await setPrice(baseAsset, price);
+
+				// Transfer margin and open position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					from: trader,
+				});
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				// Close position and withdraw too much margin.
+				const excessiveMarginBuffer = toUnit('5000'); // 5000 more margin than available.
+
+				await assert.revert(
+					perpsOrders.tradeAndTransfer(
+						marketKey,
+						toBN(position.margin)
+							.add(excessiveMarginBuffer)
+							.neg(),
+						toBN(position.size).neg(),
+						toBytes32(''),
+						{
+							from: trader,
+						}
+					)
+				);
+			});
 		});
 	});
 });
