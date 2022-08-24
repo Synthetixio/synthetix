@@ -113,7 +113,8 @@ module.exports = async ({
 			}
 			if (!continueEvenIfUnsuccessful) {
 				console.log(gray('Stopping.'));
-				process.exit();
+				// avoid silently "successful" test runs that don't run any tests
+				process.exit(1);
 			}
 		}
 	} else {
