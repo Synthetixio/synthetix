@@ -102,21 +102,6 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         return liquidatables;
     }
 
-    /**
-     * Reports the fee for submitting an order of a given size.
-     * @param sizeDelta size of the order in baseAsset units (negative numbers for shorts / selling)
-     * @return fee in sUSD 18 decimal, and invalid boolean flag for invalid rates.
-     */
-    function orderFee(
-        bytes32 marketKey,
-        int sizeDelta,
-        ExecutionOptions calldata options
-    ) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice(marketKey);
-        TradeParams memory params = _executionOptionsToTradeParams(sizeDelta, price, options);
-        return (_orderFee(params), isInvalid);
-    }
-
     /// simulates a trade including checks and results (as it would be done in trade())
     function simulateTrade(
         bytes32 marketKey,
@@ -129,13 +114,12 @@ contract PerpsEngineV2ViewsMixin is PerpsEngineV2Base {
         returns (
             uint margin,
             int size,
-            uint fee,
             Status status
         )
     {
         (uint price, bool invalid) = assetPrice(marketKey);
         if (invalid) {
-            return (0, 0, 0, Status.InvalidPrice);
+            return (0, 0, Status.InvalidPrice);
         }
 
         Position memory position = _stateViews().position(marketKey, account);

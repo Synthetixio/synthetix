@@ -59,10 +59,6 @@
 		"asset": "DYDX",
 		"feed": "0xee35A95c9a064491531493D8b380bC40A4CCd0Da"
 	},
-	"DebtRatio": {
-		"asset": "DebtRatio",
-		"feed": "0x94A178f2c480D14F8CdDa908D173d7a73F779cb7"
-	},
 	"BNB": {
 		"asset": "BNB",
 		"feed": "0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c"

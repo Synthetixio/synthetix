@@ -312,7 +312,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
     struct TradeParams {
         int sizeDelta;
         uint price;
-        uint feeRate;
+        uint feeAmount;
         bytes32 trackingCode; // tracking code for volume source fee sharing
     }
 
@@ -499,7 +499,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         Position memory oldPosition = _stateViews().position(marketKey, account);
 
         // Compute the new position after performing the trade
-        (uint newMargin, int newSize, uint fee, Status status) = _tradeResults(oldPosition, params);
+        (uint newMargin, int newSize, Status status) = _tradeResults(oldPosition, params);
 
         // check result
         _revertIfError(status);
@@ -508,8 +508,8 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         _updateStoredPosition(marketKey, account, newMargin, oldPosition.lockedMargin, newSize, params.price);
 
         // Send the fee to the fee pool
-        if (0 < fee) {
-            _manager().payFee(marketKey, fee, params.trackingCode);
+        if (params.feeAmount > 0) {
+            _manager().payFee(marketKey, params.feeAmount, params.trackingCode);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
                 emit FeeSourceTracking({
@@ -517,7 +517,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
                     marketKey: marketKey,
                     account: account,
                     sizeDelta: params.sizeDelta,
-                    fee: fee
+                    fee: params.feeAmount
                 });
             }
         }
@@ -531,7 +531,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             size: newSize,
             tradeSize: params.sizeDelta,
             price: params.price,
-            fee: fee
+            fee: params.feeAmount
         });
     }
 
@@ -923,19 +923,12 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         return notionalValue.divideDecimal(int(remainingMargin_));
     }
 
-    function _orderFee(TradeParams memory params) internal pure returns (uint fee) {
-        // usd value of the difference in position
-        int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
-        return _abs(notionalDiff.multiplyDecimal(int(params.feeRate)));
-    }
-
     function _tradeResults(Position memory oldPos, TradeParams memory params)
         internal
         view
         returns (
             uint newMargin,
             int newSize,
-            uint fee,
             Status status
         )
     {
@@ -945,26 +938,23 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
 
         // Reverts if the user is trying to submit a size-zero order.
         if (params.sizeDelta == 0) {
-            return (oldMargin, oldSize, 0, Status.NilOrder);
+            return (oldMargin, oldSize, Status.NilOrder);
         }
 
         // The order is not submitted if the user's existing position needs to be liquidated.
         if (_canLiquidate(oldPos, params.price)) {
-            return (oldMargin, oldSize, 0, Status.CanLiquidate);
+            return (oldMargin, oldSize, Status.CanLiquidate);
         }
 
         newSize = oldPos.size.add(params.sizeDelta);
-
-        // calculate the total fee for exchange
-        fee = _orderFee(params);
 
         // Deduct the fee
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
         // min margin is only checked if position is increasing
         // leverage check is skipped because it's checked later for the position after the trade
-        (newMargin, status) = _realizedMarginAfterDelta(oldPos, params.price, -int(fee), false);
+        (newMargin, status) = _realizedMarginAfterDelta(oldPos, params.price, -int(params.feeAmount), false);
         if (_isError(status)) {
-            return (oldMargin, oldSize, 0, status);
+            return (oldMargin, oldSize, status);
         }
 
         // check that new position margin is above liquidation margin
@@ -972,13 +962,13 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
         // Liquidation margin is considered without a fee, because it wouldn't make sense to allow
         // a trade that will make the position liquidatable.
         if (newMargin <= _liquidationMargin(_notionalValue(newSize, params.price))) {
-            return (oldMargin, oldSize, 0, Status.CanLiquidate);
+            return (oldMargin, oldSize, Status.CanLiquidate);
         }
 
         // stack too deep
         {
             // consider leverage limit and min initial margin limit with the paid fees (for easier UX)
-            uint marginBeforeFee = newMargin.add(fee);
+            uint marginBeforeFee = newMargin.add(params.feeAmount);
 
             // Check that the maximum leverage is not exceeded when considering new margin including the paid fee.
             // The paid fee is considered for the benefit of UX of allowed max leverage, otherwise, the actual
@@ -986,7 +976,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             // We'll allow a little extra headroom for rounding errors.
             int leverage = newSize.multiplyDecimal(int(params.price)).divideDecimal(int(marginBeforeFee));
             if (_maxLeverage(marketKey).add(uint(_UNIT) / 100) < _abs(leverage)) {
-                return (oldMargin, oldSize, 0, Status.MaxLeverageExceeded);
+                return (oldMargin, oldSize, Status.MaxLeverageExceeded);
             }
 
             // always allow to decrease a position, otherwise a margin of minInitialMargin can never
@@ -1000,17 +990,17 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             // check that min margin is kept if position is non-zero and is not decreasing
             bool checkMinMargin = newSize != 0 && !positionDecreasing;
             if (checkMinMargin && marginBeforeFee < _minInitialMargin()) {
-                return (oldMargin, oldSize, 0, Status.InsufficientMargin);
+                return (oldMargin, oldSize, Status.InsufficientMargin);
             }
         }
 
         // Check that the order isn't too large for the market.
         if (_orderSizeTooLarge(marketKey, params.price, oldPos.size, newSize)) {
-            return (oldMargin, oldSize, 0, Status.MaxMarketSizeExceeded);
+            return (oldMargin, oldSize, Status.MaxMarketSizeExceeded);
         }
 
         // only here return the new size and new margin
-        return (newMargin, newSize, fee, Status.Ok);
+        return (newMargin, newSize, Status.Ok);
     }
 
     /* ---------- Utilities ---------- */
@@ -1025,7 +1015,7 @@ contract PerpsEngineV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2, IPerpsEn
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: _addDelta(currentPrice, options.priceDelta),
-                feeRate: options.feeRate,
+                feeAmount: options.feeAmount,
                 trackingCode: options.trackingCode
             });
     }

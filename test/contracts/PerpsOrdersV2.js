@@ -561,7 +561,7 @@ contract('PerpsOrdersV2', accounts => {
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fee = (await perpsEngine.orderFee(marketKey, size, [baseFee, 0, toBytes32('')])).fee;
+			const fee = (await perpsOrders.orderFee(marketKey, size)).fee;
 			const trackingCode = toBytes32('code');
 			const tx = await perpsOrders.tradeWithTracking(marketKey, size, trackingCode, {
 				from: trader,
