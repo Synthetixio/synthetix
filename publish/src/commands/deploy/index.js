@@ -440,6 +440,7 @@ const deploy = async ({
 		deploymentPath,
 		network,
 		generateSolidity,
+		yes,
 	});
 
 	// await takeDebtSnapshotWhenRequired({
