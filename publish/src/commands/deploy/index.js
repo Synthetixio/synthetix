@@ -199,7 +199,7 @@ const deploy = async ({
 
 	const { account } = deployer;
 
-	if (!account) {
+	if (!signer) {
 		signer = deployer.signer;
 	}
 
@@ -440,6 +440,7 @@ const deploy = async ({
 		deploymentPath,
 		network,
 		deployedFuturesMarkets,
+		generateSolidity,
 	});
 
 	// await takeDebtSnapshotWhenRequired({

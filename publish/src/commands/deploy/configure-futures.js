@@ -15,6 +15,7 @@ module.exports = async ({
 	deploymentPath,
 	network,
 	deployedFuturesMarkets,
+	generateSolidity,
 }) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
@@ -144,6 +145,9 @@ module.exports = async ({
 				writeArg: [marketKeyBytes, 80],
 				comment: 'Ensure futures market is paused according to config',
 			});
+			if (generateSolidity) {
+				migrationContractNoACLWarning(`pause ${marketKey} futures market`);
+			}
 		} else if (isPaused & !shouldPause) {
 			console.log(
 				yellow(
@@ -170,10 +174,24 @@ module.exports = async ({
 					writeArg: [marketKeyBytes],
 					comment: 'Ensure futures market is un-paused according to config',
 				});
+				if (generateSolidity) {
+					migrationContractNoACLWarning(`unpause ${marketKey} futures market`);
+				}
 			}
 		}
 	}
 };
+
+function migrationContractNoACLWarning(actionMessage) {
+	console.log(
+		yellow(
+			`⚠⚠⚠ WARNING: the step is trying to ${actionMessage}, but 'generateSolidity' is true. `,
+			`The migration contract will not have the SystemStatus ACL permissions to perform this step, `,
+			`so it should be EDITED OUT of the migration contract and performed separately (by rerunning `,
+			`the deploy script).`
+		)
+	);
+}
 
 async function ensureManagerHasCorrectMarkets({
 	deployedFuturesMarkets,
