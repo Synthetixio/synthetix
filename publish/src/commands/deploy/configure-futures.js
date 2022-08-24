@@ -15,6 +15,7 @@ module.exports = async ({
 	deploymentPath,
 	network,
 	generateSolidity,
+	yes,
 }) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
@@ -140,21 +141,27 @@ module.exports = async ({
 				migrationContractNoACLWarning(`pause ${marketKey} futures market`);
 			}
 		} else if (isPaused & !shouldPause) {
-			console.log(
-				yellow(
-					`⚠⚠⚠ WARNING: The market ${marketKey} is paused, 
-					but according to config should be resumed. Confirm that this market should
-					be resumed in this release and it's not a misconfiguration issue.`
-				)
-			);
+			let resume;
 
-			let resume; // in case we're trying to resume something that doesn't need to be resumed
-			try {
-				await confirmAction(gray('Unpause the market? (y/n) '));
+			if (!yes) {
+				// in case we're trying to resume something that doesn't need to be resumed
+				console.log(
+					yellow(
+						`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
+						`but according to config should be resumed. Confirm that this market should`,
+						`be resumed in this release and it's not a misconfiguration issue.`
+					)
+				);
+				try {
+					await confirmAction(gray('Unpause the market? (y/n) '));
+					resume = true;
+				} catch (err) {
+					console.log(gray('Market will remain paused'));
+					resume = false;
+				}
+			} else {
+				// yes mode (e.g. tests)
 				resume = true;
-			} catch (err) {
-				console.log(gray('Market will remain paused'));
-				resume = false;
 			}
 
 			if (resume) {
