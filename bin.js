@@ -138,6 +138,49 @@ program
 	});
 
 program
+	.command('decode-relay-batch <rawtxsdata> [target]')
+	.description('Decode data payload from a initiate relay batch staged to Synthetix contracts')
+	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
+	.action(async (rawtxsdata, target, { network }) => {
+		if (rawtxsdata.length <= 2) {
+			console.log('data too short');
+		}
+
+		const decoded = decode({
+			network,
+			data: rawtxsdata,
+			target,
+			useOvm: false,
+			decodeMigration: false,
+		});
+
+		if (decoded.method.name !== 'initiateRelayBatch') {
+			console.log('=============================================');
+			console.log('Warning: Not a relay batch staged transaction');
+			console.log('=============================================');
+			console.log(util.inspect(decoded, false, null, true));
+			return;
+		}
+		const targets = decoded.method.params[0].value;
+		const payloads = decoded.method.params[1].value;
+
+		const decodedRelayed = [];
+		for (let i = 0; i < targets.length; i++) {
+			const target = targets[i];
+			const payload = decode({
+				network,
+				data: payloads[i],
+				target,
+				useOvm: true,
+				decodeMigration: false,
+			});
+			decodedRelayed.push({ index: i, target, payload });
+		}
+
+		console.log(util.inspect(decodedRelayed, false, null, true));
+	});
+
+program
 	.command('networks')
 	.description('Get networks')
 	.action(async () => {
