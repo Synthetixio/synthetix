@@ -3212,11 +3212,17 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		describe('canLiquidate() helper', () => {
-			it('returns true for liquidatable acounts', async () => {});
+			it('returns true for liquidatable acounts', async () => {
+				assert.isTrue(false);
+			});
 
-			it('returns false for non-liquidatable accounts', async () => {});
+			it('returns false for non-liquidatable accounts', async () => {
+				assert.isTrue(false);
+			});
 
-			it('returns mixed values according to accounts', async () => {});
+			it('returns mixed values according to accounts', async () => {
+				assert.isTrue(false);
+			});
 		});
 
 		describe('liquidatePositions', () => {
@@ -3605,11 +3611,52 @@ contract('PerpsEngineV2', accounts => {
 				assert.bnEqual(position.lockedMargin, locked);
 			});
 
-			it('can check liqudatable accounts as query', async () => {});
+			it('can check liqudatable accounts as query', async () => {
+				await setPrice(baseAsset, toUnit('200'));
 
-			it('can liquidate a group of accounts', async () => {});
+				const ret = await instance.liquidatePositions.call(
+					marketKey,
+					[trader, trader2, trader3],
+					liquidator
+				);
+				assert.deepEqual(ret, [true, true, false]);
+			});
 
-			it('can liquidate a group of accounts, some non liquidatable', async () => {});
+			it('can liquidate a group of accounts', async () => {
+				await setPrice(baseAsset, toUnit('200'));
+
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
+
+				await instance.liquidatePositions(marketKey, [trader, trader2], liquidator);
+
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+				assert.isFalse((await getPositionSummary(trader2)).canLiquidate);
+
+				const newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, toUnit('20'));
+				assert.bnEqual(newSummary.marketSizeLong, toUnit('0'));
+				assert.bnEqual(newSummary.marketSizeShort, toUnit('20'));
+				assert.bnEqual(newSummary.marketSkew, toUnit('-20'));
+			});
+
+			it('can liquidate a group of accounts, some non liquidatable', async () => {
+				await setPrice(baseAsset, toUnit('200'));
+
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
+
+				await instance.liquidatePositions(marketKey, [trader, trader2, trader3], liquidator);
+
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+				assert.isFalse((await getPositionSummary(trader2)).canLiquidate);
+
+				const newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, toUnit('20'));
+				assert.bnEqual(newSummary.marketSizeLong, toUnit('0'));
+				assert.bnEqual(newSummary.marketSizeShort, toUnit('20'));
+				assert.bnEqual(newSummary.marketSkew, toUnit('-20'));
+			});
 		});
 
 		describe('liquidatePosition backwards compatibility', () => {
