@@ -3211,6 +3211,14 @@ contract('PerpsEngineV2', accounts => {
 			});
 		});
 
+		describe('canLiquidate() helper', () => {
+			it('returns true for liquidatable acounts', async () => {});
+
+			it('returns false for non-liquidatable accounts', async () => {});
+
+			it('returns mixed values according to accounts', async () => {});
+		});
+
 		describe('liquidatePositions', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('250'));
@@ -3224,16 +3232,6 @@ contract('PerpsEngineV2', accounts => {
 			});
 
 			it('reverts as expected for bad input', async () => {
-				// empty position
-				await assert.revert(
-					instance.liquidatePosition(marketKey, noBalance, { from: liquidator }),
-					revertMsg.CannotLiquidate
-				);
-				// not underwater
-				await assert.revert(
-					instance.liquidatePosition(marketKey, trader, { from: liquidator }),
-					revertMsg.CannotLiquidate
-				);
 				// empty address
 				await assert.revert(
 					instance.liquidatePositions(marketKey, [trader], ZERO_ADDRESS),
@@ -3602,6 +3600,399 @@ contract('PerpsEngineV2', accounts => {
 				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
 				await setPrice(baseAsset, toUnit('50'));
 				await instance.liquidatePositions(marketKey, [trader], liquidator);
+				const position = await getPosition(trader);
+				assert.bnEqual(toBN(position.margin), 0);
+				assert.bnEqual(position.lockedMargin, locked);
+			});
+
+			it('can check liqudatable accounts as query', async () => {});
+
+			it('can liquidate a group of accounts', async () => {});
+
+			it('can liquidate a group of accounts, some non liquidatable', async () => {});
+		});
+
+		describe('liquidatePosition backwards compatibility', () => {
+			beforeEach(async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await transfer(toUnit('1000'), trader3);
+				await trade(toUnit('40'), trader);
+				await trade(toUnit('20'), trader2);
+				await trade(toUnit('-20'), trader3);
+				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.003 = 60
+			});
+
+			it('reverts as expected for bad input', async () => {
+				// empty position
+				await assert.revert(
+					instance.liquidatePosition(marketKey, noBalance, { from: liquidator }),
+					revertMsg.CannotLiquidate
+				);
+				// not underwater
+				await assert.revert(
+					instance.liquidatePosition(marketKey, trader, { from: liquidator }),
+					revertMsg.CannotLiquidate
+				);
+			});
+
+			it('Liquidation properly affects the overall market parameters (long case)', async () => {
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('20000'), { from: owner });
+
+				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
+
+				const summary = await marketSummary();
+				const size = toBN(summary.marketSize);
+				const skew = toBN(summary.marketSkew);
+				const positionSize = toBN((await getPosition(trader)).size);
+
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+				assert.isFalse((await getPositionSummary(trader2)).canLiquidate);
+
+				await setPrice(baseAsset, toUnit('200'));
+
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+				assert.isTrue((await getPositionSummary(trader2)).canLiquidate);
+
+				// Note at this point the true market debt should be $2000 ($1000 profit for the short trader, and two liquidated longs)
+				// However, the long positions are actually underwater and the negative contribution is not removed until liquidation
+				assert.bnClose((await marketSummary()).marketDebt, toUnit('620'), toUnit('0.1'));
+				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit('-8'), toUnit('0.01'));
+
+				await instance.liquidatePosition(marketKey, trader, { from: liquidator });
+
+				let newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, size.sub(positionSize.abs()));
+				assert.bnEqual(
+					newSummary.marketSizeLong,
+					toBN(summary.marketSizeLong).sub(positionSize.abs())
+				);
+				assert.bnEqual(newSummary.marketSizeShort, summary.marketSizeShort);
+				assert.bnEqual(newSummary.marketSkew, skew.sub(positionSize.abs()));
+				assert.bnClose(newSummary.marketDebt, toUnit('1990').sub(toUnit('20')), toUnit('0.01'));
+
+				// Funding has been recorded by the liquidation.
+				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit(0), toUnit('0.01'));
+
+				await instance.liquidatePositions(marketKey, [trader2], liquidator);
+				newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, toUnit('20'));
+				assert.bnEqual(newSummary.marketSizeLong, toUnit('0'));
+				assert.bnEqual(newSummary.marketSizeShort, toUnit('20'));
+				assert.bnEqual(newSummary.marketSkew, toUnit('-20'));
+				// Market debt is now just the remaining position, plus the funding they've made.
+				assert.bnClose(newSummary.marketDebt, toUnit('2145'), toUnit('0.01'));
+			});
+
+			it('Liquidation properly affects the overall market parameters (short case)', async () => {
+				await perpsManager.setSkewScaleUSD(marketKey, toUnit('20000'), { from: owner });
+
+				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
+
+				const summary = await marketSummary();
+				const size = toBN(summary.marketSize);
+				const positionSize = toBN((await getPosition(trader3)).size);
+
+				await setPrice(baseAsset, toUnit('350'));
+
+				assert.bnClose((await marketSummary()).marketDebt, toUnit('5960'), toUnit('0.1'));
+				assert.bnClose((await marketSummary()).unrecordedFunding, toUnit('-24.5'), toUnit('0.01'));
+
+				await instance.liquidatePosition(marketKey, trader3, { from: liquidator });
+
+				const newSummary = await marketSummary();
+				assert.bnEqual(newSummary.marketSize, size.sub(positionSize.abs()));
+				assert.bnEqual(newSummary.marketSizeLong, summary.marketSizeLong);
+				assert.bnEqual(newSummary.marketSizeShort, toUnit('0'));
+				assert.bnEqual(newSummary.marketSkew, toUnit('60'));
+				assert.bnClose(newSummary.marketDebt, toUnit('6485'), toUnit('0.1'));
+
+				// Funding has been recorded by the liquidation.
+				assert.bnClose(newSummary.unrecordedFunding, toUnit(0), toUnit('0.01'));
+			});
+
+			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
+				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
+				// fee 40*250*0.003 = 30
+				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+				const liqPrice = toBN((await getPositionSummary(trader)).approxLiquidationPrice);
+				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
+
+				const newPrice = liqPrice.sub(toUnit(1));
+				await setPrice(baseAsset, newPrice);
+
+				const { size: positionSize, id: positionId } = await getPosition(trader);
+
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+
+				const remainingMargin = (await getPositionSummary(trader)).remainingMargin;
+				const tx = await instance.liquidatePosition(marketKey, trader, { from: liquidator });
+
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+				const pos = await getPosition(trader);
+				assert.bnEqual(pos.id, 1);
+				assert.bnEqual(await perpsStorage.positionIdToAccount(marketKey, 1), trader);
+				assert.bnEqual(pos.margin, toUnit(0));
+				assert.bnEqual(pos.size, toUnit(0));
+
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
+					toUnit(40) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, instance] });
+
+				assert.equal(decodedLogs.length, 4);
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [liquidator, liquidationFee],
+					log: decodedLogs[1],
+					bnCloseVariance: toUnit('0.001'),
+				});
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: instance.address,
+					args: [
+						marketKey,
+						positionId,
+						trader,
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						(await assetPrice()).price,
+						toBN('0'),
+					],
+					log: decodedLogs[2],
+				});
+				decodedEventEqual({
+					event: 'PositionLiquidated',
+					emittedFrom: instance.address,
+					args: [marketKey, trader, liquidator, positionSize, newPrice, liquidationFee],
+					log: decodedLogs[3],
+					bnCloseVariance: toUnit('0.001'),
+				});
+
+				assert.bnLt(remainingMargin, liquidationFee);
+			});
+
+			it('liquidations of positive margin position pays to fee pool, long case', async () => {
+				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
+				// fee 40*250*0.003 = 30
+				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
+				const liqPrice = toBN((await getPositionSummary(trader)).approxLiquidationPrice);
+				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
+
+				const newPrice = liqPrice.sub(toUnit(0.5));
+				await setPrice(baseAsset, newPrice);
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+
+				const remainingMargin = toBN((await getPositionSummary(trader)).remainingMargin);
+				const tx = await instance.liquidatePosition(marketKey, trader, { from: liquidator });
+
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
+					toUnit(40) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, instance] });
+
+				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
+
+				const poolFee = remainingMargin.sub(liquidationFee);
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), poolFee],
+					log: decodedLogs[2],
+					bnCloseVariance: toUnit('0.001'),
+				});
+			});
+
+			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
+				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
+				// fee 20*250*0.003 = 15
+				// Remaining margin = 250 + (32.5 - (1000 - 15)) / (-20)= 297.625
+				const liqPrice = toBN((await getPositionSummary(trader3)).approxLiquidationPrice);
+				assert.bnClose(liqPrice, toUnit(297.625), toUnit('0.01'));
+
+				const newPrice = liqPrice.add(toUnit(1));
+
+				await setPrice(baseAsset, newPrice);
+
+				const { size: positionSize, id: positionId } = await getPosition(trader3);
+
+				const remainingMargin = (await getPositionSummary(trader3)).remainingMargin;
+				const tx = await instance.liquidatePosition(marketKey, trader3, { from: liquidator });
+
+				const pos = await getPosition(trader3);
+				assert.bnEqual(pos.id, 3);
+				assert.bnEqual(await perpsStorage.positionIdToAccount(marketKey, 3), trader3);
+				assert.bnEqual(pos.margin, toUnit(0));
+				assert.bnEqual(pos.size, toUnit(0));
+
+				// in this case, proportional fee is smaller than minimum fee
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
+					toUnit(20) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, instance] });
+
+				assert.equal(decodedLogs.length, 4);
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [liquidator, liquidationFee],
+					log: decodedLogs[1],
+				});
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: instance.address,
+					args: [
+						marketKey,
+						positionId,
+						trader3,
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						(await assetPrice()).price,
+						toBN('0'),
+					],
+					log: decodedLogs[2],
+				});
+				decodedEventEqual({
+					event: 'PositionLiquidated',
+					emittedFrom: instance.address,
+					args: [marketKey, trader3, liquidator, positionSize, newPrice, liquidationFee],
+					log: decodedLogs[3],
+					bnCloseVariance: toUnit('0.001'),
+				});
+
+				assert.bnLt(remainingMargin, liquidationFee);
+			});
+
+			it('liquidations of positive margin position pays to fee pool, short case', async () => {
+				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
+				// fee 20*250*0.001 = 15
+				// Remaining margin = 250 + (32.5 - (1000 - 15)) / (-20)= 297.625
+				const liqPrice = toBN((await getPositionSummary(trader3)).approxLiquidationPrice);
+				assert.bnClose(liqPrice, toUnit(297.625), toUnit('0.01'));
+
+				const newPrice = liqPrice.add(toUnit(0.5));
+				await setPrice(baseAsset, newPrice);
+				assert.isTrue((await getPositionSummary(trader3)).canLiquidate);
+
+				const remainingMargin = toBN((await getPositionSummary(trader3)).remainingMargin);
+				const tx = await instance.liquidatePosition(marketKey, trader3, { from: liquidator });
+
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await perpsManager.liquidationFeeRatio(), newPrice),
+					toUnit(20) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(liquidator), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, instance] });
+
+				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
+
+				const poolFee = remainingMargin.sub(liquidationFee);
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), poolFee],
+					log: decodedLogs[2],
+					bnCloseVariance: toUnit('0.001'),
+				});
+			});
+
+			it('Transfers an updated fee upon liquidation', async () => {
+				const { size: positionSize, id: positionId } = await getPosition(trader);
+				// Move the price to a non-liquidating point
+				let price = toBN((await getPositionSummary(trader)).approxLiquidationPrice);
+				const newPrice = price.add(toUnit('1'));
+
+				await setPrice(baseAsset, newPrice);
+
+				assert.isFalse((await getPositionSummary(trader)).canLiquidate);
+
+				// raise the liquidation fee
+				await perpsManager.setMinKeeperFee(toUnit('100'), { from: owner });
+
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+				price = (await getPositionSummary(trader)).approxLiquidationPrice;
+
+				// liquidate the position
+				const tx = await instance.liquidatePosition(marketKey, trader, { from: liquidator });
+
+				// check that the liquidation price was correct.
+				// liqMargin = max(100, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 125
+				// fee 40*250*0.003 = 30
+				// Remaining margin = 250 + (125 - (1000 - 30)) / (40)= 228.875
+				assert.bnClose(price, toUnit(228.875), toUnit(0.1));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, instance] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: instance.address,
+					args: [
+						marketKey,
+						positionId,
+						trader,
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						(await assetPrice()).price,
+						toBN('0'),
+					],
+					log: decodedLogs[2],
+				});
+				decodedEventEqual({
+					event: 'PositionLiquidated',
+					emittedFrom: instance.address,
+					args: [marketKey, trader, liquidator, positionSize, newPrice, toUnit('100')],
+					log: decodedLogs[3],
+					bnCloseVariance: toUnit('0.001'),
+				});
+			});
+
+			it('Liquidating a position and opening one after should increment the position id', async () => {
+				const { id: oldPositionId } = await getPosition(trader);
+				assert.bnEqual(oldPositionId, toBN('1'));
+
+				await setPrice(baseAsset, toUnit('200'));
+				assert.isTrue((await getPositionSummary(trader)).canLiquidate);
+				await instance.liquidatePosition(marketKey, trader, { from: liquidator });
+
+				await transferAndTrade({
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('10'),
+				});
+
+				const { id: newPositionId } = await getPosition(trader);
+				assert.bnGte(newPositionId, oldPositionId);
+			});
+
+			it('liquidation does not change locked margin', async () => {
+				const locked = toBN('10');
+				await setPrice(baseAsset, toUnit('260'));
+				await instance.modifyLockedMargin(marketKey, trader, locked, 0, { from: mockOrders });
+				await setPrice(baseAsset, toUnit('50'));
+				await instance.liquidatePosition(marketKey, trader, { from: liquidator });
 				const position = await getPosition(trader);
 				assert.bnEqual(toBN(position.margin), 0);
 				assert.bnEqual(position.lockedMargin, locked);
