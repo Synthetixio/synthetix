@@ -648,7 +648,9 @@ contract('PerpsOrdersV2', accounts => {
 				// 1000 margin, size 5.
 				const [fee1] = await executeTransferAndTradeWithFee(margin, size); // 1000 margin, size 5.
 
-				const originalPositionId = (await perpsOrders.positionSummary(marketKey, trader)).position.id
+				const { id: originalPositionId } = (
+					await perpsOrders.positionSummary(marketKey, trader)
+				).position;
 
 				// Increase margin by 1000 (2x), no change in size.
 				//
@@ -718,6 +720,7 @@ contract('PerpsOrdersV2', accounts => {
 
 		describe('on tradeAndTransfer', () => {
 			it('should succeed on valid invocation params');
+			it('should succeed when closing and withdrawing all remaining margin');
 			it('should succeed when transferring zero margin');
 			it('should revert when no position is available');
 			it('should revert when transfer amount exceeds remaining');

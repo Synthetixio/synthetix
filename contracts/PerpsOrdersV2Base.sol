@@ -258,13 +258,23 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     }
 
     /// Shortcut method to transfer margin and trade in a single tx.
-    function transferAndTrade(bytes32 marketKey, int marginDelta, int sizeDelta, bytes32 trackingCode) external {
+    function transferAndTrade(
+        bytes32 marketKey,
+        int marginDelta,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external {
         _engineInternal().transferMargin(marketKey, msg.sender, marginDelta);
         _trade(marketKey, sizeDelta, trackingCode);
     }
 
     /// Shortcut method to trade and transfer margin in a single tx (inverse of transferAndTrade).
-    function tradeAndTransfer(bytes32 marketKey, int marginDelta, int sizeDelta, bytes32 trackingCode) external {
+    function tradeAndTransfer(
+        bytes32 marketKey,
+        int marginDelta,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external {
         _trade(marketKey, sizeDelta, trackingCode);
         _engineInternal().transferMargin(marketKey, msg.sender, marginDelta);
     }
