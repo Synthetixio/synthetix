@@ -74,5 +74,10 @@
 	"DOGE": {
 		"asset": "DOGE",
 		"feed": "0xC6066533917f034Cf610c08e1fe5e9c7eADe0f54"
+	},
+	"DebtRatio": {
+		"asset": "DebtRatio",
+		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
+		"note": "A read-proxy with CL feed as target: 0x94A178f2c480D14F8CdDa908D173d7a73F779cb7"
 	}
 }
