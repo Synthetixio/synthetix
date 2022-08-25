@@ -57,9 +57,15 @@ program
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 	.option('-m, --decode-migration', 'Decodes a migration contract execution call')
-	.action(async (data, target, { network, useOvm, decodeMigration }) => {
+	.option('-e, --enhance-decode', 'Enhance decoded data', false)
+	.action(async (data, target, { network, useOvm, decodeMigration, enhanceDecode }) => {
 		console.log(
-			util.inspect(decode({ network, data, target, useOvm, decodeMigration }), false, null, true)
+			util.inspect(
+				decode({ network, data, target, useOvm, decodeMigration, enhanceDecode }),
+				false,
+				null,
+				true
+			)
 		);
 	});
 
@@ -69,7 +75,8 @@ program
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 	.option('-m, --decode-migration', 'Decodes a migration contract execution call')
-	.action(async (txsdata, target, { network, useOvm, decodeMigration }) => {
+	.option('-e, --enhance-decode', 'Enhance decoded data', false)
+	.action(async (txsdata, target, { network, useOvm, decodeMigration, enhanceDecode }) => {
 		if (txsdata.length <= 2) {
 			console.log('data too short');
 		}
@@ -128,7 +135,7 @@ program
 				destAddress,
 				operationType,
 				value: valueDecimal,
-				decoded: decode({ network, data, target, useOvm, decodeMigration }),
+				decoded: decode({ network, data, target, useOvm, decodeMigration, enhanceDecode }),
 			});
 
 			index++;
@@ -141,7 +148,8 @@ program
 	.command('decode-relay-batch <rawtxsdata> [target]')
 	.description('Decode data payload from a initiate relay batch staged to Synthetix contracts')
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
-	.action(async (rawtxsdata, target, { network }) => {
+	.option('-e, --enhance-decode', 'Enhance decoded data', false)
+	.action(async (rawtxsdata, target, { network, enhanceDecode }) => {
 		if (rawtxsdata.length <= 2) {
 			console.log('data too short');
 		}
@@ -152,6 +160,7 @@ program
 			target,
 			useOvm: false,
 			decodeMigration: false,
+			enhanceDecode: false,
 		});
 
 		if (decoded.method.name !== 'initiateRelayBatch') {
@@ -173,6 +182,7 @@ program
 				target,
 				useOvm: true,
 				decodeMigration: false,
+				enhanceDecode,
 			});
 			decodedRelayed.push({ index: i, target, payload });
 		}
