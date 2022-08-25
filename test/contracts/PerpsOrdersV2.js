@@ -137,6 +137,7 @@ contract('PerpsOrdersV2', accounts => {
 					'tradeWithTracking',
 					'tradeAndTransfer',
 					'transferAndTrade',
+					'closeAndWithdraw',
 					'closePosition',
 					'closePositionWithTracking',
 					'submitNextPriceOrder',
@@ -559,7 +560,6 @@ contract('PerpsOrdersV2', accounts => {
 	describe('withTracking emit expected event data', () => {
 		it('tradeWithTracking emits expected event', async () => {
 			const margin = toUnit('1000');
-
 			await perpsOrders.transferMargin(marketKey, margin, { from: trader });
 			const size = toUnit('50');
 			const price = toUnit('200');
@@ -613,10 +613,10 @@ contract('PerpsOrdersV2', accounts => {
 		});
 	});
 
-	describe('trading using shortcut methods', () => {
+	describe('trade using shortcut methods', () => {
 		describe('on transferAndTrade', () => {
 			const executeTransferAndTradeWithFee = async (margin, size) => {
-				const fee = (await perpsOrders.orderFee(marketKey, size, [baseFee, 0, toBytes32('')])).fee;
+				const fee = (await perpsOrders.orderFee(marketKey, size)).fee;
 				const tx = await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
 					from: trader,
 				});
@@ -630,12 +630,30 @@ contract('PerpsOrdersV2', accounts => {
 
 				await setPrice(baseAsset, price);
 
-				const [fee] = await executeTransferAndTradeWithFee(margin, size);
-				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				// Before executing a transfer and trade.
+				const position1 = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(position1.id, '0');
+				assert.bnEqual(position1.margin, '0', '(before) Margin does not match expected');
+				assert.bnEqual(position1.size, '0', '(before) Size does not match expected');
 
-				assert.equal(position.id, '1');
-				assert.bnEqual(position.margin, margin.sub(fee), 'Margin does not match expected');
-				assert.bnEqual(position.size, size, 'Size does not match expected');
+				const [fee, tx] = await executeTransferAndTradeWithFee(margin, size);
+
+				// After executing a transfer and trade.
+				const position2 = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.equal(position2.id, '1');
+				assert.bnEqual(position2.margin, margin.sub(fee), '(after) Margin does not match expected');
+				assert.bnEqual(position2.size, size, '(after) Size does not match expected');
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log?.name).filter(name => !!name),
+					['Burned', 'MarginModified', 'PositionModified', 'Issued', 'PositionModified']
+				);
 			});
 
 			it('should succeed when an existing position is open', async () => {
@@ -685,7 +703,8 @@ contract('PerpsOrdersV2', accounts => {
 				await assert.revert(
 					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
 						from: trader,
-					})
+					}),
+					'Insufficient margin'
 				);
 			});
 
@@ -697,23 +716,40 @@ contract('PerpsOrdersV2', accounts => {
 				await setPrice(baseAsset, price);
 
 				await assert.revert(
-					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32('code'), {
+					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
 						from: trader,
-					})
+					}),
+					'Cannot submit empty order'
 				);
 			});
 
-			it('should revert when size exceed max leverage on transferred margin', async () => {
-				const margin = toUnit('100');
-				const size = toUnit('100');
+			it('should revert when -withdrawableMargin then trading on existing position', async () => {
+				const margin = toUnit('1000');
 				const price = toUnit('50');
+				const size = divideDecimal(margin, price); // 1x
 
 				await setPrice(baseAsset, price);
 
+				// Create a valid position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					from: trader,
+				});
+
+				// Get total amount of margin trader is able to withdraw given open position.
+				const withdrawableMargin = await perpsEngine.withdrawableMargin(marketKey, trader);
+
+				// Attempt to withdraw all withdrawable margin then trading.
 				await assert.revert(
-					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
-						from: trader,
-					})
+					perpsOrders.transferAndTrade(
+						marketKey,
+						withdrawableMargin.neg(),
+						size.add(toUnit('1')), // Tip the size over by just one additional unit.
+						toBytes32(''),
+						{
+							from: trader,
+						}
+					),
+					'Max leverage exceeded'
 				);
 			});
 		});
@@ -732,7 +768,7 @@ contract('PerpsOrdersV2', accounts => {
 				});
 
 				const withdrawableMargin = await perpsEngine.withdrawableMargin(marketKey, trader);
-				await perpsOrders.tradeAndTransfer(
+				const tx = await perpsOrders.tradeAndTransfer(
 					marketKey,
 					withdrawableMargin.neg(),
 					size.neg(),
@@ -744,6 +780,16 @@ contract('PerpsOrdersV2', accounts => {
 
 				const updatedPosition = (await perpsOrders.positionSummary(marketKey, trader)).position;
 				assert.equal(updatedPosition.size, '0');
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log?.name).filter(name => !!name),
+					['Issued', 'PositionModified', 'Issued', 'MarginModified', 'PositionModified']
+				);
 			});
 
 			it('should revert when no position is available', async () => {
@@ -760,7 +806,8 @@ contract('PerpsOrdersV2', accounts => {
 				await assert.revert(
 					perpsOrders.tradeAndTransfer(marketKey, margin, size, toBytes32(''), {
 						from: trader,
-					})
+					}),
+					'Insufficient margin'
 				);
 			});
 
@@ -792,7 +839,8 @@ contract('PerpsOrdersV2', accounts => {
 						{
 							from: trader,
 						}
-					)
+					),
+					'Insufficient margin'
 				);
 			});
 		});
