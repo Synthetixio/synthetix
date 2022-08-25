@@ -162,6 +162,12 @@ contract('PerpsOrdersV2', accounts => {
 			assert.bnEqual(parameters.skewScaleUSD, skewScaleUSD);
 		});
 
+		describe('fee views', () => {
+			it('are as expected', async () => {
+				assert.bnEqual(await perpsOrders.baseFee(marketKey), baseFee);
+			});
+		});
+
 		it('prices are properly fetched from summary', async () => {
 			const price = toUnit(200);
 			await setPrice(baseAsset, price);

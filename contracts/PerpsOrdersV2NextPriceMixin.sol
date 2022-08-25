@@ -282,13 +282,6 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
     /* ========== INTERNAL VIEWS ========== */
 
-    /// helper for getting `int priceDelta` for the `trade()` interface for a specific target roundId
-    /// from current asset price
-    function _priceDeltaForRoundId(bytes32 marketKey, uint targetRoundId) internal view returns (int) {
-        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(marketKey), targetRoundId);
-        return _priceDeltaFromCurrent(marketKey, pastPrice);
-    }
-
     /// calculate the correct execution options for the past round
     function _executionOptionsForPastRoundId(bytes32 marketKey, NextPriceOrder memory order)
         internal
