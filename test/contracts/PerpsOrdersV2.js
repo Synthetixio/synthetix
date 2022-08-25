@@ -616,7 +616,7 @@ contract('PerpsOrdersV2', accounts => {
 	describe('trading using shortcut methods', () => {
 		describe('on transferAndTrade', () => {
 			const executeTransferAndTradeWithFee = async (margin, size) => {
-				const fee = (await perpsEngine.orderFee(marketKey, size, [baseFee, 0, toBytes32('')])).fee;
+				const fee = (await perpsOrders.orderFee(marketKey, size, [baseFee, 0, toBytes32('')])).fee;
 				const tx = await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
 					from: trader,
 				});
