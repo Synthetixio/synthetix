@@ -649,6 +649,37 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 	);
 };
 
+const enhanceDecodedData = decoded => {
+	const enhancedParams = decoded.method.params.map(p => {
+		if (p.type === 'bytes32') {
+			try {
+				return { ...p, enhanced: { ascii: fromBytes32(p.value).replaceAll('\x00', '') } };
+			} catch (e) {
+				return p;
+			}
+		}
+
+		if (p.type === 'uint256') {
+			try {
+				const value = w3utils.toBN(p.value);
+				return {
+					...p,
+					enhanced: {
+						bp: value.div(w3utils.toBN(1e14)).toString(),
+						decimal: value.div(w3utils.toBN(1e18)).toString(),
+					},
+				};
+			} catch (e) {
+				return p;
+			}
+		}
+
+		return p;
+	});
+	const enhancedMethod = { ...decoded.method, params: enhancedParams };
+	return { ...decoded, method: enhancedMethod };
+};
+
 const decode = ({
 	network = 'mainnet',
 	fs,
@@ -657,6 +688,7 @@ const decode = ({
 	target,
 	useOvm = false,
 	decodeMigration = false,
+	enhanceDecode = false,
 } = {}) => {
 	const sources = getSource({ network, path, fs, useOvm });
 	for (const { abi } of Object.values(sources)) {
@@ -682,7 +714,9 @@ const decode = ({
 			({ address }) => address.toLowerCase() === target.toLowerCase()
 		)[0].name;
 	}
-	return { method: abiDecoder.decodeMethod(data), contract };
+	const result = { method: abiDecoder.decodeMethod(data), contract };
+
+	return enhanceDecode ? enhanceDecodedData(result) : result;
 };
 
 const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
