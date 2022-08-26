@@ -342,7 +342,7 @@ module.exports = ({ web3 } = {}) => {
 	 *  Convenience method to assert that two BN.js instances are equal.
 	 *  @param actualBN The BN.js instance you received
 	 *  @param expectedBN The BN.js amount you expected to receive
-	 *  @param context The description to log if we fail the assertion
+	 *  @param [context] Optional description to log if we fail the assertion
 	 */
 	const assertBNEqual = (actualBN, expectedBN, context) => {
 		assert.strictEqual(actualBN.toString(), expectedBN.toString(), context);

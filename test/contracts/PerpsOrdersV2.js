@@ -20,7 +20,7 @@ contract('PerpsOrdersV2', accounts => {
 		// futuresMarketManager,
 		perpsOrders,
 		perpsEngine,
-		// perpsStorage,
+		perpsStorage,
 		exchangeRates,
 		exchanger,
 		circuitBreaker,
@@ -68,7 +68,7 @@ contract('PerpsOrdersV2', accounts => {
 			// FuturesMarketManager: futuresMarketManager,
 			PerpsOrdersV2: perpsOrders,
 			PerpsEngineV2: perpsEngine,
-			// PerpsStorageV2: perpsStorage,
+			PerpsStorageV2: perpsStorage,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
@@ -633,8 +633,8 @@ contract('PerpsOrdersV2', accounts => {
 				// Before executing a transfer and trade.
 				const position1 = (await perpsOrders.positionSummary(marketKey, trader)).position;
 				assert.equal(position1.id, '0');
-				assert.bnEqual(position1.margin, '0', '(before) Margin does not match expected');
-				assert.bnEqual(position1.size, '0', '(before) Size does not match expected');
+				assert.bnEqual(position1.margin, '0');
+				assert.bnEqual(position1.size, '0');
 
 				const [fee, tx] = await executeTransferAndTradeWithFee(margin, size);
 
@@ -642,17 +642,25 @@ contract('PerpsOrdersV2', accounts => {
 				const position2 = (await perpsOrders.positionSummary(marketKey, trader)).position;
 
 				assert.equal(position2.id, '1');
-				assert.bnEqual(position2.margin, margin.sub(fee), '(after) Margin does not match expected');
-				assert.bnEqual(position2.size, size, '(after) Size does not match expected');
+				assert.bnEqual(position2.margin, margin.sub(fee));
+				assert.bnEqual(position2.size, size);
 
 				// Verify order of events.
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine, perpsStorage],
 				});
 				assert.deepEqual(
-					decodedLogs.map(log => log?.name).filter(name => !!name),
-					['Burned', 'MarginModified', 'PositionModified', 'Issued', 'PositionModified']
+					decodedLogs.map(log => log.name),
+					[
+						'FundingUpdated',
+						'Burned',
+						'PositionInitialised',
+						'MarginModified',
+						'PositionModified',
+						'Issued',
+						'PositionModified',
+					]
 				);
 			});
 
@@ -678,11 +686,7 @@ contract('PerpsOrdersV2', accounts => {
 				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
 
 				assert.equal(position.id, originalPositionId); // Existing position modified.
-				assert.bnEqual(
-					position.size,
-					divideDecimal(margin.add(margin), price),
-					'Size does not match expected'
-				);
+				assert.bnEqual(position.size, divideDecimal(margin.add(margin), price));
 				assert.bnClose(
 					position.margin,
 					margin
@@ -755,12 +759,13 @@ contract('PerpsOrdersV2', accounts => {
 		});
 
 		describe('on tradeAndTransfer', () => {
-			it('should succeed when closing and withdrawing all remaining margin', async () => {
-				const margin = toUnit('1000');
-				const size = toUnit('50');
+			it('should succeed when closing then withdraw remaining margin', async () => {
 				const price = toUnit('10');
+				const margin = toUnit('1000');
+				const size = divideDecimal(margin, price); // 1x
 				const trackingCode = toBytes32('');
 
+				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
 				await setPrice(baseAsset, price);
 
 				// Transfer margin and open position.
@@ -768,13 +773,19 @@ contract('PerpsOrdersV2', accounts => {
 					from: trader,
 				});
 
-				// Close position (-size) and withdraw available margin (before) the final trade.
-				//
-				// There will be more margin to withdraw after the position is closed.
-				const withdrawableMargin1 = await perpsEngine.withdrawableMargin(marketKey, trader);
+				// (1) Simulate trade (close position) to find the resulting margin.
+				// (2) Using simulation data (margin), perform a close and withdraw remaining margin.
+				const fee = (await perpsOrders.orderFee(marketKey, size.neg())).fee;
+				const { margin: remainingMargin } = await perpsEngine.simulateTrade(
+					marketKey,
+					trader,
+					size.neg(),
+					[fee, toUnit('0'), trackingCode],
+					{ from: trader }
+				);
 				const tx = await perpsOrders.tradeAndTransfer(
 					marketKey,
-					withdrawableMargin1.neg(),
+					remainingMargin.neg(),
 					size.neg(),
 					trackingCode,
 					{
@@ -782,25 +793,27 @@ contract('PerpsOrdersV2', accounts => {
 					}
 				);
 
-				// Verify order of events.
-				const decodedLogs = await getDecodedLogs({
-					hash: tx.tx,
-					contracts: [sUSD, perpsEngine],
-				});
-				assert.deepEqual(
-					decodedLogs.map(log => log?.name).filter(name => !!name),
-					['Issued', 'PositionModified', 'Issued', 'MarginModified', 'PositionModified']
-				);
-
-				// Withdraw all remaining after trade succeeds.
-				const withdrawableMargin2 = await perpsEngine.withdrawableMargin(marketKey, trader);
-				await perpsOrders.transferMargin(marketKey, withdrawableMargin2.neg(), {
-					from: trader,
-				});
-
+				// Position should be closed with no remaining margin.
 				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
 				assert.equal(position.size, '0');
 				assert.bnClose(position.margin, '0');
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine, perpsStorage],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log.name),
+					[
+						'FundingUpdated',
+						'Issued',
+						'PositionModified',
+						'Issued',
+						'MarginModified',
+						'PositionModified',
+					]
+				);
 			});
 
 			it('should revert when no position is available', async () => {
@@ -881,11 +894,18 @@ contract('PerpsOrdersV2', accounts => {
 				// Verify order of events.
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsEngine],
+					contracts: [sUSD, perpsEngine, perpsStorage],
 				});
 				assert.deepEqual(
-					decodedLogs.map(log => log?.name).filter(name => !!name),
-					['Issued', 'PositionModified', 'Issued', 'MarginModified', 'PositionModified']
+					decodedLogs.map(log => log.name),
+					[
+						'FundingUpdated',
+						'Issued',
+						'PositionModified',
+						'Issued',
+						'MarginModified',
+						'PositionModified',
+					]
 				);
 			});
 
