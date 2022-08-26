@@ -273,6 +273,22 @@ interface IPerpsOrdersV2 {
 
     function trade(bytes32 marketKey, int sizeDelta) external;
 
+    function transferAndTrade(
+        bytes32 marketKey,
+        int marginDelta,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external;
+
+    function tradeAndTransfer(
+        bytes32 marketKey,
+        int marginDelta,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external;
+
+    function closeAndWithdraw(bytes32 marketKey, bytes32 trackingCode) external;
+
     function tradeWithTracking(
         bytes32 marketKey,
         int sizeDelta,

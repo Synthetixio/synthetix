@@ -342,7 +342,7 @@ module.exports = ({ web3 } = {}) => {
 	 *  Convenience method to assert that two BN.js instances are equal.
 	 *  @param actualBN The BN.js instance you received
 	 *  @param expectedBN The BN.js amount you expected to receive
-	 *  @param context The description to log if we fail the assertion
+	 *  @param [context] Optional description to log if we fail the assertion
 	 */
 	const assertBNEqual = (actualBN, expectedBN, context) => {
 		assert.strictEqual(actualBN.toString(), expectedBN.toString(), context);
@@ -354,14 +354,15 @@ module.exports = ({ web3 } = {}) => {
 	 *  @param expectedBN The BN.js amount you expected NOT to receive
 	 *  @param context The description to log if we fail the assertion
 	 */
-	const assertBNNotEqual = (actualBN, expectedBN) => {
+	const assertBNNotEqual = (actualBN, expectedBN, context) => {
 		assert.notStrictEqual(actualBN.toString(), expectedBN.toString(), context);
 	};
 
 	/**
-	 *  Convenience method to assert that two BN.js instances are within 100 units of each other.
+	 *  Convenience method to assert that two BN.js instances are within 10 units of each other.
 	 *  @param actualBN The BN.js instance you received
-	 *  @param expectedBN The BN.js amount you expected to receive, allowing a variance of +/- 100 units
+	 *  @param expectedBN The BN.js amount you expected to receive, allowing a variance of +/- 10 units
+	 *  @param [varianceParam=10] Optional max variance param used to define range
 	 */
 	const assertBNClose = (actualBN, expectedBN, varianceParam = '10') => {
 		const actual = toBN(actualBN);
@@ -370,11 +371,11 @@ module.exports = ({ web3 } = {}) => {
 
 		assert.ok(
 			actual.gte(expected.sub(variance)),
-			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()})`
 		);
 		assert.ok(
 			actual.lte(expected.add(variance)),
-			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()})`
 		);
 	};
 
@@ -493,7 +494,7 @@ module.exports = ({ web3 } = {}) => {
 	 * Convenience method to assert that the return of the given block when invoked or promise causes a
 	 * revert to occur, with an optional revert message.
 	 * @param blockOrPromise The JS block (i.e. function that when invoked returns a promise) or a promise itself
-	 * @param reason Optional reason string to search for in revert message
+	 * @param [reason] Optional reason string to search for in revert message
 	 */
 	const assertRevert = async (blockOrPromise, reason) => {
 		let errorCaught = false;

@@ -206,7 +206,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
      * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
-    function transferMargin(bytes32 marketKey, int marginDelta) external {
+    function transferMargin(bytes32 marketKey, int marginDelta) public {
         _engineInternal().transferMargin(marketKey, msg.sender, marginDelta);
     }
 
@@ -214,7 +214,7 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
      * Withdraws all accessible margin in a position. This will leave some remaining margin
      * in the account if the caller has a position open. Equivalent to `transferMargin(-withdrawableMargin(sender))`.
      */
-    function withdrawMaxMargin(bytes32 marketKey) external {
+    function withdrawMaxMargin(bytes32 marketKey) public {
         address account = msg.sender;
         uint withdrawable = engineContract().withdrawableMargin(marketKey, account);
         _engineInternal().transferMargin(marketKey, account, -int(withdrawable));
@@ -250,6 +250,34 @@ contract PerpsOrdersV2Base is PerpsConfigGettersV2Mixin, IPerpsTypesV2 {
     /// Same as closePosition, but emits an even with the trackingCode for volume source fee sharing
     function closePositionWithTracking(bytes32 marketKey, bytes32 trackingCode) external {
         _closePosition(marketKey, trackingCode);
+    }
+
+    /// Shortcut method to transfer margin and trade in a single tx.
+    function transferAndTrade(
+        bytes32 marketKey,
+        int marginDelta,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external {
+        transferMargin(marketKey, marginDelta);
+        _trade(marketKey, sizeDelta, trackingCode);
+    }
+
+    /// Shortcut method to trade and transfer margin in a single tx (inverse of transferAndTrade).
+    function tradeAndTransfer(
+        bytes32 marketKey,
+        int marginDelta,
+        int sizeDelta,
+        bytes32 trackingCode
+    ) external {
+        _trade(marketKey, sizeDelta, trackingCode);
+        transferMargin(marketKey, marginDelta);
+    }
+
+    /// Shortcut method to close an open position and withdraw all margin.
+    function closeAndWithdraw(bytes32 marketKey, bytes32 trackingCode) external {
+        _closePosition(marketKey, trackingCode);
+        withdrawMaxMargin(marketKey);
     }
 
     /* ========== INTERNAL MUTATIVE ========== */

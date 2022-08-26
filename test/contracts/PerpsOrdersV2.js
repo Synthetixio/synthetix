@@ -1,7 +1,7 @@
 const { contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toBN } = web3.utils;
-const { toUnit, multiplyDecimal } = require('../utils')();
+const { toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 
 const {
 	setupAllContracts,
@@ -20,7 +20,7 @@ contract('PerpsOrdersV2', accounts => {
 		// futuresMarketManager,
 		perpsOrders,
 		perpsEngine,
-		// perpsStorage,
+		perpsStorage,
 		exchangeRates,
 		exchanger,
 		circuitBreaker,
@@ -34,7 +34,7 @@ contract('PerpsOrdersV2', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const liquidator = accounts[5];
-	const traderInitialBalance = toUnit(1000000);
+	const traderInitialBalance = toUnit('1000000');
 
 	const marketKey = toBytes32('pBTC');
 	const baseAsset = toBytes32('BTC');
@@ -46,6 +46,7 @@ contract('PerpsOrdersV2', accounts => {
 	const skewScaleUSD = toUnit('100000');
 	const initialPrice = toUnit('100');
 	const minInitialMargin = toUnit('100');
+	const emptyBytes = toBytes32('');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -68,7 +69,7 @@ contract('PerpsOrdersV2', accounts => {
 			// FuturesMarketManager: futuresMarketManager,
 			PerpsOrdersV2: perpsOrders,
 			PerpsEngineV2: perpsEngine,
-			// PerpsStorageV2: perpsStorage,
+			PerpsStorageV2: perpsStorage,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
@@ -135,6 +136,9 @@ contract('PerpsOrdersV2', accounts => {
 					'withdrawMaxMargin',
 					'trade',
 					'tradeWithTracking',
+					'tradeAndTransfer',
+					'transferAndTrade',
+					'closeAndWithdraw',
 					'closePosition',
 					'closePositionWithTracking',
 					'submitNextPriceOrder',
@@ -612,6 +616,313 @@ contract('PerpsOrdersV2', accounts => {
 				args: [trackingCode, marketKey, trader, size.neg(), fee],
 				log: decodedLogs[2],
 				bnCloseVariance: toUnit('0.1'),
+			});
+		});
+	});
+
+	describe('trade using shortcut methods', () => {
+		describe('on transferAndTrade', () => {
+			const executeTransferAndTradeWithFee = async (margin, size) => {
+				const fee = (await perpsOrders.orderFee(marketKey, size)).fee;
+				const tx = await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+					from: trader,
+				});
+				return [fee, tx];
+			};
+
+			it('should succeed on valid invocation params', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('50');
+				const price = toUnit('200');
+
+				await setPrice(baseAsset, price);
+
+				// Before executing a transfer and trade.
+				const position1 = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(position1.id, '0');
+				assert.bnEqual(position1.margin, '0');
+				assert.bnEqual(position1.size, '0');
+
+				const [fee, tx] = await executeTransferAndTradeWithFee(margin, size);
+
+				// After executing a transfer and trade.
+				const position2 = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.equal(position2.id, '1');
+				assert.bnEqual(position2.margin, margin.sub(fee));
+				assert.bnEqual(position2.size, size);
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine, perpsStorage],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log.name),
+					[
+						'FundingUpdated',
+						'Burned',
+						'PositionInitialised',
+						'MarginModified',
+						'PositionModified',
+						'Issued',
+						'PositionModified',
+					]
+				);
+			});
+
+			it('should succeed when an existing position is open', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('5');
+				const price = toUnit('200');
+
+				await setPrice(baseAsset, price);
+
+				// 1000 margin, size 5.
+				const [fee1] = await executeTransferAndTradeWithFee(margin, size); // 1000 margin, size 5.
+
+				const { id: originalPositionId } = (
+					await perpsOrders.positionSummary(marketKey, trader)
+				).position;
+
+				// Increase margin by 1000 (2x), no change in size.
+				//
+				// margin = 2000, price = 200, size = 2000/200 = 10
+				const [fee2] = await executeTransferAndTradeWithFee(margin, size);
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.equal(position.id, originalPositionId); // Existing position modified.
+				assert.bnEqual(position.size, divideDecimal(margin.add(margin), price));
+				assert.bnClose(
+					position.margin,
+					margin
+						.add(margin)
+						.sub(fee1)
+						.sub(fee2),
+					toUnit('0.1') // 10c USD variance
+				);
+			});
+
+			it('should revert when transferring with zero margin', async () => {
+				const margin = toUnit('0'); // zero margin.
+				const size = toUnit('100');
+				const price = toUnit('500');
+
+				await setPrice(baseAsset, price);
+
+				await assert.revert(
+					perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+						from: trader,
+					}),
+					'Insufficient margin'
+				);
+			});
+
+			it('should revert when zero size is provided', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('0'); // zero size.
+				const price = toUnit('500');
+
+				await setPrice(baseAsset, price);
+
+				await assert.revert(
+					perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+						from: trader,
+					}),
+					'Cannot submit empty order'
+				);
+			});
+
+			it('should revert when -withdrawableMargin then trading on existing position', async () => {
+				const margin = toUnit('1000');
+				const price = toUnit('50');
+				const size = divideDecimal(margin, price); // 1x
+
+				await setPrice(baseAsset, price);
+
+				// Create a valid position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+					from: trader,
+				});
+
+				// Get total amount of margin trader is able to withdraw given open position.
+				const withdrawableMargin = await perpsEngine.withdrawableMargin(marketKey, trader);
+
+				// Attempt to withdraw all withdrawable margin then trading.
+				await assert.revert(
+					perpsOrders.transferAndTrade(
+						marketKey,
+						withdrawableMargin.neg(),
+						size.add(toUnit('1')), // Tip the size over by just one additional unit.
+						emptyBytes,
+						{
+							from: trader,
+						}
+					),
+					'Max leverage exceeded'
+				);
+			});
+		});
+
+		describe('on tradeAndTransfer', () => {
+			it('should succeed when closing then withdraw remaining margin', async () => {
+				const price = toUnit('10');
+				const margin = toUnit('1000');
+				const size = divideDecimal(margin, price); // 1x
+
+				// Ignore funding as to assist with calculating the remaining margin.
+				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
+				await setPrice(baseAsset, price);
+
+				// Transfer margin and open position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+					from: trader,
+				});
+
+				// (1) Simulate trade (close position) to find the resulting margin.
+				// (2) Using simulation data (margin), perform a close and withdraw remaining margin.
+				const fee = (await perpsOrders.orderFee(marketKey, size.neg())).fee;
+				const { margin: remainingMargin } = await perpsEngine.simulateTrade(
+					marketKey,
+					trader,
+					size.neg(),
+					[fee, toUnit('0'), emptyBytes],
+					{ from: trader }
+				);
+				const tx = await perpsOrders.tradeAndTransfer(
+					marketKey,
+					remainingMargin.neg(),
+					size.neg(),
+					emptyBytes,
+					{
+						from: trader,
+					}
+				);
+
+				// Position should be closed with no remaining margin.
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(position.size, '0');
+				assert.bnClose(position.margin, '0');
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine, perpsStorage],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log.name),
+					[
+						'FundingUpdated',
+						'Issued',
+						'PositionModified',
+						'Issued',
+						'MarginModified',
+						'PositionModified',
+					]
+				);
+			});
+
+			it('should revert when no position is available', async () => {
+				const margin = toUnit('100');
+				const size = toUnit('100');
+				const price = toUnit('50');
+
+				await setPrice(baseAsset, price);
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(position.id, '0');
+
+				// No prior transfer means there's nothing to trade (i.e. no position).
+				await assert.revert(
+					perpsOrders.tradeAndTransfer(marketKey, margin, size, emptyBytes, {
+						from: trader,
+					}),
+					'Insufficient margin'
+				);
+			});
+
+			it('should revert when transfer amount exceeds remaining', async () => {
+				const margin = toUnit('1000');
+				const size = toUnit('50');
+				const price = toUnit('10');
+
+				await setPrice(baseAsset, price);
+
+				// Transfer margin and open position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+					from: trader,
+				});
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				// Close position and withdraw too much margin.
+				const excessiveMarginBuffer = toUnit('5000'); // 5000 more margin than available.
+
+				await assert.revert(
+					perpsOrders.tradeAndTransfer(
+						marketKey,
+						toBN(position.margin)
+							.add(excessiveMarginBuffer)
+							.neg(),
+						toBN(position.size).neg(),
+						emptyBytes,
+						{
+							from: trader,
+						}
+					),
+					'Insufficient margin'
+				);
+			});
+		});
+
+		describe('on closeAndWithdraw', () => {
+			it('should succeed at withdrawing all margin when position open', async () => {
+				const margin = toUnit('1000');
+				const price = toUnit('50');
+				const size = divideDecimal(margin, price); // 1x
+
+				// Transfer and open a position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
+					from: trader,
+				});
+
+				// Close position and withdraw all margin.
+				const tx = await perpsOrders.closeAndWithdraw(marketKey, emptyBytes, {
+					from: trader,
+				});
+
+				// Position should be completely closed.
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.bnEqual(position.margin, '0');
+				assert.bnEqual(position.size, '0');
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine, perpsStorage],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log.name),
+					[
+						'FundingUpdated',
+						'Issued',
+						'PositionModified',
+						'Issued',
+						'MarginModified',
+						'PositionModified',
+					]
+				);
+			});
+
+			it('should revert when there is no position to close', async () => {
+				await assert.revert(
+					perpsOrders.closeAndWithdraw(marketKey, emptyBytes, {
+						from: trader,
+					}),
+					'Cannot submit empty order'
+				);
 			});
 		});
 	});
