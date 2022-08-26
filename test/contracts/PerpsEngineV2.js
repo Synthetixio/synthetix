@@ -3221,16 +3221,45 @@ contract('PerpsEngineV2', accounts => {
 		});
 
 		describe('canLiquidate() helper', () => {
+			beforeEach(async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await transfer(toUnit('1000'), trader);
+				await transfer(toUnit('1000'), trader2);
+				await transfer(toUnit('1000'), trader3);
+				await trade(toUnit('40'), trader);
+				await trade(toUnit('20'), trader2);
+				await trade(toUnit('-20'), trader3);
+			});
+
 			it('returns true for liquidatable acounts', async () => {
-				assert.isTrue(false);
+				let liquidatables;
+				await setPrice(baseAsset, toUnit('200'));
+
+				liquidatables = await instance.canLiquidate(marketKey, [trader, trader2]);
+				assert.deepEqual(liquidatables, [true, true]);
+
+				// confirm the rest
+				liquidatables = await instance.canLiquidate(marketKey, [trader3]);
+				assert.deepEqual(liquidatables, [false]);
 			});
 
 			it('returns false for non-liquidatable accounts', async () => {
-				assert.isTrue(false);
+				let liquidatables;
+				await setPrice(baseAsset, toUnit('400'));
+
+				liquidatables = await instance.canLiquidate(marketKey, [trader, trader2]);
+				assert.deepEqual(liquidatables, [false, false]);
+
+				// confirm the rest
+				liquidatables = await instance.canLiquidate(marketKey, [trader3]);
+				assert.deepEqual(liquidatables, [true]);
 			});
 
 			it('returns mixed values according to accounts', async () => {
-				assert.isTrue(false);
+				await setPrice(baseAsset, toUnit('200'));
+
+				const liquidatables = await instance.canLiquidate(marketKey, [trader, trader2, trader3]);
+				assert.deepEqual(liquidatables, [true, true, false]);
 			});
 		});
 
