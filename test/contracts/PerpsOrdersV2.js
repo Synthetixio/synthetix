@@ -759,27 +759,28 @@ contract('PerpsOrdersV2', accounts => {
 				const margin = toUnit('1000');
 				const size = toUnit('50');
 				const price = toUnit('10');
+				const trackingCode = toBytes32('');
 
 				await setPrice(baseAsset, price);
 
 				// Transfer margin and open position.
-				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+				await perpsOrders.transferAndTrade(marketKey, margin, size, trackingCode, {
 					from: trader,
 				});
 
-				const withdrawableMargin = await perpsEngine.withdrawableMargin(marketKey, trader);
+				// Close position (-size) and withdraw available margin (before) the final trade.
+				//
+				// There will be more margin to withdraw after the position is closed.
+				const withdrawableMargin1 = await perpsEngine.withdrawableMargin(marketKey, trader);
 				const tx = await perpsOrders.tradeAndTransfer(
 					marketKey,
-					withdrawableMargin.neg(),
+					withdrawableMargin1.neg(),
 					size.neg(),
-					toBytes32(''),
+					trackingCode,
 					{
 						from: trader,
 					}
 				);
-
-				const updatedPosition = (await perpsOrders.positionSummary(marketKey, trader)).position;
-				assert.equal(updatedPosition.size, '0');
 
 				// Verify order of events.
 				const decodedLogs = await getDecodedLogs({
@@ -790,6 +791,16 @@ contract('PerpsOrdersV2', accounts => {
 					decodedLogs.map(log => log?.name).filter(name => !!name),
 					['Issued', 'PositionModified', 'Issued', 'MarginModified', 'PositionModified']
 				);
+
+				// Withdraw all remaining after trade succeeds.
+				const withdrawableMargin2 = await perpsEngine.withdrawableMargin(marketKey, trader);
+				await perpsOrders.transferMargin(marketKey, withdrawableMargin2.neg(), {
+					from: trader,
+				});
+
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+				assert.equal(position.size, '0');
+				assert.bnClose(position.margin, '0');
 			});
 
 			it('should revert when no position is available', async () => {
@@ -841,6 +852,49 @@ contract('PerpsOrdersV2', accounts => {
 						}
 					),
 					'Insufficient margin'
+				);
+			});
+		});
+
+		describe('on closeAndWithdraw', () => {
+			it('should succeed at withdrawing all margin when position open', async () => {
+				const margin = toUnit('1000');
+				const price = toUnit('50');
+				const size = divideDecimal(margin, price); // 1x
+
+				// Transfer and open a position.
+				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					from: trader,
+				});
+
+				// Close position and withdraw all margin.
+				const tx = await perpsOrders.closeAndWithdraw(marketKey, toBytes32(''), {
+					from: trader,
+				});
+
+				// Position should be completely closed.
+				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
+
+				assert.bnEqual(position.margin, '0', 'Margin does not match expected');
+				assert.bnEqual(position.size, '0', 'Size does not match expected');
+
+				// Verify order of events.
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, perpsEngine],
+				});
+				assert.deepEqual(
+					decodedLogs.map(log => log?.name).filter(name => !!name),
+					['Issued', 'PositionModified', 'Issued', 'MarginModified', 'PositionModified']
+				);
+			});
+
+			it('should revert when there is no position to close', async () => {
+				await assert.revert(
+					perpsOrders.closeAndWithdraw(marketKey, toBytes32(''), {
+						from: trader,
+					}),
+					'Cannot submit empty order'
 				);
 			});
 		});
