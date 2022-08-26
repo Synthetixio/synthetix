@@ -46,6 +46,7 @@ contract('PerpsOrdersV2', accounts => {
 	const skewScaleUSD = toUnit('100000');
 	const initialPrice = toUnit('100');
 	const minInitialMargin = toUnit('100');
+	const emptyBytes = toBytes32('');
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -617,7 +618,7 @@ contract('PerpsOrdersV2', accounts => {
 		describe('on transferAndTrade', () => {
 			const executeTransferAndTradeWithFee = async (margin, size) => {
 				const fee = (await perpsOrders.orderFee(marketKey, size)).fee;
-				const tx = await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+				const tx = await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 					from: trader,
 				});
 				return [fee, tx];
@@ -705,7 +706,7 @@ contract('PerpsOrdersV2', accounts => {
 				await setPrice(baseAsset, price);
 
 				await assert.revert(
-					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 						from: trader,
 					}),
 					'Insufficient margin'
@@ -720,7 +721,7 @@ contract('PerpsOrdersV2', accounts => {
 				await setPrice(baseAsset, price);
 
 				await assert.revert(
-					perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+					perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 						from: trader,
 					}),
 					'Cannot submit empty order'
@@ -735,7 +736,7 @@ contract('PerpsOrdersV2', accounts => {
 				await setPrice(baseAsset, price);
 
 				// Create a valid position.
-				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 					from: trader,
 				});
 
@@ -748,7 +749,7 @@ contract('PerpsOrdersV2', accounts => {
 						marketKey,
 						withdrawableMargin.neg(),
 						size.add(toUnit('1')), // Tip the size over by just one additional unit.
-						toBytes32(''),
+						emptyBytes,
 						{
 							from: trader,
 						}
@@ -763,13 +764,13 @@ contract('PerpsOrdersV2', accounts => {
 				const price = toUnit('10');
 				const margin = toUnit('1000');
 				const size = divideDecimal(margin, price); // 1x
-				const trackingCode = toBytes32('');
 
+				// Ignore funding as to assist with calculating the remaining margin.
 				await perpsManager.setMaxFundingRate(marketKey, 0, { from: owner });
 				await setPrice(baseAsset, price);
 
 				// Transfer margin and open position.
-				await perpsOrders.transferAndTrade(marketKey, margin, size, trackingCode, {
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 					from: trader,
 				});
 
@@ -780,14 +781,14 @@ contract('PerpsOrdersV2', accounts => {
 					marketKey,
 					trader,
 					size.neg(),
-					[fee, toUnit('0'), trackingCode],
+					[fee, toUnit('0'), emptyBytes],
 					{ from: trader }
 				);
 				const tx = await perpsOrders.tradeAndTransfer(
 					marketKey,
 					remainingMargin.neg(),
 					size.neg(),
-					trackingCode,
+					emptyBytes,
 					{
 						from: trader,
 					}
@@ -828,7 +829,7 @@ contract('PerpsOrdersV2', accounts => {
 
 				// No prior transfer means there's nothing to trade (i.e. no position).
 				await assert.revert(
-					perpsOrders.tradeAndTransfer(marketKey, margin, size, toBytes32(''), {
+					perpsOrders.tradeAndTransfer(marketKey, margin, size, emptyBytes, {
 						from: trader,
 					}),
 					'Insufficient margin'
@@ -843,7 +844,7 @@ contract('PerpsOrdersV2', accounts => {
 				await setPrice(baseAsset, price);
 
 				// Transfer margin and open position.
-				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 					from: trader,
 				});
 
@@ -859,7 +860,7 @@ contract('PerpsOrdersV2', accounts => {
 							.add(excessiveMarginBuffer)
 							.neg(),
 						toBN(position.size).neg(),
-						toBytes32(''),
+						emptyBytes,
 						{
 							from: trader,
 						}
@@ -876,20 +877,20 @@ contract('PerpsOrdersV2', accounts => {
 				const size = divideDecimal(margin, price); // 1x
 
 				// Transfer and open a position.
-				await perpsOrders.transferAndTrade(marketKey, margin, size, toBytes32(''), {
+				await perpsOrders.transferAndTrade(marketKey, margin, size, emptyBytes, {
 					from: trader,
 				});
 
 				// Close position and withdraw all margin.
-				const tx = await perpsOrders.closeAndWithdraw(marketKey, toBytes32(''), {
+				const tx = await perpsOrders.closeAndWithdraw(marketKey, emptyBytes, {
 					from: trader,
 				});
 
 				// Position should be completely closed.
 				const position = (await perpsOrders.positionSummary(marketKey, trader)).position;
 
-				assert.bnEqual(position.margin, '0', 'Margin does not match expected');
-				assert.bnEqual(position.size, '0', 'Size does not match expected');
+				assert.bnEqual(position.margin, '0');
+				assert.bnEqual(position.size, '0');
 
 				// Verify order of events.
 				const decodedLogs = await getDecodedLogs({
@@ -911,7 +912,7 @@ contract('PerpsOrdersV2', accounts => {
 
 			it('should revert when there is no position to close', async () => {
 				await assert.revert(
-					perpsOrders.closeAndWithdraw(marketKey, toBytes32(''), {
+					perpsOrders.closeAndWithdraw(marketKey, emptyBytes, {
 						from: trader,
 					}),
 					'Cannot submit empty order'
