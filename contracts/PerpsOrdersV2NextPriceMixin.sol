@@ -93,8 +93,11 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /// given market and trader return whether their order can be executed and/or cancelled.
     function canExecuteOrCancel(bytes32 marketKey, address account) external view returns (bool canExecute, bool canCancel) {
         NextPriceOrder memory order = nextPriceOrders[marketKey][account];
-        uint curRoundId = currentRoundId(marketKey);
+        if (order.sizeDelta == 0) {
+            return (false, false);
+        }
 
+        uint curRoundId = currentRoundId(marketKey);
         canExecute = _canExecute(curRoundId, order.targetRoundId);
         canCancel = _confirmationWindowOver(marketKey, curRoundId, order.targetRoundId);
     }

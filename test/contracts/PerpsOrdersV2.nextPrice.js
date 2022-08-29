@@ -118,6 +118,57 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 		});
 	});
 
+	describe.only('when invoking canExecuteOrCancel', () => {
+		it('should return (false, false) when no order is available', async () => {
+			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
+				from: trader,
+			});
+			assert.deepEqual([canExecute, canCancel], [false, false]);
+		});
+
+		it('should return (false, false) order was just submitted', async () => {
+			// Create order.
+			await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
+
+			// Check execution/cancellation status.
+			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
+				from: trader,
+			});
+			assert.deepEqual([canExecute, canCancel], [false, false]);
+		});
+
+		it('should return (true, false) order can be executed but not cancelled', async () => {
+			// Create order.
+			await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
+
+			// targetRoundId is always current_round + 1. round++ does it.
+			await setPrice(baseAsset, price);
+
+			// Check execution/cancellation status.
+			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
+				from: trader,
+			});
+			assert.deepEqual([canExecute, canCancel], [true, false]);
+		});
+
+		it('should return (true, false) order can be executed and cancelled', async () => {
+			// Create order.
+			await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
+
+			// Give enough rounds to allow order to be cancellable.
+			await setPrice(baseAsset, price);
+			await setPrice(baseAsset, price);
+			await setPrice(baseAsset, price);
+			await setPrice(baseAsset, price);
+
+			// Check execution/cancellation status.
+			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
+				from: trader,
+			});
+			assert.deepEqual([canExecute, canCancel], [true, true]);
+		});
+	});
+
 	describe('submitNextPriceOrder()', () => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
