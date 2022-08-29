@@ -256,7 +256,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// check view
 			assert.bnEqual((await perpsOrders.orderFeeNextPrice(marketKey, size))[0], expectedFee);
 
-			// excute the order
+			// execute the order
 			const tx = await perpsOrders.executeNextPriceOrder(marketKey, trader, { from: trader });
 
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsEngine] });
@@ -343,9 +343,9 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					args: [await feePool.FEE_ADDRESS(), spotFee],
 					log: decodedLogs.slice(-2, -1)[0], // [-2]
 				});
-				// NextPriceOrderRemoved
+				// NextPriceOrderCancelled
 				decodedEventEqual({
-					event: 'NextPriceOrderRemoved',
+					event: 'NextPriceOrderCancelled',
 					emittedFrom: perpsOrders.address,
 					args: [marketKey, trader, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
@@ -557,14 +557,14 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 				});
 			});
 
-			// helper function to check excutiion and its results
+			// helper function to check execution and its results
 			// from: which account is requesting the execution
 			// targetPrice: the price that the order should be executed at
 			// feeRate: expected exchange fee rate
 			// spotTradeDetails: trade details of the same trade if it would happen as spot
 			async function checkExecution(from, targetPrice, feeRate, noFeeTradeResults) {
 				const currentMargin = toBN((await getPosition(trader)).margin);
-				// excute the order
+				// execute the order
 				const tx = await perpsOrders.executeNextPriceOrder(marketKey, trader, { from: from });
 
 				// check order is removed now
@@ -638,9 +638,9 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
-				// NextPriceOrderRemoved
+				// NextPriceOrderExecuted
 				decodedEventEqual({
-					event: 'NextPriceOrderRemoved',
+					event: 'NextPriceOrderExecuted',
 					emittedFrom: perpsOrders.address,
 					args: [marketKey, trader, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],

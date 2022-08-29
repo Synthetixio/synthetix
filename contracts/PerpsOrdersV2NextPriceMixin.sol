@@ -39,7 +39,18 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
         bytes32 trackingCode
     );
 
-    event NextPriceOrderRemoved(
+    event NextPriceOrderExecuted(
+        bytes32 indexed marketKey,
+        address indexed account,
+        uint curRoundId,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    );
+
+    event NextPriceOrderCancelled(
         bytes32 indexed marketKey,
         address indexed account,
         uint curRoundId,
@@ -201,8 +212,9 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
         // remove stored order
         delete nextPriceOrders[marketKey][account];
+
         // emit event
-        emit NextPriceOrderRemoved(
+        emit NextPriceOrderCancelled(
             marketKey,
             account,
             curRoundId,
@@ -267,8 +279,9 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
         // remove stored order
         delete nextPriceOrders[marketKey][account];
+
         // emit event
-        emit NextPriceOrderRemoved(
+        emit NextPriceOrderExecuted(
             marketKey,
             account,
             curRoundId,
