@@ -93,12 +93,14 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     /// given market and trader return whether their order can be executed and/or cancelled.
     function canExecuteOrCancel(bytes32 marketKey, address account) external view returns (bool canExecute, bool canCancel) {
         NextPriceOrder memory order = nextPriceOrders[marketKey][account];
+
+        /// order does not exist - we cannot execute nor cancel.
         if (order.sizeDelta == 0) {
             return (false, false);
         }
 
         uint curRoundId = currentRoundId(marketKey);
-        canExecute = _canExecute(curRoundId, order.targetRoundId);
+        canExecute = _canExecute(marketKey, curRoundId, order.targetRoundId);
         canCancel = _confirmationWindowOver(marketKey, curRoundId, order.targetRoundId);
     }
 
@@ -261,7 +263,7 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
 
         // check round-Id
         uint curRoundId = currentRoundId(marketKey);
-        require(_canExecute(curRoundId, order.targetRoundId), "Target roundId not reached");
+        require(order.targetRoundId <= curRoundId, "Target roundId not reached");
 
         // check order is not too old to execute
         // we cannot allow executing old orders because otherwise perps knowledge
@@ -333,8 +335,9 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     }
 
     /// returns true if order can be executed, false otherwise.
-    function _canExecute(uint curRoundId, uint targetRoundId) internal view returns (bool) {
-        return targetRoundId <= curRoundId;
+    function _canExecute(bytes32 marketKey, uint curRoundId, uint targetRoundId) internal view returns (bool) {
+        // Order exceeded our target round but order is also not too old.
+        return targetRoundId <= curRoundId && !_confirmationWindowOver(marketKey, curRoundId, targetRoundId);
     }
 
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot

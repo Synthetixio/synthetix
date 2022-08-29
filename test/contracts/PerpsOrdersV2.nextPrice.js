@@ -118,7 +118,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 		});
 	});
 
-	describe.only('when invoking canExecuteOrCancel', () => {
+	describe('when invoking canExecuteOrCancel', () => {
 		it('should return (false, false) when no order is available', async () => {
 			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
 				from: trader,
@@ -151,21 +151,23 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			assert.deepEqual([canExecute, canCancel], [true, false]);
 		});
 
-		it('should return (true, false) order can be executed and cancelled', async () => {
-			// Create order.
+		it('should return (false, true) order cannot be executed but can be cancelled', async () => {
+			// Set an explicit confirm window to avoid inadvertently breaking this on external changes.
+			await perpsManager.setNextPriceConfirmWindow(marketKey, 2, { from: owner });
+
+			// Create order (starting round = 3)
 			await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 
-			// Give enough rounds to allow order to be cancellable.
-			await setPrice(baseAsset, price);
-			await setPrice(baseAsset, price);
-			await setPrice(baseAsset, price);
-			await setPrice(baseAsset, price);
+			await setPrice(baseAsset, price); // current_round = 4 - 4 < 2
+			await setPrice(baseAsset, price); // current_round = 5 - 4 < 2
+			await setPrice(baseAsset, price); // current_round = 6 - 4 < 2
+			await setPrice(baseAsset, price); // current_round = 7 - 4 > 2 (oops! too old)
 
 			// Check execution/cancellation status.
 			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
 				from: trader,
 			});
-			assert.deepEqual([canExecute, canCancel], [true, true]);
+			assert.deepEqual([canExecute, canCancel], [false, true]);
 		});
 	});
 
