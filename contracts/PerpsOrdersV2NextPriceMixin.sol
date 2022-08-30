@@ -335,7 +335,11 @@ contract PerpsOrdersV2NextPriceMixin is PerpsOrdersV2Base {
     }
 
     /// returns true if order can be executed, false otherwise.
-    function _canExecute(bytes32 marketKey, uint curRoundId, uint targetRoundId) internal view returns (bool) {
+    function _canExecute(
+        bytes32 marketKey,
+        uint curRoundId,
+        uint targetRoundId
+    ) internal view returns (bool) {
         // Order exceeded our target round but order is also not too old.
         return targetRoundId <= curRoundId && !_confirmationWindowOver(marketKey, curRoundId, targetRoundId);
     }
