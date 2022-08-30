@@ -120,6 +120,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 
 	describe('when invoking canExecuteOrCancel', () => {
 		it('should return (false, false) when no order is available', async () => {
+			// Check execution/cancellation status.
 			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
 				from: trader,
 			});
@@ -141,7 +142,7 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// Create order.
 			await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 
-			// targetRoundId is always current_round + 1. round++ does it.
+			// targetRoundId is always currentRound + 1. round++ does it.
 			await setPrice(baseAsset, price);
 
 			// Check execution/cancellation status.
@@ -158,10 +159,10 @@ contract('PerpsOrdersV2 mixin for next price orders', accounts => {
 			// Create order (starting round = 3)
 			await perpsOrders.submitNextPriceOrder(marketKey, size, { from: trader });
 
-			await setPrice(baseAsset, price); // current_round = 4 - 4 < 2
-			await setPrice(baseAsset, price); // current_round = 5 - 4 < 2
-			await setPrice(baseAsset, price); // current_round = 6 - 4 < 2
-			await setPrice(baseAsset, price); // current_round = 7 - 4 > 2 (oops! too old)
+			await setPrice(baseAsset, price); // currentRound = 4 - 4 < 2
+			await setPrice(baseAsset, price); // currentRound = 5 - 4 < 2
+			await setPrice(baseAsset, price); // currentRound = 6 - 4 < 2
+			await setPrice(baseAsset, price); // currentRound = 7 - 4 > 2 (oops! too old)
 
 			// Check execution/cancellation status.
 			const { canExecute, canCancel } = await perpsOrders.canExecuteOrCancel(marketKey, trader, {
