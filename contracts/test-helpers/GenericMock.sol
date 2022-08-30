@@ -1,7 +1,7 @@
 // Source adapted from  https://github.com/EthWorks/Doppelganger/blob/master/contracts/Doppelganger.sol
 
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 contract GenericMock {
     mapping(bytes4 => bytes) public mockConfig;
 

@@ -1,5 +1,5 @@
 pragma solidity >=0.4.24;
-
+pragma experimental ABIEncoderV2;
 import "./IVirtualSynth.sol";
 
 // https://docs.synthetix.io/contracts/source/interfaces/iexchanger

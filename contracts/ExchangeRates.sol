@@ -192,11 +192,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     // SIP-120 Atomic exchanges
     function effectiveAtomicValueAndRates(
-        IDirectIntegrationManager.ParameterIntegrationSettings calldata,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory hello,
         uint,
-        IDirectIntegrationManager.ParameterIntegrationSettings calldata
+        IDirectIntegrationManager.ParameterIntegrationSettings memory world
     )
-        external
+        public
         view
         returns (
             uint,
@@ -338,7 +338,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return false;
     }
 
-    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings calldata) external view returns (bool) {
+    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory fun) public view returns (bool) {
         _notImplemented();
     }
 

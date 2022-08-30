@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 import "./MigrationLib_DiphdaOptimism.sol";
 
 // solhint-disable contract-name-camelcase

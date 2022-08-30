@@ -1,6 +1,6 @@
 // @unsupported: ovm
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";

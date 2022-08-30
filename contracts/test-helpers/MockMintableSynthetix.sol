@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 contract MockMintableSynthetix {
     address public mintSecondaryCallAccount;
     uint public mintSecondaryCallAmount;

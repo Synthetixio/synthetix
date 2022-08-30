@@ -1,5 +1,5 @@
 pragma solidity >=0.4.24;
-
+pragma experimental ABIEncoderV2;
 interface ILiquidator {
     // Views
     function issuanceRatio() external view returns (uint);

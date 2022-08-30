@@ -2,7 +2,7 @@
  * with Synthetix for testing ERC20 compatability
  */
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 import "../Owned.sol";
 import "../interfaces/ISynthetix.sol";
 import "../interfaces/IFeePool.sol";

@@ -32,7 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 /**
  * @title SignedSafeMath
  * @dev Signed math operations with safety checks that revert on error.

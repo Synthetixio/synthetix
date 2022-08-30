@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 // Libraries
 import "../Exchanger.sol";
 

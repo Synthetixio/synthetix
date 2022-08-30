@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 contract TemporarilyOwned {
     address public temporaryOwner;
     address public nominatedOwner;
