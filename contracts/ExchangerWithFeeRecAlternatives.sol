@@ -6,6 +6,7 @@ import "./Exchanger.sol";
 // Internal references
 import "./MinimalProxyFactory.sol";
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IDirectIntegrationManager.sol";
 import "./interfaces/IERC20.sol";
 
 interface IVirtualSynthInternal {
@@ -36,15 +37,21 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_VIRTUALSYNTH_MASTERCOPY = "VirtualSynthMastercopy";
+    bytes32 private constant CONTRACT_DIRECT_INTEGRATION_MANAGER = "DirectIntegrationManager";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Exchanger.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
+        bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_VIRTUALSYNTH_MASTERCOPY;
+        newAddresses[1] = CONTRACT_DIRECT_INTEGRATION_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== VIEWS ========== */
+
+    function directIntegrationManager() internal view returns (IDirectIntegrationManager) {
+        return IDirectIntegrationManager(requireAndGetAddress(CONTRACT_DIRECT_INTEGRATION_MANAGER));
+    }
 
     function atomicMaxVolumePerBlock() external view returns (uint) {
         return getAtomicMaxVolumePerBlock();
@@ -55,7 +62,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         view
         returns (uint exchangeFeeRate)
     {
-        exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);
     }
 
     function getAmountsForAtomicExchange(
@@ -71,10 +80,15 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             uint exchangeFeeRate
         )
     {
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
+
         (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmount,
-            sourceCurrencyKey,
-            destinationCurrencyKey
+            sourceSettings,
+            destinationSettings,
+            usdSettings
         );
     }
 
@@ -96,41 +110,6 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress
-        );
-
-        require(amountReceived >= minAmount, "The amount received is below the minimum amount specified.");
-
-        _processTradingRewards(fee, destinationAddress);
-
-        if (trackingCode != bytes32(0)) {
-            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
-        }
-    }
-
-    function exchangeAtomically(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress,
-        bytes32 trackingCode,
-        uint minAmount,
-        address directIntegrationIn,
-        bytes calldata payloadIn,
-        address directIntegrationOut,
-        bytes calldata payloadOut
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
-        uint fee;
-        (amountReceived, fee) = _exchangeAtomically(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            directIntegrationIn,
-            payloadIn,
-            directIntegrationOut,
-            payloadOut
         );
 
         require(amountReceived >= minAmount, "The amount received is below the minimum amount specified.");
@@ -172,9 +151,12 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
+
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
-        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
+        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationSettings), "Dest synth too volatile");
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
@@ -189,6 +171,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint systemSourceRate;
         uint systemDestinationRate;
 
+        // sometimes we need parameters for USD and USD has parameters which could be overridden
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(from, sUSD);
+
         // Note: also ensures the given synths are allowed to be atomically exchanged
         (
             amountReceived, // output amount with fee taken out (denominated in dest currency)
@@ -197,7 +182,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             systemConvertedAmount, // current system value without fees (denominated in dest currency)
             systemSourceRate, // current system rate for src currency
             systemDestinationRate // current system rate for dest currency
-        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
+        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, destinationSettings, usdSettings);
 
         // SIP-65: Decentralized Circuit Breaker (checking current system rates)
         if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
@@ -221,12 +206,12 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         } else {
             // Otherwise, convert source to sUSD value
             (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
-                _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, sUSD);
+                _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, usdSettings, usdSettings);
             sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
         }
 
         // Check and update atomic volume limit
-        _checkAndUpdateAtomicVolume(sourceSusdValue);
+        _checkAndUpdateAtomicVolume(sourceSettings, sourceSusdValue);
 
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -290,176 +275,29 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // No need to persist any exchange information, as no settlement is required for atomic exchanges
     }
 
-    function _exchangeAtomically(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress,
-        address directIntegrationIn, // curve pool for sUSD
-        bytes memory payloadIn, // encoded("exchangeUnderlying(USDC, sUSD)")
-        address directIntegrationOut, // curve pool for sETH
-        bytes memory payloadOut // encoded
-    ) internal returns (uint amountReceived, uint fee) {
-        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceCurrencyKey), "Src synth too volatile");
-        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationCurrencyKey), "Dest synth too volatile");
-
-        if (directIntegrationIn != address(0)) {
-            // check if direct integration address exists
-
-            // solhint-disable avoid-low-level-calls
-            (bool payloadInCallSucceeded, bytes memory payloadInCallResult) = directIntegrationIn.call(payloadIn);
-            require(payloadInCallSucceeded, string(abi.encode("directIntegrationIn call failed:", payloadInCallResult)));
-
-            // check that sUSD increased by x amount (measure balanceBefore / balanceAfter)
-        }
-
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
-
-        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
-        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmountAfterSettlement == 0) {
-            return (0, 0);
-        }
-
-        uint exchangeFeeRate;
-        uint systemConvertedAmount;
-        uint systemSourceRate;
-        uint systemDestinationRate;
-
-        // Note: also ensures the given synths are allowed to be atomically exchanged
-        (
-            amountReceived, // output amount with fee taken out (denominated in dest currency)
-            fee, // fee amount (denominated in dest currency)
-            exchangeFeeRate, // applied fee rate
-            systemConvertedAmount, // current system value without fees (denominated in dest currency)
-            systemSourceRate, // current system rate for src currency
-            systemDestinationRate // current system rate for dest currency
-        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
-
-        // SIP-65: Decentralized Circuit Breaker (checking current system rates)
-        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0);
-        }
-
-        // Sanity check atomic output's value against current system value (checking atomic rates)
-        require(
-            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
-            "Atomic rate deviates too much"
-        );
-
-        // Determine sUSD value of exchange
-        uint sourceSusdValue;
-        if (sourceCurrencyKey == sUSD) {
-            // Use after-settled amount as this is amount converted (not sourceAmount)
-            sourceSusdValue = sourceAmountAfterSettlement;
-        } else if (destinationCurrencyKey == sUSD) {
-            // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
-            sourceSusdValue = systemConvertedAmount;
-        } else {
-            // Otherwise, convert source to sUSD value
-            (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
-                _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, sUSD);
-            sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
-        }
-
-        // Check and update atomic volume limit
-        _checkAndUpdateAtomicVolume(sourceSusdValue);
-
-        // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
-        // the subtraction to not overflow, which would happen if their balance is not sufficient.
-
-        _convert(
-            sourceCurrencyKey,
-            from,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            destinationAddress,
-            false // no vsynths
-        );
-
-        // Remit the fee if required
-        if (fee > 0) {
-            // Normalize fee to sUSD
-            // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
-
-            // Remit the fee in sUSDs
-            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
-
-            // Tell the fee pool about this
-            feePool().recordFeePaid(fee);
-        }
-
-        // Note: As of this point, `fee` is denominated in sUSD.
-
-        // Note: this update of the debt snapshot will not be accurate because the atomic exchange
-        // was executed with a different rate than the system rate. To be perfect, issuance data,
-        // priced in system rates, should have been adjusted on the src and dest synth.
-        // The debt pool is expected to be deprecated soon, and so we don't bother with being
-        // perfect here. For now, an inaccuracy will slowly accrue over time with increasing atomic
-        // exchange volume.
-        _updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [systemSourceRate, systemDestinationRate]
-        );
-
-        // Let the DApps know there was a Synth exchange
-        ISynthetixInternal(address(synthetix())).emitSynthExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            destinationAddress
-        );
-
-        // Emit separate event to track atomic exchanges
-        ISynthetixInternal(address(synthetix())).emitAtomicSynthExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            destinationAddress
-        );
-
-        // No need to persist any exchange information, as no settlement is required for atomic exchanges
-
-        if (directIntegrationOut != address(0)) {
-            // check if direct integration address exists
-
-            // solhint-disable avoid-low-level-calls
-            (bool payloadOutCallSucceeded, bytes memory payloadOutCallResult) = directIntegrationOut.call(payloadOut);
-            require(payloadOutCallSucceeded, string(abi.encode("directIntegrationOut call failed:", payloadOutCallResult)));
-
-            // TODO: make sure no stray funds are remaining in the contract
-            // require(token.balanceOf(address(this)) == 0, "");
-        }
-    }
-
-    function _checkAndUpdateAtomicVolume(uint sourceSusdValue) internal {
+    function _checkAndUpdateAtomicVolume(IDirectIntegrationManager.ParameterIntegrationSettings memory settings, uint sourceSusdValue) internal {
         uint currentVolume =
             uint(lastAtomicVolume.time) == block.timestamp
                 ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
                 : sourceSusdValue;
-        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed volume limit");
+        require(currentVolume <= settings.atomicMaxVolumePerBlock, "Surpassed volume limit");
         lastAtomicVolume.time = uint64(block.timestamp);
         lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
     }
 
-    function _feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+    function _feeRateForAtomicExchange(
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+    )
         internal
         view
         returns (uint)
     {
         // Get the exchange fee rate as per source and destination currencyKey
-        uint baseRate = getAtomicExchangeFeeRate(sourceCurrencyKey).add(getAtomicExchangeFeeRate(destinationCurrencyKey));
+        uint baseRate = sourceSettings.atomicExchangeFeeRate.add(destinationSettings.atomicExchangeFeeRate);
         if (baseRate == 0) {
             // If no atomic rate was set, fallback to the regular exchange rate
-            baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
+            baseRate = sourceSettings.exchangeFeeRate.add(destinationSettings.exchangeFeeRate);
         }
 
         return baseRate;
@@ -467,8 +305,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
     function _getAmountsForAtomicExchangeMinusFees(
         uint sourceAmount,
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings
     )
         internal
         view
@@ -483,9 +322,14 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     {
         uint destinationAmount;
         (destinationAmount, systemConvertedAmount, systemSourceRate, systemDestinationRate) = exchangeRates()
-            .effectiveAtomicValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+            .effectiveAtomicValueAndRates(
+                sourceSettings, 
+                sourceAmount, 
+                destinationSettings,
+                usdSettings
+            );
 
-        exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }

@@ -1,21 +1,20 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
-import "./IERC20.sol";
-
 // https://docs.synthetix.io/contracts/source/interfaces/IDirectIntegration
 interface IDirectIntegrationManager {
-    struct ParameterOverrides {
+    struct StoredParameterIntegrationSettings {
         // A list of parameters that can be configured for direct integrations.
         // https://sips.synthetix.io/sips/sip-267/#parameters-involved
-        address dexPriceAggregator;
-        uint atomicExchangeFeeRate; // TODO: create list to handle multiple synths
+        MappedParameter[] atomicEquivalentForDexPricing; // value is encoded as a uint but can be converted into an address using address(uint160())
+        MappedParameter[] atomicExchangeFeeRate;
+        uint atomicTwapWindow;
         uint atomicMaxTwapDelta;
         uint atomicMaxVolumePerBlock;
-        uint atomicVolatilityConsiderationWindow;
-        uint atomicVolatilityTwapSeconds;
-        uint atomicVolatilityUpdateThreshold;
-        uint exchangeFeeRate; // TODO: create list to handle multiple synths
+        MappedParameter[] atomicVolatilityConsiderationWindow;
+        MappedParameter[] atomicVolatilityTwapSeconds;
+        MappedParameter[] atomicVolatilityUpdateThreshold;
+        MappedParameter[] exchangeFeeRate;
         uint exchangeMaxDynamicFee;
         uint exchangeDynamicFeeRounds;
         uint exchangeDynamicFeeThreshold;
@@ -24,9 +23,29 @@ interface IDirectIntegrationManager {
         // since they should also be configurable via the DirectIntegration contract
     }
 
-    function getParameterOverrides(address integration) external view returns (ParameterOverrides memory overrides);
+    struct ParameterIntegrationSettings {
+        bytes32 currencyKey;
+        address atomicEquivalentForDexPricing;
+        uint atomicExchangeFeeRate;
+        uint atomicTwapWindow;
+        uint atomicMaxTwapDelta;
+        uint atomicMaxVolumePerBlock;
+        uint atomicVolatilityConsiderationWindow;
+        uint atomicVolatilityTwapSeconds;
+        uint atomicVolatilityUpdateThreshold;
+        uint exchangeFeeRate;
+        uint exchangeMaxDynamicFee;
+        uint exchangeDynamicFeeRounds;
+        uint exchangeDynamicFeeThreshold;
+        uint exchangeDynamicFeeWeightDecay;
+    }
 
-    function setParameterOverrides(address integration, ParameterOverrides calldata params) external;
+    struct MappedParameter {
+        bytes32 key;
+        uint value;
+    }
 
-    // TODO: Consider moving all related parameters from SystemSettings to the DirectIntegrationManager.
+    function getExchangeParameters(address integration, bytes32 key) external view returns (ParameterIntegrationSettings memory settings);
+
+    function setExchangeParameters(address integration, StoredParameterIntegrationSettings calldata params) external;
 }

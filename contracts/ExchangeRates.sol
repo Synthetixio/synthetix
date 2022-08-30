@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -191,9 +192,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     // SIP-120 Atomic exchanges
     function effectiveAtomicValueAndRates(
-        bytes32,
+        IDirectIntegrationManager.ParameterIntegrationSettings calldata,
         uint,
-        bytes32
+        IDirectIntegrationManager.ParameterIntegrationSettings calldata
     )
         external
         view
@@ -337,7 +338,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return false;
     }
 
-    function synthTooVolatileForAtomicExchange(bytes32) external view returns (bool) {
+    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings calldata) external view returns (bool) {
         _notImplemented();
     }
 
