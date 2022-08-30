@@ -704,7 +704,7 @@
 				"Liquidator",
 				"RewardEscrowV2Storage"
 			]
-    },
+		},
 		{
 			"sip": 257,
 			"layer": "both",
@@ -1352,6 +1352,23 @@
 			},
 			"sips": [230, 249, 257, 262, 269],
 			"released": true
+		},
+		{
+			"name": "Aspidiske",
+			"version": {
+				"major": 2,
+				"minor": 77
+			},
+			"sips": [252]
+		},
+		{
+			"name": "Aspidiske (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 77
+			},
+			"sips": [252]
 		}
 	]
 }
