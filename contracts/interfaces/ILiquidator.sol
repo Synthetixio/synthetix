@@ -34,6 +34,16 @@ interface ILiquidator {
         uint penalty
     ) external view returns (uint);
 
+    function liquidationAmounts(address account, bool isSelfLiquidation)
+        external
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint initialDebtBalance
+        );
+
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;
 

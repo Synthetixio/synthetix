@@ -181,5 +181,8 @@
 	},
 	"CircuitBreaker": {
 		"deploy": false
+	},
+	"RewardEscrowV2Storage": {
+		"deploy": false
 	}
 }

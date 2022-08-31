@@ -12,8 +12,6 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
@@ -23,8 +21,6 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
-import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthRedeemer.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./Proxyable.sol";
@@ -123,8 +119,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return combineArrays(existingAddresses, newAddresses);
     }
 
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {
@@ -143,10 +139,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIXDEBTSHARE));
     }
 
-    function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
-    }
-
     function liquidator() internal view returns (ILiquidator) {
         return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
     }
@@ -159,8 +151,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
+    function rewardEscrowV2() internal view returns (IHasBalance) {
+        return IHasBalance(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function synthetixEscrow() internal view returns (IHasBalance) {
@@ -187,8 +179,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
 
-        (, int256 rawRatio, , uint ratioUpdatedAt, ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        (uint rawRatio, uint ratioUpdatedAt) = _rawDebtRatioAndUpdatedAt();
 
         debt = uint(rawIssuedSynths);
         sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
@@ -197,26 +188,27 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         isStale =
             stalePeriod < block.timestamp &&
-            (block.timestamp - getRateStalePeriod() > issuedSynthsUpdatedAt ||
-                block.timestamp - getRateStalePeriod() > ratioUpdatedAt);
+            (block.timestamp - stalePeriod > issuedSynthsUpdatedAt || block.timestamp - stalePeriod > ratioUpdatedAt);
     }
 
     function issuanceRatio() external view returns (uint) {
         return getIssuanceRatio();
     }
 
-    function _sharesForDebt(uint debtAmount) internal view returns (uint) {
-        (, int256 rawRatio, , , ) =
+    function _rawDebtRatioAndUpdatedAt() internal view returns (uint, uint) {
+        (, int256 rawRatioInt, , uint ratioUpdatedAt, ) =
             AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+        return (uint(rawRatioInt), ratioUpdatedAt);
+    }
 
-        return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(uint(rawRatio));
+    function _sharesForDebt(uint debtAmount) internal view returns (uint) {
+        (uint rawRatio, ) = _rawDebtRatioAndUpdatedAt();
+        return rawRatio == 0 ? 0 : debtAmount.divideDecimalRoundPrecise(rawRatio);
     }
 
     function _debtForShares(uint sharesAmount) internal view returns (uint) {
-        (, int256 rawRatio, , , ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
-
-        return sharesAmount.multiplyDecimalRoundPrecise(uint(rawRatio));
+        (uint rawRatio, ) = _rawDebtRatioAndUpdatedAt();
+        return sharesAmount.multiplyDecimalRoundPrecise(rawRatio);
     }
 
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
@@ -349,21 +341,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _collateral(address account) internal view returns (uint) {
-        uint balance = IERC20(address(synthetix())).balanceOf(account);
-
-        if (address(synthetixEscrow()) != address(0)) {
-            balance = balance.add(synthetixEscrow().balanceOf(account));
-        }
-
-        if (address(rewardEscrowV2()) != address(0)) {
-            balance = balance.add(rewardEscrowV2().balanceOf(account));
-        }
-
-        if (address(liquidatorRewards()) != address(0)) {
-            balance = balance.add(liquidatorRewards().earned(account));
-        }
-
-        return balance;
+        return
+            synthetixERC20()
+                .balanceOf(account)
+                .add(synthetixEscrow().balanceOf(account))
+                .add(rewardEscrowV2().balanceOf(account))
+                .add(liquidatorRewards().earned(account));
     }
 
     function minimumStakeTime() external view returns (uint) {
@@ -475,6 +458,26 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return addresses;
     }
 
+    /// @notice Provide the results that would be returned by the mutative liquidateAccount() method (that's reserved to Synthetix)
+    /// @param account The account to be liquidated
+    /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
+    /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)
+    /// @return debtToRemove the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return escrowToLiquidate the amount of escrow SNX that will be revoked during liquidation
+    /// @return initialDebtBalance the amount of initial (sUSD) debt the account has
+    function liquidationAmounts(address account, bool isSelfLiquidation)
+        external
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint initialDebtBalance
+        )
+    {
+        return _liquidationAmounts(account, isSelfLiquidation);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function _addSynth(ISynth synth) internal {
@@ -517,12 +520,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         if (synthSupply > 0) {
             (uint amountOfsUSD, uint rateToRedeem, ) =
                 exchangeRates().effectiveValueAndRates(currencyKey, synthSupply, "sUSD");
-            require(rateToRedeem > 0, "Cannot remove synth to redeem without rate");
+            require(rateToRedeem > 0, "Cannot remove without rate");
             ISynthRedeemer _synthRedeemer = synthRedeemer();
             synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
             // ensure the debt cache is aware of the new sUSD issued
             debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amountOfsUSD));
-            _synthRedeemer.deprecate(IERC20(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem);
+            _synthRedeemer.deprecate(IERC20(address(Proxyable(synthToRemove).proxy())), rateToRedeem);
         }
 
         // Remove the synth from the availableSynths array.
@@ -689,23 +692,59 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     // SIP-148: Upgraded Liquidation Mechanism
     /// @notice This is where the core internal liquidation logic resides. This function can only be invoked by Synthetix.
+    /// Reverts if liquidator().isLiquidationOpen() returns false (e.g. c-ratio is too high, delay hasn't passed,
+    ///     account wasn't flagged etc)
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
-    /// @return uint the total amount of collateral (SNX) to redeem
-    /// @return uint the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)
+    /// @return debtRemoved the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return escrowToLiquidate the amount of escrow SNX that will be revoked during liquidation
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
         onlySynthetix
-        returns (uint totalRedeemed, uint amountToLiquidate)
+        returns (
+            uint totalRedeemed,
+            uint debtRemoved,
+            uint escrowToLiquidate
+        )
     {
         require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
+        // liquidationAmounts checks isLiquidationOpen for the account
+        uint initialDebtBalance;
+        (totalRedeemed, debtRemoved, escrowToLiquidate, initialDebtBalance) = _liquidationAmounts(
+            account,
+            isSelfLiquidation
+        );
+
+        // Reduce debt shares by amount to liquidate.
+        _removeFromDebtRegister(account, debtRemoved, initialDebtBalance);
+
+        // Remove liquidation flag
+        liquidator().removeAccountInLiquidation(account);
+    }
+
+    function _liquidationAmounts(address account, bool isSelfLiquidation)
+        internal
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint debtBalance
+        )
+    {
+        // Get the account's debt balance
+        bool anyRateIsInvalid;
+        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
+
+        // otherwise calculateAmountToFixCollateral reverts with unhelpful underflow error
+        if (!liquidator().isLiquidationOpen(account, isSelfLiquidation)) {
+            return (0, 0, 0, debtBalance);
+        }
+
         // Get the penalty for the liquidation type
         uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
-
-        // Get the account's debt balance
-        (uint debtBalance, , bool anyRateIsInvalid) =
-            _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
 
         // Get the SNX rate
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
@@ -715,38 +754,77 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint collateralForAccount = _collateral(account);
 
         // Calculate the amount of debt to liquidate to fix c-ratio
-        amountToLiquidate = liquidator().calculateAmountToFixCollateral(
+        debtToRemove = liquidator().calculateAmountToFixCollateral(
             debtBalance,
             _snxToUSD(collateralForAccount, snxRate),
             penalty
         );
 
         // Get the equivalent amount of SNX for the amount to liquidate
-        // Note: While amountToLiquidate takes the penalty into account, it does not accommodate for the addition of the penalty in terms of SNX.
-        // Therefore, it is correct to add the penalty modification below to the totalRedeemed.
-        totalRedeemed = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+        // Note: While calculateAmountToFixCollateral takes the penalty into account,
+        // it only calculates the debt to be repaid (so that c-ratio is reached). The penalty still needs to be
+        // applied on the collateral side (SNX) correctly. Which is why redeemTarget needs to be multiplied by 1 + penalty
+        // to get the SNX amount calculateAmountToFixCollateral was using for its calculation.
+        // This is a "target" because it may not be available, so will be adjusted
+        uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
-        // The balanceOf here can be considered "transferable" since it's not escrowed,
-        // and it is the only SNX that can potentially be transfered if unstaked.
-        uint transferableBalance = IERC20(address(synthetix())).balanceOf(account);
-        if (totalRedeemed > transferableBalance) {
-            // Liquidate the account's debt based on the liquidation penalty.
-            amountToLiquidate = amountToLiquidate.multiplyDecimal(transferableBalance).divideDecimal(totalRedeemed);
+        // calculate actually redeemable collateral for the conditions
+        (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, isSelfLiquidation);
 
-            // Set totalRedeemed to all transferable collateral.
-            // i.e. the value of the account's staking position relative to balanceOf will be unwound.
-            totalRedeemed = transferableBalance;
+        // totalRedeemed == redeemTarget, all of the debtToRemove is removed, otherwise adjust it to redeemable collateral
+        if (totalRedeemed < redeemTarget) {
+            // Adjust debt amount to ratio of actual vs. target collateral amounts
+            debtToRemove = debtToRemove.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);
+
+            // if all collateral is gone, erase the bad debt (some unliquidatable collateral can be in
+            // legacy SynthetixEscrow or LiquidatorRewards (if Synthetix liquidation method didn't call getReward() before this)
+            // Note that collateralForAccount cannot be < totalRedeemed, because totalRedeemed comes from an exact
+            // calculation in _redeemableCollateralForTarget(). If the calculations change to create a possibility
+            // for a rounding imprecision, this check may need to be changed to `<=`.
+            if (collateralForAccount == totalRedeemed) {
+                debtToRemove = debtBalance;
+            }
         }
 
-        // Reduce debt shares by amount to liquidate.
-        _removeFromDebtRegister(account, amountToLiquidate, debtBalance);
+        return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
+    }
 
-        // Remove liquidation flag
-        liquidator().removeAccountInLiquidation(account);
+    // SIP-252
+    // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
+    // of transferrable & escrowed collateral & self or forced liquidation
+    function _redeemableCollateralForTarget(
+        address account,
+        uint redeemTarget,
+        bool isSelfLiquidation
+    ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
+        // The balanceOf here can be considered "transferable" since it's not escrowed,
+        // and it is the only SNX that can potentially be transfered if unstaked.
+        uint transferable = synthetixERC20().balanceOf(account);
+        if (redeemTarget <= transferable) {
+            // transferrable is enough
+            return (redeemTarget, 0);
+        } else {
+            // if transferrable is not enough
+            if (isSelfLiquidation) {
+                // cannot use escrow because it's not available for self-liquidation
+                return (transferable, 0);
+            } else {
+                // can use escrow if forced liquidation
+                uint escrow = rewardEscrowV2().balanceOf(account);
+                if (redeemTarget > transferable.add(escrow)) {
+                    // all of escrow needs to be redeemed
+                    return (transferable.add(escrow), escrow);
+                } else {
+                    // need only part of the escrow, add the needed part to redeemed
+                    escrowToLiquidate = redeemTarget.sub(transferable);
+                    return (transferable.add(escrowToLiquidate), escrowToLiquidate);
+                }
+            }
+        }
     }
 
     function setCurrentPeriodId(uint128 periodId) external {
-        require(msg.sender == address(feePool()), "Must be fee pool");
+        require(msg.sender == requireAndGetAddress(CONTRACT_FEEPOOL), "Must be fee pool");
 
         ISynthetixDebtShare sds = synthetixDebtShare();
 
@@ -923,7 +1001,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== MODIFIERS ========== */
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetix()), "Issuer: Only the synthetix contract can perform this action");
+        require(msg.sender == address(synthetixERC20()), "Issuer: Only Synthetix");
         _;
     }
 
@@ -936,7 +1014,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Issuer: Only the SynthRedeemer contract can perform this action");
+        require(msg.sender == address(synthRedeemer()), "Issuer: Only SynthRedeemer");
     }
 
     modifier onlySynthRedeemer() {

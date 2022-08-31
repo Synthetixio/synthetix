@@ -170,4 +170,53 @@ contract('ReadProxy', async accounts => {
 			);
 		});
 	});
+
+	describe('ImmutableReadProxy forwards views as expected', () => {
+		let mockMutator;
+		beforeEach(async () => {
+			mockMutator = await artifacts.require('MockMutator').new();
+
+			// initialize immutable proxy forwarder
+			forwarder = await artifacts.require('ImmutableReadProxy').new(mockMutator.address);
+		});
+
+		it('When trying to forward to the view, it works as expected', async () => {
+			const response = await proxyThruTo({
+				proxy: forwarder,
+				target: mockMutator,
+				fncName: 'read',
+				args: [],
+				from: account3,
+				call: true,
+			});
+
+			assert.equal(response, '0');
+		});
+
+		it('When trying to forward a call to the mutative function, it reverts', async () => {
+			// forwarder uses staticcall which reverts on any state mutation
+			await assert.revert(
+				proxyThruTo({
+					proxy: forwarder,
+					target: mockMutator,
+					fncName: 'update',
+					args: [],
+					from: account3,
+					call: true,
+				})
+			);
+		});
+		it('When trying to forward a transaction to the mutative function, it reverts', async () => {
+			await assert.revert(
+				proxyThruTo({
+					proxy: forwarder,
+					target: mockMutator,
+					fncName: 'update',
+					args: [],
+					from: account3,
+					call: false, // try as transaction
+				})
+			);
+		});
+	});
 });

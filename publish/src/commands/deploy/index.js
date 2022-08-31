@@ -23,6 +23,7 @@ const {
 
 const addSynthsToProtocol = require('./add-synths-to-protocol');
 const configureLegacySettings = require('./configure-legacy-settings');
+const configureRewardEscrow = require('./configure-reward-escrow');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
@@ -198,7 +199,7 @@ const deploy = async ({
 
 	const { account } = deployer;
 
-	if (!account) {
+	if (!signer) {
 		signer = deployer.signer;
 	}
 
@@ -356,6 +357,12 @@ const deploy = async ({
 		useOvm,
 	});
 
+	await configureRewardEscrow({
+		addressOf,
+		deployer,
+		runStep,
+	});
+
 	await importFeePeriods({
 		deployer,
 		explorerLinkPrefix,
@@ -432,6 +439,8 @@ const deploy = async ({
 		freshDeploy,
 		deploymentPath,
 		network,
+		generateSolidity,
+		yes,
 	});
 
 	// await takeDebtSnapshotWhenRequired({

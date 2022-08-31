@@ -101,6 +101,12 @@
 	"RewardEscrowV2": {
 		"deploy": true
 	},
+	"RewardEscrowV2Storage": {
+		"deploy": true
+	},
+	"RewardEscrowV2Frozen": {
+		"deploy": true
+	},
 	"RewardsDistribution": {
 		"deploy": true
 	},
@@ -152,10 +158,19 @@
 	"TokenStatesETH": {
 		"deploy": true
 	},
+	"TokenStatesLINK": {
+		"deploy": true
+	},
 	"ProxysETH": {
 		"deploy": true
 	},
+	"ProxysLINK": {
+		"deploy": true
+	},
 	"SynthsETH": {
+		"deploy": true
+	},
+	"SynthsLINK": {
 		"deploy": true
 	},
 	"MockToken": {

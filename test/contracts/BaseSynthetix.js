@@ -117,7 +117,9 @@ contract('BaseSynthetix', async accounts => {
 				'transferFrom',
 				'liquidateSelf',
 				'liquidateDelinquentAccount',
+				'liquidateDelinquentAccountEscrowIndex',
 				'initializeLiquidatorRewardsRestitution',
+				'migrateEscrowContractBalance',
 			],
 		});
 	});
@@ -560,6 +562,45 @@ contract('BaseSynthetix', async accounts => {
 					from: owner,
 				});
 				await baseSynthetixImpl.transfer(account1, amount, { from: owner });
+			});
+		});
+
+		// SIP-252
+		describe('migrateEscrowContractBalance', () => {
+			it('restricted to owner', async () => {
+				await assert.revert(
+					baseSynthetixImpl.migrateEscrowContractBalance({ from: account2 }),
+					'contract owner'
+				);
+			});
+			it('reverts if both are the same address', async () => {
+				await addressResolver.importAddresses(
+					['RewardEscrowV2Frozen', 'RewardEscrowV2'].map(toBytes32),
+					[account1, account1],
+					{ from: owner }
+				);
+				await assert.revert(
+					baseSynthetixImpl.migrateEscrowContractBalance({ from: owner }),
+					'same address'
+				);
+			});
+			it('transfers balance as needed', async () => {
+				await baseSynthetixProxy.transfer(account1, toUnit('10'), { from: owner });
+				// check balances
+				assert.bnEqual(await baseSynthetixImpl.balanceOf(account1), toUnit('10'));
+				assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('0'));
+
+				await addressResolver.importAddresses(
+					['RewardEscrowV2Frozen', 'RewardEscrowV2'].map(toBytes32),
+					[account1, account2],
+					{ from: owner }
+				);
+
+				await baseSynthetixImpl.migrateEscrowContractBalance({ from: owner });
+
+				// check balances
+				assert.bnEqual(await baseSynthetixImpl.balanceOf(account1), toUnit('0'));
+				assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('10'));
 			});
 		});
 

@@ -67,7 +67,7 @@ module.exports = {
 			url: 'http://localhost:9545',
 		},
 		mainnet: {
-			url: process.env.PROVIDER_URL.replace('network', 'mainnet') || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL?.replace('network', 'mainnet') || 'http://localhost:8545',
 			chainId: 1,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
@@ -77,19 +77,19 @@ module.exports = {
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		goerli: {
-			url: process.env.PROVIDER_URL.replace('network', 'goerli') || 'http://localhost:8545',
+			url: process.env.PROVIDER_URL?.replace('network', 'goerli') || 'http://localhost:8545',
 			chainId: 5,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'goerli-ovm': {
 			url:
-				process.env.PROVIDER_URL.replace('network', 'optimism-goerli') ||
+				process.env.PROVIDER_URL?.replace('network', 'optimism-goerli') ||
 				'https://goerli.optimism.io/',
 			chainId: 420,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		rinkeby: {
-			url: process.env.PROVIDER_URL.replace('network', 'rinkeby') || '',
+			url: process.env.PROVIDER_URL?.replace('network', 'rinkeby') || '',
 			chainId: 4,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
