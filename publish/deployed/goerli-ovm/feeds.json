@@ -1,5 +1,70 @@
 {
 	"SNX": {
-		"asset": "SNX"
+		"asset": "SNX",
+		"feed": "0x89A7630f46B8c35A7fBBC4f6e4783f1E2DC715c6"
+	},
+	"ETH": {
+		"asset": "ETH",
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"BTC": {
+		"asset": "BTC",
+		"feed": "0xC16679B963CeB52089aD2d95312A5b85E318e9d2"
+	},
+	"LINK": {
+		"asset": "LINK",
+		"feed": "0x69C5297001f38cCBE30a81359da06E5256bd28B9"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"feed": "0x5756666B2991F7C9c05Fbb71daC703Cf58F293BF"
+	},
+	"AVAX": {
+		"asset": "AVAX",
+		"feed": "0xE9512B064104593083e39630a8f874cfa6B1C0A5"
+	},
+	"MATIC": {
+		"asset": "MATIC",
+		"feed": "0x11C944427B9ebeb1417Dd44645Ad04edBF33b95e"
+	},
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
+	},
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0xe634FfeDcA25B6D5D4610D2025C4894cCd5a5587"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0x0A024aa48E09e151090637d2b68162b1Caf7BdbA"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0xA8828D339CEFEBf99934e5fdd938d1B4B9730bc3"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0xE68AF7b40A0Cc9C5E9E2B2a36b85442Ab9C3E4Cd"
+	},
+	"APE": {
+		"asset": "APE",
+		"feed": "0xE882831E58eec48B7f304482771F67e6b846733D"
+	},
+	"DYDX": {
+		"asset": "DYDX",
+		"feed": "0x6CcbE5aDBf519C2C916ADB4390A3dbD72fFcA7F2"
+	},
+	"BNB": {
+		"asset": "BNB",
+		"feed": "0x99fc60321a196794725E6D0c572143eb2F881edB"
+	},
+	"XMR": {
+		"asset": "XMR",
+		"feed": "0xaA4D946f4b081Cc6c2F30b4e343E15c8455DDfFB"
+	},
+	"DOGE": {
+		"asset": "DOGE",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	}
 }
