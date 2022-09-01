@@ -70,8 +70,9 @@
 			},
 			"RewardEscrowV2": {
 				"address": "0x6dd94459B5A844a6739c2b38a9E6d6b165cE45D9",
-				"status": "current",
-				"keccak256": "0x02a5baf81127ef46b95c176883227e8e28914d4d05cb04288bf9e2bcd7fae1a7"
+				"status": "replaced",
+				"keccak256": "0x02a5baf81127ef46b95c176883227e8e28914d4d05cb04288bf9e2bcd7fae1a7",
+				"replaced_in": "v2.77.0-alpha"
 			},
 			"SynthetixEscrow": {
 				"address": "0xFaFd00D0CaA6D5cd5161c5C1F18AaB24942aCAFA",
@@ -100,8 +101,9 @@
 			},
 			"Liquidator": {
 				"address": "0x94215de0377428c810E32c73f7fc12E5f2Af2FE2",
-				"status": "current",
-				"keccak256": "0xa3a41743153253716b71351c31afaf62b73618b17ad371835fb745c358cfc7da"
+				"status": "replaced",
+				"keccak256": "0xa3a41743153253716b71351c31afaf62b73618b17ad371835fb745c358cfc7da",
+				"replaced_in": "v2.77.0-alpha"
 			},
 			"LiquidatorRewards": {
 				"address": "0x1c6C0a89064206e397E75b11Bcd370E8A8A007B4",
@@ -140,8 +142,9 @@
 			},
 			"Synthetix": {
 				"address": "0xE5Ff777aBF6bCDBEA930179526AE5284cD884e0B",
-				"status": "current",
-				"keccak256": "0xe5dd48f48970597d6808bffeeb3b787580800e99158506d0d726f1ecd86d4b57"
+				"status": "replaced",
+				"keccak256": "0xe5dd48f48970597d6808bffeeb3b787580800e99158506d0d726f1ecd86d4b57",
+				"replaced_in": "v2.77.0-alpha"
 			},
 			"DebtCache": {
 				"address": "0x216EaF79575563A5e13227ad075850cDeb004083",
@@ -332,13 +335,49 @@
 			},
 			"Issuer": {
 				"address": "0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034",
-				"status": "current",
-				"keccak256": "0x22f9559ff51ab99f76eab53c2b1842334692d255b6b2f78ae76b4c689c659bb8"
+				"status": "replaced",
+				"keccak256": "0x22f9559ff51ab99f76eab53c2b1842334692d255b6b2f78ae76b4c689c659bb8",
+				"replaced_in": "v2.77.0-alpha"
 			},
 			"CircuitBreaker": {
 				"address": "0x5cB8210159f486dFE8Dc779357ee5A15B8f233bC",
 				"status": "current",
 				"keccak256": "0x73c5c888b94317948d43dc70a2424ea4963649c19272588fc02135692b7cde30"
+			}
+		}
+	},
+	"v2.77.0-alpha": {
+		"tag": "v2.77.0-alpha",
+		"fulltag": "v2.77.0-alpha",
+		"release": "Aspidiske",
+		"network": "goerli",
+		"date": "2022-08-31T09:17:04-04:00",
+		"commit": "abac79bcefeea7c58bfe12d9d6d1636b82cf5498",
+		"contracts": {
+			"RewardEscrowV2": {
+				"address": "0x32A0BAA5Acec418a85Fd032f0292893B8E4f743B",
+				"status": "current",
+				"keccak256": "0xd7a48d5a43d0f6dc6869dc198b5e8a475bae4a0f5bb8de12bacb3113c1a09ed8"
+			},
+			"Liquidator": {
+				"address": "0xa69768003543eBe5DD91E787278D99FfF9aD6095",
+				"status": "current",
+				"keccak256": "0x522be958cb83c736035ee47fcc2d933ddda1407bc1ece7f69f2f2d66c2e1d26f"
+			},
+			"Synthetix": {
+				"address": "0xD134Db47DDF5A6feB245452af17cCAf92ee53D3c",
+				"status": "current",
+				"keccak256": "0xfaed273e138234b2d726913a40b2ea4bd6b4458da8b4a4cd9ae4659ff2724d0e"
+			},
+			"Issuer": {
+				"address": "0x5F0CCaBe97bF838c777F08702E17EC300FF78cD0",
+				"status": "current",
+				"keccak256": "0x4fabd6bd1e726688d6105df107bce2de2c5a3c44663a0f2bb22caf48b7791a06"
+			},
+			"RewardEscrowV2Storage": {
+				"address": "0xFdB31235cDFe68bfFD1d687AC3A2b31E80eacf0d",
+				"status": "current",
+				"keccak256": "0x65f2455507f58e94591f9ef492e5f06468afaeb2d9f07933648155b7b68257fb"
 			}
 		}
 	}

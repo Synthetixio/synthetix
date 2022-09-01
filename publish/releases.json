@@ -695,17 +695,6 @@
 			"released": "both"
 		},
 		{
-			"sip": 252,
-			"layer": "both",
-			"sources": [
-				"Issuer",
-				"RewardEscrowV2",
-				"Synthetix",
-				"Liquidator",
-				"RewardEscrowV2Storage"
-			]
-    },
-		{
 			"sip": 257,
 			"layer": "both",
 			"sources": ["ExchangeRates"],
@@ -1352,6 +1341,23 @@
 			},
 			"sips": [230, 249, 257, 262, 269],
 			"released": true
+		},
+		{
+			"name": "Aspidiske",
+			"version": {
+				"major": 2,
+				"minor": 77
+			},
+			"sips": [252]
+		},
+		{
+			"name": "Aspidiske (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 77
+			},
+			"sips": [252]
 		}
 	]
 }
