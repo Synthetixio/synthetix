@@ -1,6 +1,7 @@
 name = "chainlink"
 version = "0.7-mock"
 description = "Deploys a testing aggregator with a given rate dated into the future"
+version = "<%= package.version %>"
 
 [setting.rate]
 defaultValue = "1000000000000000000"
