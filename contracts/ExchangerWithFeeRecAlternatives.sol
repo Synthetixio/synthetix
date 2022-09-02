@@ -82,13 +82,11 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
 
         (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmount,
             sourceSettings,
-            destinationSettings,
-            usdSettings
+            destinationSettings
         );
     }
 
@@ -151,67 +149,72 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
-        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
-        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
 
-        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-        require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
-        require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationSettings), "Dest synth too volatile");
-
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
-
-        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
-        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmountAfterSettlement == 0) {
-            return (0, 0);
-        }
-
+        uint sourceAmountAfterSettlement;
         uint exchangeFeeRate;
-        uint systemConvertedAmount;
         uint systemSourceRate;
         uint systemDestinationRate;
 
-        // sometimes we need parameters for USD and USD has parameters which could be overridden
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(from, sUSD);
+        {
+            IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
+            IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
 
-        // Note: also ensures the given synths are allowed to be atomically exchanged
-        (
-            amountReceived, // output amount with fee taken out (denominated in dest currency)
-            fee, // fee amount (denominated in dest currency)
-            exchangeFeeRate, // applied fee rate
-            systemConvertedAmount, // current system value without fees (denominated in dest currency)
-            systemSourceRate, // current system rate for src currency
-            systemDestinationRate // current system rate for dest currency
-        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, destinationSettings, usdSettings);
+            _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+            require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
+            require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationSettings), "Dest synth too volatile");
 
-        // SIP-65: Decentralized Circuit Breaker (checking current system rates)
-        if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
-            return (0, 0);
+            sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+
+            // If, after settlement the user has no balance left (highly unlikely), then return to prevent
+            // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+            if (sourceAmountAfterSettlement == 0) {
+                return (0, 0);
+            }
+
+            // sometimes we need parameters for USD and USD has parameters which could be overridden
+            IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(from, sUSD);
+
+            uint systemConvertedAmount;
+            
+            // Note: also ensures the given synths are allowed to be atomically exchanged
+            (
+                amountReceived, // output amount with fee taken out (denominated in dest currency)
+                fee, // fee amount (denominated in dest currency)
+                exchangeFeeRate, // applied fee rate
+                systemConvertedAmount, // current system value without fees (denominated in dest currency)
+                systemSourceRate, // current system rate for src currency
+                systemDestinationRate // current system rate for dest currency
+            ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, destinationSettings);
+
+            // SIP-65: Decentralized Circuit Breaker (checking current system rates)
+            if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
+                return (0, 0);
+            }
+
+            // Sanity check atomic output's value against current system value (checking atomic rates)
+            require(
+                !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
+                "Atomic rate deviates too much"
+            );
+
+            // Determine sUSD value of exchange
+            uint sourceSusdValue;
+            if (sourceCurrencyKey == sUSD) {
+                // Use after-settled amount as this is amount converted (not sourceAmount)
+                sourceSusdValue = sourceAmountAfterSettlement;
+            } else if (destinationCurrencyKey == sUSD) {
+                // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
+                sourceSusdValue = systemConvertedAmount;
+            } else {
+                // Otherwise, convert source to sUSD value
+                (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
+                    _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, usdSettings);
+                sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
+            }
+
+            // Check and update atomic volume limit
+            _checkAndUpdateAtomicVolume(sourceSettings, sourceSusdValue);
         }
-
-        // Sanity check atomic output's value against current system value (checking atomic rates)
-        require(
-            !exchangeCircuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
-            "Atomic rate deviates too much"
-        );
-
-        // Determine sUSD value of exchange
-        uint sourceSusdValue;
-        if (sourceCurrencyKey == sUSD) {
-            // Use after-settled amount as this is amount converted (not sourceAmount)
-            sourceSusdValue = sourceAmountAfterSettlement;
-        } else if (destinationCurrencyKey == sUSD) {
-            // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
-            sourceSusdValue = systemConvertedAmount;
-        } else {
-            // Otherwise, convert source to sUSD value
-            (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
-                _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, usdSettings, usdSettings);
-            sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
-        }
-
-        // Check and update atomic volume limit
-        _checkAndUpdateAtomicVolume(sourceSettings, sourceSusdValue);
 
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -306,8 +309,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     function _getAmountsForAtomicExchangeMinusFees(
         uint sourceAmount,
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
     )
         internal
         view
@@ -325,8 +327,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             .effectiveAtomicValueAndRates(
                 sourceSettings, 
                 sourceAmount, 
-                destinationSettings,
-                usdSettings
+                destinationSettings
             );
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);

@@ -192,9 +192,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     // SIP-120 Atomic exchanges
     function effectiveAtomicValueAndRates(
-        IDirectIntegrationManager.ParameterIntegrationSettings memory hello,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory,
         uint,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory world
+        IDirectIntegrationManager.ParameterIntegrationSettings memory
     )
         public
         view

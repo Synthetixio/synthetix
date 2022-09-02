@@ -365,22 +365,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         _notImplemented();
     }
 
-    function exchangeAtomically(
-        address,
-        bytes32,
-        uint,
-        bytes32,
-        address,
-        bytes32,
-        uint,
-        address,
-        bytes calldata,
-        address,
-        bytes calldata
-    ) external returns (uint) {
-        _notImplemented();
-    }
-
     function _emitTrackingEvent(
         bytes32 trackingCode,
         bytes32 toCurrencyKey,

@@ -59,8 +59,7 @@ interface IExchangeRates {
     function effectiveAtomicValueAndRates(
         IDirectIntegrationManager.ParameterIntegrationSettings calldata sourceSettings,
         uint sourceAmount,
-        IDirectIntegrationManager.ParameterIntegrationSettings calldata destinationSettings,
-        IDirectIntegrationManager.ParameterIntegrationSettings calldata usdSettings
+        IDirectIntegrationManager.ParameterIntegrationSettings calldata destinationSettings
     )
         external
         view

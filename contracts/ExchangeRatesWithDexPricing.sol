@@ -39,8 +39,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     function effectiveAtomicValueAndRates(
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
         uint sourceAmount,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
     )
         public
         view
@@ -51,6 +50,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             uint systemDestinationRate
         )
     {
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings;// = directIntegrationManager().getExchangeParameters(from, sUSD);
+
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceSettings.currencyKey,
             sourceAmount,
