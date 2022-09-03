@@ -500,7 +500,7 @@ contract('Exchange Rates', async accounts => {
 
 				describe('when a user queries the first entry in aggregatorKeys', () => {
 					it('then it is empty', async () => {
-						await assert.invalidOpcode(instance.aggregatorKeys(0));
+						await assert.revert(instance.aggregatorKeys(0));
 					});
 				});
 
@@ -538,7 +538,7 @@ contract('Exchange Rates', async accounts => {
 
 					it('then the list of aggregatorKeys lists it', async () => {
 						assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
-						await assert.invalidOpcode(instance.aggregatorKeys(1));
+						await assert.revert(instance.aggregatorKeys(1));
 					});
 
 					it('and the AggregatorAdded event is emitted', () => {
@@ -599,7 +599,7 @@ contract('Exchange Rates', async accounts => {
 						it('then the list of aggregatorKeys lists it also', async () => {
 							assert.equal('sJPY', bytesToString(await instance.aggregatorKeys(0)));
 							assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(1)));
-							await assert.invalidOpcode(instance.aggregatorKeys(2));
+							await assert.revert(instance.aggregatorKeys(2));
 						});
 
 						it('and the AggregatorAdded event is emitted', () => {
@@ -791,7 +791,7 @@ contract('Exchange Rates', async accounts => {
 									describe('when a user queries the aggregatorKeys', () => {
 										it('then only sXTZ is left', async () => {
 											assert.equal('sXTZ', bytesToString(await instance.aggregatorKeys(0)));
-											await assert.invalidOpcode(instance.aggregatorKeys(1));
+											await assert.revert(instance.aggregatorKeys(1));
 										});
 									});
 									it('when the ratesAndInvalidForCurrencies is queried it returns 0', async () => {
@@ -1229,35 +1229,6 @@ contract('Exchange Rates', async accounts => {
 			});
 		});
 
-		describe('atomicTwapWindow', () => {
-			it('atomicTwapWindow default is set correctly', async () => {
-				assert.bnEqual(await instance.atomicTwapWindow(), ATOMIC_TWAP_WINDOW);
-			});
-			describe('when price window is changed in the system settings', () => {
-				const newTwapWindow = toBN(ATOMIC_TWAP_WINDOW).add(toBN('1'));
-				beforeEach(async () => {
-					await systemSettings.setAtomicTwapWindow(newTwapWindow, { from: owner });
-				});
-				it('then atomicTwapWindow is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicTwapWindow(), newTwapWindow);
-				});
-			});
-		});
-
-		describe('atomicEquivalentForDexPricing', () => {
-			const snxEquivalentAddr = accountOne;
-			describe('when equivalent for SNX is changed in the system settings', () => {
-				beforeEach(async () => {
-					await systemSettings.setAtomicEquivalentForDexPricing(SNX, snxEquivalentAddr, {
-						from: owner,
-					});
-				});
-				it('then atomicEquivalentForDexPricing is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicEquivalentForDexPricing(SNX), snxEquivalentAddr);
-				});
-			});
-		});
-
 		describe('src/dest do not have an atomic equivalent for dex pricing', () => {
 			beforeEach(async () => {
 				const MockToken = artifacts.require('MockToken');
@@ -1338,7 +1309,7 @@ contract('Exchange Rates', async accounts => {
 						rates = await instance.effectiveAtomicValueAndRates(srcToken, amountIn, destToken);
 					});
 
-					it(`selects ${
+					it.only(`selects ${
 						expectedRateTypes.length ? expectedRateTypes : expectedRateTypes[0]
 					}`, () => {
 						for (const type of expectedRateTypes) {
@@ -1706,37 +1677,6 @@ contract('Exchange Rates', async accounts => {
 	};
 
 	const itReportsRateTooVolatileForAtomicExchanges = () => {
-		describe('atomicVolatilityConsiderationWindow', () => {
-			describe('when consideration window is changed in the system settings', () => {
-				const considerationWindow = toBN(600);
-				beforeEach(async () => {
-					await systemSettings.setAtomicVolatilityConsiderationWindow(SNX, considerationWindow, {
-						from: owner,
-					});
-				});
-				it('then atomicVolatilityConsiderationWindow is correctly updated', async () => {
-					assert.bnEqual(
-						await instance.atomicVolatilityConsiderationWindow(SNX),
-						considerationWindow
-					);
-				});
-			});
-		});
-
-		describe('atomicVolatilityUpdateThreshold', () => {
-			describe('when threshold for SNX is changed in the system settings', () => {
-				const updateThreshold = toBN(3);
-				beforeEach(async () => {
-					await systemSettings.setAtomicVolatilityUpdateThreshold(SNX, updateThreshold, {
-						from: owner,
-					});
-				});
-				it('then atomicVolatilityUpdateThreshold is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicVolatilityUpdateThreshold(SNX), updateThreshold);
-				});
-			});
-		});
-
 		describe('synthTooVolatileForAtomicExchange', async () => {
 			const minute = 60;
 			const synth = sETH;
@@ -1750,20 +1690,15 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
-			beforeEach('check related system systems', async () => {
-				assert.bnEqual(await instance.atomicVolatilityConsiderationWindow(synth), '0');
-				assert.bnEqual(await instance.atomicVolatilityUpdateThreshold(synth), '0');
-			});
-
 			describe('when consideration window is not set', () => {
 				it('does not consider synth to be volatile', async () => {
-					assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+					assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
 				});
 			});
 
 			describe('when update threshold is not set', () => {
 				it('does not consider synth to be volatile', async () => {
-					assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+					assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
 				});
 			});
 
@@ -1789,7 +1724,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('does not consider synth to be volatile', async () => {
-						assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+						assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
 					});
 				});
 
@@ -1808,7 +1743,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it(`${volatile ? 'considers' : 'does not consider'} synth to be volatile`, async () => {
-							assert.equal(await instance.synthTooVolatileForAtomicExchange(synth), volatile);
+							assert.equal(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth), volatile);
 						});
 					}
 
@@ -1886,7 +1821,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('does not consider synth to be volatile', async () => {
-							assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+							assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
 						});
 					});
 
@@ -1899,7 +1834,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('considers synth to be volatile', async () => {
-							assert.isTrue(await instance.synthTooVolatileForAtomicExchange(synth));
+							assert.isTrue(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
 						});
 					});
 
@@ -1909,7 +1844,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('considers synth to be volatile', async () => {
-							assert.isTrue(await instance.synthTooVolatileForAtomicExchange(synth));
+							assert.isTrue(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
 						});
 					});
 				});
@@ -1921,7 +1856,7 @@ contract('Exchange Rates', async accounts => {
 		describe('Atomic exchange volatility control', () => {
 			it('errors with not implemented when attempting to assess volatility for atomic exchanges', async () => {
 				await assert.revert(
-					instance.synthTooVolatileForAtomicExchange(sETH),
+					instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](sETH),
 					'Cannot be run on this layer'
 				);
 			});
@@ -1987,10 +1922,15 @@ contract('Exchange Rates', async accounts => {
 		const exchangeRatesContract = 'ExchangeRatesWithDexPricing';
 
 		before(async () => {
-			({ ExchangeRates: instance, SystemSettings: systemSettings } = await setupAllContracts({
+			const contracts = await setupAllContracts({
 				accounts,
 				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
-			}));
+			});
+
+			instance = contracts.ExchangeRates;
+			systemSettings = contracts.SystemSettings;
+
+			console.log(Object.entries(contracts).map(([n, c]) => [n, c.address]));
 
 			// remove the pre-configured aggregator
 			await instance.removeAggregator(toBytes32('SNX'), { from: owner });

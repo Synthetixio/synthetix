@@ -13,6 +13,17 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
     constructor(address _owner, address _resolver) public ExchangeRates(_owner, _resolver) {}
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_DIRECT_INTEGRATION_MANAGER = "DirectIntegrationManager";
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_DIRECT_INTEGRATION_MANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
     /* ========== SETTERS ========== */
 
     function setDexPriceAggregator(IDexPriceAggregator _dexPriceAggregator) external onlyOwner {
@@ -26,6 +37,10 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
     /* ========== VIEWS ========== */
 
+    function directIntegrationManager() internal view returns (IDirectIntegrationManager) {
+        return IDirectIntegrationManager(requireAndGetAddress(CONTRACT_DIRECT_INTEGRATION_MANAGER));
+    }
+
     function dexPriceAggregator() public view returns (IDexPriceAggregator) {
         return
             IDexPriceAggregator(
@@ -34,12 +49,10 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     }
 
     // SIP-120 Atomic exchanges
-    // Note that the returned systemValue, systemSourceRate, and systemDestinationRate are based on
-    // the current system rate, which may not be the atomic rate derived from value / sourceAmount
     function effectiveAtomicValueAndRates(
-        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
-        uint sourceAmount,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+        bytes32 sourceCurrencyKey,
+        uint amount,
+        bytes32 destinationCurrencyKey
     )
         public
         view
@@ -50,8 +63,31 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             uint systemDestinationRate
         )
     {
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings;// = directIntegrationManager().getExchangeParameters(from, sUSD);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
 
+        return effectiveAtomicValueAndRates(sourceSettings, amount, destinationSettings, usdSettings);
+    }
+
+    // SIP-120 Atomic exchanges
+    // Note that the returned systemValue, systemSourceRate, and systemDestinationRate are based on
+    // the current system rate, which may not be the atomic rate derived from value / sourceAmount
+    function effectiveAtomicValueAndRates(
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        uint sourceAmount,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings
+    )
+        public
+        view
+        returns (
+            uint value,
+            uint systemValue,
+            uint systemSourceRate,
+            uint systemDestinationRate
+        )
+    {
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceSettings.currencyKey,
             sourceAmount,
@@ -116,7 +152,13 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
         uint result =
-            _dexPriceDestinationValue(sourceEquivalent, destEquivalent, amount, sourceSettings.atomicTwapWindow)
+            _dexPriceDestinationValue(
+                IDexPriceAggregator(sourceSettings.dexPriceAggregator),
+                sourceEquivalent, 
+                destEquivalent, 
+                amount, 
+                sourceSettings.atomicTwapWindow
+            )
             .mul(SafeDecimalMath.unit())
             .div(amount);
             
@@ -126,6 +168,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     }
 
     function _dexPriceDestinationValue(
+        IDexPriceAggregator dexAggregator,
         IERC20 sourceEquivalent,
         IERC20 destEquivalent,
         uint sourceAmount,
@@ -135,19 +178,28 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint sourceAmountInEquivalent =
             (sourceAmount.mul(10**uint(sourceEquivalent.decimals()))).div(SafeDecimalMath.unit());
 
+        require(address(dexAggregator) != address(0), "dex aggregator address is 0");
+
         require(twapWindow != 0, "Uninitialized atomic twap window");
 
         uint twapValueInEquivalent =
-            dexPriceAggregator().assetToAsset(
+            dexAggregator.assetToAsset(
                 address(sourceEquivalent),
                 sourceAmountInEquivalent,
                 address(destEquivalent),
                 twapWindow
             );
+
         require(twapValueInEquivalent > 0, "dex price returned 0");
 
         // Similar to source amount, normalize decimals back to internal unit for output amount
         return (twapValueInEquivalent.mul(SafeDecimalMath.unit())).div(10**uint(destEquivalent.decimals()));
+    }
+
+    function synthTooVolatileForAtomicExchange(bytes32 currencyKey) public view returns (bool) {
+        IDirectIntegrationManager.ParameterIntegrationSettings memory settings = directIntegrationManager().getExchangeParameters(msg.sender, currencyKey);
+
+        return synthTooVolatileForAtomicExchange(settings);
     }
 
     function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory settings) public view returns (bool) {

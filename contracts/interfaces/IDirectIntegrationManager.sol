@@ -6,6 +6,7 @@ interface IDirectIntegrationManager {
 
     struct ParameterIntegrationSettings {
         bytes32 currencyKey;
+        address dexPriceAggregator;
         address atomicEquivalentForDexPricing;
         uint atomicExchangeFeeRate;
         uint atomicTwapWindow;
@@ -19,11 +20,6 @@ interface IDirectIntegrationManager {
         uint exchangeDynamicFeeRounds;
         uint exchangeDynamicFeeThreshold;
         uint exchangeDynamicFeeWeightDecay;
-    }
-
-    struct MappedParameter {
-        bytes32 key;
-        uint value;
     }
 
     function getExchangeParameters(address integration, bytes32 key) external view returns (ParameterIntegrationSettings memory settings);

@@ -15,9 +15,13 @@ import "./interfaces/IDirectIntegrationManager.sol";
  * to interact with Synthetix's core exchange functionalities with overridden parameters.
  * If no parameter overrides are specified, then the prevailing parameter configuration will be automatically used.
  */
-contract DirectIntegration is Owned, MixinSystemSettings, IDirectIntegrationManager {
+contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrationManager {
     /* ========== CONSTANTS ========== */
-    bytes32 public constant CONTRACT_NAME = "DirectIntegration";
+    bytes32 private constant CONTRACT_NAME = "DirectIntegration";
+
+    bytes32 private constant CONTRACT_NAME_EXCHANGE_RATES = "ExchangeRates";
+
+    bytes32 internal constant SETTING_DEX_PRICE_AGGREGATOR = "dexPriceAggregator";
 
     uint internal constant DI_VERSION = 1;
 
@@ -38,7 +42,7 @@ contract DirectIntegration is Owned, MixinSystemSettings, IDirectIntegrationMana
      * @param integration the address of the external integrator's contract
      */
     function getExchangeParameters(address integration, bytes32 currencyKey)
-        public
+        external
         view
         returns (ParameterIntegrationSettings memory overrides)
     {
@@ -46,6 +50,7 @@ contract DirectIntegration is Owned, MixinSystemSettings, IDirectIntegrationMana
 
         return ParameterIntegrationSettings(
             currencyKey,
+            storedOverrides.dexPriceAggregator != address(0) ? storedOverrides.dexPriceAggregator : flexibleStorage().getAddressValue(CONTRACT_NAME_EXCHANGE_RATES, SETTING_DEX_PRICE_AGGREGATOR),
             storedOverrides.atomicEquivalentForDexPricing != address(0) ? storedOverrides.atomicEquivalentForDexPricing : getAtomicEquivalentForDexPricing(currencyKey),
             storedOverrides.atomicExchangeFeeRate > 0 ? storedOverrides.atomicExchangeFeeRate : getAtomicExchangeFeeRate(currencyKey),
             storedOverrides.atomicTwapWindow > 0 ? storedOverrides.atomicTwapWindow : getAtomicTwapWindow(),

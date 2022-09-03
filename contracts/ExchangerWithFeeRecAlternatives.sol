@@ -82,11 +82,13 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
 
         (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmount,
             sourceSettings,
-            destinationSettings
+            destinationSettings,
+            usdSettings
         );
     }
 
@@ -184,7 +186,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
                 systemConvertedAmount, // current system value without fees (denominated in dest currency)
                 systemSourceRate, // current system rate for src currency
                 systemDestinationRate // current system rate for dest currency
-            ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, destinationSettings);
+            ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, destinationSettings, usdSettings);
 
             // SIP-65: Decentralized Circuit Breaker (checking current system rates)
             if (_exchangeRatesCircuitBroken(sourceCurrencyKey, destinationCurrencyKey)) {
@@ -208,7 +210,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             } else {
                 // Otherwise, convert source to sUSD value
                 (uint amountReceivedInUSD, uint sUsdFee, , , , ) =
-                    _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, usdSettings);
+                    _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceSettings, usdSettings, usdSettings);
                 sourceSusdValue = amountReceivedInUSD.add(sUsdFee);
             }
 
@@ -309,7 +311,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     function _getAmountsForAtomicExchangeMinusFees(
         uint sourceAmount,
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
-        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings
     )
         internal
         view
@@ -327,7 +330,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             .effectiveAtomicValueAndRates(
                 sourceSettings, 
                 sourceAmount, 
-                destinationSettings
+                destinationSettings,
+                usdSettings
             );
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);

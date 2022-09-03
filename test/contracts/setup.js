@@ -200,6 +200,7 @@ const setupContract = async ({
 		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
+		DirectIntegrationManager: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		SynthetixDebtShare: [owner, tryGetAddressOf('AddressResolver')],
 		BaseSynthetix: [
@@ -728,6 +729,10 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
 		{
+			contract: 'DirectIntegrationManager',
+			deps: ['AddressResolver', 'SystemSettings']
+		},
+		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
 			mocks: ['ExchangeCircuitBreaker'],
@@ -850,7 +855,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRatesWithDexPricing',
 			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
+			deps: ['AddressResolver', 'DirectIntegrationManager'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
@@ -858,6 +863,7 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [
 				'AddressResolver',
+				'DirectIntegrationManager', 
 				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',
