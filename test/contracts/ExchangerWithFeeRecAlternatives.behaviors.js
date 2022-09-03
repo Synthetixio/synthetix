@@ -14,10 +14,12 @@ const {
 const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
 let ExchangerWithFeeRecAlternatives;
+let DirectIntegrationManager;
 
 module.exports = function({ accounts }) {
 	before(async () => {
 		ExchangerWithFeeRecAlternatives = artifacts.require('ExchangerWithFeeRecAlternatives');
+		DirectIntegrationManager = artifacts.require('DirectIntegrationManager');
 	});
 
 	before(async () => {
@@ -58,7 +60,7 @@ module.exports = function({ accounts }) {
 		systemSourceRate,
 		systemDestinationRate,
 	}) => {
-		this.mocks.ExchangeRates.smocked.effectiveAtomicValueAndRates.will.return.with(
+		this.mocks.ExchangeRates.smocked['effectiveAtomicValueAndRates((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'].will.return.with(
 			(srcKey, amount, destKey) => {
 				amount = amount.toString(); // seems to be passed to smock as a number
 
@@ -89,7 +91,16 @@ module.exports = function({ accounts }) {
 		whenInstantiated: ({ owner }, cb) => {
 			describe(`when instantiated`, () => {
 				beforeEach(async () => {
+
+					// have to put this extra mock at the end 
+					this.directIntegrationManager = await DirectIntegrationManager.new(owner, this.resolver.address);
+
+					// we can just side effect the mock into our address resolver. convenient!
+					this.mocks.DirectIntegrationManager = this.directIntegrationManager;
+					await this.directIntegrationManager.rebuildCache();
+
 					this.instance = await ExchangerWithFeeRecAlternatives.new(owner, this.resolver.address);
+					this.directIntegrationInstance = await DirectIntegrationManager.new(owner, this.resolver.address);
 					await this.instance.rebuildCache();
 				});
 				cb();
@@ -219,7 +230,7 @@ module.exports = function({ accounts }) {
 				volatile ? 'volatile' : 'not volatile'
 			}`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangesRates.smocked.synthTooVolatileForAtomicExchange.will.return.with(
+					this.mocks.ExchangesRates.smocked['synthTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'].will.return.with(
 						synthToCheck => (synthToCheck === synth ? volatile : false)
 					);
 				});

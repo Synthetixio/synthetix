@@ -1309,7 +1309,7 @@ contract('Exchange Rates', async accounts => {
 						rates = await instance.effectiveAtomicValueAndRates(srcToken, amountIn, destToken);
 					});
 
-					it.only(`selects ${
+					it(`selects ${
 						expectedRateTypes.length ? expectedRateTypes : expectedRateTypes[0]
 					}`, () => {
 						for (const type of expectedRateTypes) {
