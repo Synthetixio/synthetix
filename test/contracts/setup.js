@@ -313,6 +313,20 @@ const setupContract = async ({
 			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
+		// Futures V2
+		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesV2MarketBTC: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC' + perpSuffix), // market key
+		],
+		FuturesV2MarketETH: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'), // base asset
+			toBytes32('sETH' + perpSuffix), // market key
+		],
+		FuturesV2MarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
 		PerpsV2Settings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketpBTC: [
@@ -605,6 +619,16 @@ const setupContract = async ({
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 			]);
 		},
+		async FuturesV2MarketBTC() {
+			await Promise.all([
+				cache['FuturesV2MarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
+		async FuturesV2MarketETH() {
+			await Promise.all([
+				cache['FuturesV2MarketManager'].addMarkets([instance.address], { from: owner }),
+			]);
+		},
 		async PerpsV2MarketpBTC() {
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
@@ -694,7 +718,25 @@ const setupContract = async ({
 						returns: ['0', false],
 					}),
 				]);
+			} else if (mock === 'FuturesV2MarketManager') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'totalDebt',
+						returns: ['0', false],
+					}),
+				]);
 			} else if (mock === 'FuturesMarket') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'recomputeFunding',
+						returns: ['0'],
+					}),
+				]);
+			} else if (mock === 'FuturesV2Market') {
 				await Promise.all([
 					mockGenericContractFnc({
 						instance,
@@ -844,7 +886,14 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
+			mocks: [
+				'Issuer',
+				'Exchanger',
+				'CollateralManager',
+				'EtherWrapper',
+				'FuturesMarketManager',
+				'FuturesV2MarketManager',
+			],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -1013,6 +1062,7 @@ const setupAllContracts = async ({
 				'CollateralManager',
 				'EtherWrapper',
 				'FuturesMarketManager',
+				'FuturesV2MarketManager',
 				'WrapperFactory',
 				'SynthetixBridgeToOptimism',
 			],
@@ -1068,6 +1118,39 @@ const setupAllContracts = async ({
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
+		// Futures v2
+		{
+			contract: 'FuturesV2MarketManager',
+			deps: ['AddressResolver', 'Exchanger', 'FuturesV2MarketSettings', 'ExchangeCircuitBreaker'],
+		},
+		{
+			contract: 'FuturesV2MarketSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'FuturesV2MarketBTC',
+			source: 'TestableFuturesV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesV2MarketManager',
+				'FuturesV2MarketSettings',
+				'SystemStatus',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'FuturesV2MarketETH',
+			source: 'TestableFuturesV2Market',
+			deps: [
+				'AddressResolver',
+				'FuturesV2MarketManager',
+				'FuturesV2MarketSettings',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{ contract: 'FuturesV2MarketData', deps: ['FuturesV2MarketSettings'] },
 		// perps v1 - "futures"
 		{
 			contract: 'FuturesMarketBTC',
@@ -1440,6 +1523,62 @@ const setupAllContracts = async ({
 			}
 			if (returnObj['FuturesMarketETH']) {
 				promises.push(setupFuturesMarket(returnObj['FuturesMarketETH']));
+			}
+
+			await Promise.all(promises);
+		}
+
+		// Futures V2
+		if (returnObj['FuturesV2MarketSettings']) {
+			const promises = [
+				returnObj['FuturesV2MarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['FuturesV2MarketSettings'].setMinKeeperFee(
+					constantsOverrides.FUTURES_MIN_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
+				returnObj['FuturesV2MarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+					from: owner,
+				}),
+				returnObj['FuturesV2MarketSettings'].setLiquidationBufferRatio(
+					FUTURES_LIQUIDATION_BUFFER_RATIO,
+					{
+						from: owner,
+					}
+				),
+			];
+
+			// TODO: fetch settings per-market programmatically
+			const setupFuturesV2Market = async market => {
+				const assetKey = await market.baseAsset();
+				const marketKey = await market.marketKey();
+				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], null, [assetKey], [toUnit('1')]);
+				await Promise.all([
+					returnObj['FuturesV2MarketSettings'].setParameters(
+						marketKey,
+						toWei('0.003'), // 0.3% taker fee
+						toWei('0.001'), // 0.1% maker fee
+						toWei('0.0005'), // 0.05% taker fee next price
+						toWei('0.0001'), // 0.01% maker fee next price
+						toBN('2'), // 2 rounds next price confirm window
+						toWei('10'), // 10x max leverage
+						toWei('100000'), // 100000 max market debt
+						toWei('0.1'), // 10% max funding rate
+						toWei('100000'), // 100000 USD skewScaleUSD
+						{ from: owner }
+					),
+				]);
+			};
+
+			if (returnObj['FuturesV2MarketBTC']) {
+				promises.push(setupFuturesV2Market(returnObj['FuturesV2MarketBTC']));
+			}
+			if (returnObj['FuturesV2MarketETH']) {
+				promises.push(setupFuturesV2Market(returnObj['FuturesV2MarketETH']));
 			}
 
 			await Promise.all(promises);

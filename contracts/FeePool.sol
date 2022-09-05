@@ -28,6 +28,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IFuturesV2MarketManager.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
@@ -79,6 +80,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
+    bytes32 private constant CONTRACT_FUTURES_V2_MARKET_MANAGER = "FuturesV2MarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
@@ -104,7 +106,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](15);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIXDEBTSHARE;
         newAddresses[2] = CONTRACT_FEEPOOLETERNALSTORAGE;
@@ -119,6 +121,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[11] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
         newAddresses[12] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         newAddresses[13] = CONTRACT_FUTURES_MARKET_MANAGER;
+        newAddresses[14] = CONTRACT_FUTURES_V2_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -164,6 +167,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     function futuresMarketManager() internal view returns (IFuturesMarketManager) {
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
+    }
+
+    function futuresV2MarketManager() internal view returns (IFuturesV2MarketManager) {
+        return IFuturesV2MarketManager(requireAndGetAddress(CONTRACT_FUTURES_V2_MARKET_MANAGER));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -706,6 +713,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             issuer().synthsByAddress(account) != bytes32(0) ||
             collateralManager().hasCollateral(account) ||
             account == address(futuresMarketManager()) ||
+            account == address(futuresV2MarketManager()) ||
             account == address(wrapperFactory()) ||
             account == address(etherWrapper());
     }

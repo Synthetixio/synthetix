@@ -15,7 +15,7 @@ import "./FuturesV2MarketBase.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract MixinFuturesNextPriceOrders is FuturesV2MarketBase {
+contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
     mapping(address => NextPriceOrder) public nextPriceOrders;
 

@@ -71,7 +71,7 @@ interface IFuturesV2Market {
             uint price,
             uint liqPrice,
             uint fee,
-            IFuturesMarketBaseTypes.Status status
+            IFuturesV2MarketBaseTypes.Status status
         );
 
     /* ---------- Market Operations ---------- */

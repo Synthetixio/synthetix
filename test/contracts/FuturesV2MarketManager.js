@@ -58,7 +58,7 @@ contract('FuturesV2MarketManager', accounts => {
 			contracts: [
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
-				'PerpsV2Settings',
+				// 'PerpsV2Settings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
