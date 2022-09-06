@@ -527,6 +527,13 @@ contract('FuturesV2MarketManager', accounts => {
 				const assetKey = toBytes32(symbol);
 				const marketKey = toBytes32('s' + symbol);
 
+				const marketState = await setupContract({
+					accounts,
+					contract: 'FuturesV2MarketState' + symbol,
+					source: 'FuturesV2MarketState',
+					args: [owner, owner],
+				});
+
 				const market = await setupContract({
 					accounts,
 					contract: 'FuturesV2Market',
@@ -534,8 +541,11 @@ contract('FuturesV2MarketManager', accounts => {
 						addressResolver.address,
 						assetKey, // base asset
 						marketKey,
+						marketState.address,
 					],
 				});
+
+				await marketState.setAssociatedContract(market.address, { from: owner });
 
 				markets.push(market);
 				marketKeys.push(marketKey);

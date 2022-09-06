@@ -59,6 +59,7 @@ contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketBase, MixinFuturesV
     constructor(
         address _resolver,
         bytes32 _baseAsset,
-        bytes32 _marketKey
-    ) public FuturesV2MarketBase(_resolver, _baseAsset, _marketKey) {}
+        bytes32 _marketKey,
+        address _marketState
+    ) public FuturesV2MarketBase(_resolver, _baseAsset, _marketKey, _marketState) {}
 }

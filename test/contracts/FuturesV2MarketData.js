@@ -75,6 +75,13 @@ contract('FuturesV2MarketData', accounts => {
 			const assetKey = toBytes32(symbol);
 			const marketKey = toBytes32(symbol + keySuffix);
 
+			const marketState = await setupContract({
+				accounts,
+				contract: 'FuturesV2MarketState' + symbol,
+				source: 'FuturesV2MarketState',
+				args: [owner, owner],
+			});
+
 			const market = await setupContract({
 				accounts,
 				contract: 'FuturesV2Market' + symbol,
@@ -83,8 +90,11 @@ contract('FuturesV2MarketData', accounts => {
 					addressResolver.address,
 					assetKey, // base asset
 					marketKey,
+					marketState.address,
 				],
 			});
+
+			await marketState.setAssociatedContract(market.address, { from: owner });
 
 			await addressResolver.rebuildCaches([market.address], { from: owner });
 			await futuresMarketManager.addMarkets([market.address], { from: owner });

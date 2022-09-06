@@ -314,17 +314,21 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// Futures V2
+		FuturesV2MarketStateBTC: [owner, deployerAccount],
+		FuturesV2MarketStateETH: [owner, deployerAccount],
 		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesV2MarketBTC: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
 			toBytes32('sBTC' + perpSuffix), // market key
+			tryGetAddressOf('FuturesV2MarketStateBTC'),
 		],
 		FuturesV2MarketETH: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'), // base asset
 			toBytes32('sETH' + perpSuffix), // market key
+			tryGetAddressOf('FuturesV2MarketStateETH'),
 		],
 		FuturesV2MarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
@@ -357,6 +361,7 @@ const setupContract = async ({
 			);
 		}
 	} catch (err) {
+		console.log({ args, default: defaultArgs[contract] });
 		throw new Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
@@ -622,11 +627,17 @@ const setupContract = async ({
 		async FuturesV2MarketBTC() {
 			await Promise.all([
 				cache['FuturesV2MarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['FuturesV2MarketStateBTC'].setAssociatedContract(instance.address, {
+					from: owner,
+				}),
 			]);
 		},
 		async FuturesV2MarketETH() {
 			await Promise.all([
 				cache['FuturesV2MarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['FuturesV2MarketStateETH'].setAssociatedContract(instance.address, {
+					from: owner,
+				}),
 			]);
 		},
 		async PerpsV2MarketpBTC() {
@@ -1128,15 +1139,23 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
 		{
+			contract: 'FuturesV2MarketStateBTC',
+			source: 'FuturesV2MarketState',
+		},
+		{
+			contract: 'FuturesV2MarketStateETH',
+			source: 'FuturesV2MarketState',
+		},
+		{
 			contract: 'FuturesV2MarketBTC',
 			source: 'TestableFuturesV2Market',
 			deps: [
 				'AddressResolver',
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
-				'SystemStatus',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'FuturesV2MarketStateBTC',
 			],
 		},
 		{
@@ -1148,6 +1167,7 @@ const setupAllContracts = async ({
 				'FuturesV2MarketSettings',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'FuturesV2MarketStateETH',
 			],
 		},
 		{ contract: 'FuturesV2MarketData', deps: ['FuturesV2MarketSettings'] },
