@@ -146,7 +146,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
 
-    FuturesV2MarketState public futuresState;
+    FuturesV2MarketState public marketState;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -171,12 +171,12 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         address _resolver,
         bytes32 _baseAsset,
         bytes32 _marketKey,
-        address _futuresState
+        address _marketState
     ) public MixinFuturesV2MarketSettings(_resolver) {
         baseAsset = _baseAsset;
         marketKey = _marketKey;
 
-        futuresState = FuturesV2MarketState(_futuresState);
+        marketState = FuturesV2MarketState(_marketState);
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
