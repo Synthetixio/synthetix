@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./MixinFuturesV2MarketSettings.sol";
@@ -778,7 +779,12 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
             return;
         }
 
-        Position storage position = positions[sender];
+        // Position storage position = positions[sender];
+
+        Position memory position = marketState.getPositionOf(sender);
+        // (uint64 id ,uint64 lastFundingIndex,uint128 margin,uint128 lastPrice,int128 size) = marketState.getPositionOf(sender);
+        // Position memory position = Position(id,lastFundingIndex, margin, lastPrice, size);
+
         _updatePositionMargin(position, price, marginDelta);
 
         emit MarginTransferred(sender, marginDelta);
@@ -788,7 +794,8 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
 
     // updates the stored position margin in place (on the stored position)
     function _updatePositionMargin(
-        Position storage position,
+        Position memory position,
+        // Position storage position,
         uint price,
         int marginDelta
     ) internal {

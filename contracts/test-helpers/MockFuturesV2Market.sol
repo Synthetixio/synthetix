@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 interface IFuturesV2MarketManagerInternal {
     function issueSUSD(address account, uint amount) external;

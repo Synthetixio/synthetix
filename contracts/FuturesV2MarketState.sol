@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
@@ -55,6 +56,10 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
 
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
+    function getPositionOf(address account) external view returns (Position memory) {
+        return positions[account];
+    }
+
     /**
      * @notice Set the position of a given account
      * @dev Only the associated contract may call this.
@@ -74,5 +79,14 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         int128 size
     ) external onlyAssociatedContract {
         positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
+    }
+
+    /**
+     * @notice Delete the position of a given account
+     * @dev Only the associated contract may call this.
+     * @param account The account whose position should be deleted.
+     */
+    function deletePosition(address account) external onlyAssociatedContract {
+        delete positions[account];
     }
 }
