@@ -44,7 +44,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         require(nextPriceOrders[msg.sender].sizeDelta == 0, "previous order exists");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
-        Position storage position = positions[msg.sender];
+        Position memory position = marketState.getPosition(msg.sender);
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert
@@ -64,7 +64,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         // deduct fees from margin
         uint commitDeposit = _nextPriceCommitDeposit(params);
         uint keeperDeposit = _minKeeperFee();
-        _updatePositionMargin(position, price, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(msg.sender, position, price, -int(commitDeposit + keeperDeposit));
         // emit event for modifying the position (subtracting the fees from margin)
         emit PositionModified(position.id, msg.sender, position.margin, position.size, 0, price, fundingIndex, 0);
 
@@ -114,10 +114,10 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         if (account == msg.sender) {
             // this is account owner
             // refund keeper fee to margin
-            Position storage position = positions[account];
+            Position memory position = marketState.getPosition(account);
             uint price = _assetPriceRequireSystemChecks();
             uint fundingIndex = _recomputeFunding(price);
-            _updatePositionMargin(position, price, int(order.keeperDeposit));
+            _updatePositionMargin(account, position, price, int(order.keeperDeposit));
 
             // emit event for modifying the position (add the fee to margin)
             emit PositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
@@ -189,12 +189,12 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
             _manager().issueSUSD(msg.sender, order.keeperDeposit);
         }
 
-        Position storage position = positions[account];
+        Position memory position = marketState.getPosition(account);
         uint currentPrice = _assetPriceRequireSystemChecks();
         uint fundingIndex = _recomputeFunding(currentPrice);
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(position, currentPrice, int(toRefund));
+        _updatePositionMargin(account, position, currentPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
         emit PositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 

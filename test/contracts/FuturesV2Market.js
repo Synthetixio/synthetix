@@ -36,6 +36,7 @@ contract('FuturesV2Market', accounts => {
 	let futuresMarketSettings,
 		futuresMarketManager,
 		futuresMarket,
+		futuresMarketState,
 		exchangeRates,
 		exchanger,
 		circuitBreaker,
@@ -105,6 +106,7 @@ contract('FuturesV2Market', accounts => {
 		({
 			FuturesV2MarketSettings: futuresMarketSettings,
 			FuturesV2MarketManager: futuresMarketManager,
+			FuturesV2MarketStateBTC: futuresMarketState,
 			FuturesV2MarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -122,6 +124,7 @@ contract('FuturesV2Market', accounts => {
 			contracts: [
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
+				'FuturesV2MarketStateBTC',
 				{ contract: 'FuturesV2MarketBTC', properties: { perpSuffix: marketKeySuffix } },
 				'AddressResolver',
 				'FeePool',
@@ -188,6 +191,7 @@ contract('FuturesV2Market', accounts => {
 		it('static parameters are set properly at construction', async () => {
 			assert.equal(await futuresMarket.baseAsset(), baseAsset);
 			assert.equal(await futuresMarket.marketKey(), marketKey);
+			assert.equal(await futuresMarket.marketState(), futuresMarketState.address);
 			const parameters = await futuresMarketSettings.parameters(marketKey);
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);

@@ -318,6 +318,12 @@ const setupContract = async ({
 		FuturesV2MarketStateETH: [owner, deployerAccount],
 		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
+		TestableFuturesV2Market: [
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC' + perpSuffix), // market key
+			tryGetAddressOf('FuturesV2MarketStateBTC'),
+		],
 		FuturesV2MarketBTC: [
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset

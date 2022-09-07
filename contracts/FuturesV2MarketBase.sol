@@ -129,12 +129,6 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
     int128[] public fundingSequence;
 
     /*
-     * Each user's position. Multiple positions can always be merged, so each user has
-     * only have one position at a time.
-     */
-    mapping(address => Position) public positions;
-
-    /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
      * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
@@ -779,13 +773,9 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
             return;
         }
 
-        // Position storage position = positions[sender];
+        Position memory position = marketState.getPosition(sender);
 
-        Position memory position = marketState.getPositionOf(sender);
-        // (uint64 id ,uint64 lastFundingIndex,uint128 margin,uint128 lastPrice,int128 size) = marketState.getPositionOf(sender);
-        // Position memory position = Position(id,lastFundingIndex, margin, lastPrice, size);
-
-        _updatePositionMargin(position, price, marginDelta);
+        _updatePositionMargin(sender, position, price, marginDelta);
 
         emit MarginTransferred(sender, marginDelta);
 
@@ -794,8 +784,8 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
 
     // updates the stored position margin in place (on the stored position)
     function _updatePositionMargin(
+        address account,
         Position memory position,
-        // Position storage position,
         uint price,
         int marginDelta
     ) internal {
@@ -832,6 +822,16 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
                 );
             }
         }
+
+        // persist position changes
+        marketState.updatePosition(
+            account,
+            position.id,
+            position.lastFundingIndex,
+            position.margin,
+            position.lastPrice,
+            position.size
+        );
     }
 
     /*
@@ -854,13 +854,20 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         address sender = msg.sender;
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
-        int marginDelta = -int(_accessibleMargin(positions[sender], price));
+        int marginDelta = -int(_accessibleMargin(marketState.getPosition(sender), price));
         _transferMargin(marginDelta, price, sender);
     }
 
     function _trade(address sender, TradeParams memory params) internal {
-        Position storage position = positions[sender];
-        Position memory oldPosition = position;
+        Position memory position = marketState.getPosition(sender);
+        Position memory oldPosition =
+            Position({
+                id: position.id,
+                lastFundingIndex: position.lastFundingIndex,
+                margin: position.margin,
+                lastPrice: position.lastPrice,
+                size: position.size
+            });
 
         // Compute the new position after performing the trade
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
@@ -903,6 +910,17 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
             position.lastPrice = uint128(params.price);
             position.lastFundingIndex = uint64(fundingIndex);
         }
+
+        // persist position changes
+        marketState.updatePosition(
+            sender,
+            position.id,
+            position.lastFundingIndex,
+            position.margin,
+            position.lastPrice,
+            position.size
+        );
+
         // emit the modification event
         emit PositionModified(
             id,
@@ -960,7 +978,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
     }
 
     function _closePosition(bytes32 trackingCode) internal {
-        int size = positions[msg.sender].size;
+        int size = marketState.getPosition(msg.sender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
@@ -981,7 +999,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         address liquidator,
         uint price
     ) internal {
-        Position storage position = positions[account];
+        Position memory position = marketState.getPosition(account);
 
         // get remaining margin for sending any leftover buffer to fee pool
         uint remMargin = _remainingMargin(position, price);
@@ -999,7 +1017,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         );
 
         // Close the position itself.
-        delete positions[account];
+        marketState.deletePosition(account);
 
         // Issue the reward to the liquidator.
         uint liqFee = _liquidationFee(positionSize, price);
@@ -1023,7 +1041,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
 
-        _revertIfError(!_canLiquidate(positions[account], price), Status.CannotLiquidate);
+        _revertIfError(!_canLiquidate(marketState.getPosition(account), price), Status.CannotLiquidate);
 
         _liquidatePosition(account, msg.sender, price);
     }

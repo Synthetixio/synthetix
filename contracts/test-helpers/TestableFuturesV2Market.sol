@@ -52,9 +52,9 @@ contract TestableFuturesV2Market is FuturesV2Market {
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      */
     function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(positions[account].size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
+        require(marketState.getPosition(account).size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
         (uint price, ) = assetPrice();
-        return _liquidationMargin(int(positions[account].size), price);
+        return _liquidationMargin(int(marketState.getPosition(account).size), price);
     }
 
     /*
@@ -62,7 +62,7 @@ contract TestableFuturesV2Market is FuturesV2Market {
      */
     function currentLeverage(address account) external view returns (int leverage, bool invalid) {
         (uint price, bool isInvalid) = assetPrice();
-        Position storage position = positions[account];
+        Position memory position = marketState.getPosition(account);
         uint remainingMargin_ = _remainingMargin(position, price);
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
