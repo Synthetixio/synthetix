@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./Proxyable.sol";
 import "./interfaces/IFuturesV2MarketManager.sol";
 
 // Libraries

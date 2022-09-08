@@ -682,8 +682,8 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      *   But in that case, it shouldn't be accessible to external accounts.
      */
     function recomputeFunding() external returns (uint lastIndex) {
-        // only FuturesV2MarketSettings is allowed to use this method
-        _revertIfError(messageSender != _settings(), Status.NotPermitted);
+        // only FuturesV2MarketSettings is allowed to use this method (calling it directly, not via proxy)
+        _revertIfError(msg.sender != _settings(), Status.NotPermitted);
         // This method is the only mutative method that uses the view _assetPrice()
         // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
         // This is because this method is used by system settings when changing funding related
@@ -1037,12 +1037,12 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
 
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
         proxy._emit(
-            abi.encode(positionSize, price, liqFee),
-            3,
+            abi.encode(positionId, account, liquidator, positionSize, price, liqFee),
+            1,
             POSITIONLIQUIDATED_SIG,
-            bytes32(positionId),
-            addressToBytes32(account),
-            addressToBytes32(liquidator)
+            0,
+            0,
+            0
         );
 
         // Send any positive margin buffer to the fee pool

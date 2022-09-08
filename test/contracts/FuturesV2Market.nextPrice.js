@@ -1,7 +1,9 @@
-const { contract, web3 } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toUnit, multiplyDecimal } = require('../utils')();
 const { toBN } = web3.utils;
+
+const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -43,7 +45,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 	before(async () => {
 		({
 			FuturesV2MarketSettings: futuresMarketSettings,
-			FuturesV2MarketBTC: futuresMarket,
+			ProxyFuturesV2MarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -56,6 +58,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			contracts: [
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
+				'FuturesV2MarketStateBTC',
 				{ contract: 'FuturesV2MarketBTC', properties: { perpSuffix: marketKeySuffix } },
 				'AddressResolver',
 				'FeePool',
@@ -80,6 +83,9 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 		for (const t of [trader, trader2, trader3]) {
 			await sUSD.issue(t, traderInitialBalance);
 		}
+
+		// use implementation ABI on the proxy address to simplify calling
+		futuresMarket = await FuturesV2Market.at(futuresMarket.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

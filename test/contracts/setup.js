@@ -640,20 +640,26 @@ const setupContract = async ({
 		},
 		async FuturesV2MarketBTC() {
 			await Promise.all([
-				cache['FuturesV2MarketManager'].addMarkets([instance.address], { from: owner }),
+				instance.setProxy(cache['ProxyFuturesV2MarketBTC'].address, { from: owner }),
 				cache['FuturesV2MarketStateBTC'].setAssociatedContract(instance.address, {
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketBTC'].setTarget(instance.address, { from: owner }),
+				cache['FuturesV2MarketManager'].addMarkets([cache['ProxyFuturesV2MarketBTC'].address], {
+					from: owner,
+				}),
 			]);
 		},
 		async FuturesV2MarketETH() {
 			await Promise.all([
-				cache['FuturesV2MarketManager'].addMarkets([instance.address], { from: owner }),
+				instance.setProxy(cache['ProxyFuturesV2MarketETH'].address, { from: owner }),
 				cache['FuturesV2MarketStateETH'].setAssociatedContract(instance.address, {
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketETH'].setTarget(instance.address, { from: owner }),
+				cache['FuturesV2MarketManager'].addMarkets([cache['ProxyFuturesV2MarketETH'].address], {
+					from: owner,
+				}),
 			]);
 		},
 		async PerpsV2MarketpBTC() {

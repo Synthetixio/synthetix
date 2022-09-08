@@ -41,10 +41,10 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
 
     function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
         // check that a previous order doesn't exist
-        require(nextPriceOrders[msg.sender].sizeDelta == 0, "previous order exists");
+        require(nextPriceOrders[messageSender].sizeDelta == 0, "previous order exists");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
-        Position memory position = marketState.getPosition(msg.sender);
+        Position memory position = marketState.getPosition(messageSender);
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert
@@ -64,9 +64,9 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         // deduct fees from margin
         uint commitDeposit = _nextPriceCommitDeposit(params);
         uint keeperDeposit = _minKeeperFee();
-        _updatePositionMargin(msg.sender, position, price, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(messageSender, position, price, -int(commitDeposit + keeperDeposit));
         // emit event for modifying the position (subtracting the fees from margin)
-        emit PositionModified(position.id, msg.sender, position.margin, position.size, 0, price, fundingIndex, 0);
+        emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
 
         // create order
         uint targetRoundId = _exchangeRates().getCurrentRoundId(baseAsset) + 1; // next round
@@ -79,8 +79,8 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
                 trackingCode: trackingCode
             });
         // emit event
-        emit NextPriceOrderSubmitted(
-            msg.sender,
+        emitNextPriceOrderSubmitted(
+            messageSender,
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
@@ -88,7 +88,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
             order.trackingCode
         );
         // store order
-        nextPriceOrders[msg.sender] = order;
+        nextPriceOrders[messageSender] = order;
     }
 
     /**
@@ -111,7 +111,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
 
         uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
 
-        if (account == msg.sender) {
+        if (account == messageSender) {
             // this is account owner
             // refund keeper fee to margin
             Position memory position = marketState.getPosition(account);
@@ -120,7 +120,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
             _updatePositionMargin(account, position, price, int(order.keeperDeposit));
 
             // emit event for modifying the position (add the fee to margin)
-            emit PositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
+            emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
         } else {
             // this is someone else (like a keeper)
             // cancellation by third party is only possible when execution cannot be attempted any longer
@@ -128,7 +128,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
             require(_confirmationWindowOver(currentRoundId, order.targetRoundId), "cannot be cancelled by keeper yet");
 
             // send keeper fee to keeper
-            _manager().issueSUSD(msg.sender, order.keeperDeposit);
+            _manager().issueSUSD(messageSender, order.keeperDeposit);
         }
 
         // pay the commitDeposit as fee to the FeePool
@@ -138,7 +138,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         // important!! position of the account, not the msg.sender
         delete nextPriceOrders[account];
         // emit event
-        emit NextPriceOrderRemoved(
+        emitNextPriceOrderRemoved(
             account,
             currentRoundId,
             order.sizeDelta,
@@ -183,10 +183,10 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         uint toRefund = order.commitDeposit; // refund the commitment deposit
 
         // refund keeperFee to margin if it's the account holder
-        if (msg.sender == account) {
+        if (messageSender == account) {
             toRefund += order.keeperDeposit;
         } else {
-            _manager().issueSUSD(msg.sender, order.keeperDeposit);
+            _manager().issueSUSD(messageSender, order.keeperDeposit);
         }
 
         Position memory position = marketState.getPosition(account);
@@ -196,7 +196,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         // if the order later fails this is reverted of course
         _updatePositionMargin(account, position, currentPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
-        emit PositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
+        emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
         // the correct price for the past round
         (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.targetRoundId);
@@ -215,7 +215,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         // remove stored order
         delete nextPriceOrders[account];
         // emit event
-        emit NextPriceOrderRemoved(
+        emitNextPriceOrderRemoved(
             account,
             currentRoundId,
             order.sizeDelta,
@@ -262,6 +262,26 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         uint keeperDeposit,
         bytes32 trackingCode
     );
+    bytes32 internal constant NEXTPRICEORDERSUBMITTED_SIG =
+        keccak256("NextPriceOrderSubmitted(address,int256,uint256,uint256,uint256,bytes32)");
+
+    function emitNextPriceOrderSubmitted(
+        address account,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    ) internal {
+        proxy._emit(
+            abi.encode(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
+            2,
+            NEXTPRICEORDERSUBMITTED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
 
     event NextPriceOrderRemoved(
         address indexed account,
@@ -272,4 +292,25 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         uint keeperDeposit,
         bytes32 trackingCode
     );
+    bytes32 internal constant NEXTPRICEORDERREMOVED_SIG =
+        keccak256("NextPriceOrderRemoved(address,uint256,int256,uint256,uint256,uint256,bytes32)");
+
+    function emitNextPriceOrderRemoved(
+        address account,
+        uint currentRoundId,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    ) internal {
+        proxy._emit(
+            abi.encode(currentRoundId, sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
+            2,
+            NEXTPRICEORDERREMOVED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
 }

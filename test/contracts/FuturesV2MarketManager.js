@@ -13,6 +13,8 @@ const {
 } = require('./helpers');
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
+const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
+
 const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesV2MarketManager', accounts => {
@@ -43,7 +45,6 @@ contract('FuturesV2MarketManager', accounts => {
 		({
 			FuturesV2MarketManager: futuresMarketManager,
 			FuturesV2MarketSettings: futuresMarketSettings,
-			// PerpsV2Settings: perpsSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -58,7 +59,6 @@ contract('FuturesV2MarketManager', accounts => {
 			contracts: [
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
-				// 'PerpsV2Settings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -529,21 +529,22 @@ contract('FuturesV2MarketManager', accounts => {
 
 				const marketState = await setupContract({
 					accounts,
-					contract: 'FuturesV2MarketState' + symbol,
+					contract: 'FuturesV2MarketStateAdded' + symbol,
 					source: 'FuturesV2MarketState',
 					args: [owner, owner],
 				});
 
-				const market = await setupContract({
+				let market = await setupContract({
 					accounts,
-					contract: 'ProxyFuturesV2Market',
+					contract: 'ProxyFuturesV2MarketAdded' + symbol,
 					source: 'Proxy',
 					args: [owner],
 				});
 
 				const marketImpl = await setupContract({
 					accounts,
-					contract: 'FuturesV2Market',
+					contract: 'FuturesV2MarketAdded' + symbol,
+					source: 'FuturesV2Market',
 					args: [
 						market.address,
 						marketState.address,
@@ -556,13 +557,15 @@ contract('FuturesV2MarketManager', accounts => {
 
 				await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 				await market.setTarget(marketImpl.address, { from: owner });
+				await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+				// use implementation ABI on the proxy address to simplify calling
+				market = await FuturesV2Market.at(market.address);
 
 				markets.push(market);
 				marketKeys.push(marketKey);
 
 				await addressResolver.rebuildCaches([market.address], { from: owner });
-
-				await futuresMarketManager.addMarkets([market.address], { from: owner });
 
 				await setPrice(assetKey, toUnit(1000));
 

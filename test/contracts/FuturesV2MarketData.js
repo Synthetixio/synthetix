@@ -77,21 +77,21 @@ contract('FuturesV2MarketData', accounts => {
 
 			const marketState = await setupContract({
 				accounts,
-				contract: 'FuturesV2MarketState' + symbol,
+				contract: 'FuturesV2MarketStateAdded' + symbol,
 				source: 'FuturesV2MarketState',
 				args: [owner, owner],
 			});
 
 			const market = await setupContract({
 				accounts,
-				contract: 'ProxyFuturesV2Market' + symbol,
+				contract: 'ProxyFuturesV2MarketAdded' + symbol,
 				source: 'Proxy',
 				args: [owner],
 			});
 
 			const marketImpl = await setupContract({
 				accounts,
-				contract: 'FuturesV2Market' + symbol,
+				contract: 'FuturesV2MarketAdded' + symbol,
 				source: 'FuturesV2Market',
 				args: [
 					market.address,
@@ -105,9 +105,9 @@ contract('FuturesV2MarketData', accounts => {
 
 			await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 			await market.setTarget(marketImpl.address, { from: owner });
+			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
 			await addressResolver.rebuildCaches([market.address], { from: owner });
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
 			await setupPriceAggregators(exchangeRates, owner, [assetKey]);
 			await setPrice(assetKey, toUnit(1000));
