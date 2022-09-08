@@ -1,6 +1,9 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+import "./Owned.sol";
+import "./Proxyable.sol";
+
 // Inheritance
 import "./MixinFuturesV2MarketSettings.sol";
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
@@ -82,7 +85,7 @@ interface IFuturesV2MarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2Market
-contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBaseTypes {
+contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, IFuturesV2MarketBaseTypes {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -163,11 +166,13 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
+        address payable _proxy,
+        address _marketState,
+        address _owner,
         address _resolver,
         bytes32 _baseAsset,
-        bytes32 _marketKey,
-        address _marketState
-    ) public MixinFuturesV2MarketSettings(_resolver) {
+        bytes32 _marketKey
+    ) public MixinFuturesV2MarketSettings(_resolver) Owned(_owner) Proxyable(_proxy) {
         baseAsset = _baseAsset;
         marketKey = _marketKey;
 
@@ -664,7 +669,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         int funding = _nextFundingEntry(price);
         fundingSequence.push(int128(funding));
         fundingLastRecomputed = uint32(block.timestamp);
-        emit FundingRecomputed(funding, sequenceLengthBefore, fundingLastRecomputed);
+        proxy._emit(abi.encode(funding, sequenceLengthBefore, fundingLastRecomputed), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
 
         return sequenceLengthBefore;
     }
@@ -678,7 +683,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
      */
     function recomputeFunding() external returns (uint lastIndex) {
         // only FuturesV2MarketSettings is allowed to use this method
-        _revertIfError(msg.sender != _settings(), Status.NotPermitted);
+        _revertIfError(messageSender != _settings(), Status.NotPermitted);
         // This method is the only mutative method that uses the view _assetPrice()
         // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
         // This is because this method is used by system settings when changing funding related
@@ -777,9 +782,9 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
 
         _updatePositionMargin(sender, position, price, marginDelta);
 
-        emit MarginTransferred(sender, marginDelta);
+        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(sender), 0, 0);
 
-        emit PositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
+        emitPositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
     }
 
     // updates the stored position margin in place (on the stored position)
@@ -843,7 +848,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
     function transferMargin(int marginDelta) external {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
-        _transferMargin(marginDelta, price, msg.sender);
+        _transferMargin(marginDelta, price, messageSender);
     }
 
     /*
@@ -851,7 +856,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
      * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
      */
     function withdrawAllMargin() external {
-        address sender = msg.sender;
+        address sender = messageSender;
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         int marginDelta = -int(_accessibleMargin(marketState.getPosition(sender), price));
@@ -882,7 +887,14 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
             _manager().payFee(fee);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                emit FuturesTracking(params.trackingCode, baseAsset, marketKey, params.sizeDelta, fee);
+                proxy._emit(
+                    abi.encode(baseAsset, marketKey, params.sizeDelta, fee),
+                    2,
+                    FUTURESTRACKING_SIG,
+                    params.trackingCode,
+                    0,
+                    0
+                );
             }
         }
 
@@ -922,7 +934,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         );
 
         // emit the modification event
-        emit PositionModified(
+        emitPositionModified(
             id,
             sender,
             newPosition.margin,
@@ -954,7 +966,7 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _trade(
-            msg.sender,
+            messageSender,
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
@@ -978,12 +990,12 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
     }
 
     function _closePosition(bytes32 trackingCode) internal {
-        int size = marketState.getPosition(msg.sender).size;
+        int size = marketState.getPosition(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _trade(
-            msg.sender,
+            messageSender,
             TradeParams({
                 sizeDelta: -size,
                 price: price,
@@ -1023,8 +1035,15 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         uint liqFee = _liquidationFee(positionSize, price);
         _manager().issueSUSD(liquidator, liqFee);
 
-        emit PositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
-        emit PositionLiquidated(positionId, account, liquidator, positionSize, price, liqFee);
+        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
+        proxy._emit(
+            abi.encode(positionSize, price, liqFee),
+            3,
+            POSITIONLIQUIDATED_SIG,
+            bytes32(positionId),
+            addressToBytes32(account),
+            addressToBytes32(liquidator)
+        );
 
         // Send any positive margin buffer to the fee pool
         if (remMargin > liqFee) {
@@ -1043,12 +1062,16 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
 
         _revertIfError(!_canLiquidate(marketState.getPosition(account), price), Status.CannotLiquidate);
 
-        _liquidatePosition(account, msg.sender, price);
+        _liquidatePosition(account, messageSender, price);
     }
 
     /* ========== EVENTS ========== */
+    function addressToBytes32(address input) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(input)));
+    }
 
     event MarginTransferred(address indexed account, int marginDelta);
+    bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
 
     event PositionModified(
         uint indexed id,
@@ -1060,17 +1083,36 @@ contract FuturesV2MarketBase is MixinFuturesV2MarketSettings, IFuturesV2MarketBa
         uint fundingIndex,
         uint fee
     );
+    bytes32 internal constant POSITIONMODIFIED_SIG =
+        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
 
-    event PositionLiquidated(
-        uint indexed id,
-        address indexed account,
-        address indexed liquidator,
+    function emitPositionModified(
+        uint id,
+        address account,
+        uint margin,
         int size,
-        uint price,
+        int tradeSize,
+        uint lastPrice,
+        uint fundingIndex,
         uint fee
-    );
+    ) internal {
+        proxy._emit(
+            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
+            3,
+            POSITIONMODIFIED_SIG,
+            bytes32(id),
+            addressToBytes32(account),
+            0
+        );
+    }
+
+    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
+    bytes32 internal constant POSITIONLIQUIDATED_SIG =
+        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
 
     event FundingRecomputed(int funding, uint index, uint timestamp);
+    bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,uint256,uint256)");
 
     event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
+    bytes32 internal constant FUTURESTRACKING_SIG = keccak256("FuturesTracking(bytes32,bytes32,bytes32,int256,uint256)");
 }

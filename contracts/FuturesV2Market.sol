@@ -58,9 +58,11 @@ import "./interfaces/IFuturesV2Market.sol";
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2Market
 contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketBase, MixinFuturesV2NextPriceOrders, MixinFuturesV2Views {
     constructor(
+        address payable _proxy,
+        address _marketState,
+        address _owner,
         address _resolver,
         bytes32 _baseAsset,
-        bytes32 _marketKey,
-        address _marketState
-    ) public FuturesV2MarketBase(_resolver, _baseAsset, _marketKey, _marketState) {}
+        bytes32 _marketKey
+    ) public FuturesV2MarketBase(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
 }

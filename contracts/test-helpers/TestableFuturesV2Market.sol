@@ -5,11 +5,13 @@ import "../FuturesV2Market.sol";
 
 contract TestableFuturesV2Market is FuturesV2Market {
     constructor(
+        address payable _proxy,
+        address _marketState,
+        address _owner,
         address _resolver,
         bytes32 _baseAsset,
-        bytes32 _marketKey,
-        address _marketState
-    ) public FuturesV2Market(_resolver, _baseAsset, _marketKey, _marketState) {}
+        bytes32 _marketKey
+    ) public FuturesV2Market(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
 
     function entryDebtCorrection() external view returns (int) {
         return _entryDebtCorrection;

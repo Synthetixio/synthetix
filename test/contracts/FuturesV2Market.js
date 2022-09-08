@@ -3,6 +3,8 @@ const { toBytes32 } = require('../..');
 const { toBN } = web3.utils;
 const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
 
+const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
+
 const {
 	setupAllContracts,
 	constantsOverrides: { EXCHANGE_DYNAMIC_FEE_THRESHOLD },
@@ -36,6 +38,7 @@ contract('FuturesV2Market', accounts => {
 	let futuresMarketSettings,
 		futuresMarketManager,
 		futuresMarket,
+		futuresMarketImpl,
 		futuresMarketState,
 		exchangeRates,
 		exchanger,
@@ -107,7 +110,8 @@ contract('FuturesV2Market', accounts => {
 			FuturesV2MarketSettings: futuresMarketSettings,
 			FuturesV2MarketManager: futuresMarketManager,
 			FuturesV2MarketStateBTC: futuresMarketState,
-			FuturesV2MarketBTC: futuresMarket,
+			FuturesV2MarketBTC: futuresMarketImpl,
+			ProxyFuturesV2MarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
@@ -162,6 +166,9 @@ contract('FuturesV2Market', accounts => {
 			[true, true],
 			{ from: owner }
 		);
+
+		// use implementation ABI on the proxy address to simplify calling
+		futuresMarket = await FuturesV2Market.at(futuresMarket.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -169,8 +176,8 @@ contract('FuturesV2Market', accounts => {
 	describe('Basic parameters', () => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: futuresMarket.abi,
-				ignoreParents: ['MixinFuturesV2MarketSettings'],
+				abi: futuresMarketImpl.abi,
+				ignoreParents: ['MixinFuturesV2MarketSettings', 'Owned', 'Proxyable'],
 				expected: [
 					'transferMargin',
 					'withdrawAllMargin',
