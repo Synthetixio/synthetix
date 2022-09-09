@@ -243,6 +243,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     function flagAccountForLiquidation(address account) external rateNotInvalid("SNX") {
         systemStatus().requireSystemActive();
 
+        require(getAddress("LegacyMarket") == address(0), "Must liquidate using V3");
+
         require(getLiquidationRatio() > 0, "Liquidation ratio not set");
         require(getLiquidationDelay() > 0, "Liquidation delay not set");
 

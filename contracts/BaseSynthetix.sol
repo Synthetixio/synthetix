@@ -179,6 +179,11 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
+        // Always allow legacy market to transfer
+        if (messageSender == getAddress("LegacyMarket")) {
+            return true;
+        }
+
         if (issuer().debtBalanceOf(account, sUSD) > 0) {
             (uint transferable, bool anyRateIsInvalid) =
                 issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
