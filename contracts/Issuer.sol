@@ -620,6 +620,26 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return rateInvalid;
     }
 
+    function burnDebtSharesForMigration(address account) external onlyMigrator {
+        // important: this has to happen before any updates to user's debt shares
+        liquidatorRewards().updateEntry(account);
+
+        ISynthetixDebtShare sds = synthetixDebtShare();
+        uint amount = sds.balanceOf(account);
+
+        sds.burnShare(account, amount);
+    }
+
+    function mintDebtSharesForMigration(address account) external onlyMigrator {
+        // important: this has to happen before any updates to user's debt shares
+        liquidatorRewards().updateEntry(account);
+
+        ISynthetixDebtShare sds = synthetixDebtShare();
+        uint amount = sds.balanceOf(account);
+
+        sds.mintShare(account, amount);
+    }
+
     /**
      * Function used to migrate balances from the CollateralShort contract
      * @param short The address of the CollateralShort contract to be upgraded
@@ -1003,6 +1023,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     modifier onlySynthetix() {
         require(msg.sender == address(synthetixERC20()), "Issuer: Only Synthetix");
         _;
+    }
+
+    modifier onlyMigrator() {
+        require(msg.sender == address(debtMigrator()), "Issuer: Only Debt Migrator");
     }
 
     modifier onlyTrustedMinters() {
