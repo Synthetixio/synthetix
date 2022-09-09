@@ -6,6 +6,8 @@ import "./Owned.sol";
 // Internal references
 import "./Proxy.sol";
 
+// import "hardhat/console.sol";
+
 // https://docs.synthetix.io/contracts/source/contracts/proxyable
 contract Proxyable is Owned {
     // This contract should be treated like an abstract contract
@@ -32,7 +34,11 @@ contract Proxyable is Owned {
     }
 
     function setMessageSender(address sender) external onlyProxy {
+        // console.log('going to update the sender');
+        // console.log('input   :', sender);
+        // console.log('current :', messageSender);
         messageSender = sender;
+        // console.log('updated :', messageSender);
     }
 
     modifier onlyProxy {

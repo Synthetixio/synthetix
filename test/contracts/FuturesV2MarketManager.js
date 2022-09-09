@@ -557,7 +557,9 @@ contract('FuturesV2MarketManager', accounts => {
 
 				await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 				await market.setTarget(marketImpl.address, { from: owner });
-				await futuresMarketManager.addMarkets([market.address], { from: owner });
+				// FIXME FUTURESV2 use proxy address
+				// await futuresMarketManager.addMarkets([market.address], { from: owner });
+				await futuresMarketManager.addMarkets([marketImpl.address], { from: owner });
 
 				// use implementation ABI on the proxy address to simplify calling
 				market = await FuturesV2Market.at(market.address);

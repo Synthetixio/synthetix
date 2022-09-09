@@ -845,7 +845,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
-    function transferMargin(int marginDelta) external {
+    function transferMargin(int marginDelta) external onlyProxy {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _transferMargin(marginDelta, price, messageSender);
@@ -855,7 +855,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      * Withdraws all accessible margin in a position. This will leave some remaining margin
      * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
      */
-    function withdrawAllMargin() external {
+    function withdrawAllMargin() external onlyProxy {
         address sender = messageSender;
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
@@ -962,7 +962,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         _modifyPosition(sizeDelta, trackingCode);
     }
 
-    function _modifyPosition(int sizeDelta, bytes32 trackingCode) internal {
+    function _modifyPosition(int sizeDelta, bytes32 trackingCode) internal onlyProxy {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
         _trade(
@@ -989,7 +989,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         _closePosition(trackingCode);
     }
 
-    function _closePosition(bytes32 trackingCode) internal {
+    function _closePosition(bytes32 trackingCode) internal onlyProxy {
         int size = marketState.getPosition(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks();
@@ -1056,7 +1056,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      * `canLiquidate(account)` is true, and reverts otherwise.
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
-    function liquidatePosition(address account) external {
+    function liquidatePosition(address account) external onlyProxy {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
 
