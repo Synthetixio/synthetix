@@ -1,5 +1,6 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
+
 // https://docs.synthetix.io/contracts/source/interfaces/iaddressresolver
 interface IAddressResolver {
     function getAddress(bytes32 name) external view returns (address);

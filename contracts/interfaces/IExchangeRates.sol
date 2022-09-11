@@ -56,7 +56,6 @@ interface IExchangeRates {
             uint destinationRate
         );
 
-
     function effectiveAtomicValueAndRates(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
@@ -127,5 +126,9 @@ interface IExchangeRates {
     function ratesForCurrencies(bytes32[] calldata currencyKeys) external view returns (uint[] memory);
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) external view returns (bool);
-    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings calldata settings) external view returns (bool);
+
+    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings calldata settings)
+        external
+        view
+        returns (bool);
 }

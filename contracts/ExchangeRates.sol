@@ -360,7 +360,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         _notImplemented();
     }
 
-    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory) public view returns (bool) {
+    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory)
+        public
+        view
+        returns (bool)
+    {
         _notImplemented();
     }
 

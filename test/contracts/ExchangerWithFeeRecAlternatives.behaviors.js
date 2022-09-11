@@ -60,47 +60,52 @@ module.exports = function({ accounts }) {
 		systemSourceRate,
 		systemDestinationRate,
 	}) => {
-		this.mocks.ExchangeRates.smocked['effectiveAtomicValueAndRates((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'].will.return.with(
-			(srcKey, amount, destKey) => {
-				amount = amount.toString(); // seems to be passed to smock as a number
+		this.mocks.ExchangeRates.smocked[
+			'effectiveAtomicValueAndRates((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
+		].will.return.with((srcKey, amount, destKey) => {
+			amount = amount.toString(); // seems to be passed to smock as a number
 
-				// For ease of comparison when mocking, atomicRate is specified in the
-				// same direction as systemDestinationRate
-				const atomicValue =
-					srcKey === sourceCurrency
-						? divideDecimal(amount, atomicRate)
-						: multiplyDecimal(amount, atomicRate);
+			// For ease of comparison when mocking, atomicRate is specified in the
+			// same direction as systemDestinationRate
+			const atomicValue =
+				srcKey === sourceCurrency
+					? divideDecimal(amount, atomicRate)
+					: multiplyDecimal(amount, atomicRate);
 
-				const [sourceRate, destinationRate] =
-					srcKey === sourceCurrency
-						? [systemSourceRate, systemDestinationRate]
-						: [systemDestinationRate, systemSourceRate];
-				const systemValue = divideDecimal(multiplyDecimal(amount, sourceRate), destinationRate);
+			const [sourceRate, destinationRate] =
+				srcKey === sourceCurrency
+					? [systemSourceRate, systemDestinationRate]
+					: [systemDestinationRate, systemSourceRate];
+			const systemValue = divideDecimal(multiplyDecimal(amount, sourceRate), destinationRate);
 
-				return [
-					atomicValue, // value
-					systemValue, // systemValue
-					systemSourceRate, // systemSourceRate
-					systemDestinationRate, // systemDestinationRate
-				].map(bn => bn.toString());
-			}
-		);
+			return [
+				atomicValue, // value
+				systemValue, // systemValue
+				systemSourceRate, // systemSourceRate
+				systemDestinationRate, // systemDestinationRate
+			].map(bn => bn.toString());
+		});
 	};
 
 	return {
 		whenInstantiated: ({ owner }, cb) => {
 			describe(`when instantiated`, () => {
 				beforeEach(async () => {
-
-					// have to put this extra mock at the end 
-					this.directIntegrationManager = await DirectIntegrationManager.new(owner, this.resolver.address);
+					// have to put this extra mock at the end
+					this.directIntegrationManager = await DirectIntegrationManager.new(
+						owner,
+						this.resolver.address
+					);
 
 					// we can just side effect the mock into our address resolver. convenient!
 					this.mocks.DirectIntegrationManager = this.directIntegrationManager;
 					await this.directIntegrationManager.rebuildCache();
 
 					this.instance = await ExchangerWithFeeRecAlternatives.new(owner, this.resolver.address);
-					this.directIntegrationInstance = await DirectIntegrationManager.new(owner, this.resolver.address);
+					this.directIntegrationInstance = await DirectIntegrationManager.new(
+						owner,
+						this.resolver.address
+					);
 					await this.instance.rebuildCache();
 				});
 				cb();
@@ -230,9 +235,9 @@ module.exports = function({ accounts }) {
 				volatile ? 'volatile' : 'not volatile'
 			}`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangesRates.smocked['synthTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'].will.return.with(
-						synthToCheck => (synthToCheck === synth ? volatile : false)
-					);
+					this.mocks.ExchangesRates.smocked[
+						'synthTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
+					].will.return.with(synthToCheck => (synthToCheck === synth ? volatile : false));
 				});
 			});
 		},

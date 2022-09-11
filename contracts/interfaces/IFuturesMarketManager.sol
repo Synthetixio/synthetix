@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
+
 interface IFuturesMarketManager {
     function markets(uint index, uint pageSize) external view returns (address[] memory);
 

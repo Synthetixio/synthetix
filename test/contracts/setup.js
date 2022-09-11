@@ -730,7 +730,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DirectIntegrationManager',
-			deps: ['AddressResolver', 'SystemSettings']
+			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{
 			contract: 'ExchangeRates',
@@ -863,7 +863,7 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [
 				'AddressResolver',
-				'DirectIntegrationManager', 
+				'DirectIntegrationManager',
 				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',

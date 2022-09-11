@@ -63,9 +63,12 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
             uint systemDestinationRate
         )
     {
-        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings = directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
-        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings = directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
 
         return effectiveAtomicValueAndRates(sourceSettings, amount, destinationSettings, usdSettings);
     }
@@ -104,7 +107,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         if (usePureChainlinkPriceForSource) {
             sourceRate = systemSourceRate;
         } else {
-            sourceRate = _getMinValue(systemSourceRate, 
+            sourceRate = _getMinValue(
+                systemSourceRate,
                 _getPriceFromDexAggregator(sourceSettings, usdSettings, sourceAmount)
             );
         }
@@ -143,7 +147,10 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint amount
     ) internal view returns (uint) {
         require(amount != 0, "Amount must be greater than 0");
-        require(sourceSettings.currencyKey == sUSD || destinationSettings.currencyKey == sUSD, "Atomic swaps must go through sUSD");
+        require(
+            sourceSettings.currencyKey == sUSD || destinationSettings.currencyKey == sUSD,
+            "Atomic swaps must go through sUSD"
+        );
 
         IERC20 sourceEquivalent = IERC20(sourceSettings.atomicEquivalentForDexPricing);
         require(address(sourceEquivalent) != address(0), "No atomic equivalent for source");
@@ -154,14 +161,15 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint result =
             _dexPriceDestinationValue(
                 IDexPriceAggregator(sourceSettings.dexPriceAggregator),
-                sourceEquivalent, 
-                destEquivalent, 
-                amount, 
-                sourceSettings.atomicTwapWindow
+                sourceEquivalent,
+                destEquivalent,
+                amount,
+                sourceSettings
+                    .atomicTwapWindow
             )
-            .mul(SafeDecimalMath.unit())
-            .div(amount);
-            
+                .mul(SafeDecimalMath.unit())
+                .div(amount);
+
         require(result != 0, "Result must be greater than 0");
 
         return destinationSettings.currencyKey == "sUSD" ? result : SafeDecimalMath.unit().divideDecimalRound(result);
@@ -197,12 +205,17 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     }
 
     function synthTooVolatileForAtomicExchange(bytes32 currencyKey) public view returns (bool) {
-        IDirectIntegrationManager.ParameterIntegrationSettings memory settings = directIntegrationManager().getExchangeParameters(msg.sender, currencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory settings =
+            directIntegrationManager().getExchangeParameters(msg.sender, currencyKey);
 
         return synthTooVolatileForAtomicExchange(settings);
     }
 
-    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory settings) public view returns (bool) {
+    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
+        public
+        view
+        returns (bool)
+    {
         // sUSD is a special case and is never volatile
         if (settings.currencyKey == "sUSD") return false;
 

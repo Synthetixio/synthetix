@@ -48,23 +48,44 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
     {
         ParameterIntegrationSettings storage storedOverrides = _settings[integration][currencyKey];
 
-        return ParameterIntegrationSettings(
-            currencyKey,
-            storedOverrides.dexPriceAggregator != address(0) ? storedOverrides.dexPriceAggregator : flexibleStorage().getAddressValue(CONTRACT_NAME_EXCHANGE_RATES, SETTING_DEX_PRICE_AGGREGATOR),
-            storedOverrides.atomicEquivalentForDexPricing != address(0) ? storedOverrides.atomicEquivalentForDexPricing : getAtomicEquivalentForDexPricing(currencyKey),
-            storedOverrides.atomicExchangeFeeRate > 0 ? storedOverrides.atomicExchangeFeeRate : getAtomicExchangeFeeRate(currencyKey),
-            storedOverrides.atomicTwapWindow > 0 ? storedOverrides.atomicTwapWindow : getAtomicTwapWindow(),
-            storedOverrides.atomicMaxTwapDelta,
-            storedOverrides.atomicMaxVolumePerBlock > 0 ? storedOverrides.atomicMaxVolumePerBlock : getAtomicMaxVolumePerBlock(),
-            storedOverrides.atomicVolatilityConsiderationWindow > 0 ? storedOverrides.atomicVolatilityConsiderationWindow : getAtomicVolatilityConsiderationWindow(currencyKey),
-            storedOverrides.atomicVolatilityTwapSeconds,
-            storedOverrides.atomicVolatilityUpdateThreshold > 0 ? storedOverrides.atomicVolatilityUpdateThreshold : getAtomicVolatilityUpdateThreshold(currencyKey),
-            storedOverrides.exchangeFeeRate > 0 ? storedOverrides.exchangeFeeRate : getExchangeFeeRate(currencyKey),
-            storedOverrides.exchangeMaxDynamicFee > 0 ? storedOverrides.exchangeMaxDynamicFee : getExchangeMaxDynamicFee(),
-            storedOverrides.exchangeDynamicFeeRounds > 0 ? storedOverrides.exchangeDynamicFeeRounds : getExchangeDynamicFeeRounds(),
-            storedOverrides.exchangeDynamicFeeThreshold > 0 ? storedOverrides.exchangeDynamicFeeThreshold : getExchangeDynamicFeeThreshold(),
-            storedOverrides.exchangeDynamicFeeWeightDecay > 0 ? storedOverrides.exchangeDynamicFeeWeightDecay : getExchangeDynamicFeeWeightDecay()
-        );
+        return
+            ParameterIntegrationSettings(
+                currencyKey,
+                storedOverrides.dexPriceAggregator != address(0)
+                    ? storedOverrides.dexPriceAggregator
+                    : flexibleStorage().getAddressValue(CONTRACT_NAME_EXCHANGE_RATES, SETTING_DEX_PRICE_AGGREGATOR),
+                storedOverrides.atomicEquivalentForDexPricing != address(0)
+                    ? storedOverrides.atomicEquivalentForDexPricing
+                    : getAtomicEquivalentForDexPricing(currencyKey),
+                storedOverrides.atomicExchangeFeeRate > 0
+                    ? storedOverrides.atomicExchangeFeeRate
+                    : getAtomicExchangeFeeRate(currencyKey),
+                storedOverrides.atomicTwapWindow > 0 ? storedOverrides.atomicTwapWindow : getAtomicTwapWindow(),
+                storedOverrides.atomicMaxTwapDelta,
+                storedOverrides.atomicMaxVolumePerBlock > 0
+                    ? storedOverrides.atomicMaxVolumePerBlock
+                    : getAtomicMaxVolumePerBlock(),
+                storedOverrides.atomicVolatilityConsiderationWindow > 0
+                    ? storedOverrides.atomicVolatilityConsiderationWindow
+                    : getAtomicVolatilityConsiderationWindow(currencyKey),
+                storedOverrides.atomicVolatilityTwapSeconds,
+                storedOverrides.atomicVolatilityUpdateThreshold > 0
+                    ? storedOverrides.atomicVolatilityUpdateThreshold
+                    : getAtomicVolatilityUpdateThreshold(currencyKey),
+                storedOverrides.exchangeFeeRate > 0 ? storedOverrides.exchangeFeeRate : getExchangeFeeRate(currencyKey),
+                storedOverrides.exchangeMaxDynamicFee > 0
+                    ? storedOverrides.exchangeMaxDynamicFee
+                    : getExchangeMaxDynamicFee(),
+                storedOverrides.exchangeDynamicFeeRounds > 0
+                    ? storedOverrides.exchangeDynamicFeeRounds
+                    : getExchangeDynamicFeeRounds(),
+                storedOverrides.exchangeDynamicFeeThreshold > 0
+                    ? storedOverrides.exchangeDynamicFeeThreshold
+                    : getExchangeDynamicFeeThreshold(),
+                storedOverrides.exchangeDynamicFeeWeightDecay > 0
+                    ? storedOverrides.exchangeDynamicFeeWeightDecay
+                    : getExchangeDynamicFeeWeightDecay()
+            );
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -76,15 +97,23 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
      * @notice This will require a SIP and a presentation, given the importance of clearly presenting
      * external interactions with Synthetix contracts and the parameter overrides that would be implemented.
      */
-    function setExchangeParameters(address integration, bytes32[] calldata currencyKeys, ParameterIntegrationSettings calldata settings) external onlyOwner {
-        for (uint i = 0;i < currencyKeys.length;i++) {
+    function setExchangeParameters(
+        address integration,
+        bytes32[] calldata currencyKeys,
+        ParameterIntegrationSettings calldata settings
+    ) external onlyOwner {
+        for (uint i = 0; i < currencyKeys.length; i++) {
             _setExchangeParameters(integration, currencyKeys[i], settings);
         }
     }
 
     /* ---------- Internal Functions ---------- */
 
-    function _setExchangeParameters(address integration, bytes32 currencyKey, ParameterIntegrationSettings memory settings) internal {
+    function _setExchangeParameters(
+        address integration,
+        bytes32 currencyKey,
+        ParameterIntegrationSettings memory settings
+    ) internal {
         require(address(integration) != address(0), "Address cannot be 0");
 
         // TODO: causes `UnimplementedFeatureError`
@@ -94,5 +123,9 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
 
     /* ========== EVENTS ========== */
 
-    event IntegrationParametersSet(address indexed integration, bytes32 indexed currencyKey, ParameterIntegrationSettings overrides);
+    event IntegrationParametersSet(
+        address indexed integration,
+        bytes32 indexed currencyKey,
+        ParameterIntegrationSettings overrides
+    );
 }

@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
+
 // Stub functions required by the DebtCache and FeePool contracts.
 // https://docs.synthetix.io/contracts/source/contracts/etherwrapper
 contract EmptyEtherWrapper {

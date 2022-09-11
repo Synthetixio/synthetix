@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
+
 // https://sips.synthetix.io/sips/sip-120/
 // Uniswap V3 based DecPriceAggregator (unaudited) e.g. https://etherscan.io/address/0xf120f029ac143633d1942e48ae2dfa2036c5786c#code
 // https://github.com/sohkai/uniswap-v3-spot-twap-oracle

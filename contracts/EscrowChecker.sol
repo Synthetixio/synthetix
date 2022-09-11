@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
+
 interface ISynthetixEscrow {
     function numVestingEntries(address account) external view returns (uint);
 

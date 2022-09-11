@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 // https://docs.synthetix.io/contracts/source/interfaces/IDirectIntegration
 interface IDirectIntegrationManager {
-
     struct ParameterIntegrationSettings {
         bytes32 currencyKey;
         address dexPriceAggregator;
@@ -22,7 +21,14 @@ interface IDirectIntegrationManager {
         uint exchangeDynamicFeeWeightDecay;
     }
 
-    function getExchangeParameters(address integration, bytes32 key) external view returns (ParameterIntegrationSettings memory settings);
+    function getExchangeParameters(address integration, bytes32 key)
+        external
+        view
+        returns (ParameterIntegrationSettings memory settings);
 
-    function setExchangeParameters(address integration, bytes32[] calldata currencyKeys, ParameterIntegrationSettings calldata params) external;
+    function setExchangeParameters(
+        address integration,
+        bytes32[] calldata currencyKeys,
+        ParameterIntegrationSettings calldata params
+    ) external;
 }

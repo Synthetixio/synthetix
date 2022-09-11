@@ -1692,13 +1692,17 @@ contract('Exchange Rates', async accounts => {
 
 			describe('when consideration window is not set', () => {
 				it('does not consider synth to be volatile', async () => {
-					assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
+					assert.isFalse(
+						await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+					);
 				});
 			});
 
 			describe('when update threshold is not set', () => {
 				it('does not consider synth to be volatile', async () => {
-					assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
+					assert.isFalse(
+						await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+					);
 				});
 			});
 
@@ -1724,7 +1728,9 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('does not consider synth to be volatile', async () => {
-						assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
+						assert.isFalse(
+							await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+						);
 					});
 				});
 
@@ -1743,7 +1749,10 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it(`${volatile ? 'considers' : 'does not consider'} synth to be volatile`, async () => {
-							assert.equal(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth), volatile);
+							assert.equal(
+								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth),
+								volatile
+							);
 						});
 					}
 
@@ -1821,7 +1830,9 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('does not consider synth to be volatile', async () => {
-							assert.isFalse(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
+							assert.isFalse(
+								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+							);
 						});
 					});
 
@@ -1834,7 +1845,9 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('considers synth to be volatile', async () => {
-							assert.isTrue(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
+							assert.isTrue(
+								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+							);
 						});
 					});
 
@@ -1844,7 +1857,9 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						it('considers synth to be volatile', async () => {
-							assert.isTrue(await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth));
+							assert.isTrue(
+								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+							);
 						});
 					});
 				});

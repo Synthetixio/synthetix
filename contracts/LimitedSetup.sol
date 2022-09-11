@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
+
 // https://docs.synthetix.io/contracts/source/contracts/limitedsetup
 contract LimitedSetup {
     uint public setupExpiryTime;

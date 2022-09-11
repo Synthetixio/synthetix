@@ -1,5 +1,6 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
+
 interface ICollateralEth {
     function open(uint amount, bytes32 currency) external payable returns (uint id);
 

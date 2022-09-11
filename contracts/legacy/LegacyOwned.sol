@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
+
 contract LegacyOwned {
     address public owner;
     address public nominatedOwner;
