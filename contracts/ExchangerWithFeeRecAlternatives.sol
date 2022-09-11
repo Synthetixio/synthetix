@@ -167,7 +167,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
                 directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
 
-            _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+            _ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount);
             require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
             require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationSettings), "Dest synth too volatile");
 
@@ -195,8 +195,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
                 systemDestinationRate // current system rate for dest currency
             ) = _getAmountsForAtomicExchangeMinusFees(
                 sourceAmountAfterSettlement,
-                sourceCurrencyKey,
-                destinationCurrencyKey
+                sourceSettings,
+                destinationSettings,
+                usdSettings
             );
 
             // Sanity check atomic output's value against current system value (checking atomic rates)
