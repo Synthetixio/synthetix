@@ -33,30 +33,18 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external onlySynthetixBridge {
+        // add escrowedAmount to account and total aggregates
+        state().updateEscrowAccountBalance(account, SafeCast.toInt256(escrowedAmount));
+
         // There must be enough balance in the contract to provide for the escrowed balance.
-        totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
         require(
-            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
+            totalEscrowedBalance() <= synthetixERC20().balanceOf(address(this)),
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
-        /* Add escrowedAmount to account's escrowed balance */
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
-
         for (uint i = 0; i < vestingEntries.length; i++) {
-            _importVestingEntry(account, vestingEntries[i]);
+            state().addVestingEntry(account, vestingEntries[i]);
         }
-    }
-
-    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = entry;
-
-        /* append entryID to list of entries for account */
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
     }
 
     modifier onlySynthetixBridge() {

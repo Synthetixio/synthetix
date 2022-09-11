@@ -292,5 +292,23 @@
 	},
 	"LiquidatorRewards": {
 		"deploy": false
+	},
+	"CircuitBreaker": {
+		"deploy": false
+	},
+	"FuturesMarketDebtRatio": {
+		"deploy": false
+	},
+	"FuturesMarketBNB": {
+		"deploy": false
+	},
+	"FuturesMarketOP": {
+		"deploy": false
+	},
+	"FuturesMarketXMR": {
+		"deploy": false
+	},
+	"FuturesMarketDOGE": {
+		"deploy": false
 	}
 }

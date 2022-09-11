@@ -337,5 +337,8 @@
 	},
 	"OneNetAggregatorsDEFI": {
 		"deploy": false
+	},
+	"CircuitBreaker": {
+		"deploy": false
 	}
 }

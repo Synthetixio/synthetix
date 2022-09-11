@@ -69,7 +69,12 @@ contract('ShortingRewards', accounts => {
 		const rewardsTokenIdentifier = await rewardsToken.symbol();
 
 		await systemSettings.setRateStalePeriod(DAY * rateStaleDays, { from: owner });
-		await updateAggregatorRates(exchangeRates, [toBytes32(rewardsTokenIdentifier)], [toUnit('2')]);
+		await updateAggregatorRates(
+			exchangeRates,
+			null,
+			[toBytes32(rewardsTokenIdentifier)],
+			[toUnit('2')]
+		);
 		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
 	};
 
@@ -224,7 +229,7 @@ contract('ShortingRewards', accounts => {
 	});
 
 	beforeEach(async () => {
-		await updateAggregatorRates(exchangeRates, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
 
 		await issuesUSDToAccount(toUnit(100000), owner);
 		await issuesBTCtoAccount(toUnit(10), owner);
@@ -435,7 +440,7 @@ contract('ShortingRewards', accounts => {
 			await fastForward(DAY);
 
 			// Make the short so underwater it must get closed.
-			await updateAggregatorRates(exchangeRates, [sBTC], ['20000'].map(toUnit));
+			await updateAggregatorRates(exchangeRates, null, [sBTC], ['20000'].map(toUnit));
 
 			// close the loan via liquidation
 			await issuesBTCtoAccount(toUnit(1), account2);
@@ -454,7 +459,7 @@ contract('ShortingRewards', accounts => {
 			await fastForward(DAY);
 
 			// Make the short so underwater it must get closed.
-			await updateAggregatorRates(exchangeRates, [sBTC], ['20000'].map(toUnit));
+			await updateAggregatorRates(exchangeRates, null, [sBTC], ['20000'].map(toUnit));
 
 			// close the loan via liquidation
 			await issuesBTCtoAccount(toUnit(1), account2);

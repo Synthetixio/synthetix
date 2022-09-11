@@ -43,6 +43,8 @@ interface ISynthetix {
 
     function transferableSynthetix(address account) external view returns (uint transferable);
 
+    function getFirstNonZeroEscrowIndex(address account) external view returns (uint);
+
     // Mutative Functions
     function burnSynths(uint amount) external;
 
@@ -125,6 +127,8 @@ interface ISynthetix {
 
     // Liquidations
     function liquidateDelinquentAccount(address account) external returns (bool);
+
+    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex) external returns (bool);
 
     function liquidateSelf() external returns (bool);
 

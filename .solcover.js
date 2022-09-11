@@ -4,7 +4,14 @@ const {
 
 module.exports = {
 	port: 8545,
-	skipFiles: ['test-helpers', 'migrations', 'legacy', 'EscrowChecker.sol', 'EmptyEtherWrapper.sol'],
+	skipFiles: [
+		'test-helpers',
+		'migrations',
+		'legacy',
+		'RewardEscrowV2Frozen',
+		'EscrowChecker.sol',
+		'EmptyEtherWrapper.sol',
+	],
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)
 		time: new Date(inflationStartTimestampInSecs * 1000),

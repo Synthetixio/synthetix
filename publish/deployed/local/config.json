@@ -50,6 +50,9 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"CircuitBreaker": {
+		"deploy": true
+	},
 	"ExchangeCircuitBreaker": {
 		"deploy": true
 	},
@@ -96,6 +99,12 @@
 		"deploy": true
 	},
 	"RewardEscrowV2": {
+		"deploy": true
+	},
+	"RewardEscrowV2Storage": {
+		"deploy": true
+	},
+	"RewardEscrowV2Frozen": {
 		"deploy": true
 	},
 	"RewardsDistribution": {
@@ -149,10 +158,19 @@
 	"TokenStatesETH": {
 		"deploy": true
 	},
+	"TokenStatesLINK": {
+		"deploy": true
+	},
 	"ProxysETH": {
 		"deploy": true
 	},
+	"ProxysLINK": {
+		"deploy": true
+	},
 	"SynthsETH": {
+		"deploy": true
+	},
+	"SynthsLINK": {
 		"deploy": true
 	},
 	"MockToken": {

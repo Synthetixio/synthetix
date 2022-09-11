@@ -197,6 +197,7 @@ const setupContract = async ({
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		CircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
@@ -235,6 +236,9 @@ const setupContract = async ({
 			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
+		BaseRewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
+		RewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
+		RewardEscrowV2Storage: [owner, ZERO_ADDRESS],
 		BaseRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		RewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		ImportableRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
@@ -562,6 +566,26 @@ const setupContract = async ({
 			});
 		},
 
+		async RewardEscrowV2() {
+			await Promise.all([
+				cache['RewardEscrowV2Storage'].setAssociatedContract(instance.address, { from: owner }),
+				cache['RewardEscrowV2Storage'].setFallbackRewardEscrow(
+					cache['RewardEscrowV2Frozen'].address,
+					{ from: owner }
+				),
+			]);
+		},
+
+		async ImportableRewardEscrowV2() {
+			await Promise.all([
+				cache['RewardEscrowV2Storage'].setAssociatedContract(instance.address, { from: owner }),
+				cache['RewardEscrowV2Storage'].setFallbackRewardEscrow(
+					cache['RewardEscrowV2Frozen'].address,
+					{ from: owner }
+				),
+			]);
+		},
+
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
 			await instance.updateAccessControls(
@@ -753,18 +777,34 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{
-			contract: 'BaseRewardEscrowV2',
+			contract: 'BaseRewardEscrowV2Frozen',
 			deps: ['AddressResolver'],
-			mocks: ['Synthetix', 'FeePool'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
+		},
+		{
+			contract: 'RewardEscrowV2Frozen',
+			deps: ['AddressResolver'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
+		},
+		{
+			contract: 'RewardEscrowV2Storage',
+			deps: ['RewardEscrowV2Frozen'],
+			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
+		},
+		{
+			contract: 'BaseRewardEscrowV2',
+			deps: ['AddressResolver', 'RewardEscrowV2Storage'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
 		},
 		{
 			contract: 'RewardEscrowV2',
-			deps: ['AddressResolver', 'SystemStatus'],
+			deps: ['AddressResolver', 'SystemStatus', 'RewardEscrowV2Storage'],
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
 		},
 		{
 			contract: 'ImportableRewardEscrowV2',
-			deps: ['AddressResolver'],
+			resolverAlias: `RewardEscrowV2`,
+			deps: ['AddressResolver', 'RewardEscrowV2Storage'],
 			mocks: ['Synthetix', 'FeePool', 'SynthetixBridgeToBase', 'Issuer'],
 		},
 		{ contract: 'SynthetixEscrow' },
@@ -772,7 +812,10 @@ const setupAllContracts = async ({
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidator' },
-		{ contract: 'Liquidator', deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage'] },
+		{
+			contract: 'Liquidator',
+			deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage', 'SynthetixEscrow'],
+		},
 		{
 			contract: 'LiquidatorRewards',
 			deps: ['AddressResolver', 'Liquidator', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
@@ -834,6 +877,11 @@ const setupAllContracts = async ({
 			],
 		},
 		{
+			contract: 'CircuitBreaker',
+			mocks: ['Issuer', 'ExchangeRates'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
+		},
+		{
 			contract: 'ExchangeCircuitBreaker',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
@@ -849,7 +897,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
@@ -860,7 +908,14 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
 			resolverAlias: 'Exchanger',
-			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
+			mocks: [
+				'Synthetix',
+				'CircuitBreaker',
+				'ExchangeRates',
+				'FeePool',
+				'DelegateApprovals',
+				'VirtualSynthMastercopy',
+			],
 			deps: [
 				'AddressResolver',
 				'DirectIntegrationManager',
@@ -870,7 +925,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
-				'ExchangeCircuitBreaker',
+				'CircuitBreaker',
 			],
 		},
 		{
@@ -925,6 +980,7 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
+				'RewardEscrowV2',
 			],
 		},
 		{
@@ -1013,7 +1069,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings'],
+			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings', 'ExchangeCircuitBreaker'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1368,7 +1424,7 @@ const setupAllContracts = async ({
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
-				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await updateAggregatorRates(returnObj['ExchangeRates'], null, [assetKey], [toUnit('1')]);
 				await Promise.all([
 					returnObj['FuturesMarketSettings'].setParameters(
 						marketKey,
@@ -1417,7 +1473,12 @@ const setupAllContracts = async ({
 				const assetKey = await market.baseAsset();
 				const marketKey = await market.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
-				await updateAggregatorRates(returnObj['ExchangeRates'], [assetKey], [toUnit('1')]);
+				await updateAggregatorRates(
+					returnObj['ExchangeRates'],
+					returnObj['CircuitBreaker'],
+					[assetKey],
+					[toUnit('1')]
+				);
 				await Promise.all([
 					returnObj['PerpsV2Settings'].setParameters(
 						marketKey,
@@ -1456,7 +1517,12 @@ const setupAllContracts = async ({
 		const keys = ['SNX', ...(feeds || [])].map(toBytes32);
 		const prices = ['0.2', ...(feeds || []).map(() => '1.0')].map(toUnit);
 		await setupPriceAggregators(returnObj['ExchangeRates'], owner, keys);
-		await updateAggregatorRates(returnObj['ExchangeRates'], keys, prices);
+		await updateAggregatorRates(
+			returnObj['ExchangeRates'],
+			returnObj['CircuitBreaker'],
+			keys,
+			prices
+		);
 	}
 
 	return returnObj;

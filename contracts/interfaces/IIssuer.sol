@@ -66,6 +66,16 @@ interface IIssuer {
         view
         returns (uint transferable, bool anyRateIsInvalid);
 
+    function liquidationAmounts(address account, bool isSelfLiquidation)
+        external
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint initialDebtBalance
+        );
+
     // Restricted: used internally to Synthetix
     function addSynths(ISynth[] calldata synthsToAdd) external;
 
@@ -103,7 +113,11 @@ interface IIssuer {
 
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
-        returns (uint totalRedeemed, uint amountToLiquidate);
+        returns (
+            uint totalRedeemed,
+            uint debtRemoved,
+            uint escrowToLiquidate
+        );
 
     function issueSynthsWithoutDebt(
         bytes32 currencyKey,

@@ -40,7 +40,7 @@ const performTransactionalStep = async ({
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
-		arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
+		typeof arg === 'string' && arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
 	)})`;
 
 	// check to see if action required

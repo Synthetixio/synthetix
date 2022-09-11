@@ -67,6 +67,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		synthRedeemer,
 		exchanger,
 		aggregatorDebtRatio,
+		aggregatorIssuedSynths,
+		circuitBreaker,
 		debtShares;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -93,7 +95,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 			AddressResolver: addressResolver,
 			SynthRedeemer: synthRedeemer,
 			SynthetixDebtShare: debtShares,
+			CircuitBreaker: circuitBreaker,
 			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
+			'ext:AggregatorIssuedSynths': aggregatorIssuedSynths,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -133,11 +137,24 @@ contract('Issuer (via Synthetix)', async accounts => {
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
 	});
 
+	async function updateDebtMonitors() {
+		await debtCache.takeDebtSnapshot();
+		await circuitBreaker.resetLastValue(
+			[aggregatorIssuedSynths.address, aggregatorDebtRatio.address],
+			[
+				(await aggregatorIssuedSynths.latestRoundData())[1],
+				(await aggregatorDebtRatio.latestRoundData())[1],
+			],
+			{ from: owner }
+		);
+	}
+
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
 		await updateAggregatorRates(
 			exchangeRates,
+			circuitBreaker,
 			[sAUD, sEUR, SNX, sETH],
 			['0.5', '1.25', '0.1', '200'].map(toUnit)
 		);
@@ -150,7 +167,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
-		await debtCache.takeDebtSnapshot();
+		await updateDebtMonitors();
 	});
 
 	it('ensure only known functions are mutative', () => {
@@ -175,7 +192,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',
-				'setLastDebtRatio',
 				'upgradeCollateralShort',
 			],
 		});
@@ -216,7 +232,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -224,7 +240,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
@@ -232,7 +248,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynths,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -240,7 +256,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynthsOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
@@ -248,7 +264,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -256,7 +272,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
@@ -264,7 +280,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('liquidateAccount() cannot be invoked directly by a user', async () => {
@@ -272,7 +288,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.liquidateAccount,
 				args: [account1, false],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -280,7 +296,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only the synthetix contract can perform this action',
+				reason: 'Issuer: Only Synthetix',
 			});
 		});
 		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
@@ -289,15 +305,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [1234],
 				accounts,
 				reason: 'Must be fee pool',
-			});
-		});
-		it('setLastDebtRatio() cannot be invoked directly by a user', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: issuer.setLastDebtRatio,
-				args: [1234],
-				accounts,
-				address: owner,
-				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
@@ -396,6 +403,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await updateAggregatorRates(
 							exchangeRates,
+							circuitBreaker,
 							[sAUD, sEUR, sETH, ETH, SNX],
 							['0.5', '1.25', '100', '100', '2'].map(toUnit)
 						);
@@ -415,13 +423,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 						});
-						it('then should have recorded debt and not debt shares', async () => {
+						it('then should have recorded debt and debt shares even though there are none', async () => {
 							const debtInfo = await issuer.allNetworksDebtInfo();
 
 							assert.bnEqual(debtInfo.debt, toUnit('2200'));
-							assert.bnEqual(debtInfo.sharesSupply, toUnit('0')); // stays 0 if no debt shares are minted
+							assert.bnEqual(debtInfo.sharesSupply, toUnit('2200')); // stays 0 if no debt shares are minted
 							assert.isFalse(debtInfo.isStale);
 						});
 					});
@@ -437,7 +445,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							// Issue
 							const amountIssued = toUnit('2011');
 							await synthetix.issueSynths(amountIssued, { from: account1 });
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 						});
 						it('then should have recorded debt and debt shares', async () => {
 							const debtInfo = await issuer.allNetworksDebtInfo();
@@ -459,7 +467,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							// Issue
 							const amountIssued = toUnit('2011');
 							await synthetix.issueSynths(amountIssued, { from: account1 });
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 
 							await aggregatorDebtRatio.setOverrideTimestamp(500); // really old timestamp
 						});
@@ -477,10 +485,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 						// Send a price update to give the synth rates
 						await updateAggregatorRates(
 							exchangeRates,
+							circuitBreaker,
 							[sAUD, sEUR, sETH, ETH, SNX],
 							['0.5', '1.25', '100', '100', '2'].map(toUnit)
 						);
-						await debtCache.takeDebtSnapshot();
+						await updateDebtMonitors();
 					});
 
 					describe('when numerous issues in one currency', () => {
@@ -493,7 +502,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 						});
 						it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('1111'));
@@ -529,7 +538,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 						});
 						it('then totalIssuedSynths in should correctly calculate the total issued synths in sUSD', async () => {
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('2200'));
@@ -556,8 +565,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 			describe('debtBalance()', () => {
 				it('should not change debt balance % if exchange rates change', async () => {
 					let newAUDRate = toUnit('0.5');
-					await updateAggregatorRates(exchangeRates, [sAUD], [newAUDRate]);
-					await debtCache.takeDebtSnapshot();
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [sAUD], [newAUDRate]);
+					await updateDebtMonitors();
 
 					await synthetix.transfer(account1, toUnit('20000'), {
 						from: owner,
@@ -587,8 +596,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 					);
 
 					newAUDRate = toUnit('1.85');
-					await updateAggregatorRates(exchangeRates, [sAUD], [newAUDRate]);
-					await debtCache.takeDebtSnapshot();
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [sAUD], [newAUDRate]);
+					await updateDebtMonitors();
 
 					totalIssuedSynthsUSD = await synthetix.totalIssuedSynths(sUSD);
 					const conversionFactor = web3.utils.toBN(1000000000);
@@ -877,12 +886,17 @@ contract('Issuer (via Synthetix)', async accounts => {
 							// Assert that we can't remove the synth now
 							await assert.revert(
 								issuer.removeSynth(currencyKey, { from: owner }),
-								'Cannot remove synth to redeem without rate'
+								'Cannot remove without rate'
 							);
 						});
 						describe('when the synth has a rate', () => {
 							beforeEach(async () => {
-								await updateAggregatorRates(exchangeRates, [currencyKey], [toUnit('2')]);
+								await updateAggregatorRates(
+									exchangeRates,
+									circuitBreaker,
+									[currencyKey],
+									[toUnit('2')]
+								);
 							});
 
 							describe('when another user exchanges into the synth', () => {
@@ -930,7 +944,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							describe('when a debt snapshot is taken', () => {
 								let totalIssuedSynths;
 								beforeEach(async () => {
-									await debtCache.takeDebtSnapshot();
+									await updateDebtMonitors();
 
 									totalIssuedSynths = await issuer.totalIssuedSynths(sUSD, true);
 
@@ -1167,8 +1181,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await fastForward(
 								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
 							);
-
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 						});
 
 						it('reverts on issueSynths()', async () => {
@@ -1405,20 +1418,30 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					// They should now be able to issue sUSD
 					await synthetix.issueSynths(toUnit('100'), { from: account1 });
+					await updateDebtMonitors();
 					await synthetix.issueSynths(toUnit('1'), { from: account1 });
+					await updateDebtMonitors();
+
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('101'));
 
 					await sUSDContract.issue(account1, toUnit('10000000'));
-
 					await debtCache.takeDebtSnapshot();
 
-					// trigger circuit breaking
-					await synthetix.issueSynths('1', { from: account1 });
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('10000101'));
 
-					assert.bnEqual(
-						(await systemStatus.issuanceSuspension()).reason,
-						165,
-						"circuit breaker didn't trigger"
-					);
+					// trigger circuit breaking
+					await synthetix.issueSynths(toUnit('1'), { from: account1 });
+
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('10000101'));
+
+					// undo
+					await sUSDContract.burn(account1, toUnit('10000000'));
+
+					// circuit is still broken
+					await synthetix.issueSynths(toUnit('1'), { from: account1 });
+					await synthetix.issueSynths(toUnit('1'), { from: account1 });
+
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('101'));
 				});
 			});
 
@@ -1430,23 +1453,30 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					// They should now be able to issue sUSD
 					await synthetix.issueSynths(toUnit('100'), { from: account1 });
+					await updateDebtMonitors();
 					await synthetix.burnSynths(toUnit('1'), { from: account1 });
 
-					await sUSDContract.burn(account1, toUnit('99'));
-
+					// burn the rest of the synths without getting rid of debt shares
+					await sUSDContract.burn(account1, toUnit('90'));
 					await debtCache.takeDebtSnapshot();
 
 					// all debt should be burned here
-					assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit(0));
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit(9));
 
-					// trigger circuit breaking
+					// trigger circuit breaking (not reverting here is part of the test)
 					await synthetix.burnSynths('1', { from: account1 });
 
-					assert.bnEqual(
-						(await systemStatus.issuanceSuspension()).reason,
-						165,
-						"circuit breaker didn't trigger"
-					);
+					// debt should not have changed
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit(9));
+
+					// mint it back
+					await sUSDContract.issue(account1, toUnit('90'));
+
+					await synthetix.burnSynths('1', { from: account1 });
+					await synthetix.burnSynths('1', { from: account1 });
+
+					// debt should not have changed
+					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit(99));
 				});
 
 				describe('potential blocking conditions', () => {
@@ -1491,7 +1521,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await fastForward(
 								(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
 							);
-							await debtCache.takeDebtSnapshot();
+							await updateDebtMonitors();
 						});
 
 						it('then calling burn() reverts', async () => {
@@ -1824,8 +1854,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							from: owner,
 						});
 						// Set SNX price to 1
-						await updateAggregatorRates(exchangeRates, [SNX], ['1'].map(toUnit));
-						await debtCache.takeDebtSnapshot();
+						await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], ['1'].map(toUnit));
+						await updateDebtMonitors();
+
 						// Issue
 						await synthetix.issueMaxSynths({ from: account1 });
 						assert.bnClose(await synthetix.debtBalanceOf(account1, sUSD), toUnit('8000'));
@@ -1837,8 +1868,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price drops 50%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['.5'].map(toUnit));
-							await debtCache.takeDebtSnapshot();
+							await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], ['.5'].map(toUnit));
+							await updateDebtMonitors();
+
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 							assert.equal(await feePool.isFeesClaimable(account1), false);
 						});
@@ -1859,8 +1891,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price drops 10%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['.9'].map(toUnit));
-							await debtCache.takeDebtSnapshot();
+							await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], ['.9'].map(toUnit));
+							await updateDebtMonitors();
+
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
 
@@ -1880,8 +1913,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price drops 90%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['.1'].map(toUnit));
-							await debtCache.takeDebtSnapshot();
+							await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], ['.1'].map(toUnit));
+							await updateDebtMonitors();
+
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
 
@@ -1901,8 +1935,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 					describe('when the SNX price increases 100%', () => {
 						let maxIssuableSynths;
 						beforeEach(async () => {
-							await updateAggregatorRates(exchangeRates, [SNX], ['2'].map(toUnit));
-							await debtCache.takeDebtSnapshot();
+							await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], ['2'].map(toUnit));
+							await updateDebtMonitors();
+
 							maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
 						});
 
@@ -1988,8 +2023,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 									});
 									describe('and the sEUR price decreases by 20% to 1', () => {
 										beforeEach(async () => {
-											await updateAggregatorRates(exchangeRates, [sEUR], ['1'].map(toUnit));
-											await debtCache.takeDebtSnapshot();
+											await updateAggregatorRates(
+												exchangeRates,
+												circuitBreaker,
+												[sEUR],
+												['1'].map(toUnit)
+											);
+											await updateDebtMonitors();
 										});
 										describe('and 60s elapses', () => {
 											beforeEach(async () => {
@@ -2313,8 +2353,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
 				// Set sEUR for purposes of this test
-				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('0.75')]);
-				await debtCache.takeDebtSnapshot();
+				await updateAggregatorRates(exchangeRates, circuitBreaker, [sEUR], [toUnit('0.75')]);
+				await updateDebtMonitors();
 
 				const issuedSynthetixs = web3.utils.toBN('200000');
 				await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -2332,8 +2372,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				await synthetix.exchange(sUSD, issuedSynths, sEUR, { from: account1 });
 
 				// Increase the value of sEUR relative to synthetix
-				await updateAggregatorRates(exchangeRates, [sEUR], [toUnit('1.1')]);
-				await debtCache.takeDebtSnapshot();
+				await updateAggregatorRates(exchangeRates, null, [sEUR], [toUnit('1.1')]);
+				await updateDebtMonitors();
 
 				await assert.revert(
 					synthetix.issueSynths(synthsToNotIssueYet, { from: account1 }),
@@ -2633,8 +2673,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 					await synthetix.transfer(authoriser, toUnit('20000'), {
 						from: owner,
 					});
-					await updateAggregatorRates(exchangeRates, [SNX], [toUnit('1')]);
-					await debtCache.takeDebtSnapshot();
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], [toUnit('1')]);
+					await updateDebtMonitors();
 				});
 				describe('when not approved it should revert on', async () => {
 					it('issueMaxSynthsOnBehalf', async () => {
@@ -2720,8 +2760,14 @@ contract('Issuer (via Synthetix)', async accounts => {
 							});
 							it('and calling burnSynthsToTargetOnBehalf() succeeds', async () => {
 								// need the user to be undercollaterized for this to succeed
-								await updateAggregatorRates(exchangeRates, [SNX], [toUnit('0.001')]);
-								await debtCache.takeDebtSnapshot();
+								await updateAggregatorRates(
+									exchangeRates,
+									circuitBreaker,
+									[SNX],
+									[toUnit('0.001')]
+								);
+								await updateDebtMonitors();
+
 								await synthetix.burnSynthsToTargetOnBehalf(authoriser, { from: delegate });
 							});
 						});
@@ -2770,8 +2816,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 				it('should approveBurnOnBehalf and burnSynthsToTarget', async () => {
 					await synthetix.issueMaxSynths({ from: authoriser });
-					await updateAggregatorRates(exchangeRates, [SNX], [toUnit('0.01')]);
-					await debtCache.takeDebtSnapshot();
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [SNX], [toUnit('0.01')]);
+					await updateDebtMonitors();
 
 					await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
 
@@ -2833,12 +2879,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 						fnc: issuer.burnForRedemption,
 						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
 						accounts,
-						reason: 'Issuer: Only the SynthRedeemer contract can perform this action',
+						reason: 'Issuer: Only SynthRedeemer',
 					});
 				});
 				describe('when a user has 100 sETH', () => {
 					beforeEach(async () => {
 						await sETHContract.issue(account1, toUnit('100'));
+						await updateDebtMonitors();
 					});
 					describe('when burnForRedemption is invoked on the user for 75 sETH', () => {
 						beforeEach(async () => {

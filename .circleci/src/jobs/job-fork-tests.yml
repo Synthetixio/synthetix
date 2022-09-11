@@ -1,5 +1,6 @@
 # Starts a fork of mainnet, deploys the latest release, and runs L1 integration tests
 {{> job-header-node.yml}}
+resource_class: large
 steps:
   - checkout
   - attach_workspace:
