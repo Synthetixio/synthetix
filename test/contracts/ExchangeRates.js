@@ -26,7 +26,7 @@ const { setupAllContracts } = require('./setup');
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { RATE_STALE_PERIOD, ATOMIC_TWAP_WINDOW },
+	defaults: { RATE_STALE_PERIOD },
 } = require('../..');
 
 const { toBN } = require('web3-utils');
