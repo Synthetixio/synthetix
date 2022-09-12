@@ -9,10 +9,17 @@ import "./State.sol";
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketState
 contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     /*
-     * Each user's position. Multiple positions can always be merged, so each user has
-     * only have one position at a time.
+     * The net position in base units of the whole market.
+     * When this is positive, longs outweigh shorts. When it is negative, shorts outweigh longs.
      */
-    mapping(address => Position) public positions;
+    int128 public marketSkew;
+
+    /*
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
+     * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
+     * which is equivalent to the sum of remaining margins in all positions.
+     */
+    int128 internal _entryDebtCorrection;
 
     /*
      * The funding sequence allows constant-time calculation of the funding owed to a given position.
@@ -27,25 +34,25 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     int128[] public fundingSequence;
 
     /*
-     * The net position in base units of the whole market.
-     * When this is positive, longs outweigh shorts. When it is negative, shorts outweigh longs.
+     * Each user's position. Multiple positions can always be merged, so each user has
+     * only have one position at a time.
      */
-    int128 public marketSkew;
+    mapping(address => Position) public positions;
 
-    /*
-     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
-     * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
-     * which is equivalent to the sum of remaining margins in all positions.
-     */
-    int128 internal _entryDebtCorrection;
+    // This increments for each position; zero reflects a position that does not exist.
+    uint64 internal _nextPositionId = 1;
 
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
     }
 
-    function getEntryDebtCorrection() external view onlyAssociatedContract returns (int128) {
+    function entryDebtCorrection() external view onlyAssociatedContract returns (int128) {
         return _entryDebtCorrection;
+    }
+
+    function nextPositionId() external view onlyAssociatedContract returns (uint64) {
+        return _nextPositionId;
     }
 
     function fundingSequenceLength() external view returns (uint) {
@@ -58,6 +65,10 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
 
     function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContract {
         _entryDebtCorrection = entryDebtCorrection;
+    }
+
+    function setNextPositionId(uint64 nextPositionId) external onlyAssociatedContract {
+        _nextPositionId = nextPositionId;
     }
 
     function setMarketSkew(int128 _marketSkew) external onlyAssociatedContract {

@@ -113,9 +113,6 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     // The total number of base units in long and short positions.
     uint128 public marketSize;
 
-    // This increments for each position; zero reflects a position that does not exist.
-    uint64 internal _nextPositionId = 1;
-
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
 
@@ -714,14 +711,14 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
 
     function _marketDebt(uint price) internal view returns (uint) {
         // short circuit and also convenient during setup
-        if (marketState.marketSkew() == 0 && marketState.getEntryDebtCorrection() == 0) {
+        if (marketState.marketSkew() == 0 && marketState.entryDebtCorrection() == 0) {
             // if these are 0, the resulting calculation is necessarily zero as well
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
         int priceWithFunding = int(price).add(_nextFundingEntry(price));
         int totalDebt =
-            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.getEntryDebtCorrection());
+            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
         return uint(_max(totalDebt, 0));
     }
 
@@ -732,7 +729,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         int newCorrection = _positionDebtCorrection(newPosition);
         int oldCorrection = _positionDebtCorrection(oldPosition);
         marketState.setEntryDebtCorrection(
-            int128(int(marketState.getEntryDebtCorrection()).add(newCorrection).sub(oldCorrection))
+            int128(int(marketState.entryDebtCorrection()).add(newCorrection).sub(oldCorrection))
         );
     }
 
@@ -898,8 +895,8 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         } else {
             if (oldPosition.size == 0) {
                 // New positions get new ids.
-                id = _nextPositionId;
-                _nextPositionId += 1;
+                id = marketState.nextPositionId();
+                marketState.setNextPositionId(id + 1);
             }
             position.id = id;
             position.size = newPosition.size;
