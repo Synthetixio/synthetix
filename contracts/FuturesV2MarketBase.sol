@@ -110,9 +110,6 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
     bytes32 public baseAsset;
 
-    // The total number of base units in long and short positions.
-    uint128 public marketSize;
-
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
 
@@ -258,7 +255,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
         // we check that the side of the market their order is on would not break the limit.
         int newSkew = int(marketState.marketSkew()).sub(oldSize).add(newSize);
-        int newMarketSize = int(marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
+        int newMarketSize = int(marketState.marketSize()).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
 
         int newSideSize;
         if (0 < newSize) {
@@ -861,7 +858,9 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));
-        marketSize = uint128(uint(marketSize).add(_abs(newPosition.size)).sub(_abs(oldPosition.size)));
+        marketState.setMarketSize(
+            uint128(uint(marketState.marketSize()).add(_abs(newPosition.size)).sub(_abs(oldPosition.size)))
+        );
 
         // Send the fee to the fee pool
         if (0 < fee) {
@@ -1001,7 +1000,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         int positionSize = position.size;
         uint positionId = position.id;
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).sub(positionSize)));
-        marketSize = uint128(uint(marketSize).sub(_abs(positionSize)));
+        marketState.setMarketSize(uint128(uint(marketState.marketSize()).sub(_abs(positionSize))));
 
         uint fundingIndex = _latestFundingIndex();
         _applyDebtCorrection(

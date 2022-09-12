@@ -8,6 +8,9 @@ import "./State.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketState
 contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
+    // The total number of base units in long and short positions.
+    uint128 public marketSize;
+
     /*
      * The net position in base units of the whole market.
      * When this is positive, longs outweigh shorts. When it is negative, shorts outweigh longs.
@@ -61,6 +64,10 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
 
     function getPosition(address account) external view returns (Position memory) {
         return positions[account];
+    }
+
+    function setMarketSize(uint128 _marketSize) external onlyAssociatedContract {
+        marketSize = _marketSize;
     }
 
     function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContract {

@@ -36,8 +36,15 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
+    function marketSize() public view returns (uint128) {
+        return marketState.marketSize();
+    }
+
+    /*
+     * Sizes of the long and short sides of the market (in sUSD)
+     */
     function marketSizes() public view returns (uint long, uint short) {
-        int size = int(marketSize);
+        int size = int(marketState.marketSize());
         int skew = marketState.marketSkew();
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
     }
