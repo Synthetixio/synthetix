@@ -724,6 +724,19 @@
 			"released": "both"
 		},
 		{
+			"sip": 267,
+			"layer": "both",
+			"sources": [
+				"DirectIntegrationManager",
+				"Exchanger",
+				"ExchangeRates",
+				"Synthetix",
+				"SystemSettings",
+				"SystemSettingsLib",
+				"SystemStatus"
+			]
+		},
+		{
 			"sip": 269,
 			"layer": "ovm",
 			"sources": [],
