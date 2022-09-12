@@ -6,8 +6,13 @@ import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 import "./Owned.sol";
 import "./State.sol";
 
+// Libraries
+import "./AddressSetLib.sol";
+
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketState
 contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
+    using AddressSetLib for AddressSetLib.AddressSet;
+
     // The total number of base units in long and short positions.
     uint128 public marketSize;
 
@@ -42,6 +47,9 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
      */
     mapping(address => Position) public positions;
 
+    // The set of all addresses (positions) .
+    AddressSetLib.AddressSet internal _positionAddresses;
+
     // This increments for each position; zero reflects a position that does not exist.
     uint64 internal _nextPositionId = 1;
 
@@ -64,6 +72,15 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
 
     function getPosition(address account) external view returns (Position memory) {
         return positions[account];
+    }
+
+    function getPositionAddressesPage(uint index, uint pageSize)
+        external
+        view
+        onlyAssociatedContract
+        returns (address[] memory)
+    {
+        return _positionAddresses.getPage(index, pageSize);
     }
 
     function setMarketSize(uint128 _marketSize) external onlyAssociatedContract {
@@ -109,6 +126,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         int128 size
     ) external onlyAssociatedContract {
         positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
+        _positionAddresses.add(account);
     }
 
     /**
@@ -118,5 +136,8 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
      */
     function deletePosition(address account) external onlyAssociatedContract {
         delete positions[account];
+        if (_positionAddresses.contains(account)) {
+            _positionAddresses.remove(account);
+        }
     }
 }
