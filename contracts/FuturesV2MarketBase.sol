@@ -120,18 +120,6 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     int128 public marketSkew;
 
     /*
-     * The funding sequence allows constant-time calculation of the funding owed to a given position.
-     * Each entry in the sequence holds the net funding accumulated per base unit since the market was created.
-     * Then to obtain the net funding over a particular interval, subtract the start point's sequence entry
-     * from the end point's sequence entry.
-     * Positions contain the funding sequence entry at the time they were confirmed; so to compute
-     * the net funding on a given position, obtain from this sequence the net funding per base unit
-     * since the position was confirmed and multiply it by the position size.
-     */
-    uint32 public fundingLastRecomputed;
-    int128[] public fundingSequence;
-
-    /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
      * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
@@ -177,9 +165,6 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         marketKey = _marketKey;
 
         marketState = FuturesV2MarketState(_marketState);
-
-        // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
-        fundingSequence.push(0);
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
@@ -252,7 +237,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     }
 
     function _unrecordedFunding(uint price) internal view returns (int funding) {
-        int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
+        int elapsed = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
         // The current funding rate, rescaled to a percentage per second.
         int currentFundingRatePerSecond = _currentFundingRate(price) / 1 days;
         return currentFundingRatePerSecond.multiplyDecimal(int(price)).mul(elapsed);
@@ -263,12 +248,12 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
     function _nextFundingEntry(uint price) internal view returns (int funding) {
-        return int(fundingSequence[_latestFundingIndex()]).add(_unrecordedFunding(price));
+        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
     }
 
     function _netFundingPerUnit(uint startIndex, uint price) internal view returns (int) {
         // Compute the net difference between start and end indices.
-        return _nextFundingEntry(price).sub(fundingSequence[startIndex]);
+        return _nextFundingEntry(price).sub(marketState.fundingSequence(startIndex));
     }
 
     /* ---------- Position Details ---------- */
@@ -472,7 +457,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     }
 
     function _latestFundingIndex() internal view returns (uint) {
-        return fundingSequence.length.sub(1); // at least one element is pushed in constructor
+        return marketState.fundingSequenceLength().sub(1); // at least one element is pushed in constructor
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
@@ -664,12 +649,19 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     }
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
-        uint sequenceLengthBefore = fundingSequence.length;
+        uint sequenceLengthBefore = marketState.fundingSequenceLength();
 
         int funding = _nextFundingEntry(price);
-        fundingSequence.push(int128(funding));
-        fundingLastRecomputed = uint32(block.timestamp);
-        proxy._emit(abi.encode(funding, sequenceLengthBefore, fundingLastRecomputed), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
+        marketState.pushFundingSequence(int128(funding));
+        marketState.setFundingLastRecomputed(uint32(block.timestamp));
+        proxy._emit(
+            abi.encode(funding, sequenceLengthBefore, marketState.fundingLastRecomputed()),
+            1,
+            FUNDINGRECOMPUTED_SIG,
+            0,
+            0,
+            0
+        );
 
         return sequenceLengthBefore;
     }
@@ -727,7 +719,9 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
          */
         return
             int(position.margin).sub(
-                int(position.size).multiplyDecimal(int(position.lastPrice).add(fundingSequence[position.lastFundingIndex]))
+                int(position.size).multiplyDecimal(
+                    int(position.lastPrice).add(marketState.fundingSequence(position.lastFundingIndex))
+                )
             );
     }
 

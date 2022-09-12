@@ -66,7 +66,21 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * The number of entries in the funding sequence.
      */
     function fundingSequenceLength() external view returns (uint) {
-        return fundingSequence.length;
+        return marketState.fundingSequenceLength();
+    }
+
+    /*
+     * The number of entries in the funding sequence.
+     */
+    function fundingSequence(uint index) external view returns (int128) {
+        return marketState.fundingSequence(index);
+    }
+
+    /*
+     * The number of entries in the funding sequence.
+     */
+    function fundingLastRecomputed() external view returns (uint32) {
+        return marketState.fundingLastRecomputed();
     }
 
     /*

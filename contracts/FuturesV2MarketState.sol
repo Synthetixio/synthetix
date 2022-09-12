@@ -14,7 +14,34 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
      */
     mapping(address => Position) public positions;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
+    /*
+     * The funding sequence allows constant-time calculation of the funding owed to a given position.
+     * Each entry in the sequence holds the net funding accumulated per base unit since the market was created.
+     * Then to obtain the net funding over a particular interval, subtract the start point's sequence entry
+     * from the end point's sequence entry.
+     * Positions contain the funding sequence entry at the time they were confirmed; so to compute
+     * the net funding on a given position, obtain from this sequence the net funding per base unit
+     * since the position was confirmed and multiply it by the position size.
+     */
+    uint32 public fundingLastRecomputed;
+    int128[] public fundingSequence;
+
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
+        // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
+        fundingSequence.push(0);
+    }
+
+    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContract {
+        fundingLastRecomputed = lastRecomputed;
+    }
+
+    function fundingSequenceLength() external view returns (uint) {
+        return fundingSequence.length;
+    }
+
+    function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContract {
+        fundingSequence.push(_fundingSequence);
+    }
 
     function getPosition(address account) external view returns (Position memory) {
         return positions[account];
