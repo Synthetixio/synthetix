@@ -14,7 +14,7 @@ contract TestableFuturesV2Market is FuturesV2Market {
     ) public FuturesV2Market(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
 
     function entryDebtCorrection() external view returns (int) {
-        return _entryDebtCorrection;
+        return marketState.getEntryDebtCorrection();
     }
 
     function proportionalSkew() external view returns (int) {

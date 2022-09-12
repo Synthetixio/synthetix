@@ -119,13 +119,6 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      */
     int128 public marketSkew;
 
-    /*
-     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
-     * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
-     * which is equivalent to the sum of remaining margins in all positions.
-     */
-    int128 internal _entryDebtCorrection;
-
     // This increments for each position; zero reflects a position that does not exist.
     uint64 internal _nextPositionId = 1;
 
@@ -727,13 +720,13 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
 
     function _marketDebt(uint price) internal view returns (uint) {
         // short circuit and also convenient during setup
-        if (marketSkew == 0 && _entryDebtCorrection == 0) {
+        if (marketSkew == 0 && marketState.getEntryDebtCorrection() == 0) {
             // if these are 0, the resulting calculation is necessarily zero as well
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
         int priceWithFunding = int(price).add(_nextFundingEntry(price));
-        int totalDebt = int(marketSkew).multiplyDecimal(priceWithFunding).add(_entryDebtCorrection);
+        int totalDebt = int(marketSkew).multiplyDecimal(priceWithFunding).add(marketState.getEntryDebtCorrection());
         return uint(_max(totalDebt, 0));
     }
 
@@ -743,7 +736,9 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     function _applyDebtCorrection(Position memory newPosition, Position memory oldPosition) internal {
         int newCorrection = _positionDebtCorrection(newPosition);
         int oldCorrection = _positionDebtCorrection(oldPosition);
-        _entryDebtCorrection = int128(int(_entryDebtCorrection).add(newCorrection).sub(oldCorrection));
+        marketState.setEntryDebtCorrection(
+            int128(int(marketState.getEntryDebtCorrection()).add(newCorrection).sub(oldCorrection))
+        );
     }
 
     function _transferMargin(

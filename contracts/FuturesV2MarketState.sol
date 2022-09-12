@@ -26,9 +26,24 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     uint32 public fundingLastRecomputed;
     int128[] public fundingSequence;
 
+    /*
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
+     * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
+     * which is equivalent to the sum of remaining margins in all positions.
+     */
+    int128 internal _entryDebtCorrection;
+
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
+    }
+
+    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContract {
+        _entryDebtCorrection = entryDebtCorrection;
+    }
+
+    function getEntryDebtCorrection() external view onlyAssociatedContract returns (int128) {
+        return _entryDebtCorrection;
     }
 
     function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContract {
