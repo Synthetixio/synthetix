@@ -27,6 +27,12 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     int128[] public fundingSequence;
 
     /*
+     * The net position in base units of the whole market.
+     * When this is positive, longs outweigh shorts. When it is negative, shorts outweigh longs.
+     */
+    int128 public marketSkew;
+
+    /*
      * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.lastFundingIndex])}
      * Then marketSkew * (price + _nextFundingEntry()) + _entryDebtCorrection yields the total system debt,
      * which is equivalent to the sum of remaining margins in all positions.
@@ -38,28 +44,32 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         fundingSequence.push(0);
     }
 
-    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContract {
-        _entryDebtCorrection = entryDebtCorrection;
-    }
-
     function getEntryDebtCorrection() external view onlyAssociatedContract returns (int128) {
         return _entryDebtCorrection;
-    }
-
-    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContract {
-        fundingLastRecomputed = lastRecomputed;
     }
 
     function fundingSequenceLength() external view returns (uint) {
         return fundingSequence.length;
     }
 
-    function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContract {
-        fundingSequence.push(_fundingSequence);
-    }
-
     function getPosition(address account) external view returns (Position memory) {
         return positions[account];
+    }
+
+    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContract {
+        _entryDebtCorrection = entryDebtCorrection;
+    }
+
+    function setMarketSkew(int128 _marketSkew) external onlyAssociatedContract {
+        marketSkew = _marketSkew;
+    }
+
+    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContract {
+        fundingLastRecomputed = lastRecomputed;
+    }
+
+    function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContract {
+        fundingSequence.push(_fundingSequence);
     }
 
     /**

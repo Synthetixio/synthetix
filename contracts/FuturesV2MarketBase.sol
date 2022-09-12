@@ -113,12 +113,6 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     // The total number of base units in long and short positions.
     uint128 public marketSize;
 
-    /*
-     * The net position in base units of the whole market.
-     * When this is positive, longs outweigh shorts. When it is negative, shorts outweigh longs.
-     */
-    int128 public marketSkew;
-
     // This increments for each position; zero reflects a position that does not exist.
     uint64 internal _nextPositionId = 1;
 
@@ -220,7 +214,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         require(price > 0, "price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-        return int(marketSkew).divideDecimal(int(skewScaleBaseAsset));
+        return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(uint price) internal view returns (int) {
@@ -266,7 +260,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
 
         // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
         // we check that the side of the market their order is on would not break the limit.
-        int newSkew = int(marketSkew).sub(oldSize).add(newSize);
+        int newSkew = int(marketState.marketSkew()).sub(oldSize).add(newSize);
         int newMarketSize = int(marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
 
         int newSideSize;
@@ -436,7 +430,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         // Otherwise if the order is opposite to the skew, the maker fee is charged.
         // the case where the order flips the skew is ignored for simplicity due to being negligible
         // in both size of effect and frequency of occurrence
-        uint staticRate = _sameSide(notionalDiff, marketSkew) ? params.takerFee : params.makerFee;
+        uint staticRate = _sameSide(notionalDiff, marketState.marketSkew()) ? params.takerFee : params.makerFee;
         uint feeRate = staticRate.add(dynamicFeeRate);
         return _abs(notionalDiff.multiplyDecimal(int(feeRate)));
     }
@@ -720,13 +714,14 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
 
     function _marketDebt(uint price) internal view returns (uint) {
         // short circuit and also convenient during setup
-        if (marketSkew == 0 && marketState.getEntryDebtCorrection() == 0) {
+        if (marketState.marketSkew() == 0 && marketState.getEntryDebtCorrection() == 0) {
             // if these are 0, the resulting calculation is necessarily zero as well
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
         int priceWithFunding = int(price).add(_nextFundingEntry(price));
-        int totalDebt = int(marketSkew).multiplyDecimal(priceWithFunding).add(marketState.getEntryDebtCorrection());
+        int totalDebt =
+            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.getEntryDebtCorrection());
         return uint(_max(totalDebt, 0));
     }
 
@@ -868,7 +863,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         _revertIfError(status);
 
         // Update the aggregated market size and skew with the new order size
-        marketSkew = int128(int(marketSkew).add(newPosition.size).sub(oldPosition.size));
+        marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));
         marketSize = uint128(uint(marketSize).add(_abs(newPosition.size)).sub(_abs(oldPosition.size)));
 
         // Send the fee to the fee pool
@@ -1008,7 +1003,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         // Record updates to market size and debt.
         int positionSize = position.size;
         uint positionId = position.id;
-        marketSkew = int128(int(marketSkew).sub(positionSize));
+        marketState.setMarketSkew(int128(int(marketState.marketSkew()).sub(positionSize)));
         marketSize = uint128(uint(marketSize).sub(_abs(positionSize)));
 
         uint fundingIndex = _latestFundingIndex();
