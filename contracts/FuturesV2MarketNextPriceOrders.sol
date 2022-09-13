@@ -14,7 +14,7 @@ import "./interfaces/IFuturesV2MarketBaseTypes.sol";
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
  the risk to the debt pool, and funding rate for traders. 
- The fees can be reduced when comitting to next price, because front-running (MEV and oracle delay)
+ The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
  is less of a risk when committing to next price.
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
  without either introducing free (or cheap) optionality to cause cancellations, and without large
@@ -39,7 +39,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
     /**
      * @notice submits an order to be filled at a price of the next oracle update.
      * Reverts if a previous order still exists (wasn't executed or cancelled).
-     * Reverts if the order cannot be filled at current price to prevent witholding commitFee for
+     * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
      * incorrectly submitted orders (that cannot be filled).
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      */
