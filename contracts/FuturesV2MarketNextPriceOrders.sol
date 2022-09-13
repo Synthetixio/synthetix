@@ -55,7 +55,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
 
     function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
         // check that a previous order doesn't exist
-        require(marketState.nextPriceOrders(messageSender).sizeDelta == 0, "previous order exists");
+        require(marketState.nextPriceOrder(messageSender).sizeDelta == 0, "previous order exists");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
         Position memory position = marketState.positions(messageSender);

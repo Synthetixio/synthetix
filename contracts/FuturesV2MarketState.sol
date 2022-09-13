@@ -97,6 +97,10 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         return _positionAddresses.getPage(index, pageSize);
     }
 
+    function getNextPriceOrder(address account) external view returns (NextPriceOrder memory) {
+        return nextPriceOrders[account];
+    }
+
     function setMarketKey(bytes32 _marketKey) external onlyAssociatedContract {
         require(marketKey == bytes32(0) || _marketKey == marketKey, "Cannot change market key");
         marketKey = _marketKey;
@@ -125,6 +129,10 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
 
     function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContract {
         fundingLastRecomputed = lastRecomputed;
+    }
+
+    function setNextPriceOrder(address account, NextPriceOrder memory order) public onlyAssociatedContract {
+        nextPriceOrders[account] = order;
     }
 
     function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContract {
