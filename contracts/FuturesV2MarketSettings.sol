@@ -8,6 +8,7 @@ import "./MixinFuturesV2MarketSettings.sol";
 // Internal references
 import "./interfaces/IFuturesV2MarketSettings.sol";
 import "./interfaces/IFuturesV2MarketManager.sol";
+import "./interfaces/IFuturesV2MarketViews.sol";
 import "./interfaces/IFuturesV2Market.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketSettings
@@ -206,8 +207,11 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
     // must be recomputed, otherwise already-accrued but unrealised funding in the market can change.
 
     function _recomputeFunding(bytes32 _marketKey) internal {
-        IFuturesV2Market market = IFuturesV2Market(_futuresMarketManager().marketForKey(_marketKey));
-        if (market.marketSize() > 0) {
+        address marketAddress = _futuresMarketManager().marketForKey(_marketKey);
+
+        IFuturesV2MarketViews marketView = IFuturesV2MarketViews(marketAddress);
+        if (marketView.marketSize() > 0) {
+            IFuturesV2Market market = IFuturesV2Market(marketAddress);
             // only recompute funding when market has positions, this check is important for initial setup
             market.recomputeFunding();
         }

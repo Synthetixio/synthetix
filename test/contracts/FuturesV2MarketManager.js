@@ -41,6 +41,18 @@ contract('FuturesV2MarketManager', accounts => {
 		);
 	}
 
+	async function putBehindProxy(market) {
+		const proxy = await setupContract({
+			accounts,
+			contract: 'ProxyFuturesV2',
+			args: [owner],
+		});
+
+		await proxy.setTarget(market.address, { from: owner });
+
+		return proxy;
+	}
+
 	before(async () => {
 		({
 			FuturesV2MarketManager: futuresMarketManager,
@@ -107,7 +119,7 @@ contract('FuturesV2MarketManager', accounts => {
 
 	describe('Market management', () => {
 		const currencyKeys = ['sBTC', 'sETH'].map(toBytes32);
-		let markets, addresses;
+		let markets, marketProxies, addresses, proxyAddresses;
 		beforeEach(async () => {
 			markets = await Promise.all(
 				currencyKeys.map(k =>
@@ -120,15 +132,18 @@ contract('FuturesV2MarketManager', accounts => {
 				)
 			);
 
+			marketProxies = await Promise.all(markets.map(market => putBehindProxy(market)));
+
 			addresses = markets.map(m => m.address);
-			await futuresMarketManager.addMarkets(addresses, { from: owner });
+			proxyAddresses = marketProxies.map(m => m.address);
+			await futuresMarketManager.addMarkets(proxyAddresses, addresses, { from: owner });
 		});
 
 		it('Adding a single market', async () => {
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(markets.length));
 			assert.equal(markets.length, 2);
-			assert.deepEqual(markets, addresses);
+			assert.deepEqual(markets, proxyAddresses);
 
 			const market = await setupContract({
 				accounts,
@@ -142,11 +157,14 @@ contract('FuturesV2MarketManager', accounts => {
 				],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
-			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
-			assert.equal((await futuresMarketManager.markets(2, 1))[0], market.address);
 
-			assert.equal(await futuresMarketManager.marketForKey(toBytes32('sLINK')), market.address);
+			const proxy = await putBehindProxy(market);
+			await futuresMarketManager.addMarkets([proxy.address], [market.address], { from: owner });
+
+			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
+			assert.equal((await futuresMarketManager.markets(2, 1))[0], proxy.address);
+
+			assert.equal(await futuresMarketManager.marketForKey(toBytes32('sLINK')), proxy.address);
 		});
 
 		it('Adding multiple markets', async () => {
@@ -161,24 +179,28 @@ contract('FuturesV2MarketManager', accounts => {
 					})
 				)
 			);
+			const proxies = await Promise.all(markets.map(market => putBehindProxy(market)));
+
+			const proxiesAddress = proxies.map(m => m.address);
 			const addresses = markets.map(m => m.address);
-			const tx = await futuresMarketManager.addMarkets(addresses, { from: owner });
+
+			const tx = await futuresMarketManager.addMarkets(proxiesAddress, addresses, { from: owner });
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(4));
-			assert.deepEqual(await futuresMarketManager.markets(2, 2), addresses);
-			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), addresses);
+			assert.deepEqual(await futuresMarketManager.markets(2, 2), proxiesAddress);
+			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), proxiesAddress);
 
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'MarketAdded',
 				emittedFrom: futuresMarketManager.address,
-				args: [addresses[0], keys[0], keys[0]],
+				args: [proxiesAddress[0], keys[0], keys[0]],
 				log: decodedLogs[0],
 			});
 			decodedEventEqual({
 				event: 'MarketAdded',
 				emittedFrom: futuresMarketManager.address,
-				args: [addresses[1], keys[1], keys[1]],
+				args: [proxiesAddress[1], keys[1], keys[1]],
 				log: decodedLogs[1],
 			});
 		});
@@ -196,8 +218,10 @@ contract('FuturesV2MarketManager', accounts => {
 				],
 				skipPostDeploy: true,
 			});
+			const proxy = await putBehindProxy(market);
 			await assert.revert(
-				futuresMarketManager.addMarkets([market.address], { from: owner }),
+				// FIXME add proxy, state and implementation
+				futuresMarketManager.addMarkets([proxy.address], [market.address], { from: owner }),
 				'Market already exists'
 			);
 		});
@@ -205,6 +229,7 @@ contract('FuturesV2MarketManager', accounts => {
 		it('Can add more than one market for the same asset', async () => {
 			const firstKey = currencyKeys[1];
 			const market1 = markets[1];
+			const proxy1 = marketProxies[1];
 
 			const secondKey = toBytes32('sETH-2'); // different market key
 			const market2 = await setupContract({
@@ -219,25 +244,26 @@ contract('FuturesV2MarketManager', accounts => {
 				],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market2.address], { from: owner });
+			const proxy2 = await putBehindProxy(market2);
+			await futuresMarketManager.addMarkets([proxy2.address], [market2.address], { from: owner });
 
-			// check correcr addresses returned
-			assert.equal(await futuresMarketManager.marketForKey(secondKey), market2.address);
-			assert.equal(await futuresMarketManager.marketForKey(firstKey), market1.address);
+			// check correct addresses returned
+			assert.equal(await futuresMarketManager.marketForKey(secondKey), proxy2.address);
+			assert.equal(await futuresMarketManager.marketForKey(firstKey), proxy1.address);
 		});
 
 		it('Removing a single market', async () => {
-			await futuresMarketManager.removeMarkets([addresses[0]], { from: owner });
+			await futuresMarketManager.removeMarkets([proxyAddresses[0]], { from: owner });
 
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
-			assert.deepEqual(markets, [addresses[1]]);
+			assert.deepEqual(markets, [proxyAddresses[1]]);
 
 			assert.equal(await futuresMarketManager.marketForKey(currencyKeys[0]), ZERO_ADDRESS);
 		});
 
 		it('Removing multiple markets', async () => {
-			const tx = await futuresMarketManager.removeMarkets(addresses, { from: owner });
+			const tx = await futuresMarketManager.removeMarkets(proxyAddresses, { from: owner });
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
 			assert.deepEqual(markets, []);
@@ -251,13 +277,13 @@ contract('FuturesV2MarketManager', accounts => {
 			decodedEventEqual({
 				event: 'MarketRemoved',
 				emittedFrom: futuresMarketManager.address,
-				args: [addresses[0], currencyKeys[0]],
+				args: [proxyAddresses[0], currencyKeys[0]],
 				log: decodedLogs[0],
 			});
 			decodedEventEqual({
 				event: 'MarketRemoved',
 				emittedFrom: futuresMarketManager.address,
-				args: [addresses[1], currencyKeys[1]],
+				args: [proxyAddresses[1], currencyKeys[1]],
 				log: decodedLogs[1],
 			});
 		});
@@ -267,7 +293,7 @@ contract('FuturesV2MarketManager', accounts => {
 
 			let markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
-			assert.deepEqual(markets, [addresses[0]]);
+			assert.deepEqual(markets, [proxyAddresses[0]]);
 
 			const market = await setupContract({
 				accounts,
@@ -281,7 +307,9 @@ contract('FuturesV2MarketManager', accounts => {
 				],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+			const proxy = await putBehindProxy(market);
+			await futuresMarketManager.addMarkets([proxy.address], [market.address], { from: owner });
 			await futuresMarketManager.removeMarketsByKey(['sBTC', 'sLINK'].map(toBytes32), {
 				from: owner,
 			});
@@ -328,12 +356,13 @@ contract('FuturesV2MarketManager', accounts => {
 				],
 				skipPostDeploy: true,
 			});
+			const proxy = await putBehindProxy(market);
 
 			const revertReason = 'Only the contract owner may perform this action';
 
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.addMarkets,
-				args: [[market.address]],
+				args: [[proxy.address], [market.address]],
 				accounts,
 				address: owner,
 				skipPassCheck: false,
@@ -342,7 +371,7 @@ contract('FuturesV2MarketManager', accounts => {
 
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.removeMarkets,
-				args: [[market.address]],
+				args: [[proxy.address]],
 				accounts,
 				address: owner,
 				skipPassCheck: false,
@@ -361,7 +390,7 @@ contract('FuturesV2MarketManager', accounts => {
 	});
 
 	describe('sUSD issuance', () => {
-		let market;
+		let market, proxy;
 		beforeEach(async () => {
 			market = await setupContract({
 				accounts,
@@ -375,7 +404,9 @@ contract('FuturesV2MarketManager', accounts => {
 				],
 				skipPostDeploy: true,
 			});
-			await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+			proxy = await putBehindProxy(market);
+			await futuresMarketManager.addMarkets([proxy.address], [market.address], { from: owner });
 		});
 
 		it('issuing/burning sUSD', async () => {
@@ -419,14 +450,14 @@ contract('FuturesV2MarketManager', accounts => {
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for markets',
+				reason: 'Permitted only for market implementations',
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.burnSUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for markets',
+				reason: 'Permitted only for market implementations',
 			});
 		});
 	});
@@ -445,7 +476,7 @@ contract('FuturesV2MarketManager', accounts => {
 		describe('when there are multiple markets', () => {
 			const individualDebt = toUnit('1000');
 			const currencyKeys = ['sBTC', 'sETH', 'sLINK'].map(toBytes32);
-			let markets;
+			let markets, proxies;
 			beforeEach(async () => {
 				markets = await Promise.all(
 					currencyKeys.map(k =>
@@ -457,7 +488,11 @@ contract('FuturesV2MarketManager', accounts => {
 						})
 					)
 				);
+
+				proxies = await Promise.all(markets.map(market => putBehindProxy(market)));
+
 				await futuresMarketManager.addMarkets(
+					proxies.map(m => m.address),
 					markets.map(m => m.address),
 					{ from: owner }
 				);
@@ -473,7 +508,7 @@ contract('FuturesV2MarketManager', accounts => {
 				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('3700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('700')));
 
-				await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
+				await futuresMarketManager.removeMarkets([proxies[2].address], { from: owner });
 				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('2700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.sub(toUnit('300')));
 				const market = await setupContract({
@@ -488,7 +523,9 @@ contract('FuturesV2MarketManager', accounts => {
 					],
 					skipPostDeploy: true,
 				});
-				await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+				const proxy = await putBehindProxy(market);
+				await futuresMarketManager.addMarkets([proxy.address], [market.address], { from: owner });
 
 				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('3700')));
@@ -507,7 +544,7 @@ contract('FuturesV2MarketManager', accounts => {
 				assert.isTrue((await futuresMarketManager.totalDebt())[1]);
 				assert.isTrue((await debtCache.currentDebt())[1]);
 
-				await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
+				await futuresMarketManager.removeMarkets([proxies[2].address], { from: owner });
 				assert.isFalse((await futuresMarketManager.totalDebt())[1]);
 				assert.isFalse((await debtCache.currentDebt())[1]);
 			});
@@ -537,7 +574,7 @@ contract('FuturesV2MarketManager', accounts => {
 				let market = await setupContract({
 					accounts,
 					contract: 'ProxyFuturesV2MarketAdded' + symbol,
-					source: 'Proxy',
+					source: 'ProxyFuturesV2',
 					args: [owner],
 				});
 
@@ -557,9 +594,10 @@ contract('FuturesV2MarketManager', accounts => {
 
 				await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 				await market.setTarget(marketImpl.address, { from: owner });
-				// FIXME FUTURESV2 use proxy address
-				// await futuresMarketManager.addMarkets([market.address], { from: owner });
-				await futuresMarketManager.addMarkets([marketImpl.address], { from: owner });
+
+				await futuresMarketManager.addMarkets([market.address], [marketImpl.address], {
+					from: owner,
+				});
 
 				// use implementation ABI on the proxy address to simplify calling
 				market = await FuturesV2Market.at(market.address);

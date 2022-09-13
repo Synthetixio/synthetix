@@ -6,6 +6,7 @@ import "./FuturesV2MarketBase.sol";
 import "./MixinFuturesV2NextPriceOrders.sol";
 import "./MixinFuturesV2Views.sol";
 import "./interfaces/IFuturesV2Market.sol";
+import "./interfaces/IFuturesV2MarketViews.sol";
 
 /*
  * Synthetic Futures
@@ -56,7 +57,13 @@ import "./interfaces/IFuturesV2Market.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2Market
-contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketBase, MixinFuturesV2NextPriceOrders, MixinFuturesV2Views {
+contract FuturesV2Market is
+    IFuturesV2Market,
+    IFuturesV2MarketViews,
+    FuturesV2MarketBase,
+    MixinFuturesV2NextPriceOrders,
+    MixinFuturesV2Views
+{
     constructor(
         address payable _proxy,
         address _marketState,

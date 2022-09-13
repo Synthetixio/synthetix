@@ -373,11 +373,17 @@ const setupContract = async ({
 				'to',
 				instance.address
 			);
-			if (contract.startsWith('FuturesV2Market')) {
+			if (contract.startsWith('FuturesV2Market') || contract.startsWith('ProxyFuturesV2Market')) {
 				log('Deployed wiht default args:', defaultArgs[contract], 'and args:', args);
 			}
 		}
 	} catch (err) {
+		console.log({ contract, source, forContract, args, defArgs: defaultArgs[contract] });
+		console.log({ abi: artifact.abi });
+
+		console.log(
+			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
+		);
 		throw new Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
@@ -647,11 +653,13 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketBTC'].setTarget(instance.address, { from: owner }),
-				// FIXME FUTURESV2 use proxy address
-				// cache['FuturesV2MarketManager'].addMarkets([cache['ProxyFuturesV2MarketBTC'].address], {
-				cache['FuturesV2MarketManager'].addMarkets([instance.address], {
-					from: owner,
-				}),
+				cache['FuturesV2MarketManager'].addMarkets(
+					[cache['ProxyFuturesV2MarketBTC'].address],
+					[instance.address],
+					{
+						from: owner,
+					}
+				),
 			]);
 		},
 		async FuturesV2MarketETH() {
@@ -661,11 +669,13 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketETH'].setTarget(instance.address, { from: owner }),
-				// FIXME FUTURESV2 use proxy address
-				// cache['FuturesV2MarketManager'].addMarkets([cache['ProxyFuturesV2MarketETH'].address], {
-				cache['FuturesV2MarketManager'].addMarkets([instance.address], {
-					from: owner,
-				}),
+				cache['FuturesV2MarketManager'].addMarkets(
+					[cache['ProxyFuturesV2MarketETH'].address],
+					[instance.address],
+					{
+						from: owner,
+					}
+				),
 			]);
 		},
 		async PerpsV2MarketpBTC() {
@@ -1183,8 +1193,8 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 		// Futures v2
-		{ contract: 'Proxy', forContract: 'FuturesV2MarketBTC' },
-		{ contract: 'Proxy', forContract: 'FuturesV2MarketETH' },
+		{ contract: 'Proxy', source: 'ProxyFuturesV2', forContract: 'FuturesV2MarketBTC' },
+		{ contract: 'Proxy', source: 'ProxyFuturesV2', forContract: 'FuturesV2MarketETH' },
 		{
 			contract: 'FuturesV2MarketStateBTC',
 			source: 'FuturesV2MarketState',
@@ -1209,8 +1219,8 @@ const setupAllContracts = async ({
 				'ProxyFuturesV2MarketBTC',
 				'FuturesV2MarketStateBTC',
 				'AddressResolver',
-				'FuturesV2MarketManager',
-				'FuturesV2MarketSettings',
+				// 'FuturesV2MarketManager',
+				// 'FuturesV2MarketSettings',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
@@ -1222,8 +1232,8 @@ const setupAllContracts = async ({
 				'ProxyFuturesV2MarketETH',
 				'FuturesV2MarketStateETH',
 				'AddressResolver',
-				'FuturesV2MarketManager',
-				'FuturesV2MarketSettings',
+				// 'FuturesV2MarketManager',
+				// 'FuturesV2MarketSettings',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],

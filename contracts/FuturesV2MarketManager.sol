@@ -18,7 +18,7 @@ import "./interfaces/IERC20.sol";
 
 // import "hardhat/console.sol";
 
-// basic views that are expected to be supported by v1 (IFuturesV2Market) and v2 markets (IPerpsV2Market)
+// basic views that are expected to be supported by v1 (IFuturesV2MarketViews) and v2 markets (IPerpsV2Market)
 interface IMarketViews {
     function marketKey() external view returns (bytes32);
 
@@ -43,6 +43,8 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
     /* ========== STATE VARIABLES ========== */
 
     AddressSetLib.AddressSet internal _markets;
+    AddressSetLib.AddressSet internal _implementations;
+    mapping(address => address) internal _marketImplementation;
     mapping(bytes32 => address) public marketForKey;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -187,11 +189,14 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
     /*
      * Add a set of new markets. Reverts if some market key already has a market.
      */
-    function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
+    function addMarkets(address[] calldata marketsToAdd, address[] calldata implementations) external onlyOwner {
+        require(marketsToAdd.length == implementations.length, "Implementations must match markets length");
+
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToAdd[i];
             require(!_markets.contains(market), "Market already exists");
+            require(implementations[i] != address(0), "Invalid implementation address");
 
             // console.log('going to retrieve the marketKey');
             // console.log('msg.sender   :', msg.sender);
@@ -203,6 +208,8 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
             require(marketForKey[key] == address(0), "Market already exists for key");
             marketForKey[key] = market;
             _markets.add(market);
+            _implementations.add(implementations[i]);
+            _marketImplementation[market] = implementations[i];
             emit MarketAdded(market, baseAsset, key);
         }
     }
@@ -217,6 +224,8 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
             bytes32 baseAsset = IMarketViews(market).baseAsset();
 
             require(marketForKey[key] != address(0), "Unknown market");
+            _implementations.remove(_marketImplementation[market]);
+            delete _marketImplementation[market];
             delete marketForKey[key];
             _markets.remove(market);
             emit MarketRemoved(market, baseAsset, key);
@@ -242,7 +251,7 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function issueSUSD(address account, uint amount) external onlyMarkets {
+    function issueSUSD(address account, uint amount) external onlyMarketImplementations {
         // No settlement is required to issue synths into the target account.
         _sUSD().issue(account, amount);
     }
@@ -252,7 +261,7 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function burnSUSD(address account, uint amount) external onlyMarkets returns (uint postReclamationAmount) {
+    function burnSUSD(address account, uint amount) external onlyMarketImplementations returns (uint postReclamationAmount) {
         // We'll settle first, in order to ensure the user has sufficient balance.
         // If the settlement reduces the user's balance below the requested amount,
         // the settled remainder will be the resulting deposit.
@@ -301,8 +310,17 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
         require(_markets.contains(msg.sender), "Permitted only for markets");
     }
 
+    function _requireIsMarketImplementation() internal view {
+        require(_implementations.contains(msg.sender), "Permitted only for market implementations");
+    }
+
     modifier onlyMarkets() {
-        _requireIsMarket();
+        _requireIsMarketImplementation();
+        _;
+    }
+
+    modifier onlyMarketImplementations() {
+        _requireIsMarketImplementation();
         _;
     }
 

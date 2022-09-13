@@ -84,6 +84,7 @@ contract('FuturesV2MarketSettings', accounts => {
 			returns: [toBytes32('sBTC')],
 		});
 
+		// FIXME add proxy, state and implementation
 		// add the market
 		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});
@@ -429,6 +430,7 @@ contract('FuturesV2MarketSettings', accounts => {
 				returns: [secondMarketKey],
 			});
 
+			// FIXME add proxy, state and implementation
 			// add the market
 			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
 		});

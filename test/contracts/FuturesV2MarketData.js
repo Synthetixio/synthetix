@@ -85,7 +85,7 @@ contract('FuturesV2MarketData', accounts => {
 			const market = await setupContract({
 				accounts,
 				contract: 'ProxyFuturesV2MarketAdded' + symbol,
-				source: 'Proxy',
+				source: 'ProxyFuturesV2',
 				args: [owner],
 			});
 
@@ -105,9 +105,9 @@ contract('FuturesV2MarketData', accounts => {
 
 			await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 			await market.setTarget(marketImpl.address, { from: owner });
-			// FIXME FUTURESV2 use proxy address
-			// await futuresMarketManager.addMarkets([market.address], { from: owner });
-			await futuresMarketManager.addMarkets([marketImpl.address], { from: owner });
+			await futuresMarketManager.addMarkets([market.address], [marketImpl.address], {
+				from: owner,
+			});
 
 			await addressResolver.rebuildCaches([market.address], { from: owner });
 

@@ -656,7 +656,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
      */
     function recomputeFunding() external returns (uint lastIndex) {
         // only FuturesV2MarketSettings is allowed to use this method (calling it directly, not via proxy)
-        _revertIfError(msg.sender != _settings(), Status.NotPermitted);
+        _revertIfError(messageSender != _settings(), Status.NotPermitted);
         // This method is the only mutative method that uses the view _assetPrice()
         // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
         // This is because this method is used by system settings when changing funding related

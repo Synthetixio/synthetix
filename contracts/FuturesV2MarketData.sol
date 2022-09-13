@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Internal references
-import "./interfaces/IFuturesV2Market.sol";
+import "./interfaces/IFuturesV2MarketViews.sol";
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 import "./interfaces/IFuturesV2MarketManager.sol";
 import "./interfaces/IFuturesV2MarketSettings.sol";
@@ -166,7 +166,7 @@ contract FuturesV2MarketData {
         uint numMarkets = markets.length;
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
-            IFuturesV2Market market = IFuturesV2Market(markets[i]);
+            IFuturesV2MarketViews market = IFuturesV2MarketViews(markets[i]);
             bytes32 marketKey = market.marketKey();
             bytes32 baseAsset = market.baseAsset();
             IFuturesV2MarketSettings.Parameters memory params = _parameters(marketKey);
@@ -211,12 +211,12 @@ contract FuturesV2MarketData {
         return FundingParameters(params.maxFundingRate, params.skewScaleUSD);
     }
 
-    function _marketSizes(IFuturesV2Market market) internal view returns (Sides memory) {
+    function _marketSizes(IFuturesV2MarketViews market) internal view returns (Sides memory) {
         (uint long, uint short) = market.marketSizes();
         return Sides(long, short);
     }
 
-    function _marketDetails(IFuturesV2Market market) internal view returns (MarketData memory) {
+    function _marketDetails(IFuturesV2MarketViews market) internal view returns (MarketData memory) {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
         bytes32 baseAsset = market.baseAsset();
@@ -237,15 +237,15 @@ contract FuturesV2MarketData {
             );
     }
 
-    function marketDetails(IFuturesV2Market market) external view returns (MarketData memory) {
+    function marketDetails(IFuturesV2MarketViews market) external view returns (MarketData memory) {
         return _marketDetails(market);
     }
 
     function marketDetailsForKey(bytes32 marketKey) external view returns (MarketData memory) {
-        return _marketDetails(IFuturesV2Market(_futuresMarketManager().marketForKey(marketKey)));
+        return _marketDetails(IFuturesV2MarketViews(_futuresMarketManager().marketForKey(marketKey)));
     }
 
-    function _position(IFuturesV2Market market, address account)
+    function _position(IFuturesV2MarketViews market, address account)
         internal
         view
         returns (IFuturesV2MarketBaseTypes.Position memory)
@@ -267,37 +267,37 @@ contract FuturesV2MarketData {
             );
     }
 
-    function _notionalValue(IFuturesV2Market market, address account) internal view returns (int) {
+    function _notionalValue(IFuturesV2MarketViews market, address account) internal view returns (int) {
         (int value, ) = market.notionalValue(account);
         return value;
     }
 
-    function _profitLoss(IFuturesV2Market market, address account) internal view returns (int) {
+    function _profitLoss(IFuturesV2MarketViews market, address account) internal view returns (int) {
         (int value, ) = market.profitLoss(account);
         return value;
     }
 
-    function _accruedFunding(IFuturesV2Market market, address account) internal view returns (int) {
+    function _accruedFunding(IFuturesV2MarketViews market, address account) internal view returns (int) {
         (int value, ) = market.accruedFunding(account);
         return value;
     }
 
-    function _remainingMargin(IFuturesV2Market market, address account) internal view returns (uint) {
+    function _remainingMargin(IFuturesV2MarketViews market, address account) internal view returns (uint) {
         (uint value, ) = market.remainingMargin(account);
         return value;
     }
 
-    function _accessibleMargin(IFuturesV2Market market, address account) internal view returns (uint) {
+    function _accessibleMargin(IFuturesV2MarketViews market, address account) internal view returns (uint) {
         (uint value, ) = market.accessibleMargin(account);
         return value;
     }
 
-    function _liquidationPrice(IFuturesV2Market market, address account) internal view returns (uint) {
+    function _liquidationPrice(IFuturesV2MarketViews market, address account) internal view returns (uint) {
         (uint liquidationPrice, ) = market.liquidationPrice(account);
         return liquidationPrice;
     }
 
-    function _positionDetails(IFuturesV2Market market, address account) internal view returns (PositionData memory) {
+    function _positionDetails(IFuturesV2MarketViews market, address account) internal view returns (PositionData memory) {
         return
             PositionData(
                 _position(market, account),
@@ -311,11 +311,11 @@ contract FuturesV2MarketData {
             );
     }
 
-    function positionDetails(IFuturesV2Market market, address account) external view returns (PositionData memory) {
+    function positionDetails(IFuturesV2MarketViews market, address account) external view returns (PositionData memory) {
         return _positionDetails(market, account);
     }
 
     function positionDetailsForMarketKey(bytes32 marketKey, address account) external view returns (PositionData memory) {
-        return _positionDetails(IFuturesV2Market(_futuresMarketManager().marketForKey(marketKey)), account);
+        return _positionDetails(IFuturesV2MarketViews(_futuresMarketManager().marketForKey(marketKey)), account);
     }
 }
