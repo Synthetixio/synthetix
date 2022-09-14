@@ -111,8 +111,6 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
 			const tx = await futuresMarket.submitNextPriceOrder(size, { from: trader });
 
-			// const marketState = await FuturesV2MarketState.at(await futuresMarket.marketState());
-
 			const order = await futuresMarketState.getNextPriceOrder(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
