@@ -3,7 +3,7 @@ const { artifacts, contract } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toUnit, toBN } = require('../utils')();
 
-const { mockGenericContractFnc, setupAllContracts } = require('./setup');
+const { mockGenericContractFnc, setupAllContracts, setupContract } = require('./setup');
 const { assert } = require('./common');
 const {
 	getDecodedLogs,
@@ -17,7 +17,7 @@ const BN = require('bn.js');
 contract('FuturesV2MarketSettings', accounts => {
 	let futuresMarketManager, futuresMarketSettings;
 
-	let mockFuturesMarketBTC;
+	let mockFuturesMarketBTCImpl, mockFuturesMarketBTC;
 
 	const owner = accounts[1];
 
@@ -54,39 +54,49 @@ contract('FuturesV2MarketSettings', accounts => {
 			],
 		}));
 
-		mockFuturesMarketBTC = await artifacts.require('GenericMock').new();
+		mockFuturesMarketBTCImpl = await artifacts.require('GenericMock').new();
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTC,
+			instance: mockFuturesMarketBTCImpl,
 			mock: 'FuturesV2Market',
 			fncName: 'recomputeFunding',
 			returns: ['0'],
 		});
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTC,
+			instance: mockFuturesMarketBTCImpl,
 			mock: 'FuturesV2Market',
 			fncName: 'marketSize',
 			returns: ['1'],
 		});
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTC,
+			instance: mockFuturesMarketBTCImpl,
 			mock: 'FuturesV2Market',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTC,
+			instance: mockFuturesMarketBTCImpl,
 			mock: 'FuturesV2Market',
 			fncName: 'marketKey',
 			returns: [toBytes32('sBTC')],
 		});
 
-		// FIXME add proxy, state and implementation
+		mockFuturesMarketBTC = await setupContract({
+			accounts,
+			contract: 'ProxyFuturesV2',
+			args: [owner],
+		});
+		await mockFuturesMarketBTC.setTarget(mockFuturesMarketBTCImpl.address, { from: owner });
+
 		// add the market
-		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addMarkets(
+			[mockFuturesMarketBTC.address],
+			[mockFuturesMarketBTCImpl.address],
+			{ from: owner }
+		);
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -396,43 +406,53 @@ contract('FuturesV2MarketSettings', accounts => {
 		const firstMarketKey = toBytes32('sBTC');
 		const secondMarketKey = toBytes32('SomethingElse');
 
-		let secondBTCMarket;
+		let secondBTCMarket, secondBTCMarketImpl;
 
 		before(async () => {
 			// add a second BTC market
-			secondBTCMarket = await artifacts.require('GenericMock').new();
+			secondBTCMarketImpl = await artifacts.require('GenericMock').new();
 
 			await mockGenericContractFnc({
-				instance: secondBTCMarket,
+				instance: secondBTCMarketImpl,
 				mock: 'FuturesV2Market',
 				fncName: 'recomputeFunding',
 				returns: ['0'],
 			});
 
 			await mockGenericContractFnc({
-				instance: secondBTCMarket,
+				instance: secondBTCMarketImpl,
 				mock: 'FuturesV2Market',
 				fncName: 'marketSize',
 				returns: ['1'],
 			});
 
 			await mockGenericContractFnc({
-				instance: secondBTCMarket,
+				instance: secondBTCMarketImpl,
 				mock: 'FuturesV2Market',
 				fncName: 'baseAsset',
 				returns: [toBytes32('sBTC')],
 			});
 
 			await mockGenericContractFnc({
-				instance: secondBTCMarket,
+				instance: secondBTCMarketImpl,
 				mock: 'FuturesV2Market',
 				fncName: 'marketKey',
 				returns: [secondMarketKey],
 			});
 
-			// FIXME add proxy, state and implementation
+			secondBTCMarket = await setupContract({
+				accounts,
+				contract: 'ProxyFuturesV2',
+				args: [owner],
+			});
+			await secondBTCMarket.setTarget(secondBTCMarketImpl.address, { from: owner });
+
 			// add the market
-			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+			await futuresMarketManager.addMarkets(
+				[secondBTCMarket.address],
+				[secondBTCMarketImpl.address],
+				{ from: owner }
+			);
 		});
 
 		it('should be able to change parameters for both markets independently', async () => {
