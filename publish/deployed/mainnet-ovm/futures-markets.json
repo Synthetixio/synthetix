@@ -198,16 +198,16 @@
 	{
 		"marketKey": "sOP",
 		"asset": "OP",
-		"takerFee": "0.0040",
-		"makerFee": "0.0035",
-		"takerFeeNextPrice": "0.003",
-		"makerFeeNextPrice": "0.003",
+		"takerFee": "0.0045",
+		"makerFee": "0.0040",
+		"takerFeeNextPrice": "0.0040",
+		"makerFeeNextPrice": "0.0035",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "1000000",
+		"maxMarketValueUSD": "100000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
-		"paused": true
+		"skewScaleUSD": "10000000",
+		"paused": false
 	},
 	{
 		"marketKey": "sXMR",
