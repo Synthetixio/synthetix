@@ -165,6 +165,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
      * @param targetRoundId Price oracle roundId using which price this order needs to executed
      * @param commitDeposit The commitDeposit paid upon submitting that needs to be refunded if order succeeds
      * @param keeperDeposit The keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
+     * @param executableAtTime The timestamp at which this order is executable at
      * @param trackingCode Tracking code to emit on execution for volume source fee sharing
      */
     function updateNextPriceOrder(
@@ -173,9 +174,17 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
+        uint256 executableAtTime,
         bytes32 trackingCode
     ) external onlyAssociatedContract {
-        nextPriceOrders[account] = NextPriceOrder(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode);
+        nextPriceOrders[account] = NextPriceOrder(
+            sizeDelta,
+            targetRoundId,
+            commitDeposit,
+            keeperDeposit,
+            executableAtTime,
+            trackingCode
+        );
     }
 
     /**

@@ -33,6 +33,7 @@ interface IFuturesV2MarketBaseTypes {
         uint128 targetRoundId; // price oracle roundId using which price this order needs to executed
         uint128 commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds
         uint128 keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
+        uint256 executableAtTime; // The timestamp at which this order is executable at
         bytes32 trackingCode; // tracking code to emit on execution for volume source fee sharing
     }
 }

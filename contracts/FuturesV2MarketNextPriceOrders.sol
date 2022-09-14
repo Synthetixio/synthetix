@@ -34,6 +34,8 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
         return marketState.nextPriceOrders(account);
     }
 
+    uint public constant MIN_NEXT_PRICE_ORDER_DELAY = 60 seconds;
+
     ///// Mutative methods
 
     /**
@@ -41,21 +43,38 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
      * Reverts if a previous order still exists (wasn't executed or cancelled).
      * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
      * incorrectly submitted orders (that cannot be filled).
+     *
+     * The order is executable after maxTimeDelta. However, we also allow execution if the next price update
+     * occurs before the maxTimeDelta.
+     * Reverts if the maxTimeDelta is < minimum required delay.
+     *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
+     * @param maxTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitNextPriceOrder(int sizeDelta) external {
-        _submitNextPriceOrder(sizeDelta, bytes32(0));
+    function submitNextPriceOrder(int sizeDelta, uint maxTimeDelta) external {
+        _submitNextPriceOrder(sizeDelta, maxTimeDelta, bytes32(0));
     }
 
     /// same as submitNextPriceOrder but emits an event with the tracking code
     /// to allow volume source fee sharing for integrations
-    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
-        _submitNextPriceOrder(sizeDelta, trackingCode);
+    function submitNextPriceOrderWithTracking(
+        int sizeDelta,
+        uint maxTimeDelta,
+        bytes32 trackingCode
+    ) external {
+        _submitNextPriceOrder(sizeDelta, maxTimeDelta, trackingCode);
     }
 
-    function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
+    function _submitNextPriceOrder(
+        int sizeDelta,
+        uint maxTimeDelta,
+        bytes32 trackingCode
+    ) internal {
         // check that a previous order doesn't exist
         require(marketState.nextPriceOrder(messageSender).sizeDelta == 0, "previous order exists");
+
+        // ensure the maxTimeDelta is above the minimum required delay
+        require(maxTimeDelta >= MIN_NEXT_PRICE_ORDER_DELAY, "minTimeDelta delay too short");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
         Position memory position = marketState.positions(messageSender);
@@ -90,6 +109,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
+                executableAtTime: block.timestamp + maxTimeDelta,
                 trackingCode: trackingCode
             });
         // emit event
@@ -108,6 +128,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
             order.targetRoundId,
             order.commitDeposit,
             order.keeperDeposit,
+            order.executableAtTime,
             order.trackingCode
         );
     }
@@ -189,9 +210,12 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        // check round-Id
+        // check order executability and round-id
         uint currentRoundId = _exchangeRates().getCurrentRoundId(marketState.baseAsset());
-        require(order.targetRoundId <= currentRoundId, "target roundId not reached");
+        require(
+            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
+            "executability not reached"
+        );
 
         // check order is not too old to execute
         // we cannot allow executing old orders because otherwise future knowledge
