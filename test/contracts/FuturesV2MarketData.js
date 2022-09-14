@@ -43,7 +43,7 @@ contract('FuturesV2MarketData', accounts => {
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
-			FuturesV2MarketBTC: futuresMarket,
+			ProxyFuturesV2MarketBTC: futuresMarket,
 			FuturesV2MarketManager: futuresMarketManager,
 			FuturesV2MarketSettings: futuresMarketSettings,
 			FuturesV2MarketData: futuresMarketData,
@@ -69,6 +69,9 @@ contract('FuturesV2MarketData', accounts => {
 				'CollateralManager',
 			],
 		}));
+
+		// use implementation ABI on the proxy address to simplify calling
+		futuresMarket = await FuturesV2Market.at(futuresMarket.address);
 
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
