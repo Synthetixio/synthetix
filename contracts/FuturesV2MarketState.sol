@@ -131,10 +131,6 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         fundingLastRecomputed = lastRecomputed;
     }
 
-    function setNextPriceOrder(address account, NextPriceOrder memory order) public onlyAssociatedContract {
-        nextPriceOrders[account] = order;
-    }
-
     function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContract {
         fundingSequence.push(_fundingSequence);
     }
