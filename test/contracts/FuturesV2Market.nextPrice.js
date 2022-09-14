@@ -12,6 +12,7 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
+		futuresMarketState,
 		exchangeRates,
 		circuitBreaker,
 		sUSD,
@@ -46,6 +47,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 		({
 			FuturesV2MarketSettings: futuresMarketSettings,
 			ProxyFuturesV2MarketBTC: futuresMarket,
+			FuturesV2MarketStateBTC: futuresMarketState,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -109,8 +111,9 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
 			const tx = await futuresMarket.submitNextPriceOrder(size, { from: trader });
 
-			// check order
-			const order = await futuresMarket.nextPriceOrders(trader);
+			// const marketState = await FuturesV2MarketState.at(await futuresMarket.marketState());
+
+			const order = await futuresMarketState.getNextPriceOrder(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
@@ -202,7 +205,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			});
 
 			// check order
-			const order = await futuresMarket.nextPriceOrders(trader);
+			const order = await futuresMarketState.getNextPriceOrder(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
@@ -267,7 +270,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				const tx = await futuresMarket.cancelNextPriceOrder(trader, { from: from });
 
 				// check order is removed
-				const order = await futuresMarket.nextPriceOrders(trader);
+				const order = await futuresMarketState.getNextPriceOrder(trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
@@ -317,7 +320,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
 				await futuresMarket.submitNextPriceOrder(size, { from: trader });
-				const newOrder = await futuresMarket.nextPriceOrders(trader);
+				const newOrder = await futuresMarketState.getNextPriceOrder(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
@@ -529,11 +532,11 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			// spotTradeDetails: trade details of the same trade if it would happen as spot
 			async function checkExecution(from, targetPrice, feeRate, spotTradeDetails) {
 				const currentMargin = toBN((await futuresMarket.positions(trader)).margin);
-				// excute the order
+				// execute the order
 				const tx = await futuresMarket.executeNextPriceOrder(trader, { from: from });
 
 				// check order is removed now
-				const order = await futuresMarket.nextPriceOrders(trader);
+				const order = await futuresMarketState.getNextPriceOrder(trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
@@ -601,7 +604,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
 				await futuresMarket.submitNextPriceOrder(size, { from: trader });
-				const newOrder = await futuresMarket.nextPriceOrders(trader);
+				const newOrder = await futuresMarketState.getNextPriceOrder(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
