@@ -2,74 +2,125 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
+import "./interfaces/IDebtMigrator.sol";
+import "./interfaces/IIssuer.sol";
+
+import "./interfaces/ILiquidatorRewards.sol";
+
+import "./interfaces/ISynthetixBridgeToOptimism.sol";
+import "./interfaces/ISynthetixDebtShare.sol";
+
+import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 // TODO: for deployment
 // 1. add to deploy-core
 // 2. "connect" the migrators on L1/L2 using the address resolver (see OP bridges)
-contract DebtMigrator is Owned {
+contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
 
-    // bytes32 internal constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
-    // bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
+    bytes32 private constant CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM = "ovm:DebtMigratorOnOptimism";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
+    bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
-    // function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-    //     addresses = new bytes32[](3);
-    //     addresses[0] = CONTRACT_SYNTH_SUSD;
-    //     addresses[1] = CONTRACT_FLEXIBLESTORAGE;
-    //     addresses[2] = CONTRACT_FEEPOOL;
-    // }
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
-    // /* ========== INTERNAL VIEWS ========== */
-    // function synthsUSD() internal view returns (IERC20) {
-    //     return IERC20(requireAndGetAddress(CONTRACT_SYNTH_SUSD));
-    // }
+    /* ========== INTERNALS ============ */
 
-    // Mutatative functions
+    function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
+        return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
+    }
+
+    function _debtMigratorOnOptimism() private view returns (address) {
+        return requireAndGetAddress(CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM);
+    }
+
+    function _issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
+    function _liquidatorRewards() internal view returns (ILiquidatorRewards) {
+        return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATOR_REWARDS));
+    }
+
+    function _synthetixBridgeToOptimism() internal view returns (ISynthetixBridgeToOptimism) {
+        return ISynthetixBridgeToOptimism(requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM));
+    }
+
+    function _synthetixDebtShare() internal view returns (ISynthetixDebtShare) {
+        return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIX_DEBT_SHARE));
+    }
+
+    function _getCrossDomainGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
+        // Use specified crossDomainGasLimit if specified value is not zero.
+        // otherwise use the default in SystemSettings.
+        return
+            crossDomainGasLimit != 0
+                ? crossDomainGasLimit
+                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
+    }
+
+    /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](2);
+        newAddresses[0] = CONTRACT_EXT_MESSENGER;
+        newAddresses[1] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    /* ========== RESTRICTED ========== */
 
     function migrateEntireAccount(address account) external {
-        require(msg.sender == account, "Must be owner");
+        require(msg.sender == account, "Must be the account owner");
         _migrateEntireAccount(account);
     }
 
-    function migrateEntireAccountOnBehalf(address account) external onlyOwner {}
+    function migrateEntireAccountOnBehalf(address account) external onlyOwner {
+        _migrateEntireAccount(account);
+    }
 
-    function _migrateEntireAccount(address account) internal {
-        address targets = [address(debtMigrator), address(debtMigrator)];
+    function _migrateEntireAccount(address _account) internal {
+        // require system active
 
-        // burn SDS
-        issuer().burnDebtSharesForMigration();
+        // important: this has to happen before any updates to user's debt shares
+        _liquidatorRewards().updateEntry(_account);
+        _liquidatorRewards().getReward(_account);
 
-        // claim liquidation rewards
-        liquidationRewards.getReward();
+        // remove all SDS
+        ISynthetixDebtShare sds = _synthetixDebtShare();
+        uint _amount = sds.balanceOf(_account);
+        _issuer().modifyDebtSharesForMigration(_account, _amount);
 
-        // create message payloads
-        bytes memory escrowMessageData =
-            abi.encodeWithSelector(
-                synthetixBridgeToOptimism.depositAndMigrateEscrow.selector,
-                currencyKey,
-                destination,
-                amount
-            );
+        // require zeroed balances
+        require(_liquidatorRewards().earned(_account) == 0, "Earned balance is not zero");
+        require(_synthetixDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
 
-        bytes memory recvMessageData = abi.encodeWithSelector(this.finalizeMigration.selector, amount);
+        // create the data payload to be relayed on L2
+        IIssuer issuer;
+        bytes memory payload = abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, _amount);
 
-        // require debt balance 0, snx balance 0, escrow 0, liq rewards 0, etc.
+        // send message to L2 to finalize the migration
+        IDebtMigrator debtMigratorOnOptimism;
+        bytes memory messageData =
+            abi.encodeWithSelector(debtMigratorOnOptimism.finalizeMigration.selector, address(_issuer()), payload);
+        _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
-        Relay.initiateRelayBatch(targets, [escrowMessageData, recvMessageData]);
-
-        // require success
-
-        emit MigrationInitialized(account);
+        emit MigrationInitiated(_account);
     }
 
     // ========== EVENTS ==========
 
-    event MigrationInitialized(address indexed account);
+    event MigrationInitiated(address indexed account);
 }

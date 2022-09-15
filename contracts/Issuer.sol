@@ -91,6 +91,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
     bytes32 private constant CONTRACT_SYNTHETIXBRIDGETOOPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIXBRIDGETOBASE = "SynthetixBridgeToBase";
+    bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM = "DebtMigratorOnEthereum";
+    bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_OPTIMISM = "DebtMigratorOnOptimism";
 
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
@@ -620,24 +622,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return rateInvalid;
     }
 
-    function burnDebtSharesForMigration(address account) external onlyMigrator {
-        // important: this has to happen before any updates to user's debt shares
-        liquidatorRewards().updateEntry(account);
-
+    // SIP-237: Debt Migration
+    // allows for migration of debt from L1 -> L2
+    function modifyDebtSharesForMigration(address account, uint amount) external onlyTrustedMigrators {
         ISynthetixDebtShare sds = synthetixDebtShare();
-        uint amount = sds.balanceOf(account);
 
-        sds.burnShare(account, amount);
-    }
-
-    function mintDebtSharesForMigration(address account) external onlyMigrator {
-        // important: this has to happen before any updates to user's debt shares
-        liquidatorRewards().updateEntry(account);
-
-        ISynthetixDebtShare sds = synthetixDebtShare();
-        uint amount = sds.balanceOf(account);
-
-        sds.mintShare(account, amount);
+        if (msg.sender == resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM)) {
+            sds.burnShare(account, amount);
+        } else {
+            sds.mintShare(account, amount);
+        }
     }
 
     /**
@@ -646,10 +640,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      * @param amount The amount of sUSD collateral to be burnt
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
-        require(short != address(0), "Issuer: invalid address");
         require(short == resolver.getAddress("CollateralShortLegacy"), "Issuer: wrong short address");
-        require(address(synths[sUSD]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot burn 0 synths");
 
         exchanger().settle(short, sUSD);
 
@@ -1025,15 +1016,19 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _;
     }
 
-    modifier onlyMigrator() {
-        require(msg.sender == address(debtMigrator()), "Issuer: Only Debt Migrator");
-    }
-
     modifier onlyTrustedMinters() {
         address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
         require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "Issuer: only trusted minters");
         require(bridgeL1 == address(0) || bridgeL2 == address(0), "Issuer: one minter must be 0x0");
+        _;
+    }
+
+    modifier onlyTrustedMigrators() {
+        address migratorL1 = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
+        address migratorL2 = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_OPTIMISM);
+        require(msg.sender == migratorL1 || msg.sender == migratorL2, "Issuer: only trusted migrators");
+        // require(migratorL1 == address(0) || migratorL2 == address(0), "Issuer: one migrator must be 0x0");
         _;
     }
 
