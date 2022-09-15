@@ -148,7 +148,17 @@ const setupContract = async ({
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
-		if (artifact._json.contractName === 'SystemSettings') {
+
+		if (
+			artifact._json.contractName === 'Exchanger' ||
+			artifact._json.contractName === 'ExchangerWithFeeRecAlternatives'
+		) {
+			// SafeDecimalMath -> ExchangerLib -> Exchanger*
+			const ExchangerLib = artifacts.require('ExchangerLib');
+			ExchangerLib.link(safeDecimalMath);
+			artifact.link(await ExchangerLib.new());
+			artifact.link(await safeDecimalMath);
+		} else if (artifact._json.contractName === 'SystemSettings') {
 			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
 			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
 			SystemSettingsLib.link(safeDecimalMath);
@@ -758,7 +768,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
+			deps: ['AddressResolver', 'SystemSettings', 'CircuitBreaker'],
 			mocks: ['ExchangeCircuitBreaker'],
 		},
 		{ contract: 'SynthetixDebtShare' },
@@ -903,7 +913,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRatesWithDexPricing',
 			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'DirectIntegrationManager'],
+			deps: ['AddressResolver', 'DirectIntegrationManager', 'CircuitBreaker'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',

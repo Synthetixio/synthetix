@@ -18,7 +18,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     bytes32 private constant CONTRACT_DIRECT_INTEGRATION_MANAGER = "DirectIntegrationManager";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = ExchangeRates.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_DIRECT_INTEGRATION_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);

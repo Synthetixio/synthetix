@@ -14,7 +14,11 @@ contract('DynamicFee', accounts => {
 
 	before(async () => {
 		const safeDecimalMath = await SafeDecimalMath.new();
+		const ExchangerLib = artifacts.require('ExchangerLib');
+		ExchangerLib.link(safeDecimalMath);
+
 		TestableDynamicFee.link(safeDecimalMath);
+		TestableDynamicFee.link(await ExchangerLib.new());
 		const addressResolver = account1; // is not important for these tests
 		testableDynamicFee = await TestableDynamicFee.new(owner, addressResolver);
 	});

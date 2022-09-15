@@ -9,6 +9,8 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IDirectIntegrationManager.sol";
 import "./interfaces/IERC20.sol";
 
+import "hardhat/console.sol";
+
 interface IVirtualSynthInternal {
     function initialize(
         IERC20 _synth,
@@ -200,6 +202,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
                 usdSettings
             );
 
+            console.log("SOURCE AMT AFTER SETTLE", sourceAmountAfterSettlement, sourceAmount);
+
             // Sanity check atomic output's value against current system value (checking atomic rates)
             require(
                 !circuitBreaker().isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
@@ -264,7 +268,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // The debt pool is expected to be deprecated soon, and so we don't bother with being
         // perfect here. For now, an inaccuracy will slowly accrue over time with increasing atomic
         // exchange volume.
-        _updateSNXIssuedDebtOnExchange(
+        ExchangerLib.updateSNXIssuedDebtOnExchange(
+            debtCache(),
             [sourceCurrencyKey, destinationCurrencyKey],
             [systemSourceRate, systemDestinationRate]
         );
@@ -341,7 +346,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             .effectiveAtomicValueAndRates(sourceSettings, sourceAmount, destinationSettings, usdSettings);
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);
-        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
+        amountReceived = ExchangerLib.deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 

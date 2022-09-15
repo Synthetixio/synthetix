@@ -1984,7 +1984,7 @@ contract('Exchange Rates', async accounts => {
 		before(async () => {
 			const contracts = await setupAllContracts({
 				accounts,
-				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
+				contracts: [exchangeRatesContract, 'CircuitBreaker', 'SystemSettings', 'AddressResolver'],
 			});
 
 			instance = contracts.ExchangeRates;
