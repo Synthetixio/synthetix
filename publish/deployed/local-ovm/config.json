@@ -196,5 +196,8 @@
 	},
 	"SystemSettingsLib": {
 		"deploy": true
+	},
+	"DebtMigratorOnOptimism": {
+		"deploy": true
 	}
 }
