@@ -105,8 +105,6 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
-
-    function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix

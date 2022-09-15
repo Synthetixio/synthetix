@@ -42,6 +42,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
+    bytes32 private constant CONTRACT_DIRECT_INTEGRATION_MANAGER = "DirectIntegrationManager";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -49,7 +50,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](10);
+        bytes32[] memory newAddresses = new bytes32[](11);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -60,6 +61,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
         newAddresses[9] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[10] = CONTRACT_DIRECT_INTEGRATION_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -101,6 +103,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function debtCache() internal view returns (IExchangerInternalDebtCache) {
         return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+
+    function directIntegrationManager() internal view returns (IDirectIntegrationManager) {
+        return IDirectIntegrationManager(requireAndGetAddress(CONTRACT_DIRECT_INTEGRATION_MANAGER));
     }
 
     function resolvedAddresses() internal view returns (ExchangerLib.ResolvedAddresses memory) {
@@ -212,11 +218,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         }
 
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
+
         (amountReceived, fee, vSynth) = _exchange(
             exchangeForAddress,
-            sourceCurrencyKey,
+            sourceSettings,
             sourceAmount,
-            destinationCurrencyKey,
+            destinationSettings,
             destinationAddress,
             virtualSynth
         );
@@ -273,9 +284,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function _exchange(
         address from,
-        bytes32 sourceCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
         uint sourceAmount,
-        bytes32 destinationCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         address destinationAddress,
         bool virtualSynth
     )
@@ -286,7 +297,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             IVirtualSynth vSynth
         )
     {
-        if (!_ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount)) {
+        if (!_ensureCanExchange(sourceSettings.currencyKey, destinationSettings.currencyKey, sourceAmount)) {
             return (0, 0, IVirtualSynth(0));
         }
 
@@ -294,10 +305,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         IExchanger.ExchangeEntry memory entry;
         ExchangerLib.ResolvedAddresses memory addrs = resolvedAddresses();
 
-        entry.roundIdForSrc = addrs.exchangeRates.getCurrentRoundId(sourceCurrencyKey);
-        entry.roundIdForDest = addrs.exchangeRates.getCurrentRoundId(destinationCurrencyKey);
+        entry.roundIdForSrc = addrs.exchangeRates.getCurrentRoundId(sourceSettings.currencyKey);
+        entry.roundIdForDest = addrs.exchangeRates.getCurrentRoundId(destinationSettings.currencyKey);
 
-        entry.sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        entry.sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceSettings.currencyKey);
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
@@ -306,20 +317,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = addrs.exchangeRates.effectiveValueAndRatesAtRound(
-            sourceCurrencyKey,
+            sourceSettings.currencyKey,
             entry.sourceAmountAfterSettlement,
-            destinationCurrencyKey,
+            destinationSettings.currencyKey,
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
 
         // rates must also be good for the round we are doing
-        _ensureCanExchangeAtRound(sourceCurrencyKey, destinationCurrencyKey, entry.roundIdForSrc, entry.roundIdForDest);
+        _ensureCanExchangeAtRound(sourceSettings.currencyKey, destinationSettings.currencyKey, entry.roundIdForSrc, entry.roundIdForDest);
 
         bool tooVolatile;
         (entry.exchangeFeeRate, tooVolatile) = _feeRateForExchangeAtRounds(
-            sourceCurrencyKey,
-            destinationCurrencyKey,
+            sourceSettings,
+            destinationSettings,
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
@@ -337,10 +348,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
         vSynth = _convert(
-            sourceCurrencyKey,
+            sourceSettings.currencyKey,
             from,
             entry.sourceAmountAfterSettlement,
-            destinationCurrencyKey,
+            destinationSettings.currencyKey,
             amountReceived,
             destinationAddress,
             virtualSynth
@@ -355,7 +366,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         if (fee > 0) {
             // Normalize fee to sUSD
             // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = addrs.exchangeRates.effectiveValue(destinationCurrencyKey, fee, sUSD);
+            fee = addrs.exchangeRates.effectiveValue(destinationSettings.currencyKey, fee, sUSD);
 
             // Remit the fee in sUSDs
             issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
@@ -371,16 +382,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // in these currencies
         ExchangerLib.updateSNXIssuedDebtOnExchange(
             addrs.debtCache,
-            [sourceCurrencyKey, destinationCurrencyKey],
+            [sourceSettings.currencyKey, destinationSettings.currencyKey],
             [entry.sourceRate, entry.destinationRate]
         );
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
-            sourceCurrencyKey,
+            sourceSettings.currencyKey,
             entry.sourceAmountAfterSettlement,
-            destinationCurrencyKey,
+            destinationSettings.currencyKey,
             amountReceived,
             destinationAddress
         );
@@ -391,9 +402,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             ExchangerLib.appendExchange(
                 addrs,
                 destinationAddress,
-                sourceCurrencyKey,
+                sourceSettings.currencyKey,
                 entry.sourceAmountAfterSettlement,
-                destinationCurrencyKey,
+                destinationSettings.currencyKey,
                 amountReceived,
                 entry.exchangeFeeRate
             );
@@ -446,13 +457,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return ExchangerLib.internalSettle(resolvedAddresses(), from, currencyKey, true, getWaitingPeriodSecs());
     }
 
-    function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
-        systemStatus().requireSystemActive();
-        // SIP-65: Decentralized Circuit Breaker
-        (, bool circuitBroken, ) = exchangeRates().rateWithSafetyChecks(currencyKey);
-        require(circuitBroken, "Synth price is valid");
-    }
-
     /* ========== INTERNAL FUNCTIONS ========== */
 
     // runs basic checks and calls `rateWithSafetyChecks` (which can trigger circuit breakers)
@@ -503,7 +507,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate, and whether the rates are too volatile
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
-        (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+
+        (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceSettings, destinationSettings);
         require(!tooVolatile, "too volatile");
         return feeRate;
     }
@@ -517,120 +526,126 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint feeRate, bool tooVolatile)
     {
-        return _dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+
+        return _dynamicFeeRateForExchange(sourceSettings, destinationSettings);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
-    /// @param sourceCurrencyKey The source currency key
-    /// @param destinationCurrencyKey The destination currency key
+    /// @param sourceSettings The source currency key
+    /// @param destinationSettings The destination currency key
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate and if rates are too volatile
-    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+    function _feeRateForExchange(
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+    )
         internal
         view
         returns (uint feeRate, bool tooVolatile)
     {
         // Get the exchange fee rate as per the source currencyKey and destination currencyKey
-        uint baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
+        uint baseRate = sourceSettings.exchangeFeeRate.add(destinationSettings.exchangeFeeRate);
         uint dynamicFee;
-        (dynamicFee, tooVolatile) = _dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        (dynamicFee, tooVolatile) = _dynamicFeeRateForExchange(sourceSettings, destinationSettings);
         return (baseRate.add(dynamicFee), tooVolatile);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
-    /// @param sourceCurrencyKey The source currency key
-    /// @param destinationCurrencyKey The destination currency key
+    /// @param sourceSettings The source currency key
+    /// @param destinationSettings The destination currency key
     /// @param roundIdForSrc The round id of the source currency.
     /// @param roundIdForDest The round id of the target currency.
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate
     function _feeRateForExchangeAtRounds(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint feeRate, bool tooVolatile) {
         // Get the exchange fee rate as per the source currencyKey and destination currencyKey
-        uint baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
+        uint baseRate = sourceSettings.exchangeFeeRate.add(destinationSettings.exchangeFeeRate);
         uint dynamicFee;
         (dynamicFee, tooVolatile) = _dynamicFeeRateForExchangeAtRounds(
-            sourceCurrencyKey,
-            destinationCurrencyKey,
+            sourceSettings,
+            destinationSettings,
             roundIdForSrc,
             roundIdForDest
         );
         return (baseRate.add(dynamicFee), tooVolatile);
     }
 
-    function _dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+    function _dynamicFeeRateForExchange(
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+    )
         internal
         view
         returns (uint dynamicFee, bool tooVolatile)
     {
-        DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrency(destinationCurrencyKey, config);
-        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrency(sourceCurrencyKey, config);
+        (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrency(destinationSettings);
+        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrency(sourceSettings);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
         // cap to maxFee
-        bool overMax = dynamicFee > config.maxFee;
-        dynamicFee = overMax ? config.maxFee : dynamicFee;
+        bool overMax = dynamicFee > sourceSettings.exchangeMaxDynamicFee;
+        dynamicFee = overMax ? sourceSettings.exchangeMaxDynamicFee : dynamicFee;
         return (dynamicFee, overMax || dstVolatile || srcVolatile);
     }
 
     function _dynamicFeeRateForExchangeAtRounds(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
-        DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
         (uint dynamicFeeDst, bool dstVolatile) =
-            _dynamicFeeRateForCurrencyRound(destinationCurrencyKey, roundIdForDest, config);
-        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrencyRound(sourceCurrencyKey, roundIdForSrc, config);
+            _dynamicFeeRateForCurrencyRound(destinationSettings, roundIdForDest);
+        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrencyRound(sourceSettings, roundIdForSrc);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
         // cap to maxFee
-        bool overMax = dynamicFee > config.maxFee;
-        dynamicFee = overMax ? config.maxFee : dynamicFee;
+        bool overMax = dynamicFee > sourceSettings.exchangeMaxDynamicFee;
+        dynamicFee = overMax ? sourceSettings.exchangeMaxDynamicFee : dynamicFee;
         return (dynamicFee, overMax || dstVolatile || srcVolatile);
     }
 
     /// @notice Get dynamic dynamicFee for a given currency key (SIP-184)
-    /// @param currencyKey The given currency key
-    /// @param config dynamic fee calculation configuration params
+    /// @param settings The given currency key
     /// @return The dynamic fee and if it exceeds max dynamic fee set in config
-    function _dynamicFeeRateForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config)
+    function _dynamicFeeRateForCurrency(IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
         internal
         view
         returns (uint dynamicFee, bool tooVolatile)
     {
         // no dynamic dynamicFee for sUSD or too few rounds
-        if (currencyKey == sUSD || config.rounds <= 1) {
+        if (settings.currencyKey == sUSD || settings.exchangeDynamicFeeRounds <= 1) {
             return (0, false);
         }
-        uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
-        return _dynamicFeeRateForCurrencyRound(currencyKey, roundId, config);
+        uint roundId = exchangeRates().getCurrentRoundId(settings.currencyKey);
+        return _dynamicFeeRateForCurrencyRound(settings, roundId);
     }
 
     /// @notice Get dynamicFee for a given currency key (SIP-184)
-    /// @param currencyKey The given currency key
+    /// @param settings The given currency key
     /// @param roundId The round id
-    /// @param config dynamic fee calculation configuration params
     /// @return The dynamic fee and if it exceeds max dynamic fee set in config
     function _dynamicFeeRateForCurrencyRound(
-        bytes32 currencyKey,
-        uint roundId,
-        DynamicFeeConfig memory config
+        IDirectIntegrationManager.ParameterIntegrationSettings memory settings,
+        uint roundId
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
         // no dynamic dynamicFee for sUSD or too few rounds
-        if (currencyKey == sUSD || config.rounds <= 1) {
+        if (settings.currencyKey == sUSD || settings.exchangeDynamicFeeRounds <= 1) {
             return (0, false);
         }
         uint[] memory prices;
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        dynamicFee = _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(settings.currencyKey, settings.exchangeDynamicFeeRounds, roundId);
+        dynamicFee = _dynamicFeeCalculation(prices, settings.exchangeDynamicFeeThreshold, settings.exchangeDynamicFeeWeightDecay);
         // cap to maxFee
-        bool overMax = dynamicFee > config.maxFee;
-        dynamicFee = overMax ? config.maxFee : dynamicFee;
+        bool overMax = dynamicFee > settings.exchangeMaxDynamicFee;
+        dynamicFee = overMax ? settings.exchangeMaxDynamicFee : dynamicFee;
         return (dynamicFee, overMax);
     }
 
@@ -694,6 +709,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+
         require(sourceCurrencyKey == sUSD || !exchangeRates().rateIsInvalid(sourceCurrencyKey), "src synth rate invalid");
 
         require(
@@ -710,7 +730,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         systemStatus().requireSynthActive(destinationCurrencyKey);
 
         bool tooVolatile;
-        (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceSettings, destinationSettings);
 
         // check rates volatility result
         require(!tooVolatile, "exchange rates too volatile");

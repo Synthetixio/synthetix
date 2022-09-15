@@ -9,8 +9,6 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IDirectIntegrationManager.sol";
 import "./interfaces/IERC20.sol";
 
-import "hardhat/console.sol";
-
 interface IVirtualSynthInternal {
     function initialize(
         IERC20 _synth,
@@ -39,21 +37,15 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_VIRTUALSYNTH_MASTERCOPY = "VirtualSynthMastercopy";
-    bytes32 private constant CONTRACT_DIRECT_INTEGRATION_MANAGER = "DirectIntegrationManager";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Exchanger.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](2);
+        bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_VIRTUALSYNTH_MASTERCOPY;
-        newAddresses[1] = CONTRACT_DIRECT_INTEGRATION_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== VIEWS ========== */
-
-    function directIntegrationManager() internal view returns (IDirectIntegrationManager) {
-        return IDirectIntegrationManager(requireAndGetAddress(CONTRACT_DIRECT_INTEGRATION_MANAGER));
-    }
 
     function atomicMaxVolumePerBlock() external view returns (uint) {
         return getAtomicMaxVolumePerBlock();
@@ -201,8 +193,6 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
                 destinationSettings,
                 usdSettings
             );
-
-            console.log("SOURCE AMT AFTER SETTLE", sourceAmountAfterSettlement, sourceAmount);
 
             // Sanity check atomic output's value against current system value (checking atomic rates)
             require(
