@@ -304,14 +304,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // balance of a synth will show an amount after settlement
         uint balanceOfSourceAfterSettlement = IERC20(address(issuer().synths(currencyKey))).balanceOf(from);
 
+        if (refunded > 0) {
+            amountAfterSettlement = amountAfterSettlement.add(refunded);
+        }
+
         // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
         if (amountAfterSettlement > balanceOfSourceAfterSettlement) {
             // then the amount to exchange is reduced to their remaining supply
             amountAfterSettlement = balanceOfSourceAfterSettlement;
-        }
-
-        if (refunded > 0) {
-            amountAfterSettlement = amountAfterSettlement.add(refunded);
         }
     }
 
