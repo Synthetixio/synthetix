@@ -16,8 +16,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
-// import "hardhat/console.sol";
-
 // basic views that are expected to be supported by v1 (IFuturesV2MarketViews) and v2 markets (IPerpsV2Market)
 interface IMarketViews {
     function marketKey() external view returns (bytes32);
@@ -198,11 +196,7 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
             require(!_markets.contains(market), "Market already exists");
             require(implementations[i] != address(0), "Invalid implementation address");
 
-            // console.log('going to retrieve the marketKey');
-            // console.log('msg.sender   :', msg.sender);
-            // console.log('this address :', address(this));
             bytes32 key = IMarketViews(market).marketKey();
-            // console.log('done');
             bytes32 baseAsset = IMarketViews(market).baseAsset();
 
             require(marketForKey[key] == address(0), "Market already exists for key");

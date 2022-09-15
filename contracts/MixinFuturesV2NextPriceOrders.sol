@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./FuturesV2MarketBase.sol";
+import "./FuturesV2MarketMutations.sol";
 
 /**
  Mixin that implements NextPrice orders mechanism for the futures market.
@@ -16,7 +16,7 @@ import "./FuturesV2MarketBase.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
+contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
     mapping(address => NextPriceOrder) public nextPriceOrders;
 
@@ -54,8 +54,8 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFeeNextPrice(marketKey),
-                makerFee: _makerFeeNextPrice(marketKey),
+                takerFee: _takerFeeNextPrice(_marketKey),
+                makerFee: _makerFeeNextPrice(_marketKey),
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
@@ -69,7 +69,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
 
         // create order
-        uint targetRoundId = _exchangeRates().getCurrentRoundId(baseAsset) + 1; // next round
+        uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset) + 1; // next round
         NextPriceOrder memory order =
             NextPriceOrder({
                 sizeDelta: int128(sizeDelta),
@@ -109,7 +109,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset);
 
         if (account == messageSender) {
             // this is account owner
@@ -169,7 +169,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         require(order.sizeDelta != 0, "no previous order");
 
         // check round-Id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(baseAsset);
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset);
         require(order.targetRoundId <= currentRoundId, "target roundId not reached");
 
         // check order is not too old to execute
@@ -199,15 +199,15 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
         emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
         // the correct price for the past round
-        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.targetRoundId);
+        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset, order.targetRoundId);
         // execute or revert
         _trade(
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeNextPrice(marketKey),
-                makerFee: _makerFeeNextPrice(marketKey),
+                takerFee: _takerFeeNextPrice(_marketKey),
+                makerFee: _makerFeeNextPrice(_marketKey),
                 trackingCode: order.trackingCode
             })
         );
@@ -231,7 +231,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
     // rounds after target roundId
     function _confirmationWindowOver(uint currentRoundId, uint targetRoundId) internal view returns (bool) {
-        return (currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey)); // don't underflow
+        return (currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(_marketKey)); // don't underflow
     }
 
     // convenience view to access exchangeRates contract for methods that are not exposed
@@ -243,8 +243,8 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketBase {
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
     function _nextPriceCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
-        params.takerFee = _takerFee(marketKey);
-        params.makerFee = _makerFee(marketKey);
+        params.takerFee = _takerFee(_marketKey);
+        params.makerFee = _makerFee(_marketKey);
         // Commit fee is equal to the spot fee that would be paid.
         // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit

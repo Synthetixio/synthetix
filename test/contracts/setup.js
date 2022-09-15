@@ -320,14 +320,20 @@ const setupContract = async ({
 		ProxyFuturesV2MarketETH: [owner],
 		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
-		// TestableFuturesV2Market: [
-		// 	tryGetAddressOf('ProxyFuturesV2MarketBTC'),
-		// 	tryGetAddressOf('FuturesV2MarketStateBTC'),
-		// 	owner,
-		// 	tryGetAddressOf('AddressResolver'),
-		// 	toBytes32('sBTC'), // base asset
-		// 	toBytes32('sBTC' + perpSuffix), // market key
-		// ],
+		FuturesV2MarketViewsBTC: [
+			tryGetAddressOf('FuturesV2MarketStateBTC'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC' + perpSuffix), // market key
+		],
+		FuturesV2MarketViewsETH: [
+			tryGetAddressOf('FuturesV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'), // base asset
+			toBytes32('sETH' + perpSuffix), // market key
+		],
 		FuturesV2MarketBTC: [
 			tryGetAddressOf('ProxyFuturesV2MarketBTC'),
 			tryGetAddressOf('FuturesV2MarketStateBTC'),
@@ -378,12 +384,6 @@ const setupContract = async ({
 			}
 		}
 	} catch (err) {
-		console.log({ contract, source, forContract, args, defArgs: defaultArgs[contract] });
-		console.log({ abi: artifact.abi });
-
-		console.log(
-			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
-		);
 		throw new Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
@@ -646,6 +646,20 @@ const setupContract = async ({
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 			]);
 		},
+		async FuturesV2MarketViewsBTC() {
+			await Promise.all([
+				cache['ProxyFuturesV2MarketBTC'].setViewsTarget(instance.address, {
+					from: owner,
+				}),
+			]);
+		},
+		async FuturesV2MarketViewsETH() {
+			await Promise.all([
+				cache['ProxyFuturesV2MarketETH'].setViewsTarget(instance.address, {
+					from: owner,
+				}),
+			]);
+		},
 		async FuturesV2MarketBTC() {
 			await Promise.all([
 				instance.setProxy(cache['ProxyFuturesV2MarketBTC'].address, { from: owner }),
@@ -653,6 +667,7 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketBTC'].setTarget(instance.address, { from: owner }),
+				instance.propagateToState({ from: owner }),
 				cache['FuturesV2MarketManager'].addMarkets(
 					[cache['ProxyFuturesV2MarketBTC'].address],
 					[instance.address],
@@ -669,6 +684,7 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketETH'].setTarget(instance.address, { from: owner }),
+				instance.propagateToState({ from: owner }),
 				cache['FuturesV2MarketManager'].addMarkets(
 					[cache['ProxyFuturesV2MarketETH'].address],
 					[instance.address],
@@ -1213,11 +1229,34 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'Exchanger', 'FuturesV2MarketSettings', 'ExchangeCircuitBreaker'],
 		},
 		{
+			contract: 'FuturesV2MarketViewsBTC',
+			source: 'FuturesV2MarketViews',
+			deps: [
+				'ProxyFuturesV2MarketBTC',
+				'FuturesV2MarketStateBTC',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'FuturesV2MarketViewsETH',
+			source: 'FuturesV2MarketViews',
+			deps: [
+				'ProxyFuturesV2MarketBTC',
+				'FuturesV2MarketStateBTC',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
 			contract: 'FuturesV2MarketBTC',
 			source: 'TestableFuturesV2Market',
 			deps: [
 				'ProxyFuturesV2MarketBTC',
 				'FuturesV2MarketStateBTC',
+				'FuturesV2MarketViewsBTC',
 				'AddressResolver',
 				// 'FuturesV2MarketManager',
 				// 'FuturesV2MarketSettings',
@@ -1231,6 +1270,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyFuturesV2MarketETH',
 				'FuturesV2MarketStateETH',
+				'FuturesV2MarketViewsETH',
 				'AddressResolver',
 				// 'FuturesV2MarketManager',
 				// 'FuturesV2MarketSettings',
@@ -1637,10 +1677,10 @@ const setupAllContracts = async ({
 			};
 
 			if (returnObj['FuturesV2MarketBTC']) {
-				promises.push(setupFuturesV2Market(returnObj['FuturesV2MarketBTC']));
+				promises.push(setupFuturesV2Market(returnObj['ProxyFuturesV2MarketBTC']));
 			}
 			if (returnObj['FuturesV2MarketETH']) {
-				promises.push(setupFuturesV2Market(returnObj['FuturesV2MarketETH']));
+				promises.push(setupFuturesV2Market(returnObj['ProxyFuturesV2MarketETH']));
 			}
 
 			await Promise.all(promises);

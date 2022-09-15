@@ -9,36 +9,43 @@ import "./interfaces/IFuturesV2MarketViews.sol";
 contract ProxyFuturesV2 is Proxy, IFuturesV2MarketViews {
     constructor(address _owner) public Proxy(_owner) {}
 
+    IFuturesV2MarketViews public viewsTarget;
+
+    function setViewsTarget(IFuturesV2MarketViews _target) external onlyOwner {
+        viewsTarget = _target;
+        emit ViewsTargetUpdated(_target);
+    }
+
     /* ---------- Market Details ---------- */
 
     function marketKey() external view returns (bytes32 key) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).marketKey();
+        return viewsTarget.marketKey();
     }
 
     function baseAsset() external view returns (bytes32 key) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).baseAsset();
+        return viewsTarget.baseAsset();
     }
 
     function marketSize() external view returns (uint128 size) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).marketSize();
+        return viewsTarget.marketSize();
     }
 
     function marketSkew() external view returns (int128 skew) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).marketSkew();
+        return viewsTarget.marketSkew();
     }
 
     function fundingLastRecomputed() external view returns (uint32 timestamp) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).fundingLastRecomputed();
+        return viewsTarget.fundingLastRecomputed();
     }
 
     function fundingSequence(uint index) external view returns (int128 netFunding) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).fundingSequence(index);
+        return viewsTarget.fundingSequence(index);
     }
 
     /* ---------- Position Details ---------- */
@@ -55,84 +62,84 @@ contract ProxyFuturesV2 is Proxy, IFuturesV2MarketViews {
         )
     {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).positions(account);
+        return viewsTarget.positions(account);
     }
 
     function assetPrice() external view returns (uint price, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).assetPrice();
+        return viewsTarget.assetPrice();
     }
 
     function marketSizes() external view returns (uint long, uint short) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).marketSizes();
+        return viewsTarget.marketSizes();
     }
 
     function marketDebt() external view returns (uint debt, bool isInvalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).marketDebt();
+        return viewsTarget.marketDebt();
     }
 
     function currentFundingRate() external view returns (int fundingRate) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).currentFundingRate();
+        return viewsTarget.currentFundingRate();
     }
 
     function unrecordedFunding() external view returns (int funding, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).unrecordedFunding();
+        return viewsTarget.unrecordedFunding();
     }
 
     function fundingSequenceLength() external view returns (uint length) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).fundingSequenceLength();
+        return viewsTarget.fundingSequenceLength();
     }
 
     /* ---------- Position Details ---------- */
 
     function notionalValue(address account) external view returns (int value, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).notionalValue(account);
+        return viewsTarget.notionalValue(account);
     }
 
     function profitLoss(address account) external view returns (int pnl, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).profitLoss(account);
+        return viewsTarget.profitLoss(account);
     }
 
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).accruedFunding(account);
+        return viewsTarget.accruedFunding(account);
     }
 
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).remainingMargin(account);
+        return viewsTarget.remainingMargin(account);
     }
 
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).accessibleMargin(account);
+        return viewsTarget.accessibleMargin(account);
     }
 
     function liquidationPrice(address account) external view returns (uint price, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).liquidationPrice(account);
+        return viewsTarget.liquidationPrice(account);
     }
 
     function liquidationFee(address account) external view returns (uint) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).liquidationFee(account);
+        return viewsTarget.liquidationFee(account);
     }
 
     function canLiquidate(address account) external view returns (bool) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).canLiquidate(account);
+        return viewsTarget.canLiquidate(account);
     }
 
     function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).orderFee(sizeDelta);
+        return viewsTarget.orderFee(sizeDelta);
     }
 
     function postTradeDetails(int sizeDelta, address sender)
@@ -148,6 +155,8 @@ contract ProxyFuturesV2 is Proxy, IFuturesV2MarketViews {
         )
     {
         // Immutable static call from target contract
-        return IFuturesV2MarketViews(address(target)).postTradeDetails(sizeDelta, sender);
+        return viewsTarget.postTradeDetails(sizeDelta, sender);
     }
+
+    event ViewsTargetUpdated(IFuturesV2MarketViews newTarget);
 }

@@ -3,12 +3,70 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./FuturesV2MarketBase.sol";
+import "./interfaces/IFuturesV2MarketViews.sol";
 
 /**
- * A mixin that implements vairous useful views that are used externally but
- * aren't used inside the core contract (so don't need to clutter the contract file)
+ * FuturesV2 Market Views
  */
-contract MixinFuturesV2Views is FuturesV2MarketBase {
+contract FuturesV2MarketViews is FuturesV2MarketBase, IFuturesV2MarketViews {
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor(
+        address _marketState,
+        address _owner,
+        address _resolver,
+        bytes32 _baseAsset,
+        bytes32 _marketKey
+    ) public FuturesV2MarketBase(_marketState, _owner, _resolver, _baseAsset, _marketKey) {}
+
+    /* ---------- Market Details ---------- */
+
+    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
+    // for the same asset in order to allow migrations.
+    function marketKey() public view returns (bytes32 key) {
+        return marketState.marketKey();
+    }
+
+    // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
+    function baseAsset() external view returns (bytes32 key) {
+        return marketState.baseAsset();
+    }
+
+    /*
+     * Sizes of the long and short sides of the market (in sUSD)
+     */
+    function marketSize() external view returns (uint128) {
+        return marketState.marketSize();
+    }
+
+    /*
+     * Sizes of the long and short sides of the market (in sUSD)
+     */
+    function marketSkew() external view returns (int128) {
+        return marketState.marketSkew();
+    }
+
+    /*
+     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
+     */
+    function assetPrice() external view returns (uint price, bool invalid) {
+        return _assetPrice();
+    }
+
+    /*
+     * The number of entries in the funding sequence.
+     */
+    function fundingLastRecomputed() external view returns (uint32) {
+        return marketState.fundingLastRecomputed();
+    }
+
+    /*
+     * The number of entries in the funding sequence.
+     */
+    function fundingSequence(uint index) external view returns (int128) {
+        return marketState.fundingSequence(index);
+    }
+
     /*
      * Positions details
      */
@@ -29,21 +87,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
     /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
-    function marketSkew() public view returns (int128) {
-        return marketState.marketSkew();
-    }
-
-    /*
-     * Sizes of the long and short sides of the market (in sUSD)
-     */
-    function marketSize() public view returns (uint128) {
-        return marketState.marketSize();
-    }
-
-    /*
-     * Sizes of the long and short sides of the market (in sUSD)
-     */
-    function marketSizes() public view returns (uint long, uint short) {
+    function marketSizes() external view returns (uint long, uint short) {
         int size = int(marketState.marketSize());
         int skew = marketState.marketSkew();
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
@@ -54,7 +98,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * The total market debt is equivalent to the sum of remaining margins in all open positions.
      */
     function marketDebt() external view returns (uint debt, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_marketDebt(price), isInvalid);
     }
 
@@ -63,7 +107,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
      */
     function currentFundingRate() external view returns (int) {
-        (uint price, ) = assetPrice();
+        (uint price, ) = _assetPrice();
         return _currentFundingRate(price);
     }
 
@@ -72,7 +116,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * been persisted in the funding sequence.
      */
     function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_unrecordedFunding(price), isInvalid);
     }
 
@@ -83,25 +127,13 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
         return marketState.fundingSequenceLength();
     }
 
-    /*
-     * The number of entries in the funding sequence.
-     */
-    function fundingSequence(uint index) external view returns (int128) {
-        return marketState.fundingSequence(index);
-    }
-
-    /*
-     * The number of entries in the funding sequence.
-     */
-    function fundingLastRecomputed() external view returns (uint32) {
-        return marketState.fundingLastRecomputed();
-    }
+    /* ---------- Position Details ---------- */
 
     /*
      * The notional value of a position is its size multiplied by the current price. Margin and leverage are ignored.
      */
     function notionalValue(address account) external view returns (int value, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_notionalValue(marketState.getPosition(account).size, price), isInvalid);
     }
 
@@ -109,7 +141,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * The PnL of a position is the change in its notional value. Funding is not taken into account.
      */
     function profitLoss(address account) external view returns (int pnl, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_profitLoss(marketState.getPosition(account), price), isInvalid);
     }
 
@@ -117,7 +149,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * The funding accrued in a position since it was opened; this does not include PnL.
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_accruedFunding(marketState.getPosition(account), price), isInvalid);
     }
 
@@ -125,7 +157,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * The initial margin plus profit and funding; returns zero balance if losses exceed the initial margin.
      */
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_remainingMargin(marketState.getPosition(account), price), isInvalid);
     }
 
@@ -134,7 +166,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * true value slightly.
      */
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         return (_accessibleMargin(marketState.getPosition(account), price), isInvalid);
     }
 
@@ -146,7 +178,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * A position's accurate liquidation price can move around slightly due to accrued funding.
      */
     function liquidationPrice(address account) external view returns (uint price, bool invalid) {
-        (uint aPrice, bool isInvalid) = assetPrice();
+        (uint aPrice, bool isInvalid) = _assetPrice();
         uint liqPrice = _approxLiquidationPrice(marketState.getPosition(account), aPrice);
         return (liqPrice, isInvalid);
     }
@@ -159,7 +191,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      *  in sUSD fixed point decimal units or 0 if account is not liquidatable.
      */
     function liquidationFee(address account) external view returns (uint) {
-        (uint price, bool invalid) = assetPrice();
+        (uint price, bool invalid) = _assetPrice();
         if (!invalid && _canLiquidate(marketState.getPosition(account), price)) {
             return _liquidationFee(int(marketState.getPosition(account).size), price);
         } else {
@@ -174,7 +206,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * True if and only if a position is ready to be liquidated.
      */
     function canLiquidate(address account) external view returns (bool) {
-        (uint price, bool invalid) = assetPrice();
+        (uint price, bool invalid) = _assetPrice();
         return !invalid && _canLiquidate(marketState.getPosition(account), price);
     }
 
@@ -187,14 +219,14 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
      * too high due to recent volatility.
      */
     function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = assetPrice();
+        (uint price, bool isInvalid) = _assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
+                takerFee: _takerFee(marketKey()),
+                makerFee: _makerFee(marketKey()),
                 trackingCode: bytes32(0)
             });
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
@@ -216,7 +248,7 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
         )
     {
         bool invalid;
-        (price, invalid) = assetPrice();
+        (price, invalid) = _assetPrice();
         if (invalid) {
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
         }
@@ -225,8 +257,8 @@ contract MixinFuturesV2Views is FuturesV2MarketBase {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
+                takerFee: _takerFee(marketKey()),
+                makerFee: _makerFee(marketKey()),
                 trackingCode: bytes32(0)
             });
         (Position memory newPosition, uint fee_, Status status_) =

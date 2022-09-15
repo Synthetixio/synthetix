@@ -37,6 +37,7 @@ const Status = {
 contract('FuturesV2Market', accounts => {
 	let futuresMarketSettings,
 		futuresMarketManager,
+		futuresMarketProxy,
 		futuresMarket,
 		futuresMarketImpl,
 		futuresMarketState,
@@ -111,7 +112,7 @@ contract('FuturesV2Market', accounts => {
 			FuturesV2MarketManager: futuresMarketManager,
 			FuturesV2MarketStateBTC: futuresMarketState,
 			FuturesV2MarketBTC: futuresMarketImpl,
-			ProxyFuturesV2MarketBTC: futuresMarket,
+			ProxyFuturesV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
@@ -129,6 +130,7 @@ contract('FuturesV2Market', accounts => {
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
 				'FuturesV2MarketStateBTC',
+				'FuturesV2MarketViewsBTC',
 				{ contract: 'FuturesV2MarketBTC', properties: { perpSuffix: marketKeySuffix } },
 				'AddressResolver',
 				'FeePool',
@@ -168,7 +170,7 @@ contract('FuturesV2Market', accounts => {
 		);
 
 		// use implementation ABI on the proxy address to simplify calling
-		futuresMarket = await FuturesV2Market.at(futuresMarket.address);
+		futuresMarket = await FuturesV2Market.at(futuresMarketProxy.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -191,6 +193,7 @@ contract('FuturesV2Market', accounts => {
 					'submitNextPriceOrderWithTracking',
 					'cancelNextPriceOrder',
 					'executeNextPriceOrder',
+					'propagateToState',
 				],
 			});
 		});

@@ -84,8 +84,8 @@ interface IFuturesV2MarketManagerInternal {
     function payFee(uint amount) external;
 }
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2Market
-contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, IFuturesV2MarketBaseTypes {
+// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketBase
+contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2MarketBaseTypes {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -102,16 +102,12 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     bytes32 internal constant sUSD = "sUSD";
 
     /* ========== STATE VARIABLES ========== */
-
     // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
     // for the same asset in order to allow migrations.
-    bytes32 public marketKey;
+    bytes32 internal _marketKey;
 
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
-    bytes32 public baseAsset;
-
-    // Holds the revert message for each type of error.
-    mapping(uint8 => string) internal _errorMessages;
+    bytes32 internal _baseAsset;
 
     FuturesV2MarketState public marketState;
 
@@ -122,6 +118,9 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesV2MarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesV2MarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+
+    // Holds the revert message for each type of error.
+    mapping(uint8 => string) internal _errorMessages;
 
     // convenience struct for passing params between position modification helper functions
     struct TradeParams {
@@ -135,17 +134,16 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address payable _proxy,
         address _marketState,
         address _owner,
         address _resolver,
-        bytes32 _baseAsset,
-        bytes32 _marketKey
-    ) public MixinFuturesV2MarketSettings(_resolver) Owned(_owner) Proxyable(_proxy) {
-        baseAsset = _baseAsset;
-        marketKey = _marketKey;
-
+        bytes32 baseAsset,
+        bytes32 marketKey
+    ) public MixinFuturesV2MarketSettings(_resolver) Owned(_owner) {
         marketState = FuturesV2MarketState(_marketState);
+
+        _baseAsset = baseAsset;
+        _marketKey = marketKey;
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
@@ -161,7 +159,12 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
     }
 
-    /* ========== VIEWS ========== */
+    function propagateToState() external onlyOwner {
+        // Save into state to use in views.
+        // Will revert if state _baseAsset or _marketKey are already set and different
+        marketState.setBaseAsset(_baseAsset);
+        marketState.setMarketKey(_marketKey);
+    }
 
     /* ---------- External Contracts ---------- */
 
@@ -206,13 +209,13 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(marketKey).divideDecimal(price);
+        uint skewScaleBaseAsset = _skewScaleUSD(_marketKey).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
         return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(marketKey));
+        int maxFundingRate = int(_maxFundingRate(_marketKey));
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
     }
@@ -343,7 +346,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(marketKey).sub(milli));
+        int maxLeverage = int(_maxLeverage(_marketKey).sub(milli));
         uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -434,7 +437,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
+        return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset);
     }
 
     function _latestFundingIndex() internal view returns (uint) {
@@ -516,7 +519,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         {
             // stack too deep
             int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
-            if (_maxLeverage(marketKey).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            if (_maxLeverage(_marketKey).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
         }
@@ -525,7 +528,7 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValueUSD(marketKey).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
+                uint(int(_maxMarketValueUSD(_marketKey).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
                 oldPos.size,
                 newPos.size
             )
@@ -537,6 +540,29 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
     }
 
     /* ---------- Utilities ---------- */
+    function _marketDebt(uint price) internal view returns (uint) {
+        // short circuit and also convenient during setup
+        if (marketState.marketSkew() == 0 && marketState.entryDebtCorrection() == 0) {
+            // if these are 0, the resulting calculation is necessarily zero as well
+            return 0;
+        }
+        // see comment explaining this calculation in _positionDebtCorrection()
+        int priceWithFunding = int(price).add(_nextFundingEntry(price));
+        int totalDebt =
+            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
+        return uint(_max(totalDebt, 0));
+    }
+
+    /*
+     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
+     * Public because used both externally and internally
+     */
+    function _assetPrice() internal view returns (uint price, bool invalid) {
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(_baseAsset);
+        // Ensure we catch uninitialised rates or suspended state / synth
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset);
+        return (price, invalid);
+    }
 
     /*
      * Absolute value of the input, returned as a signed number.
@@ -590,509 +616,4 @@ contract FuturesV2MarketBase is Owned, Proxyable, MixinFuturesV2MarketSettings, 
             revert(_errorMessages[uint8(status)]);
         }
     }
-
-    /*
-     * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
-     * Public because used both externally and internally
-     */
-    function assetPrice() public view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
-        // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
-        return (price, invalid);
-    }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    /* ---------- Market Operations ---------- */
-
-    /*
-     * The current base price, reverting if it is invalid, or if system or synth is suspended.
-     * This is mutative because the circuit breaker stores the last price on every invocation.
-     */
-    function _assetPriceRequireSystemChecks() internal returns (uint) {
-        // check that futures market isn't suspended, revert with appropriate message
-        _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
-        // check that synth is active, and wasn't suspended, revert with appropriate message
-        _systemStatus().requireSynthActive(baseAsset);
-        // check if circuit breaker if price is within deviation tolerance and system & synth is active
-        // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
-        //  despite reverting immediately after if circuit is broken, which may seem silly.
-        //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
-        //  because last-rate is what used for measuring the deviation for subsequent trades.
-        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(baseAsset);
-        // revert if price is invalid or circuit was broken
-        // note: we revert here, which means that circuit is not really broken (is not persisted), this is
-        //  because the futures methods and interface are designed for reverts, and do not support no-op
-        //  return values.
-        _revertIfError(circuitBroken, Status.InvalidPrice);
-        return price;
-    }
-
-    function _recomputeFunding(uint price) internal returns (uint lastIndex) {
-        uint sequenceLengthBefore = marketState.fundingSequenceLength();
-
-        int funding = _nextFundingEntry(price);
-        marketState.pushFundingSequence(int128(funding));
-        marketState.setFundingLastRecomputed(uint32(block.timestamp));
-        proxy._emit(
-            abi.encode(funding, sequenceLengthBefore, marketState.fundingLastRecomputed()),
-            1,
-            FUNDINGRECOMPUTED_SIG,
-            0,
-            0,
-            0
-        );
-
-        return sequenceLengthBefore;
-    }
-
-    /**
-     * Pushes a new entry to the funding sequence at the current price and funding rate.
-     * @dev Admin only method accessible to FuturesV2MarketSettings. This is admin only because:
-     * - When system parameters change, funding should be recomputed, but system may be paused
-     *   during that time for any reason, so this method needs to work even if system is paused.
-     *   But in that case, it shouldn't be accessible to external accounts.
-     */
-    function recomputeFunding() external returns (uint lastIndex) {
-        // only FuturesV2MarketSettings is allowed to use this method (calling it directly, not via proxy)
-        _revertIfError(messageSender != _settings(), Status.NotPermitted);
-        // This method is the only mutative method that uses the view _assetPrice()
-        // and not the mutative _assetPriceRequireSystemChecks() that reverts on system flags.
-        // This is because this method is used by system settings when changing funding related
-        // parameters, so needs to function even when system / market is paused. E.g. to facilitate
-        // market migration.
-        (uint price, bool invalid) = assetPrice();
-        // A check for a valid price is still in place, to ensure that a system settings action
-        // doesn't take place when the price is invalid (e.g. some oracle issue).
-        require(!invalid, "Invalid price");
-        return _recomputeFunding(price);
-    }
-
-    /*
-     * The impact of a given position on the debt correction.
-     */
-    function _positionDebtCorrection(Position memory position) internal view returns (int) {
-        /**
-        This method only returns the correction term for the debt calculation of the position, and not it's 
-        debt. This is needed for keeping track of the _marketDebt() in an efficient manner to allow O(1) marketDebt
-        calculation in _marketDebt().
-
-        Explanation of the full market debt calculation from the SIP https://sips.synthetix.io/sips/sip-80/:
-
-        The overall market debt is the sum of the remaining margin in all positions. The intuition is that
-        the debt of a single position is the value withdrawn upon closing that position.
-
-        single position remaining margin = initial-margin + profit-loss + accrued-funding =
-            = initial-margin + q * (price - last-price) + q * funding-accrued-per-unit
-            = initial-margin + q * price - q * last-price + q * (funding - initial-funding)
-
-        Total debt = sum ( position remaining margins )
-            = sum ( initial-margin + q * price - q * last-price + q * (funding - initial-funding) )
-            = sum( q * price ) + sum( q * funding ) + sum( initial-margin - q * last-price - q * initial-funding )
-            = skew * price + skew * funding + sum( initial-margin - q * ( last-price + initial-funding ) )
-            = skew (price + funding) + sum( initial-margin - q * ( last-price + initial-funding ) )
-
-        The last term: sum( initial-margin - q * ( last-price + initial-funding ) ) being the position debt correction
-            that is tracked with each position change using this method. 
-        
-        The first term and the full debt calculation using current skew, price, and funding is calculated globally in _marketDebt().
-         */
-        return
-            int(position.margin).sub(
-                int(position.size).multiplyDecimal(
-                    int(position.lastPrice).add(marketState.fundingSequence(position.lastFundingIndex))
-                )
-            );
-    }
-
-    function _marketDebt(uint price) internal view returns (uint) {
-        // short circuit and also convenient during setup
-        if (marketState.marketSkew() == 0 && marketState.entryDebtCorrection() == 0) {
-            // if these are 0, the resulting calculation is necessarily zero as well
-            return 0;
-        }
-        // see comment explaining this calculation in _positionDebtCorrection()
-        int priceWithFunding = int(price).add(_nextFundingEntry(price));
-        int totalDebt =
-            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
-        return uint(_max(totalDebt, 0));
-    }
-
-    /*
-     * Alter the debt correction to account for the net result of altering a position.
-     */
-    function _applyDebtCorrection(Position memory newPosition, Position memory oldPosition) internal {
-        int newCorrection = _positionDebtCorrection(newPosition);
-        int oldCorrection = _positionDebtCorrection(oldPosition);
-        marketState.setEntryDebtCorrection(
-            int128(int(marketState.entryDebtCorrection()).add(newCorrection).sub(oldCorrection))
-        );
-    }
-
-    function _transferMargin(
-        int marginDelta,
-        uint price,
-        address sender
-    ) internal {
-        // Transfer no tokens if marginDelta is 0
-        uint absDelta = _abs(marginDelta);
-        if (marginDelta > 0) {
-            // A positive margin delta corresponds to a deposit, which will be burnt from their
-            // sUSD balance and credited to their margin account.
-
-            // Ensure we handle reclamation when burning tokens.
-            uint postReclamationAmount = _manager().burnSUSD(sender, absDelta);
-            if (postReclamationAmount != absDelta) {
-                // If balance was insufficient, the actual delta will be smaller
-                marginDelta = int(postReclamationAmount);
-            }
-        } else if (marginDelta < 0) {
-            // A negative margin delta corresponds to a withdrawal, which will be minted into
-            // their sUSD balance, and debited from their margin account.
-            _manager().issueSUSD(sender, absDelta);
-        } else {
-            // Zero delta is a no-op
-            return;
-        }
-
-        Position memory position = marketState.getPosition(sender);
-
-        _updatePositionMargin(sender, position, price, marginDelta);
-
-        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(sender), 0, 0);
-
-        emitPositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
-    }
-
-    // updates the stored position margin in place (on the stored position)
-    function _updatePositionMargin(
-        address account,
-        Position memory position,
-        uint price,
-        int marginDelta
-    ) internal {
-        Position memory oldPosition = position;
-        // Determine new margin, ensuring that the result is positive.
-        (uint margin, Status status) = _recomputeMarginWithDelta(oldPosition, price, marginDelta);
-        _revertIfError(status);
-
-        // Update the debt correction.
-        int positionSize = position.size;
-        uint fundingIndex = _latestFundingIndex();
-        _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
-        );
-
-        // Update the account's position with the realised margin.
-        position.margin = uint128(margin);
-        // We only need to update their funding/PnL details if they actually have a position open
-        if (positionSize != 0) {
-            position.lastPrice = uint128(price);
-            position.lastFundingIndex = uint64(fundingIndex);
-
-            // The user can always decrease their margin if they have no position, or as long as:
-            //     * they have sufficient margin to do so
-            //     * the resulting margin would not be lower than the liquidation margin or min initial margin
-            //     * the resulting leverage is lower than the maximum leverage
-            if (marginDelta < 0) {
-                _revertIfError(
-                    (margin < _minInitialMargin()) ||
-                        (margin <= _liquidationMargin(position.size, price)) ||
-                        (_maxLeverage(marketKey) < _abs(_currentLeverage(position, price, margin))),
-                    Status.InsufficientMargin
-                );
-            }
-        }
-
-        // persist position changes
-        marketState.updatePosition(
-            account,
-            position.id,
-            position.lastFundingIndex,
-            position.margin,
-            position.lastPrice,
-            position.size
-        );
-    }
-
-    /*
-     * Alter the amount of margin in a position. A positive input triggers a deposit; a negative one, a
-     * withdrawal. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
-     * Reverts on deposit if the caller lacks a sufficient sUSD balance.
-     * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
-     */
-    function transferMargin(int marginDelta) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
-        _recomputeFunding(price);
-        _transferMargin(marginDelta, price, messageSender);
-    }
-
-    /*
-     * Withdraws all accessible margin in a position. This will leave some remaining margin
-     * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
-     */
-    function withdrawAllMargin() external onlyProxy {
-        address sender = messageSender;
-        uint price = _assetPriceRequireSystemChecks();
-        _recomputeFunding(price);
-        int marginDelta = -int(_accessibleMargin(marketState.getPosition(sender), price));
-        _transferMargin(marginDelta, price, sender);
-    }
-
-    function _trade(address sender, TradeParams memory params) internal {
-        Position memory position = marketState.getPosition(sender);
-        Position memory oldPosition =
-            Position({
-                id: position.id,
-                lastFundingIndex: position.lastFundingIndex,
-                margin: position.margin,
-                lastPrice: position.lastPrice,
-                size: position.size
-            });
-
-        // Compute the new position after performing the trade
-        (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
-        _revertIfError(status);
-
-        // Update the aggregated market size and skew with the new order size
-        marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));
-        marketState.setMarketSize(
-            uint128(uint(marketState.marketSize()).add(_abs(newPosition.size)).sub(_abs(oldPosition.size)))
-        );
-
-        // Send the fee to the fee pool
-        if (0 < fee) {
-            _manager().payFee(fee);
-            // emit tracking code event
-            if (params.trackingCode != bytes32(0)) {
-                proxy._emit(
-                    abi.encode(baseAsset, marketKey, params.sizeDelta, fee),
-                    2,
-                    FUTURESTRACKING_SIG,
-                    params.trackingCode,
-                    0,
-                    0
-                );
-            }
-        }
-
-        // Update the margin, and apply the resulting debt correction
-        position.margin = newPosition.margin;
-        _applyDebtCorrection(newPosition, oldPosition);
-
-        // Record the trade
-        uint64 id = oldPosition.id;
-        uint fundingIndex = _latestFundingIndex();
-        if (newPosition.size == 0) {
-            // If the position is being closed, we no longer need to track these details.
-            delete position.id;
-            delete position.size;
-            delete position.lastPrice;
-            delete position.lastFundingIndex;
-        } else {
-            if (oldPosition.size == 0) {
-                // New positions get new ids.
-                id = marketState.nextPositionId();
-                marketState.setNextPositionId(id + 1);
-            }
-            position.id = id;
-            position.size = newPosition.size;
-            position.lastPrice = uint128(params.price);
-            position.lastFundingIndex = uint64(fundingIndex);
-        }
-
-        // persist position changes
-        marketState.updatePosition(
-            sender,
-            position.id,
-            position.lastFundingIndex,
-            position.margin,
-            position.lastPrice,
-            position.size
-        );
-
-        // emit the modification event
-        emitPositionModified(
-            id,
-            sender,
-            newPosition.margin,
-            newPosition.size,
-            params.sizeDelta,
-            params.price,
-            fundingIndex,
-            fee
-        );
-    }
-
-    /*
-     * Adjust the sender's position size.
-     * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
-     */
-    function modifyPosition(int sizeDelta) external {
-        _modifyPosition(sizeDelta, bytes32(0));
-    }
-
-    /*
-     * Same as modifyPosition, but emits an event with the passed tracking code to
-     * allow offchain calculations for fee sharing with originating integrations
-     */
-    function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external {
-        _modifyPosition(sizeDelta, trackingCode);
-    }
-
-    function _modifyPosition(int sizeDelta, bytes32 trackingCode) internal onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
-        _recomputeFunding(price);
-        _trade(
-            messageSender,
-            TradeParams({
-                sizeDelta: sizeDelta,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: trackingCode
-            })
-        );
-    }
-
-    /*
-     * Submit an order to close a position.
-     */
-    function closePosition() external {
-        _closePosition(bytes32(0));
-    }
-
-    /// Same as closePosition, but emits an even with the trackingCode for volume source fee sharing
-    function closePositionWithTracking(bytes32 trackingCode) external {
-        _closePosition(trackingCode);
-    }
-
-    function _closePosition(bytes32 trackingCode) internal onlyProxy {
-        int size = marketState.getPosition(messageSender).size;
-        _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireSystemChecks();
-        _recomputeFunding(price);
-        _trade(
-            messageSender,
-            TradeParams({
-                sizeDelta: -size,
-                price: price,
-                takerFee: _takerFee(marketKey),
-                makerFee: _makerFee(marketKey),
-                trackingCode: trackingCode
-            })
-        );
-    }
-
-    function _liquidatePosition(
-        address account,
-        address liquidator,
-        uint price
-    ) internal {
-        Position memory position = marketState.getPosition(account);
-
-        // get remaining margin for sending any leftover buffer to fee pool
-        uint remMargin = _remainingMargin(position, price);
-
-        // Record updates to market size and debt.
-        int positionSize = position.size;
-        uint positionId = position.id;
-        marketState.setMarketSkew(int128(int(marketState.marketSkew()).sub(positionSize)));
-        marketState.setMarketSize(uint128(uint(marketState.marketSize()).sub(_abs(positionSize))));
-
-        uint fundingIndex = _latestFundingIndex();
-        _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), 0, uint128(price), 0),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
-        );
-
-        // Close the position itself.
-        marketState.deletePosition(account);
-
-        // Issue the reward to the liquidator.
-        uint liqFee = _liquidationFee(positionSize, price);
-        _manager().issueSUSD(liquidator, liqFee);
-
-        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
-        proxy._emit(
-            abi.encode(positionId, account, liquidator, positionSize, price, liqFee),
-            1,
-            POSITIONLIQUIDATED_SIG,
-            0,
-            0,
-            0
-        );
-
-        // Send any positive margin buffer to the fee pool
-        if (remMargin > liqFee) {
-            _manager().payFee(remMargin.sub(liqFee));
-        }
-    }
-
-    /*
-     * Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
-     * `canLiquidate(account)` is true, and reverts otherwise.
-     * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
-     */
-    function liquidatePosition(address account) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
-        _recomputeFunding(price);
-
-        _revertIfError(!_canLiquidate(marketState.getPosition(account), price), Status.CannotLiquidate);
-
-        _liquidatePosition(account, messageSender, price);
-    }
-
-    /* ========== EVENTS ========== */
-    function addressToBytes32(address input) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(input)));
-    }
-
-    event MarginTransferred(address indexed account, int marginDelta);
-    bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
-
-    event PositionModified(
-        uint indexed id,
-        address indexed account,
-        uint margin,
-        int size,
-        int tradeSize,
-        uint lastPrice,
-        uint fundingIndex,
-        uint fee
-    );
-    bytes32 internal constant POSITIONMODIFIED_SIG =
-        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
-
-    function emitPositionModified(
-        uint id,
-        address account,
-        uint margin,
-        int size,
-        int tradeSize,
-        uint lastPrice,
-        uint fundingIndex,
-        uint fee
-    ) internal {
-        proxy._emit(
-            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
-            3,
-            POSITIONMODIFIED_SIG,
-            bytes32(id),
-            addressToBytes32(account),
-            0
-        );
-    }
-
-    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
-    bytes32 internal constant POSITIONLIQUIDATED_SIG =
-        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
-
-    event FundingRecomputed(int funding, uint index, uint timestamp);
-    bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,uint256,uint256)");
-
-    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
-    bytes32 internal constant FUTURESTRACKING_SIG = keccak256("FuturesTracking(bytes32,bytes32,bytes32,int256,uint256)");
 }

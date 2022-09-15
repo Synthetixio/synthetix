@@ -2,11 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./FuturesV2MarketBase.sol";
+import "./FuturesV2MarketMutations.sol";
 import "./MixinFuturesV2NextPriceOrders.sol";
-import "./MixinFuturesV2Views.sol";
 import "./interfaces/IFuturesV2Market.sol";
-import "./interfaces/IFuturesV2MarketViews.sol";
 
 /*
  * Synthetic Futures
@@ -57,13 +55,7 @@ import "./interfaces/IFuturesV2MarketViews.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2Market
-contract FuturesV2Market is
-    IFuturesV2Market,
-    IFuturesV2MarketViews,
-    FuturesV2MarketBase,
-    MixinFuturesV2NextPriceOrders,
-    MixinFuturesV2Views
-{
+contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketMutations, MixinFuturesV2NextPriceOrders {
     constructor(
         address payable _proxy,
         address _marketState,
@@ -71,5 +63,5 @@ contract FuturesV2Market is
         address _resolver,
         bytes32 _baseAsset,
         bytes32 _marketKey
-    ) public FuturesV2MarketBase(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
+    ) public FuturesV2MarketMutations(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
 }

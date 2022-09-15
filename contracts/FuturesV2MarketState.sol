@@ -13,6 +13,13 @@ import "./AddressSetLib.sol";
 contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     using AddressSetLib for AddressSetLib.AddressSet;
 
+    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
+    // for the same asset in order to allow migrations.
+    bytes32 public marketKey;
+
+    // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
+    bytes32 public baseAsset;
+
     // The total number of base units in long and short positions.
     uint128 public marketSize;
 
@@ -81,6 +88,16 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         returns (address[] memory)
     {
         return _positionAddresses.getPage(index, pageSize);
+    }
+
+    function setMarketKey(bytes32 _marketKey) external onlyAssociatedContract {
+        require(marketKey == bytes32("") || _marketKey == marketKey, "Cannot change market key");
+        marketKey = _marketKey;
+    }
+
+    function setBaseAsset(bytes32 _baseAsset) external onlyAssociatedContract {
+        require(baseAsset == bytes32("") || _baseAsset == baseAsset, "Cannot change base asset");
+        baseAsset = _baseAsset;
     }
 
     function setMarketSize(uint128 _marketSize) external onlyAssociatedContract {
