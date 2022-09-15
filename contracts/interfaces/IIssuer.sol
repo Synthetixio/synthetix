@@ -132,7 +132,4 @@ interface IIssuer {
     ) external returns (bool rateInvalid);
 
     function modifyDebtSharesForMigration(address account, uint amount) external;
-    // function removeDebtSharesForMigration(address account, uint amount) external;
-
-    // function addDebtSharesForMigration(address accoun, uint amountt) external;
 }
