@@ -36,6 +36,9 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, Future
 
     uint public constant MIN_NEXT_PRICE_ORDER_DELAY = 60 seconds;
 
+    /// Minimum amount of time (in seconds) before a delayed order can be executed.
+    uint public constant MIN_ORDER_DELAY = 60 seconds;
+
     ///// Mutative methods
 
     /**
@@ -74,7 +77,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, Future
         require(marketState.delayedOrder(messageSender).sizeDelta == 0, "previous order exists");
 
         // ensure the maxTimeDelta is above the minimum required delay
-        require(maxTimeDelta >= MIN_NEXT_PRICE_ORDER_DELAY, "minTimeDelta delay too short");
+        require(maxTimeDelta >= MIN_ORDER_DELAY, "minTimeDelta delay too short");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
         Position memory position = marketState.positions(messageSender);
