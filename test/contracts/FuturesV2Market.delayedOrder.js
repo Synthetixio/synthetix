@@ -1,6 +1,6 @@
 const { artifacts, contract, web3, ethers } = require('hardhat');
 const { toBytes32 } = require('../..');
-const { toUnit, multiplyDecimal } = require('../utils')();
+const { toUnit, multiplyDecimal, fastForward } = require('../utils')();
 const { toBN } = web3.utils;
 
 const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
@@ -642,6 +642,25 @@ contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
 
 				beforeEach(async () => {
 					targetPrice = multiplyDecimal(price, toUnit(0.9));
+				});
+
+				it('before target round but after delay', async () => {
+					// set target round to be many price updates into the future.
+					await futuresMarketSettings.setNextPriceConfirmWindow(marketKey, 10, { from: owner });
+
+					// check we cannot execute the order
+					await assert.revert(
+						futuresMarket.executeDelayedOrder(trader, { from: trader2 }),
+						'executability not reached'
+					);
+
+					// fast forward to the order's executableAtTime
+					await setPrice(baseAsset, targetPrice);
+					spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+					await fastForward(maxTimeDelta);
+
+					// check we can execute.
+					await checkExecution(trader, targetPrice, takerFeeNextPrice, spotTradeDetails);
 				});
 
 				describe('during target round', () => {
