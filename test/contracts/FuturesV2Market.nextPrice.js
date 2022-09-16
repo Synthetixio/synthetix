@@ -58,8 +58,8 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			contracts: [
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
-				'FuturesV2MarketStateBTC',
-				{ contract: 'FuturesV2MarketBTC', properties: { perpSuffix: marketKeySuffix } },
+				{ contract: 'FuturesV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
+				'FuturesV2MarketBTC',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
