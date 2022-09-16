@@ -6,7 +6,7 @@ const { setupContract, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
-const FuturesV2Market = artifacts.require('FuturesV2Market');
+const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
 
 contract('FuturesV2MarketData', accounts => {
 	let addressResolver,
@@ -57,6 +57,7 @@ contract('FuturesV2MarketData', accounts => {
 			contracts: [
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
+				'FuturesV2MarketStateBTC',
 				'FuturesV2MarketBTC',
 				'FuturesV2MarketData',
 				'AddressResolver',
@@ -82,7 +83,12 @@ contract('FuturesV2MarketData', accounts => {
 				accounts,
 				contract: 'FuturesV2MarketStateAdded' + symbol,
 				source: 'FuturesV2MarketState',
-				args: [owner, owner],
+				args: [
+					owner,
+					owner,
+					assetKey, // base asset
+					marketKey,
+				],
 			});
 
 			const market = await setupContract({
@@ -96,23 +102,26 @@ contract('FuturesV2MarketData', accounts => {
 				accounts,
 				contract: 'FuturesV2MarketAdded' + symbol,
 				source: 'FuturesV2Market',
-				args: [
-					market.address,
-					marketState.address,
-					owner,
-					addressResolver.address,
-					assetKey, // base asset
-					marketKey,
-				],
+				args: [market.address, marketState.address, owner, addressResolver.address],
+			});
+
+			const marketViews = await setupContract({
+				accounts,
+				contract: 'FuturesV2MarketViewsAdded' + symbol,
+				source: 'FuturesV2MarketViews',
+				args: [marketState.address, owner, addressResolver.address],
 			});
 
 			await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 			await market.setTarget(marketImpl.address, { from: owner });
+			await market.setViewsTarget(marketViews.address, { from: owner });
 			await futuresMarketManager.addMarkets([market.address], [marketImpl.address], {
 				from: owner,
 			});
 
-			await addressResolver.rebuildCaches([market.address], { from: owner });
+			await addressResolver.rebuildCaches([market.address, marketViews.address], {
+				from: owner,
+			});
 
 			await setupPriceAggregators(exchangeRates, owner, [assetKey]);
 			await setPrice(assetKey, toUnit(1000));
