@@ -80,7 +80,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    /* ========== RESTRICTED ========== */
+    /* ========== MUTATIVE ========== */
 
     function migrateEntireAccount(address account) external {
         require(msg.sender == account, "Must be the account owner");
