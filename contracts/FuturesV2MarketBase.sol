@@ -15,10 +15,8 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeCircuitBreaker.sol";
-// import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
-// import "./interfaces/IERC20.sol";
 
 // Internal references
 import "./interfaces/IFuturesV2MarketState.sol";
@@ -88,9 +86,9 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
+    using SafeDecimalMath for uint;
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
-    using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ========== */
 
