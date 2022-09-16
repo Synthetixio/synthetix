@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('hardhat');
+const { artifacts, contract, web3, ethers } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toUnit, multiplyDecimal } = require('../utils')();
 const { toBN } = web3.utils;
@@ -188,6 +188,26 @@ contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
 					'Market suspended'
 				);
 			});
+
+			it('if maxTimeDelta is below the minimum delay or negative', async () => {
+				await assert.revert(
+					futuresMarket.submitDelayedOrder(0, 1, { from: trader }),
+					'minTimeDelta delay too short'
+				);
+				try {
+					await futuresMarket.submitDelayedOrder(0, -1, { from: trader });
+				} catch (err) {
+					const { reason, code, argument } = err;
+					assert.deepEqual(
+						{
+							reason: 'value out-of-bounds',
+							code: 'INVALID_ARGUMENT',
+							argument: 'maxTimeDelta',
+						},
+						{ reason, code, argument }
+					);
+				}
+			});
 		});
 	});
 
@@ -208,6 +228,7 @@ contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
 					from: trader,
 				}
 			);
+			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
 
 			// check order
 			const order = await futuresMarketState.getDelayedOrder(trader);
@@ -215,6 +236,7 @@ contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
+			assert.bnEqual(order.executableAtTime, txBlock.timestamp + maxTimeDelta);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -532,7 +554,7 @@ contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
 				});
 			});
 
-			// helper function to check excutiion and its results
+			// helper function to check execution and its results
 			// from: which account is requesting the execution
 			// targetPrice: the price that the order should be executed at
 			// feeRate: expected exchange fee rate
