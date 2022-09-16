@@ -44,7 +44,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
         require(nextPriceOrders[messageSender].sizeDelta == 0, "previous order exists");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
-        Position memory position = marketState.getPosition(messageSender);
+        Position memory position = marketState.positions(messageSender);
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price and market and check that the order doesn't revert
@@ -114,7 +114,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
         if (account == messageSender) {
             // this is account owner
             // refund keeper fee to margin
-            Position memory position = marketState.getPosition(account);
+            Position memory position = marketState.positions(account);
             uint price = _assetPriceRequireSystemChecks();
             uint fundingIndex = _recomputeFunding(price);
             _updatePositionMargin(account, position, price, int(order.keeperDeposit));
@@ -189,7 +189,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
             _manager().issueSUSD(messageSender, order.keeperDeposit);
         }
 
-        Position memory position = marketState.getPosition(account);
+        Position memory position = marketState.positions(account);
         uint currentPrice = _assetPriceRequireSystemChecks();
         uint fundingIndex = _recomputeFunding(currentPrice);
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order

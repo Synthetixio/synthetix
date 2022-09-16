@@ -85,10 +85,6 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         return fundingSequence.length;
     }
 
-    function getPosition(address account) external view returns (Position memory) {
-        return positions[account];
-    }
-
     function getPositionAddressesPage(uint index, uint pageSize)
         external
         view

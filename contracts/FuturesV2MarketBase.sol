@@ -22,7 +22,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 // Internal references
-import "./FuturesV2MarketState.sol";
+import "./interfaces/IFuturesV2MarketState.sol";
 
 /*
  * Synthetic Futures
@@ -103,7 +103,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
 
     /* ========== STATE VARIABLES ========== */
 
-    FuturesV2MarketState public marketState;
+    IFuturesV2MarketState public marketState;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -132,7 +132,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
         address _owner,
         address _resolver
     ) public MixinFuturesV2MarketSettings(_resolver) Owned(_owner) {
-        marketState = FuturesV2MarketState(_marketState);
+        marketState = IFuturesV2MarketState(_marketState);
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";

@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 import "./IFuturesV2MarketBaseTypes.sol";
 
@@ -21,11 +22,12 @@ interface IFuturesV2MarketViews {
         external
         view
         returns (
-            uint64 id,
-            uint64 lastFundingIndex,
-            uint128 margin,
-            uint128 lastPrice,
-            int128 size
+            IFuturesV2MarketBaseTypes.Position memory
+            // uint64 id,
+            // uint64 lastFundingIndex,
+            // uint128 margin,
+            // uint128 lastPrice,
+            // int128 size
         );
 
     function assetPrice() external view returns (uint price, bool invalid);

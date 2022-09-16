@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Proxy.sol";
 import "./interfaces/IFuturesV2MarketViews.sol";
+import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/proxy
 contract ProxyFuturesV2 is Proxy, IFuturesV2MarketViews {
@@ -54,12 +55,12 @@ contract ProxyFuturesV2 is Proxy, IFuturesV2MarketViews {
         external
         view
         returns (
-            uint64 id,
-            uint64 lastFundingIndex,
-            uint128 margin,
-            uint128 lastPrice,
-            int128 size
+            IFuturesV2MarketBaseTypes.Position memory // uint64 id,
         )
+    // uint64 lastFundingIndex,
+    // uint128 margin,
+    // uint128 lastPrice,
+    // int128 size
     {
         // Immutable static call from target contract
         return viewsTarget.positions(account);

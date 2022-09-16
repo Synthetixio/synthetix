@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../FuturesV2Market.sol";
 import "../interfaces/IFuturesV2MarketViews.sol";
+import "../interfaces/IFuturesV2MarketBaseTypes.sol";
 
 contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
     constructor(
@@ -59,9 +60,9 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      */
     function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(marketState.getPosition(account).size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
+        require(marketState.positions(account).size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
         (uint price, ) = _assetPrice();
-        return _liquidationMargin(int(marketState.getPosition(account).size), price);
+        return _liquidationMargin(int(marketState.positions(account).size), price);
     }
 
     /*
@@ -69,7 +70,7 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
      */
     function currentLeverage(address account) external view returns (int leverage, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
-        Position memory position = marketState.getPosition(account);
+        Position memory position = marketState.positions(account);
         uint remainingMargin_ = _remainingMargin(position, price);
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
@@ -104,14 +105,14 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
         external
         view
         returns (
-            uint64 id,
-            uint64 lastFundingIndex,
-            uint128 margin,
-            uint128 lastPrice,
-            int128 size
+            IFuturesV2MarketBaseTypes.Position memory // uint64 id,
         )
+    // uint64 lastFundingIndex,
+    // uint128 margin,
+    // uint128 lastPrice,
+    // int128 size
     {
-        return (0, 0, 0, 0, 0);
+        return Position(0, 0, 0, 0, 0);
     }
 
     function assetPrice() external view returns (uint price, bool invalid) {

@@ -6,12 +6,6 @@ import "./Proxyable.sol";
 // Inheritance
 import "./FuturesV2MarketBase.sol";
 
-// Libraries
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./SignedSafeMath.sol";
-import "./SignedSafeDecimalMath.sol";
-import "./SafeDecimalMath.sol";
-
 /*
  * Synthetic Futures
  * =================
@@ -216,7 +210,7 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
             return;
         }
 
-        Position memory position = marketState.getPosition(sender);
+        Position memory position = marketState.positions(sender);
 
         _updatePositionMargin(sender, position, price, marginDelta);
 
@@ -297,12 +291,12 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
         address sender = messageSender;
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
-        int marginDelta = -int(_accessibleMargin(marketState.getPosition(sender), price));
+        int marginDelta = -int(_accessibleMargin(marketState.positions(sender), price));
         _transferMargin(marginDelta, price, sender);
     }
 
     function _trade(address sender, TradeParams memory params) internal {
-        Position memory position = marketState.getPosition(sender);
+        Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({
                 id: position.id,
@@ -430,7 +424,7 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
     }
 
     function _closePosition(bytes32 trackingCode) internal onlyProxy {
-        int size = marketState.getPosition(messageSender).size;
+        int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
@@ -451,7 +445,7 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
         address liquidator,
         uint price
     ) internal {
-        Position memory position = marketState.getPosition(account);
+        Position memory position = marketState.positions(account);
 
         // get remaining margin for sending any leftover buffer to fee pool
         uint remMargin = _remainingMargin(position, price);
@@ -500,7 +494,7 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding(price);
 
-        _revertIfError(!_canLiquidate(marketState.getPosition(account), price), Status.CannotLiquidate);
+        _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 
         _liquidatePosition(account, messageSender, price);
     }

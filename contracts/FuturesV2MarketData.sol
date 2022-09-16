@@ -250,21 +250,22 @@ contract FuturesV2MarketData {
         view
         returns (IFuturesV2MarketBaseTypes.Position memory)
     {
-        (
-            uint64 positionId,
-            uint64 positionEntryIndex,
-            uint128 positionMargin,
-            uint128 positionEntryPrice,
-            int128 positionSize
-        ) = market.positions(account);
-        return
-            IFuturesV2MarketBaseTypes.Position(
-                positionId,
-                positionEntryIndex,
-                positionMargin,
-                positionEntryPrice,
-                positionSize
-            );
+        return market.positions(account);
+        // (
+        //     uint64 positionId,
+        //     uint64 positionEntryIndex,
+        //     uint128 positionMargin,
+        //     uint128 positionEntryPrice,
+        //     int128 positionSize
+        // ) = market.positions(account);
+        // return
+        //     IFuturesV2MarketBaseTypes.Position(
+        //         positionId,
+        //         positionEntryIndex,
+        //         positionMargin,
+        //         positionEntryPrice,
+        //         positionSize
+        //     );
     }
 
     function _notionalValue(IFuturesV2MarketViews market, address account) internal view returns (int) {
