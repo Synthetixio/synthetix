@@ -30,19 +30,19 @@ import "./interfaces/IFuturesV2Market.sol";
  *
  * The contract architecture is as follows:
  *
- *     - FuturesV2Market.sol:         one of these exists per asset. Margin is maintained isolated per market.
- *                                  this contract is composed of several mixins: `base` contains all the core logic,
- *                                  `nextPrice` contains the next-price order flows, and `views` contains logic
- *                                  that is only used by external / manager contracts.
+ *     - FuturesV2Market.sol:        one of these exists per asset. Margin is maintained isolated per market.
+ *                                   this contract is composed of several mixins: `base` contains all the core logic,
+ *                                   `delayedOrder` contains the delayed order flows, and `views` contains logic
+ *                                   that is only used by external / manager contracts.
  *
- *     - FuturesV2MarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
- *                                  futures markets and the rest of the system. It accumulates the total debt
- *                                  over all markets, and issues and burns sUSD on each market's behalf.
+ *     - FuturesV2MarketManager.sol: the manager keeps track of which markets exist, and is the main window between
+ *                                   futures markets and the rest of the system. It accumulates the total debt
+ *                                   over all markets, and issues and burns sUSD on each market's behalf.
  *
  *     - FuturesV2MarketSettings.sol: Holds the settings for each market in the global FlexibleStorage instance used
- *                                  by SystemSettings, and provides an interface to modify these values. Other than
- *                                  the base asset, these settings determine the behaviour of each market.
- *                                  See that contract for descriptions of the meanings of each setting.
+ *                                    by SystemSettings, and provides an interface to modify these values. Other than
+ *                                    the base asset, these settings determine the behaviour of each market.
+ *                                    See that contract for descriptions of the meanings of each setting.
  *
  * Technical note: internal functions within the FuturesV2Market contract assume the following:
  *

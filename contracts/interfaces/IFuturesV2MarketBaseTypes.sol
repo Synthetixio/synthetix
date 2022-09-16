@@ -27,7 +27,7 @@ interface IFuturesV2MarketBaseTypes {
         int128 size;
     }
 
-    // next-price order storage
+    // delayed order storage
     struct DelayedOrder {
         int128 sizeDelta; // difference in position to pass to modifyPosition
         uint128 targetRoundId; // price oracle roundId using which price this order needs to executed
