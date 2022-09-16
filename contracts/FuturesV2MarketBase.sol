@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 import "./Owned.sol";
-import "./Proxyable.sol";
 
 // Inheritance
 import "./MixinFuturesV2MarketSettings.sol";
@@ -16,10 +15,10 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeCircuitBreaker.sol";
-import "./interfaces/IExchangeRates.sol";
+// import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IERC20.sol";
+// import "./interfaces/IERC20.sol";
 
 // Internal references
 import "./interfaces/IFuturesV2MarketState.sol";
@@ -524,19 +523,6 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     }
 
     /* ---------- Utilities ---------- */
-    function _marketDebt(uint price) internal view returns (uint) {
-        // short circuit and also convenient during setup
-        if (marketState.marketSkew() == 0 && marketState.entryDebtCorrection() == 0) {
-            // if these are 0, the resulting calculation is necessarily zero as well
-            return 0;
-        }
-        // see comment explaining this calculation in _positionDebtCorrection()
-        int priceWithFunding = int(price).add(_nextFundingEntry(price));
-        int totalDebt =
-            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
-        return uint(_max(totalDebt, 0));
-    }
-
     /*
      * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
      * Public because used both externally and internally

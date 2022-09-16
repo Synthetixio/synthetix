@@ -287,4 +287,17 @@ contract FuturesV2MarketViews is FuturesV2MarketBase, IFuturesV2MarketViews {
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
         return uint(_max(0, result));
     }
+
+    function _marketDebt(uint price) internal view returns (uint) {
+        // short circuit and also convenient during setup
+        if (marketState.marketSkew() == 0 && marketState.entryDebtCorrection() == 0) {
+            // if these are 0, the resulting calculation is necessarily zero as well
+            return 0;
+        }
+        // see comment explaining this calculation in _positionDebtCorrection()
+        int priceWithFunding = int(price).add(_nextFundingEntry(price));
+        int totalDebt =
+            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
+        return uint(_max(totalDebt, 0));
+    }
 }
