@@ -13,6 +13,7 @@ import "./interfaces/ILiquidatorRewards.sol";
 
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
+import "./interfaces/ISystemStatus.sol";
 
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
@@ -27,6 +28,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
+    bytes32 private constant CONTRACT_SYSTEM_STATUS = "SystemStatus";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -58,6 +60,10 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIX_DEBT_SHARE));
     }
 
+    function _systemStatus() internal view returns (ISystemStatus) {
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEM_STATUS));
+    }
+
     function _getCrossDomainGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
         // Use specified crossDomainGasLimit if specified value is not zero.
         // otherwise use the default in SystemSettings.
@@ -71,9 +77,14 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](2);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
+        newAddresses[2] = CONTRACT_ISSUER;
+        newAddresses[3] = CONTRACT_LIQUIDATOR_REWARDS;
+        newAddresses[4] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
+        newAddresses[5] = CONTRACT_SYNTHETIX_DEBT_SHARE;
+        newAddresses[6] = CONTRACT_SYSTEM_STATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -89,7 +100,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     }
 
     function _migrateEntireAccount(address _account) internal {
-        // require system active
+        _systemStatus().requireSystemActive();
 
         // important: this has to happen before any updates to user's debt shares
         _liquidatorRewards().updateEntry(_account);
