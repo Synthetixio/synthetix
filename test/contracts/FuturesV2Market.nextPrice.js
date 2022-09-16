@@ -262,7 +262,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 
 			// helper function to check cancellation tx effects
 			async function checkCancellation(from) {
-				const currentMargin = (await futuresMarket.positions(trader)).margin;
+				const currentMargin = toBN((await futuresMarket.positions(trader)).margin);
 				// cancel the order
 				const tx = await futuresMarket.cancelNextPriceOrder(trader, { from: from });
 
@@ -528,7 +528,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			// feeRate: expected exchange fee rate
 			// spotTradeDetails: trade details of the same trade if it would happen as spot
 			async function checkExecution(from, targetPrice, feeRate, spotTradeDetails) {
-				const currentMargin = (await futuresMarket.positions(trader)).margin;
+				const currentMargin = toBN((await futuresMarket.positions(trader)).margin);
 				// excute the order
 				const tx = await futuresMarket.executeNextPriceOrder(trader, { from: from });
 

@@ -3180,7 +3180,7 @@ contract('FuturesV2Market', accounts => {
 				const size = await futuresMarket.marketSize();
 				const sizes = await futuresMarket.marketSizes();
 				const skew = await futuresMarket.marketSkew();
-				const positionSize = (await futuresMarket.positions(trader)).size;
+				const positionSize = toBN((await futuresMarket.positions(trader)).size);
 
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 				assert.isFalse(await futuresMarket.canLiquidate(trader2));
@@ -3229,7 +3229,7 @@ contract('FuturesV2Market', accounts => {
 
 				const size = await futuresMarket.marketSize();
 				const sizes = await futuresMarket.marketSizes();
-				const positionSize = (await futuresMarket.positions(trader3)).size;
+				const positionSize = toBN((await futuresMarket.positions(trader3)).size);
 
 				await setPrice(baseAsset, toUnit('350'));
 
@@ -3526,7 +3526,7 @@ contract('FuturesV2Market', accounts => {
 				});
 
 				const { id: newPositionId } = await futuresMarket.positions(trader);
-				assert.bnGte(newPositionId, oldPositionId);
+				assert.bnGte(toBN(newPositionId), toBN(oldPositionId));
 			});
 		});
 
