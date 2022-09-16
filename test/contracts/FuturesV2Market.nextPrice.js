@@ -9,7 +9,7 @@ const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
-contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
+contract('FuturesV2Market MixinFuturesV2NextPriceOrders', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
 		futuresMarketState,
@@ -92,7 +92,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin, size, price;
+	let margin, size, price, maxTimeDelta;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -100,6 +100,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 		await futuresMarket.transferMargin(margin, { from: trader });
 		size = toUnit('50');
 		price = toUnit('200');
+		maxTimeDelta = 60;
 		await setPrice(baseAsset, price);
 	});
 
@@ -109,7 +110,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await futuresMarket.orderFee(size))[0];
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
-			const tx = await futuresMarket.submitNextPriceOrder(size, { from: trader });
+			const tx = await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 
 			const order = await futuresMarketState.getNextPriceOrder(trader);
 			assert.bnEqual(order.sizeDelta, size);
@@ -144,7 +145,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 		describe('cannot submit an order when', () => {
 			it('zero size', async () => {
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(0, { from: trader }),
+					futuresMarket.submitNextPriceOrder(0, maxTimeDelta, { from: trader }),
 					'Cannot submit empty order'
 				);
 			});
@@ -152,22 +153,22 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			it('not enough margin', async () => {
 				await futuresMarket.withdrawAllMargin({ from: trader });
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader }),
 					'Insufficient margin'
 				);
 			});
 
 			it('too much leverage', async () => {
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(size.mul(toBN(10)), { from: trader }),
+					futuresMarket.submitNextPriceOrder(size.mul(toBN(10)), maxTimeDelta, { from: trader }),
 					'Max leverage exceeded'
 				);
 			});
 
 			it('previous order exists', async () => {
-				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+				await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader }),
 					'previous order exists'
 				);
 			});
@@ -175,7 +176,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			it('if futures markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -183,7 +184,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			it('if market is suspended', async () => {
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader }),
 					'Market suspended'
 				);
 			});
@@ -198,9 +199,15 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await futuresMarket.orderFee(size))[0];
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
-			const tx = await futuresMarket.submitNextPriceOrderWithTracking(size, trackingCode, {
-				from: trader,
-			});
+
+			const tx = await futuresMarket.submitNextPriceOrderWithTracking(
+				size,
+				maxTimeDelta,
+				trackingCode,
+				{
+					from: trader,
+				}
+			);
 
 			// check order
 			const order = await futuresMarketState.getNextPriceOrder(trader);
@@ -223,14 +230,16 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 
 		it('executing an order emits the tracking event', async () => {
 			// setup
-			await futuresMarket.submitNextPriceOrderWithTracking(size, trackingCode, { from: trader });
+			await futuresMarket.submitNextPriceOrderWithTracking(size, maxTimeDelta, trackingCode, {
+				from: trader,
+			});
 
 			// go to next round
 			await setPrice(baseAsset, price);
 
 			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, takerFeeNextPrice));
 
-			// excute the order
+			// execute the order
 			const tx = await futuresMarket.executeNextPriceOrder(trader, { from: trader });
 
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -317,7 +326,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				// transfer more margin
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+				await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 				const newOrder = await futuresMarketState.getNextPriceOrder(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -326,7 +335,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				spotFee = (await futuresMarket.orderFee(size))[0];
 				keeperFee = await futuresMarketSettings.minKeeperFee();
-				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+				await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 			});
 
 			it('cannot cancel if futures markets are suspended', async () => {
@@ -445,11 +454,11 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				// commitFee is the fee that would be chanrged for a spot trade when order is submitted
+				// commitFee is the fee that would be charged for a spot trade when order is submitted
 				commitFee = (await futuresMarket.orderFee(size))[0];
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await futuresMarketSettings.minKeeperFee();
-				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+				await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 			});
 
 			describe('execution reverts', () => {
@@ -457,12 +466,12 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 					// account owner
 					await assert.revert(
 						futuresMarket.executeNextPriceOrder(trader, { from: trader }),
-						'target roundId not reached'
+						'executability not reached'
 					);
 					// keeper
 					await assert.revert(
 						futuresMarket.executeNextPriceOrder(trader, { from: trader2 }),
-						'target roundId not reached'
+						'executability not reached'
 					);
 				});
 
@@ -601,7 +610,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				// transfer more margin
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+				await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 				const newOrder = await futuresMarketState.getNextPriceOrder(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -732,7 +741,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 
 				// submit an order
-				await futuresMarket.submitNextPriceOrder(size, { from: trader });
+				await futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader });
 
 				// spike the price
 				await setPrice(baseAsset, spikedPrice);
@@ -747,7 +756,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				await futuresMarket.cancelNextPriceOrder(trader, { from: trader });
 
 				await assert.revert(
-					futuresMarket.submitNextPriceOrder(size, { from: trader }),
+					futuresMarket.submitNextPriceOrder(size, maxTimeDelta, { from: trader }),
 					'Price too volatile'
 				);
 			});
