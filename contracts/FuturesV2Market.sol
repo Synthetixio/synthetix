@@ -60,8 +60,6 @@ contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketMutations, MixinFut
         address payable _proxy,
         address _marketState,
         address _owner,
-        address _resolver,
-        bytes32 _baseAsset,
-        bytes32 _marketKey
-    ) public FuturesV2MarketMutations(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
+        address _resolver
+    ) public FuturesV2MarketMutations(_proxy, _marketState, _owner, _resolver) {}
 }

@@ -128,9 +128,9 @@ contract('FuturesV2Market', accounts => {
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
 				'FuturesV2MarketManager',
-				'FuturesV2MarketStateBTC',
+				{ contract: 'FuturesV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
 				'FuturesV2MarketViewsBTC',
-				{ contract: 'FuturesV2MarketBTC', properties: { perpSuffix: marketKeySuffix } },
+				'FuturesV2MarketBTC',
 				'FuturesV2MarketSettings',
 				'AddressResolver',
 				'FeePool',
@@ -193,7 +193,6 @@ contract('FuturesV2Market', accounts => {
 					'submitNextPriceOrderWithTracking',
 					'cancelNextPriceOrder',
 					'executeNextPriceOrder',
-					'propagateToState',
 				],
 			});
 		});

@@ -66,33 +66,14 @@ import "./SafeDecimalMath.sol";
  */
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketMutations
 contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
-    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
-    // for the same asset in order to allow migrations.
-    bytes32 internal _marketKey;
-
-    // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
-    bytes32 internal _baseAsset;
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address payable _proxy,
         address _marketState,
         address _owner,
-        address _resolver,
-        bytes32 baseAsset,
-        bytes32 marketKey
-    ) public FuturesV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {
-        _baseAsset = baseAsset;
-        _marketKey = marketKey;
-    }
-
-    function propagateToState() external onlyOwner {
-        // Save into state to use in views.
-        // Will revert if state _baseAsset or _marketKey are already set and different
-        marketState.setBaseAsset(_baseAsset);
-        marketState.setMarketKey(_marketKey);
-    }
+        address _resolver
+    ) public FuturesV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {}
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -104,15 +85,15 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
      */
     function _assetPriceRequireSystemChecks() internal returns (uint) {
         // check that futures market isn't suspended, revert with appropriate message
-        _systemStatus().requireFuturesMarketActive(_marketKey); // asset and market may be different
+        _systemStatus().requireFuturesMarketActive(marketState.marketKey()); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
-        _systemStatus().requireSynthActive(_baseAsset);
+        _systemStatus().requireSynthActive(marketState.baseAsset());
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
         // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
         //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
-        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(_baseAsset);
+        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(marketState.baseAsset());
         // revert if price is invalid or circuit was broken
         // note: we revert here, which means that circuit is not really broken (is not persisted), this is
         //  because the futures methods and interface are designed for reverts, and do not support no-op
@@ -279,7 +260,7 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
                 _revertIfError(
                     (margin < _minInitialMargin()) ||
                         (margin <= _liquidationMargin(position.size, price)) ||
-                        (_maxLeverage(_marketKey) < _abs(_currentLeverage(position, price, margin))),
+                        (_maxLeverage(marketState.marketKey()) < _abs(_currentLeverage(position, price, margin))),
                     Status.InsufficientMargin
                 );
             }
@@ -347,7 +328,7 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
                 proxy._emit(
-                    abi.encode(_baseAsset, _marketKey, params.sizeDelta, fee),
+                    abi.encode(marketState.baseAsset(), marketState.marketKey(), params.sizeDelta, fee),
                     2,
                     FUTURESTRACKING_SIG,
                     params.trackingCode,
@@ -429,8 +410,8 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(_marketKey),
-                makerFee: _makerFee(_marketKey),
+                takerFee: _takerFee(marketState.marketKey()),
+                makerFee: _makerFee(marketState.marketKey()),
                 trackingCode: trackingCode
             })
         );
@@ -458,8 +439,8 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
             TradeParams({
                 sizeDelta: -size,
                 price: price,
-                takerFee: _takerFee(_marketKey),
-                makerFee: _makerFee(_marketKey),
+                takerFee: _takerFee(marketState.marketKey()),
+                makerFee: _makerFee(marketState.marketKey()),
                 trackingCode: trackingCode
             })
         );

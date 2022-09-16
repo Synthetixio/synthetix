@@ -60,16 +60,24 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     // This increments for each position; zero reflects a position that does not exist.
     uint64 internal _nextPositionId = 1;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
+    constructor(
+        address _owner,
+        address _associatedContract,
+        bytes32 _baseAsset,
+        bytes32 _marketKey
+    ) public Owned(_owner) State(_associatedContract) {
+        baseAsset = _baseAsset;
+        marketKey = _marketKey;
+
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
     }
 
-    function entryDebtCorrection() external view onlyAssociatedContract returns (int128) {
+    function entryDebtCorrection() external view returns (int128) {
         return _entryDebtCorrection;
     }
 
-    function nextPositionId() external view onlyAssociatedContract returns (uint64) {
+    function nextPositionId() external view returns (uint64) {
         return _nextPositionId;
     }
 

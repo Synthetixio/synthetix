@@ -9,10 +9,8 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
         address payable _proxy,
         address _marketState,
         address _owner,
-        address _resolver,
-        bytes32 _baseAsset,
-        bytes32 _marketKey
-    ) public FuturesV2Market(_proxy, _marketState, _owner, _resolver, _baseAsset, _marketKey) {}
+        address _resolver
+    ) public FuturesV2Market(_proxy, _marketState, _owner, _resolver) {}
 
     function entryDebtCorrection() external view returns (int) {
         return marketState.entryDebtCorrection();
@@ -24,7 +22,7 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
     }
 
     function maxFundingRate() external view returns (uint) {
-        return _maxFundingRate(_marketKey);
+        return _maxFundingRate(marketState.marketKey());
     }
 
     /*
@@ -41,7 +39,7 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
     {
         uint price;
         (price, invalid) = _assetPrice();
-        int sizeLimit = int(_maxMarketValueUSD(_marketKey)).divideDecimal(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(marketState.marketKey())).divideDecimal(int(price));
         (uint longSize, uint shortSize) = _marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));

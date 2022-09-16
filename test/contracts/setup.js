@@ -314,8 +314,18 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// Futures V2
-		FuturesV2MarketStateBTC: [owner, deployerAccount],
-		FuturesV2MarketStateETH: [owner, deployerAccount],
+		FuturesV2MarketStateBTC: [
+			owner,
+			deployerAccount,
+			toBytes32('sBTC'), // base asset
+			toBytes32('sBTC' + perpSuffix), // market key
+		],
+		FuturesV2MarketStateETH: [
+			owner,
+			deployerAccount,
+			toBytes32('sETH'), // base asset
+			toBytes32('sETH' + perpSuffix), // market key
+		],
 		ProxyFuturesV2MarketBTC: [owner],
 		ProxyFuturesV2MarketETH: [owner],
 		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
@@ -335,16 +345,12 @@ const setupContract = async ({
 			tryGetAddressOf('FuturesV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sBTC'), // base asset
-			toBytes32('sBTC' + perpSuffix), // market key
 		],
 		FuturesV2MarketETH: [
 			tryGetAddressOf('ProxyFuturesV2MarketETH'),
 			tryGetAddressOf('FuturesV2MarketStateETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sETH'), // base asset
-			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesV2MarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
@@ -663,7 +669,6 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketBTC'].setTarget(instance.address, { from: owner }),
-				instance.propagateToState({ from: owner }),
 				cache['FuturesV2MarketManager'].addMarkets(
 					[cache['ProxyFuturesV2MarketBTC'].address],
 					[instance.address],
@@ -680,7 +685,6 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketETH'].setTarget(instance.address, { from: owner }),
-				instance.propagateToState({ from: owner }),
 				cache['FuturesV2MarketManager'].addMarkets(
 					[cache['ProxyFuturesV2MarketETH'].address],
 					[instance.address],
