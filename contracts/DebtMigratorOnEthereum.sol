@@ -16,9 +16,6 @@ import "./interfaces/ISynthetixDebtShare.sol";
 
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-// TODO: for deployment
-// 1. add to deploy-core
-// 2. "connect" the migrators on L1/L2 using the address resolver (see OP bridges)
 contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
 
