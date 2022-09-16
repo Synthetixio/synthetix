@@ -65,21 +65,21 @@ contract('FuturesV2MarketSettings', accounts => {
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2Market',
+			mock: 'FuturesV2MarketViews',
 			fncName: 'marketSize',
 			returns: ['1'],
 		});
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2Market',
+			mock: 'FuturesV2MarketViews',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2Market',
+			mock: 'FuturesV2MarketViews',
 			fncName: 'marketKey',
 			returns: [toBytes32('sBTC')],
 		});
@@ -90,6 +90,7 @@ contract('FuturesV2MarketSettings', accounts => {
 			args: [owner],
 		});
 		await mockFuturesMarketBTC.setTarget(mockFuturesMarketBTCImpl.address, { from: owner });
+		await mockFuturesMarketBTC.setViewsTarget(mockFuturesMarketBTCImpl.address, { from: owner });
 
 		// add the market
 		await futuresMarketManager.addMarkets(
@@ -421,21 +422,21 @@ contract('FuturesV2MarketSettings', accounts => {
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2Market',
+				mock: 'FuturesV2MarketViews',
 				fncName: 'marketSize',
 				returns: ['1'],
 			});
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2Market',
+				mock: 'FuturesV2MarketViews',
 				fncName: 'baseAsset',
 				returns: [toBytes32('sBTC')],
 			});
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2Market',
+				mock: 'FuturesV2MarketViews',
 				fncName: 'marketKey',
 				returns: [secondMarketKey],
 			});
@@ -446,6 +447,7 @@ contract('FuturesV2MarketSettings', accounts => {
 				args: [owner],
 			});
 			await secondBTCMarket.setTarget(secondBTCMarketImpl.address, { from: owner });
+			await secondBTCMarket.setViewsTarget(secondBTCMarketImpl.address, { from: owner });
 
 			// add the market
 			await futuresMarketManager.addMarkets(
