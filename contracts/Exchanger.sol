@@ -604,7 +604,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
         (uint dynamicFeeDst, bool dstVolatile) =
             _dynamicFeeRateForCurrencyRound(destinationSettings, roundIdForDest);
-        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrencyRound(sourceSettings, roundIdForSrc);
+        (uint dynamicFeeSrc, bool srcVolatile) = 
+            _dynamicFeeRateForCurrencyRound(sourceSettings, roundIdForSrc);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
         // cap to maxFee
         bool overMax = dynamicFee > sourceSettings.exchangeMaxDynamicFee;

@@ -43,7 +43,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ExchangerWithFeeRecAlternatives.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['exchange', 'exchangeAtomically', 'settle', 'suspendSynthWithInvalidRate'],
+			expected: ['exchange', 'exchangeAtomically', 'settle'],
 		});
 	});
 
