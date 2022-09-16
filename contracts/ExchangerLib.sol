@@ -9,7 +9,6 @@ import "./interfaces/IDebtCache.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetix.sol";
 
-
 import "./SafeDecimalMath.sol";
 
 library ExchangerLib {
@@ -41,15 +40,13 @@ library ExchangerLib {
             uint numEntriesSettled
         )
     {
-        require(maxSecsLeftInWaitingPeriod(resolvedAddresses.exchangeState, from, currencyKey, waitingPeriod) == 0, "Cannot settle during waiting period");
+        require(
+            maxSecsLeftInWaitingPeriod(resolvedAddresses.exchangeState, from, currencyKey, waitingPeriod) == 0,
+            "Cannot settle during waiting period"
+        );
 
         (uint reclaimAmount, uint rebateAmount, uint entries, IExchanger.ExchangeEntrySettlement[] memory settlements) =
-            _settlementOwing(
-                resolvedAddresses,
-                from, 
-                currencyKey,
-                waitingPeriod
-            );
+            _settlementOwing(resolvedAddresses, from, currencyKey, waitingPeriod);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -88,7 +85,12 @@ library ExchangerLib {
         resolvedAddresses.exchangeState.removeEntries(from, currencyKey);
     }
 
-    function maxSecsLeftInWaitingPeriod(IExchangeState exchangeState, address account, bytes32 currencyKey, uint waitingPeriod) public view returns (uint) {
+    function maxSecsLeftInWaitingPeriod(
+        IExchangeState exchangeState,
+        address account,
+        bytes32 currencyKey,
+        uint waitingPeriod
+    ) public view returns (uint) {
         return secsLeftInWaitingPeriodForExchange(exchangeState.getMaxTimestamp(account, currencyKey), waitingPeriod);
     }
 
@@ -124,8 +126,8 @@ library ExchangerLib {
 
     function settlementOwing(
         ResolvedAddresses calldata resolvedAddresses,
-        address account, 
-        bytes32 currencyKey, 
+        address account,
+        bytes32 currencyKey,
         uint waitingPeriod
     )
         external
@@ -135,15 +137,16 @@ library ExchangerLib {
             uint rebateAmount,
             uint numEntries,
             IExchanger.ExchangeEntrySettlement[] memory
-        ) {
+        )
+    {
         return _settlementOwing(resolvedAddresses, account, currencyKey, waitingPeriod);
     }
 
     // Internal function to aggregate each individual rebate and reclaim entry for a synth
     function _settlementOwing(
         ResolvedAddresses memory resolvedAddresses,
-        address account, 
-        bytes32 currencyKey, 
+        address account,
+        bytes32 currencyKey,
         uint waitingPeriod
     )
         internal
@@ -162,10 +165,12 @@ library ExchangerLib {
         IExchanger.ExchangeEntrySettlement[] memory settlements = new IExchanger.ExchangeEntrySettlement[](numEntries);
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
-            IExchangeState.ExchangeEntry memory exchangeEntry = getExchangeEntry(resolvedAddresses.exchangeState, account, currencyKey, i);
+            IExchangeState.ExchangeEntry memory exchangeEntry =
+                getExchangeEntry(resolvedAddresses.exchangeState, account, currencyKey, i);
 
-                // determine the last round ids for src and dest pairs when period ended or latest if not over
-                (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(resolvedAddresses.exchangeRates, exchangeEntry, waitingPeriod);
+            // determine the last round ids for src and dest pairs when period ended or latest if not over
+            (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) =
+                getRoundIdsAtPeriodEnd(resolvedAddresses.exchangeRates, exchangeEntry, waitingPeriod);
 
             // given these round ids, determine what effective value they should have received
             uint amountShouldHaveReceived;
@@ -186,8 +191,11 @@ library ExchangerLib {
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
             bool sip65condition =
-                resolvedAddresses.circuitBreaker.isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived);
-            
+                resolvedAddresses.circuitBreaker.isDeviationAboveThreshold(
+                    exchangeEntry.amountReceived,
+                    amountShouldHaveReceived
+                );
+
             uint reclaim;
             uint rebate;
 
@@ -248,11 +256,11 @@ library ExchangerLib {
             });
     }
 
-    function getRoundIdsAtPeriodEnd(IExchangeRates exRates, IExchangeState.ExchangeEntry memory exchangeEntry, uint waitingPeriod)
-        internal
-        view
-        returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd)
-    {
+    function getRoundIdsAtPeriodEnd(
+        IExchangeRates exRates,
+        IExchangeState.ExchangeEntry memory exchangeEntry,
+        uint waitingPeriod
+    ) internal view returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) {
         srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
             exchangeEntry.src,
             exchangeEntry.roundIdForSrc,
@@ -267,11 +275,7 @@ library ExchangerLib {
         );
     }
 
-    function deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
-        internal
-        pure
-        returns (uint amountReceived)
-    {
+    function deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate) internal pure returns (uint amountReceived) {
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 
@@ -310,7 +314,11 @@ library ExchangerLib {
         );
     }
 
-    function updateSNXIssuedDebtOnExchange(IExchangerInternalDebtCache debtCache, bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external {
+    function updateSNXIssuedDebtOnExchange(
+        IExchangerInternalDebtCache debtCache,
+        bytes32[2] calldata currencyKeys,
+        uint[2] calldata currencyRates
+    ) external {
         bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
         uint numKeys = includesSUSD ? 2 : 3;
 

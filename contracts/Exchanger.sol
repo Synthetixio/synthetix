@@ -110,14 +110,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function resolvedAddresses() internal view returns (ExchangerLib.ResolvedAddresses memory) {
-        return ExchangerLib.ResolvedAddresses(
-            exchangeState(),
-            exchangeRates(),
-            circuitBreaker(),
-            debtCache(),
-            issuer(),
-            synthetix()
-        );
+        return
+            ExchangerLib.ResolvedAddresses(
+                exchangeState(),
+                exchangeRates(),
+                circuitBreaker(),
+                debtCache(),
+                issuer(),
+                synthetix()
+            );
     }
 
     function waitingPeriodSecs() external view returns (uint) {
@@ -147,7 +148,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         (reclaimAmount, rebateAmount, numEntries, ) = ExchangerLib.settlementOwing(
             resolvedAddresses(),
-            account, 
+            account,
             currencyKey,
             getWaitingPeriodSecs()
         );
@@ -158,18 +159,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return true;
         }
 
-        (uint reclaimAmount, , , ) = ExchangerLib.settlementOwing(
-            resolvedAddresses(),
-            account, 
-            currencyKey,
-            getWaitingPeriodSecs()
-        );
+        (uint reclaimAmount, , , ) =
+            ExchangerLib.settlementOwing(resolvedAddresses(), account, currencyKey, getWaitingPeriodSecs());
 
         return reclaimAmount > 0;
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
-        return ExchangerLib.secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey), getWaitingPeriodSecs());
+        return
+            ExchangerLib.secsLeftInWaitingPeriodForExchange(
+                exchangeState().getMaxTimestamp(account, currencyKey),
+                getWaitingPeriodSecs()
+            );
     }
 
     /* ========== SETTERS ========== */
@@ -271,7 +272,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address from,
         bytes32 sourceCurrencyKey
     ) internal returns (uint sourceAmountAfterSettlement) {
-        (, uint refunded, uint numEntriesSettled) = ExchangerLib.internalSettle(resolvedAddresses(), from, sourceCurrencyKey, false, getWaitingPeriodSecs());
+        (, uint refunded, uint numEntriesSettled) =
+            ExchangerLib.internalSettle(resolvedAddresses(), from, sourceCurrencyKey, false, getWaitingPeriodSecs());
 
         sourceAmountAfterSettlement = sourceAmount;
 
@@ -308,7 +310,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         entry.roundIdForSrc = addrs.exchangeRates.getCurrentRoundId(sourceSettings.currencyKey);
         entry.roundIdForDest = addrs.exchangeRates.getCurrentRoundId(destinationSettings.currencyKey);
 
-        entry.sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceSettings.currencyKey);
+        entry.sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(
+            sourceAmount,
+            from,
+            sourceSettings.currencyKey
+        );
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
@@ -316,7 +322,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = addrs.exchangeRates.effectiveValueAndRatesAtRound(
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = addrs
+            .exchangeRates
+            .effectiveValueAndRatesAtRound(
             sourceSettings.currencyKey,
             entry.sourceAmountAfterSettlement,
             destinationSettings.currencyKey,
@@ -325,7 +333,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
 
         // rates must also be good for the round we are doing
-        _ensureCanExchangeAtRound(sourceSettings.currencyKey, destinationSettings.currencyKey, entry.roundIdForSrc, entry.roundIdForDest);
+        _ensureCanExchangeAtRound(
+            sourceSettings.currencyKey,
+            destinationSettings.currencyKey,
+            entry.roundIdForSrc,
+            entry.roundIdForDest
+        );
 
         bool tooVolatile;
         (entry.exchangeFeeRate, tooVolatile) = _feeRateForExchangeAtRounds(
@@ -542,11 +555,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _feeRateForExchange(
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
-    )
-        internal
-        view
-        returns (uint feeRate, bool tooVolatile)
-    {
+    ) internal view returns (uint feeRate, bool tooVolatile) {
         // Get the exchange fee rate as per the source currencyKey and destination currencyKey
         uint baseRate = sourceSettings.exchangeFeeRate.add(destinationSettings.exchangeFeeRate);
         uint dynamicFee;
@@ -582,11 +591,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _dynamicFeeRateForExchange(
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
-    )
-        internal
-        view
-        returns (uint dynamicFee, bool tooVolatile)
-    {
+    ) internal view returns (uint dynamicFee, bool tooVolatile) {
         (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrency(destinationSettings);
         (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrency(sourceSettings);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
@@ -602,10 +607,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
-        (uint dynamicFeeDst, bool dstVolatile) =
-            _dynamicFeeRateForCurrencyRound(destinationSettings, roundIdForDest);
-        (uint dynamicFeeSrc, bool srcVolatile) = 
-            _dynamicFeeRateForCurrencyRound(sourceSettings, roundIdForSrc);
+        (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrencyRound(destinationSettings, roundIdForDest);
+        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrencyRound(sourceSettings, roundIdForSrc);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
         // cap to maxFee
         bool overMax = dynamicFee > sourceSettings.exchangeMaxDynamicFee;
@@ -642,8 +645,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, false);
         }
         uint[] memory prices;
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(settings.currencyKey, settings.exchangeDynamicFeeRounds, roundId);
-        dynamicFee = _dynamicFeeCalculation(prices, settings.exchangeDynamicFeeThreshold, settings.exchangeDynamicFeeWeightDecay);
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(
+            settings.currencyKey,
+            settings.exchangeDynamicFeeRounds,
+            roundId
+        );
+        dynamicFee = _dynamicFeeCalculation(
+            prices,
+            settings.exchangeDynamicFeeThreshold,
+            settings.exchangeDynamicFeeWeightDecay
+        );
         // cap to maxFee
         bool overMax = dynamicFee > settings.exchangeMaxDynamicFee;
         dynamicFee = overMax ? settings.exchangeMaxDynamicFee : dynamicFee;

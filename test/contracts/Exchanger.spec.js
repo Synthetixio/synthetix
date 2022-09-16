@@ -256,7 +256,9 @@ contract('Exchanger (spec tests)', async accounts => {
 								amountOfSrcExchanged,
 								sUSD,
 								sETH,
-								{ from: owner }
+								{
+									from: owner,
+								}
 							);
 							const logs = await getDecodedLogs({
 								hash: exchangeTransaction.tx,
@@ -4434,58 +4436,58 @@ contract('Exchanger (spec tests)', async accounts => {
 				}
 
 				overrideParams.push(await systemSettings.atomicExchangeFeeRate(token));
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setAtomicExchangeFeeRate(token, 100, { from: owner });
 				}
 
 				overrideParams.push(realAtomicTwapWindow);
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setAtomicTwapWindow(200, { from: owner });
 				}
 
 				overrideParams.push(0);
 
 				overrideParams.push(realAtomicMaxVolumePerBlock);
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setAtomicMaxVolumePerBlock(400, { from: owner });
 				}
 
 				overrideParams.push(await systemSettings.atomicVolatilityConsiderationWindow(token));
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setAtomicVolatilityConsiderationWindow(token, 500, { from: owner });
 				}
 
 				overrideParams.push(0);
 
 				overrideParams.push(await systemSettings.atomicVolatilityUpdateThreshold(token));
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setAtomicVolatilityUpdateThreshold(token, 700, { from: owner });
 				}
 
 				overrideParams.push(await systemSettings.exchangeFeeRate(token));
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					// for now this interferes with unrelated test aspects and its unused by the current requested spec
 					await systemSettings.setExchangeFeeRateForSynths([token], [800], { from: owner });
 				}
 
 				overrideParams.push(realExchangeMaxDynamicFee);
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setExchangeMaxDynamicFee(900, { from: owner });
 				}
 
 				// override exchange dynamic fee rounds should always be 0
 				overrideParams.push(realExchangeDynamicFeeRounds);
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setExchangeDynamicFeeRounds(0, { from: owner });
 				}
 
 				overrideParams.push(realExchangeDynamicFeeThreshold);
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setExchangeDynamicFeeThreshold(1100, { from: owner });
 				}
 
 				overrideParams.push(realExchangeDynamicFeeWeightDecay);
-				if (overrideParams[overrideParams.length - 1] != '0') {
+				if (overrideParams[overrideParams.length - 1] !== '0') {
 					await systemSettings.setExchangeDynamicFeeWeightDecay(1200, { from: owner });
 				}
 
