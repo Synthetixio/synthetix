@@ -324,15 +324,11 @@ const setupContract = async ({
 			tryGetAddressOf('FuturesV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sBTC'), // base asset
-			toBytes32('sBTC' + perpSuffix), // market key
 		],
 		FuturesV2MarketViewsETH: [
 			tryGetAddressOf('FuturesV2MarketStateETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sETH'), // base asset
-			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesV2MarketBTC: [
 			tryGetAddressOf('ProxyFuturesV2MarketBTC'),
@@ -1208,6 +1204,7 @@ const setupAllContracts = async ({
 			],
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
+
 		// Futures v2
 		{ contract: 'Proxy', source: 'ProxyFuturesV2', forContract: 'FuturesV2MarketBTC' },
 		{ contract: 'Proxy', source: 'ProxyFuturesV2', forContract: 'FuturesV2MarketETH' },
@@ -1243,8 +1240,8 @@ const setupAllContracts = async ({
 			contract: 'FuturesV2MarketViewsETH',
 			source: 'FuturesV2MarketViews',
 			deps: [
-				'ProxyFuturesV2MarketBTC',
-				'FuturesV2MarketStateBTC',
+				'ProxyFuturesV2MarketETH',
+				'FuturesV2MarketStateETH',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',

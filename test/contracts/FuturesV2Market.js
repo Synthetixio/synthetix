@@ -128,10 +128,10 @@ contract('FuturesV2Market', accounts => {
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
 				'FuturesV2MarketManager',
-				'FuturesV2MarketSettings',
 				'FuturesV2MarketStateBTC',
 				'FuturesV2MarketViewsBTC',
 				{ contract: 'FuturesV2MarketBTC', properties: { perpSuffix: marketKeySuffix } },
+				'FuturesV2MarketSettings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',

@@ -14,10 +14,8 @@ contract FuturesV2MarketViews is FuturesV2MarketBase, IFuturesV2MarketViews {
     constructor(
         address _marketState,
         address _owner,
-        address _resolver,
-        bytes32 _baseAsset,
-        bytes32 _marketKey
-    ) public FuturesV2MarketBase(_marketState, _owner, _resolver, _baseAsset, _marketKey) {}
+        address _resolver
+    ) public FuturesV2MarketBase(_marketState, _owner, _resolver) {}
 
     /* ---------- Market Details ---------- */
 

@@ -91,12 +91,12 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     }
 
     function setMarketKey(bytes32 _marketKey) external onlyAssociatedContract {
-        require(marketKey == bytes32("") || _marketKey == marketKey, "Cannot change market key");
+        require(marketKey == bytes32(0) || _marketKey == marketKey, "Cannot change market key");
         marketKey = _marketKey;
     }
 
     function setBaseAsset(bytes32 _baseAsset) external onlyAssociatedContract {
-        require(baseAsset == bytes32("") || _baseAsset == baseAsset, "Cannot change base asset");
+        require(baseAsset == bytes32(0) || _baseAsset == baseAsset, "Cannot change base asset");
         baseAsset = _baseAsset;
     }
 

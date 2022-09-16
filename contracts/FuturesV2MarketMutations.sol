@@ -66,6 +66,13 @@ import "./SafeDecimalMath.sol";
  */
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketMutations
 contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
+    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
+    // for the same asset in order to allow migrations.
+    bytes32 internal _marketKey;
+
+    // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
+    bytes32 internal _baseAsset;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -73,9 +80,19 @@ contract FuturesV2MarketMutations is FuturesV2MarketBase, Proxyable {
         address _marketState,
         address _owner,
         address _resolver,
-        bytes32 _baseAsset,
-        bytes32 _marketKey
-    ) public FuturesV2MarketBase(_marketState, _owner, _resolver, _baseAsset, _marketKey) Proxyable(_proxy) {}
+        bytes32 baseAsset,
+        bytes32 marketKey
+    ) public FuturesV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {
+        _baseAsset = baseAsset;
+        _marketKey = marketKey;
+    }
+
+    function propagateToState() external onlyOwner {
+        // Save into state to use in views.
+        // Will revert if state _baseAsset or _marketKey are already set and different
+        marketState.setBaseAsset(_baseAsset);
+        marketState.setMarketKey(_marketKey);
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 

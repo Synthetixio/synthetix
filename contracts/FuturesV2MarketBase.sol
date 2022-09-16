@@ -102,12 +102,6 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     bytes32 internal constant sUSD = "sUSD";
 
     /* ========== STATE VARIABLES ========== */
-    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
-    // for the same asset in order to allow migrations.
-    bytes32 internal _marketKey;
-
-    // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
-    bytes32 internal _baseAsset;
 
     FuturesV2MarketState public marketState;
 
@@ -136,14 +130,9 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     constructor(
         address _marketState,
         address _owner,
-        address _resolver,
-        bytes32 baseAsset,
-        bytes32 marketKey
+        address _resolver
     ) public MixinFuturesV2MarketSettings(_resolver) Owned(_owner) {
         marketState = FuturesV2MarketState(_marketState);
-
-        _baseAsset = baseAsset;
-        _marketKey = marketKey;
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
@@ -157,13 +146,6 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
-    }
-
-    function propagateToState() external onlyOwner {
-        // Save into state to use in views.
-        // Will revert if state _baseAsset or _marketKey are already set and different
-        marketState.setBaseAsset(_baseAsset);
-        marketState.setMarketKey(_marketKey);
     }
 
     /* ---------- External Contracts ---------- */
@@ -209,13 +191,13 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(_marketKey).divideDecimal(price);
+        uint skewScaleBaseAsset = _skewScaleUSD(marketState.marketKey()).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
         return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(_marketKey));
+        int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
     }
@@ -346,7 +328,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(_marketKey).sub(milli));
+        int maxLeverage = int(_maxLeverage(marketState.marketKey()).sub(milli));
         uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -437,7 +419,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset);
+        return _exchanger().dynamicFeeRateForExchange(sUSD, marketState.baseAsset());
     }
 
     function _latestFundingIndex() internal view returns (uint) {
@@ -519,7 +501,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
         {
             // stack too deep
             int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
-            if (_maxLeverage(_marketKey).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            if (_maxLeverage(marketState.marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
         }
@@ -528,7 +510,9 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(int(_maxMarketValueUSD(_marketKey).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
+                uint(
+                    int(_maxMarketValueUSD(marketState.marketKey()).add(100 * uint(_UNIT))).divideDecimal(int(params.price))
+                ),
                 oldPos.size,
                 newPos.size
             )
@@ -558,9 +542,9 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
      * Public because used both externally and internally
      */
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(_baseAsset);
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(marketState.baseAsset());
         // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset);
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(marketState.baseAsset());
         return (price, invalid);
     }
 

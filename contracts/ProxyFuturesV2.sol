@@ -55,7 +55,7 @@ contract ProxyFuturesV2 is Proxy, IFuturesV2MarketViews {
         view
         returns (
             uint64 id,
-            uint64 fundingIndex,
+            uint64 lastFundingIndex,
             uint128 margin,
             uint128 lastPrice,
             int128 size
