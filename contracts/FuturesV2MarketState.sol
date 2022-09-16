@@ -61,7 +61,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     uint64 internal _nextPositionId = 1;
 
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
-    mapping(address => NextPriceOrder) public nextPriceOrders;
+    mapping(address => DelayedOrder) public delayedOrders;
 
     constructor(
         address _owner,
@@ -97,8 +97,8 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         return _positionAddresses.getPage(index, pageSize);
     }
 
-    function getNextPriceOrder(address account) external view returns (NextPriceOrder memory) {
-        return nextPriceOrders[account];
+    function getDelayedOrder(address account) external view returns (DelayedOrder memory) {
+        return delayedOrders[account];
     }
 
     function setMarketKey(bytes32 _marketKey) external onlyAssociatedContract {
@@ -168,7 +168,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
      * @param executableAtTime The timestamp at which this order is executable at
      * @param trackingCode Tracking code to emit on execution for volume source fee sharing
      */
-    function updateNextPriceOrder(
+    function updateDelayedOrder(
         address account,
         int128 sizeDelta,
         uint128 targetRoundId,
@@ -177,7 +177,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         uint256 executableAtTime,
         bytes32 trackingCode
     ) external onlyAssociatedContract {
-        nextPriceOrders[account] = NextPriceOrder(
+        delayedOrders[account] = DelayedOrder(
             sizeDelta,
             targetRoundId,
             commitDeposit,
@@ -199,7 +199,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         }
     }
 
-    function deleteNextPriceOrder(address account) external onlyAssociatedContract {
-        delete nextPriceOrders[account];
+    function deleteDelayedOrder(address account) external onlyAssociatedContract {
+        delete delayedOrders[account];
     }
 }

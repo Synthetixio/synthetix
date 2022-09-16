@@ -28,7 +28,7 @@ interface IFuturesV2MarketBaseTypes {
     }
 
     // next-price order storage
-    struct NextPriceOrder {
+    struct DelayedOrder {
         int128 sizeDelta; // difference in position to pass to modifyPosition
         uint128 targetRoundId; // price oracle roundId using which price this order needs to executed
         uint128 commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds

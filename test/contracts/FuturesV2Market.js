@@ -189,10 +189,11 @@ contract('FuturesV2Market', accounts => {
 					'closePositionWithTracking',
 					'liquidatePosition',
 					'recomputeFunding',
-					'submitNextPriceOrder',
-					'submitNextPriceOrderWithTracking',
-					'cancelNextPriceOrder',
-					'executeNextPriceOrder',
+					'submitDelayedOrder',
+					'submitDelayedOrderWithTracking',
+					'cancelDelayedOrder',
+					'executeDelayedOrder',
+					'propagateToState',
 				],
 			});
 		});
