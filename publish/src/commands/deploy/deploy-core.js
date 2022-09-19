@@ -38,6 +38,11 @@ module.exports = async ({
 		library: true,
 	});
 
+	await deployer.deployContract({
+		name: 'ExchangerLib',
+		library: true,
+	});
+
 	console.log(gray(`\n------ DEPLOY ADDRESS RESOLVER ------\n`));
 
 	await deployer.deployContract({

@@ -205,5 +205,8 @@
 	},
 	"SystemSettingsLib": {
 		"deploy": true
+	},
+	"ExchangerLib": {
+		"deploy": true
 	}
 }
