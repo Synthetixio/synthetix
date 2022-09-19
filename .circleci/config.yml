@@ -60,8 +60,8 @@ jobs:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: node publish build --test-helpers
-      - run: npx hardhat cannon:build --file cannonfile.aggregator.toml
-      - run: npx hardhat cannon:build
+      - run: npx hardhat cannon:build --network cannon --file cannonfile.aggregator.toml
+      - run: npx hardhat cannon:build --network cannon
       - persist_to_workspace:
           root: .
           paths:
