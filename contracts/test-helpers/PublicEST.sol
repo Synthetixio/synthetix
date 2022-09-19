@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 import "../interfaces/IRewardEscrowV2.sol";
 import "../ExternStateToken.sol";
