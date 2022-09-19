@@ -19,7 +19,7 @@ interface IFuturesV2MarketState {
 
     function positions(address) external view returns (IFuturesV2MarketBaseTypes.Position memory);
 
-    function nextPriceOrders(address) external view returns (IFuturesV2MarketBaseTypes.NextPriceOrder memory);
+    function delayedOrders(address) external view returns (IFuturesV2MarketBaseTypes.DelayedOrder memory);
 
     function entryDebtCorrection() external view returns (int128);
 
@@ -54,16 +54,17 @@ interface IFuturesV2MarketState {
         int128 size
     ) external;
 
-    function updateNextPriceOrder(
+    function updateDelayedOrder(
         address account,
         int128 sizeDelta,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
+        uint256 executableAtTime,
         bytes32 trackingCode
     ) external;
 
     function deletePosition(address) external;
 
-    function deleteNextPriceOrder(address) external;
+    function deleteDelayedOrder(address) external;
 }
