@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log } = require('hardhat');
+const { artifacts, web3, log, ethers } = require('hardhat');
 
 const { toWei, toBN } = web3.utils;
 const { toUnit } = require('../utils')();
@@ -391,6 +391,36 @@ const setupContract = async ({
 		);
 	}
 
+	// Futures V2 Proxy
+	const excludedFunctions = [
+		// Owned
+		'nominateNewOwner',
+		'acceptOwnership',
+		// MixinResolver
+		'resolver',
+		'resolverAddressesRequired',
+		'rebuildCache',
+		'isResolvedCache',
+		// FuturesV2MarketBase
+		'marketState',
+	];
+
+	const getFunctionSignatures = (instance, excludedFunctions) => {
+		const contractInterface = new ethers.utils.Interface(instance.abi);
+		const signatures = [];
+		const funcNames = Object.keys(contractInterface.functions);
+		for (const funcName of funcNames) {
+			const signature = {
+				signature: contractInterface.getSighash(contractInterface.functions[funcName]),
+				functionName: contractInterface.functions[funcName].name,
+				stateMutability: contractInterface.functions[funcName].stateMutability,
+				isView: contractInterface.functions[funcName].stateMutability === 'view',
+			};
+			signatures.push(signature);
+		}
+		return signatures.filter(f => !excludedFunctions.includes(f.functionName));
+	};
+
 	const postDeployTasks = {
 		async Synthetix() {
 			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
@@ -649,18 +679,26 @@ const setupContract = async ({
 			]);
 		},
 		async FuturesV2MarketViewsBTC() {
-			await Promise.all([
-				cache['ProxyFuturesV2MarketBTC'].setViewsTarget(instance.address, {
-					from: owner,
-				}),
-			]);
+			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+
+			await Promise.all(
+				filteredFunctions.map(e =>
+					cache['ProxyFuturesV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
 		},
 		async FuturesV2MarketViewsETH() {
-			await Promise.all([
-				cache['ProxyFuturesV2MarketETH'].setViewsTarget(instance.address, {
-					from: owner,
-				}),
-			]);
+			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+
+			await Promise.all(
+				filteredFunctions.map(e =>
+					cache['ProxyFuturesV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
 		},
 		async FuturesV2MarketBTC() {
 			await Promise.all([
@@ -1652,8 +1690,11 @@ const setupAllContracts = async ({
 
 			// TODO: fetch settings per-market programmatically
 			const setupFuturesV2Market = async market => {
-				const assetKey = await market.baseAsset();
-				const marketKey = await market.marketKey();
+				const marketViewsArtifact = artifacts.require('FuturesV2MarketViews');
+				const proxiedMarketViews = await marketViewsArtifact.at(market.address);
+
+				const assetKey = await proxiedMarketViews.baseAsset();
+				const marketKey = await proxiedMarketViews.marketKey();
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await updateAggregatorRates(returnObj['ExchangeRates'], null, [assetKey], [toUnit('1')]);
 				await Promise.all([
