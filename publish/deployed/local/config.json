@@ -208,5 +208,8 @@
 	},
 	"ExchangerLib": {
 		"deploy": true
+	},
+	"DirectIntegrationManager": {
+		"deploy": true
 	}
 }

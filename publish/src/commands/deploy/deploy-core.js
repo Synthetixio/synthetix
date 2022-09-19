@@ -330,4 +330,11 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
+
+	await deployer.deployContract({
+		name: 'DirectIntegrationManager',
+		source: 'DirectIntegrationManager',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
 };
