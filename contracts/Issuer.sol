@@ -168,7 +168,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function allNetworksDebtInfo()
-        public
+        internal
         view
         returns (
             uint256 debt,
