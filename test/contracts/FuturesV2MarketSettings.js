@@ -3,7 +3,13 @@ const { artifacts, contract } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toUnit, toBN } = require('../utils')();
 
-const { mockGenericContractFnc, setupAllContracts, setupContract } = require('./setup');
+const {
+	mockGenericContractFnc,
+	setupAllContracts,
+	setupContract,
+	excludedFunctions,
+	getFunctionSignatures,
+} = require('./setup');
 const { assert } = require('./common');
 const {
 	getDecodedLogs,
@@ -89,8 +95,17 @@ contract('FuturesV2MarketSettings', accounts => {
 			contract: 'ProxyFuturesV2',
 			args: [owner],
 		});
+
+		const filteredFunctions = getFunctionSignatures(mockFuturesMarketBTCImpl, excludedFunctions);
+
 		await mockFuturesMarketBTC.setTarget(mockFuturesMarketBTCImpl.address, { from: owner });
-		await mockFuturesMarketBTC.setViewsTarget(mockFuturesMarketBTCImpl.address, { from: owner });
+		await Promise.all(
+			filteredFunctions.map(e =>
+				mockFuturesMarketBTC.addRoute(e.signature, mockFuturesMarketBTCImpl.address, e.isView, {
+					from: owner,
+				})
+			)
+		);
 
 		// add the market
 		await futuresMarketManager.addMarkets(
@@ -446,8 +461,17 @@ contract('FuturesV2MarketSettings', accounts => {
 				contract: 'ProxyFuturesV2',
 				args: [owner],
 			});
+
+			const filteredFunctions = getFunctionSignatures(secondBTCMarketImpl, excludedFunctions);
+
 			await secondBTCMarket.setTarget(secondBTCMarketImpl.address, { from: owner });
-			await secondBTCMarket.setViewsTarget(secondBTCMarketImpl.address, { from: owner });
+			await Promise.all(
+				filteredFunctions.map(e =>
+					secondBTCMarket.addRoute(e.signature, secondBTCMarketImpl.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
 
 			// add the market
 			await futuresMarketManager.addMarkets(

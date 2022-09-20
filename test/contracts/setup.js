@@ -119,6 +119,36 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	await instance.mockReturns(signature, responseAsEncodedData);
 };
 
+// Futures V2 Proxy
+const excludedFunctions = [
+	// Owned
+	'nominateNewOwner',
+	'acceptOwnership',
+	// MixinResolver
+	'resolver',
+	'resolverAddressesRequired',
+	'rebuildCache',
+	'isResolvedCache',
+	// FuturesV2MarketBase
+	'marketState',
+];
+
+const getFunctionSignatures = (instance, excludedFunctions) => {
+	const contractInterface = new ethers.utils.Interface(instance.abi);
+	const signatures = [];
+	const funcNames = Object.keys(contractInterface.functions);
+	for (const funcName of funcNames) {
+		const signature = {
+			signature: contractInterface.getSighash(contractInterface.functions[funcName]),
+			functionName: contractInterface.functions[funcName].name,
+			stateMutability: contractInterface.functions[funcName].stateMutability,
+			isView: contractInterface.functions[funcName].stateMutability === 'view',
+		};
+		signatures.push(signature);
+	}
+	return signatures.filter(f => !excludedFunctions.includes(f.functionName));
+};
+
 /**
  * Setup an individual contract. Note: will fail if required dependencies aren't provided in the cache.
  */
@@ -390,36 +420,6 @@ const setupContract = async ({
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
 	}
-
-	// Futures V2 Proxy
-	const excludedFunctions = [
-		// Owned
-		'nominateNewOwner',
-		'acceptOwnership',
-		// MixinResolver
-		'resolver',
-		'resolverAddressesRequired',
-		'rebuildCache',
-		'isResolvedCache',
-		// FuturesV2MarketBase
-		'marketState',
-	];
-
-	const getFunctionSignatures = (instance, excludedFunctions) => {
-		const contractInterface = new ethers.utils.Interface(instance.abi);
-		const signatures = [];
-		const funcNames = Object.keys(contractInterface.functions);
-		for (const funcName of funcNames) {
-			const signature = {
-				signature: contractInterface.getSighash(contractInterface.functions[funcName]),
-				functionName: contractInterface.functions[funcName].name,
-				stateMutability: contractInterface.functions[funcName].stateMutability,
-				isView: contractInterface.functions[funcName].stateMutability === 'view',
-			};
-			signatures.push(signature);
-		}
-		return signatures.filter(f => !excludedFunctions.includes(f.functionName));
-	};
 
 	const postDeployTasks = {
 		async Synthetix() {
@@ -1806,4 +1806,6 @@ module.exports = {
 	setupContract,
 	setupAllContracts,
 	constantsOverrides,
+	excludedFunctions,
+	getFunctionSignatures,
 };

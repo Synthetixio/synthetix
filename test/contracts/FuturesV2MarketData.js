@@ -2,7 +2,12 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { toWei, toBN } = web3.utils;
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
-const { setupContract, setupAllContracts } = require('./setup');
+const {
+	setupContract,
+	setupAllContracts,
+	excludedFunctions,
+	getFunctionSignatures,
+} = require('./setup');
 const { assert } = require('./common');
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
@@ -58,6 +63,7 @@ contract('FuturesV2MarketData', accounts => {
 				'FuturesV2MarketManager',
 				'FuturesV2MarketSettings',
 				'FuturesV2MarketStateBTC',
+				'FuturesV2MarketViewsBTC',
 				'FuturesV2MarketBTC',
 				'FuturesV2MarketData',
 				'AddressResolver',
@@ -112,9 +118,17 @@ contract('FuturesV2MarketData', accounts => {
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
+			const filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
+
 			await marketState.setAssociatedContract(marketImpl.address, { from: owner });
 			await market.setTarget(marketImpl.address, { from: owner });
-			await market.setViewsTarget(marketViews.address, { from: owner });
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketViews.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
 			await futuresMarketManager.addMarkets([market.address], [marketImpl.address], {
 				from: owner,
 			});
