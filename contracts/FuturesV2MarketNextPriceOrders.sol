@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./FuturesV2MarketMutations.sol";
+import "./FuturesV2MarketProxyable.sol";
 import "./interfaces/IFuturesV2MarketNextPriceOrders.sol";
 
 // Reference
@@ -20,7 +20,16 @@ import "./interfaces/IFuturesV2MarketBaseTypes.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations, IFuturesV2MarketNextPriceOrders {
+contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, FuturesV2MarketProxyable {
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor(
+        address payable _proxy,
+        address _marketState,
+        address _owner,
+        address _resolver
+    ) public FuturesV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
+
     function nextPriceOrders(address account) external view returns (NextPriceOrder memory) {
         return marketState.nextPriceOrders(account);
     }
@@ -324,6 +333,29 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations, IFuturesV2Ma
             NEXTPRICEORDERREMOVED_SIG,
             addressToBytes32(account),
             0,
+            0
+        );
+    }
+
+    bytes32 internal constant POSITIONMODIFIED_SIG =
+        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
+
+    function emitPositionModified(
+        uint id,
+        address account,
+        uint margin,
+        int size,
+        int tradeSize,
+        uint lastPrice,
+        uint fundingIndex,
+        uint fee
+    ) internal {
+        proxy._emit(
+            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
+            3,
+            POSITIONMODIFIED_SIG,
+            bytes32(id),
+            addressToBytes32(account),
             0
         );
     }

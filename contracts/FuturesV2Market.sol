@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./FuturesV2MarketMutations.sol";
-import "./MixinFuturesV2NextPriceOrders.sol";
 import "./interfaces/IFuturesV2Market.sol";
 
 /*
@@ -55,7 +54,7 @@ import "./interfaces/IFuturesV2Market.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2Market
-contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketMutations, MixinFuturesV2NextPriceOrders {
+contract FuturesV2Market is IFuturesV2Market, FuturesV2MarketMutations {
     constructor(
         address payable _proxy,
         address _marketState,
