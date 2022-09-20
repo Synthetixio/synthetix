@@ -3,6 +3,10 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./FuturesV2MarketMutations.sol";
+import "./interfaces/IFuturesV2MarketNextPriceOrders.sol";
+
+// Reference
+import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 
 /**
  Mixin that implements NextPrice orders mechanism for the futures market.
@@ -16,9 +20,10 @@ import "./FuturesV2MarketMutations.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
-    /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
-    mapping(address => NextPriceOrder) public nextPriceOrders;
+contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations, IFuturesV2MarketNextPriceOrders {
+    function nextPriceOrders(address account) external view returns (NextPriceOrder memory) {
+        return marketState.nextPriceOrders(account);
+    }
 
     ///// Mutative methods
 
@@ -41,7 +46,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
 
     function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
         // check that a previous order doesn't exist
-        require(nextPriceOrders[messageSender].sizeDelta == 0, "previous order exists");
+        require(marketState.nextPriceOrders(messageSender).sizeDelta == 0, "previous order exists");
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
         Position memory position = marketState.positions(messageSender);
@@ -88,7 +93,14 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
             order.trackingCode
         );
         // store order
-        nextPriceOrders[messageSender] = order;
+        marketState.updateNextPriceOrder(
+            messageSender,
+            order.sizeDelta,
+            order.targetRoundId,
+            order.commitDeposit,
+            order.keeperDeposit,
+            order.trackingCode
+        );
     }
 
     /**
@@ -105,7 +117,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
      */
     function cancelNextPriceOrder(address account) external {
         // important!! order of the account, not the msg.sender
-        NextPriceOrder memory order = nextPriceOrders[account];
+        NextPriceOrder memory order = marketState.nextPriceOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
@@ -136,7 +148,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
 
         // remove stored order
         // important!! position of the account, not the msg.sender
-        delete nextPriceOrders[account];
+        marketState.deleteNextPriceOrder(account);
         // emit event
         emitNextPriceOrderRemoved(
             account,
@@ -164,7 +176,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
      */
     function executeNextPriceOrder(address account) external {
         // important!: order  of the account, not the sender!
-        NextPriceOrder memory order = nextPriceOrders[account];
+        NextPriceOrder memory order = marketState.nextPriceOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
@@ -213,7 +225,7 @@ contract MixinFuturesV2NextPriceOrders is FuturesV2MarketMutations {
         );
 
         // remove stored order
-        delete nextPriceOrders[account];
+        marketState.deleteNextPriceOrder(account);
         // emit event
         emitNextPriceOrderRemoved(
             account,

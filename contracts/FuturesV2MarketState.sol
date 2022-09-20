@@ -60,6 +60,9 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     // This increments for each position; zero reflects a position that does not exist.
     uint64 internal _nextPositionId = 1;
 
+    /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
+    mapping(address => NextPriceOrder) public nextPriceOrders;
+
     constructor(
         address _owner,
         address _associatedContract,
@@ -151,6 +154,27 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     }
 
     /**
+     * @notice Store a next price order at the specified account
+     * @dev Only the associated contract may call this.
+     * @param account The account whose value to set.
+     * @param sizeDelta Difference in position to pass to modifyPosition
+     * @param targetRoundId Price oracle roundId using which price this order needs to executed
+     * @param commitDeposit The commitDeposit paid upon submitting that needs to be refunded if order succeeds
+     * @param keeperDeposit The keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
+     * @param trackingCode Tracking code to emit on execution for volume source fee sharing
+     */
+    function updateNextPriceOrder(
+        address account,
+        int128 sizeDelta,
+        uint128 targetRoundId,
+        uint128 commitDeposit,
+        uint128 keeperDeposit,
+        bytes32 trackingCode
+    ) external onlyAssociatedContract {
+        nextPriceOrders[account] = NextPriceOrder(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode);
+    }
+
+    /**
      * @notice Delete the position of a given account
      * @dev Only the associated contract may call this.
      * @param account The account whose position should be deleted.
@@ -160,5 +184,9 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         if (_positionAddresses.contains(account)) {
             _positionAddresses.remove(account);
         }
+    }
+
+    function deleteNextPriceOrder(address account) external onlyAssociatedContract {
+        delete nextPriceOrders[account];
     }
 }

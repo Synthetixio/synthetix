@@ -17,14 +17,6 @@ interface IFuturesV2Market {
 
     function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external;
 
-    function submitNextPriceOrder(int sizeDelta) external;
-
-    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external;
-
-    function cancelNextPriceOrder(address account) external;
-
-    function executeNextPriceOrder(address account) external;
-
     function closePosition() external;
 
     function closePositionWithTracking(bytes32 trackingCode) external;
