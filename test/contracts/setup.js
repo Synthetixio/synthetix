@@ -370,6 +370,18 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+		FuturesV2NextPriceBTC: [
+			tryGetAddressOf('ProxyFuturesV2MarketBTC'),
+			tryGetAddressOf('FuturesV2MarketStateBTC'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		FuturesV2NextPriceETH: [
+			tryGetAddressOf('ProxyFuturesV2MarketETH'),
+			tryGetAddressOf('FuturesV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
 		FuturesV2MarketBTC: [
 			tryGetAddressOf('ProxyFuturesV2MarketBTC'),
 			tryGetAddressOf('FuturesV2MarketStateBTC'),
@@ -699,6 +711,30 @@ const setupContract = async ({
 					})
 				)
 			);
+		},
+		async FuturesV2NextPriceBTC() {
+			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+
+			await Promise.all([
+				instance.setProxy(cache['ProxyFuturesV2MarketBTC'].address, { from: owner }),
+				...filteredFunctions.map(e =>
+					cache['ProxyFuturesV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				),
+			]);
+		},
+		async FuturesV2NextPriceETH() {
+			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+
+			await Promise.all([
+				instance.setProxy(cache['ProxyFuturesV2MarketETH'].address, { from: owner }),
+				...filteredFunctions.map(e =>
+					cache['ProxyFuturesV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				),
+			]);
 		},
 		async FuturesV2MarketBTC() {
 			await Promise.all([
@@ -1290,12 +1326,35 @@ const setupAllContracts = async ({
 			],
 		},
 		{
+			contract: 'FuturesV2NextPriceBTC',
+			source: 'FuturesV2MarketNextPriceOrders',
+			deps: [
+				'ProxyFuturesV2MarketETH',
+				'FuturesV2MarketStateETH',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
+			contract: 'FuturesV2NextPriceETH',
+			source: 'FuturesV2MarketNextPriceOrders',
+			deps: [
+				'ProxyFuturesV2MarketETH',
+				'FuturesV2MarketStateETH',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+			],
+		},
+		{
 			contract: 'FuturesV2MarketBTC',
 			source: 'TestableFuturesV2Market',
 			deps: [
 				'ProxyFuturesV2MarketBTC',
 				'FuturesV2MarketStateBTC',
 				'FuturesV2MarketViewsBTC',
+				'FuturesV2NextPriceBTC',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
@@ -1308,6 +1367,7 @@ const setupAllContracts = async ({
 				'ProxyFuturesV2MarketETH',
 				'FuturesV2MarketStateETH',
 				'FuturesV2MarketViewsETH',
+				'FuturesV2NextPriceETH',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
