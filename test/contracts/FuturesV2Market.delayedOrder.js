@@ -9,7 +9,7 @@ const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
-contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
+contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
 		futuresMarketState,
@@ -105,11 +105,14 @@ contract('FuturesV2Market MixinFuturesV2DelayedOrders', accounts => {
 	});
 
 	describe('submitDelayedOrder()', () => {
-		it('submitting an order results in correct views and events', async () => {
+		it.only('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await futuresMarket.orderFee(size))[0];
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
+
+			console.log(futuresMarket);
+
 			const tx = await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
 
 			const order = await futuresMarketState.getDelayedOrder(trader);

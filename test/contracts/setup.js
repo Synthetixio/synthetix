@@ -1327,7 +1327,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesV2NextPriceBTC',
-			source: 'FuturesV2MarketNextPriceOrders',
+			source: 'FuturesV2MarketDelayedOrders',
 			deps: [
 				'ProxyFuturesV2MarketETH',
 				'FuturesV2MarketStateETH',
@@ -1338,7 +1338,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesV2NextPriceETH',
-			source: 'FuturesV2MarketNextPriceOrders',
+			source: 'FuturesV2MarketDelayedOrders',
 			deps: [
 				'ProxyFuturesV2MarketETH',
 				'FuturesV2MarketStateETH',

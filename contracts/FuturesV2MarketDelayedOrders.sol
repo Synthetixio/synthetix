@@ -3,13 +3,13 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./FuturesV2MarketProxyable.sol";
-import "./interfaces/IFuturesV2MarketNextPriceOrders.sol";
+import "./interfaces/IFuturesV2MarketDelayedOrders.sol";
 
 // Reference
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 
 /**
- Mixin that implements NextPrice orders mechanism for the futures market.
+ Implements Delayed mechanism for the futures market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -20,7 +20,7 @@ import "./interfaces/IFuturesV2MarketBaseTypes.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, FuturesV2MarketProxyable {
+contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -31,7 +31,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, Future
     ) public FuturesV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     function nextPriceOrders(address account) external view returns (DelayedOrder memory) {
-        return marketState.nextPriceOrders(account);
+        return marketState.delayedOrders(account);
     }
 
     uint public constant MIN_NEXT_PRICE_ORDER_DELAY = 60 seconds;
@@ -74,7 +74,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, Future
         bytes32 trackingCode
     ) internal {
         // check that a previous order doesn't exist
-        require(marketState.delayedOrder(messageSender).sizeDelta == 0, "previous order exists");
+        require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
 
         // ensure the maxTimeDelta is above the minimum required delay
         require(maxTimeDelta >= MIN_ORDER_DELAY, "minTimeDelta delay too short");
@@ -150,7 +150,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, Future
      */
     function cancelDelayedOrder(address account) external {
         // important!! order of the account, not the msg.sender
-        DelayedOrder memory order = marketState.delayedOrder(account);
+        DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
@@ -209,7 +209,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketNextPriceOrders, Future
      */
     function executeDelayedOrder(address account) external {
         // important!: order of the account, not the sender!
-        DelayedOrder memory order = marketState.delayedOrder(account);
+        DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
