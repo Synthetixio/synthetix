@@ -4,13 +4,13 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 import "./Owned.sol";
-import "./State.sol";
+import "./StateShared.sol";
 
 // Libraries
 import "./AddressSetLib.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketState
-contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
+contract FuturesV2MarketState is Owned, StateShared, IFuturesV2MarketBaseTypes {
     using AddressSetLib for AddressSetLib.AddressSet;
 
     // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
@@ -65,10 +65,10 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
 
     constructor(
         address _owner,
-        address _associatedContract,
+        address[] memory _associatedContracts,
         bytes32 _baseAsset,
         bytes32 _marketKey
-    ) public Owned(_owner) State(_associatedContract) {
+    ) public Owned(_owner) StateShared(_associatedContracts) {
         baseAsset = _baseAsset;
         marketKey = _marketKey;
 
@@ -91,43 +91,43 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     function getPositionAddressesPage(uint index, uint pageSize)
         external
         view
-        onlyAssociatedContract
+        onlyAssociatedContracts
         returns (address[] memory)
     {
         return _positionAddresses.getPage(index, pageSize);
     }
 
-    function setMarketKey(bytes32 _marketKey) external onlyAssociatedContract {
+    function setMarketKey(bytes32 _marketKey) external onlyAssociatedContracts {
         require(marketKey == bytes32(0) || _marketKey == marketKey, "Cannot change market key");
         marketKey = _marketKey;
     }
 
-    function setBaseAsset(bytes32 _baseAsset) external onlyAssociatedContract {
+    function setBaseAsset(bytes32 _baseAsset) external onlyAssociatedContracts {
         require(baseAsset == bytes32(0) || _baseAsset == baseAsset, "Cannot change base asset");
         baseAsset = _baseAsset;
     }
 
-    function setMarketSize(uint128 _marketSize) external onlyAssociatedContract {
+    function setMarketSize(uint128 _marketSize) external onlyAssociatedContracts {
         marketSize = _marketSize;
     }
 
-    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContract {
+    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyAssociatedContracts {
         _entryDebtCorrection = entryDebtCorrection;
     }
 
-    function setNextPositionId(uint64 nextPositionId) external onlyAssociatedContract {
+    function setNextPositionId(uint64 nextPositionId) external onlyAssociatedContracts {
         _nextPositionId = nextPositionId;
     }
 
-    function setMarketSkew(int128 _marketSkew) external onlyAssociatedContract {
+    function setMarketSkew(int128 _marketSkew) external onlyAssociatedContracts {
         marketSkew = _marketSkew;
     }
 
-    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContract {
+    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyAssociatedContracts {
         fundingLastRecomputed = lastRecomputed;
     }
 
-    function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContract {
+    function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContracts {
         fundingSequence.push(_fundingSequence);
     }
 
@@ -148,7 +148,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         uint128 margin,
         uint128 lastPrice,
         int128 size
-    ) external onlyAssociatedContract {
+    ) external onlyAssociatedContracts {
         positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
         _positionAddresses.add(account);
     }
@@ -170,7 +170,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
         uint128 commitDeposit,
         uint128 keeperDeposit,
         bytes32 trackingCode
-    ) external onlyAssociatedContract {
+    ) external onlyAssociatedContracts {
         nextPriceOrders[account] = NextPriceOrder(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode);
     }
 
@@ -179,14 +179,14 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
      * @dev Only the associated contract may call this.
      * @param account The account whose position should be deleted.
      */
-    function deletePosition(address account) external onlyAssociatedContract {
+    function deletePosition(address account) external onlyAssociatedContracts {
         delete positions[account];
         if (_positionAddresses.contains(account)) {
             _positionAddresses.remove(account);
         }
     }
 
-    function deleteNextPriceOrder(address account) external onlyAssociatedContract {
+    function deleteNextPriceOrder(address account) external onlyAssociatedContracts {
         delete nextPriceOrders[account];
     }
 }

@@ -124,11 +124,15 @@ const excludedFunctions = [
 	// Owned
 	'nominateNewOwner',
 	'acceptOwnership',
+	'nominatedOwner',
+	'owner',
 	// MixinResolver
 	'resolver',
 	'resolverAddressesRequired',
 	'rebuildCache',
 	'isResolvedCache',
+	// ProxyFuturesV2
+	'getRoutesPage',
 	// FuturesV2MarketBase
 	'marketState',
 ];
@@ -346,13 +350,13 @@ const setupContract = async ({
 		// Futures V2
 		FuturesV2MarketStateBTC: [
 			owner,
-			deployerAccount,
+			[deployerAccount],
 			toBytes32('sBTC'), // base asset
 			toBytes32('sBTC' + perpSuffix), // market key
 		],
 		FuturesV2MarketStateETH: [
 			owner,
-			deployerAccount,
+			[deployerAccount],
 			toBytes32('sETH'), // base asset
 			toBytes32('sETH' + perpSuffix), // market key
 		],
@@ -716,6 +720,12 @@ const setupContract = async ({
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
+				cache['FuturesV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
+					from: owner,
+				}),
+				cache['FuturesV2MarketStateBTC'].addAssociatedContracts([instance.address], {
+					from: owner,
+				}),
 				instance.setProxy(cache['ProxyFuturesV2MarketBTC'].address, { from: owner }),
 				...filteredFunctions.map(e =>
 					cache['ProxyFuturesV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
@@ -728,6 +738,12 @@ const setupContract = async ({
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
+				cache['FuturesV2MarketStateETH'].removeAssociatedContracts([deployerAccount], {
+					from: owner,
+				}),
+				cache['FuturesV2MarketStateETH'].addAssociatedContracts([instance.address], {
+					from: owner,
+				}),
 				instance.setProxy(cache['ProxyFuturesV2MarketETH'].address, { from: owner }),
 				...filteredFunctions.map(e =>
 					cache['ProxyFuturesV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
@@ -739,33 +755,31 @@ const setupContract = async ({
 		async FuturesV2MarketBTC() {
 			await Promise.all([
 				instance.setProxy(cache['ProxyFuturesV2MarketBTC'].address, { from: owner }),
-				cache['FuturesV2MarketStateBTC'].setAssociatedContract(instance.address, {
+				cache['FuturesV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
+					from: owner,
+				}),
+				cache['FuturesV2MarketStateBTC'].addAssociatedContracts([instance.address], {
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketBTC'].setTarget(instance.address, { from: owner }),
-				cache['FuturesV2MarketManager'].addMarkets(
-					[cache['ProxyFuturesV2MarketBTC'].address],
-					[instance.address],
-					{
-						from: owner,
-					}
-				),
+				cache['FuturesV2MarketManager'].addMarkets([cache['ProxyFuturesV2MarketBTC'].address], {
+					from: owner,
+				}),
 			]);
 		},
 		async FuturesV2MarketETH() {
 			await Promise.all([
 				instance.setProxy(cache['ProxyFuturesV2MarketETH'].address, { from: owner }),
-				cache['FuturesV2MarketStateETH'].setAssociatedContract(instance.address, {
+				cache['FuturesV2MarketStateETH'].removeAssociatedContracts([deployerAccount], {
+					from: owner,
+				}),
+				cache['FuturesV2MarketStateETH'].addAssociatedContracts([instance.address], {
 					from: owner,
 				}),
 				cache['ProxyFuturesV2MarketETH'].setTarget(instance.address, { from: owner }),
-				cache['FuturesV2MarketManager'].addMarkets(
-					[cache['ProxyFuturesV2MarketETH'].address],
-					[instance.address],
-					{
-						from: owner,
-					}
-				),
+				cache['FuturesV2MarketManager'].addMarkets([cache['ProxyFuturesV2MarketETH'].address], {
+					from: owner,
+				}),
 			]);
 		},
 		async PerpsV2MarketpBTC() {

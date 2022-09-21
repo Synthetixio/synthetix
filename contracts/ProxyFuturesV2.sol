@@ -18,7 +18,9 @@ contract ProxyFuturesV2 is Owned {
         bool isView;
     }
 
+    mapping(address => uint) internal _targetReferences; // number of routes referincing a target
     mapping(bytes4 => uint) internal _routeIndexes;
+    address[] internal _routedTargets;
     Route[] internal _routes;
 
     constructor(address _owner) public Owned(_owner) {}
@@ -32,31 +34,42 @@ contract ProxyFuturesV2 is Owned {
         return index != 0 || _routes[0].selector == selector;
     }
 
-    function _removeRoute(bytes4 selector) internal {
-        require(_contains(selector), "Selector not in set.");
-        // Replace the removed selector with the last selector of the list.
-        uint index = _routeIndexes[selector];
-        uint lastIndex = _routes.length - 1; // We required that selector is in the list, so it is not empty.
-        if (index != lastIndex) {
-            // No need to shift the last selector if it is the one we want to delete.
-            Route storage shiftedElement = _routes[lastIndex];
-            _routes[index] = shiftedElement;
-            _routeIndexes[shiftedElement.selector] = index;
+    function _removeTargetReference(address implementation) internal {
+        require(_targetReferences[implementation] > 0, "Target not referenced.");
+
+        // Decrement the references
+        _targetReferences[implementation] -= 1;
+
+        // if was the latest reference, remove it from the _routedTargets and emit an event
+        if (_targetReferences[implementation] == 0) {
+            // Accepting a for loop since implementations for a market is going to be a very limited number (initially only 2)
+            for (uint idx = 0; idx < _routedTargets.length; idx++) {
+                if (_routedTargets[idx] == implementation) {
+                    // remove it by bringing the last one to that position and poping the latest item (if it's the latest one will do an unecessary write)
+                    _routedTargets[idx] = _routedTargets[_routedTargets.length - 1];
+                    _routedTargets.pop();
+                    break;
+                }
+            }
+
+            emit TargetedRouteRemoved(implementation);
         }
-        _routes.pop();
-        delete _routeIndexes[selector];
     }
 
     function addRoute(
         bytes4 selector,
         address implementation,
         bool isView
-    ) external {
+    ) external onlyOwner {
         require(selector != bytes4(0), "invalid nil selector");
 
         if (_contains(selector)) {
             // Update data
             Route storage route = _routes[_routeIndexes[selector]];
+
+            // Remove old implementation reference
+            _removeTargetReference(route.implementation);
+
             route.selector = selector;
             route.implementation = implementation;
             route.isView = isView;
@@ -71,11 +84,38 @@ contract ProxyFuturesV2 is Owned {
             _routes.push(newRoute);
         }
 
+        // Add to targeted references
+        _targetReferences[implementation] += 1;
+        if (_targetReferences[implementation] == 1) {
+            // First reference, add to routed targets and emit the event
+            _routedTargets.push(implementation);
+            emit TargetedRouteAdded(implementation);
+        }
+
         emit RouteUpdated(selector, implementation, isView);
     }
 
-    function removeRoute(bytes4 selector) external {
-        _removeRoute(selector);
+    function removeRoute(bytes4 selector) external onlyOwner {
+        require(_contains(selector), "Selector not in set.");
+
+        // Replace the removed selector with the last selector of the list.
+        uint index = _routeIndexes[selector];
+        uint lastIndex = _routes.length - 1; // We required that selector is in the list, so it is not empty.
+
+        // Remove target reference
+        _removeTargetReference(_routes[index].implementation);
+
+        // Ensure target is in latest index
+        if (index != lastIndex) {
+            // No need to shift the last selector if it is the one we want to delete.
+            Route storage shiftedElement = _routes[lastIndex];
+            _routes[index] = shiftedElement;
+            _routeIndexes[shiftedElement.selector] = index;
+        }
+
+        // Remove target
+        _routes.pop();
+        delete _routeIndexes[selector];
         emit RouteRemoved(selector);
     }
 
@@ -103,6 +143,15 @@ contract ProxyFuturesV2 is Owned {
         return page;
     }
 
+    function getAllTargets() external view returns (address[] memory) {
+        address[] memory allTargets = new address[](_routedTargets.length + 1);
+        for (uint i = 0; i < _routedTargets.length; i++) {
+            allTargets[i] = _routedTargets[i];
+        }
+        allTargets[_routedTargets.length] = target;
+        return allTargets;
+    }
+
     ///// BASED ON PROXY.SOL /////
     /* ----- Proxy based on Proxy.sol ----- */
 
@@ -118,7 +167,7 @@ contract ProxyFuturesV2 is Owned {
         bytes32 topic2,
         bytes32 topic3,
         bytes32 topic4
-    ) external onlyTarget {
+    ) external onlyTargets {
         uint size = callData.length;
         bytes memory _callData = callData;
 
@@ -180,8 +229,8 @@ contract ProxyFuturesV2 is Owned {
         }
     }
 
-    modifier onlyTarget {
-        require(msg.sender == target, "Must be proxy target");
+    modifier onlyTargets {
+        require(msg.sender == target || _targetReferences[msg.sender] > 0, "Must be a proxy target");
         _;
     }
 
@@ -190,4 +239,8 @@ contract ProxyFuturesV2 is Owned {
     event RouteUpdated(bytes4 route, address implementation, bool isView);
 
     event RouteRemoved(bytes4 route);
+
+    event TargetedRouteAdded(address targetedRoute);
+
+    event TargetedRouteRemoved(address targetedRoute);
 }

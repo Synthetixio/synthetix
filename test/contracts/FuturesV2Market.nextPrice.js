@@ -12,6 +12,7 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
+		futuresNextPrice,
 		exchangeRates,
 		circuitBreaker,
 		sUSD,
@@ -46,6 +47,7 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 		({
 			FuturesV2MarketSettings: futuresMarketSettings,
 			ProxyFuturesV2MarketBTC: futuresMarket,
+			FuturesV2NextPriceBTC: futuresNextPrice,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -122,7 +124,10 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			assert.bnEqual(position.margin, expectedMargin);
 
 			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [futuresMarket, futuresNextPrice],
+			});
 			assert.equal(decodedLogs.length, 3);
 			// PositionModified
 			decodedEventEqual({
@@ -209,7 +214,10 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, futuresMarket, futuresNextPrice],
+			});
 
 			// NextPriceOrderSubmitted
 			decodedEventEqual({
@@ -232,7 +240,10 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 			// excute the order
 			const tx = await futuresMarket.executeNextPriceOrder(trader, { from: trader });
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, futuresMarket, futuresNextPrice],
+			});
 
 			decodedEventEqual({
 				event: 'FuturesTracking',
@@ -274,7 +285,10 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				assert.bnEqual(order.keeperDeposit, 0);
 
 				// The relevant events are properly emitted
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, futuresMarket, futuresNextPrice],
+				});
 
 				if (from === trader) {
 					// trader gets refunded
@@ -540,7 +554,10 @@ contract('FuturesV2Market MixinFuturesNextPriceOrders', accounts => {
 				assert.bnEqual(order.keeperDeposit, 0);
 
 				// The relevant events are properly emitted
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, futuresMarket, futuresNextPrice],
+				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded
 				if (from === trader) {

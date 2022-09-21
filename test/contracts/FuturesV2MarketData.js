@@ -91,7 +91,7 @@ contract('FuturesV2MarketData', accounts => {
 				source: 'FuturesV2MarketState',
 				args: [
 					owner,
-					owner,
+					[owner],
 					assetKey, // base asset
 					marketKey,
 				],
@@ -118,9 +118,21 @@ contract('FuturesV2MarketData', accounts => {
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
-			const filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
+			const marketNextPrice = await setupContract({
+				accounts,
+				contract: 'FuturesV2NextPriceAdded' + symbol,
+				source: 'FuturesV2MarketNextPriceOrders',
+				args: [market.address, marketState.address, owner, addressResolver.address],
+			});
 
-			await marketState.setAssociatedContract(marketImpl.address, { from: owner });
+			const filteredFunctions = [
+				...getFunctionSignatures(marketViews, excludedFunctions),
+				...getFunctionSignatures(marketNextPrice, excludedFunctions),
+			];
+
+			await marketState.addAssociatedContracts([marketImpl.address, marketNextPrice.address], {
+				from: owner,
+			});
 			await market.setTarget(marketImpl.address, { from: owner });
 			await Promise.all(
 				filteredFunctions.map(e =>
@@ -129,13 +141,16 @@ contract('FuturesV2MarketData', accounts => {
 					})
 				)
 			);
-			await futuresMarketManager.addMarkets([market.address], [marketImpl.address], {
+			await futuresMarketManager.addMarkets([market.address], {
 				from: owner,
 			});
 
-			await addressResolver.rebuildCaches([market.address, marketViews.address], {
-				from: owner,
-			});
+			await addressResolver.rebuildCaches(
+				[market.address, marketViews.address, marketNextPrice.address],
+				{
+					from: owner,
+				}
+			);
 
 			await setupPriceAggregators(exchangeRates, owner, [assetKey]);
 			await setPrice(assetKey, toUnit(1000));
