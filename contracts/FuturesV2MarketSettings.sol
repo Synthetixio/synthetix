@@ -241,10 +241,7 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         _setParameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA, _maxDelayTimeDelta);
     }
 
-    function setParameters(
-        bytes32 _marketKey,
-        Parameters calldata _parameters
-    ) external onlyOwner {
+    function setParameters(bytes32 _marketKey, Parameters calldata _parameters) external onlyOwner {
         _recomputeFunding(_marketKey);
         setTakerFee(_marketKey, _parameters.takerFee);
         setMakerFee(_marketKey, _parameters.makerFee);
