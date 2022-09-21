@@ -65,8 +65,8 @@ contract('FuturesV2Market', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
-	const takerFeeNextPrice = toUnit('0.0005');
-	const makerFeeNextPrice = toUnit('0.0001');
+	const takerFeeDelayedOrder = toUnit('0.0005');
+	const makerFeeDelayedOrder = toUnit('0.0001');
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
@@ -205,7 +205,7 @@ contract('FuturesV2Market', accounts => {
 			const parameters = await futuresMarketSettings.parameters(marketKey);
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);
-			assert.bnEqual(parameters.takerFeeNextPrice, takerFeeNextPrice);
+			assert.bnEqual(parameters.takerFeeDelayedOrder, takerFeeNextPrice);
 			assert.bnEqual(parameters.makerFeeNextPrice, makerFeeNextPrice);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);

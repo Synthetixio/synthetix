@@ -370,13 +370,13 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		FuturesV2NextPriceBTC: [
+		FuturesV2DelayedOrderBTC: [
 			tryGetAddressOf('ProxyFuturesV2MarketBTC'),
 			tryGetAddressOf('FuturesV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		FuturesV2NextPriceETH: [
+		FuturesV2DelayedOrderETH: [
 			tryGetAddressOf('ProxyFuturesV2MarketETH'),
 			tryGetAddressOf('FuturesV2MarketStateETH'),
 			owner,
@@ -712,7 +712,7 @@ const setupContract = async ({
 				)
 			);
 		},
-		async FuturesV2NextPriceBTC() {
+		async FuturesV2DelayedOrderBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
@@ -724,7 +724,7 @@ const setupContract = async ({
 				),
 			]);
 		},
-		async FuturesV2NextPriceETH() {
+		async FuturesV2DelayedOrderETH() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
@@ -1326,7 +1326,7 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'FuturesV2NextPriceBTC',
+			contract: 'FuturesV2DelayedOrderBTC',
 			source: 'FuturesV2MarketDelayedOrders',
 			deps: [
 				'ProxyFuturesV2MarketETH',
@@ -1337,7 +1337,7 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'FuturesV2NextPriceETH',
+			contract: 'FuturesV2DelayedOrderETH',
 			source: 'FuturesV2MarketDelayedOrders',
 			deps: [
 				'ProxyFuturesV2MarketETH',
@@ -1354,7 +1354,7 @@ const setupAllContracts = async ({
 				'ProxyFuturesV2MarketBTC',
 				'FuturesV2MarketStateBTC',
 				'FuturesV2MarketViewsBTC',
-				'FuturesV2NextPriceBTC',
+				'FuturesV2DelayedOrderBTC',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
@@ -1367,7 +1367,7 @@ const setupAllContracts = async ({
 				'ProxyFuturesV2MarketETH',
 				'FuturesV2MarketStateETH',
 				'FuturesV2MarketViewsETH',
-				'FuturesV2NextPriceETH',
+				'FuturesV2DelayedOrderETH',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',

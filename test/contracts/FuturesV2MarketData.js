@@ -223,8 +223,8 @@ contract('FuturesV2MarketData', accounts => {
 			assert.equal(details.baseAsset, baseAsset);
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
-			assert.bnEqual(details.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
-			assert.bnEqual(details.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
+			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
+			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
@@ -309,8 +309,8 @@ contract('FuturesV2MarketData', accounts => {
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
 			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
-			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
+			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 		});
 
 		it('For market keys', async () => {
@@ -343,8 +343,8 @@ contract('FuturesV2MarketData', accounts => {
 			assert.equal(sBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
-			assert.equal(sBTCSummary.feeRates.takerFeeNextPrice, fmParams.takerFeeNextPrice);
-			assert.equal(sBTCSummary.feeRates.makerFeeNextPrice, fmParams.makerFeeNextPrice);
+			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
+			assert.equal(sBTCSummary.feeRates.makerFeeDelayedOrder, fmParams.makerFeeDelayedOrder);
 
 			const sETHParams = await futuresMarketData.parameters(newMarketKey); // sETH
 

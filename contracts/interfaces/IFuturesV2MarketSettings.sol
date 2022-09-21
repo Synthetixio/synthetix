@@ -4,8 +4,8 @@ interface IFuturesV2MarketSettings {
     struct Parameters {
         uint takerFee;
         uint makerFee;
-        uint takerFeeNextPrice;
-        uint makerFeeNextPrice;
+        uint takerFeeDelayedOrder;
+        uint makerFeeDelayedOrder;
         uint nextPriceConfirmWindow;
         uint maxLeverage;
         uint maxMarketValueUSD;
@@ -17,9 +17,9 @@ interface IFuturesV2MarketSettings {
 
     function makerFee(bytes32 _marketKey) external view returns (uint);
 
-    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint);
+    function takerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint);
 
-    function makerFeeNextPrice(bytes32 _marketKey) external view returns (uint);
+    function makerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint);
 
     function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
 

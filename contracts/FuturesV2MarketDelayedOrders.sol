@@ -30,7 +30,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         address _resolver
     ) public FuturesV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
-    function nextPriceOrders(address account) external view returns (DelayedOrder memory) {
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
         return marketState.delayedOrders(account);
     }
 
@@ -90,15 +90,15 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFeeNextPrice(marketState.marketKey()),
-                makerFee: _makerFeeNextPrice(marketState.marketKey()),
+                takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
+                makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
         _revertIfError(status);
 
         // deduct fees from margin
-        uint commitDeposit = _nextPriceCommitDeposit(params);
+        uint commitDeposit = _delayedOrderCommitDeposit(params);
         uint keeperDeposit = _minKeeperFee();
         _updatePositionMargin(messageSender, position, price, -int(commitDeposit + keeperDeposit));
         // emit event for modifying the position (subtracting the fees from margin)
@@ -254,8 +254,8 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: pastPrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeNextPrice(marketState.marketKey()),
-                makerFee: _makerFeeNextPrice(marketState.marketKey()),
+                takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
+                makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
                 trackingCode: order.trackingCode
             })
         );
@@ -291,7 +291,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
     }
 
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
-    function _nextPriceCommitDeposit(TradeParams memory params) internal view returns (uint) {
+    function _delayedOrderCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
         params.takerFee = _takerFee(marketState.marketKey());
         params.makerFee = _makerFee(marketState.marketKey());
@@ -312,7 +312,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         uint keeperDeposit,
         bytes32 trackingCode
     );
-    bytes32 internal constant NEXTPRICEORDERSUBMITTED_SIG =
+    bytes32 internal constant DELAYEDORDERORDERSUBMITTED_SIG =
         keccak256("DelayedOrderSubmitted(address,int256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderSubmitted(
@@ -326,7 +326,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         proxy._emit(
             abi.encode(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
             2,
-            NEXTPRICEORDERSUBMITTED_SIG,
+            DELAYEDORDERORDERSUBMITTED_SIG,
             addressToBytes32(account),
             0,
             0
@@ -342,7 +342,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         uint keeperDeposit,
         bytes32 trackingCode
     );
-    bytes32 internal constant NEXTPRICEORDERREMOVED_SIG =
+    bytes32 internal constant DELAYEDORDERORDERREMOVED_SIG =
         keccak256("DelayedOrderRemoved(address,uint256,int256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderRemoved(
@@ -357,7 +357,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         proxy._emit(
             abi.encode(currentRoundId, sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
             2,
-            NEXTPRICEORDERREMOVED_SIG,
+            DELAYEDORDERORDERREMOVED_SIG,
             addressToBytes32(account),
             0,
             0

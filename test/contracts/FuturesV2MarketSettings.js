@@ -30,8 +30,8 @@ contract('FuturesV2MarketSettings', accounts => {
 	const marketKey = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
-	const takerFeeNextPrice = toUnit('0.0005');
-	const makerFeeNextPrice = toUnit('0.0001');
+	const takerFeeDelayedOrder = toUnit('0.0005');
+	const makerFeeDelayedOrder = toUnit('0.0001');
 	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
@@ -122,8 +122,8 @@ contract('FuturesV2MarketSettings', accounts => {
 			expected: [
 				'setTakerFee',
 				'setMakerFee',
-				'setTakerFeeNextPrice',
-				'setMakerFeeNextPrice',
+				'setTakerFeeDelayedOrder',
+				'setMakerFeeDelayedOrder',
 				'setNextPriceConfirmWindow',
 				'setMaxLeverage',
 				'setMaxMarketValueUSD',
@@ -145,8 +145,8 @@ contract('FuturesV2MarketSettings', accounts => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
-				takerFeeNextPrice,
-				makerFeeNextPrice,
+				takerFeeDelayedOrder,
+				makerFeeDelayedOrder,
 				nextPriceConfirmWindow,
 				maxLeverage,
 				maxMarketValueUSD,
@@ -179,7 +179,7 @@ contract('FuturesV2MarketSettings', accounts => {
 
 			it('should revert if maker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setMakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setMakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'maker fee greater than 1'
@@ -188,7 +188,7 @@ contract('FuturesV2MarketSettings', accounts => {
 
 			it('should revert if taker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setTakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setTakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'

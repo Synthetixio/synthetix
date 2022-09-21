@@ -105,14 +105,11 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 	});
 
 	describe('submitDelayedOrder()', () => {
-		it.only('submitting an order results in correct views and events', async () => {
+		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await futuresMarket.orderFee(size))[0];
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
-
-			console.log(futuresMarket);
-
 			const tx = await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
 
 			const order = await futuresMarketState.getDelayedOrder(trader);

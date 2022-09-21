@@ -53,17 +53,17 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
     }
 
     /*
-     * The fee charged when opening a position on the heavy side of a futures market using next price mechanism.
+     * The fee charged when opening a position on the heavy side of a futures market using delayed order mechanism.
      */
-    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint) {
-        return _takerFeeNextPrice(_marketKey);
+    function takerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint) {
+        return _takerFeeDelayedOrder(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the light side of a futures market using next price mechanism.
+     * The fee charged when opening a position on the light side of a futures market using delayed order mechanism.
      */
-    function makerFeeNextPrice(bytes32 _marketKey) public view returns (uint) {
-        return _makerFeeNextPrice(_marketKey);
+    function makerFeeDelayedOrder(bytes32 _marketKey) public view returns (uint) {
+        return _makerFeeDelayedOrder(_marketKey);
     }
 
     /*
@@ -107,8 +107,8 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         returns (
             uint takerFee,
             uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
+            uint takerFeeDelayedOrder,
+            uint makerFeeDelayedOrder,
             uint nextPriceConfirmWindow,
             uint maxLeverage,
             uint maxMarketValueUSD,
@@ -118,8 +118,8 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
     {
         takerFee = _takerFee(_marketKey);
         makerFee = _makerFee(_marketKey);
-        takerFeeNextPrice = _takerFeeNextPrice(_marketKey);
-        makerFeeNextPrice = _makerFeeNextPrice(_marketKey);
+        takerFeeDelayedOrder = _takerFeeDelayedOrder(_marketKey);
+        makerFeeDelayedOrder = _makerFeeDelayedOrder(_marketKey);
         nextPriceConfirmWindow = _nextPriceConfirmWindow(_marketKey);
         maxLeverage = _maxLeverage(_marketKey);
         maxMarketValueUSD = _maxMarketValueUSD(_marketKey);
@@ -181,14 +181,14 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         _setParameter(_marketKey, PARAMETER_MAKER_FEE, _makerFee);
     }
 
-    function setTakerFeeNextPrice(bytes32 _marketKey, uint _takerFeeNextPrice) public onlyOwner {
-        require(_takerFeeNextPrice <= 1e18, "taker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
+    function setTakerFeeDelayedOrder(bytes32 _marketKey, uint _takerFeeDelayedOrder) public onlyOwner {
+        require(_takerFeeDelayedOrder <= 1e18, "taker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_TAKER_FEE_DELAYED_ORDER, _takerFeeDelayedOrder);
     }
 
-    function setMakerFeeNextPrice(bytes32 _marketKey, uint _makerFeeNextPrice) public onlyOwner {
-        require(_makerFeeNextPrice <= 1e18, "maker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
+    function setMakerFeeDelayedOrder(bytes32 _marketKey, uint _makerFeeDelayedOrder) public onlyOwner {
+        require(_makerFeeDelayedOrder <= 1e18, "maker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_MAKER_FEE_DELAYED_ORDER, _makerFeeDelayedOrder);
     }
 
     function setNextPriceConfirmWindow(bytes32 _marketKey, uint _nextPriceConfirmWindow) public onlyOwner {
@@ -232,8 +232,8 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         bytes32 _marketKey,
         uint _takerFee,
         uint _makerFee,
-        uint _takerFeeNextPrice,
-        uint _makerFeeNextPrice,
+        uint _takerFeeDelayedOrder,
+        uint _makerFeeDelayedOrder,
         uint _nextPriceConfirmWindow,
         uint _maxLeverage,
         uint _maxMarketValueUSD,
@@ -243,8 +243,8 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         _recomputeFunding(_marketKey);
         setTakerFee(_marketKey, _takerFee);
         setMakerFee(_marketKey, _makerFee);
-        setTakerFeeNextPrice(_marketKey, _takerFeeNextPrice);
-        setMakerFeeNextPrice(_marketKey, _makerFeeNextPrice);
+        setTakerFeeDelayedOrder(_marketKey, _takerFeeDelayedOrder);
+        setMakerFeeDelayedOrder(_marketKey, _makerFeeDelayedOrder);
         setNextPriceConfirmWindow(_marketKey, _nextPriceConfirmWindow);
         setMaxLeverage(_marketKey, _maxLeverage);
         setMaxMarketValueUSD(_marketKey, _maxMarketValueUSD);

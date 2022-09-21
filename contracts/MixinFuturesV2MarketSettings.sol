@@ -16,8 +16,8 @@ contract MixinFuturesV2MarketSettings is MixinResolver {
     // Per-market settings
     bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
-    bytes32 internal constant PARAMETER_TAKER_FEE_NEXT_PRICE = "takerFeeNextPrice";
-    bytes32 internal constant PARAMETER_MAKER_FEE_NEXT_PRICE = "makerFeeNextPrice";
+    bytes32 internal constant PARAMETER_TAKER_FEE_DELAYED_ORDER = "takerFeeDelayedOrder";
+    bytes32 internal constant PARAMETER_MAKER_FEE_DELAYED_ORDER = "makerFeeDelayedOrder";
     bytes32 internal constant PARAMETER_NEXT_PRICE_CONFIRM_WINDOW = "nextPriceConfirmWindow";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
@@ -66,12 +66,12 @@ contract MixinFuturesV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAKER_FEE);
     }
 
-    function _takerFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE);
+    function _takerFeeDelayedOrder(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_TAKER_FEE_DELAYED_ORDER);
     }
 
-    function _makerFeeNextPrice(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE);
+    function _makerFeeDelayedOrder(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAKER_FEE_DELAYED_ORDER);
     }
 
     function _nextPriceConfirmWindow(bytes32 _marketKey) internal view returns (uint) {

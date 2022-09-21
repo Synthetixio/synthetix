@@ -184,7 +184,7 @@ contract FuturesV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice)
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder)
             );
         }
 
@@ -229,7 +229,7 @@ contract FuturesV2MarketData {
                 address(market),
                 baseAsset,
                 marketKey,
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice),
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder),
                 MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
