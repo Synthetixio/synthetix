@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 import "./MixinResolver.sol";
 
@@ -23,6 +24,8 @@ contract MixinFuturesV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
+    bytes32 internal constant PARAMETER_MIN_DELAY_TIME_DELTA = "minDelayTimeDelta";
+    bytes32 internal constant PARAMETER_MAX_DELAY_TIME_DELTA = "maxDelayTimeDelta";
 
     // Global settings
     // minimum liquidation fee payable to liquidator
@@ -92,6 +95,14 @@ contract MixinFuturesV2MarketSettings is MixinResolver {
 
     function _maxFundingRate(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_MAX_FUNDING_RATE);
+    }
+
+    function _minDelayTimeDelta(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MIN_DELAY_TIME_DELTA);
+    }
+
+    function _maxDelayTimeDelta(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA);
     }
 
     function _minKeeperFee() internal view returns (uint) {

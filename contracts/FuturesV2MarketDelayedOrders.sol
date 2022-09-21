@@ -9,13 +9,13 @@ import "./interfaces/IFuturesV2MarketDelayedOrders.sol";
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 
 /**
- Implements Delayed mechanism for the futures market.
- The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
- of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
- arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
- the risk to the debt pool, and funding rate for traders. 
- The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
- is less of a risk when committing to next price.
+ Implements delayed order mechanism for the futures market.
+ The purpose of this mechanism is to allow reduced fees for trades that commit to an order some pre-determined
+ time in the future or an updated price instead of the current price. Specifically, this should serve funding
+ rate arbitrageurs, such that funding rate arb is profitable for smaller skews. This in turn serves the protocol
+ by reducing the skew, and so the risk to the debt pool, and funding rate for traders.
+ The fees can be reduced when committing to an order in the future, because front-running (MEV and oracle delay)
+ is less of a risk.
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
@@ -34,50 +34,49 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         return marketState.delayedOrders(account);
     }
 
-    uint public constant MIN_NEXT_PRICE_ORDER_DELAY = 60 seconds;
-
-    /// Minimum amount of time (in seconds) before a delayed order can be executed.
-    uint public constant MIN_ORDER_DELAY = 60 seconds;
-
     ///// Mutative methods
 
     /**
-     * @notice submits an order to be filled at a price of the next oracle update.
+     * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
      * Reverts if a previous order still exists (wasn't executed or cancelled).
      * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
      * incorrectly submitted orders (that cannot be filled).
      *
-     * The order is executable after maxTimeDelta. However, we also allow execution if the next price update
-     * occurs before the maxTimeDelta.
-     * Reverts if the maxTimeDelta is < minimum required delay.
+     * The order is executable after desiredTimeDelta. However, we also allow execution if the next price update
+     * occurs before the desiredTimeDelta.
+     * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param maxTimeDelta maximum time in seconds to wait before filling this order
+     * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitDelayedOrder(int sizeDelta, uint maxTimeDelta) external {
-        _submitDelayedOrder(sizeDelta, maxTimeDelta, bytes32(0));
+    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
+        _submitDelayedOrder(sizeDelta, desiredTimeDelta, bytes32(0));
     }
 
     /// same as submitDelayedOrder but emits an event with the tracking code
     /// to allow volume source fee sharing for integrations
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint maxTimeDelta,
+        uint desiredTimeDelta,
         bytes32 trackingCode
     ) external {
-        _submitDelayedOrder(sizeDelta, maxTimeDelta, trackingCode);
+        _submitDelayedOrder(sizeDelta, desiredTimeDelta, trackingCode);
     }
 
     function _submitDelayedOrder(
         int sizeDelta,
-        uint maxTimeDelta,
+        uint desiredTimeDelta,
         bytes32 trackingCode
     ) internal {
         // check that a previous order doesn't exist
         require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
 
-        // ensure the maxTimeDelta is above the minimum required delay
-        require(maxTimeDelta >= MIN_ORDER_DELAY, "minTimeDelta delay too short");
+        // ensure the desiredTimeDelta is above the minimum required delay
+        bytes32 marketKey = marketState.marketKey();
+        require(
+            desiredTimeDelta >= _minDelayTimeDelta(marketKey) && desiredTimeDelta <= _maxDelayTimeDelta(marketKey),
+            "delay out of bounds"
+        );
 
         // storage position as it's going to be modified to deduct commitFee and keeperFee
         Position memory position = marketState.positions(messageSender);
@@ -112,7 +111,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
-                executableAtTime: block.timestamp + maxTimeDelta,
+                executableAtTime: block.timestamp + desiredTimeDelta,
                 trackingCode: trackingCode
             });
         // emit event
@@ -195,17 +194,18 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
     }
 
     /**
-     * @notice Tries to execute a previously submitted next-price order.
+     * @notice Tries to execute a previously submitted delayed order.
      * Reverts if:
      * - There is no order
      * - Target roundId wasn't reached yet
      * - Order is stale (target roundId is too low compared to current roundId).
      * - Order fails for accounting reason (e.g. margin was removed, leverage exceeded, etc)
+     * - Time delay and target round has not yet been reached
      * If order reverts, it has to be removed by calling cancelDelayedOrder().
      * Anyone can call this method for any account.
      * If this is called by the account holder - the keeperFee is refunded into margin,
      *  otherwise it sent to the msg.sender.
-     * @param account address of the account for which to try to execute a next-price order
+     * @param account address of the account for which to try to execute a delayed order
      */
     function executeDelayedOrder(address account) external {
         // important!: order of the account, not the sender!

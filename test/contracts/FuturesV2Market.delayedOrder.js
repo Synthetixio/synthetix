@@ -92,7 +92,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin, size, price, maxTimeDelta;
+	let margin, size, price, desiredTimeDelta;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -100,7 +100,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 		await futuresMarket.transferMargin(margin, { from: trader });
 		size = toUnit('50');
 		price = toUnit('200');
-		maxTimeDelta = 60;
+		desiredTimeDelta = 60;
 		await setPrice(baseAsset, price);
 	});
 
@@ -110,7 +110,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await futuresMarket.orderFee(size))[0];
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
-			const tx = await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+			const tx = await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 
 			const order = await futuresMarketState.getDelayedOrder(trader);
 			assert.bnEqual(order.sizeDelta, size);
@@ -145,7 +145,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 		describe('cannot submit an order when', () => {
 			it('zero size', async () => {
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(0, maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(0, desiredTimeDelta, { from: trader }),
 					'Cannot submit empty order'
 				);
 			});
@@ -153,22 +153,22 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			it('not enough margin', async () => {
 				await futuresMarket.withdrawAllMargin({ from: trader });
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader }),
 					'Insufficient margin'
 				);
 			});
 
 			it('too much leverage', async () => {
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(size.mul(toBN(10)), maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(size.mul(toBN(10)), desiredTimeDelta, { from: trader }),
 					'Max leverage exceeded'
 				);
 			});
 
 			it('previous order exists', async () => {
-				await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader }),
 					'previous order exists'
 				);
 			});
@@ -176,7 +176,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			it('if futures markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -184,12 +184,12 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			it('if market is suspended', async () => {
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader }),
 					'Market suspended'
 				);
 			});
 
-			it('if maxTimeDelta is below the minimum delay or negative', async () => {
+			it('if desiredTimeDelta is below the minimum delay or negative', async () => {
 				await assert.revert(
 					futuresMarket.submitDelayedOrder(0, 1, { from: trader }),
 					'minTimeDelta delay too short'
@@ -202,7 +202,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 						{
 							reason: 'value out-of-bounds',
 							code: 'INVALID_ARGUMENT',
-							argument: 'maxTimeDelta',
+							argument: 'desiredTimeDelta',
 						},
 						{ reason, code, argument }
 					);
@@ -222,7 +222,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 
 			const tx = await futuresMarket.submitDelayedOrderWithTracking(
 				size,
-				maxTimeDelta,
+				desiredTimeDelta,
 				trackingCode,
 				{
 					from: trader,
@@ -236,7 +236,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
-			assert.bnEqual(order.executableAtTime, txBlock.timestamp + maxTimeDelta);
+			assert.bnEqual(order.executableAtTime, txBlock.timestamp + desiredTimeDelta);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -252,7 +252,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 
 		it('executing an order emits the tracking event', async () => {
 			// setup
-			await futuresMarket.submitDelayedOrderWithTracking(size, maxTimeDelta, trackingCode, {
+			await futuresMarket.submitDelayedOrderWithTracking(size, desiredTimeDelta, trackingCode, {
 				from: trader,
 			});
 
@@ -348,7 +348,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				// transfer more margin
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 				const newOrder = await futuresMarketState.getDelayedOrder(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -357,7 +357,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				spotFee = (await futuresMarket.orderFee(size))[0];
 				keeperFee = await futuresMarketSettings.minKeeperFee();
-				await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 			});
 
 			it('cannot cancel if futures markets are suspended', async () => {
@@ -480,7 +480,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				commitFee = (await futuresMarket.orderFee(size))[0];
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await futuresMarketSettings.minKeeperFee();
-				await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 			});
 
 			describe('execution reverts', () => {
@@ -632,7 +632,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				// transfer more margin
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 				const newOrder = await futuresMarketState.getDelayedOrder(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -657,7 +657,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 					// fast forward to the order's executableAtTime
 					await setPrice(baseAsset, targetPrice);
 					spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
-					await fastForward(maxTimeDelta);
+					await fastForward(desiredTimeDelta);
 
 					// check we can execute.
 					await checkExecution(trader, targetPrice, takerFeeNextPrice, spotTradeDetails);
@@ -782,7 +782,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 
 				// submit an order
-				await futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader });
+				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 
 				// spike the price
 				await setPrice(baseAsset, spikedPrice);
@@ -797,7 +797,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				await futuresMarket.cancelDelayedOrder(trader, { from: trader });
 
 				await assert.revert(
-					futuresMarket.submitDelayedOrder(size, maxTimeDelta, { from: trader }),
+					futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader }),
 					'Price too volatile'
 				);
 			});

@@ -158,7 +158,7 @@ contract FuturesV2MarketState is Owned, State, IFuturesV2MarketBaseTypes {
     }
 
     /**
-     * @notice Store a next price order at the specified account
+     * @notice Store a delayed order at the specified account
      * @dev Only the associated contract may call this.
      * @param account The account whose value to set.
      * @param sizeDelta Difference in position to pass to modifyPosition

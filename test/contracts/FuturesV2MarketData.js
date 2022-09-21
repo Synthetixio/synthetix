@@ -143,15 +143,19 @@ contract('FuturesV2MarketData', accounts => {
 			// Now that the market exists we can set the all its parameters
 			await futuresMarketSettings.setParameters(
 				marketKey,
-				toWei('0.005'), // 0.5% taker fee
-				toWei('0.001'), // 0.1% maker fee
-				toWei('0.0005'), // 0.05% taker fee next price
-				toWei('0'), // 0% maker fee next price
-				toBN('2'), // 2 rounds next price confirm window
-				toWei('5'), // 5x max leverage
-				toWei('1000000'), // 1000000 max total margin
-				toWei('0.2'), // 20% max funding rate
-				toWei('100000'), // 100000 USD skewScaleUSD
+				[
+					toWei('0.005'), // 0.5% taker fee
+					toWei('0.001'), // 0.1% maker fee
+					toWei('0.0005'), // 0.05% taker fee delayed order
+					toWei('0'), // 0% maker fee delayed order
+					toBN('2'), // 2 rounds next price confirm window
+					toWei('5'), // 5x max leverage
+					toWei('1000000'), // 1000000 max total margin
+					toWei('0.2'), // 20% max funding rate
+					toWei('100000'), // 100000 USD skewScaleUSD
+					60, // 60s minimum delay time in seconds
+					120, // 120s maximum delay time in seconds
+				],
 				{ from: owner }
 			);
 		}
@@ -237,6 +241,8 @@ contract('FuturesV2MarketData', accounts => {
 			assert.bnEqual(details.marketSizeDetails.sides.short, marketSizes.short);
 			assert.bnEqual(details.marketSizeDetails.marketDebt, (await futuresMarket.marketDebt()).debt);
 			assert.bnEqual(details.marketSizeDetails.marketSkew, await futuresMarket.marketSkew());
+
+			// TODO: Include min/max delayed order
 
 			const assetPrice = await futuresMarket.assetPrice();
 			assert.bnEqual(details.priceDetails.price, assetPrice.price);
@@ -358,8 +364,8 @@ contract('FuturesV2MarketData', accounts => {
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
 			assert.equal(sETHSummary.feeRates.takerFee, sETHParams.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, sETHParams.takerFeeNextPrice);
-			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, sETHParams.makerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, sETHParams.takerFeeDelayedOrder);
+			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, sETHParams.makerFeeDelayedOrder);
 
 			assert.equal(
 				sLINKSummary.market,
@@ -373,8 +379,8 @@ contract('FuturesV2MarketData', accounts => {
 			assert.equal(sLINKSummary.currentFundingRate, toUnit(0));
 			assert.equal(sLINKSummary.feeRates.takerFee, toUnit('0.005'));
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
-			assert.equal(sLINKSummary.feeRates.takerFeeNextPrice, toUnit('0.0005'));
-			assert.equal(sLINKSummary.feeRates.makerFeeNextPrice, toUnit('0'));
+			assert.equal(sLINKSummary.feeRates.takerFeeDelayedOrder, toUnit('0.0005'));
+			assert.equal(sLINKSummary.feeRates.makerFeeDelayedOrder, toUnit('0'));
 		});
 	});
 });

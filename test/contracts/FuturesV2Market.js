@@ -181,19 +181,14 @@ contract('FuturesV2Market', accounts => {
 				abi: futuresMarketImpl.abi,
 				ignoreParents: ['MixinFuturesV2MarketSettings', 'Owned', 'Proxyable'],
 				expected: [
-					'transferMargin',
-					'withdrawAllMargin',
-					'modifyPosition',
-					'modifyPositionWithTracking',
 					'closePosition',
 					'closePositionWithTracking',
 					'liquidatePosition',
+					'modifyPosition',
+					'modifyPositionWithTracking',
 					'recomputeFunding',
-					'submitDelayedOrder',
-					'submitDelayedOrderWithTracking',
-					'cancelDelayedOrder',
-					'executeDelayedOrder',
-					'propagateToState',
+					'transferMargin',
+					'withdrawAllMargin',
 				],
 			});
 		});
@@ -205,8 +200,8 @@ contract('FuturesV2Market', accounts => {
 			const parameters = await futuresMarketSettings.parameters(marketKey);
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);
-			assert.bnEqual(parameters.takerFeeDelayedOrder, takerFeeNextPrice);
-			assert.bnEqual(parameters.makerFeeNextPrice, makerFeeNextPrice);
+			assert.bnEqual(parameters.takerFeeDelayedOrder, takerFeeDelayedOrder);
+			assert.bnEqual(parameters.makerFeeNextPrice, makerFeeDelayedOrder);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
@@ -3621,7 +3616,7 @@ contract('FuturesV2Market', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, 0, 0, {
+					futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], {
 						from: owner,
 					}),
 					'Invalid price'
@@ -3691,7 +3686,7 @@ contract('FuturesV2Market', accounts => {
 			it('then futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
+				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
 					from: owner,
 				});
 			});
@@ -3699,7 +3694,7 @@ contract('FuturesV2Market', accounts => {
 			it('futuresMarketSettings parameter changes still revert if price is invalid', async () => {
 				await setPrice(baseAsset, toUnit('1'), false); // circuit breaker will revert
 				await assert.revert(
-					futuresMarketSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
+					futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
 						from: owner,
 					}),
 					'Invalid price'
@@ -3845,7 +3840,7 @@ contract('FuturesV2Market', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
+				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
 					from: owner,
 				});
 			});
@@ -3917,7 +3912,7 @@ contract('FuturesV2Market', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, 0, 0, 0, 0, 0, 0, 0, 0, 1, {
+				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
 					from: owner,
 				});
 			});

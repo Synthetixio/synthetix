@@ -101,30 +101,35 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         return _skewScaleUSD(_marketKey);
     }
 
-    function parameters(bytes32 _marketKey)
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeDelayedOrder,
-            uint makerFeeDelayedOrder,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        )
-    {
-        takerFee = _takerFee(_marketKey);
-        makerFee = _makerFee(_marketKey);
-        takerFeeDelayedOrder = _takerFeeDelayedOrder(_marketKey);
-        makerFeeDelayedOrder = _makerFeeDelayedOrder(_marketKey);
-        nextPriceConfirmWindow = _nextPriceConfirmWindow(_marketKey);
-        maxLeverage = _maxLeverage(_marketKey);
-        maxMarketValueUSD = _maxMarketValueUSD(_marketKey);
-        maxFundingRate = _maxFundingRate(_marketKey);
-        skewScaleUSD = _skewScaleUSD(_marketKey);
+    /*
+     * The delayed order lower bound whereby the desired delta must be greater than or equal to.
+     */
+    function minDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
+        return _minDelayTimeDelta(_marketKey);
+    }
+
+    /*
+     * The delayed order upper bound whereby the desired delta must be greater than or equal to.
+     */
+    function maxDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
+        return _maxDelayTimeDelta(_marketKey);
+    }
+
+    function parameters(bytes32 _marketKey) external view returns (Parameters memory) {
+        return
+            Parameters(
+                _takerFee(_marketKey),
+                _makerFee(_marketKey),
+                _takerFeeDelayedOrder(_marketKey),
+                _makerFeeDelayedOrder(_marketKey),
+                _nextPriceConfirmWindow(_marketKey),
+                _maxLeverage(_marketKey),
+                _maxMarketValueUSD(_marketKey),
+                _maxFundingRate(_marketKey),
+                _skewScaleUSD(_marketKey),
+                _minDelayTimeDelta(_marketKey),
+                _maxDelayTimeDelta(_marketKey)
+            );
     }
 
     /*
@@ -228,28 +233,30 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         _setParameter(_marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
+    function setMinDelayTimeDelta(bytes32 _marketKey, uint _minDelayTimeDelta) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MIN_DELAY_TIME_DELTA, _minDelayTimeDelta);
+    }
+
+    function setMaxDelayTimeDelta(bytes32 _marketKey, uint _maxDelayTimeDelta) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA, _maxDelayTimeDelta);
+    }
+
     function setParameters(
         bytes32 _marketKey,
-        uint _takerFee,
-        uint _makerFee,
-        uint _takerFeeDelayedOrder,
-        uint _makerFeeDelayedOrder,
-        uint _nextPriceConfirmWindow,
-        uint _maxLeverage,
-        uint _maxMarketValueUSD,
-        uint _maxFundingRate,
-        uint _skewScaleUSD
+        Parameters calldata _parameters
     ) external onlyOwner {
         _recomputeFunding(_marketKey);
-        setTakerFee(_marketKey, _takerFee);
-        setMakerFee(_marketKey, _makerFee);
-        setTakerFeeDelayedOrder(_marketKey, _takerFeeDelayedOrder);
-        setMakerFeeDelayedOrder(_marketKey, _makerFeeDelayedOrder);
-        setNextPriceConfirmWindow(_marketKey, _nextPriceConfirmWindow);
-        setMaxLeverage(_marketKey, _maxLeverage);
-        setMaxMarketValueUSD(_marketKey, _maxMarketValueUSD);
-        setMaxFundingRate(_marketKey, _maxFundingRate);
-        setSkewScaleUSD(_marketKey, _skewScaleUSD);
+        setTakerFee(_marketKey, _parameters.takerFee);
+        setMakerFee(_marketKey, _parameters.makerFee);
+        setMaxLeverage(_marketKey, _parameters.maxLeverage);
+        setMaxMarketValueUSD(_marketKey, _parameters.maxMarketValueUSD);
+        setMaxFundingRate(_marketKey, _parameters.maxFundingRate);
+        setSkewScaleUSD(_marketKey, _parameters.skewScaleUSD);
+        setTakerFeeDelayedOrder(_marketKey, _parameters.takerFeeDelayedOrder);
+        setMakerFeeDelayedOrder(_marketKey, _parameters.makerFeeDelayedOrder);
+        setNextPriceConfirmWindow(_marketKey, _parameters.nextPriceConfirmWindow);
+        setMinDelayTimeDelta(_marketKey, _parameters.minDelayTimeDelta);
+        setMaxDelayTimeDelta(_marketKey, _parameters.maxDelayTimeDelta);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {

@@ -640,15 +640,19 @@ contract('FuturesV2MarketManager', accounts => {
 				// Now that the market exists we can set the all its parameters
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					toUnit('0.005'), // 0.5% taker fee
-					toUnit('0.001'), // 0.1% maker fee
-					toUnit('0.0005'), // 0.05% taker fee next price
-					toUnit('0'), // 0% maker fee next price
-					toBN('2'), // 2 rounds next price confirm window
-					toUnit('5'), // 5x max leverage
-					toUnit('1000000'), // 1000000 max total margin
-					toUnit('0.2'), // 20% max funding rate
-					toUnit('100000'), // 100000 USD skewScaleUSD
+					[
+						toUnit('0.005'), // 0.5% taker fee
+						toUnit('0.001'), // 0.1% maker fee
+						toUnit('0.0005'), // 0.05% taker fee next price
+						toUnit('0'), // 0% maker fee next price
+						toBN('2'), // 2 rounds next price confirm window
+						toUnit('5'), // 5x max leverage
+						toUnit('1000000'), // 1000000 max total margin
+						toUnit('0.2'), // 20% max funding rate
+						toUnit('100000'), // 100000 USD skewScaleUSD
+						60, // 60s minimum delay time in seconds
+						120, // 120s maximum delay time in seconds
+					],
 					{ from: owner }
 				);
 			}

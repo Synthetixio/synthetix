@@ -63,8 +63,8 @@ contract FuturesV2MarketData {
     struct FeeRates {
         uint takerFee;
         uint makerFee;
-        uint takerFeeNextPrice;
-        uint makerFeeNextPrice;
+        uint takerFeeDelayedOrder;
+        uint makerFeeDelayedOrder;
     }
 
     struct FundingDetails {
@@ -137,29 +137,7 @@ contract FuturesV2MarketData {
     }
 
     function _parameters(bytes32 marketKey) internal view returns (IFuturesV2MarketSettings.Parameters memory) {
-        (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        ) = _futuresMarketSettings().parameters(marketKey);
-        return
-            IFuturesV2MarketSettings.Parameters(
-                takerFee,
-                makerFee,
-                takerFeeNextPrice,
-                makerFeeNextPrice,
-                nextPriceConfirmWindow,
-                maxLeverage,
-                maxMarketValueUSD,
-                maxFundingRate,
-                skewScaleUSD
-            );
+        return _futuresMarketSettings().parameters(marketKey);
     }
 
     function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {

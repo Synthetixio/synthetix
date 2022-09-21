@@ -54,13 +54,13 @@ import "./interfaces/IFuturesV2MarketState.sol";
  *     - FuturesV2Market.sol:         one of these exists per asset. Margin is maintained isolated per market.
  *
  *     - FuturesV2MarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
- *                                  futures markets and the rest of the system. It accumulates the total debt
- *                                  over all markets, and issues and burns sUSD on each market's behalf.
+ *                                    futures markets and the rest of the system. It accumulates the total debt
+ *                                    over all markets, and issues and burns sUSD on each market's behalf.
  *
  *     - FuturesV2MarketSettings.sol: Holds the settings for each market in the global FlexibleStorage instance used
- *                                  by SystemSettings, and provides an interface to modify these values. Other than
- *                                  the base asset, these settings determine the behaviour of each market.
- *                                  See that contract for descriptions of the meanings of each setting.
+ *                                    by SystemSettings, and provides an interface to modify these values. Other than
+ *                                    the base asset, these settings determine the behaviour of each market.
+ *                                    See that contract for descriptions of the meanings of each setting.
  *
  * Each futures market and the manager operates behind a proxy, and for efficiency they communicate with one another
  * using their underlying implementations.
@@ -367,7 +367,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      * @dev The liquidation margin contains a buffer that is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * size. The buffer should prevent liquidation happening at negative margin (due to delayed orders being worse)
      * so that stakers would not leak value to liquidators through minting rewards that are not from the
      * account's margin.
      */
@@ -414,7 +414,7 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
+    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
         return _exchanger().dynamicFeeRateForExchange(sUSD, marketState.baseAsset());
     }

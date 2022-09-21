@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 interface IFuturesV2MarketSettings {
     struct Parameters {
@@ -11,6 +12,8 @@ interface IFuturesV2MarketSettings {
         uint maxMarketValueUSD;
         uint maxFundingRate;
         uint skewScaleUSD;
+        uint minDelayTimeDelta;
+        uint maxDelayTimeDelta;
     }
 
     function takerFee(bytes32 _marketKey) external view returns (uint);
@@ -31,20 +34,11 @@ interface IFuturesV2MarketSettings {
 
     function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
 
-    function parameters(bytes32 _marketKey)
-        external
-        view
-        returns (
-            uint _takerFee,
-            uint _makerFee,
-            uint _takerFeeNextPrice,
-            uint _makerFeeNextPrice,
-            uint _nextPriceConfirmWindow,
-            uint _maxLeverage,
-            uint _maxMarketValueUSD,
-            uint _maxFundingRate,
-            uint _skewScaleUSD
-        );
+    function minDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
+
+    function maxDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
+
+    function parameters(bytes32 _marketKey) external view returns (Parameters memory);
 
     function minKeeperFee() external view returns (uint);
 
