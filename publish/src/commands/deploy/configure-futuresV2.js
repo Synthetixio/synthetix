@@ -17,7 +17,7 @@ module.exports = async ({
 	generateSolidity,
 	yes,
 }) => {
-	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
+	console.log(gray(`\n------ CONFIGURE FUTURES V2 MARKETS ------\n`));
 
 	if (!useOvm) return;
 

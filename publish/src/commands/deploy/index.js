@@ -34,6 +34,7 @@ const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
 const deployFutures = require('./deploy-futures');
+const deployFuturesV2 = require('./deploy-futuresv2');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -301,6 +302,18 @@ const deploy = async ({
 	});
 
 	await deployFutures({
+		account,
+		addressOf,
+		getDeployParameter,
+		deployer,
+		runStep,
+		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
+	});
+
+	await deployFuturesV2({
 		account,
 		addressOf,
 		getDeployParameter,

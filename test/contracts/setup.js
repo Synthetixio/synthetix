@@ -348,6 +348,9 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// Futures V2
+		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesV2MarketData: [tryGetAddressOf('AddressResolver')],
 		FuturesV2MarketStateBTC: [
 			owner,
 			[deployerAccount],
@@ -362,8 +365,6 @@ const setupContract = async ({
 		],
 		ProxyFuturesV2MarketBTC: [owner],
 		ProxyFuturesV2MarketETH: [owner],
-		FuturesV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
-		FuturesV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesV2MarketViewsBTC: [
 			tryGetAddressOf('FuturesV2MarketStateBTC'),
 			owner,
@@ -398,7 +399,6 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		FuturesV2MarketData: [tryGetAddressOf('AddressResolver')],
 		// perps v2
 		PerpsV2Settings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketpBTC: [

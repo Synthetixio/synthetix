@@ -3,6 +3,11 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 
+const {
+	excludedFunctions,
+	getFunctionSignatures,
+} = require('../../command-utils/futures-v2-utils');
+
 module.exports = async ({
 	account,
 	addressOf,
@@ -24,7 +29,7 @@ module.exports = async ({
 	// Futures market setup
 	// ----------------
 
-	console.log(gray(`\n------ DEPLOY FUTURES MARKETS ------\n`));
+	console.log(gray(`\n------ DEPLOY FUTURES V2 MARKETS ------\n`));
 
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesV2MarketManager',
@@ -53,18 +58,134 @@ module.exports = async ({
 	const deployedFuturesMarkets = [];
 
 	for (const marketConfig of futuresMarkets) {
+		let filteredFunctions;
 		const baseAsset = toBytes32(marketConfig.asset);
 		const marketKey = toBytes32(marketConfig.marketKey);
 		const marketName = 'FuturesV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketProxyName = 'ProxyFuturesV2' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketStateName = 'FuturesV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketViewName = 'FuturesV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketNextPriceName = 'FuturesV2NextPrice' + marketConfig.marketKey.slice('1'); // remove s prefix
 
+		// Deploy contracts
+		// Proxy
+		const futuresMarketProxy = await deployer.deployContract({
+			name: marketProxyName,
+			source: 'ProxyFuturesV2',
+			args: [account],
+		});
+
+		// State
+		const futuresMarketState = await deployer.deployContract({
+			name: marketStateName,
+			source: 'FuturesV2MarketState',
+			args: [account, [account], baseAsset, marketKey],
+		});
+
+		// Market
 		const futuresMarket = await deployer.deployContract({
 			name: marketName,
 			source: 'FuturesV2Market',
-			args: [addressOf(ReadProxyAddressResolver), baseAsset, marketKey],
+			args: [
+				futuresMarketProxy.address,
+				futuresMarketState.address,
+				account,
+				addressOf(ReadProxyAddressResolver),
+			],
 		});
 
-		if (futuresMarket) {
-			deployedFuturesMarkets.push(addressOf(futuresMarket));
+		// Views
+		const futuresMarketViews = await deployer.deployContract({
+			name: marketViewName,
+			source: 'FuturesV2MarketViews',
+			args: [futuresMarketState.address, account, addressOf(ReadProxyAddressResolver)],
+		});
+
+		// Next Price
+		const futuresMarketNextPrice = await deployer.deployContract({
+			name: marketNextPriceName,
+			source: 'FuturesV2MarketNextPriceOrders',
+			args: [
+				futuresMarketProxy.address,
+				futuresMarketState.address,
+				account,
+				addressOf(ReadProxyAddressResolver),
+			],
+		});
+
+		// Configure Contracts, Proxy and State
+
+		// Initial cleanup
+		await runStep({
+			contract: `FuturesV2MarketState`,
+			target: futuresMarketState,
+			write: 'removeAssociatedContracts',
+			writeArg: [[account.address]],
+		});
+
+		// Configure Views
+		filteredFunctions = getFunctionSignatures(futuresMarketViews, excludedFunctions);
+		for (const f in filteredFunctions) {
+			await runStep({
+				contract: `ProxyFuturesV2`,
+				target: futuresMarketProxy,
+				write: 'addRoute',
+				writeArg: [f.signature, futuresMarketViews.address, f.isView],
+			});
+		}
+
+		// Configure Next Price
+		await runStep({
+			contract: `FuturesV2MarketState`,
+			target: futuresMarketState,
+			write: 'addAssociatedContracts',
+			writeArg: [[futuresMarketNextPrice.address]],
+		});
+
+		await runStep({
+			contract: `FuturesV2MarketNextPriceOrders`,
+			target: futuresMarketNextPrice,
+			write: 'setProxy',
+			writeArg: [futuresMarketProxy.address],
+		});
+
+		filteredFunctions = getFunctionSignatures(futuresMarketNextPrice, excludedFunctions);
+		for (const f in filteredFunctions) {
+			await runStep({
+				contract: `ProxyFuturesV2`,
+				target: futuresMarketProxy,
+				write: 'addRoute',
+				writeArg: [f.signature, futuresMarketNextPrice.address, f.isView],
+			});
+		}
+
+		// Configure Market
+		await runStep({
+			contract: `FuturesV2MarketState`,
+			target: futuresMarketState,
+			write: 'addAssociatedContracts',
+			writeArg: [[futuresMarket.address]],
+		});
+
+		await runStep({
+			contract: `FuturesV2Market`,
+			target: futuresMarket,
+			write: 'setProxy',
+			writeArg: [futuresMarketProxy.address],
+		});
+
+		filteredFunctions = getFunctionSignatures(futuresMarket, excludedFunctions);
+		for (const f in filteredFunctions) {
+			await runStep({
+				contract: `ProxyFuturesV2`,
+				target: futuresMarketProxy,
+				write: 'addRoute',
+				writeArg: [f.signature, futuresMarket.address, f.isView],
+			});
+		}
+
+		if (futuresMarketProxy) {
+			deployedFuturesMarkets.push(addressOf(futuresMarketProxy));
 		}
 	}
 
