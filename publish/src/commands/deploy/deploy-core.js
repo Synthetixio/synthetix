@@ -322,7 +322,7 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'DebtMigratorOnOptimism',
 		deps: ['AddressResolver'],
-		args: [addressOf(readProxyForResolver), account],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
