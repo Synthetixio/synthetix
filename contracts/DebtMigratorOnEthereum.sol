@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -8,9 +9,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IDebtMigrator.sol";
 import "./interfaces/IIssuer.sol";
-
 import "./interfaces/ILiquidatorRewards.sol";
-
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -28,6 +27,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_SYSTEM_STATUS = "SystemStatus";
 
     /* ========== CONSTRUCTOR ========== */
@@ -60,6 +60,10 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIX_DEBT_SHARE));
     }
 
+    function _synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    }
+
     function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEM_STATUS));
     }
@@ -90,16 +94,16 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     /* ========== MUTATIVE ========== */
 
-    function migrateEntireAccount(address account) external {
+    function migrateToL2(address account) external {
         require(msg.sender == account, "Must be the account owner");
-        _migrateEntireAccount(account);
+        _migrateToL2(account);
     }
 
-    function migrateEntireAccountOnBehalf(address account) external onlyOwner {
-        _migrateEntireAccount(account);
+    function migrateToL2OnBehalf(address account) external onlyOwner {
+        _migrateToL2(account);
     }
 
-    function _migrateEntireAccount(address _account) internal {
+    function _migrateToL2(address _account) internal {
         _systemStatus().requireSystemActive();
 
         // important: this has to happen before any updates to user's debt shares
@@ -111,7 +115,15 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         uint _amount = sds.balanceOf(_account);
         _issuer().modifyDebtSharesForMigration(_account, _amount);
 
+        // Deposit the user's non-escrowed SNX to L2.
+        // TODO: prioritize the largest 25 escrow entries to save gas and optimize c-ratio.
+        // Another tx may be required to migrate the user's remaining escrow entries.
+        uint _spotBalance = _synthetixERC20().balanceOf(_account);
+        uint256[][] memory sortedEntryIds;
+        _synthetixBridgeToOptimism().depositAndMigrateEscrow(_spotBalance, sortedEntryIds);
+
         // require zeroed balances
+        require(_synthetixERC20().balanceOf(_account) == 0, "SNX balance is not zero");
         require(_liquidatorRewards().earned(_account) == 0, "Earned balance is not zero");
         require(_synthetixDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
 
