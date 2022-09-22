@@ -7,7 +7,19 @@ import "./Owned.sol";
 // Internal references
 import "./Proxyable.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/proxyfuturesv2
+/**
+ * Based on Proxy.sol that adds routing capabilities to route specific function calls (selectors) to
+ * specific implementations and flagging the routes if are views in order to not call
+ * proxyable.setMessageSender() that is mutative (resulting in a revert). If the function call (selector) is
+ * not found, the default target (same as defined as target in Proxy.sol) is used as fallback.
+ *
+ * In order to manage the routes it provides two onlyOwner functions (`addRoute` and `removeRoute`), and
+ * some helper views to get the size of the route list (`getRoutesLength`), the list of routes (`getRoutesPage`),
+ * and a list of all the targeted contracts (including default target and routed targets).
+ *
+ * Note that all the targets are enabled to emit events, not only the default target.
+ */
+// https://docs.synthetix.io/contracts/source/contracts/ProxyFuturesV2
 contract ProxyFuturesV2 is Owned {
     address public target;
 
@@ -18,10 +30,13 @@ contract ProxyFuturesV2 is Owned {
         bool isView;
     }
 
-    mapping(address => uint) internal _targetReferences; // number of routes referincing a target
-    mapping(bytes4 => uint) internal _routeIndexes;
-    address[] internal _routedTargets;
+    // Route definition and index to quickly access it
     Route[] internal _routes;
+    mapping(bytes4 => uint) internal _routeIndexes;
+    // number of routes referencing a target, if number is greater than zero, it means the address is a valid target
+    mapping(address => uint) internal _targetReferences;
+    // list of valid target addresses (more than zero references in the routes)
+    address[] internal _routedTargets;
 
     constructor(address _owner) public Owned(_owner) {}
 

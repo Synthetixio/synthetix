@@ -6,7 +6,14 @@ import "./Owned.sol";
 // Libraries
 import "./AddressSetLib.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/stateshared
+/**
+ * Based on `State.sol`. This contract adds the capability to have multiple associated contracts
+ * enabled to access a state contract.
+ *
+ * Note: it changed the interface to manage the associated contracts from `setAssociatedContract`
+ * to `addAssociatedContracts` or `removeAssociatedContracts` and the modifier is now plural
+ */
+// https://docs.synthetix.io/contracts/source/contracts/StateShared
 contract StateShared is Owned {
     using AddressSetLib for AddressSetLib.AddressSet;
 

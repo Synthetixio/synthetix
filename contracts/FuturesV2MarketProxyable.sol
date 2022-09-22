@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./Proxyable.sol";
 import "./FuturesV2MarketBase.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketBase
+// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketProxyable
 contract FuturesV2MarketProxyable is FuturesV2MarketBase, Proxyable {
     /* ========== CONSTRUCTOR ========== */
 
@@ -95,14 +95,8 @@ contract FuturesV2MarketProxyable is FuturesV2MarketBase, Proxyable {
         int funding = _nextFundingEntry(price);
         marketState.pushFundingSequence(int128(funding));
         marketState.setFundingLastRecomputed(uint32(block.timestamp));
-        proxy._emit(
-            abi.encode(funding, sequenceLengthBefore, marketState.fundingLastRecomputed()),
-            1,
-            FUNDINGRECOMPUTED_SIG,
-            0,
-            0,
-            0
-        );
+
+        emitPositionLiquidated(funding, sequenceLengthBefore, marketState.fundingLastRecomputed());
 
         return sequenceLengthBefore;
     }
@@ -185,13 +179,12 @@ contract FuturesV2MarketProxyable is FuturesV2MarketBase, Proxyable {
             _manager().payFee(fee);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                proxy._emit(
-                    abi.encode(marketState.baseAsset(), marketState.marketKey(), params.sizeDelta, fee),
-                    2,
-                    FUTURESTRACKING_SIG,
+                emitFuturesTracking(
                     params.trackingCode,
-                    0,
-                    0
+                    marketState.baseAsset(),
+                    marketState.marketKey(),
+                    params.sizeDelta,
+                    fee
                 );
             }
         }
@@ -285,13 +278,46 @@ contract FuturesV2MarketProxyable is FuturesV2MarketBase, Proxyable {
     event MarginTransferred(address indexed account, int marginDelta);
     bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
 
+    function emitMarginTransferred(address account, int marginDelta) internal {
+        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
+    }
+
     event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
     bytes32 internal constant POSITIONLIQUIDATED_SIG =
         keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
 
+    function emitPositionLiquidated(
+        uint id,
+        address account,
+        address liquidator,
+        int size,
+        uint price,
+        uint fee
+    ) internal {
+        proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
+    }
+
     event FundingRecomputed(int funding, uint index, uint timestamp);
     bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,uint256,uint256)");
 
+    function emitPositionLiquidated(
+        int funding,
+        uint index,
+        uint timestamp
+    ) internal {
+        proxy._emit(abi.encode(funding, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
+    }
+
     event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
     bytes32 internal constant FUTURESTRACKING_SIG = keccak256("FuturesTracking(bytes32,bytes32,bytes32,int256,uint256)");
+
+    function emitFuturesTracking(
+        bytes32 trackingCode,
+        bytes32 baseAsset,
+        bytes32 marketKey,
+        int sizeDelta,
+        uint fee
+    ) internal {
+        proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, FUTURESTRACKING_SIG, trackingCode, 0, 0);
+    }
 }

@@ -9,7 +9,7 @@ import "./interfaces/IFuturesV2MarketNextPriceOrders.sol";
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 
 /**
- Mixin that implements NextPrice orders mechanism for the futures market.
+ Contract that implements NextPrice orders mechanism for the FuturesV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -20,6 +20,7 @@ import "./interfaces/IFuturesV2MarketBaseTypes.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
+// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketNextPriceOrders
 contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, FuturesV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
