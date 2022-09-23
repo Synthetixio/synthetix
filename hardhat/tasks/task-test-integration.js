@@ -61,7 +61,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			} else {
-				await hre.run('cannon:build', { file: 'cannonfile.aggregator.toml' });
+				await hre.run('cannon:build', { cannonfile: 'cannonfile.aggregator.toml' });
 				await hre.run('cannon:build');
 			}
 			hre.config.addedSynths = synthsToAdd;
