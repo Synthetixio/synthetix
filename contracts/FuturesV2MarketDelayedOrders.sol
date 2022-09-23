@@ -278,7 +278,7 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
     ///// Internal views
 
     // confirmation window is over when current roundId is more than nextPriceConfirmWindow
-    // rounds after target roundId
+    // rounds after target roundId or if block.timestamp > order.executableAtTime + delayedOrderConfirmWindow
     function _confirmationWindowOver(uint currentRoundId, uint targetRoundId) internal view returns (bool) {
         return
             (currentRoundId > targetRoundId) &&

@@ -640,9 +640,10 @@ contract('FuturesV2MarketManager', accounts => {
 					[
 						toUnit('0.005'), // 0.5% taker fee
 						toUnit('0.001'), // 0.1% maker fee
-						toUnit('0.0005'), // 0.05% taker fee next price
-						toUnit('0'), // 0% maker fee next price
+						toUnit('0.0005'), // 0.05% taker fee delayed order
+						toUnit('0'), // 0% maker fee delayed order
 						toBN('2'), // 2 rounds next price confirm window
+						30, // 30s delay confirm window
 						toUnit('5'), // 5x max leverage
 						toUnit('1000000'), // 1000000 max total margin
 						toUnit('0.2'), // 20% max funding rate

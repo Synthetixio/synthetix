@@ -116,6 +116,7 @@ contract('FuturesV2MarketSettings', accounts => {
 			abi: futuresMarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
+				'setDelayedOrderConfirmWindow',
 				'setLiquidationBufferRatio',
 				'setLiquidationFeeRatio',
 				'setMakerFee',

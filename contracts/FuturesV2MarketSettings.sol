@@ -74,6 +74,13 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
     }
 
     /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function delayedOrderConfirmWindow(bytes32 _marketKey) public view returns (uint) {
+        return _delayedOrderConfirmWindow(_marketKey);
+    }
+
+    /*
      * The maximum allowable leverage in a market.
      */
     function maxLeverage(bytes32 _marketKey) public view returns (uint) {
@@ -123,6 +130,7 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
                 _takerFeeDelayedOrder(_marketKey),
                 _makerFeeDelayedOrder(_marketKey),
                 _nextPriceConfirmWindow(_marketKey),
+                _delayedOrderConfirmWindow(_marketKey),
                 _maxLeverage(_marketKey),
                 _maxMarketValueUSD(_marketKey),
                 _maxFundingRate(_marketKey),
@@ -200,6 +208,10 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         _setParameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
     }
 
+    function setDelayedOrderConfirmWindow(bytes32 _marketKey, uint _delayedOrderConfirmWindow) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW, _delayedOrderConfirmWindow);
+    }
+
     function setMaxLeverage(bytes32 _marketKey, uint _maxLeverage) public onlyOwner {
         _setParameter(_marketKey, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
@@ -252,6 +264,7 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
         setTakerFeeDelayedOrder(_marketKey, _parameters.takerFeeDelayedOrder);
         setMakerFeeDelayedOrder(_marketKey, _parameters.makerFeeDelayedOrder);
         setNextPriceConfirmWindow(_marketKey, _parameters.nextPriceConfirmWindow);
+        setDelayedOrderConfirmWindow(_marketKey, _parameters.delayedOrderConfirmWindow);
         setMinDelayTimeDelta(_marketKey, _parameters.minDelayTimeDelta);
         setMaxDelayTimeDelta(_marketKey, _parameters.maxDelayTimeDelta);
     }

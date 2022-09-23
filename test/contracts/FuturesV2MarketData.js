@@ -164,6 +164,7 @@ contract('FuturesV2MarketData', accounts => {
 					toWei('0.0005'), // 0.05% taker fee delayed order
 					toWei('0'), // 0% maker fee delayed order
 					toBN('2'), // 2 rounds next price confirm window
+					30, // 30s delay confirm window
 					toWei('5'), // 5x max leverage
 					toWei('1000000'), // 1000000 max total margin
 					toWei('0.2'), // 20% max funding rate

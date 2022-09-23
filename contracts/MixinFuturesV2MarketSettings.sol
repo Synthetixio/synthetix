@@ -20,6 +20,7 @@ contract MixinFuturesV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_TAKER_FEE_DELAYED_ORDER = "takerFeeDelayedOrder";
     bytes32 internal constant PARAMETER_MAKER_FEE_DELAYED_ORDER = "makerFeeDelayedOrder";
     bytes32 internal constant PARAMETER_NEXT_PRICE_CONFIRM_WINDOW = "nextPriceConfirmWindow";
+    bytes32 internal constant PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW = "delayedOrderConfirmWindow";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
@@ -79,6 +80,10 @@ contract MixinFuturesV2MarketSettings is MixinResolver {
 
     function _nextPriceConfirmWindow(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW);
+    }
+
+    function _delayedOrderConfirmWindow(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW);
     }
 
     function _maxLeverage(bytes32 _marketKey) internal view returns (uint) {

@@ -8,6 +8,7 @@ interface IFuturesV2MarketSettings {
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
         uint nextPriceConfirmWindow;
+        uint delayedOrderConfirmWindow;
         uint maxLeverage;
         uint maxMarketValueUSD;
         uint maxFundingRate;
@@ -25,6 +26,8 @@ interface IFuturesV2MarketSettings {
     function makerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint);
 
     function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
+
+    function delayedOrderConfirmWindow(bytes32 _marketKey) external view returns (uint);
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 
