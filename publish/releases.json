@@ -729,6 +729,7 @@
 			"sources": [
 				"DirectIntegrationManager",
 				"Exchanger",
+				"ExchangerLib",
 				"ExchangeRates",
 				"Synthetix",
 				"SystemSettings",

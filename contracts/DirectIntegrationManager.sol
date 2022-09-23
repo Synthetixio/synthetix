@@ -46,46 +46,50 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
         view
         returns (ParameterIntegrationSettings memory overrides)
     {
-        ParameterIntegrationSettings storage storedOverrides = _settings[integration][currencyKey];
+        ParameterIntegrationSettings memory storedOverrides = _settings[integration][currencyKey];
 
         return
-            ParameterIntegrationSettings(
-                currencyKey,
-                storedOverrides.dexPriceAggregator != address(0)
+            ParameterIntegrationSettings({
+                currencyKey: currencyKey,
+                dexPriceAggregator: storedOverrides.dexPriceAggregator != address(0)
                     ? storedOverrides.dexPriceAggregator
                     : flexibleStorage().getAddressValue(CONTRACT_NAME_EXCHANGE_RATES, SETTING_DEX_PRICE_AGGREGATOR),
-                storedOverrides.atomicEquivalentForDexPricing != address(0)
+                atomicEquivalentForDexPricing: storedOverrides.atomicEquivalentForDexPricing != address(0)
                     ? storedOverrides.atomicEquivalentForDexPricing
                     : getAtomicEquivalentForDexPricing(currencyKey),
-                storedOverrides.atomicExchangeFeeRate > 0
+                atomicExchangeFeeRate: storedOverrides.atomicExchangeFeeRate > 0
                     ? storedOverrides.atomicExchangeFeeRate
                     : getAtomicExchangeFeeRate(currencyKey),
-                storedOverrides.atomicTwapWindow > 0 ? storedOverrides.atomicTwapWindow : getAtomicTwapWindow(),
-                storedOverrides.atomicMaxTwapDelta,
-                storedOverrides.atomicMaxVolumePerBlock > 0
+                atomicTwapWindow: storedOverrides.atomicTwapWindow > 0
+                    ? storedOverrides.atomicTwapWindow
+                    : getAtomicTwapWindow(),
+                atomicMaxTwapDelta: storedOverrides.atomicMaxTwapDelta,
+                atomicMaxVolumePerBlock: storedOverrides.atomicMaxVolumePerBlock > 0
                     ? storedOverrides.atomicMaxVolumePerBlock
                     : getAtomicMaxVolumePerBlock(),
-                storedOverrides.atomicVolatilityConsiderationWindow > 0
+                atomicVolatilityConsiderationWindow: storedOverrides.atomicVolatilityConsiderationWindow > 0
                     ? storedOverrides.atomicVolatilityConsiderationWindow
                     : getAtomicVolatilityConsiderationWindow(currencyKey),
-                storedOverrides.atomicVolatilityTwapSeconds,
-                storedOverrides.atomicVolatilityUpdateThreshold > 0
+                atomicVolatilityTwapSeconds: storedOverrides.atomicVolatilityTwapSeconds,
+                atomicVolatilityUpdateThreshold: storedOverrides.atomicVolatilityUpdateThreshold > 0
                     ? storedOverrides.atomicVolatilityUpdateThreshold
                     : getAtomicVolatilityUpdateThreshold(currencyKey),
-                storedOverrides.exchangeFeeRate > 0 ? storedOverrides.exchangeFeeRate : getExchangeFeeRate(currencyKey),
-                storedOverrides.exchangeMaxDynamicFee > 0
+                exchangeFeeRate: storedOverrides.exchangeFeeRate > 0
+                    ? storedOverrides.exchangeFeeRate
+                    : getExchangeFeeRate(currencyKey),
+                exchangeMaxDynamicFee: storedOverrides.exchangeMaxDynamicFee > 0
                     ? storedOverrides.exchangeMaxDynamicFee
                     : getExchangeMaxDynamicFee(),
-                storedOverrides.exchangeDynamicFeeRounds > 0
+                exchangeDynamicFeeRounds: storedOverrides.exchangeDynamicFeeRounds > 0
                     ? storedOverrides.exchangeDynamicFeeRounds
                     : getExchangeDynamicFeeRounds(),
-                storedOverrides.exchangeDynamicFeeThreshold > 0
+                exchangeDynamicFeeThreshold: storedOverrides.exchangeDynamicFeeThreshold > 0
                     ? storedOverrides.exchangeDynamicFeeThreshold
                     : getExchangeDynamicFeeThreshold(),
-                storedOverrides.exchangeDynamicFeeWeightDecay > 0
+                exchangeDynamicFeeWeightDecay: storedOverrides.exchangeDynamicFeeWeightDecay > 0
                     ? storedOverrides.exchangeDynamicFeeWeightDecay
                     : getExchangeDynamicFeeWeightDecay()
-            );
+            });
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

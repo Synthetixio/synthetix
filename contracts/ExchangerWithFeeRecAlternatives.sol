@@ -156,6 +156,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint systemDestinationRate;
 
         {
+            systemStatus().requireDirectIntegrationActive(from);
             IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
                 directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
             IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =

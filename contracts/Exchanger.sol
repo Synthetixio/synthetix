@@ -219,6 +219,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         }
 
+        systemStatus().requireDirectIntegrationActive(from);
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
             directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
