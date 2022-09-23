@@ -53,18 +53,18 @@ import "./interfaces/IFuturesV2Market.sol";
  *                                    `mutations` contains the basic market behaviour
  *                                    `views` contains functions to provide visibility to different parameters and
  *                                           is used by external or manager contracts.
- *                                    `nextPriceOrders` contains the logic to implement the next-price order flows.
+ *                                    `nextPriceOrders` contains the logic to implement the delayed order flows.
  *
  *     - FuturesV2State.sol:         The State contracts holds all the state for the market and is consumed/updated
  *                                  by the fragments.
  *                                  It provides access to the positions in case a migration is needed in the future.
  *
- *     - FuturesV2Market.sol:        Contains the core logic to implement the market and positon flows.
+ *     - FuturesV2Market.sol:        Contains the core logic to implement the market and position flows.
  *
  *     - FuturesV2MarketViews.sol:   Contains the logic to access market and positions parameters by external or
  *                                  manager contracts
  *
- *     - FuturesV2MarketNextPriceOrders.sol:  Contains the lofic to implement next-price order flows
+ *     - FuturesV2MarketDelayedOrders.sol:  Contains the logic to implement delayed order flows
  *
  *
  * Technical note: internal functions within the FuturesV2Market contract assume the following:

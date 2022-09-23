@@ -118,19 +118,19 @@ contract('FuturesV2MarketData', accounts => {
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
-			const marketNextPrice = await setupContract({
+			const marketDelayedOrder = await setupContract({
 				accounts,
-				contract: 'FuturesV2NextPriceAdded' + symbol,
-				source: 'FuturesV2MarketNextPriceOrders',
+				contract: 'FuturesV2DelayedOrderAdded' + symbol,
+				source: 'FuturesV2MarketDelayedOrders',
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
 			const filteredFunctions = [
 				...getFunctionSignatures(marketViews, excludedFunctions),
-				...getFunctionSignatures(marketNextPrice, excludedFunctions),
+				...getFunctionSignatures(marketDelayedOrder, excludedFunctions),
 			];
 
-			await marketState.addAssociatedContracts([marketImpl.address, marketNextPrice.address], {
+			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
 				from: owner,
 			});
 			await market.setTarget(marketImpl.address, { from: owner });
@@ -146,7 +146,7 @@ contract('FuturesV2MarketData', accounts => {
 			});
 
 			await addressResolver.rebuildCaches(
-				[market.address, marketViews.address, marketNextPrice.address],
+				[market.address, marketViews.address, marketDelayedOrder.address],
 				{
 					from: owner,
 				}

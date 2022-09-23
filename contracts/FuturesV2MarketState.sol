@@ -195,7 +195,7 @@ contract FuturesV2MarketState is Owned, StateShared, IFuturesV2MarketBaseTypes {
         }
     }
 
-    function deleteNextPriceOrder(address account) external onlyAssociatedContracts {
-        delete nextPriceOrders[account];
+    function deleteDelayedOrder(address account) external onlyAssociatedContracts {
+        delete delayedOrders[account];
     }
 }

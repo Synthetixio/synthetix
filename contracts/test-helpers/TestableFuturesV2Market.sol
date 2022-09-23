@@ -3,10 +3,10 @@ pragma experimental ABIEncoderV2;
 
 import "../FuturesV2Market.sol";
 import "../interfaces/IFuturesV2MarketViews.sol";
-import "../interfaces/IFuturesV2MarketNextPriceOrders.sol";
+import "../interfaces/IFuturesV2MarketDelayedOrders.sol";
 import "../interfaces/IFuturesV2MarketBaseTypes.sol";
 
-contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews, IFuturesV2MarketNextPriceOrders {
+contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews, IFuturesV2MarketDelayedOrders {
     constructor(
         address payable _proxy,
         address _marketState,
@@ -185,15 +185,19 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews, IFut
 
     /* ---------- Next Price Orders ---------- */
 
-    function nextPriceOrders(address account) external view returns (NextPriceOrder memory) {
-        return NextPriceOrder(0, 0, 0, 0, bytes32(0));
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
+        return DelayedOrder(0, 0, 0, 0, 0, bytes32(0));
     }
 
-    function submitNextPriceOrder(int sizeDelta) external {}
+    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}
 
-    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+    function submitDelayedOrderWithTracking(
+        int sizeDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode
+    ) external {}
 
-    function cancelNextPriceOrder(address account) external {}
+    function cancelDelayedOrder(address account) external {}
 
-    function executeNextPriceOrder(address account) external {}
+    function executeDelayedOrder(address account) external {}
 }
