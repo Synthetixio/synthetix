@@ -76,7 +76,7 @@ contract ProxyFuturesV2 is Owned {
         address implementation,
         bool isView
     ) external onlyOwner {
-        require(selector != bytes4(0), "invalid nil selector");
+        require(selector != bytes4(0), "Invalid nil selector");
 
         if (_contains(selector)) {
             // Update data
