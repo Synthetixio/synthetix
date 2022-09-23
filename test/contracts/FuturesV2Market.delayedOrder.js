@@ -114,7 +114,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 			const keeperFee = await futuresMarketSettings.minKeeperFee();
 			const tx = await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 
-			const order = await futuresMarketState.getDelayedOrder(trader);
+			const order = await futuresMarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
@@ -197,7 +197,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 			it('if desiredTimeDelta is below the minimum delay or negative', async () => {
 				await assert.revert(
 					futuresMarket.submitDelayedOrder(0, 1, { from: trader }),
-					'minTimeDelta delay too short'
+					'delay out of bounds'
 				);
 				try {
 					await futuresMarket.submitDelayedOrder(0, -1, { from: trader });
@@ -236,7 +236,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
 
 			// check order
-			const order = await futuresMarketState.getDelayedOrder(trader);
+			const order = await futuresMarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
@@ -310,7 +310,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 				const tx = await futuresMarket.cancelDelayedOrder(trader, { from: from });
 
 				// check order is removed
-				const order = await futuresMarketState.getDelayedOrder(trader);
+				const order = await futuresMarketState.delayedOrders(trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
@@ -363,7 +363,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
 				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
-				const newOrder = await futuresMarketState.getDelayedOrder(trader);
+				const newOrder = await futuresMarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
@@ -579,7 +579,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 				const tx = await futuresMarket.executeDelayedOrder(trader, { from: from });
 
 				// check order is removed now
-				const order = await futuresMarketState.getDelayedOrder(trader);
+				const order = await futuresMarketState.delayedOrders(trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
@@ -650,7 +650,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 				await futuresMarket.transferMargin(margin, { from: trader });
 				// and can submit new order
 				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
-				const newOrder = await futuresMarketState.getDelayedOrder(trader);
+				const newOrder = await futuresMarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
