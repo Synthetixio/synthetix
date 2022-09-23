@@ -213,6 +213,13 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 					);
 				}
 			});
+
+			it('if desiredTimeDelta is above the minimum delay', async () => {
+				await assert.revert(
+					futuresMarket.submitDelayedOrder(0, 1000000, { from: trader }),
+					'delay out of bounds'
+				);
+			});
 		});
 	});
 

@@ -75,6 +75,8 @@ contract('FuturesV2Market', accounts => {
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
+	const minDelayTimeDelta = 60;
+	const maxDelayTimeDelta = 120;
 
 	const initialFundingIndex = toBN(0);
 
@@ -162,7 +164,7 @@ contract('FuturesV2Market', accounts => {
 			await sUSD.issue(t, traderInitialBalance);
 		}
 
-		// allow ownder to suspend system or synths
+		// allow owner to suspend system or synths
 		await systemStatus.updateAccessControls(
 			[toBytes32('System'), toBytes32('Synth')],
 			[owner, owner],
@@ -192,6 +194,10 @@ contract('FuturesV2Market', accounts => {
 					'recomputeFunding',
 					'transferMargin',
 					'withdrawAllMargin',
+					'cancelDelayedOrder',
+					'executeDelayedOrder',
+					'submitDelayedOrder',
+					'submitDelayedOrderWithTracking',
 				],
 			});
 		});
@@ -217,11 +223,13 @@ contract('FuturesV2Market', accounts => {
 			assert.bnEqual(parameters.takerFee, takerFee);
 			assert.bnEqual(parameters.makerFee, makerFee);
 			assert.bnEqual(parameters.takerFeeDelayedOrder, takerFeeDelayedOrder);
-			assert.bnEqual(parameters.makerFeeNextPrice, makerFeeDelayedOrder);
+			assert.bnEqual(parameters.makerFeeDelayedOrder, makerFeeDelayedOrder);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
 			assert.bnEqual(parameters.skewScaleUSD, skewScaleUSD);
+			assert.bnEqual(parameters.minDelayTimeDelta, minDelayTimeDelta);
+			assert.bnEqual(parameters.maxDelayTimeDelta, maxDelayTimeDelta);
 		});
 
 		it('prices are properly fetched', async () => {
