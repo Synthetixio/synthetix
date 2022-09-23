@@ -1777,8 +1777,8 @@ const setupAllContracts = async ({
 						[
 							toWei('0.003'), // 0.3% taker fee
 							toWei('0.001'), // 0.1% maker fee
-							toWei('0.0005'), // 0.05% taker fee next price
-							toWei('0.0001'), // 0.01% maker fee next price
+							toWei('0.0005'), // 0.05% taker fee delayed order
+							toWei('0.0001'), // 0.01% maker fee delayed order
 							toBN('2'), // 2 rounds next price confirm window
 							toWei('10'), // 10x max leverage
 							toWei('100000'), // 100000 max market debt

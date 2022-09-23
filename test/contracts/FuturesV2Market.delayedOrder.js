@@ -9,10 +9,10 @@ const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
-contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
+contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
-		futuresNextPrice,
+		futuresDelayedOrder,
 		futuresMarketState,
 		exchangeRates,
 		circuitBreaker,
@@ -48,7 +48,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 		({
 			FuturesV2MarketSettings: futuresMarketSettings,
 			ProxyFuturesV2MarketBTC: futuresMarket,
-			FuturesV2NextPriceBTC: futuresNextPrice,
+			FuturesV2DelayedOrderBTC: futuresDelayedOrder,
 			FuturesV2MarketStateBTC: futuresMarketState,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
@@ -128,7 +128,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [futuresMarket, futuresNextPrice],
+				contracts: [futuresMarket, futuresDelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
 			// PositionModified
@@ -246,7 +246,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, futuresMarket, futuresNextPrice],
+				contracts: [sUSD, futuresMarket, futuresDelayedOrder],
 			});
 
 			// DelayedOrderSubmitted
@@ -274,7 +274,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, futuresMarket, futuresNextPrice],
+				contracts: [sUSD, futuresMarket, futuresDelayedOrder],
 			});
 
 			decodedEventEqual({
@@ -319,7 +319,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, futuresMarket, futuresNextPrice],
+					contracts: [sUSD, futuresMarket, futuresDelayedOrder],
 				});
 
 				if (from === trader) {
@@ -588,7 +588,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, futuresMarket, futuresNextPrice],
+					contracts: [sUSD, futuresMarket, futuresDelayedOrder],
 				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded

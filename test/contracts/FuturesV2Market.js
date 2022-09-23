@@ -40,7 +40,7 @@ contract('FuturesV2Market', accounts => {
 		futuresMarketProxy,
 		futuresMarket,
 		futuresMarketImpl,
-		futuresMarketNextPriceImpl,
+		futuresMarketDelayedOrderImpl,
 		futuresMarketState,
 		exchangeRates,
 		exchanger,
@@ -113,7 +113,7 @@ contract('FuturesV2Market', accounts => {
 			FuturesV2MarketManager: futuresMarketManager,
 			FuturesV2MarketStateBTC: futuresMarketState,
 			FuturesV2MarketBTC: futuresMarketImpl,
-			FuturesV2NextPriceBTC: futuresMarketNextPriceImpl,
+			FuturesV2DelayedOrderBTC: futuresMarketDelayedOrderImpl,
 			ProxyFuturesV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -198,13 +198,13 @@ contract('FuturesV2Market', accounts => {
 
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: futuresMarketNextPriceImpl.abi,
+				abi: futuresMarketDelayedOrderImpl.abi,
 				ignoreParents: ['MixinFuturesV2MarketSettings', 'Owned', 'Proxyable'],
 				expected: [
-					'submitNextPriceOrder',
-					'submitNextPriceOrderWithTracking',
-					'cancelNextPriceOrder',
-					'executeNextPriceOrder',
+					'submitDelayedOrder',
+					'submitDelayedOrderWithTracking',
+					'cancelDelayedOrder',
+					'executeDelayedOrder',
 				],
 			});
 		});
