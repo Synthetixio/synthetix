@@ -823,10 +823,6 @@ describe('publish scripts', () => {
 								describe('when one synth has a price well outside of range, triggering price deviation', () => {
 									beforeEach(async () => {
 										CircuitBreaker = getContract({ target: 'CircuitBreaker' });
-										console.error(
-											'BUHFORE',
-											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
-										);
 										await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
 									});
 									it('when exchange occurs into that synth, the synth is suspended', async () => {
@@ -837,10 +833,6 @@ describe('publish scripts', () => {
 											overrides
 										);
 										await tx.wait();
-										console.error(
-											'AFTA',
-											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
-										);
 
 										const suspended = await CircuitBreaker.circuitBroken(
 											aggregators['ETH'].address

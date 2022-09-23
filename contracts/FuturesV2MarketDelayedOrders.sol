@@ -9,17 +9,18 @@ import "./interfaces/IFuturesV2MarketDelayedOrders.sol";
 import "./interfaces/IFuturesV2MarketBaseTypes.sol";
 
 /**
- Implements delayed order mechanism for the futures market.
- The purpose of this mechanism is to allow reduced fees for trades that commit to an order some pre-determined
- time in the future or an updated price instead of the current price. Specifically, this should serve funding
- rate arbitrageurs, such that funding rate arb is profitable for smaller skews. This in turn serves the protocol
- by reducing the skew, and so the risk to the debt pool, and funding rate for traders.
- The fees can be reduced when committing to an order in the future, because front-running (MEV and oracle delay)
- is less of a risk.
+ Contract that implements NextPrice orders mechanism for the FuturesV2 market.
+ The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
+ of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
+ arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
+ the risk to the debt pool, and funding rate for traders. 
+ The fees can be reduced when comitting to next price, because front-running (MEV and oracle delay)
+ is less of a risk when committing to next price.
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
+// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketNextPriceOrders
 contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 

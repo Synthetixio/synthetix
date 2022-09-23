@@ -40,6 +40,7 @@ contract('FuturesV2Market', accounts => {
 		futuresMarketProxy,
 		futuresMarket,
 		futuresMarketImpl,
+		futuresMarketNextPriceImpl,
 		futuresMarketState,
 		exchangeRates,
 		exchanger,
@@ -112,6 +113,7 @@ contract('FuturesV2Market', accounts => {
 			FuturesV2MarketManager: futuresMarketManager,
 			FuturesV2MarketStateBTC: futuresMarketState,
 			FuturesV2MarketBTC: futuresMarketImpl,
+			FuturesV2NextPriceBTC: futuresMarketNextPriceImpl,
 			ProxyFuturesV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -177,6 +179,7 @@ contract('FuturesV2Market', accounts => {
 
 	describe('Basic parameters', () => {
 		it('Only expected functions are mutative', () => {
+			// FIXME use actual contract and not Testeable version to check the abi
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketImpl.abi,
 				ignoreParents: ['MixinFuturesV2MarketSettings', 'Owned', 'Proxyable'],
@@ -189,6 +192,19 @@ contract('FuturesV2Market', accounts => {
 					'recomputeFunding',
 					'transferMargin',
 					'withdrawAllMargin',
+				],
+			});
+		});
+
+		it('Only expected functions are mutative', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: futuresMarketNextPriceImpl.abi,
+				ignoreParents: ['MixinFuturesV2MarketSettings', 'Owned', 'Proxyable'],
+				expected: [
+					'submitNextPriceOrder',
+					'submitNextPriceOrderWithTracking',
+					'cancelNextPriceOrder',
+					'executeNextPriceOrder',
 				],
 			});
 		});

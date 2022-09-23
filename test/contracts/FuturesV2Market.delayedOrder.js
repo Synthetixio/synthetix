@@ -12,6 +12,7 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
+		futuresNextPrice,
 		futuresMarketState,
 		exchangeRates,
 		circuitBreaker,
@@ -47,6 +48,7 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 		({
 			FuturesV2MarketSettings: futuresMarketSettings,
 			ProxyFuturesV2MarketBTC: futuresMarket,
+			FuturesV2NextPriceBTC: futuresNextPrice,
 			FuturesV2MarketStateBTC: futuresMarketState,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
@@ -124,7 +126,10 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			assert.bnEqual(position.margin, expectedMargin);
 
 			// The relevant events are properly emitted
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [futuresMarket, futuresNextPrice],
+			});
 			assert.equal(decodedLogs.length, 3);
 			// PositionModified
 			decodedEventEqual({
@@ -239,7 +244,10 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + desiredTimeDelta);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, futuresMarket, futuresNextPrice],
+			});
 
 			// DelayedOrderSubmitted
 			decodedEventEqual({
@@ -264,7 +272,10 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 			// execute the order
 			const tx = await futuresMarket.executeDelayedOrder(trader, { from: trader });
 
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, futuresMarket, futuresNextPrice],
+			});
 
 			decodedEventEqual({
 				event: 'FuturesTracking',
@@ -306,7 +317,10 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				assert.bnEqual(order.keeperDeposit, 0);
 
 				// The relevant events are properly emitted
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, futuresMarket, futuresNextPrice],
+				});
 
 				if (from === trader) {
 					// trader gets refunded
@@ -572,7 +586,10 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders.sol', accounts => {
 				assert.bnEqual(order.keeperDeposit, 0);
 
 				// The relevant events are properly emitted
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [sUSD, futuresMarket, futuresNextPrice],
+				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded
 				if (from === trader) {

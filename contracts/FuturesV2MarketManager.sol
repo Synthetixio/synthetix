@@ -16,7 +16,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
-// basic views that are expected to be supported by v1 (IFuturesV2MarketViews) and v2 markets (IPerpsV2Market)
+// basic views that are expected to be supported
 interface IMarketViews {
     function marketKey() external view returns (bytes32);
 
@@ -31,6 +31,8 @@ interface IMarketViews {
     function marketDebt() external view returns (uint debt, bool isInvalid);
 
     function currentFundingRate() external view returns (int fundingRate);
+
+    function getAllTargets() external view returns (address[] memory);
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketManager
@@ -42,7 +44,7 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
 
     AddressSetLib.AddressSet internal _markets;
     AddressSetLib.AddressSet internal _implementations;
-    mapping(address => address) internal _marketImplementation;
+    mapping(address => address[]) internal _marketImplementation;
     mapping(bytes32 => address) public marketForKey;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -184,17 +186,32 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function _addImplementations(address market) internal {
+        address[] memory implementations = IMarketViews(market).getAllTargets();
+        for (uint i = 0; i < implementations.length; i++) {
+            _implementations.add(implementations[i]);
+        }
+        _marketImplementation[market] = implementations;
+    }
+
+    function _removeImplementations(address market) internal {
+        address[] memory implementations = _marketImplementation[market];
+        for (uint i = 0; i < implementations.length; i++) {
+            if (_implementations.contains(implementations[i])) {
+                _implementations.remove(implementations[i]);
+            }
+        }
+        delete _marketImplementation[market];
+    }
+
     /*
      * Add a set of new markets. Reverts if some market key already has a market.
      */
-    function addMarkets(address[] calldata marketsToAdd, address[] calldata implementations) external onlyOwner {
-        require(marketsToAdd.length == implementations.length, "Implementations must match markets length");
-
+    function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToAdd[i];
             require(!_markets.contains(market), "Market already exists");
-            require(implementations[i] != address(0), "Invalid implementation address");
 
             bytes32 key = IMarketViews(market).marketKey();
             bytes32 baseAsset = IMarketViews(market).baseAsset();
@@ -202,8 +219,11 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
             require(marketForKey[key] == address(0), "Market already exists for key");
             marketForKey[key] = market;
             _markets.add(market);
-            _implementations.add(implementations[i]);
-            _marketImplementation[market] = implementations[i];
+
+            // Add implementations
+            _addImplementations(market);
+
+            // Emit the event
             emit MarketAdded(market, baseAsset, key);
         }
     }
@@ -218,8 +238,10 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
             bytes32 baseAsset = IMarketViews(market).baseAsset();
 
             require(marketForKey[key] != address(0), "Unknown market");
-            _implementations.remove(_marketImplementation[market]);
-            delete _marketImplementation[market];
+
+            // Remove implementations
+            _removeImplementations(market);
+
             delete marketForKey[key];
             _markets.remove(market);
             emit MarketRemoved(market, baseAsset, key);
@@ -238,6 +260,20 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
      */
     function removeMarketsByKey(bytes32[] calldata marketKeysToRemove) external onlyOwner {
         _removeMarkets(_marketsForKeys(marketKeysToRemove));
+    }
+
+    function updateMarketsImplementations(address[] calldata marketsToUpdate) external onlyOwner {
+        uint numOfMarkets = marketsToUpdate.length;
+        for (uint i; i < numOfMarkets; i++) {
+            address market = marketsToUpdate[i];
+            require(market != address(0), "Unknown market");
+
+            // Remove old implementations
+            _removeImplementations(market);
+
+            // Pull new implementations
+            _addImplementations(market);
+        }
     }
 
     /*

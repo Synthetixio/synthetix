@@ -5,9 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./FuturesV2MarketBase.sol";
 import "./interfaces/IFuturesV2MarketViews.sol";
 
-/**
- * FuturesV2 Market Views
- */
+// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketViews
 contract FuturesV2MarketViews is FuturesV2MarketBase, IFuturesV2MarketViews {
     /* ========== CONSTRUCTOR ========== */
 

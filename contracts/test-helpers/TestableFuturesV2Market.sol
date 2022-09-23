@@ -3,9 +3,10 @@ pragma experimental ABIEncoderV2;
 
 import "../FuturesV2Market.sol";
 import "../interfaces/IFuturesV2MarketViews.sol";
+import "../interfaces/IFuturesV2MarketNextPriceOrders.sol";
 import "../interfaces/IFuturesV2MarketBaseTypes.sol";
 
-contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
+contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews, IFuturesV2MarketNextPriceOrders {
     constructor(
         address payable _proxy,
         address _marketState,
@@ -101,17 +102,7 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
         return 0;
     }
 
-    function positions(address account)
-        external
-        view
-        returns (
-            IFuturesV2MarketBaseTypes.Position memory // uint64 id,
-        )
-    // uint64 lastFundingIndex,
-    // uint128 margin,
-    // uint128 lastPrice,
-    // int128 size
-    {
+    function positions(address account) external view returns (IFuturesV2MarketBaseTypes.Position memory) {
         return Position(0, 0, 0, 0, 0);
     }
 
@@ -191,4 +182,18 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews {
     {
         return (0, 0, 0, 0, 0, IFuturesV2MarketBaseTypes.Status.Ok);
     }
+
+    /* ---------- Next Price Orders ---------- */
+
+    function nextPriceOrders(address account) external view returns (NextPriceOrder memory) {
+        return NextPriceOrder(0, 0, 0, 0, bytes32(0));
+    }
+
+    function submitNextPriceOrder(int sizeDelta) external {}
+
+    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+
+    function cancelNextPriceOrder(address account) external {}
+
+    function executeNextPriceOrder(address account) external {}
 }
