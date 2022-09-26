@@ -183,7 +183,7 @@ contract TestableFuturesV2Market is FuturesV2Market, IFuturesV2MarketViews, IFut
         return (0, 0, 0, 0, 0, IFuturesV2MarketBaseTypes.Status.Ok);
     }
 
-    /* ---------- Next Price Orders ---------- */
+    /* ---------- Delayed Orders ---------- */
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
         return DelayedOrder(0, 0, 0, 0, 0, bytes32(0));
