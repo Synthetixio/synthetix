@@ -474,6 +474,45 @@ contract('FuturesV2Market FuturesV2MarketDelayedOrders', accounts => {
 					await setPrice(baseAsset, price);
 					await checkCancellation(trader2);
 				});
+
+				it('cannot cancel before time based confirmation window is over', async () => {
+					// set a known and deterministic confirmation window.
+					const delayedOrderConfirmWindow = 60;
+					await futuresMarketSettings.setDelayedOrderConfirmWindow(
+						marketKey,
+						delayedOrderConfirmWindow,
+						{ from: owner }
+					);
+
+					// no time has changed.
+					await assert.revert(
+						futuresMarket.cancelDelayedOrder(trader, { from: trader2 }),
+						'cannot be cancelled by keeper yet'
+					);
+
+					const { timestamp } = await ethers.provider.getBlock('latest');
+					const ffDelta = 5;
+
+					// time has moved forward (no change to round) but not enough.
+					const order = await futuresMarketState.delayedOrders(trader);
+					const exectuableAtTimeDelta = order.executableAtTime.sub(toBN(timestamp)).toNumber();
+					await fastForward(ffDelta); // fast forward by 5 seconds
+					await assert.revert(
+						futuresMarket.cancelDelayedOrder(trader, { from: trader2 }),
+						'cannot be cancelled by keeper yet'
+					);
+
+					// time has moved forward, order is executable but cancellable
+					await fastForward(exectuableAtTimeDelta - ffDelta + 1);
+					await assert.revert(
+						futuresMarket.cancelDelayedOrder(trader, { from: trader2 }),
+						'cannot be cancelled by keeper yet'
+					);
+
+					// time has moved forward and now past confirmation window (still no round change)
+					await fastForward(delayedOrderConfirmWindow);
+					await checkCancellation(trader2);
+				});
 			});
 		});
 	});

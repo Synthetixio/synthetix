@@ -170,7 +170,10 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
             // this is someone else (like a keeper)
             // cancellation by third party is only possible when execution cannot be attempted any longer
             // otherwise someone might try to grief an account by cancelling for the keeper fee
-            require(_confirmationWindowOver(currentRoundId, order.targetRoundId), "cannot be cancelled by keeper yet");
+            require(
+                _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+                "cannot be cancelled by keeper yet"
+            );
 
             // send keeper fee to keeper
             _manager().issueSUSD(messageSender, order.keeperDeposit);
@@ -226,7 +229,10 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
         // can be used to trigger failures of orders that are more profitable
         // then the commitFee that was charged, or can be used to confirm
         // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(!_confirmationWindowOver(currentRoundId, order.targetRoundId), "order too old, use cancel");
+        require(
+            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+            "order too old, use cancel"
+        );
 
         // handle the fees and refunds according to the mechanism rules
         uint toRefund = order.commitDeposit; // refund the commitment deposit
@@ -277,12 +283,21 @@ contract FuturesV2MarketDelayedOrders is IFuturesV2MarketDelayedOrders, FuturesV
 
     ///// Internal views
 
-    // confirmation window is over when current roundId is more than nextPriceConfirmWindow
-    // rounds after target roundId or if block.timestamp > order.executableAtTime + delayedOrderConfirmWindow
-    function _confirmationWindowOver(uint currentRoundId, uint targetRoundId) internal view returns (bool) {
+    /// confirmation window is over when:
+    ///  1. current roundId is more than nextPriceConfirmWindow rounds after target roundId
+    ///  2. or executableAtTime - block.timestamp is more than delayedOrderConfirmWindow
+    ///
+    /// if either conditions are met, an order is considered to have exceeded the window.
+    function _confirmationWindowOver(
+        uint executableAtTime,
+        uint currentRoundId,
+        uint targetRoundId
+    ) internal view returns (bool) {
+        bytes32 marketKey = marketState.marketKey();
         return
-            (currentRoundId > targetRoundId) &&
-            (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketState.marketKey())); // don't underflow
+            (block.timestamp > executableAtTime &&
+                (block.timestamp - executableAtTime) > _delayedOrderConfirmWindow(marketKey)) ||
+            ((currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey))); // don't underflow
     }
 
     // convenience view to access exchangeRates contract for methods that are not exposed
