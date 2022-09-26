@@ -36,7 +36,7 @@
 		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "25",
-		"maxMarketValueUSD": "3000000",
+		"maxMarketValueUSD": "2000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "300000000",
 		"paused": false
@@ -64,7 +64,7 @@
 		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "3000000",
+		"maxMarketValueUSD": "2000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "50000000",
 		"paused": false
@@ -106,7 +106,7 @@
 		"makerFeeNextPrice": "0.003",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "3000000",
+		"maxMarketValueUSD": "2000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "50000000",
 		"paused": false
@@ -162,7 +162,7 @@
 		"makerFeeNextPrice": "0.0075",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "10",
-		"maxMarketValueUSD": "2000000",
+		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "10000000",
 		"paused": false
