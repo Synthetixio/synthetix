@@ -153,10 +153,10 @@ const setupContract = async ({
 			artifact._json.contractName === 'Exchanger' ||
 			artifact._json.contractName === 'ExchangerWithFeeRecAlternatives'
 		) {
-			// SafeDecimalMath -> ExchangerLib -> Exchanger*
-			const ExchangerLib = artifacts.require('ExchangerLib');
-			ExchangerLib.link(safeDecimalMath);
-			artifact.link(await ExchangerLib.new());
+			// SafeDecimalMath -> ExchangeSettlementLib -> Exchanger*
+			const ExchangeSettlementLib = artifacts.require('ExchangeSettlementLib');
+			ExchangeSettlementLib.link(safeDecimalMath);
+			artifact.link(await ExchangeSettlementLib.new());
 			artifact.link(await safeDecimalMath);
 		} else if (artifact._json.contractName === 'SystemSettings') {
 			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings

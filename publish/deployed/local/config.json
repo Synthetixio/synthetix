@@ -206,7 +206,7 @@
 	"SystemSettingsLib": {
 		"deploy": true
 	},
-	"ExchangerLib": {
+	"ExchangeSettlementLib": {
 		"deploy": true
 	},
 	"DirectIntegrationManager": {

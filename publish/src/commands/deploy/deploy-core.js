@@ -39,7 +39,7 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'ExchangerLib',
+		name: 'ExchangeSettlementLib',
 		library: true,
 	});
 

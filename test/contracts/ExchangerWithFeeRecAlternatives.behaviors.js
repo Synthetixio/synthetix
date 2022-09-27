@@ -24,11 +24,11 @@ module.exports = function({ accounts }) {
 
 	before(async () => {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
-		const ExchangerLib = artifacts.require('ExchangerLib');
-		ExchangerLib.link(safeDecimalMath);
+		const ExchangeSettlementLib = artifacts.require('ExchangeSettlementLib');
+		ExchangeSettlementLib.link(safeDecimalMath);
 
 		ExchangerWithFeeRecAlternatives.link(safeDecimalMath);
-		ExchangerWithFeeRecAlternatives.link(await ExchangerLib.new());
+		ExchangerWithFeeRecAlternatives.link(await ExchangeSettlementLib.new());
 	});
 
 	beforeEach(async () => {

@@ -11,7 +11,7 @@ import "./interfaces/ISynthetix.sol";
 
 import "./SafeDecimalMath.sol";
 
-library ExchangerLib {
+library ExchangeSettlementLib {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
 
@@ -122,6 +122,21 @@ library ExchangerLib {
         // issue amount to user
         resolvedAddresses.issuer.synths(currencyKey).issue(from, amount);
         ISynthetixInternal(address(resolvedAddresses.synthetix)).emitExchangeRebate(from, currencyKey, amount);
+    }
+
+    function hasWaitingPeriodOrSettlementOwing(
+        ResolvedAddresses calldata resolvedAddresses,
+        address account,
+        bytes32 currencyKey,
+        uint waitingPeriod
+    ) external view returns (bool) {
+        if (maxSecsLeftInWaitingPeriod(resolvedAddresses.exchangeState, account, currencyKey, waitingPeriod) != 0) {
+            return true;
+        }
+
+        (uint reclaimAmount, , , ) = _settlementOwing(resolvedAddresses, account, currencyKey, waitingPeriod);
+
+        return reclaimAmount > 0;
     }
 
     function settlementOwing(
@@ -312,32 +327,6 @@ library ExchangerLib {
             roundIdForSrc,
             roundIdForDest
         );
-    }
-
-    function updateSNXIssuedDebtOnExchange(
-        IExchangerInternalDebtCache debtCache,
-        bytes32[2] calldata currencyKeys,
-        uint[2] calldata currencyRates
-    ) external {
-        bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
-        uint numKeys = includesSUSD ? 2 : 3;
-
-        bytes32[] memory keys = new bytes32[](numKeys);
-        keys[0] = currencyKeys[0];
-        keys[1] = currencyKeys[1];
-
-        uint[] memory rates = new uint[](numKeys);
-        rates[0] = currencyRates[0];
-        rates[1] = currencyRates[1];
-
-        if (!includesSUSD) {
-            keys[2] = sUSD; // And we'll also update sUSD to account for any fees if it wasn't one of the exchanged currencies
-            rates[2] = SafeDecimalMath.unit();
-        }
-
-        // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
-        // the exchange will have failed already.
-        debtCache.updateCachedSynthDebtsWithRates(keys, rates);
     }
 
     // ========== EVENTS ==========

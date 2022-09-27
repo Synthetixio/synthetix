@@ -257,8 +257,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         // The debt pool is expected to be deprecated soon, and so we don't bother with being
         // perfect here. For now, an inaccuracy will slowly accrue over time with increasing atomic
         // exchange volume.
-        ExchangerLib.updateSNXIssuedDebtOnExchange(
-            debtCache(),
+        _updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
             [systemSourceRate, systemDestinationRate]
         );
@@ -335,7 +334,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             .effectiveAtomicValueAndRates(sourceSettings, sourceAmount, destinationSettings, usdSettings);
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);
-        amountReceived = ExchangerLib.deductFeesFromAmount(destinationAmount, exchangeFeeRate);
+        amountReceived = ExchangeSettlementLib.deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 
