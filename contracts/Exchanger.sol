@@ -221,9 +221,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         systemStatus().requireDirectIntegrationActive(from);
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-            directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
+            _exchangeSettings(from, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-            directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
+            _exchangeSettings(from, destinationCurrencyKey);
 
         (amountReceived, fee, vSynth) = _exchange(
             exchangeForAddress,
@@ -473,6 +473,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
+    // gets the exchange parameters for a given direct integration (returns default params if no overrides exist)
+    function _exchangeSettings(address from, bytes32 currencyKey)
+        internal
+        view
+        returns (IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
+    {
+        settings = directIntegrationManager().getExchangeParameters(from, currencyKey);
+    }
+
     // runs basic checks and calls `rateWithSafetyChecks` (which can trigger circuit breakers)
     // returns if there are any problems found with the rate of the given currencyKey but not reverted
     function _ensureCanExchange(
@@ -522,9 +531,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     /// @return The exchange fee rate, and whether the rates are too volatile
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
 
         (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceSettings, destinationSettings);
         require(!tooVolatile, "too volatile");
@@ -541,9 +550,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         returns (uint feeRate, bool tooVolatile)
     {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
 
         return _dynamicFeeRateForExchange(sourceSettings, destinationSettings);
     }
@@ -723,9 +732,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         )
     {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
 
         require(sourceCurrencyKey == sUSD || !exchangeRates().rateIsInvalid(sourceCurrencyKey), "src synth rate invalid");
 

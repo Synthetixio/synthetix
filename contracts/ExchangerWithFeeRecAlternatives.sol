@@ -57,9 +57,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         returns (uint exchangeFeeRate)
     {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
         exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);
     }
 
@@ -77,11 +77,10 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         )
     {
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, sourceCurrencyKey);
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, destinationCurrencyKey);
-        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings =
-            directIntegrationManager().getExchangeParameters(msg.sender, sUSD);
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = _exchangeSettings(msg.sender, sUSD);
 
         (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmount,
@@ -158,9 +157,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         {
             systemStatus().requireDirectIntegrationActive(from);
             IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
-                directIntegrationManager().getExchangeParameters(from, sourceCurrencyKey);
+                _exchangeSettings(from, sourceCurrencyKey);
             IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
-                directIntegrationManager().getExchangeParameters(from, destinationCurrencyKey);
+                _exchangeSettings(from, destinationCurrencyKey);
 
             _ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount);
             require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
@@ -175,8 +174,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             }
 
             // sometimes we need parameters for USD and USD has parameters which could be overridden
-            IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings =
-                directIntegrationManager().getExchangeParameters(from, sUSD);
+            IDirectIntegrationManager.ParameterIntegrationSettings memory usdSettings = _exchangeSettings(from, sUSD);
 
             uint systemConvertedAmount;
 
