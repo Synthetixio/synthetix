@@ -737,10 +737,11 @@
 				"ovm": [
 					"FeePool",
 					"DebtCache",
-					"FuturesV2Market.+",
 					"FuturesV2MarketManager",
 					"FuturesV2MarketSettings",
-					"FuturesV2MarketData"
+					"FuturesV2MarketData",
+					"ProxyFuturesV2.+",
+					"FuturesV2Market.+"
 				]
 			}
 		}

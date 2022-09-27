@@ -176,10 +176,34 @@
 	"FuturesMarketData": {
 		"deploy": true
 	},
+	"ProxyFuturesV2BTC": {
+		"deploy": true
+	},
+	"FuturesV2MarketStateBTC": {
+		"deploy": true
+	},
 	"FuturesV2MarketBTC": {
 		"deploy": true
 	},
+	"FuturesV2MarketViewsBTC": {
+		"deploy": true
+	},
+	"FuturesV2MarketNextPriceOrdersBTC": {
+		"deploy": true
+	},
+	"ProxyFuturesV2ETH": {
+		"deploy": true
+	},
+	"FuturesV2MarketStateETH": {
+		"deploy": true
+	},
 	"FuturesV2MarketETH": {
+		"deploy": true
+	},
+	"FuturesV2MarketViewsETH": {
+		"deploy": true
+	},
+	"FuturesV2MarketNextPriceOrdersETH": {
 		"deploy": true
 	},
 	"FuturesV2MarketManager": {
