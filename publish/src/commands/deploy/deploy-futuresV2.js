@@ -20,16 +20,16 @@ module.exports = async ({
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
-	const { futuresMarkets } = loadAndCheckRequiredSources({
-		deploymentPath,
-		network,
-	});
-
 	// ----------------
 	// Futures market setup
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY FUTURES V2 MARKETS ------\n`));
+
+	const { futuresMarkets } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesV2MarketManager',
@@ -58,6 +58,9 @@ module.exports = async ({
 	const deployedFuturesMarkets = [];
 
 	for (const marketConfig of futuresMarkets) {
+		console.log(
+			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
+		);
 		let filteredFunctions;
 		const baseAsset = toBytes32(marketConfig.asset);
 		const marketKey = toBytes32(marketConfig.marketKey);

@@ -176,6 +176,21 @@
 	"FuturesMarketData": {
 		"deploy": true
 	},
+	"FuturesV2MarketBTC": {
+		"deploy": true
+	},
+	"FuturesV2MarketETH": {
+		"deploy": true
+	},
+	"FuturesV2MarketManager": {
+		"deploy": true
+	},
+	"FuturesV2MarketSettings": {
+		"deploy": true
+	},
+	"FuturesV2MarketData": {
+		"deploy": true
+	},
 	"WrapperFactory": {
 		"deploy": true
 	},

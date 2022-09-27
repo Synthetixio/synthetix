@@ -728,6 +728,21 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "both"
+		},
+		{
+			"sip": 280,
+			"layer": "ovm",
+			"sources": {
+				"base": ["FeePool", "DebtCache", "FuturesV2MarketManager"],
+				"ovm": [
+					"FeePool",
+					"DebtCache",
+					"FuturesV2Market.+",
+					"FuturesV2MarketManager",
+					"FuturesV2MarketSettings",
+					"FuturesV2MarketData"
+				]
+			}
 		}
 	],
 	"releases": [
