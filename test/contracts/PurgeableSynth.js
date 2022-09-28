@@ -70,6 +70,7 @@ contract('PurgeableSynth', accounts => {
 				'SystemSettings',
 				'CollateralManager',
 				'FuturesMarketManager',
+				'FuturesV2MarketManager',
 			],
 		}));
 
@@ -146,6 +147,7 @@ contract('PurgeableSynth', accounts => {
 					'Issuer',
 					'FeePool',
 					'FuturesMarketManager',
+					'FuturesV2MarketManager',
 					'ExchangeRates',
 				].map(toBytes32)
 			);
