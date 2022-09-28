@@ -176,15 +176,20 @@ program
 		const decodedRelayed = [];
 		for (let i = 0; i < targets.length; i++) {
 			const target = targets[i];
-			const payload = decode({
-				network,
-				data: payloads[i],
-				target,
-				useOvm: true,
-				decodeMigration: false,
-				enhanceDecode,
-			});
-			decodedRelayed.push({ index: i, target, payload });
+			try {
+				const payload = decode({
+					network,
+					data: payloads[i],
+					target,
+					useOvm: true,
+					decodeMigration: false,
+					enhanceDecode,
+				});
+				decodedRelayed.push({ index: i, target, payload });
+			} catch (e) {
+				// unable to decode.
+				decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
+			}
 		}
 
 		console.log(util.inspect(decodedRelayed, false, null, true));

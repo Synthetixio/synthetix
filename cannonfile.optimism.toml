@@ -12,7 +12,7 @@ defaultValue = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
 # some snx and sUSD will be minted by this address
 [setting.test_user]
-defaultValue = "0x73570075092502472E4b61A7058Df1A4a1DB12f2"
+defaultValue = "0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
 
 # how much should SNX be worth (6 decimals)
 [setting.rate_snx]
