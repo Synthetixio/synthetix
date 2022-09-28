@@ -76,6 +76,7 @@ module.exports = async ({
 			name: marketProxyName,
 			source: 'ProxyFuturesV2',
 			args: [account],
+			force: true,
 		});
 
 		// State
@@ -83,6 +84,7 @@ module.exports = async ({
 			name: marketStateName,
 			source: 'FuturesV2MarketState',
 			args: [account, [account], baseAsset, marketKey],
+			force: true,
 		});
 
 		// Market
@@ -95,6 +97,7 @@ module.exports = async ({
 				account,
 				addressOf(ReadProxyAddressResolver),
 			],
+			force: true,
 		});
 
 		// Views
@@ -102,6 +105,7 @@ module.exports = async ({
 			name: marketViewName,
 			source: 'FuturesV2MarketViews',
 			args: [futuresMarketState.address, account, addressOf(ReadProxyAddressResolver)],
+			force: true,
 		});
 
 		// Next Price
@@ -114,6 +118,7 @@ module.exports = async ({
 				account,
 				addressOf(ReadProxyAddressResolver),
 			],
+			force: true,
 		});
 
 		// Configure Contracts, Proxy and State
@@ -123,12 +128,12 @@ module.exports = async ({
 			contract: `FuturesV2MarketState`,
 			target: futuresMarketState,
 			write: 'removeAssociatedContracts',
-			writeArg: [[account.address]],
+			writeArg: [[account]],
 		});
 
 		// Configure Views
 		filteredFunctions = getFunctionSignatures(futuresMarketViews, excludedFunctions);
-		for (const f in filteredFunctions) {
+		for (const f of filteredFunctions) {
 			await runStep({
 				contract: `ProxyFuturesV2`,
 				target: futuresMarketProxy,
@@ -153,7 +158,7 @@ module.exports = async ({
 		});
 
 		filteredFunctions = getFunctionSignatures(futuresMarketNextPrice, excludedFunctions);
-		for (const f in filteredFunctions) {
+		for (const f of filteredFunctions) {
 			await runStep({
 				contract: `ProxyFuturesV2`,
 				target: futuresMarketProxy,
@@ -178,7 +183,7 @@ module.exports = async ({
 		});
 
 		filteredFunctions = getFunctionSignatures(futuresMarket, excludedFunctions);
-		for (const f in filteredFunctions) {
+		for (const f of filteredFunctions) {
 			await runStep({
 				contract: `ProxyFuturesV2`,
 				target: futuresMarketProxy,

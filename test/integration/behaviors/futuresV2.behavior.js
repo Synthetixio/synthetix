@@ -11,6 +11,22 @@ const toBN = v => ethers.BigNumber.from(v.toString());
 const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
+const proxyedContract = (proxy, abi, user) => {
+	return new ethers.Contract(proxy.address, abi, user);
+};
+
+const unifyAbis = implementations => {
+	const fullAbi = [];
+	for (const implementation of implementations) {
+		for (const fragment of implementation.interface.format(ethers.FormatTypes)) {
+			if (!fullAbi.includes(fragment)) {
+				fullAbi.push(fragment);
+			}
+		}
+	}
+	return fullAbi;
+};
+
 function itCanTrade({ ctx }) {
 	describe('opening positions', function() {
 		this.retries(0);
@@ -22,6 +38,10 @@ function itCanTrade({ ctx }) {
 			FuturesV2MarketSettings,
 			FuturesV2MarketData,
 			FuturesV2MarketBTC,
+			FuturesV2MarketImplBTC,
+			FuturesV2NextPriceBTC,
+			FuturesV2MarketViewsBTC,
+			ProxyFuturesV2BTC,
 			ExchangeRates,
 			SynthsUSD;
 
@@ -30,7 +50,10 @@ function itCanTrade({ ctx }) {
 				FuturesV2MarketManager,
 				FuturesV2MarketSettings,
 				FuturesV2MarketData,
-				FuturesV2MarketBTC,
+				FuturesV2MarketBTC: FuturesV2MarketImplBTC,
+				FuturesV2NextPriceBTC,
+				FuturesV2MarketViewsBTC,
+				ProxyFuturesV2BTC,
 				ExchangeRates,
 				SynthsUSD,
 			} = ctx.contracts);
@@ -38,6 +61,12 @@ function itCanTrade({ ctx }) {
 			// owner = ctx.users.owner;
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
+
+			FuturesV2MarketBTC = proxyedContract(
+				ProxyFuturesV2BTC,
+				unifyAbis([FuturesV2MarketImplBTC, FuturesV2MarketViewsBTC, FuturesV2NextPriceBTC]),
+				someUser
+			);
 		});
 
 		before('ensure users have sUSD', async () => {
@@ -63,13 +92,16 @@ function itCanTrade({ ctx }) {
 
 			it('user can transferMargin and withdraw it', async () => {
 				// transfer
+				console.log('ll 1');
 				await market.transferMargin(margin);
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
 
+				console.log('ll 2');
 				// withdraw
 				await (await market.withdrawAllMargin()).wait();
 				const withdrawBalance = await SynthsUSD.balanceOf(someUser.address);
 				assert.bnEqual(withdrawBalance, balance);
+				console.log('ll 3');
 			});
 
 			describe('with funded margin', () => {

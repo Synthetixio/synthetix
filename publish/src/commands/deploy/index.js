@@ -28,6 +28,7 @@ const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureFutures = require('./configure-futures');
+const configureFuturesV2 = require('./configure-futuresV2');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
@@ -443,6 +444,20 @@ const deploy = async ({
 	});
 
 	await configureFutures({
+		addressOf,
+		deployer,
+		loadAndCheckRequiredSources,
+		runStep,
+		getDeployParameter,
+		useOvm,
+		freshDeploy,
+		deploymentPath,
+		network,
+		generateSolidity,
+		yes,
+	});
+
+	await configureFuturesV2({
 		addressOf,
 		deployer,
 		loadAndCheckRequiredSources,

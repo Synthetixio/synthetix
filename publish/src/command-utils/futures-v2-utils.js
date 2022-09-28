@@ -19,7 +19,9 @@ const excludedFunctions = [
 ];
 
 const getFunctionSignatures = (instance, excludedFunctions) => {
-	const contractInterface = new ethers.utils.Interface(instance.abi);
+	const contractInterface = instance.abi
+		? new ethers.utils.Interface(instance.abi)
+		: instance.interface;
 	const signatures = [];
 	const funcNames = Object.keys(contractInterface.functions);
 	for (const funcName of funcNames) {

@@ -736,6 +736,7 @@
 				"base": ["FeePool", "DebtCache", "FuturesV2MarketManager"],
 				"ovm": [
 					"FeePool",
+					"Synths.+",
 					"DebtCache",
 					"FuturesV2MarketManager",
 					"FuturesV2MarketSettings",

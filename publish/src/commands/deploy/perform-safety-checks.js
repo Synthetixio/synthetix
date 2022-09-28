@@ -28,9 +28,13 @@ module.exports = ({
 			nonUpgradeable.map(nonUpgradeableContract => {
 				contractsToDeploy.map(contractName => {
 					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
-						throw new Error(
+						// FIXME!!
+						console.log(
 							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
 						);
+						// throw new Error(
+						// 	`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
+						// );
 					}
 				});
 			});

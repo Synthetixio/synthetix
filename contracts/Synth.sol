@@ -262,7 +262,8 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(feePool()) ||
             account == address(exchanger()) ||
             account == address(issuer()) ||
-            account == address(futuresMarketManager());
+            account == address(futuresMarketManager()) ||
+            account == address(futuresV2MarketManager());
     }
 
     modifier onlyInternalContracts() {
