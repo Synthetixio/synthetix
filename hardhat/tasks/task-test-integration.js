@@ -3,6 +3,7 @@ const isCI = require('is-ci');
 
 const {
 	constants: { BUILD_FOLDER },
+	getUsers,
 } = require('../..');
 const { task } = require('hardhat/config');
 const {
@@ -61,9 +62,14 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			} else {
+				const owner = getUsers({ network: 'local', user: 'deployer' });
 				const cmd = `cannon:${hre.network.name === 'cannon' ? 'build' : 'deploy'}`;
-				await hre.run(cmd, { cannonfile: 'cannonfile.aggregator.toml' });
-				await hre.run(cmd);
+
+				await hre.run(cmd, {
+					impersonate: owner.address,
+					cannonfile: 'cannonfile.aggregator.toml',
+				});
+				await hre.run(cmd, { impersonate: owner.address });
 			}
 
 			hre.config.addedSynths = synthsToAdd;
