@@ -737,6 +737,8 @@
 				"ovm": [
 					"FeePool",
 					"Synths.+",
+					"PurgeableSynth",
+					"MultiCollateralSynth",
 					"DebtCache",
 					"FuturesV2MarketManager",
 					"FuturesV2MarketSettings",

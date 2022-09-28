@@ -92,16 +92,13 @@ function itCanTrade({ ctx }) {
 
 			it('user can transferMargin and withdraw it', async () => {
 				// transfer
-				console.log('ll 1');
 				await market.transferMargin(margin);
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
 
-				console.log('ll 2');
 				// withdraw
 				await (await market.withdrawAllMargin()).wait();
 				const withdrawBalance = await SynthsUSD.balanceOf(someUser.address);
 				assert.bnEqual(withdrawBalance, balance);
-				console.log('ll 3');
 			});
 
 			describe('with funded margin', () => {
