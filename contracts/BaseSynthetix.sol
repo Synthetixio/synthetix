@@ -36,6 +36,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
 
     // ========== CONSTRUCTOR ==========
 
@@ -180,7 +181,11 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
         // Always allow legacy market to transfer
-        if (messageSender == getAddress("LegacyMarket")) {
+        // note if legacy market is not yet available this will just return 0 address and it  will never be true
+        if (
+            messageSender != address(0) &&
+            messageSender == resolver.getAddress(CONTRACT_V3_LEGACYMARKET)
+        ) {
             return true;
         }
 

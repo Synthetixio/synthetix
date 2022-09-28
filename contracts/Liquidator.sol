@@ -35,6 +35,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
+    bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
 
     /* ========== CONSTANTS ========== */
 
@@ -243,7 +244,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     function flagAccountForLiquidation(address account) external rateNotInvalid("SNX") {
         systemStatus().requireSystemActive();
 
-        require(getAddress("LegacyMarket") == address(0), "Must liquidate using V3");
+        require(resolver.getAddress(CONTRACT_V3_LEGACYMARKET) == address(0), "Must liquidate using V3");
 
         require(getLiquidationRatio() > 0, "Liquidation ratio not set");
         require(getLiquidationDelay() > 0, "Liquidation delay not set");

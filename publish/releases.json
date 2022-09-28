@@ -728,6 +728,15 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "both"
+		},
+		{
+			"sip": 299,
+			"layer": "both",
+			"sources": [
+				"Synthetix",
+				"Issuer",
+				"Liquidator"
+			]
 		}
 	],
 	"releases": [
