@@ -182,10 +182,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function _canTransfer(address account, uint value) internal view returns (bool) {
         // Always allow legacy market to transfer
         // note if legacy market is not yet available this will just return 0 address and it  will never be true
-        if (
-            messageSender != address(0) &&
-            messageSender == resolver.getAddress(CONTRACT_V3_LEGACYMARKET)
-        ) {
+        if (messageSender != address(0) && messageSender == resolver.getAddress(CONTRACT_V3_LEGACYMARKET)) {
             return true;
         }
 
