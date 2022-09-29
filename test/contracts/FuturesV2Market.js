@@ -2352,13 +2352,14 @@ contract('FuturesV2Market', accounts => {
 				let price = toUnit(100);
 
 				await setPrice(baseAsset, price);
+
+				const fee1 = (await futuresMarket.orderFee(toUnit('50')))[0];
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('50'), { from: trader }); // 5x
+
+				const fee2 = (await futuresMarket.orderFee(toUnit('-100')))[0];
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 }); // -10x
-
-				const fee1 = multiplyDecimal(toUnit('5000'), makerFee);
-				const fee2 = multiplyDecimal(toUnit('10000'), makerFee);
 
 				const lev = (notional, margin, fee) => divideDecimal(notional, margin.sub(fee));
 
