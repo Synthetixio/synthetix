@@ -43,7 +43,6 @@ contract('FuturesMarketManager', accounts => {
 		({
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketSettings: futuresMarketSettings,
-			// PerpsV2Settings: perpsSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -58,7 +57,7 @@ contract('FuturesMarketManager', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
-				'PerpsV2Settings',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',

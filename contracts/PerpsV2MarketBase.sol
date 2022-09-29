@@ -54,8 +54,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
-    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "PerpsV2MarketManager";
-    bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "PerpsV2MarketSettings";
+    bytes32 internal constant CONTRACT_PERPSV2MARKETMANAGER = "PerpsV2MarketManager";
+    bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
     // Holds the revert message for each type of error.
@@ -100,8 +100,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[2] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[3] = CONTRACT_FUTURESMARKETSETTINGS;
+        newAddresses[2] = CONTRACT_PERPSV2MARKETMANAGER;
+        newAddresses[3] = CONTRACT_PERPSV2MARKETSETTINGS;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
@@ -119,11 +119,11 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _manager() internal view returns (IPerpsV2MarketManagerInternal) {
-        return IPerpsV2MarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+        return IPerpsV2MarketManagerInternal(requireAndGetAddress(CONTRACT_PERPSV2MARKETMANAGER));
     }
 
     function _settings() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_FUTURESMARKETSETTINGS);
+        return requireAndGetAddress(CONTRACT_PERPSV2MARKETSETTINGS);
     }
 
     /* ---------- Market Details ---------- */

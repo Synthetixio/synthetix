@@ -17,7 +17,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "PerpsV2MarketManager";
+    bytes32 internal constant CONTRACT_PERPSV2_MARKET_MANAGER = "PerpsV2MarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -28,12 +28,12 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
+        newAddresses[0] = CONTRACT_PERPSV2_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function _futuresMarketManager() internal view returns (IPerpsV2MarketManager) {
-        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
+        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_PERPSV2_MARKET_MANAGER));
     }
 
     /* ---------- Getters ---------- */
