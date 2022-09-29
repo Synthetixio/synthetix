@@ -54,7 +54,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
         _submitNextPriceOrder(sizeDelta, trackingCode);
     }
 
-    function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal {
+    function _submitNextPriceOrder(int sizeDelta, bytes32 trackingCode) internal onlyProxy {
         // check that a previous order doesn't exist
         require(marketState.nextPriceOrders(messageSender).sizeDelta == 0, "previous order exists");
 
@@ -125,7 +125,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
      *  or send to the msg.sender if it's not the account holder.
      * @param account the account for which the stored order should be cancelled
      */
-    function cancelNextPriceOrder(address account) external {
+    function cancelNextPriceOrder(address account) external onlyProxy {
         // important!! order of the account, not the msg.sender
         NextPriceOrder memory order = marketState.nextPriceOrders(account);
         // check that a previous order exists
@@ -184,7 +184,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a next-price order
      */
-    function executeNextPriceOrder(address account) external {
+    function executeNextPriceOrder(address account) external onlyProxy {
         // important!: order  of the account, not the sender!
         NextPriceOrder memory order = marketState.nextPriceOrders(account);
         // check that a previous order exists

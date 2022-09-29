@@ -176,7 +176,7 @@
 	"FuturesMarketData": {
 		"deploy": true
 	},
-	"ProxyFuturesV2BTC": {
+	"FuturesV2ProxyBTC": {
 		"deploy": true
 	},
 	"FuturesV2MarketStateBTC": {
@@ -191,7 +191,7 @@
 	"FuturesV2MarketNextPriceOrdersBTC": {
 		"deploy": true
 	},
-	"ProxyFuturesV2ETH": {
+	"FuturesV2ProxyETH": {
 		"deploy": true
 	},
 	"FuturesV2MarketStateETH": {

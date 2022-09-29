@@ -41,7 +41,7 @@ function itCanTrade({ ctx }) {
 			FuturesV2MarketImplBTC,
 			FuturesV2NextPriceBTC,
 			FuturesV2MarketViewsBTC,
-			ProxyFuturesV2BTC,
+			FuturesV2ProxyBTC,
 			ExchangeRates,
 			SynthsUSD;
 
@@ -53,7 +53,7 @@ function itCanTrade({ ctx }) {
 				FuturesV2MarketBTC: FuturesV2MarketImplBTC,
 				FuturesV2NextPriceBTC,
 				FuturesV2MarketViewsBTC,
-				ProxyFuturesV2BTC,
+				FuturesV2ProxyBTC,
 				ExchangeRates,
 				SynthsUSD,
 			} = ctx.contracts);
@@ -63,7 +63,7 @@ function itCanTrade({ ctx }) {
 			otherUser = ctx.users.otherUser;
 
 			FuturesV2MarketBTC = proxyedContract(
-				ProxyFuturesV2BTC,
+				FuturesV2ProxyBTC,
 				unifyAbis([FuturesV2MarketImplBTC, FuturesV2MarketViewsBTC, FuturesV2NextPriceBTC]),
 				someUser
 			);

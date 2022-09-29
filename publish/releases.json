@@ -743,7 +743,7 @@
 					"FuturesV2MarketManager",
 					"FuturesV2MarketSettings",
 					"FuturesV2MarketData",
-					"ProxyFuturesV2.+",
+					"FuturesV2Proxy.+",
 					"FuturesV2Market.+"
 				]
 			}
