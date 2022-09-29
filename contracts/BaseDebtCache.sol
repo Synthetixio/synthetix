@@ -19,7 +19,7 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./interfaces/IFuturesMarketManager.sol";
-import "./interfaces/IFuturesV2MarketManager.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
@@ -49,7 +49,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 private constant CONTRACT_FUTURESV2MARKETMANAGER = "FuturesV2MarketManager";
+    bytes32 private constant CONTRACT_FUTURESV2MARKETMANAGER = "PerpsV2MarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
@@ -99,8 +99,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
-    function futuresV2MarketManager() internal view returns (IFuturesV2MarketManager) {
-        return IFuturesV2MarketManager(requireAndGetAddress(CONTRACT_FUTURESV2MARKETMANAGER));
+    function perpsV2MarketManager() internal view returns (IPerpsV2MarketManager) {
+        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_FUTURESV2MARKETMANAGER));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -171,13 +171,13 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
         (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
-        (uint futuresV2Debt, bool futuresV2DebtIsInvalid) = futuresV2MarketManager().totalDebt();
+        (uint perpsV2Debt, bool perpsV2DebtIsInvalid) = perpsV2MarketManager().totalDebt();
 
         return (
             values,
-            futuresDebt + futuresV2Debt,
+            futuresDebt + perpsV2Debt,
             excludedDebt,
-            isInvalid || futuresDebtIsInvalid || futuresV2DebtIsInvalid || isAnyNonSnxDebtRateInvalid
+            isInvalid || futuresDebtIsInvalid || perpsV2DebtIsInvalid || isAnyNonSnxDebtRateInvalid
         );
     }
 
@@ -306,13 +306,13 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         total = total.add(futuresDebt);
 
         // Add in the debt accounted for by futures V2
-        (uint futuresV2Debt, bool futuresV2DebtIsInvalid) = futuresV2MarketManager().totalDebt();
-        total = total.add(futuresV2Debt);
+        (uint perpsV2Debt, bool perpsV2DebtIsInvalid) = perpsV2MarketManager().totalDebt();
+        total = total.add(perpsV2Debt);
 
         // Ensure that if the excluded non-SNX debt exceeds SNX-backed debt, no overflow occurs
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isInvalid || futuresDebtIsInvalid || futuresV2DebtIsInvalid || isAnyNonSnxDebtRateInvalid);
+        return (total, isInvalid || futuresDebtIsInvalid || perpsV2DebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {

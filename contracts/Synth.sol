@@ -13,7 +13,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IFuturesMarketManager.sol";
-import "./interfaces/IFuturesV2MarketManager.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
@@ -36,7 +36,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 private constant CONTRACT_FUTURESV2MARKETMANAGER = "FuturesV2MarketManager";
+    bytes32 private constant CONTRACT_FUTURESV2MARKETMANAGER = "PerpsV2MarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -220,8 +220,8 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
-    function futuresV2MarketManager() internal view returns (IFuturesV2MarketManager) {
-        return IFuturesV2MarketManager(requireAndGetAddress(CONTRACT_FUTURESV2MARKETMANAGER));
+    function perpsV2MarketManager() internal view returns (IPerpsV2MarketManager) {
+        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_FUTURESV2MARKETMANAGER));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
@@ -270,7 +270,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(exchanger()) ||
             account == address(issuer()) ||
             account == address(futuresMarketManager()) ||
-            account == address(futuresV2MarketManager());
+            account == address(perpsV2MarketManager());
     }
 
     modifier onlyInternalContracts() {

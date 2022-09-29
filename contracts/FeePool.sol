@@ -28,7 +28,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IFuturesMarketManager.sol";
-import "./interfaces/IFuturesV2MarketManager.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
@@ -80,7 +80,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
-    bytes32 private constant CONTRACT_FUTURES_V2_MARKET_MANAGER = "FuturesV2MarketManager";
+    bytes32 private constant CONTRACT_FUTURES_V2_MARKET_MANAGER = "PerpsV2MarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
@@ -169,8 +169,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
     }
 
-    function futuresV2MarketManager() internal view returns (IFuturesV2MarketManager) {
-        return IFuturesV2MarketManager(requireAndGetAddress(CONTRACT_FUTURES_V2_MARKET_MANAGER));
+    function perpsV2MarketManager() internal view returns (IPerpsV2MarketManager) {
+        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_FUTURES_V2_MARKET_MANAGER));
     }
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
@@ -713,7 +713,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             issuer().synthsByAddress(account) != bytes32(0) ||
             collateralManager().hasCollateral(account) ||
             account == address(futuresMarketManager()) ||
-            account == address(futuresV2MarketManager()) ||
+            account == address(perpsV2MarketManager()) ||
             account == address(wrapperFactory()) ||
             account == address(etherWrapper());
     }

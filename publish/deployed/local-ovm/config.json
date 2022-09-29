@@ -176,43 +176,43 @@
 	"FuturesMarketData": {
 		"deploy": true
 	},
-	"FuturesV2ProxyBTC": {
+	"PerpsV2ProxyBTC": {
 		"deploy": true
 	},
-	"FuturesV2MarketStateBTC": {
+	"PerpsV2MarketStateBTC": {
 		"deploy": true
 	},
-	"FuturesV2MarketBTC": {
+	"PerpsV2MarketBTC": {
 		"deploy": true
 	},
-	"FuturesV2MarketViewsBTC": {
+	"PerpsV2MarketViewsBTC": {
 		"deploy": true
 	},
-	"FuturesV2MarketNextPriceOrdersBTC": {
+	"PerpsV2MarketNextPriceOrdersBTC": {
 		"deploy": true
 	},
-	"FuturesV2ProxyETH": {
+	"PerpsV2ProxyETH": {
 		"deploy": true
 	},
-	"FuturesV2MarketStateETH": {
+	"PerpsV2MarketStateETH": {
 		"deploy": true
 	},
-	"FuturesV2MarketETH": {
+	"PerpsV2MarketETH": {
 		"deploy": true
 	},
-	"FuturesV2MarketViewsETH": {
+	"PerpsV2MarketViewsETH": {
 		"deploy": true
 	},
-	"FuturesV2MarketNextPriceOrdersETH": {
+	"PerpsV2MarketNextPriceOrdersETH": {
 		"deploy": true
 	},
-	"FuturesV2MarketManager": {
+	"PerpsV2MarketManager": {
 		"deploy": true
 	},
-	"FuturesV2MarketSettings": {
+	"PerpsV2MarketSettings": {
 		"deploy": true
 	},
-	"FuturesV2MarketData": {
+	"PerpsV2MarketData": {
 		"deploy": true
 	},
 	"WrapperFactory": {
