@@ -380,7 +380,7 @@ contract('FuturesV2Market', accounts => {
 						sizeDelta: t1size,
 					});
 
-					const fee = toUnit('7');
+					const fee = toUnit('14');
 					await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader });
 					assert.bnEqual((await futuresMarket.orderFee(t1size.mul(toBN(2)))).fee, fee);
 					const tx = await futuresMarket.modifyPosition(t1size.mul(toBN(2)), { from: trader });
@@ -397,7 +397,10 @@ contract('FuturesV2Market', accounts => {
 						args: [
 							toBN('1'),
 							trader,
-							margin.mul(toBN(3)).sub(toUnit('10.5')),
+							margin
+								.mul(toBN(3))
+								.sub(fee)
+								.sub(toUnit('3.5')),
 							t1size.mul(toBN(3)),
 							t1size.mul(toBN(2)),
 							toUnit('100'),
@@ -448,18 +451,57 @@ contract('FuturesV2Market', accounts => {
 				});
 
 				it('Submit a fresh order on the opposite side to the skew larger than the skew', async () => {
+					const price = toBN('100');
+
+					// first position pushes the skew to one side (depending on if leverage is neg or pos).
+					//
+					// - leverage is either 3.5 or -3.5
+					// - margin is 1000
+					//
+					// sizeDelta is ((leverage * -1) * (margin / 2)) / 100
+					// 	= (3.5 * -1 * (1000 / 2)) / 100 = -17.5
+					//  = (-3.5 * -1 * (1000 / 2)) / 100 = 17.5
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
 						fillPrice: toUnit('100'),
 						marginDelta: margin.div(toBN(2)),
-						sizeDelta: multiplyDecimal(leverage.neg(), margin.div(toBN(2))).div(toBN('100')),
+						sizeDelta: multiplyDecimal(leverage.neg(), margin.div(toBN(2))).div(price),
 					});
 
+					// if the next sizeDelta pushes the skew into the opposite direction
+					//
+					// notional = margin * leverage
+					//          = 1000 * 3.5
+					//          = 3500
+					//          = (or neg) 1000 * -3.5
+					//          = -3500
+					//
+					// sizeDelta = notional / 100
+					//           = 3500 / 100
+					//           = 35
+					//           = (or neg) -3500 / 100
+					//           = -35
+					//
+					// given the skew above at -17.5 or 17.5, a 35 or -35 sizeDelta will push the skew in the opposite
+					// direction.
+					//
+					// (+/-)17.5 -> 0 will be charged at a makerFee
+					// 0 -> (+/-)17.5 will be charged with takerFee
+					//
+					// - maker fee is 0.003
+					// - taker fee is 0.001
+					// - price is 100 sUSD
+					//
+					// fee = 17.5 * 100 * 0.001 + 17.5 * 100 * 0.003
+					//     = 1.75 + 5.25
+					//     = 7
 					const notional = multiplyDecimal(margin, leverage);
-					const fee = multiplyDecimal(notional, makerFee).abs();
+					const fee = toUnit('7');
 					await futuresMarket.transferMargin(margin, { from: trader });
-					assert.bnEqual((await futuresMarket.orderFee(notional.div(toBN('100'))))[0], fee);
+
+					const sizeDelta = notional.div(price);
+					assert.bnEqual((await futuresMarket.orderFee(sizeDelta))[0], fee);
 				});
 
 				it('Increase an existing position on the side of the skew', async () => {
@@ -508,6 +550,13 @@ contract('FuturesV2Market', accounts => {
 				});
 
 				it('Increase an existing position opposite to the skew larger than the skew', async () => {
+					// push the skew to one side (taker fee)
+					//
+					// sizeDelta = (leverage * (margin * 2)) / 100
+					//           = (3.5 * (1000 * 2)) / 100
+					//           = (3.5 * 2000) / 100
+					//           = 7000 / 100
+					//           = 70
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
@@ -516,6 +565,12 @@ contract('FuturesV2Market', accounts => {
 						sizeDelta: multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100)),
 					});
 
+					// push the skew to the other side (maker then taker fee)
+					//
+					// sizeDelta = (-leverage * margin) / 100
+					//           = (-3.5 * 1000) / 100
+					//           = -3500 / 100
+					//           = -35
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
@@ -524,13 +579,27 @@ contract('FuturesV2Market', accounts => {
 						sizeDelta: multiplyDecimal(leverage.neg(), margin).div(toBN(100)),
 					});
 
+					// sizeDelta = (-leverage * (margin * 2)) / 100
+					//           = -3.5 * 2000 / 100
+					//           = -7000 / 100
+					//           = -70
+					//
+					// marketSkew at this stage is 35, -70 will incur 35 in makerFee and 35 in takerFee
+					//
+					// makerFee = 0.001, takerFee = 0.003, price = 100
+					//
+					// fee = 35 * makerFee * price + 35 * takerFee * price
+					//     = 35 * 0.001 * 100 + 35 * 0.003 * 100
+					//     = 3.5 + 10.5
+					//     = 14
+					const fee = toUnit('14');
 					assert.bnEqual(
 						(
 							await futuresMarket.orderFee(
 								multiplyDecimal(leverage.neg(), margin.mul(toBN(2))).div(toBN(100))
 							)
 						)[0],
-						toUnit('7')
+						fee
 					);
 				});
 
