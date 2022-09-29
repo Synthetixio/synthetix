@@ -17,7 +17,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
-// basic views that are expected to be supported by v1 (IFuturesMarket) and v2 markets (IPerpsV2Market)
+// basic views that are expected to be supported by v1 (IFuturesMarket)
 interface IMarketViews {
     function marketKey() external view returns (bytes32);
 
