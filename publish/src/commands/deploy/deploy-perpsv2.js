@@ -21,7 +21,7 @@ module.exports = async ({
 	// Futures market setup
 	// ----------------
 
-	console.log(gray(`\n------ DEPLOY FUTURES V2 MARKETS ------\n`));
+	console.log(gray(`\n------ DEPLOY PERPS V2 MARKETS ------\n`));
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
