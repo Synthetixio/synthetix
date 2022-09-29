@@ -348,15 +348,35 @@ contract FuturesV2MarketBase is Owned, MixinFuturesV2MarketSettings, IFuturesV2M
 
     function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal view returns (uint fee) {
         // usd value of the difference in position
+        int marketSkew = marketState.marketSkew();
         int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
 
-        // If the order is submitted on the same side as the skew (increasing it) - the taker fee is charged.
-        // Otherwise if the order is opposite to the skew, the maker fee is charged.
-        // the case where the order flips the skew is ignored for simplicity due to being negligible
-        // in both size of effect and frequency of occurrence
-        uint staticRate = _sameSide(notionalDiff, marketState.marketSkew()) ? params.takerFee : params.makerFee;
-        uint feeRate = staticRate.add(dynamicFeeRate);
-        return _abs(notionalDiff.multiplyDecimal(int(feeRate)));
+        // minimum fee to pay regardless (due to dynamic fees).
+        uint baseFee = _abs(notionalDiff).multiplyDecimal(dynamicFeeRate);
+
+        // does this trade keep the skew on one side?
+        if (_sameSide(marketSkew + params.sizeDelta, marketSkew)) {
+            // use a flat maker/taker fee for the entire size depending on whether the skew is increased or reduced.
+            //
+            // if the order is submitted on the same side as the skew (increasing it) - the taker fee is charged.
+            // otherwise if the order is opposite to the skew, the maker fee is charged.
+            uint staticRate = _sameSide(notionalDiff, marketState.marketSkew()) ? params.takerFee : params.makerFee;
+            return baseFee + _abs(notionalDiff.multiplyDecimal(int(staticRate)));
+        }
+
+        // this trade flips the skew.
+        //
+        // the proportion of size that moves in the direction after the flip should not be considered
+        // as a maker (reducing skew) as it's now taking (increasing skew) in the opposite direction. hence,
+        // a different fee is applied on the proportion increasing the skew.
+
+        // proportion of size that's on the other direction
+        uint takerSize = _abs((marketSkew + params.sizeDelta).divideDecimal(params.sizeDelta));
+        uint makerSize = uint(_UNIT) - takerSize;
+        uint takerFee = _abs(notionalDiff).multiplyDecimal(takerSize).multiplyDecimal(params.takerFee);
+        uint makerFee = _abs(notionalDiff).multiplyDecimal(makerSize).multiplyDecimal(params.makerFee);
+
+        return baseFee + takerFee + makerFee;
     }
 
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
