@@ -459,7 +459,7 @@ contract('FuturesV2Market', accounts => {
 					// - margin is 1000
 					//
 					// sizeDelta is ((leverage * -1) * (margin / 2)) / 100
-					// 	= (3.5 * -1 * (1000 / 2)) / 100 = -17.5
+					//  = (3.5 * -1 * (1000 / 2)) / 100 = -17.5
 					//  = (-3.5 * -1 * (1000 / 2)) / 100 = 17.5
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
