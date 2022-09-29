@@ -63,13 +63,11 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 				});
 			} else {
 				const owner = getUsers({ network: 'local', user: 'deployer' });
-				const cmd = `cannon:${hre.network.name === 'cannon' ? 'build' : 'deploy'}`;
-
-				await hre.run(cmd, {
+				await hre.run('cannon:deploy', {
 					impersonate: owner.address,
 					cannonfile: 'cannonfile.aggregator.toml',
 				});
-				await hre.run(cmd, { impersonate: owner.address });
+				await hre.run('cannon:deploy', { impersonate: owner.address });
 			}
 
 			hre.config.addedSynths = synthsToAdd;
@@ -128,9 +126,13 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				const cmd = `cannon:${hre.network.name === 'cannon' ? 'build' : 'deploy'}`;
-				await hre.run(cmd, { cannonfile: 'cannonfile.aggregator.toml' });
-				await hre.run(cmd, {
+				const owner = getUsers({ network: 'local', user: 'deployer' });
+				await hre.run('cannon:deploy', {
+					impersonate: owner.address,
+					cannonfile: 'cannonfile.aggregator.toml',
+				});
+				await hre.run('cannon:deploy', {
+					impersonate: owner.address,
 					cannonfile: 'cannonfile.optimism.toml',
 					preset: 'local-ovm',
 					settings: ['network=local-ovm'],
