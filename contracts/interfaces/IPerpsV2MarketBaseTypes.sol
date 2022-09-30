@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-interface IFuturesV2MarketBaseTypes {
+interface IPerpsV2MarketBaseTypes {
     /* ========== TYPES ========== */
 
     enum Status {

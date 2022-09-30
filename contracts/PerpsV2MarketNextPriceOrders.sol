@@ -2,14 +2,14 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./FuturesV2MarketProxyable.sol";
-import "./interfaces/IFuturesV2MarketNextPriceOrders.sol";
+import "./PerpsV2MarketProxyable.sol";
+import "./interfaces/IPerpsV2MarketNextPriceOrders.sol";
 
 // Reference
-import "./interfaces/IFuturesV2MarketBaseTypes.sol";
+import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 
 /**
- Contract that implements NextPrice orders mechanism for the FuturesV2 market.
+ Contract that implements NextPrice orders mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -20,8 +20,8 @@ import "./interfaces/IFuturesV2MarketBaseTypes.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketNextPriceOrders
-contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, FuturesV2MarketProxyable {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketNextPriceOrders
+contract PerpsV2MarketNextPriceOrders is IPerpsV2MarketNextPriceOrders, PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -29,7 +29,7 @@ contract FuturesV2MarketNextPriceOrders is IFuturesV2MarketNextPriceOrders, Futu
         address _marketState,
         address _owner,
         address _resolver
-    ) public FuturesV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
+    ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     function nextPriceOrders(address account) external view returns (NextPriceOrder memory) {
         return marketState.nextPriceOrders(account);

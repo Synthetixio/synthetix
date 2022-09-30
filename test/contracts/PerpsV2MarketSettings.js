@@ -20,7 +20,7 @@ const {
 
 const BN = require('bn.js');
 
-contract('FuturesV2MarketSettings', accounts => {
+contract('PerpsV2MarketSettings', accounts => {
 	let futuresMarketManager, futuresMarketSettings;
 
 	let mockFuturesMarketBTCImpl, mockFuturesMarketBTC;
@@ -41,14 +41,14 @@ contract('FuturesV2MarketSettings', accounts => {
 
 	before(async () => {
 		({
-			FuturesV2MarketSettings: futuresMarketSettings,
-			FuturesV2MarketManager: futuresMarketManager,
+			PerpsV2MarketSettings: futuresMarketSettings,
+			PerpsV2MarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			contracts: [
-				'FuturesV2MarketSettings',
-				'FuturesV2MarketManager',
+				'PerpsV2MarketSettings',
+				'PerpsV2MarketManager',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -64,35 +64,35 @@ contract('FuturesV2MarketSettings', accounts => {
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2Market',
+			mock: 'PerpsV2Market',
 			fncName: 'recomputeFunding',
 			returns: ['0'],
 		});
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2MarketViews',
+			mock: 'PerpsV2MarketViews',
 			fncName: 'marketSize',
 			returns: ['1'],
 		});
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2MarketViews',
+			mock: 'PerpsV2MarketViews',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTCImpl,
-			mock: 'FuturesV2MarketViews',
+			mock: 'PerpsV2MarketViews',
 			fncName: 'marketKey',
 			returns: [toBytes32('sBTC')],
 		});
 
 		mockFuturesMarketBTC = await setupContract({
 			accounts,
-			contract: 'ProxyFuturesV2',
+			contract: 'ProxyPerpsV2',
 			args: [owner],
 		});
 
@@ -426,35 +426,35 @@ contract('FuturesV2MarketSettings', accounts => {
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2Market',
+				mock: 'PerpsV2Market',
 				fncName: 'recomputeFunding',
 				returns: ['0'],
 			});
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2MarketViews',
+				mock: 'PerpsV2MarketViews',
 				fncName: 'marketSize',
 				returns: ['1'],
 			});
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2MarketViews',
+				mock: 'PerpsV2MarketViews',
 				fncName: 'baseAsset',
 				returns: [toBytes32('sBTC')],
 			});
 
 			await mockGenericContractFnc({
 				instance: secondBTCMarketImpl,
-				mock: 'FuturesV2MarketViews',
+				mock: 'PerpsV2MarketViews',
 				fncName: 'marketKey',
 				returns: [secondMarketKey],
 			});
 
 			secondBTCMarket = await setupContract({
 				accounts,
-				contract: 'ProxyFuturesV2',
+				contract: 'ProxyPerpsV2',
 				args: [owner],
 			});
 

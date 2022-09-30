@@ -1,10 +1,10 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "./IFuturesV2MarketBaseTypes.sol";
+import "./IPerpsV2MarketBaseTypes.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketState
-interface IFuturesV2MarketState {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketState
+interface IPerpsV2MarketState {
     function marketKey() external view returns (bytes32);
 
     function baseAsset() external view returns (bytes32);
@@ -17,9 +17,9 @@ interface IFuturesV2MarketState {
 
     function fundingSequence(uint) external view returns (int128);
 
-    function positions(address) external view returns (IFuturesV2MarketBaseTypes.Position memory);
+    function positions(address) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
-    function nextPriceOrders(address) external view returns (IFuturesV2MarketBaseTypes.NextPriceOrder memory);
+    function nextPriceOrders(address) external view returns (IPerpsV2MarketBaseTypes.NextPriceOrder memory);
 
     function entryDebtCorrection() external view returns (int128);
 

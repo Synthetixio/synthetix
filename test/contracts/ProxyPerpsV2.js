@@ -10,12 +10,12 @@ const TestableAddressSetAbi = artifacts.require('TestableAddressSetProxyable').a
 const TestableBytes32SetAbi = artifacts.require('TestableBytes32SetProxyable').abi;
 const TestableProxyableAbi = artifacts.require('TestableProxyable').abi;
 
-contract('ProxyFuturesV2', async accounts => {
+contract('ProxyPerpsV2', async accounts => {
 	// Signers
 	let owner, user;
 
 	// Real contracts
-	let ProxyFuturesV2, TestableProxyable, TestableBytes32Set, TestableAddressSet;
+	let ProxyPerpsV2, TestableProxyable, TestableBytes32Set, TestableAddressSet;
 
 	// Other mocked stuff
 	const mockedAddress1 = ethers.Wallet.createRandom().address;
@@ -24,25 +24,25 @@ contract('ProxyFuturesV2', async accounts => {
 		let factory;
 		[owner, user] = await ethers.getSigners();
 
-		factory = await ethers.getContractFactory('ProxyFuturesV2', owner);
-		ProxyFuturesV2 = await factory.deploy(owner.address);
+		factory = await ethers.getContractFactory('ProxyPerpsV2', owner);
+		ProxyPerpsV2 = await factory.deploy(owner.address);
 
 		// Using some pre-existent Testable AddressSet as a generic target contract
 		factory = await ethers.getContractFactory('TestableProxyable', owner);
-		TestableProxyable = await factory.deploy(ProxyFuturesV2.address, owner.address);
+		TestableProxyable = await factory.deploy(ProxyPerpsV2.address, owner.address);
 
 		factory = await ethers.getContractFactory('TestableBytes32SetProxyable', owner);
-		TestableBytes32Set = await factory.deploy(ProxyFuturesV2.address, owner.address);
+		TestableBytes32Set = await factory.deploy(ProxyPerpsV2.address, owner.address);
 
 		factory = await ethers.getContractFactory('TestableAddressSetProxyable', owner);
-		TestableAddressSet = await factory.deploy(ProxyFuturesV2.address, owner.address);
+		TestableAddressSet = await factory.deploy(ProxyPerpsV2.address, owner.address);
 
 		await TestableAddressSet.add(mockedAddress1);
 	});
 
 	it('only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: artifacts.require('ProxyFuturesV2').abi,
+			abi: artifacts.require('ProxyPerpsV2').abi,
 			ignoreParents: ['Owned'],
 			hasFallback: true,
 			expected: ['addRoute', 'removeRoute', 'setTarget', '_emit'],
@@ -53,35 +53,31 @@ contract('ProxyFuturesV2', async accounts => {
 		describe('when calling setTarget', () => {
 			it('reverts calling it by a normal user', async () => {
 				await assert.revert(
-					ProxyFuturesV2.connect(user).setTarget(TestableProxyable.address),
+					ProxyPerpsV2.connect(user).setTarget(TestableProxyable.address),
 					'Only the contract owner may perform this action'
 				);
 			});
 
 			it('sets the target when the user is the owner', async () => {
-				await ProxyFuturesV2.connect(owner).setTarget(TestableProxyable.address);
-				assert.equal(await ProxyFuturesV2.target(), TestableProxyable.address);
+				await ProxyPerpsV2.connect(owner).setTarget(TestableProxyable.address);
+				assert.equal(await ProxyPerpsV2.target(), TestableProxyable.address);
 			});
 		});
 
 		describe('when calling addRoute', () => {
 			it('reverts calling it by a normal user', async () => {
 				await assert.revert(
-					ProxyFuturesV2.connect(user).addRoute('0x00112233', TestableBytes32Set.address, false),
+					ProxyPerpsV2.connect(user).addRoute('0x00112233', TestableBytes32Set.address, false),
 					'Only the contract owner may perform this action'
 				);
 			});
 
 			it('sets a route when the user is the owner', async () => {
-				const initialRouteLen = await ProxyFuturesV2.getRoutesLength();
-				await ProxyFuturesV2.connect(owner).addRoute(
-					'0x00112233',
-					TestableBytes32Set.address,
-					false
-				);
+				const initialRouteLen = await ProxyPerpsV2.getRoutesLength();
+				await ProxyPerpsV2.connect(owner).addRoute('0x00112233', TestableBytes32Set.address, false);
 
 				assert.equal(
-					(await ProxyFuturesV2.getRoutesLength()).toString(),
+					(await ProxyPerpsV2.getRoutesLength()).toString(),
 					initialRouteLen.add(1).toString()
 				);
 			});
@@ -89,27 +85,23 @@ contract('ProxyFuturesV2', async accounts => {
 
 		describe('when calling removeRoute', () => {
 			beforeEach('add a sample route to remove', async () => {
-				await ProxyFuturesV2.connect(owner).addRoute(
-					'0x00112233',
-					TestableBytes32Set.address,
-					false
-				);
+				await ProxyPerpsV2.connect(owner).addRoute('0x00112233', TestableBytes32Set.address, false);
 			});
 
 			it('reverts calling it by a normal user', async () => {
 				await assert.revert(
-					ProxyFuturesV2.connect(user).removeRoute('0x00112233'),
+					ProxyPerpsV2.connect(user).removeRoute('0x00112233'),
 					'Only the contract owner may perform this action'
 				);
 			});
 
 			it('removes a route when the user is the owner', async () => {
-				const initialRouteLen = await ProxyFuturesV2.getRoutesLength();
+				const initialRouteLen = await ProxyPerpsV2.getRoutesLength();
 
-				await ProxyFuturesV2.connect(owner).removeRoute('0x00112233');
+				await ProxyPerpsV2.connect(owner).removeRoute('0x00112233');
 
 				assert.equal(
-					(await ProxyFuturesV2.getRoutesLength()).toString(),
+					(await ProxyPerpsV2.getRoutesLength()).toString(),
 					initialRouteLen.sub(1).toString()
 				);
 			});
@@ -122,11 +114,11 @@ contract('ProxyFuturesV2', async accounts => {
 
 			beforeEach('setup proxyable contract', async () => {
 				const factory = await ethers.getContractFactory('TestableProxyable', owner);
-				TestableProxyable = await factory.deploy(ProxyFuturesV2.address, owner.address);
+				TestableProxyable = await factory.deploy(ProxyPerpsV2.address, owner.address);
 			});
 
 			it('emits an event if the contract is the target', async () => {
-				await ProxyFuturesV2.connect(owner).setTarget(TestableProxyable.address);
+				await ProxyPerpsV2.connect(owner).setTarget(TestableProxyable.address);
 
 				const receipt = await (await TestableProxyable.emitSomeEvent()).wait();
 
@@ -134,11 +126,7 @@ contract('ProxyFuturesV2', async accounts => {
 			});
 
 			it('emits an event if the contract is in the targeted routes', async () => {
-				await ProxyFuturesV2.connect(owner).addRoute(
-					'0x00112233',
-					TestableProxyable.address,
-					false
-				);
+				await ProxyPerpsV2.connect(owner).addRoute('0x00112233', TestableProxyable.address, false);
 
 				const receipt = await (await TestableProxyable.emitSomeEvent()).wait();
 
@@ -153,7 +141,7 @@ contract('ProxyFuturesV2', async accounts => {
 
 	describe('when is not configured', async () => {
 		it('reverts calling any routed function', async () => {
-			const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableAddressSetAbi, user);
+			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableAddressSetAbi, user);
 			await assert.revert(
 				Proxied.add(TestableProxyable.address),
 				'function call to a non-contract account'
@@ -165,9 +153,9 @@ contract('ProxyFuturesV2', async accounts => {
 		let receipt, route;
 
 		const checkTargetConfig = async (targets, routes, targetsCount, routesCount, idx) => {
-			const currentTargets = await ProxyFuturesV2.getAllTargets();
-			const currentRoutesLength = await ProxyFuturesV2.getRoutesLength();
-			const currentRoutes = await ProxyFuturesV2.getRoutesPage(0, currentRoutesLength);
+			const currentTargets = await ProxyPerpsV2.getAllTargets();
+			const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+			const currentRoutes = await ProxyPerpsV2.getRoutesPage(0, currentRoutesLength);
 			assert.equal(currentTargets.length, targetsCount, 'invalid number of targets');
 			assert.equal(currentRoutes.length, routesCount, 'invalid number of routes');
 
@@ -221,7 +209,7 @@ contract('ProxyFuturesV2', async accounts => {
 			route = sampleRoutes[0];
 
 			receipt = await (
-				await ProxyFuturesV2.addRoute(route.selector, route.implementation, route.isView)
+				await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
 			).wait();
 
 			await checkTargetConfig([routedAddress1, emptyTarget], [sampleRoutes[0]], 2, 1);
@@ -245,7 +233,7 @@ contract('ProxyFuturesV2', async accounts => {
 			route = sampleRoutes[1];
 
 			receipt = await (
-				await ProxyFuturesV2.addRoute(route.selector, route.implementation, route.isView)
+				await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
 			).wait();
 
 			await checkTargetConfig(
@@ -270,7 +258,7 @@ contract('ProxyFuturesV2', async accounts => {
 			route = sampleRoutes[2];
 
 			receipt = await (
-				await ProxyFuturesV2.addRoute(route.selector, route.implementation, route.isView)
+				await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
 			).wait();
 
 			await checkTargetConfig(
@@ -299,7 +287,7 @@ contract('ProxyFuturesV2', async accounts => {
 			route = sampleRoutes[3];
 
 			receipt = await (
-				await ProxyFuturesV2.addRoute(route.selector, route.implementation, route.isView)
+				await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
 			).wait();
 
 			await checkTargetConfig(
@@ -331,7 +319,7 @@ contract('ProxyFuturesV2', async accounts => {
 			// Remove the 1st selector
 			route = sampleRoutes[0];
 
-			receipt = await (await ProxyFuturesV2.removeRoute(route.selector)).wait();
+			receipt = await (await ProxyPerpsV2.removeRoute(route.selector)).wait();
 
 			await checkTargetConfig(
 				[routedAddress1, routedAddress3, emptyTarget],
@@ -348,7 +336,7 @@ contract('ProxyFuturesV2', async accounts => {
 			]);
 
 			// Add default target
-			receipt = await (await ProxyFuturesV2.setTarget(defaultTarget)).wait();
+			receipt = await (await ProxyPerpsV2.setTarget(defaultTarget)).wait();
 			await checkTargetConfig(
 				[routedAddress1, routedAddress3, defaultTarget],
 				[sampleRoutes[3], sampleRoutes[1]],
@@ -366,7 +354,7 @@ contract('ProxyFuturesV2', async accounts => {
 			// Remove the 3rd selector
 			route = sampleRoutes[3];
 
-			receipt = await (await ProxyFuturesV2.removeRoute(route.selector)).wait();
+			receipt = await (await ProxyPerpsV2.removeRoute(route.selector)).wait();
 
 			await checkTargetConfig([routedAddress1, defaultTarget], [sampleRoutes[1]], 2, 1);
 
@@ -384,7 +372,7 @@ contract('ProxyFuturesV2', async accounts => {
 			// Remove the 2nd selector
 			route = sampleRoutes[1];
 
-			receipt = await (await ProxyFuturesV2.removeRoute(route.selector)).wait();
+			receipt = await (await ProxyPerpsV2.removeRoute(route.selector)).wait();
 			await checkTargetConfig([defaultTarget], [], 1, 0);
 
 			checkEvents(receipt, [
@@ -405,30 +393,30 @@ contract('ProxyFuturesV2', async accounts => {
 
 		it('reverts attempting to set a nil selector', async () => {
 			await assert.revert(
-				ProxyFuturesV2.addRoute('0x00000000', sampleAddress, false),
+				ProxyPerpsV2.addRoute('0x00000000', sampleAddress, false),
 				'Invalid nil selector'
 			);
 		});
 
 		it('reverts attempting to remove an unexistent selector', async () => {
 			// set a selector to remove
-			await (await ProxyFuturesV2.addRoute('0x00000011', sampleAddress, false)).wait();
+			await (await ProxyPerpsV2.addRoute('0x00000011', sampleAddress, false)).wait();
 
 			// attempt to remove another selector (not set)
-			await assert.revert(ProxyFuturesV2.removeRoute('0x11111111'), 'Selector not in set');
+			await assert.revert(ProxyPerpsV2.removeRoute('0x11111111'), 'Selector not in set');
 
 			// confirm removing the valid selector
-			await (await ProxyFuturesV2.removeRoute('0x00000011')).wait();
+			await (await ProxyPerpsV2.removeRoute('0x00000011')).wait();
 		});
 	});
 
 	describe('when a target is configured', async () => {
 		beforeEach('configure the target', async () => {
-			await ProxyFuturesV2.connect(owner).setTarget(TestableProxyable.address);
+			await ProxyPerpsV2.connect(owner).setTarget(TestableProxyable.address);
 		});
 
 		it('can call a function in the target', async () => {
-			const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableProxyableAbi, user);
+			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableProxyableAbi, user);
 			const receipt = await (await Proxied.emitSomeEvent()).wait();
 
 			assert.equal(receipt.events.length, 1);
@@ -439,29 +427,21 @@ contract('ProxyFuturesV2', async accounts => {
 				// NOTE: See selectors in comment at the end of the file
 
 				// TestableAddressSet.contains(address)
-				await (
-					await ProxyFuturesV2.addRoute('0x5dbe47e8', TestableAddressSet.address, true)
-				).wait();
+				await (await ProxyPerpsV2.addRoute('0x5dbe47e8', TestableAddressSet.address, true)).wait();
 				// TestableAddressSet.add(address)
-				await (
-					await ProxyFuturesV2.addRoute('0x0a3b0a4f', TestableAddressSet.address, false)
-				).wait();
+				await (await ProxyPerpsV2.addRoute('0x0a3b0a4f', TestableAddressSet.address, false)).wait();
 
 				// TestableBytes32Set.contains(bytes32)
-				await (
-					await ProxyFuturesV2.addRoute('0x1d1a696d', TestableBytes32Set.address, true)
-				).wait();
+				await (await ProxyPerpsV2.addRoute('0x1d1a696d', TestableBytes32Set.address, true)).wait();
 				// TestableBytes32Set.add(bytes32)
-				await (
-					await ProxyFuturesV2.addRoute('0x446bffba', TestableBytes32Set.address, false)
-				).wait();
+				await (await ProxyPerpsV2.addRoute('0x446bffba', TestableBytes32Set.address, false)).wait();
 			});
 
 			describe('can call a routed contract function', async () => {
 				const mockedAddress2 = ethers.Wallet.createRandom().address;
 
 				it('can read a value (view)', async () => {
-					const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableAddressSetAbi, user);
+					const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableAddressSetAbi, user);
 
 					let result = await Proxied.contains(mockedAddress2);
 					assert.isBoolean(result);
@@ -473,7 +453,7 @@ contract('ProxyFuturesV2', async accounts => {
 				});
 
 				it('can write and read a value', async () => {
-					const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableAddressSetAbi, user);
+					const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableAddressSetAbi, user);
 					// add mockedAddress2
 					await (await Proxied.add(mockedAddress2)).wait();
 
@@ -483,7 +463,7 @@ contract('ProxyFuturesV2', async accounts => {
 				});
 
 				it('can still call the default target', async () => {
-					const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableProxyableAbi, user);
+					const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableProxyableAbi, user);
 					const receipt = await (await Proxied.emitSomeEvent()).wait();
 
 					assert.equal(receipt.events.length, 1);
@@ -492,7 +472,7 @@ contract('ProxyFuturesV2', async accounts => {
 
 			describe('can interact with a 2nd routed contract', async () => {
 				it('can write and read a value', async () => {
-					const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableBytes32SetAbi, user);
+					const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableBytes32SetAbi, user);
 					// add some value
 					const testValue = toBytes32('Some Value');
 
@@ -511,18 +491,18 @@ contract('ProxyFuturesV2', async accounts => {
 			// NOTE: See selectors in comment at the end of the file
 
 			// TestableAddressSet.contains(address)
-			await (await ProxyFuturesV2.addRoute('0x5dbe47e8', TestableAddressSet.address, true)).wait();
+			await (await ProxyPerpsV2.addRoute('0x5dbe47e8', TestableAddressSet.address, true)).wait();
 			// TestableAddressSet.add(address)
-			await (await ProxyFuturesV2.addRoute('0x0a3b0a4f', TestableAddressSet.address, false)).wait();
+			await (await ProxyPerpsV2.addRoute('0x0a3b0a4f', TestableAddressSet.address, false)).wait();
 
 			// TestableProxyable.emitSomeEvent()
-			await (await ProxyFuturesV2.addRoute('0x953bb133', TestableProxyable.address, true)).wait();
+			await (await ProxyPerpsV2.addRoute('0x953bb133', TestableProxyable.address, true)).wait();
 		});
 
 		it('can write and read a value', async () => {
 			const mockedAddress2 = ethers.Wallet.createRandom().address;
 
-			const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableAddressSetAbi, user);
+			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableAddressSetAbi, user);
 			// add mockedAddress2
 			await (await Proxied.add(mockedAddress2)).wait();
 
@@ -532,14 +512,14 @@ contract('ProxyFuturesV2', async accounts => {
 		});
 
 		it('can still call the default target', async () => {
-			const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableProxyableAbi, user);
+			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableProxyableAbi, user);
 			const receipt = await (await Proxied.emitSomeEvent()).wait();
 
 			assert.equal(receipt.events.length, 1);
 		});
 
 		it('reverts calling a route not added', async () => {
-			const Proxied = new ethers.Contract(ProxyFuturesV2.address, TestableBytes32SetAbi, user);
+			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableBytes32SetAbi, user);
 			await assert.revert(
 				Proxied.add(toBytes32('Some Value')),
 				'function call to a non-contract account'

@@ -12,9 +12,9 @@ const excludedFunctions = [
 	'resolverAddressesRequired',
 	'rebuildCache',
 	'isResolvedCache',
-	// ProxyFuturesV2
+	// ProxyPerpsV2
 	'getRoutesPage',
-	// FuturesV2MarketBase
+	// PerpsV2MarketBase
 	'marketState',
 ];
 

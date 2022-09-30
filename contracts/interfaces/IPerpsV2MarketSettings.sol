@@ -1,25 +1,31 @@
 pragma solidity ^0.5.16;
 
-interface IPerpsV2Settings {
+interface IPerpsV2MarketSettings {
     struct Parameters {
-        uint baseFee;
-        uint baseFeeNextPrice;
+        uint takerFee;
+        uint makerFee;
+        uint takerFeeNextPrice;
+        uint makerFeeNextPrice;
         uint nextPriceConfirmWindow;
         uint maxLeverage;
-        uint maxSingleSideValueUSD;
+        uint maxMarketValueUSD;
         uint maxFundingRate;
         uint skewScaleUSD;
     }
 
-    function baseFee(bytes32 _marketKey) external view returns (uint);
+    function takerFee(bytes32 _marketKey) external view returns (uint);
 
-    function baseFeeNextPrice(bytes32 _marketKey) external view returns (uint);
+    function makerFee(bytes32 _marketKey) external view returns (uint);
+
+    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint);
+
+    function makerFeeNextPrice(bytes32 _marketKey) external view returns (uint);
 
     function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 
-    function maxSingleSideValueUSD(bytes32 _marketKey) external view returns (uint);
+    function maxMarketValueUSD(bytes32 _marketKey) external view returns (uint);
 
     function maxFundingRate(bytes32 _marketKey) external view returns (uint);
 
@@ -29,11 +35,13 @@ interface IPerpsV2Settings {
         external
         view
         returns (
-            uint _baseFee,
-            uint _baseFeeNextPrice,
+            uint _takerFee,
+            uint _makerFee,
+            uint _takerFeeNextPrice,
+            uint _makerFeeNextPrice,
             uint _nextPriceConfirmWindow,
             uint _maxLeverage,
-            uint _maxSingleSideValueUSD,
+            uint _maxMarketValueUSD,
             uint _maxFundingRate,
             uint _skewScaleUSD
         );

@@ -3,37 +3,37 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinFuturesV2MarketSettings.sol";
+import "./MixinPerpsV2MarketSettings.sol";
 
 // Internal references
-import "./interfaces/IFuturesV2MarketSettings.sol";
-import "./interfaces/IFuturesV2MarketManager.sol";
-import "./interfaces/IFuturesV2MarketViews.sol";
-import "./interfaces/IFuturesV2Market.sol";
+import "./interfaces/IPerpsV2MarketSettings.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
+import "./interfaces/IPerpsV2MarketViews.sol";
+import "./interfaces/IPerpsV2Market.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketSettings
-contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuturesV2MarketSettings {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketSettings
+contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketSettings {
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesV2MarketManager";
+    bytes32 internal constant CONTRACT_PERPSV2_MARKET_MANAGER = "PerpsV2MarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesV2MarketSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinFuturesV2MarketSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
+        newAddresses[0] = CONTRACT_PERPSV2_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _futuresMarketManager() internal view returns (IFuturesV2MarketManager) {
-        return IFuturesV2MarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
+    function _futuresMarketManager() internal view returns (IPerpsV2MarketManager) {
+        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_PERPSV2_MARKET_MANAGER));
     }
 
     /* ---------- Getters ---------- */
@@ -209,9 +209,9 @@ contract FuturesV2MarketSettings is Owned, MixinFuturesV2MarketSettings, IFuture
     function _recomputeFunding(bytes32 _marketKey) internal {
         address marketAddress = _futuresMarketManager().marketForKey(_marketKey);
 
-        IFuturesV2MarketViews marketView = IFuturesV2MarketViews(marketAddress);
+        IPerpsV2MarketViews marketView = IPerpsV2MarketViews(marketAddress);
         if (marketView.marketSize() > 0) {
-            IFuturesV2Market market = IFuturesV2Market(marketAddress);
+            IPerpsV2Market market = IPerpsV2Market(marketAddress);
             // only recompute funding when market has positions, this check is important for initial setup
             market.recomputeFunding();
         }

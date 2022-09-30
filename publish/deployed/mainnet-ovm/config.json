@@ -311,13 +311,13 @@
 	"FuturesMarketDOGE": {
 		"deploy": false
 	},
-	"FuturesV2MarketManager": {
+	"PerpsV2MarketManager": {
 		"deploy": true
 	},
-	"FuturesV2MarketSettings": {
+	"PerpsV2MarketSettings": {
 		"deploy": true
 	},
-	"FuturesV2MarketData": {
+	"PerpsV2MarketData": {
 		"deploy": true
 	}
 }

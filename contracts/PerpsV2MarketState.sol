@@ -2,15 +2,15 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./interfaces/IFuturesV2MarketBaseTypes.sol";
+import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 import "./Owned.sol";
 import "./StateShared.sol";
 
 // Libraries
 import "./AddressSetLib.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketState
-contract FuturesV2MarketState is Owned, StateShared, IFuturesV2MarketBaseTypes {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketState
+contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     using AddressSetLib for AddressSetLib.AddressSet;
 
     // The market identifier in the futures system (manager + settings). Multiple markets can co-exist

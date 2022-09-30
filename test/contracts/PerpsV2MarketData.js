@@ -11,9 +11,9 @@ const {
 const { assert } = require('./common');
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
-const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
-contract('FuturesV2MarketData', accounts => {
+contract('PerpsV2MarketData', accounts => {
 	let addressResolver,
 		futuresMarket,
 		sethMarket,
@@ -48,10 +48,10 @@ contract('FuturesV2MarketData', accounts => {
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
-			ProxyFuturesV2MarketBTC: futuresMarket,
-			FuturesV2MarketManager: futuresMarketManager,
-			FuturesV2MarketSettings: futuresMarketSettings,
-			FuturesV2MarketData: futuresMarketData,
+			ProxyPerpsV2MarketBTC: futuresMarket,
+			PerpsV2MarketManager: futuresMarketManager,
+			PerpsV2MarketSettings: futuresMarketSettings,
+			PerpsV2MarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -60,12 +60,12 @@ contract('FuturesV2MarketData', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH', 'sLINK'],
 			contracts: [
-				'FuturesV2MarketManager',
-				'FuturesV2MarketSettings',
-				'FuturesV2MarketStateBTC',
-				'FuturesV2MarketViewsBTC',
-				'FuturesV2MarketBTC',
-				'FuturesV2MarketData',
+				'PerpsV2MarketManager',
+				'PerpsV2MarketSettings',
+				'PerpsV2MarketStateBTC',
+				'PerpsV2MarketViewsBTC',
+				'PerpsV2MarketBTC',
+				'PerpsV2MarketData',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -78,7 +78,7 @@ contract('FuturesV2MarketData', accounts => {
 		}));
 
 		// use implementation ABI on the proxy address to simplify calling
-		futuresMarket = await FuturesV2Market.at(futuresMarket.address);
+		futuresMarket = await PerpsV2Market.at(futuresMarket.address);
 
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
@@ -87,8 +87,8 @@ contract('FuturesV2MarketData', accounts => {
 
 			const marketState = await setupContract({
 				accounts,
-				contract: 'FuturesV2MarketStateAdded' + symbol,
-				source: 'FuturesV2MarketState',
+				contract: 'PerpsV2MarketStateAdded' + symbol,
+				source: 'PerpsV2MarketState',
 				args: [
 					owner,
 					[owner],
@@ -99,29 +99,29 @@ contract('FuturesV2MarketData', accounts => {
 
 			const market = await setupContract({
 				accounts,
-				contract: 'ProxyFuturesV2MarketAdded' + symbol,
-				source: 'ProxyFuturesV2',
+				contract: 'ProxyPerpsV2MarketAdded' + symbol,
+				source: 'ProxyPerpsV2',
 				args: [owner],
 			});
 
 			const marketImpl = await setupContract({
 				accounts,
-				contract: 'FuturesV2MarketAdded' + symbol,
-				source: 'FuturesV2Market',
+				contract: 'PerpsV2MarketAdded' + symbol,
+				source: 'PerpsV2Market',
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
 			const marketViews = await setupContract({
 				accounts,
-				contract: 'FuturesV2MarketViewsAdded' + symbol,
-				source: 'FuturesV2MarketViews',
+				contract: 'PerpsV2MarketViewsAdded' + symbol,
+				source: 'PerpsV2MarketViews',
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
 			const marketNextPrice = await setupContract({
 				accounts,
-				contract: 'FuturesV2NextPriceAdded' + symbol,
-				source: 'FuturesV2MarketNextPriceOrders',
+				contract: 'PerpsV2NextPriceAdded' + symbol,
+				source: 'PerpsV2MarketNextPriceOrders',
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
@@ -196,7 +196,7 @@ contract('FuturesV2MarketData', accounts => {
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
 		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
 
-		sethMarket = await FuturesV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
+		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
 		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });

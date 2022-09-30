@@ -1,21 +1,21 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-interface IFuturesV2MarketManagerInternal {
+interface IPerpsV2MarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external;
 }
 
-contract MockFuturesV2Market {
+contract MockPerpsV2Market {
     bytes32 public baseAsset;
     bytes32 public marketKey;
     uint public debt;
     bool public invalid;
-    IFuturesV2MarketManagerInternal public manager;
+    IPerpsV2MarketManagerInternal public manager;
 
     constructor(
-        IFuturesV2MarketManagerInternal _manager,
+        IPerpsV2MarketManagerInternal _manager,
         bytes32 _baseAsset,
         bytes32 _marketKey,
         uint _debt,
@@ -28,7 +28,7 @@ contract MockFuturesV2Market {
         invalid = _invalid;
     }
 
-    function setManager(IFuturesV2MarketManagerInternal _manager) external {
+    function setManager(IPerpsV2MarketManagerInternal _manager) external {
         manager = _manager;
     }
 

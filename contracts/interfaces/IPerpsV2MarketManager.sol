@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-interface IFuturesV2MarketManager {
+interface IPerpsV2MarketManager {
     function markets(uint index, uint pageSize) external view returns (address[] memory);
 
     function numMarkets() external view returns (uint);

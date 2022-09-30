@@ -1,9 +1,9 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "./IFuturesV2MarketBaseTypes.sol";
+import "./IPerpsV2MarketBaseTypes.sol";
 
-interface IFuturesV2MarketViews {
+interface IPerpsV2MarketViews {
     /* ---------- Market Details ---------- */
 
     function marketKey() external view returns (bytes32 key);
@@ -22,7 +22,7 @@ interface IFuturesV2MarketViews {
         external
         view
         returns (
-            IFuturesV2MarketBaseTypes.Position memory
+            IPerpsV2MarketBaseTypes.Position memory
             // uint64 id,
             // uint64 lastFundingIndex,
             // uint128 margin,
@@ -71,6 +71,6 @@ interface IFuturesV2MarketViews {
             uint price,
             uint liqPrice,
             uint fee,
-            IFuturesV2MarketBaseTypes.Status status
+            IPerpsV2MarketBaseTypes.Status status
         );
 }

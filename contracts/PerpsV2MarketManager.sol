@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./interfaces/IFuturesV2MarketManager.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -35,8 +35,8 @@ interface IMarketViews {
     function getAllTargets() external view returns (address[] memory);
 }
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketManager
-contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketManager
+contract PerpsV2MarketManager is Owned, MixinResolver, IPerpsV2MarketManager {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
 
@@ -49,7 +49,7 @@ contract FuturesV2MarketManager is Owned, MixinResolver, IFuturesV2MarketManager
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 public constant CONTRACT_NAME = "FuturesV2MarketManager";
+    bytes32 public constant CONTRACT_NAME = "PerpsV2MarketManager";
 
     bytes32 internal constant SUSD = "sUSD";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";

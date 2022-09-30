@@ -3,10 +3,10 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Proxyable.sol";
-import "./FuturesV2MarketBase.sol";
+import "./PerpsV2MarketBase.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketProxyable
-contract FuturesV2MarketProxyable is FuturesV2MarketBase, Proxyable {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketProxyable
+contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -14,7 +14,7 @@ contract FuturesV2MarketProxyable is FuturesV2MarketBase, Proxyable {
         address _marketState,
         address _owner,
         address _resolver
-    ) public FuturesV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {}
+    ) public PerpsV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {}
 
     /* ---------- Market Operations ---------- */
 

@@ -18,11 +18,11 @@ const {
 } = require('./helpers');
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
-const FuturesV2Market = artifacts.require('TestableFuturesV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
-contract('FuturesV2MarketManager', accounts => {
+contract('PerpsV2MarketManager', accounts => {
 	let futuresMarketManager,
 		futuresMarketSettings,
 		systemSettings,
@@ -48,7 +48,7 @@ contract('FuturesV2MarketManager', accounts => {
 	async function putBehindProxy(market) {
 		const proxy = await setupContract({
 			accounts,
-			contract: 'ProxyFuturesV2',
+			contract: 'ProxyPerpsV2',
 			args: [owner],
 		});
 
@@ -68,8 +68,8 @@ contract('FuturesV2MarketManager', accounts => {
 
 	before(async () => {
 		({
-			FuturesV2MarketManager: futuresMarketManager,
-			FuturesV2MarketSettings: futuresMarketSettings,
+			PerpsV2MarketManager: futuresMarketManager,
+			PerpsV2MarketSettings: futuresMarketSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -82,8 +82,8 @@ contract('FuturesV2MarketManager', accounts => {
 			synths: ['sUSD'],
 			feeds: ['BTC', 'ETH', 'LINK'],
 			contracts: [
-				'FuturesV2MarketManager',
-				'FuturesV2MarketSettings',
+				'PerpsV2MarketManager',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -127,7 +127,7 @@ contract('FuturesV2MarketManager', accounts => {
 		});
 
 		it('contract has CONTRACT_NAME getter', async () => {
-			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('FuturesV2MarketManager'));
+			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('PerpsV2MarketManager'));
 		});
 	});
 
@@ -139,7 +139,7 @@ contract('FuturesV2MarketManager', accounts => {
 				currencyKeys.map(k =>
 					setupContract({
 						accounts,
-						contract: 'MockFuturesV2Market',
+						contract: 'MockPerpsV2Market',
 						args: [futuresMarketManager.address, k, k, toUnit('1000'), false],
 						skipPostDeploy: true,
 					})
@@ -160,7 +160,7 @@ contract('FuturesV2MarketManager', accounts => {
 
 			const market = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					toBytes32('sLINK'),
@@ -186,7 +186,7 @@ contract('FuturesV2MarketManager', accounts => {
 				keys.map(k =>
 					setupContract({
 						accounts,
-						contract: 'MockFuturesV2Market',
+						contract: 'MockPerpsV2Market',
 						args: [futuresMarketManager.address, k, k, toUnit('1000'), false],
 						skipPostDeploy: true,
 					})
@@ -220,7 +220,7 @@ contract('FuturesV2MarketManager', accounts => {
 		it('Cannot add more than one market for the same key.', async () => {
 			const market = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					toBytes32('sETH'),
@@ -245,7 +245,7 @@ contract('FuturesV2MarketManager', accounts => {
 			const secondKey = toBytes32('sETH-2'); // different market key
 			const market2 = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					await market1.baseAsset(),
@@ -308,7 +308,7 @@ contract('FuturesV2MarketManager', accounts => {
 
 			const market = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					toBytes32('sLINK'),
@@ -338,7 +338,7 @@ contract('FuturesV2MarketManager', accounts => {
 
 			const market = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					toBytes32('sLINK'),
@@ -357,7 +357,7 @@ contract('FuturesV2MarketManager', accounts => {
 		it('Only the owner can add or remove markets', async () => {
 			const market = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					toBytes32('sLINK'),
@@ -405,7 +405,7 @@ contract('FuturesV2MarketManager', accounts => {
 		beforeEach(async () => {
 			market = await setupContract({
 				accounts,
-				contract: 'MockFuturesV2Market',
+				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
 					toBytes32('sLINK'),
@@ -493,7 +493,7 @@ contract('FuturesV2MarketManager', accounts => {
 					currencyKeys.map(k =>
 						setupContract({
 							accounts,
-							contract: 'MockFuturesV2Market',
+							contract: 'MockPerpsV2Market',
 							args: [futuresMarketManager.address, k, k, individualDebt, false],
 							skipPostDeploy: true,
 						})
@@ -523,7 +523,7 @@ contract('FuturesV2MarketManager', accounts => {
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.sub(toUnit('300')));
 				const market = await setupContract({
 					accounts,
-					contract: 'MockFuturesV2Market',
+					contract: 'MockPerpsV2Market',
 					args: [
 						futuresMarketManager.address,
 						toBytes32('sLINK'),
@@ -576,8 +576,8 @@ contract('FuturesV2MarketManager', accounts => {
 
 				const marketState = await setupContract({
 					accounts,
-					contract: 'FuturesV2MarketStateAdded' + symbol,
-					source: 'FuturesV2MarketState',
+					contract: 'PerpsV2MarketStateAdded' + symbol,
+					source: 'PerpsV2MarketState',
 					args: [
 						owner,
 						[owner],
@@ -588,22 +588,22 @@ contract('FuturesV2MarketManager', accounts => {
 
 				let market = await setupContract({
 					accounts,
-					contract: 'ProxyFuturesV2MarketAdded' + symbol,
-					source: 'ProxyFuturesV2',
+					contract: 'ProxyPerpsV2MarketAdded' + symbol,
+					source: 'ProxyPerpsV2',
 					args: [owner],
 				});
 
 				const marketImpl = await setupContract({
 					accounts,
-					contract: 'FuturesV2MarketAdded' + symbol,
-					source: 'FuturesV2Market',
+					contract: 'PerpsV2MarketAdded' + symbol,
+					source: 'PerpsV2Market',
 					args: [market.address, marketState.address, owner, addressResolver.address],
 				});
 
 				const marketViews = await setupContract({
 					accounts,
-					contract: 'FuturesV2MarketViewsAdded' + symbol,
-					source: 'FuturesV2MarketViews',
+					contract: 'PerpsV2MarketViewsAdded' + symbol,
+					source: 'PerpsV2MarketViews',
 					args: [marketState.address, owner, addressResolver.address],
 				});
 
@@ -625,7 +625,7 @@ contract('FuturesV2MarketManager', accounts => {
 				});
 
 				// use implementation ABI on the proxy address to simplify calling
-				market = await FuturesV2Market.at(market.address);
+				market = await PerpsV2Market.at(market.address);
 
 				markets.push(market);
 				marketKeys.push(marketKey);

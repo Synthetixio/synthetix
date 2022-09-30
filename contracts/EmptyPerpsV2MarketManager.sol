@@ -3,10 +3,10 @@ pragma solidity ^0.5.16;
 // Empty contract for ether collateral placeholder for OVM
 // https://docs.synthetix.io/contracts/source/contracts/emptyethercollateral
 
-import "./interfaces/IFuturesV2MarketManager.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
 
-contract EmptyFuturesV2MarketManager is IFuturesV2MarketManager {
-    bytes32 public constant CONTRACT_NAME = "EmptyFuturesV2MarketManager";
+contract EmptyPerpsV2MarketManager is IPerpsV2MarketManager {
+    bytes32 public constant CONTRACT_NAME = "EmptyPerpsV2MarketManager";
 
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
         index;

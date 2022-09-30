@@ -34,26 +34,26 @@ function itCanTrade({ ctx }) {
 		const sUSDAmount = ethers.utils.parseEther('100000');
 
 		let someUser, otherUser;
-		let FuturesV2MarketManager,
-			FuturesV2MarketSettings,
-			FuturesV2MarketData,
-			FuturesV2MarketBTC,
-			FuturesV2MarketImplBTC,
-			FuturesV2NextPriceBTC,
-			FuturesV2MarketViewsBTC,
-			FuturesV2ProxyBTC,
+		let PerpsV2MarketManager,
+			PerpsV2MarketSettings,
+			PerpsV2MarketData,
+			PerpsV2MarketBTC,
+			PerpsV2MarketImplBTC,
+			PerpsV2NextPriceBTC,
+			PerpsV2MarketViewsBTC,
+			PerpsV2ProxyBTC,
 			ExchangeRates,
 			SynthsUSD;
 
 		before('target contracts and users', () => {
 			({
-				FuturesV2MarketManager,
-				FuturesV2MarketSettings,
-				FuturesV2MarketData,
-				FuturesV2MarketBTC: FuturesV2MarketImplBTC,
-				FuturesV2NextPriceBTC,
-				FuturesV2MarketViewsBTC,
-				FuturesV2ProxyBTC,
+				PerpsV2MarketManager,
+				PerpsV2MarketSettings,
+				PerpsV2MarketData,
+				PerpsV2MarketBTC: PerpsV2MarketImplBTC,
+				PerpsV2NextPriceBTC,
+				PerpsV2MarketViewsBTC,
+				PerpsV2ProxyBTC,
 				ExchangeRates,
 				SynthsUSD,
 			} = ctx.contracts);
@@ -62,9 +62,9 @@ function itCanTrade({ ctx }) {
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
-			FuturesV2MarketBTC = proxyedContract(
-				FuturesV2ProxyBTC,
-				unifyAbis([FuturesV2MarketImplBTC, FuturesV2MarketViewsBTC, FuturesV2NextPriceBTC]),
+			PerpsV2MarketBTC = proxyedContract(
+				PerpsV2ProxyBTC,
+				unifyAbis([PerpsV2MarketImplBTC, PerpsV2MarketViewsBTC, PerpsV2NextPriceBTC]),
 				someUser
 			);
 		});
@@ -82,7 +82,7 @@ function itCanTrade({ ctx }) {
 			const margin = toUnit('1000');
 
 			before('market and conditions', async () => {
-				market = FuturesV2MarketBTC.connect(someUser);
+				market = PerpsV2MarketBTC.connect(someUser);
 				assetKey = await market.baseAsset();
 				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
@@ -104,12 +104,12 @@ function itCanTrade({ ctx }) {
 			describe('with funded margin', () => {
 				const largerMargin = margin.mul(50); // 50k
 				before('fund margin', async () => {
-					({ debt } = await FuturesV2MarketManager.totalDebt());
+					({ debt } = await PerpsV2MarketManager.totalDebt());
 					await (await market.transferMargin(largerMargin)).wait();
 				});
 
 				it('futures debt increases roughly by the margin deposit', async () => {
-					const res = await FuturesV2MarketManager.totalDebt();
+					const res = await PerpsV2MarketManager.totalDebt();
 					assert.bnClose(
 						res.debt.toString(),
 						debt.add(largerMargin).toString(),
@@ -151,7 +151,7 @@ function itCanTrade({ ctx }) {
 						await market.transferMargin(margin);
 
 						// lever up
-						const maxLeverage = await FuturesV2MarketSettings.maxLeverage(marketKey);
+						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
 						await market.modifyPosition(multiplyDecimal(posSize1x, maxLeverage));
 					});
 
@@ -176,7 +176,7 @@ function itCanTrade({ ctx }) {
 						assert.ok(await market.canLiquidate(someUser.address));
 
 						// liquidation tx
-						const otherCaller = FuturesV2MarketBTC.connect(otherUser);
+						const otherCaller = PerpsV2MarketBTC.connect(otherUser);
 						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
 
 						// position: rekt
@@ -192,8 +192,8 @@ function itCanTrade({ ctx }) {
 			let allMarketsAddresses, allSummaries, allMarkets, assetKeys, marketKeys;
 
 			before('market and conditions', async () => {
-				allMarketsAddresses = await FuturesV2MarketManager.allMarkets();
-				allSummaries = await FuturesV2MarketData.allMarketSummaries();
+				allMarketsAddresses = await PerpsV2MarketManager.allMarkets();
+				allSummaries = await PerpsV2MarketData.allMarketSummaries();
 
 				// get market contracts
 				allMarkets = [];
@@ -201,7 +201,7 @@ function itCanTrade({ ctx }) {
 					// this assumes all markets have the same source and abi, which
 					// may not be true when a migration to new futures version happens
 					allMarkets.push(
-						new ethers.Contract(marketAddress, FuturesV2MarketBTC.interface, ctx.provider)
+						new ethers.Contract(marketAddress, PerpsV2MarketBTC.interface, ctx.provider)
 					);
 				}
 
@@ -238,14 +238,14 @@ function itCanTrade({ ctx }) {
 			it(`per market parameters make sense`, async () => {
 				for (const marketKey of marketKeys) {
 					// leverage
-					const maxLeverage = await FuturesV2MarketSettings.maxLeverage(marketKey);
+					const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLt(maxLeverage, toUnit(100));
 
-					const maxMarketValueUSD = await FuturesV2MarketSettings.maxMarketValueUSD(marketKey);
+					const maxMarketValueUSD = await PerpsV2MarketSettings.maxMarketValueUSD(marketKey);
 					assert.bnLt(maxMarketValueUSD, toUnit(100000000));
 
-					const skewScaleUSD = await FuturesV2MarketSettings.skewScaleUSD(marketKey);
+					const skewScaleUSD = await PerpsV2MarketSettings.skewScaleUSD(marketKey);
 					// not too small, may not be true for a deprecated (winding down) market
 					assert.bnGt(skewScaleUSD, toUnit(1));
 				}
@@ -253,12 +253,12 @@ function itCanTrade({ ctx }) {
 
 			it(`global parameters make sense`, async () => {
 				// minKeeperFee
-				const minKeeperFee = await FuturesV2MarketSettings.minKeeperFee();
+				const minKeeperFee = await PerpsV2MarketSettings.minKeeperFee();
 				assert.bnGte(minKeeperFee, toUnit(1));
 				assert.bnLt(minKeeperFee, toUnit(100));
 
 				// minInitialMargin
-				const minInitialMargin = await FuturesV2MarketSettings.minInitialMargin();
+				const minInitialMargin = await PerpsV2MarketSettings.minInitialMargin();
 				assert.bnGt(minInitialMargin, toUnit(1));
 				assert.bnLt(minInitialMargin, toUnit(200));
 			});

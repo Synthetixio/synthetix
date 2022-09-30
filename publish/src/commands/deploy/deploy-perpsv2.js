@@ -3,10 +3,7 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 
-const {
-	excludedFunctions,
-	getFunctionSignatures,
-} = require('../../command-utils/futures-v2-utils');
+const { excludedFunctions, getFunctionSignatures } = require('../../command-utils/perps-v2-utils');
 
 module.exports = async ({
 	account,
@@ -24,7 +21,7 @@ module.exports = async ({
 	// Futures market setup
 	// ----------------
 
-	console.log(gray(`\n------ DEPLOY FUTURES V2 MARKETS ------\n`));
+	console.log(gray(`\n------ DEPLOY PERPS V2 MARKETS ------\n`));
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -32,8 +29,8 @@ module.exports = async ({
 	});
 
 	const futuresMarketManager = await deployer.deployContract({
-		name: 'FuturesV2MarketManager',
-		source: useOvm ? 'FuturesV2MarketManager' : 'EmptyFuturesV2MarketManager',
+		name: 'PerpsV2MarketManager',
+		source: useOvm ? 'PerpsV2MarketManager' : 'EmptyPerpsV2MarketManager',
 		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
 		deps: ['ReadProxyAddressResolver'],
 	});
@@ -45,13 +42,13 @@ module.exports = async ({
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
 	// I've colocated it here for now.
 	await deployer.deployContract({
-		name: 'FuturesV2MarketData',
+		name: 'PerpsV2MarketData',
 		args: [addressOf(ReadProxyAddressResolver)],
 		deps: ['AddressResolver'],
 	});
 
 	await deployer.deployContract({
-		name: 'FuturesV2MarketSettings',
+		name: 'PerpsV2MarketSettings',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
@@ -64,17 +61,17 @@ module.exports = async ({
 		let filteredFunctions;
 		const baseAsset = toBytes32(marketConfig.asset);
 		const marketKey = toBytes32(marketConfig.marketKey);
-		const marketName = 'FuturesV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketProxyName = 'FuturesV2Proxy' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketStateName = 'FuturesV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketViewName = 'FuturesV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketNextPriceName = 'FuturesV2NextPrice' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketName = 'PerpsV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketProxyName = 'PerpsV2Proxy' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketNextPriceName = 'PerpsV2NextPrice' + marketConfig.marketKey.slice('1'); // remove s prefix
 
 		// Deploy contracts
 		// Proxy
 		const futuresMarketProxy = await deployer.deployContract({
 			name: marketProxyName,
-			source: 'ProxyFuturesV2',
+			source: 'ProxyPerpsV2',
 			args: [account],
 			force: true,
 		});
@@ -82,7 +79,7 @@ module.exports = async ({
 		// State
 		const futuresMarketState = await deployer.deployContract({
 			name: marketStateName,
-			source: 'FuturesV2MarketState',
+			source: 'PerpsV2MarketState',
 			args: [account, [account], baseAsset, marketKey],
 			force: true,
 		});
@@ -90,7 +87,7 @@ module.exports = async ({
 		// Market
 		const futuresMarket = await deployer.deployContract({
 			name: marketName,
-			source: 'FuturesV2Market',
+			source: 'PerpsV2Market',
 			args: [
 				futuresMarketProxy.address,
 				futuresMarketState.address,
@@ -103,7 +100,7 @@ module.exports = async ({
 		// Views
 		const futuresMarketViews = await deployer.deployContract({
 			name: marketViewName,
-			source: 'FuturesV2MarketViews',
+			source: 'PerpsV2MarketViews',
 			args: [futuresMarketState.address, account, addressOf(ReadProxyAddressResolver)],
 			force: true,
 		});
@@ -111,7 +108,7 @@ module.exports = async ({
 		// Next Price
 		const futuresMarketNextPrice = await deployer.deployContract({
 			name: marketNextPriceName,
-			source: 'FuturesV2MarketNextPriceOrders',
+			source: 'PerpsV2MarketNextPriceOrders',
 			args: [
 				futuresMarketProxy.address,
 				futuresMarketState.address,
@@ -125,7 +122,7 @@ module.exports = async ({
 
 		// Initial cleanup
 		await runStep({
-			contract: `FuturesV2MarketState`,
+			contract: `PerpsV2MarketState`,
 			target: futuresMarketState,
 			write: 'removeAssociatedContracts',
 			writeArg: [[account]],
@@ -135,7 +132,7 @@ module.exports = async ({
 		filteredFunctions = getFunctionSignatures(futuresMarketViews, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
-				contract: `ProxyFuturesV2`,
+				contract: `ProxyPerpsV2`,
 				target: futuresMarketProxy,
 				write: 'addRoute',
 				writeArg: [f.signature, futuresMarketViews.address, f.isView],
@@ -144,14 +141,14 @@ module.exports = async ({
 
 		// Configure Next Price
 		await runStep({
-			contract: `FuturesV2MarketState`,
+			contract: `PerpsV2MarketState`,
 			target: futuresMarketState,
 			write: 'addAssociatedContracts',
 			writeArg: [[futuresMarketNextPrice.address]],
 		});
 
 		await runStep({
-			contract: `FuturesV2MarketNextPriceOrders`,
+			contract: `PerpsV2MarketNextPriceOrders`,
 			target: futuresMarketNextPrice,
 			write: 'setProxy',
 			writeArg: [futuresMarketProxy.address],
@@ -160,7 +157,7 @@ module.exports = async ({
 		filteredFunctions = getFunctionSignatures(futuresMarketNextPrice, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
-				contract: `ProxyFuturesV2`,
+				contract: `ProxyPerpsV2`,
 				target: futuresMarketProxy,
 				write: 'addRoute',
 				writeArg: [f.signature, futuresMarketNextPrice.address, f.isView],
@@ -169,14 +166,14 @@ module.exports = async ({
 
 		// Configure Market
 		await runStep({
-			contract: `FuturesV2MarketState`,
+			contract: `PerpsV2MarketState`,
 			target: futuresMarketState,
 			write: 'addAssociatedContracts',
 			writeArg: [[futuresMarket.address]],
 		});
 
 		await runStep({
-			contract: `FuturesV2Market`,
+			contract: `PerpsV2Market`,
 			target: futuresMarket,
 			write: 'setProxy',
 			writeArg: [futuresMarketProxy.address],
@@ -185,7 +182,7 @@ module.exports = async ({
 		filteredFunctions = getFunctionSignatures(futuresMarket, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
-				contract: `ProxyFuturesV2`,
+				contract: `ProxyPerpsV2`,
 				target: futuresMarketProxy,
 				write: 'addRoute',
 				writeArg: [f.signature, futuresMarket.address, f.isView],
@@ -211,7 +208,7 @@ module.exports = async ({
 			.sort();
 		if (toRemove.length > 0) {
 			await runStep({
-				contract: `FuturesV2MarketManager`,
+				contract: `PerpsV2MarketManager`,
 				target: futuresMarketManager,
 				read: 'markets',
 				readArg: [0, numManagerKnownMarkets],
@@ -225,7 +222,7 @@ module.exports = async ({
 
 		if (toAdd.length > 0) {
 			await runStep({
-				contract: `FuturesV2MarketManager`,
+				contract: `PerpsV2MarketManager`,
 				target: futuresMarketManager,
 				read: 'markets',
 				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],

@@ -2,18 +2,18 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./FuturesV2MarketBase.sol";
-import "./interfaces/IFuturesV2MarketViews.sol";
+import "./PerpsV2MarketBase.sol";
+import "./interfaces/IPerpsV2MarketViews.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/FuturesV2MarketViews
-contract FuturesV2MarketViews is FuturesV2MarketBase, IFuturesV2MarketViews {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketViews
+contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _marketState,
         address _owner,
         address _resolver
-    ) public FuturesV2MarketBase(_marketState, _owner, _resolver) {}
+    ) public PerpsV2MarketBase(_marketState, _owner, _resolver) {}
 
     /* ---------- Market Details ---------- */
 

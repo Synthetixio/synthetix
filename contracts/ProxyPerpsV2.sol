@@ -19,8 +19,8 @@ import "./Proxyable.sol";
  *
  * Note that all the targets are enabled to emit events, not only the default target.
  */
-// https://docs.synthetix.io/contracts/source/contracts/ProxyFuturesV2
-contract ProxyFuturesV2 is Owned {
+// https://docs.synthetix.io/contracts/source/contracts/ProxyPerpsV2
+contract ProxyPerpsV2 is Owned {
     address public target;
 
     /* ----- Dynamic router storage ----- */

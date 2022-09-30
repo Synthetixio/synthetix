@@ -17,14 +17,11 @@ module.exports = async ({
 	generateSolidity,
 	yes,
 }) => {
-	console.log(gray(`\n------ CONFIGURE FUTURES V2 MARKETS ------\n`));
+	console.log(gray(`\n------ CONFIGURE PERPS V2 MARKETS ------\n`));
 
 	if (!useOvm) return;
 
-	const {
-		FuturesV2MarketSettings: futuresMarketSettings,
-		SystemStatus,
-	} = deployer.deployedContracts;
+	const { PerpsV2MarketSettings: futuresMarketSettings, SystemStatus } = deployer.deployedContracts;
 
 	const { futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -33,7 +30,7 @@ module.exports = async ({
 
 	const FUTURES_MIN_INITIAL_MARGIN = await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN');
 	await runStep({
-		contract: 'FuturesV2MarketSettings',
+		contract: 'PerpsV2MarketSettings',
 		target: futuresMarketSettings,
 		read: 'minInitialMargin',
 		expected: input => input === FUTURES_MIN_INITIAL_MARGIN,
@@ -44,7 +41,7 @@ module.exports = async ({
 
 	const FUTURES_LIQUIDATION_FEE_RATIO = await getDeployParameter('FUTURES_LIQUIDATION_FEE_RATIO');
 	await runStep({
-		contract: 'FuturesV2MarketSettings',
+		contract: 'PerpsV2MarketSettings',
 		target: futuresMarketSettings,
 		read: 'liquidationFeeRatio',
 		expected: input => input === FUTURES_LIQUIDATION_FEE_RATIO,
@@ -57,7 +54,7 @@ module.exports = async ({
 		'FUTURES_LIQUIDATION_BUFFER_RATIO'
 	);
 	await runStep({
-		contract: 'FuturesV2MarketSettings',
+		contract: 'PerpsV2MarketSettings',
 		target: futuresMarketSettings,
 		read: 'liquidationBufferRatio',
 		expected: input => input === FUTURES_LIQUIDATION_BUFFER_RATIO,
@@ -68,7 +65,7 @@ module.exports = async ({
 
 	const FUTURES_MIN_KEEPER_FEE = await getDeployParameter('FUTURES_MIN_KEEPER_FEE');
 	await runStep({
-		contract: 'FuturesV2MarketSettings',
+		contract: 'PerpsV2MarketSettings',
 		target: futuresMarketSettings,
 		read: 'minKeeperFee',
 		expected: input => input === FUTURES_MIN_KEEPER_FEE,
@@ -118,7 +115,7 @@ module.exports = async ({
 			const value = settings[setting];
 
 			await runStep({
-				contract: 'FuturesV2MarketSettings',
+				contract: 'PerpsV2MarketSettings',
 				target: futuresMarketSettings,
 				read: setting,
 				readArg: [marketKeyBytes],
