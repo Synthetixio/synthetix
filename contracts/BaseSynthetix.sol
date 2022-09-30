@@ -392,34 +392,23 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
 
         if (totalRedeemed > 0) {
-            uint stakerRewards; // The amount of rewards to be sent to the LiquidatorRewards contract.
             uint flagReward = liquidator().flagReward();
             uint liquidateReward = liquidator().liquidateReward();
-            // Check if the total amount of redeemed SNX is enough to payout the liquidation rewards.
-            if (totalRedeemed >= flagReward.add(liquidateReward)) {
-                // Transfer the flagReward to the account who flagged this account for liquidation.
-                address flagger = liquidator().getLiquidationCallerForAccount(account);
-                bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
-                require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
 
-                // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
-                bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
-                require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
+            // Transfer the flagReward to the account who flagged this account for liquidation.
+            address flagger = liquidator().getLiquidationCallerForAccount(account);
+            bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
+            require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
 
-                // The remaining SNX to be sent to the LiquidatorRewards contract.
-                stakerRewards = totalRedeemed.sub(flagReward.add(liquidateReward));
-            } else {
-                /* If the total amount of redeemed SNX is greater than zero 
-                but is less than the sum of the flag & liquidate rewards,
-                then just send all of the SNX to the LiquidatorRewards contract. */
-                stakerRewards = totalRedeemed;
-            }
+            // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
+            bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
+            require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
-            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), stakerRewards);
+            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
             require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
 
             // Inform the LiquidatorRewards contract about the incoming SNX rewards.
-            liquidatorRewards().notifyRewardAmount(stakerRewards);
+            liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
             return true;
         } else {

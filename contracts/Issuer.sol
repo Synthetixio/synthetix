@@ -626,10 +626,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      * @param amount The amount of sUSD collateral to be burnt
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
-        require(short != address(0), "Issuer: invalid address");
         require(short == resolver.getAddress("CollateralShortLegacy"), "Issuer: wrong short address");
-        require(address(synths[sUSD]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot burn 0 synths");
 
         exchanger().settle(short, sUSD);
 
@@ -762,7 +759,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
                 snxBalance
             );
             // Return the minimum of both computed values
-            debtToRemove = _getMinValue(_snxToUSD(totalRedeemed, snxRate), debtToRemove);
+            debtToRemove = _getMinValue(
+                _snxToUSD(totalRedeemed, snxRate).divideDecimal(SafeDecimalMath.unit().add(penalty)),
+                debtToRemove
+            );
 
             // escrow is zero since it cannot be self liquidated
             return (totalRedeemed, debtToRemove, 0, debtBalance);
@@ -795,6 +795,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     // SIP-252
     // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
     // of transferrable & escrowed collateral & self or forced liquidation
+    // SIP-252
+    // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
+    // of transferrable & escrowed collateral & self or forced liquidation
     function _redeemableCollateralForTarget(address account, uint redeemTarget)
         internal
         view
@@ -808,16 +811,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             return (redeemTarget, 0);
         } else {
             // if transferrable is not enough
-            // can use escrow if forced liquidation
-            uint escrow = rewardEscrowV2().balanceOf(account);
-            if (redeemTarget > transferable.add(escrow)) {
-                // all of escrow needs to be redeemed
-                return (transferable.add(escrow), escrow);
-            } else {
-                // need only part of the escrow, add the needed part to redeemed
-                escrowToLiquidate = redeemTarget.sub(transferable);
-                return (transferable.add(escrowToLiquidate), escrowToLiquidate);
-            }
+            // need only part of the escrow, add the needed part to redeemed
+            escrowToLiquidate = redeemTarget.sub(transferable);
+            return (transferable.add(escrowToLiquidate), escrowToLiquidate);
         }
     }
 
