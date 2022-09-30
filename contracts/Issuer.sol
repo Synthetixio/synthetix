@@ -743,60 +743,63 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             return (0, 0, 0, debtBalance);
         }
 
-        // Get the penalty for the liquidation type
-        uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
-
         // Get the SNX rate
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
-        // Get the total amount of SNX collateral (including escrows and rewards)
-        uint collateralForAccount = _collateral(account);
+        // Get the liquid SNX balance
+        uint snxBalance = synthetixERC20().balanceOf(account);
 
-        // Calculate the amount of debt to liquidate to fix c-ratio
-        debtToRemove = liquidator().calculateAmountToFixCollateral(
-            debtBalance,
-            _snxToUSD(collateralForAccount, snxRate),
-            penalty
-        );
+        uint penalty;
+        if (isSelfLiquidation) {
+            // Get self liquidation penalty
+            penalty = getSelfLiquidationPenalty();
 
-        // Get the equivalent amount of SNX for the amount to liquidate
-        // Note: While calculateAmountToFixCollateral takes the penalty into account,
-        // it only calculates the debt to be repaid (so that c-ratio is reached). The penalty still needs to be
-        // applied on the collateral side (SNX) correctly. Which is why redeemTarget needs to be multiplied by 1 + penalty
-        // to get the SNX amount calculateAmountToFixCollateral was using for its calculation.
-        // This is a "target" because it may not be available, so will be adjusted
-        uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+            // Calculate the amount of debt to remove and SNX to redeem for a self liquidation
+            debtToRemove = liquidator().calculateAmountToFixCollateral(debtBalance, _snxToUSD(snxBalance, snxRate), penalty);
+            totalRedeemed = _getMinValue(
+                _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty)),
+                snxBalance
+            );
+            // Return the minimum of both computed values
+            debtToRemove = _getMinValue(_snxToUSD(totalRedeemed, snxRate), debtToRemove);
 
-        // calculate actually redeemable collateral for the conditions
-        (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, isSelfLiquidation);
+            // escrow is zero since it cannot be self liquidated
+            return (totalRedeemed, debtToRemove, 0, debtBalance);
+        } else {
+            // In the case of forced Liquidation
+            penalty = getSnxLiquidationPenalty();
 
-        // totalRedeemed == redeemTarget, all of the debtToRemove is removed, otherwise adjust it to redeemable collateral
-        if (totalRedeemed < redeemTarget) {
-            // Adjust debt amount to ratio of actual vs. target collateral amounts
-            debtToRemove = debtToRemove.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);
+            // Get the total USD value of their SNX collateral (including escrows and rewards and minus the flag and liquidate rewards)
+            uint collateralForAccountUSD =
+                _snxToUSD(_collateral(account).sub(getLiquidateReward().add(getFlagReward())), snxRate);
 
-            // if all collateral is gone, erase the bad debt (some unliquidatable collateral can be in
-            // legacy SynthetixEscrow or LiquidatorRewards (if Synthetix liquidation method didn't call getReward() before this)
-            // Note that collateralForAccount cannot be < totalRedeemed, because totalRedeemed comes from an exact
-            // calculation in _redeemableCollateralForTarget(). If the calculations change to create a possibility
-            // for a rounding imprecision, this check may need to be changed to `<=`.
-            if (collateralForAccount == totalRedeemed) {
+            // Calculate the amount of debt to remove and the sUSD value of the SNX required to liquidate.
+            debtToRemove = liquidator().calculateAmountToFixCollateral(debtBalance, collateralForAccountUSD, penalty);
+            uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+
+            if (redeemTarget >= _collateral(account)) {
+                // need to wipe out the account
                 debtToRemove = debtBalance;
+                totalRedeemed = _collateral(account);
+                escrowToLiquidate = rewardEscrowV2().balanceOf(account);
+                return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
+            } else {
+                // normal liquidation
+                (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget);
+                return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
             }
         }
-
-        return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
     }
 
     // SIP-252
     // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
     // of transferrable & escrowed collateral & self or forced liquidation
-    function _redeemableCollateralForTarget(
-        address account,
-        uint redeemTarget,
-        bool isSelfLiquidation
-    ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
+    function _redeemableCollateralForTarget(address account, uint redeemTarget)
+        internal
+        view
+        returns (uint totalRedeemed, uint escrowToLiquidate)
+    {
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferable = synthetixERC20().balanceOf(account);
@@ -805,22 +808,21 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             return (redeemTarget, 0);
         } else {
             // if transferrable is not enough
-            if (isSelfLiquidation) {
-                // cannot use escrow because it's not available for self-liquidation
-                return (transferable, 0);
+            // can use escrow if forced liquidation
+            uint escrow = rewardEscrowV2().balanceOf(account);
+            if (redeemTarget > transferable.add(escrow)) {
+                // all of escrow needs to be redeemed
+                return (transferable.add(escrow), escrow);
             } else {
-                // can use escrow if forced liquidation
-                uint escrow = rewardEscrowV2().balanceOf(account);
-                if (redeemTarget > transferable.add(escrow)) {
-                    // all of escrow needs to be redeemed
-                    return (transferable.add(escrow), escrow);
-                } else {
-                    // need only part of the escrow, add the needed part to redeemed
-                    escrowToLiquidate = redeemTarget.sub(transferable);
-                    return (transferable.add(escrowToLiquidate), escrowToLiquidate);
-                }
+                // need only part of the escrow, add the needed part to redeemed
+                escrowToLiquidate = redeemTarget.sub(transferable);
+                return (transferable.add(escrowToLiquidate), escrowToLiquidate);
             }
         }
+    }
+
+    function _getMinValue(uint x, uint y) internal pure returns (uint) {
+        return x < y ? x : y;
     }
 
     function setCurrentPeriodId(uint128 periodId) external {

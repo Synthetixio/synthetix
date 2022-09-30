@@ -75,10 +75,6 @@ async function deploy(runtime, networkVariant) {
 	try {
 		// if cannon can give us the signer for the owner address, we should use that
 		const ownerAddress = synthetix.getUsers({ network, useOvm, user: 'owner' }).address;
-
-		// need to reset any contract code at this address to nothing or else anvil
-		// is going to complain that the address doesn't work
-		runtime.provider.send('hardhat_setCode', [ownerAddress, '0x']);
 		signer = await runtime.getSigner(ownerAddress);
 	} catch (err) {
 		// otherwise we want to use the cannon default signer, which is set above

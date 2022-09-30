@@ -603,6 +603,30 @@ contract('Liquidator', accounts => {
 						);
 					});
 				});
+				describe('with only escrowed SNX', () => {
+					let escrowBalanceBefore;
+					beforeEach(async () => {
+						await setLiquidSNXBalance(alice, 0);
+						escrowBalanceBefore = await createEscrowEntries(alice, toUnit('1'), 100);
+
+						// set up liquidation
+						await updateSNXPrice('6');
+						await synthetix.issueMaxSynths({ from: alice });
+						await updateSNXPrice('1');
+					});
+					it('should revert with cannot self liquidate', async () => {
+						// should have no liquida SNX balance, only in escrow
+						const snxBalance = await synthetix.balanceOf(alice);
+						const collateralBalance = await synthetix.collateral(alice);
+						const escrowBalanceAfter = await rewardEscrowV2.balanceOf(alice);
+
+						assert.bnEqual(snxBalance, toUnit('0'));
+						assert.bnEqual(collateralBalance, escrowBalanceBefore);
+						assert.bnEqual(escrowBalanceAfter, escrowBalanceBefore);
+
+						await assert.revert(synthetix.liquidateSelf({ from: alice }), 'cannot self liquidate');
+					});
+				});
 			});
 		});
 

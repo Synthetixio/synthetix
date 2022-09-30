@@ -190,7 +190,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         /// is because it's an unlikely scenario and Issuer code size (and interface) are already too big.
         uint unliquidatable = synthetixEscrow().balanceOf(account);
         uint balance = issuer().collateral(account).sub(unliquidatable);
-        return balance > (getLiquidateReward().add(getFlagReward()));
+        return balance >= (getLiquidateReward().add(getFlagReward()));
     }
 
     /**

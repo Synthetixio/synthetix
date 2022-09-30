@@ -441,6 +441,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // escrowToLiquidate can only be zero, this is to protect from an issuer calc bug causing
         // incorrect accounting & transfers later
         require(escrowToLiquidate == 0, "cannot self liquidate escrow");
+        require(debtRemoved > 0, "cannot self liquidate");
 
         emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
 
