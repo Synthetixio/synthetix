@@ -182,7 +182,12 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function _canTransfer(address account, uint value) internal view returns (bool) {
         // Always allow legacy market to transfer
         // note if legacy market is not yet available this will just return 0 address and it  will never be true
-        if (messageSender != address(0) && messageSender == resolver.getAddress(CONTRACT_V3_LEGACYMARKET)) {
+        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
+        if (
+            (messageSender != address(0) && 
+            messageSender == legacyMarketAddress) ||
+            account == legacyMarketAddress
+        ) {
             return true;
         }
 
@@ -460,6 +465,15 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;
+    }
+
+    /**
+     * @notice allows for migration from v2x to v3 when an account has pending escrow entries
+     */
+    function revokeAllEscrow(address account) external systemActive {
+        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
+        require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
+        rewardEscrowV2().revokeFrom(account, msg.sender, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
     }
 
     /**
