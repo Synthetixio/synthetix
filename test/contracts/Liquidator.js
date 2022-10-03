@@ -1054,7 +1054,7 @@ contract('Liquidator', accounts => {
 
 										// And liquidation penalty is 30%
 										penalty = toUnit('0.3');
-										await systemSettings.setLiquidationPenalty(penalty, { from: owner });
+										await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
 
 										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on SNX liquidations.)
 										await systemSettings.setLiquidationPenalty(toUnit('0.2'), {

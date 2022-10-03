@@ -43,7 +43,7 @@ async function deployInstance({
 		useOvm,
 		provider,
 		maxFeePerGas: 100,
-		maxPriorityFeePerGas: 100,
+		maxPriorityFeePerGas: 2,
 		yes: true,
 	});
 }

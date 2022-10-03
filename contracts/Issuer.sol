@@ -702,13 +702,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         returns (
             uint totalRedeemed,
             uint debtRemoved,
-            uint escrowToLiquidate
+            uint escrowToLiquidate,
+            uint initialDebtBalance
         )
     {
         require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
         // liquidationAmounts checks isLiquidationOpen for the account
-        uint initialDebtBalance;
         (totalRedeemed, debtRemoved, escrowToLiquidate, initialDebtBalance) = _liquidationAmounts(
             account,
             isSelfLiquidation
@@ -778,7 +778,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             debtToRemove = liquidator().calculateAmountToFixCollateral(debtBalance, collateralForAccountUSD, penalty);
             uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
-            if (redeemTarget >= _collateral(account)) {
+            if (redeemTarget.add(getLiquidateReward().add(getFlagReward())) >= _collateral(account)) {
                 // need to wipe out the account
                 debtToRemove = debtBalance;
                 totalRedeemed = _collateral(account);

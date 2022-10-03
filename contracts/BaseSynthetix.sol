@@ -378,7 +378,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
         liquidatorRewards().getReward(account);
 
-        (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
+        (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate, uint initialDebtBalance) =
+            issuer().liquidateAccount(account, false);
         // this should not happen, but better to ensure (since it's coming from another contract)
         require(totalRedeemed >= escrowToLiquidate, "escrowToLiquidate too large");
 
@@ -391,30 +392,34 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
 
-        if (totalRedeemed > 0) {
-            uint flagReward = liquidator().flagReward();
-            uint liquidateReward = liquidator().liquidateReward();
+        require(totalRedeemed > 0, "Total SNX to redeem must be greater than zero");
 
-            // Transfer the flagReward to the account who flagged this account for liquidation.
-            address flagger = liquidator().getLiquidationCallerForAccount(account);
-            bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
-            require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
+        // First, pay out the flag and liquidate rewards.
+        uint flagReward = liquidator().flagReward();
+        uint liquidateReward = liquidator().liquidateReward();
 
-            // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
-            bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
-            require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
+        // Transfer the flagReward to the account who flagged this account for liquidation.
+        address flagger = liquidator().getLiquidationCallerForAccount(account);
+        bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
+        require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
 
-            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
-            require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
+        // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
+        bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
+        require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
-            // Inform the LiquidatorRewards contract about the incoming SNX rewards.
-            liquidatorRewards().notifyRewardAmount(totalRedeemed);
-
-            return true;
-        } else {
-            // In this unlikely case, the total redeemed SNX is not greater than zero so don't perform any transfers.
-            return false;
+        // If the account has been completely wiped, take the flag and liquidate rewards into account.
+        if (initialDebtBalance == debtToRemove) {
+            totalRedeemed = totalRedeemed.sub(flagReward.add(liquidateReward));
         }
+
+        // Send the remaining SNX to the LiquidatorRewards contract.
+        bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
+        require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
+
+        // Inform the LiquidatorRewards contract about the incoming SNX rewards.
+        liquidatorRewards().notifyRewardAmount(totalRedeemed);
+
+        return true;
     }
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
@@ -426,7 +431,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().getReward(liquidatedAccount);
 
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
+        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate, ) =
+            issuer().liquidateAccount(liquidatedAccount, true);
         // escrowToLiquidate can only be zero, this is to protect from an issuer calc bug causing
         // incorrect accounting & transfers later
         require(escrowToLiquidate == 0, "cannot self liquidate escrow");

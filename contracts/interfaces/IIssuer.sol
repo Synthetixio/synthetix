@@ -116,7 +116,8 @@ interface IIssuer {
         returns (
             uint totalRedeemed,
             uint debtRemoved,
-            uint escrowToLiquidate
+            uint escrowToLiquidate,
+            uint initialDebtBalance
         );
 
     function issueSynthsWithoutDebt(
