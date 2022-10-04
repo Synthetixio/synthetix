@@ -168,6 +168,11 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             uint initialDebtBalance
         )
     {
+        // return zeroes otherwise calculateAmountToFixCollateral reverts with unhelpful underflow error
+        if (!this.isLiquidationOpen(account, isSelfLiquidation)) {
+            return (0, 0, 0, issuer().debtBalanceOf(account, "sUSD"));
+        }
+
         return issuer().liquidationAmounts(account, isSelfLiquidation);
     }
 
