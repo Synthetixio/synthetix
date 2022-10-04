@@ -378,10 +378,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
         liquidatorRewards().getReward(account);
 
-        (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate, uint initialDebtBalance) =
-            issuer().liquidateAccount(account, false);
-        // this should not happen, but better to ensure (since it's coming from another contract)
-        require(totalRedeemed >= escrowToLiquidate, "escrowToLiquidate too large");
+        (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
 
         // This transfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger
@@ -407,11 +404,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
         require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
-        // If the account has been completely wiped, take the flag and liquidate rewards into account.
-        if (initialDebtBalance == debtToRemove) {
-            totalRedeemed = totalRedeemed.sub(flagReward.add(liquidateReward));
-        }
-
         // Send the remaining SNX to the LiquidatorRewards contract.
         bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
         require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
@@ -431,8 +423,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().getReward(liquidatedAccount);
 
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate, ) =
-            issuer().liquidateAccount(liquidatedAccount, true);
+        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
         // escrowToLiquidate can only be zero, this is to protect from an issuer calc bug causing
         // incorrect accounting & transfers later
         require(escrowToLiquidate == 0, "cannot self liquidate escrow");
