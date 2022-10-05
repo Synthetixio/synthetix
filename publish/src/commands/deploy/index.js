@@ -28,13 +28,14 @@ const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureFutures = require('./configure-futures');
+const configurePerpsV2 = require('./configure-perpsv2');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
 const deployFutures = require('./deploy-futures');
-const deployFuturesV2 = require('./deploy-futuresV2');
+const deployPerpsV2 = require('./deploy-perpsv2');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -313,7 +314,7 @@ const deploy = async ({
 		loadAndCheckRequiredSources,
 	});
 
-	await deployFuturesV2({
+	await deployPerpsV2({
 		account,
 		addressOf,
 		getDeployParameter,
@@ -443,6 +444,20 @@ const deploy = async ({
 	});
 
 	await configureFutures({
+		addressOf,
+		deployer,
+		loadAndCheckRequiredSources,
+		runStep,
+		getDeployParameter,
+		useOvm,
+		freshDeploy,
+		deploymentPath,
+		network,
+		generateSolidity,
+		yes,
+	});
+
+	await configurePerpsV2({
 		addressOf,
 		deployer,
 		loadAndCheckRequiredSources,
