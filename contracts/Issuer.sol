@@ -627,6 +627,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
         require(short == resolver.getAddress("CollateralShortLegacy"), "Issuer: wrong short address");
+        require(amount > 0, "Issuer: cannot burn 0 synths");
 
         exchanger().settle(short, sUSD);
 

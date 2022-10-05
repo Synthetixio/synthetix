@@ -3017,13 +3017,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('basic protection', () => {
-					it('should not allow address(0) for the CollateralShortLegacy', async () => {
-						await assert.revert(
-							issuer.upgradeCollateralShort(ZERO_ADDRESS, toUnit(0.1), { from: owner }),
-							'Issuer: invalid address'
-						);
-					});
-
 					it('should not allow an invalid address for the CollateralShortLegacy', async () => {
 						await assert.revert(
 							issuer.upgradeCollateralShort(wrongCollateralShort, toUnit(0.1), { from: owner }),
