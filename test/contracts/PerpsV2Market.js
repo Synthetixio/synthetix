@@ -15,6 +15,7 @@ const {
 	decodedEventEqual,
 	ensureOnlyExpectedMutativeFunctions,
 	updateAggregatorRates,
+	onlyGivenAddressCanInvoke,
 } = require('./helpers');
 
 const MockExchanger = artifacts.require('MockExchanger');
@@ -40,6 +41,7 @@ contract('PerpsV2Market', accounts => {
 		futuresMarketProxy,
 		futuresMarket,
 		futuresMarketImpl,
+		futuresMarketViewsImpl,
 		futuresMarketDelayedOrderImpl,
 		futuresMarketState,
 		exchangeRates,
@@ -115,6 +117,7 @@ contract('PerpsV2Market', accounts => {
 			PerpsV2MarketManager: futuresMarketManager,
 			PerpsV2MarketStateBTC: futuresMarketState,
 			PerpsV2MarketBTC: futuresMarketImpl,
+			PerpsV2MarketViewsBTC: futuresMarketViewsImpl,
 			PerpsV2DelayedOrderBTC: futuresMarketDelayedOrderImpl,
 			ProxyPerpsV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
@@ -180,20 +183,11 @@ contract('PerpsV2Market', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	describe('Basic parameters', () => {
-		it('Only expected functions are mutative', () => {
-			// FIXME use actual contract and not Testeable version to check the abi
+		it('Only expected functions are mutative PerpsV2MarketNextPriceOrders', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: futuresMarketImpl.abi,
+				abi: futuresMarketDelayedOrderImpl.abi,
 				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
 				expected: [
-					'closePosition',
-					'closePositionWithTracking',
-					'liquidatePosition',
-					'modifyPosition',
-					'modifyPositionWithTracking',
-					'recomputeFunding',
-					'transferMargin',
-					'withdrawAllMargin',
 					'cancelDelayedOrder',
 					'executeDelayedOrder',
 					'submitDelayedOrder',
@@ -202,15 +196,31 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
-		it('Only expected functions are mutative', () => {
+		it('Only expected functions are mutative PerpsV2MarketViews', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: futuresMarketDelayedOrderImpl.abi,
-				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
+				abi: futuresMarketViewsImpl.abi,
+				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned'],
+				expected: [],
+			});
+		});
+
+		it('Only expected functions are mutative PerpsV2MarketState', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: futuresMarketState.abi,
+				ignoreParents: ['Owned', 'StateShared'],
 				expected: [
-					'submitDelayedOrder',
-					'submitDelayedOrderWithTracking',
-					'cancelDelayedOrder',
-					'executeDelayedOrder',
+					'setBaseAsset',
+					'setMarketKey',
+					'setMarketSize',
+					'setMarketSkew',
+					'setEntryDebtCorrection',
+					'setNextPositionId',
+					'setFundingLastRecomputed',
+					'pushFundingSequence',
+					'updateNextPriceOrder',
+					'updatePosition',
+					'deleteNextPriceOrder',
+					'deletePosition',
 				],
 			});
 		});
@@ -322,6 +332,214 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('0'));
 			assert.bnEqual(await futuresMarket.proportionalSkew(), toUnit('0'));
+		});
+	});
+
+	describe('Market Subcontracts access', () => {
+		describe('PerpsV2Market', () => {
+			it('Only settings() functions only work for settings contract', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.recomputeFunding,
+					args: [],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Not permitted by this address',
+					skipPassCheck: true,
+				});
+			});
+
+			it('Only proxy functions only work for proxy', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.transferMargin,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.withdrawAllMargin,
+					args: [],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.modifyPosition,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.modifyPositionWithTracking,
+					args: [1, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.closePosition,
+					args: [],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.closePositionWithTracking,
+					args: [toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketImpl.liquidatePosition,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+			});
+		});
+
+		describe('PerpsV2MarketDelayedOrders', () => {
+			it('Only proxy functions only work for proxy', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketDelayedOrderImpl.submitDelayedOrder,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketDelayedOrderImpl.submitDelayedOrderWithTracking,
+					args: [1, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketDelayedOrderImpl.cancelDelayedOrder,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketDelayedOrderImpl.executeDelayedOrder,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+			});
+		});
+
+		describe('PerpsV2MarketState', () => {
+			it('Only associate functions only work for associate contracts - PerpsV2MarketState', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setMarketKey,
+					args: [toBytes32('marketKey')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setBaseAsset,
+					args: [toBytes32('marketKey')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setMarketSize,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setEntryDebtCorrection,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setNextPositionId,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setMarketSkew,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.setFundingLastRecomputed,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.pushFundingSequence,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.updatePosition,
+					args: [noBalance, 1, 1, 1, 1, 1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.updateNextPriceOrder,
+					args: [noBalance, 1, 1, 1, 1, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.deletePosition,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketState.deleteNextPriceOrder,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only an associated contract can perform this action',
+					skipPassCheck: true,
+				});
+			});
 		});
 	});
 
