@@ -12,10 +12,6 @@ const commands = {
 	connectBridge: require('./src/commands/connect-bridge').connectBridge,
 };
 
-async function prepareDeploy(...args) {
-	await commands.prepareDeploy(...args);
-}
-
 async function deployInstance({
 	addNewSynths,
 	buildPath,
@@ -67,9 +63,6 @@ async function deploy(runtime, networkVariant) {
 	}
 	const buildPath = path.join(__dirname, '..', synthetix.constants.BUILD_FOLDER);
 
-	// prepare the synths but skip preparing releases (as this isn't a fork)
-	const synthsToAdd = [];
-
 	// get the signer that we want to have for the deployer
 	let signer = await runtime.getDefaultSigner({});
 	try {
@@ -81,7 +74,6 @@ async function deploy(runtime, networkVariant) {
 		console.log(err);
 	}
 
-	await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: true, useSips: false });
 	await deployInstance({
 		addNewSynths: true,
 		buildPath,
