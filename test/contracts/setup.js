@@ -1689,7 +1689,7 @@ const setupAllContracts = async ({
 			await Promise.all(promises);
 		}
 
-		// Futures V2
+		// PerpsV2
 		if (returnObj['PerpsV2MarketSettings']) {
 			const promises = [
 				returnObj['PerpsV2MarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {

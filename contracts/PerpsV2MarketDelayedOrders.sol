@@ -72,8 +72,14 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         // check that a previous order doesn't exist
         require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
 
-        // ensure the desiredTimeDelta is above the minimum required delay
         bytes32 marketKey = marketState.marketKey();
+
+        // automatically set desiredTimeDelta to min if 0 is specified
+        if (desiredTimeDelta == 0) {
+            desiredTimeDelta = _minDelayTimeDelta(marketKey);
+        }
+
+        // ensure the desiredTimeDelta is above the minimum required delay
         require(
             desiredTimeDelta >= _minDelayTimeDelta(marketKey) && desiredTimeDelta <= _maxDelayTimeDelta(marketKey),
             "delay out of bounds"
