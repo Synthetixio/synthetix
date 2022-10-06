@@ -135,7 +135,7 @@ jobs:
       docker_layer_caching: true
     environment:
       foundry_locked_commit: "3c49efe"
-    resource_class: xlarge
+    resource_class: large
     steps:
       - restore_cache:
           keys:
