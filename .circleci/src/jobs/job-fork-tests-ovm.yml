@@ -1,6 +1,8 @@
 # Starts a fork of OVM, deploys the latest release, and runs L2 integration tests
 {{> job-header-node.yml}}
 resource_class: large
+environment: 
+  NODE_OPTIONS: --max_old_space_size=8192
 steps:
   - checkout
   - attach_workspace:

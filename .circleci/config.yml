@@ -39,6 +39,7 @@ jobs:
       docker_layer_caching: true
     environment:
       foundry_locked_commit: "3c49efe"
+      NODE_OPTIONS: --max_old_space_size=8192
     steps:
       - restore_cache:
           keys:
@@ -76,6 +77,8 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
     resource_class: large
+    environment:
+      NODE_OPTIONS: --max_old_space_size=8192
     steps:
       - checkout
       - attach_workspace:
@@ -135,6 +138,7 @@ jobs:
       docker_layer_caching: true
     environment:
       foundry_locked_commit: "3c49efe"
+      NODE_OPTIONS: --max_old_space_size=8192
     resource_class: large
     steps:
       - restore_cache:
@@ -308,6 +312,7 @@ jobs:
       docker_layer_caching: true
     environment:
       foundry_locked_commit: "3c49efe"
+      NODE_OPTIONS: --max_old_space_size=8192
     resource_class: large
     steps:
       - restore_cache:
