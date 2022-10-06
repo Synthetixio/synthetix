@@ -3,7 +3,7 @@
 {{> job-header-machine.yml}}
 # set custom delimiter to avoid checksum parsing
 {{=<% %>=}}
-resource_class: large
+resource_class: xlarge
 steps:
   # get foundry
   - restore_cache:

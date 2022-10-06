@@ -4,4 +4,3 @@ machine:
   docker_layer_caching: true
 environment:
   foundry_locked_commit: "3c49efe"
-  NODE_OPTIONS: --max_old_space_size=8192
