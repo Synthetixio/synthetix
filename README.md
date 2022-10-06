@@ -221,7 +221,7 @@ snx.getUsers({ network: 'mainnet' });
 [ { name: 'owner',
     address: '0xEb3107117FEAd7de89Cd14D463D340A2E6917769' },
   { name: 'deployer',
-    address: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe' },
+    address: '0x302d2451d9f47620374B54c521423Bf0403916A2' },
   { name: 'marketClosure',
     address: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7' },
   { name: 'oracle',
