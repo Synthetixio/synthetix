@@ -177,6 +177,27 @@ contract Synthetix is BaseSynthetix {
         _internalTransfer(address(rewardEscrow()), address(rewardEscrowV2()), rewardEscrowBalance);
     }
 
+    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
+    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
+    function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
+        // ensure the user has no SNX in escrow
+        synthetixEscrow().vest();
+        return _liquidateDelinquentAccount(account, 0, messageSender);
+    }
+
+    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
+    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
+    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        // ensure the user has no SNX in escrow
+        synthetixEscrow().vest();
+        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
+    }
+
     // ========== EVENTS ==========
 
     event AtomicSynthExchange(

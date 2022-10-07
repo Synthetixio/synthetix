@@ -19,6 +19,8 @@ import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
+import "./interfaces/ISynthetixEscrow.sol";
+
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
@@ -36,6 +38,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
 
     // ========== CONSTRUCTOR ==========
 
@@ -55,7 +58,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](7);
+        addresses = new bytes32[](8);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
@@ -63,6 +66,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         addresses[4] = CONTRACT_LIQUIDATORREWARDS;
         addresses[5] = CONTRACT_LIQUIDATOR;
         addresses[6] = CONTRACT_REWARDESCROW_V2;
+        addresses[7] = CONTRACT_SYNTHETIXESCROW;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -87,6 +91,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
+    }
+
+    function synthetixEscrow() internal view returns (ISynthetixEscrow) {
+        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function liquidator() internal view returns (ILiquidator) {
@@ -353,23 +361,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
-    function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        return _liquidateDelinquentAccount(account, 0, messageSender);
-    }
-
-    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
-    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
-    }
-
-    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
-    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function _liquidateDelinquentAccount(
         address account,
         uint escrowStartIndex,
@@ -389,8 +380,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
 
-        require(totalRedeemed > 0, "Total SNX to redeem must be greater than zero");
-
         // First, pay out the flag and liquidate rewards.
         uint flagReward = liquidator().flagReward();
         uint liquidateReward = liquidator().liquidateReward();
@@ -405,11 +394,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
         // Send the remaining SNX to the LiquidatorRewards contract.
-        bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
-        require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
+        if (totalRedeemed > 0) {
+            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
+            require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
 
-        // Inform the LiquidatorRewards contract about the incoming SNX rewards.
-        liquidatorRewards().notifyRewardAmount(totalRedeemed);
+            // Inform the LiquidatorRewards contract about the incoming SNX rewards.
+            liquidatorRewards().notifyRewardAmount(totalRedeemed);
+        }
 
         return true;
     }
@@ -455,6 +446,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             bool success = _transferByProxy(address(liquidatorRewards()), owner, amount);
             require(success, "restitution transfer failed");
         }
+    }
+
+    function liquidateDelinquentAccount(address) external returns (bool) {
+        _notImplemented();
+    }
+
+    function liquidateDelinquentAccountEscrowIndex(address, uint) external returns (bool) {
+        _notImplemented();
     }
 
     function exchangeWithTrackingForInitiator(

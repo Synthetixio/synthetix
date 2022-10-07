@@ -748,7 +748,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Calculate the amount of debt to remove and SNX to redeem for a self liquidation
             debtToRemove = liquidator().calculateAmountToFixCollateral(
                 debtBalance,
-                _snxToUSD(synthetixERC20().balanceOf(account), snxRate), // USD value of their liquid SNX balance
+                _snxToUSD(_collateral(account), snxRate), // USD value of their liquid SNX balance
                 penalty
             );
 
@@ -792,11 +792,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     // SIP-252
-    // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
-    // of transferrable & escrowed collateral & self or forced liquidation
-    // SIP-252
-    // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
-    // of transferrable & escrowed collateral & self or forced liquidation
+    // calculates the amount of SNX that can be force liquidated (redeemed) for the various cases
+    // of transferrable & escrowed collateral
     function _redeemableCollateralForTarget(
         address account,
         uint redeemTarget,
