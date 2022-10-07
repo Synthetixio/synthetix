@@ -19,8 +19,6 @@ import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
-import "./interfaces/ISynthetixEscrow.sol";
-
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
@@ -38,7 +36,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
 
     // ========== CONSTRUCTOR ==========
 
@@ -58,7 +55,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](8);
+        addresses = new bytes32[](7);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
@@ -66,7 +63,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         addresses[4] = CONTRACT_LIQUIDATORREWARDS;
         addresses[5] = CONTRACT_LIQUIDATOR;
         addresses[6] = CONTRACT_REWARDESCROW_V2;
-        addresses[7] = CONTRACT_SYNTHETIXESCROW;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -91,10 +87,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
-    }
-
-    function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function liquidator() internal view returns (ILiquidator) {
