@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "./BaseSynthetix.sol";
 
 // Internal references
-import "./interfaces/ISynthetixEscrow.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISupplySchedule.sol";
@@ -17,7 +16,6 @@ contract Synthetix is BaseSynthetix {
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
     bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
-    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
 
     // ========== CONSTRUCTOR ==========
 
@@ -31,18 +29,13 @@ contract Synthetix is BaseSynthetix {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](3);
+        bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_REWARD_ESCROW;
         newAddresses[1] = CONTRACT_SUPPLYSCHEDULE;
-        newAddresses[2] = CONTRACT_SYNTHETIXESCROW;
         return combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== VIEWS ==========
-
-    function synthetixEscrow() internal view returns (ISynthetixEscrow) {
-        return ISynthetixEscrow(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
-    }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
         return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARD_ESCROW));
@@ -182,27 +175,6 @@ contract Synthetix is BaseSynthetix {
         // transfer all of RewardEscrow's balance to RewardEscrowV2
         // _internalTransfer emits the transfer event
         _internalTransfer(address(rewardEscrow()), address(rewardEscrowV2()), rewardEscrowBalance);
-    }
-
-    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
-    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
-    function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        // ensure the user has no SNX in escrow
-        synthetixEscrow().vest();
-        return _liquidateDelinquentAccount(account, 0, messageSender);
-    }
-
-    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
-    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        // ensure the user has no SNX in escrow
-        synthetixEscrow().vest();
-        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
     }
 
     // ========== EVENTS ==========

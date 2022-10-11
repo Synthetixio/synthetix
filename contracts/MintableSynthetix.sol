@@ -63,21 +63,4 @@ contract MintableSynthetix is BaseSynthetix {
         emitTransfer(account, address(0), amount);
         totalSupply = totalSupply.sub(amount);
     }
-
-    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
-    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
-    function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        return _liquidateDelinquentAccount(account, 0, messageSender);
-    }
-
-    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
-    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
-    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
-    }
 }
