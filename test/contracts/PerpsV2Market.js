@@ -183,7 +183,7 @@ contract('PerpsV2Market', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	describe('Basic parameters', () => {
-		it('Only expected functions are mutative PerpsV2MarketNextPriceOrders', () => {
+		it('Only expected functions are mutative PerpsV2MarketDelayedOrders', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketDelayedOrderImpl.abi,
 				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
@@ -217,9 +217,9 @@ contract('PerpsV2Market', accounts => {
 					'setNextPositionId',
 					'setFundingLastRecomputed',
 					'pushFundingSequence',
-					'updateNextPriceOrder',
+					'updateDelayedOrder',
 					'updatePosition',
-					'deleteNextPriceOrder',
+					'deleteDelayedOrder',
 					'deletePosition',
 				],
 			});
@@ -410,7 +410,7 @@ contract('PerpsV2Market', accounts => {
 			it('Only proxy functions only work for proxy', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketDelayedOrderImpl.submitDelayedOrder,
-					args: [1],
+					args: [1, 60],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only the proxy can call',
 					skipPassCheck: true,
@@ -418,7 +418,7 @@ contract('PerpsV2Market', accounts => {
 
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketDelayedOrderImpl.submitDelayedOrderWithTracking,
-					args: [1, toBytes32('code')],
+					args: [1, 60, toBytes32('code')],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only the proxy can call',
 					skipPassCheck: true,
@@ -517,8 +517,8 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				await onlyGivenAddressCanInvoke({
-					fnc: futuresMarketState.updateNextPriceOrder,
-					args: [noBalance, 1, 1, 1, 1, toBytes32('code')],
+					fnc: futuresMarketState.updateDelayedOrder,
+					args: [noBalance, 1, 1, 1, 1, 1, toBytes32('code')],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only an associated contract can perform this action',
 					skipPassCheck: true,
@@ -533,7 +533,7 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				await onlyGivenAddressCanInvoke({
-					fnc: futuresMarketState.deleteNextPriceOrder,
+					fnc: futuresMarketState.deleteDelayedOrder,
 					args: [noBalance],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only an associated contract can perform this action',
@@ -2571,12 +2571,13 @@ contract('PerpsV2Market', accounts => {
 
 				await setPrice(baseAsset, price);
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+				const fee1 = (await futuresMarket.orderFee(toUnit('50')))[0];
 				await futuresMarket.modifyPosition(toUnit('50'), { from: trader }); // 5x
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 }); // -10x
 
-				const fee1 = multiplyDecimal(toUnit('5000'), makerFee);
-				const fee2 = multiplyDecimal(toUnit('10000'), makerFee);
+				const fee2 = (await futuresMarket.orderFee(toUnit('-100')))[0];
+				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 }); // -10x
 
 				const lev = (notional, margin, fee) => divideDecimal(notional, margin.sub(fee));
 

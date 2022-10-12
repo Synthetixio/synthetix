@@ -68,7 +68,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         int sizeDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode
-    ) internal {
+    ) internal onlyProxy {
         // check that a previous order doesn't exist
         require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
 
@@ -154,7 +154,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      *  or send to the msg.sender if it's not the account holder.
      * @param account the account for which the stored order should be cancelled
      */
-    function cancelDelayedOrder(address account) external {
+    function cancelDelayedOrder(address account) external onlyProxy {
         // important!! order of the account, not the msg.sender
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
@@ -217,7 +217,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a delayed order
      */
-    function executeDelayedOrder(address account) external {
+    function executeDelayedOrder(address account) external onlyProxy {
         // important!: order of the account, not the sender!
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
