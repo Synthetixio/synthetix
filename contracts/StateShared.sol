@@ -54,6 +54,10 @@ contract StateShared is Owned {
         }
     }
 
+    function associatedContracts() external view returns (address[] memory) {
+        return _associatedContracts.getPage(0, _associatedContracts.elements.length);
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier onlyAssociatedContracts {

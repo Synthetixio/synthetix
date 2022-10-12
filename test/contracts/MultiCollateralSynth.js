@@ -83,6 +83,7 @@ contract('MultiCollateralSynth', accounts => {
 				'CollateralManagerState',
 				'CollateralEth',
 				'FuturesMarketManager',
+				'PerpsV2MarketManager',
 			],
 		}));
 
@@ -175,6 +176,7 @@ contract('MultiCollateralSynth', accounts => {
 					'Issuer',
 					'FeePool',
 					'FuturesMarketManager',
+					'PerpsV2MarketManager',
 					'CollateralManager',
 					'EtherWrapper',
 					'WrapperFactory',

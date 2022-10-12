@@ -190,6 +190,28 @@ module.exports = {
 		}
 	},
 
+	async onlyGivenAddressesCanInvoke({
+		fnc,
+		args,
+		accounts,
+		addresses = [],
+		skipPassCheck = false,
+		reason = undefined,
+	}) {
+		for (const user of accounts) {
+			if (addresses.includes(user)) {
+				continue;
+			}
+
+			await assert.revert(fnc(...args, { from: user }), reason);
+		}
+		if (!skipPassCheck && addresses.length > 0) {
+			for (const address of addresses) {
+				await fnc(...args, { from: address });
+			}
+		}
+	},
+
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
 	async issueSynthsToUser({ owner, issuer, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract

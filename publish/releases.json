@@ -728,6 +728,25 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "both"
+		},
+		{
+			"sip": 280,
+			"layer": "ovm",
+			"sources": {
+				"base": ["FeePool", "DebtCache", "PerpsV2MarketManager"],
+				"ovm": [
+					"FeePool",
+					"Synths.+",
+					"PurgeableSynth",
+					"MultiCollateralSynth",
+					"DebtCache",
+					"PerpsV2MarketManager",
+					"PerpsV2MarketSettings",
+					"PerpsV2MarketData",
+					"PerpsV2Proxy.+",
+					"PerpsV2Market.+"
+				]
+			}
 		}
 	],
 	"releases": [

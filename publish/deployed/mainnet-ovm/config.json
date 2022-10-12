@@ -310,5 +310,14 @@
 	},
 	"FuturesMarketDOGE": {
 		"deploy": false
+	},
+	"PerpsV2MarketManager": {
+		"deploy": true
+	},
+	"PerpsV2MarketSettings": {
+		"deploy": true
+	},
+	"PerpsV2MarketData": {
+		"deploy": true
 	}
 }

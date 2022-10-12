@@ -15,16 +15,16 @@ module.exports = async ({
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
-	const { futuresMarkets } = loadAndCheckRequiredSources({
-		deploymentPath,
-		network,
-	});
-
 	// ----------------
 	// Futures market setup
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY FUTURES MARKETS ------\n`));
+
+	const { futuresMarkets } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',

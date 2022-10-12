@@ -13,6 +13,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IPerpsV2MarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
@@ -35,6 +36,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+    bytes32 private constant CONTRACT_FUTURESV2MARKETMANAGER = "PerpsV2MarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -189,12 +191,13 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](5);
+        addresses = new bytes32[](6);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_FEEPOOL;
         addresses[4] = CONTRACT_FUTURESMARKETMANAGER;
+        addresses[5] = CONTRACT_FUTURESV2MARKETMANAGER;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -215,6 +218,10 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     function futuresMarketManager() internal view returns (IFuturesMarketManager) {
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    }
+
+    function perpsV2MarketManager() internal view returns (IPerpsV2MarketManager) {
+        return IPerpsV2MarketManager(requireAndGetAddress(CONTRACT_FUTURESV2MARKETMANAGER));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
@@ -262,7 +269,8 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
             account == address(feePool()) ||
             account == address(exchanger()) ||
             account == address(issuer()) ||
-            account == address(futuresMarketManager());
+            account == address(futuresMarketManager()) ||
+            account == address(perpsV2MarketManager());
     }
 
     modifier onlyInternalContracts() {
