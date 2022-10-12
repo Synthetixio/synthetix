@@ -92,9 +92,11 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLengthBefore = marketState.fundingSequenceLength();
 
+        int fundingRate = _currentFundingRate(price);
         int funding = _nextFundingEntry(price);
         marketState.pushFundingSequence(int128(funding));
         marketState.setFundingLastRecomputed(uint32(block.timestamp));
+        marketState.setFundingRate(fundingRate);
 
         emitFundingRecomputed(funding, sequenceLengthBefore, marketState.fundingLastRecomputed());
 

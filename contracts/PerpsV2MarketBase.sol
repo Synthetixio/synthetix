@@ -141,25 +141,30 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
     }
 
-    function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
-        // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
+    function _proportionalElapsed() internal view returns (int) {
+        return int(block.timestamp.sub(marketState.fundingLastRecomputed())) / 1 days;
     }
 
-    function _unrecordedFunding(uint price) internal view returns (int funding) {
-        int elapsed = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
-        // The current funding rate, rescaled to a percentage per second.
-        int currentFundingRatePerSecond = _currentFundingRate(price) / 1 days;
-        return currentFundingRatePerSecond.multiplyDecimal(int(price)).mul(elapsed);
+    function _fundingVelocity(uint price) internal view returns (int) {
+        int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
+        return _proportionalSkew(price).multiplyDecimal(maxFundingRate);
+    }
+
+    function _currentFundingRate(uint price) internal view returns (int) {
+        return int(marketState.fundingRate()).add(_fundingVelocity(price).multiplyDecimal(_proportionalElapsed()));
+    }
+
+    function _unrecordedFunding(uint price) internal view returns (int) {
+        int nextFundingRate = _currentFundingRate(price);
+        return int(marketState.fundingRate()).add(nextFundingRate).div(2).mul(_proportionalElapsed());
     }
 
     /*
      * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
-    function _nextFundingEntry(uint price) internal view returns (int funding) {
-        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
+    function _nextFundingEntry(uint price) internal view returns (int) {
+        return _latestFundingEntry().add(_unrecordedFunding(price));
     }
 
     function _netFundingPerUnit(uint startIndex, uint price) internal view returns (int) {
@@ -389,6 +394,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _latestFundingIndex() internal view returns (uint) {
         return marketState.fundingSequenceLength().sub(1); // at least one element is pushed in constructor
+    }
+
+    function _latestFundingEntry() internal view returns (int) {
+        return marketState.fundingSequence(_latestFundingIndex());
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)

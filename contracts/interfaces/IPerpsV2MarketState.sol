@@ -17,6 +17,8 @@ interface IPerpsV2MarketState {
 
     function fundingSequence(uint) external view returns (int128);
 
+    function fundingRate() external view returns (int128);
+
     function positions(address) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
     function delayedOrders(address) external view returns (IPerpsV2MarketBaseTypes.DelayedOrder memory);
@@ -42,6 +44,8 @@ interface IPerpsV2MarketState {
     function setMarketSkew(int128) external;
 
     function setFundingLastRecomputed(uint32) external;
+
+    function setFundingRate(int _fundingRate) external;
 
     function pushFundingSequence(int128) external;
 

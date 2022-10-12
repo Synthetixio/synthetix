@@ -48,6 +48,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     uint32 public fundingLastRecomputed;
     int128[] public fundingSequence;
 
+    int128 public fundingRate;
+
     /*
      * Each user's position. Multiple positions can always be merged, so each user has
      * only have one position at a time.
@@ -129,6 +131,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContracts {
         fundingSequence.push(_fundingSequence);
+    }
+
+    function setFundingRate(int128 _fundingRate) external onlyAssociatedContracts {
+        fundingRate = _fundingRate;
     }
 
     /**
