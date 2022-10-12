@@ -406,7 +406,7 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
-		describe.only('PerpsV2MarketDelayedOrders', () => {
+		describe('PerpsV2MarketDelayedOrders', () => {
 			it('Only proxy functions only work for proxy', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketDelayedOrderImpl.submitDelayedOrder,
@@ -518,7 +518,7 @@ contract('PerpsV2Market', accounts => {
 
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketState.updateDelayedOrder,
-					args: [noBalance, 1, 1, 1, 1, toBytes32('code')],
+					args: [noBalance, 1, 1, 1, 1, 1, toBytes32('code')],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only an associated contract can perform this action',
 					skipPassCheck: true,
