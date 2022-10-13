@@ -582,8 +582,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address to,
         uint amount
     ) external onlyTrustedMinters returns (bool rateInvalid) {
-        require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot issue 0 synths");
+        require(address(synths[currencyKey]) != address(0), "synth doesn't exist");
+        require(amount > 0, "cannot issue 0 synths");
 
         // record issue timestamp
         _setLastIssueEvent(to);
@@ -604,8 +604,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address from,
         uint amount
     ) external onlyTrustedMinters returns (bool rateInvalid) {
-        require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot issue 0 synths");
+        require(address(synths[currencyKey]) != address(0), "synth doesn't exist");
+        require(amount > 0, "cannot issue 0 synths");
 
         exchanger().settle(from, currencyKey);
 
@@ -626,8 +626,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      * @param amount The amount of sUSD collateral to be burnt
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
-        require(short == resolver.getAddress("CollateralShortLegacy"), "Issuer: wrong short address");
-        require(amount > 0, "Issuer: cannot burn 0 synths");
+        require(short == resolver.getAddress("CollateralShortLegacy"), "wrong address");
+        require(amount > 0, "cannot burn 0 synths");
 
         exchanger().settle(short, sUSD);
 
@@ -635,7 +635,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
-        require(amount > 0, "Issuer: cannot issue 0 synths");
+        require(amount > 0, "cannot issue 0 synths");
 
         _issueSynths(from, amount, false);
     }
@@ -718,8 +718,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Reduce debt shares by amount to liquidate.
         _removeFromDebtRegister(account, debtRemoved, initialDebtBalance);
 
-        // Remove liquidation flag
-        liquidator().removeAccountInLiquidation(account);
+        // Determine if the liquidation flag should be removed.
+        // For self liquidations, check if the c-ratio is greater than ( 1 / issuance ratio ) - 10% variance
+        (uint cratio, ) = _collateralisationRatio(account);
+        if (
+            !isSelfLiquidation ||
+            cratio > SafeDecimalMath.unit().divideDecimalRound(getIssuanceRatio()).sub(SafeDecimalMath.unit().div(10))
+        ) {
+            // remove the flag
+            liquidator().removeAccountInLiquidation(account);
+        }
     }
 
     function _liquidationAmounts(address account, bool isSelfLiquidation)
@@ -995,20 +1003,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== MODIFIERS ========== */
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetixERC20()), "Issuer: Only Synthetix");
+        require(msg.sender == address(synthetixERC20()), "Only Synthetix");
         _;
     }
 
     modifier onlyTrustedMinters() {
         address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
-        require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "Issuer: only trusted minters");
-        require(bridgeL1 == address(0) || bridgeL2 == address(0), "Issuer: one minter must be 0x0");
+        require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "only trusted minters");
+        require(bridgeL1 == address(0) || bridgeL2 == address(0), "one minter must be 0x0");
         _;
     }
 
     function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Issuer: Only SynthRedeemer");
+        require(msg.sender == address(synthRedeemer()), "Only SynthRedeemer");
     }
 
     modifier onlySynthRedeemer() {

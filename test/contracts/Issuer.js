@@ -212,7 +212,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [sUSD, owner, toUnit(100)],
 				accounts,
 				address: synthetixBridgeToOptimism,
-				reason: 'Issuer: only trusted minters',
+				reason: 'only trusted minters',
 			});
 		});
 
@@ -223,7 +223,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// full functionality of this method requires issuing synths,
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
-				reason: 'Issuer: only trusted minters',
+				reason: 'only trusted minters',
 			});
 		});
 
@@ -232,7 +232,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -240,7 +240,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
@@ -248,7 +248,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynths,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -256,7 +256,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynthsOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
@@ -264,7 +264,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -272,7 +272,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
@@ -280,7 +280,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('liquidateAccount() cannot be invoked directly by a user', async () => {
@@ -288,7 +288,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.liquidateAccount,
 				args: [account1, false],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -296,7 +296,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
@@ -322,7 +322,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					issuer.issueSynthsWithoutDebt(sUSD, owner, toUnit(100), {
 						from: synthetixBridgeToOptimism,
 					}),
-					'Issuer: one minter must be 0x0'
+					'one minter must be 0x0'
 				);
 			});
 		});
@@ -1842,7 +1842,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await assert.revert(
 							synthetix.issueSynths(issuedSynths1, { from: account1 }),
-							'Issuer: cannot issue 0 synths'
+							'cannot issue 0 synths'
 						);
 					});
 				});
@@ -2879,7 +2879,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						fnc: issuer.burnForRedemption,
 						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
 						accounts,
-						reason: 'Issuer: Only SynthRedeemer',
+						reason: 'Only SynthRedeemer',
 					});
 				});
 				describe('when a user has 100 sETH', () => {
@@ -3020,7 +3020,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					it('should not allow an invalid address for the CollateralShortLegacy', async () => {
 						await assert.revert(
 							issuer.upgradeCollateralShort(wrongCollateralShort, toUnit(0.1), { from: owner }),
-							'Issuer: wrong short address'
+							'wrong address'
 						);
 					});
 
@@ -3029,7 +3029,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							issuer.upgradeCollateralShort(collateralShortMock, toUnit(0), {
 								from: owner,
 							}),
-							'Issuer: cannot burn 0 synths'
+							'cannot burn 0 synths'
 						);
 					});
 				});
