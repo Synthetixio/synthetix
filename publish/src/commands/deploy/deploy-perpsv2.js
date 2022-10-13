@@ -65,7 +65,7 @@ module.exports = async ({
 		const marketProxyName = 'PerpsV2Proxy' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketNextPriceName = 'PerpsV2NextPrice' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketDelayedOrderName = 'PerpsV2DelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
 
 		// Deploy contracts
 		// Proxy
@@ -105,10 +105,10 @@ module.exports = async ({
 			force: true,
 		});
 
-		// Next Price
-		const futuresMarketNextPrice = await deployer.deployContract({
-			name: marketNextPriceName,
-			source: 'PerpsV2MarketNextPriceOrders',
+		// DelayedOrder
+		const futuresMarketDelayedOrder = await deployer.deployContract({
+			name: marketDelayedOrderName,
+			source: 'PerpsV2MarketDelayedOrders',
 			args: [
 				futuresMarketProxy.address,
 				futuresMarketState.address,
@@ -144,23 +144,23 @@ module.exports = async ({
 			contract: `PerpsV2MarketState`,
 			target: futuresMarketState,
 			write: 'addAssociatedContracts',
-			writeArg: [[futuresMarketNextPrice.address]],
+			writeArg: [[futuresMarketDelayedOrder.address]],
 		});
 
 		await runStep({
-			contract: `PerpsV2MarketNextPriceOrders`,
-			target: futuresMarketNextPrice,
+			contract: `PerpsV2MarketDelayedOrders`,
+			target: futuresMarketDelayedOrder,
 			write: 'setProxy',
 			writeArg: [futuresMarketProxy.address],
 		});
 
-		filteredFunctions = getFunctionSignatures(futuresMarketNextPrice, excludedFunctions);
+		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
 				contract: `ProxyPerpsV2`,
 				target: futuresMarketProxy,
 				write: 'addRoute',
-				writeArg: [f.signature, futuresMarketNextPrice.address, f.isView],
+				writeArg: [f.signature, futuresMarketDelayedOrder.address, f.isView],
 			});
 		}
 
