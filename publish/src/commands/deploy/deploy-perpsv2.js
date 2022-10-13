@@ -23,7 +23,7 @@ module.exports = async ({
 
 	console.log(gray(`\n------ DEPLOY PERPS V2 MARKETS ------\n`));
 
-	const { futuresMarkets } = loadAndCheckRequiredSources({
+	const { perpsv2Markets } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
@@ -54,7 +54,7 @@ module.exports = async ({
 
 	const deployedFuturesMarkets = [];
 
-	for (const marketConfig of futuresMarkets) {
+	for (const marketConfig of perpsv2Markets) {
 		console.log(
 			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
 		);

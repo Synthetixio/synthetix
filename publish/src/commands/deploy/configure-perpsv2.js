@@ -23,7 +23,7 @@ module.exports = async ({
 
 	const { PerpsV2MarketSettings: futuresMarketSettings, SystemStatus } = deployer.deployedContracts;
 
-	const { futuresMarkets } = loadAndCheckRequiredSources({
+	const { perpsv2Markets } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
@@ -78,7 +78,7 @@ module.exports = async ({
 	// Configure parameters for each market.
 	//
 
-	for (const market of Object.values(futuresMarkets)) {
+	for (const market of Object.values(perpsv2Markets)) {
 		const {
 			asset,
 			marketKey,
@@ -87,6 +87,9 @@ module.exports = async ({
 			takerFeeDelayedOrder,
 			makerFeeDelayedOrder,
 			nextPriceConfirmWindow,
+			delayedOrderConfirmWindow,
+			minDelayTimeDelta,
+			maxDelayTimeDelta,
 			maxLeverage,
 			maxMarketValueUSD,
 			maxFundingRate,
@@ -104,6 +107,9 @@ module.exports = async ({
 			takerFeeDelayedOrder: w3utils.toWei(takerFeeDelayedOrder),
 			makerFeeDelayedOrder: w3utils.toWei(makerFeeDelayedOrder),
 			nextPriceConfirmWindow: nextPriceConfirmWindow,
+			delayedOrderConfirmWindow: delayedOrderConfirmWindow,
+			minDelayTimeDelta: minDelayTimeDelta,
+			maxDelayTimeDelta: maxDelayTimeDelta,
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
 			maxFundingRate: w3utils.toWei(maxFundingRate),
