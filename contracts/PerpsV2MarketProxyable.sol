@@ -96,7 +96,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         marketState.pushFundingSequence(int128(funding));
         marketState.setFundingLastRecomputed(uint32(block.timestamp));
 
-        emitPositionLiquidated(funding, sequenceLengthBefore, marketState.fundingLastRecomputed());
+        emitFundingRecomputed(funding, sequenceLengthBefore, marketState.fundingLastRecomputed());
 
         return sequenceLengthBefore;
     }
@@ -300,7 +300,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     event FundingRecomputed(int funding, uint index, uint timestamp);
     bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,uint256,uint256)");
 
-    function emitPositionLiquidated(
+    function emitFundingRecomputed(
         int funding,
         uint index,
         uint timestamp
