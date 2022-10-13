@@ -39,7 +39,7 @@ function itCanTrade({ ctx }) {
 			PerpsV2MarketData,
 			PerpsV2MarketBTC,
 			PerpsV2MarketImplBTC,
-			PerpsV2NextPriceBTC,
+			PerpsV2DelayedOrderBTC,
 			PerpsV2MarketViewsBTC,
 			PerpsV2ProxyBTC,
 			ExchangeRates,
@@ -51,7 +51,7 @@ function itCanTrade({ ctx }) {
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
 				PerpsV2MarketBTC: PerpsV2MarketImplBTC,
-				PerpsV2NextPriceBTC,
+				PerpsV2DelayedOrderBTC,
 				PerpsV2MarketViewsBTC,
 				PerpsV2ProxyBTC,
 				ExchangeRates,
@@ -64,7 +64,7 @@ function itCanTrade({ ctx }) {
 
 			PerpsV2MarketBTC = proxyedContract(
 				PerpsV2ProxyBTC,
-				unifyAbis([PerpsV2MarketImplBTC, PerpsV2MarketViewsBTC, PerpsV2NextPriceBTC]),
+				unifyAbis([PerpsV2MarketImplBTC, PerpsV2MarketViewsBTC, PerpsV2DelayedOrderBTC]),
 				someUser
 			);
 		});

@@ -80,6 +80,7 @@ const constants = {
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
 	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
+	PERPS_V2_MARKETS_FILENAME: 'perpsv2-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
