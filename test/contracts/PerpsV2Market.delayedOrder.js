@@ -98,7 +98,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 	beforeEach(async () => {
 		// prepare basic order parameters
-		margin = toUnit('1000');
+		margin = toUnit('2000');
 		await futuresMarket.transferMargin(margin, { from: trader });
 		size = toUnit('50');
 		price = toUnit('200');
@@ -610,7 +610,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 				it('if price too high', async () => {
 					// go to target round, set price too high
-					await setPrice(baseAsset, price.mul(toBN(2)));
+					await setPrice(baseAsset, price.mul(toBN(5)));
 
 					// account owner
 					await assert.revert(
@@ -730,12 +730,15 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					);
 
 					// fast-forward to the order's executableAtTime
-					await setPrice(baseAsset, targetPrice);
+					//
+					// note that we do NOT update the price (to ensure target round is never reached)
 					spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
 					await fastForward(desiredTimeDelta);
 
 					// check we can execute.
-					await checkExecution(trader, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+					//
+					// note the predicate uses `price` and not `targetPrice` because target is never reached
+					await checkExecution(trader, price, takerFeeDelayedOrder, spotTradeDetails);
 				});
 
 				describe('during target round', () => {
