@@ -2436,7 +2436,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.unitEqual(ratio, '0.2');
 				});
 
-				it("should include escrowed synthetix when calculating a user's collaterisation ratio", async () => {
+				it("should not include escrowed synthetix when calculating a user's collaterisation ratio", async () => {
 					const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 					const transferredSynthetixs = toUnit('60000');
 					await synthetix.transfer(account1, transferredSynthetixs, {
@@ -2468,7 +2468,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					const collaterisationRatio = await synthetix.collateralisationRatio(account1);
 					const expectedCollaterisationRatio = divideDecimal(
 						maxIssuable,
-						multiplyDecimal(escrowedSynthetixs.add(transferredSynthetixs), snx2usdRate)
+						multiplyDecimal(transferredSynthetixs, snx2usdRate)
 					);
 					assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 				});
@@ -2502,10 +2502,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				it('should permit user to issue sUSD debt with only escrowed SNX as collateral (no SNX in wallet)', async () => {
-					const oneWeek = 60 * 60 * 24 * 7;
-					const twelveWeeks = oneWeek * 12;
-					const now = await currentTime();
-
 					// ensure collateral of account1 is empty
 					let collateral = await synthetix.collateral(account1, { from: account1 });
 					assert.bnEqual(collateral, 0);
@@ -2516,17 +2512,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					// Append escrow amount to account1
 					const escrowedAmount = toUnit('15000');
-					await synthetix.transfer(escrow.address, escrowedAmount, {
+					await synthetix.transfer(rewardEscrowV2.address, escrowedAmount, {
 						from: owner,
 					});
-					await escrow.appendVestingEntry(
-						account1,
-						web3.utils.toBN(now + twelveWeeks),
-						escrowedAmount,
-						{
-							from: owner,
-						}
-					);
+					await rewardEscrowV2.appendVestingEntry(account1, escrowedAmount, duration, {
+						from: account6,
+					});
 
 					// collateral should include escrowed amount
 					collateral = await synthetix.collateral(account1, { from: account1 });
@@ -2575,7 +2566,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.bnEqual(collateral, amount);
 				});
 
-				it("should include escrowed synthetix when checking a user's collateral", async () => {
+				it("should not include escrowed synthetix when checking a user's collateral", async () => {
 					const oneWeek = 60 * 60 * 24 * 7;
 					const twelveWeeks = oneWeek * 12;
 					const now = await currentTime();
@@ -2595,7 +2586,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					const amount = toUnit('60000');
 					await synthetix.transfer(account1, amount, { from: owner });
 					const collateral = await synthetix.collateral(account1, { from: account2 });
-					assert.bnEqual(collateral, amount.add(escrowedAmount));
+					assert.bnEqual(collateral, amount);
 				});
 
 				it("should include escrowed reward synthetix when checking a user's collateral", async () => {
@@ -2635,21 +2626,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					// Setup escrow
-					const oneWeek = 60 * 60 * 24 * 7;
-					const twelveWeeks = oneWeek * 12;
-					const now = await currentTime();
 					const escrowedSynthetixs = toUnit('30000');
-					await synthetix.transfer(escrow.address, escrowedSynthetixs, {
+					await synthetix.transfer(rewardEscrowV2.address, escrowedSynthetixs, {
 						from: owner,
 					});
-					await escrow.appendVestingEntry(
-						account1,
-						web3.utils.toBN(now + twelveWeeks),
-						escrowedSynthetixs,
-						{
-							from: owner,
-						}
-					);
+					await rewardEscrowV2.appendVestingEntry(account1, escrowedSynthetixs, duration, {
+						from: account6,
+					});
 
 					const maxIssuable = await synthetix.maxIssuableSynths(account1);
 					// await synthetix.issueSynths(maxIssuable, { from: account1 });
