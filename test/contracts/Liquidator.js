@@ -794,7 +794,7 @@ contract('Liquidator', accounts => {
 						});
 
 						it('ignores SynthetixEscrow balance', async () => {
-							await setLiquidSNXBalance(alice, 0);
+							await setLiquidSNXBalance(alice, 1);
 							const escrowedAmount = toUnit(1000);
 							await synthetix.transfer(legacySynthetixEscrow.address, escrowedAmount, {
 								from: owner,
@@ -807,13 +807,12 @@ contract('Liquidator', accounts => {
 									from: owner,
 								}
 							);
-							// check it's counted towards collateral (if this check fails and SynthetixEscrow is no longer
-							// collateral, update Liquidator to *not* subtract it in _hasEnoughSNXForRewards
-							assert.bnEqual(await issuer.collateral(alice), escrowedAmount);
+							// check it's NOT counted towards collateral
+							assert.bnEqual(await issuer.collateral(alice), 1);
 							// cause bad c-ratio
-							await updateSNXPrice('6');
+							await updateSNXPrice('1000');
 							await synthetix.issueMaxSynths({ from: alice });
-							await updateSNXPrice('1');
+							await updateSNXPrice('0.1');
 							// should be false
 							assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
 							// cannot flag the account

@@ -342,11 +342,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function _collateral(address account) internal view returns (uint) {
         return
-            synthetixERC20()
-                .balanceOf(account)
-                .add(synthetixEscrow().balanceOf(account))
-                .add(rewardEscrowV2().balanceOf(account))
-                .add(liquidatorRewards().earned(account));
+            synthetixERC20().balanceOf(account).add(rewardEscrowV2().balanceOf(account)).add(
+                liquidatorRewards().earned(account)
+            );
     }
 
     function minimumStakeTime() external view returns (uint) {
@@ -719,12 +717,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _removeFromDebtRegister(account, debtRemoved, initialDebtBalance);
 
         // Determine if the liquidation flag should be removed.
-        // For self liquidations, check if the c-ratio is greater than ( 1 / issuance ratio ) - 10% variance
+        // For self liquidations, check if the c-ratio is close to the issuance ratio + some variance
         (uint cratio, ) = _collateralisationRatio(account);
-        if (
-            !isSelfLiquidation ||
-            cratio > SafeDecimalMath.unit().divideDecimalRound(getIssuanceRatio()).sub(SafeDecimalMath.unit().div(10))
-        ) {
+        if (!isSelfLiquidation || cratio < getIssuanceRatio().add(SafeDecimalMath.unit().div(200))) {
             // remove the flag
             liquidator().removeAccountInLiquidation(account);
         }
