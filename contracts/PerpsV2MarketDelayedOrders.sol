@@ -261,7 +261,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
 
         // price depends on whether the delay or price update has reached/occurred first
         uint executePrice = currentPrice;
-        if (currentRoundId > order.targetRoundId) {
+        if (currentRoundId >= order.targetRoundId) {
             // the correct price for the past round if target round was met
             (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(marketState.baseAsset(), order.targetRoundId);
             executePrice = pastPrice;
