@@ -259,14 +259,20 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         // emit event for modifying the position (refunding fee/s)
         emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
-        // the correct price for the past round
-        (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(marketState.baseAsset(), order.targetRoundId);
+        // price depends on whether the delay or price update has reached/occurred first
+        uint executePrice = currentPrice;
+        if (currentRoundId >= order.targetRoundId) {
+            // the correct price for the past round if target round was met
+            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(marketState.baseAsset(), order.targetRoundId);
+            executePrice = pastPrice;
+        }
+
         // execute or revert
         _trade(
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: pastPrice, // the funding is applied only from order confirmation time
+                price: executePrice, // the funding is applied only from order confirmation time
                 takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
                 makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
                 trackingCode: order.trackingCode
