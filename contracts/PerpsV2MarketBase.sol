@@ -378,6 +378,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         return baseFee + takerFee + makerFee;
     }
+
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
