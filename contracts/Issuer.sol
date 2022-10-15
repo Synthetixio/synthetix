@@ -751,11 +751,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Calculate the amount of debt to remove and SNX to redeem for a self liquidation
             debtToRemove = liquidator().calculateAmountToFixCollateral(
                 debtBalance,
-                _snxToUSD(_collateral(account), snxRate), // USD value of their liquid SNX balance
+                _snxToUSD(_collateral(account), snxRate),
                 penalty
             );
 
-            // Get the minimum value for both totalRedeemed and debtToRemove
+            // Get the minimum values for both totalRedeemed and debtToRemove
             totalRedeemed = _getMinValue(
                 _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty)),
                 synthetixERC20().balanceOf(account)
@@ -773,7 +773,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             penalty = getSnxLiquidationPenalty();
             uint rewardsSum = getLiquidateReward().add(getFlagReward());
 
-            // Get the total USD value of their SNX collateral (including escrows and rewards and minus the flag and liquidate rewards)
+            // Get the total USD value of their SNX collateral (including escrow and rewards minus the flag and liquidate rewards)
             uint collateralForAccountUSD = _snxToUSD(_collateral(account).sub(rewardsSum), snxRate);
 
             // Calculate the amount of debt to remove and the sUSD value of the SNX required to liquidate.
@@ -795,8 +795,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     // SIP-252
-    // calculates the amount of SNX that can be force liquidated (redeemed) for the various cases
-    // of transferrable & escrowed collateral
+    // calculates the amount of SNX that can be force liquidated (redeemed)
+    // for the various cases of transferrable & escrowed collateral
     function _redeemableCollateralForTarget(
         address account,
         uint redeemTarget,
@@ -806,10 +806,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferable = synthetixERC20().balanceOf(account);
         if (redeemTarget.add(rewardsSum) <= transferable) {
-            // transferrable is enough
+            // transferable is enough
             return (redeemTarget, 0);
         } else {
-            // if transferrable is not enough
+            // if transferable is not enough
             // need only part of the escrow, add the needed part to redeemed
             escrowToLiquidate = redeemTarget.add(rewardsSum).sub(transferable);
             return (redeemTarget, escrowToLiquidate);
