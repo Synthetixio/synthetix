@@ -45,7 +45,7 @@ interface IPerpsV2MarketState {
 
     function setFundingLastRecomputed(uint32) external;
 
-    function setFundingRate(int _fundingRate) external;
+    function setFundingRate(int128 _fundingRate) external;
 
     function pushFundingSequence(int128) external;
 

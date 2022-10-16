@@ -347,7 +347,7 @@ const setupContract = async ({
 			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
-		// Futures V2
+		// Perps V2
 		PerpsV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketData: [tryGetAddressOf('AddressResolver')],
@@ -416,7 +416,7 @@ const setupContract = async ({
 				instance.address
 			);
 			if (contract.startsWith('PerpsV2Market') || contract.startsWith('ProxyPerpsV2Market')) {
-				log('Deployed wiht default args:', defaultArgs[contract], 'and args:', args);
+				log('Deployed with default args:', defaultArgs[contract], 'and args:', args);
 			}
 		}
 	} catch (err) {

@@ -48,7 +48,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     uint32 public fundingLastRecomputed;
     int128[] public fundingSequence;
 
-    int128 public fundingRate;
+    /* TODO: Add comment */
+    int128 public fundingRate = 0;
 
     /*
      * Each user's position. Multiple positions can always be merged, so each user has

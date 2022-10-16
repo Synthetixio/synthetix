@@ -216,6 +216,7 @@ contract('PerpsV2Market', accounts => {
 					'setEntryDebtCorrection',
 					'setNextPositionId',
 					'setFundingLastRecomputed',
+					'setFundingRate',
 					'pushFundingSequence',
 					'updateDelayedOrder',
 					'updatePosition',
