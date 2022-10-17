@@ -127,6 +127,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /* ---------- Market Details ---------- */
+    function _baseAsset() internal view returns (bytes32) {
+        return marketState.baseAsset();
+    }
+
+    function _marketKey() internal view returns (bytes32) {
+        return marketState.marketKey();
+    }
 
     /*
      * The size of the skew relative to the size of the market skew scaler.
@@ -136,13 +143,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(marketState.marketKey()).divideDecimal(price);
+        uint skewScaleBaseAsset = _skewScaleUSD(_marketKey()).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
         return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
     }
 
     function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
+        int maxFundingRate = int(_maxFundingRate(_marketKey()));
         // Note the minus sign: funding flows in the opposite direction to the skew.
         return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
     }
@@ -273,7 +280,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(marketState.marketKey()).sub(milli));
+        int maxLeverage = int(_maxLeverage(_marketKey()).sub(milli));
         uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -384,7 +391,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, marketState.baseAsset());
+        return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset());
     }
 
     function _latestFundingIndex() internal view returns (uint) {
@@ -466,7 +473,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         {
             // stack too deep
             int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
-            if (_maxLeverage(marketState.marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            if (_maxLeverage(_marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
         }
@@ -475,9 +482,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(
-                    int(_maxMarketValueUSD(marketState.marketKey()).add(100 * uint(_UNIT))).divideDecimal(int(params.price))
-                ),
+                uint(int(_maxMarketValueUSD(_marketKey()).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
                 oldPos.size,
                 newPos.size
             )
@@ -494,9 +499,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * Public because used both externally and internally
      */
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(marketState.baseAsset());
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(_baseAsset());
         // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(marketState.baseAsset());
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset());
         return (price, invalid);
     }
 

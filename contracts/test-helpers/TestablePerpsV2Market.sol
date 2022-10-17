@@ -24,7 +24,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     function maxFundingRate() external view returns (uint) {
-        return _maxFundingRate(marketState.marketKey());
+        return _maxFundingRate(_marketKey());
     }
 
     /*
@@ -41,7 +41,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     {
         uint price;
         (price, invalid) = _assetPrice();
-        int sizeLimit = int(_maxMarketValueUSD(marketState.marketKey())).divideDecimal(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(_marketKey())).divideDecimal(int(price));
         (uint longSize, uint shortSize) = _marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));

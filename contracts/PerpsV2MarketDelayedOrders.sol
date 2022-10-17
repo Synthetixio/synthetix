@@ -72,7 +72,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         // check that a previous order doesn't exist
         require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
 
-        bytes32 marketKey = marketState.marketKey();
+        bytes32 marketKey = _marketKey();
 
         // automatically set desiredTimeDelta to min if 0 is specified
         if (desiredTimeDelta == 0) {
@@ -96,8 +96,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
-                makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
+                takerFee: _takerFeeDelayedOrder(_marketKey()),
+                makerFee: _makerFeeDelayedOrder(_marketKey()),
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
@@ -111,7 +111,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
 
         // create order
-        uint targetRoundId = _exchangeRates().getCurrentRoundId(marketState.baseAsset()) + 1; // next round
+        uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
             DelayedOrder({
                 sizeDelta: int128(sizeDelta),
@@ -160,7 +160,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(marketState.baseAsset());
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
         if (account == messageSender) {
             // this is account owner
@@ -224,7 +224,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         require(order.sizeDelta != 0, "no previous order");
 
         // check order executability and round-id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(marketState.baseAsset());
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
         require(
             block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
             "executability not reached"
@@ -263,7 +263,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         uint executePrice = currentPrice;
         if (currentRoundId >= order.targetRoundId) {
             // the correct price for the past round if target round was met
-            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(marketState.baseAsset(), order.targetRoundId);
+            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
             executePrice = pastPrice;
         }
 
@@ -273,8 +273,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: executePrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
-                makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
+                takerFee: _takerFeeDelayedOrder(_marketKey()),
+                makerFee: _makerFeeDelayedOrder(_marketKey()),
                 trackingCode: order.trackingCode
             })
         );
@@ -305,7 +305,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         uint currentRoundId,
         uint targetRoundId
     ) internal view returns (bool) {
-        bytes32 marketKey = marketState.marketKey();
+        bytes32 marketKey = _marketKey();
         return
             (block.timestamp > executableAtTime &&
                 (block.timestamp - executableAtTime) > _delayedOrderConfirmWindow(marketKey)) ||
@@ -321,8 +321,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
     function _delayedOrderCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
-        params.takerFee = _takerFee(marketState.marketKey());
-        params.makerFee = _makerFee(marketState.marketKey());
+        params.takerFee = _takerFee(_marketKey());
+        params.makerFee = _makerFee(_marketKey());
         // Commit fee is equal to the spot fee that would be paid.
         // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
         // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
@@ -388,29 +388,6 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             DELAYEDORDERORDERREMOVED_SIG,
             addressToBytes32(account),
             0,
-            0
-        );
-    }
-
-    bytes32 internal constant POSITIONMODIFIED_SIG =
-        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
-
-    function emitPositionModified(
-        uint id,
-        address account,
-        uint margin,
-        int size,
-        int tradeSize,
-        uint lastPrice,
-        uint fundingIndex,
-        uint fee
-    ) internal {
-        proxy._emit(
-            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
-            3,
-            POSITIONMODIFIED_SIG,
-            bytes32(id),
-            addressToBytes32(account),
             0
         );
     }
