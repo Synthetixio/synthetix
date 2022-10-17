@@ -34,7 +34,6 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
 
     /* ========== CONSTANTS ========== */
 
@@ -49,12 +48,11 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_ISSUER;
         newAddresses[3] = CONTRACT_EXRATES;
-        newAddresses[4] = CONTRACT_SYNTHETIXESCROW;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -72,10 +70,6 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
-    }
-
-    function synthetixEscrow() internal view returns (IHasBalance) {
-        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function issuanceRatio() external view returns (uint) {

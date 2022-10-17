@@ -84,7 +84,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
@@ -100,7 +99,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](15);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -109,13 +108,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[5] = CONTRACT_FEEPOOL;
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[8] = CONTRACT_SYNTHETIXESCROW;
-        newAddresses[9] = CONTRACT_LIQUIDATOR;
-        newAddresses[10] = CONTRACT_LIQUIDATOR_REWARDS;
-        newAddresses[11] = CONTRACT_DEBTCACHE;
-        newAddresses[12] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
-        newAddresses[14] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[8] = CONTRACT_LIQUIDATOR;
+        newAddresses[9] = CONTRACT_LIQUIDATOR_REWARDS;
+        newAddresses[10] = CONTRACT_DEBTCACHE;
+        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -153,10 +151,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function rewardEscrowV2() internal view returns (IHasBalance) {
         return IHasBalance(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
-    }
-
-    function synthetixEscrow() internal view returns (IHasBalance) {
-        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
