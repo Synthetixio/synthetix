@@ -2019,7 +2019,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 					await sEURContract.issue(account1, toUnit('1000'));
 				});
-				describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and no refund', () => {
+				describe('when calculatAmountAfterSettlement is invoked with an amount < 1000 and no refund', () => {
 					let response;
 					beforeEach(async () => {
 						response = await exchanger.calculateAmountAfterSettlement(
@@ -2033,7 +2033,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.bnEqual(response, toUnit('500'));
 					});
 				});
-				describe('when calculatAmountAfterSettlement is invoked with and amount < 1000 and a refund', () => {
+				describe('when calculatAmountAfterSettlement is invoked with an amount < 1000 and a refund', () => {
 					let response;
 					beforeEach(async () => {
 						response = await exchanger.calculateAmountAfterSettlement(
@@ -2047,7 +2047,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.bnEqual(response, toUnit('525'));
 					});
 				});
-				describe('when calculatAmountAfterSettlement is invoked with and amount > 1000 and no refund', () => {
+				describe('when calculatAmountAfterSettlement is invoked with an amount > 1000 and no refund', () => {
 					let response;
 					beforeEach(async () => {
 						response = await exchanger.calculateAmountAfterSettlement(
@@ -2061,7 +2061,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.bnEqual(response, toUnit('1000'));
 					});
 				});
-				describe('when calculatAmountAfterSettlement is invoked with and amount > 1000 and a refund', () => {
+				describe('when calculatAmountAfterSettlement is invoked with an amount > 1000 and a refund', () => {
 					let response;
 					beforeEach(async () => {
 						response = await exchanger.calculateAmountAfterSettlement(
