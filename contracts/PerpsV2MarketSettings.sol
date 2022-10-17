@@ -67,6 +67,20 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
+     * The fee charged when opening a position on the heavy side of a futures market using delayed order mechanism.
+     */
+    function takerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint) {
+        return _takerFeeOffchainDelayedOrder(_marketKey);
+    }
+
+    /*
+     * The fee charged when opening a position on the light side of a futures market using delayed order mechanism.
+     */
+    function makerFeeOffchainDelayedOrder(bytes32 _marketKey) public view returns (uint) {
+        return _makerFeeOffchainDelayedOrder(_marketKey);
+    }
+
+    /*
      * The number of price update rounds during which confirming next-price is allowed
      */
     function nextPriceConfirmWindow(bytes32 _marketKey) public view returns (uint) {
@@ -78,6 +92,13 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function delayedOrderConfirmWindow(bytes32 _marketKey) public view returns (uint) {
         return _delayedOrderConfirmWindow(_marketKey);
+    }
+
+    /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function offchainDelayedOrderConfirmWindow(bytes32 _marketKey) public view returns (uint) {
+        return _offchainDelayedOrderConfirmWindow(_marketKey);
     }
 
     /*
@@ -204,12 +225,29 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAKER_FEE_DELAYED_ORDER, _makerFeeDelayedOrder);
     }
 
+    function setTakerFeeOffchainDelayedOrder(bytes32 _marketKey, uint _takerFeeOffchainDelayedOrder) public onlyOwner {
+        require(_takerFeeOffchainDelayedOrder <= 1e18, "taker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_TAKER_FEE_OFFCHAIN_DELAYED_ORDER, _takerFeeOffchainDelayedOrder);
+    }
+
+    function setMakerFeeOffchainDelayedOrder(bytes32 _marketKey, uint _makerFeeOffchainDelayedOrder) public onlyOwner {
+        require(_makerFeeOffchainDelayedOrder <= 1e18, "maker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_MAKER_FEE_OFFCHAIN_DELAYED_ORDER, _makerFeeOffchainDelayedOrder);
+    }
+
     function setNextPriceConfirmWindow(bytes32 _marketKey, uint _nextPriceConfirmWindow) public onlyOwner {
         _setParameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
     }
 
     function setDelayedOrderConfirmWindow(bytes32 _marketKey, uint _delayedOrderConfirmWindow) public onlyOwner {
         _setParameter(_marketKey, PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW, _delayedOrderConfirmWindow);
+    }
+
+    function setOffchainDelayedOrderConfirmWindow(bytes32 _marketKey, uint _offchainDelayedOrderConfirmWindow)
+        public
+        onlyOwner
+    {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_CONFIRM_WINDOW, _offchainDelayedOrderConfirmWindow);
     }
 
     function setMaxLeverage(bytes32 _marketKey, uint _maxLeverage) public onlyOwner {

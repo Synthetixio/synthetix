@@ -25,9 +25,15 @@ interface IPerpsV2MarketSettings {
 
     function makerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint);
 
+    function takerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint);
+
+    function makerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint);
+
     function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
 
     function delayedOrderConfirmWindow(bytes32 _marketKey) external view returns (uint);
+
+    function offchainDelayedOrderConfirmWindow(bytes32 _marketKey) external view returns (uint);
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 

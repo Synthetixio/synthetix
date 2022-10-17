@@ -63,6 +63,9 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
     mapping(address => DelayedOrder) public delayedOrders;
 
+    /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
+    mapping(address => OffchainDelayedOrder) public offchainDelayedOrders;
+
     constructor(
         address _owner,
         address[] memory _associatedContracts,
@@ -184,6 +187,36 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     /**
+     * @notice Store a delayed order at the specified account
+     * @dev Only the associated contract may call this.
+     * @param account The account whose value to set.
+     * @param sizeDelta Difference in position to pass to modifyPosition
+     * @param targetRoundId Price oracle roundId using which price this order needs to executed
+     * @param commitDeposit The commitDeposit paid upon submitting that needs to be refunded if order succeeds
+     * @param keeperDeposit The keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
+     * @param executableAtTime The timestamp at which this order is executable at
+     * @param trackingCode Tracking code to emit on execution for volume source fee sharing
+     */
+    function updateOffchainDelayedOrder(
+        address account,
+        int128 sizeDelta,
+        uint128 targetRoundId,
+        uint128 commitDeposit,
+        uint128 keeperDeposit,
+        uint256 executableAtTime,
+        bytes32 trackingCode
+    ) external onlyAssociatedContracts {
+        offchainDelayedOrders[account] = OffchainDelayedOrder(
+            sizeDelta,
+            targetRoundId,
+            commitDeposit,
+            keeperDeposit,
+            executableAtTime,
+            trackingCode
+        );
+    }
+
+    /**
      * @notice Delete the position of a given account
      * @dev Only the associated contract may call this.
      * @param account The account whose position should be deleted.
@@ -197,5 +230,9 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function deleteDelayedOrder(address account) external onlyAssociatedContracts {
         delete delayedOrders[account];
+    }
+
+    function deleteOffchainDelayedOrder(address account) external onlyAssociatedContracts {
+        delete offchainDelayedOrders[account];
     }
 }
