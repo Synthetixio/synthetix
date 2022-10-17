@@ -423,10 +423,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().getReward(liquidatedAccount);
 
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
-        // escrowToLiquidate can only be zero, this is to protect from an issuer calc bug causing
-        // incorrect accounting & transfers later
-        require(escrowToLiquidate == 0, "cannot self liquidate escrow");
+        // escrowToLiquidate is unused because it cannot be used for self-liquidations
+        (uint totalRedeemed, uint debtRemoved, ) = issuer().liquidateAccount(liquidatedAccount, true);
         require(debtRemoved > 0, "cannot self liquidate");
 
         emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
