@@ -8,7 +8,7 @@
 		"makerFeeNextPrice": "0.002",
 		"nextPriceConfirmWindow": "2",
 		"maxLeverage": "25",
-		"maxMarketValueUSD": "5000000",
+		"maxMarketValueUSD": "10000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "300000000",
 		"paused": false
