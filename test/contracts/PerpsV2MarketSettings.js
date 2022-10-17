@@ -121,6 +121,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setLiquidationFeeRatio',
 				'setMakerFee',
 				'setMakerFeeDelayedOrder',
+				'setMakerFeeOffchainDelayedOrder',
 				'setMaxDelayTimeDelta',
 				'setMaxFundingRate',
 				'setMaxLeverage',
@@ -129,10 +130,12 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMinInitialMargin',
 				'setMinKeeperFee',
 				'setNextPriceConfirmWindow',
+				'setOffchainDelayedOrderConfirmWindow',
 				'setParameters',
 				'setSkewScaleUSD',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
+				'setTakerFeeOffchainDelayedOrder',
 			],
 		});
 	});
