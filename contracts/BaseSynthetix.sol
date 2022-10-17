@@ -389,8 +389,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
 
-        require(totalRedeemed > 0, "Total SNX to redeem must be greater than zero");
-
         // First, pay out the flag and liquidate rewards.
         uint flagReward = liquidator().flagReward();
         uint liquidateReward = liquidator().liquidateReward();
@@ -404,12 +402,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
         require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
-        // Send the remaining SNX to the LiquidatorRewards contract.
-        bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
-        require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
+        if (totalRedeemed > 0) {
+            // Send the remaining SNX to the LiquidatorRewards contract.
+            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
+            require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
 
-        // Inform the LiquidatorRewards contract about the incoming SNX rewards.
-        liquidatorRewards().notifyRewardAmount(totalRedeemed);
+            // Inform the LiquidatorRewards contract about the incoming SNX rewards.
+            liquidatorRewards().notifyRewardAmount(totalRedeemed);
+        }
 
         return true;
     }
