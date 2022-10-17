@@ -189,12 +189,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /// @notice Checks if an account has enough SNX balance to be considered open for forced liquidation.
     function _hasEnoughSNXForRewards(address account) internal view returns (bool) {
-        /// SynthetixEscrow is unliquidatable so should be subtracted from SNX that can be used for rewards.
-        /// This has internal knowledge about collateral calculation (should only be in Issuer), and if SynthetixEscrow
-        /// is deprecated from Issuer's collateral balance - this needs to be updated too. The reason it's added here
-        /// is because it's an unlikely scenario and Issuer code size (and interface) are already too big.
-        uint unliquidatable = synthetixEscrow().balanceOf(account);
-        uint balance = issuer().collateral(account).sub(unliquidatable);
+        uint balance = issuer().collateral(account);
         return balance >= (getLiquidateReward().add(getFlagReward()));
     }
 
