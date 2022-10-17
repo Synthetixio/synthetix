@@ -63,14 +63,12 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
                 atomicTwapWindow: storedOverrides.atomicTwapWindow > 0
                     ? storedOverrides.atomicTwapWindow
                     : getAtomicTwapWindow(),
-                atomicMaxTwapDelta: storedOverrides.atomicMaxTwapDelta,
                 atomicMaxVolumePerBlock: storedOverrides.atomicMaxVolumePerBlock > 0
                     ? storedOverrides.atomicMaxVolumePerBlock
                     : getAtomicMaxVolumePerBlock(),
                 atomicVolatilityConsiderationWindow: storedOverrides.atomicVolatilityConsiderationWindow > 0
                     ? storedOverrides.atomicVolatilityConsiderationWindow
                     : getAtomicVolatilityConsiderationWindow(currencyKey),
-                atomicVolatilityTwapSeconds: storedOverrides.atomicVolatilityTwapSeconds,
                 atomicVolatilityUpdateThreshold: storedOverrides.atomicVolatilityUpdateThreshold > 0
                     ? storedOverrides.atomicVolatilityUpdateThreshold
                     : getAtomicVolatilityUpdateThreshold(currencyKey),
