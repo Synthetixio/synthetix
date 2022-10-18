@@ -710,13 +710,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Reduce debt shares by amount to liquidate.
         _removeFromDebtRegister(account, debtRemoved, initialDebtBalance);
 
-        // Determine if the liquidation flag should be removed.
-        // For self liquidations, check if the c-ratio is close to the issuance ratio + some variance
-        (uint cratio, ) = _collateralisationRatio(account);
-        if (!isSelfLiquidation || cratio < getIssuanceRatio().add(SafeDecimalMath.unit().div(200))) {
-            // remove the flag
+        if (!isSelfLiquidation) {
+            // In case of forced liquidation only, remove the liquidation flag.
             liquidator().removeAccountInLiquidation(account);
         }
+        // Note: To remove the flag after self liquidation, call Liquidator.checkAndRemoveAccountInLiquidation(account).
     }
 
     function _liquidationAmounts(address account, bool isSelfLiquidation)

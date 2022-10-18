@@ -199,11 +199,11 @@ contract('Liquidator', accounts => {
 		it('issuance ratio is correctly configured as a default', async () => {
 			assert.bnEqual(await liquidator.issuanceRatio(), ISSUANCE_RATIO);
 		});
-		it('flag reward ', async () => {
+		it('flag reward', async () => {
 			const flagReward = await liquidator.flagReward();
 			assert.bnEqual(flagReward, FLAG_REWARD);
 		});
-		it('liquidate reward ', async () => {
+		it('liquidate reward', async () => {
 			const liquidateReward = await liquidator.liquidateReward();
 			assert.bnEqual(liquidateReward, LIQUIDATE_REWARD);
 		});
@@ -580,21 +580,24 @@ contract('Liquidator', accounts => {
 						assert.bnEqual(await rewardEscrowV2.balanceOf(alice), escrowBalance);
 					});
 					it('escrow balance is not used for self-liquidation', async () => {
+						const snxBalanceBefore = await synthetix.balanceOf(alice);
 						const debtBefore = await synthetix.debtBalanceOf(alice, sUSD);
 						const totalDebt = await synthetix.totalIssuedSynths(sUSD);
-						// severely underwater
-						await updateSNXPrice('0.1');
+						// just above the liquidation ratio
+						await updateSNXPrice('1');
 						await synthetix.liquidateSelf({ from: alice });
-						// all liquid snx is gone
-						assert.bnEqual(await synthetix.balanceOf(alice), toUnit('0'));
+						// liquid snx is reduced
+						const snxBalanceAfter = await synthetix.balanceOf(alice);
+						assert.bnLt(snxBalanceAfter, snxBalanceBefore);
 						// escrow untouched
 						assert.bnEqual(await rewardEscrowV2.balanceOf(alice), escrowBalance);
 						// system debt is the same
 						assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), totalDebt);
 						// debt shares forgiven matching the liquidated SNX
-						// redeemed = (800 * 0.1 / 1.2) = 66.666666666666666667
+						// redeemed = (liquidatedSnx * SNXPrice / (1 + penalty))
 						// debt is fewer shares (but of higher debt per share), by (total - redeemed / total) more debt per share
-						const redeemed = toUnit('66.666666666666666667');
+						const liquidatedSnx = snxBalanceBefore.sub(snxBalanceAfter);
+						const redeemed = divideDecimal(liquidatedSnx, toUnit('1.2'));
 						const shareMultiplier = divideDecimal(totalDebt, totalDebt.sub(redeemed));
 						assert.bnClose(
 							await synthetix.debtBalanceOf(alice, sUSD),
@@ -1501,7 +1504,7 @@ contract('Liquidator', accounts => {
 				await assert.revert(synthetix.liquidateSelf({ from: alice }), 'Not open for liquidation');
 			});
 		});
-		describe('When David collateral value is less than debt issued + penalty) ', () => {
+		describe('When Davids collateral value is less than debt issued + penalty', () => {
 			let davidDebtBefore;
 			let davidCollateralBefore;
 			beforeEach(async () => {
@@ -1528,6 +1531,9 @@ contract('Liquidator', accounts => {
 				);
 
 				assert.isTrue(davidDebtBefore.gt(collateralInUSD));
+			});
+			it('then self liquidation reverts', async () => {
+				await assert.revert(synthetix.liquidateSelf({ from: david }), 'Not open for liquidation');
 			});
 			describe('when Bob flags and tries to liquidate David', () => {
 				beforeEach(async () => {
