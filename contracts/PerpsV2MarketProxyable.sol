@@ -299,7 +299,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
     }
 
-    event FundingRecomputed(int funding, uint index, uint timestamp);
+    event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
     bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,int256,uint256,uint256)");
 
     function emitFundingRecomputed(

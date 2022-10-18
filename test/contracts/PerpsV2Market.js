@@ -1050,6 +1050,10 @@ contract('PerpsV2Market', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed']
+				);
 				assert.equal(decodedLogs.length, 1);
 				assert.equal(decodedLogs[0].name, 'FundingRecomputed');
 
@@ -1228,6 +1232,10 @@ contract('PerpsV2Market', accounts => {
 
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.deepEqual(
+				decodedLogs.map(({ name }) => name),
+				['FundingRecomputed', 'Issued', 'PositionModified']
+			);
 			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
 				event: 'Issued',
@@ -1257,7 +1265,11 @@ contract('PerpsV2Market', accounts => {
 
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-			assert.equal(decodedLogs.length, 4); // funding, issued, tracking, pos-modified
+			assert.deepEqual(
+				decodedLogs.map(({ name }) => name),
+				['FundingRecomputed', 'Issued', 'FuturesTracking', 'PositionModified']
+			);
+			assert.equal(decodedLogs.length, 4);
 			decodedEventEqual({
 				event: 'FuturesTracking',
 				emittedFrom: futuresMarket.address,
@@ -1704,7 +1716,10 @@ contract('PerpsV2Market', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
-
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified']
+				);
 				assert.equal(decodedLogs.length, 3);
 				const fee = multiplyDecimal(toUnit(1000), takerFee).add(
 					multiplyDecimal(toUnit(2000), makerFee)
@@ -1745,7 +1760,10 @@ contract('PerpsV2Market', accounts => {
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
-
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'FuturesTracking', 'PositionModified']
+				);
 				assert.equal(decodedLogs.length, 4);
 				const fee = multiplyDecimal(toUnit(2000), makerFee);
 
@@ -2097,8 +2115,10 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarket.transferMargin(accessible.neg(), { from: account });
 				accessible = (await futuresMarket.accessibleMargin(account))[0];
 				assert.bnClose(accessible, toBN('0'), toUnit('1'));
+
+				// withdraw large enough margin to trigger leverage > maxLeverage.
 				await assert.revert(
-					futuresMarket.transferMargin(toUnit('-1'), { from: account }),
+					futuresMarket.transferMargin(toUnit('-1.5'), { from: account }),
 					'Insufficient margin'
 				);
 			};
@@ -3594,7 +3614,10 @@ contract('PerpsV2Market', accounts => {
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated']
+				);
 				assert.equal(decodedLogs.length, 4);
 
 				decodedEventEqual({
@@ -3651,7 +3674,10 @@ contract('PerpsV2Market', accounts => {
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
+				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
 				const poolFee = remainingMargin.sub(liquidationFee);
@@ -3697,7 +3723,10 @@ contract('PerpsV2Market', accounts => {
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated']
+				);
 				assert.equal(decodedLogs.length, 4);
 				decodedEventEqual({
 					event: 'Issued',
@@ -3752,7 +3781,10 @@ contract('PerpsV2Market', accounts => {
 				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
+				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
 				const poolFee = remainingMargin.sub(liquidationFee);
