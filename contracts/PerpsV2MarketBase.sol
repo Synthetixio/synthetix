@@ -142,7 +142,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _proportionalElapsed() internal view returns (int) {
-        return int(block.timestamp.sub(marketState.fundingLastRecomputed())) / 1 days;
+        int delta = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
+        return delta.divideDecimal(1 days);
     }
 
     function _fundingVelocity(uint price) internal view returns (int) {
