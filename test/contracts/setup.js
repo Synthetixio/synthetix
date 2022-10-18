@@ -347,7 +347,8 @@ const setupContract = async ({
 			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
-		// Futures V2
+		// Perps V2
+		PerpsV2ExchangeRate: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketData: [tryGetAddressOf('AddressResolver')],
@@ -1275,7 +1276,8 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 
-		// Futures v2
+		// Perps v2
+		{ contract: 'PerpsV2ExchangeRate', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'Proxy', source: 'ProxyPerpsV2', forContract: 'PerpsV2MarketBTC' },
 		{ contract: 'Proxy', source: 'ProxyPerpsV2', forContract: 'PerpsV2MarketETH' },
 		{
@@ -1286,10 +1288,7 @@ const setupAllContracts = async ({
 			contract: 'PerpsV2MarketStateETH',
 			source: 'PerpsV2MarketState',
 		},
-		{
-			contract: 'PerpsV2MarketSettings',
-			deps: ['AddressResolver', 'FlexibleStorage'],
-		},
+		{ contract: 'PerpsV2MarketSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'PerpsV2MarketData', deps: ['PerpsV2MarketSettings'] },
 		{
 			contract: 'PerpsV2MarketManager',

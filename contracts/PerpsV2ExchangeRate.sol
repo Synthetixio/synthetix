@@ -22,9 +22,9 @@ contract PerpsV2ExchangeRate is Owned, MixinSystemSettings {
 
     /* ========== SETTERS ========== */
 
-    function setOffchainOracle(IPyth _offchainOracle) external onlyOwner {
-        flexibleStorage().setAddressValue(CONTRACT_NAME, SETTING_OFFCHAIN_ORACLE, address(_offchainOracle));
-        emit OffchainOracleUpdated(address(_offchainOracle));
+    function setOffchainOracle(address offchainOracle) external onlyOwner {
+        flexibleStorage().setAddressValue(CONTRACT_NAME, SETTING_OFFCHAIN_ORACLE, offchainOracle);
+        emit OffchainOracleUpdated(offchainOracle);
     }
 
     function setOffchainPriceFeedId(bytes32 assetId, bytes32 priceFeedId) external onlyOwner {
