@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('hardhat');
+const { artifacts, contract, web3, ethers } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toBN } = web3.utils;
 const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
@@ -100,7 +100,7 @@ contract('PerpsV2Market', accounts => {
 	}) {
 		await market.transferMargin(marginDelta, { from: account });
 		await setPrice(await market.baseAsset(), fillPrice);
-		await market.modifyPosition(sizeDelta, {
+		return market.modifyPosition(sizeDelta, {
 			from: account,
 		});
 	}
@@ -2678,7 +2678,33 @@ contract('PerpsV2Market', accounts => {
 		});
 	});
 
-	describe('Funding', () => {
+	describe.only('Funding', () => {
+		// New tests
+
+		describe.only('New funding unit tests', () => {
+			it('A specific complete example');
+
+			it('A balanced market may not always have zero funding');
+
+			it('Should have zero funding when market is empty');
+
+			it('Should continue to increase rate so long as the market is skewed');
+
+			it('Should stop increasing and stay elevated when market is balanced');
+
+			it('Should increase rate in opposite directly when skew flips');
+
+			it('Should proportionally affect funding after altering skewScaleUSD');
+
+			it('Should proportionally affect funding after altering maxFundingRate');
+
+			it('Should cap daily funding rate by maxFundingRate');
+
+			it('Should accrue no funding when position is zero-sized');
+		});
+
+		// Old tests (some may no longer be relevant)
+
 		it('An empty market induces zero funding rate', async () => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 		});
@@ -3074,10 +3100,6 @@ contract('PerpsV2Market', accounts => {
 					toUnit('0.01')
 				);
 			});
-		});
-
-		it.skip('A zero-size position accrues no funding', async () => {
-			assert.isTrue(false);
 		});
 	});
 
