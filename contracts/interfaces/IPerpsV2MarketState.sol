@@ -73,6 +73,7 @@ interface IPerpsV2MarketState {
         uint128 commitDeposit,
         uint128 keeperDeposit,
         uint256 executableAtTime,
+        uint256 latestPublishtime,
         bytes32 trackingCode
     ) external;
 
