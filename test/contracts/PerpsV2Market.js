@@ -2063,7 +2063,12 @@ contract('PerpsV2Market', accounts => {
 					toUnit('1000').sub(fee),
 					toUnit('0.1')
 				);
-				assert.bnEqual((await futuresMarket.remainingMargin(trader2))[0], toUnit('5000').sub(fee2));
+
+				assert.bnClose(
+					(await futuresMarket.remainingMargin(trader2))[0],
+					toUnit('5000').sub(fee2),
+					toUnit('0.1')
+				);
 			});
 
 			describe.skip('profit and no funding', async () => {
@@ -2116,7 +2121,7 @@ contract('PerpsV2Market', accounts => {
 
 				// withdraw large enough margin to trigger leverage > maxLeverage.
 				await assert.revert(
-					futuresMarket.transferMargin(toUnit('-1'), { from: account }),
+					futuresMarket.transferMargin(toUnit('-1.5'), { from: account }),
 					'Insufficient margin'
 				);
 			};
@@ -2945,69 +2950,6 @@ contract('PerpsV2Market', accounts => {
 		});
 
 		// Old tests (some may no longer be relevant)
-
-		it('Various skew rates', async () => {
-			// Market is balanced
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
-
-			const price = toUnit(250);
-
-			await transferMarginAndModifyPosition({
-				market: futuresMarket,
-				account: trader,
-				fillPrice: price,
-				marginDelta: toUnit('1000'),
-				sizeDelta: toUnit('12'),
-			});
-
-			await transferMarginAndModifyPosition({
-				market: futuresMarket,
-				account: trader2,
-				fillPrice: price,
-				marginDelta: toUnit('1000'),
-				sizeDelta: toUnit('-12'),
-			});
-
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
-
-			const minScale = divideDecimal(
-				(await futuresMarketSettings.parameters(marketKey)).skewScaleUSD,
-				price
-			);
-			const maxFundingRate = await futuresMarket.maxFundingRate();
-			// Market is 24 units long skewed (24 / 100000)
-			await futuresMarket.modifyPosition(toUnit('24'), { from: trader });
-			let marketSkew = await futuresMarket.marketSkew();
-			assert.bnEqual(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
-			);
-
-			// 50% the other way ()
-			await futuresMarket.modifyPosition(toUnit('-32'), { from: trader });
-			marketSkew = await futuresMarket.marketSkew();
-			assert.bnClose(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
-			);
-
-			// Market is 100% skewed
-			await futuresMarket.closePosition({ from: trader });
-			marketSkew = await futuresMarket.marketSkew();
-			assert.bnClose(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
-			);
-
-			// 100% the other way
-			await futuresMarket.modifyPosition(toUnit('4'), { from: trader });
-			await futuresMarket.closePosition({ from: trader2 });
-			marketSkew = await futuresMarket.marketSkew();
-			assert.bnClose(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(divideDecimal(marketSkew, minScale), maxFundingRate.neg())
-			);
-		});
 
 		it('Altering the max funding has a proportional effect', async () => {
 			// 0, +-50%, +-100%
