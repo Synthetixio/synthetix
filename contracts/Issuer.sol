@@ -714,7 +714,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // In case of forced liquidation only, remove the liquidation flag.
             liquidator().removeAccountInLiquidation(account);
         }
-        // Note: To remove the flag after self liquidation, call Liquidator.checkAndRemoveAccountInLiquidation(account).
+        // Note: To remove the flag after self liquidation, burn to target and then call Liquidator.checkAndRemoveAccountInLiquidation(account).
     }
 
     function _liquidationAmounts(address account, bool isSelfLiquidation)

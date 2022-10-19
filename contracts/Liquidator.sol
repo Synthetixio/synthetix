@@ -141,9 +141,9 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             }
             return false;
         } else {
-            // Not open for self-liquidation when the account's collateral value is less than debt issued + penalty
+            // Not open for self-liquidation when the account's collateral value is less than debt issued + forced penalty
             uint unit = SafeDecimalMath.unit();
-            if (accountCollateralisationRatio > (unit.divideDecimal(unit.add(getSelfLiquidationPenalty())))) {
+            if (accountCollateralisationRatio > (unit.divideDecimal(unit.add(getSnxLiquidationPenalty())))) {
                 return false;
             }
         }
