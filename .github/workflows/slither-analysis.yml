@@ -14,10 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: ghcr.io/synthetixio/docker-sec-tools/ubuntu:16.15
-      credentials:
-        username: synthetixio
-        password: ${{ secrets.GH_PACKAGES_READ_ONLY }}
+      image: synthetixio/docker-sec-tools:16.17-ubuntu
 
     steps:
       - name: Checkout

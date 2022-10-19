@@ -84,7 +84,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
@@ -100,7 +99,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](15);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -109,13 +108,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[5] = CONTRACT_FEEPOOL;
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[8] = CONTRACT_SYNTHETIXESCROW;
-        newAddresses[9] = CONTRACT_LIQUIDATOR;
-        newAddresses[10] = CONTRACT_LIQUIDATOR_REWARDS;
-        newAddresses[11] = CONTRACT_DEBTCACHE;
-        newAddresses[12] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
-        newAddresses[14] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[8] = CONTRACT_LIQUIDATOR;
+        newAddresses[9] = CONTRACT_LIQUIDATOR_REWARDS;
+        newAddresses[10] = CONTRACT_DEBTCACHE;
+        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -153,10 +151,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function rewardEscrowV2() internal view returns (IHasBalance) {
         return IHasBalance(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
-    }
-
-    function synthetixEscrow() internal view returns (IHasBalance) {
-        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
@@ -342,11 +336,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function _collateral(address account) internal view returns (uint) {
         return
-            synthetixERC20()
-                .balanceOf(account)
-                .add(synthetixEscrow().balanceOf(account))
-                .add(rewardEscrowV2().balanceOf(account))
-                .add(liquidatorRewards().earned(account));
+            synthetixERC20().balanceOf(account).add(rewardEscrowV2().balanceOf(account)).add(
+                liquidatorRewards().earned(account)
+            );
     }
 
     function minimumStakeTime() external view returns (uint) {
@@ -582,8 +574,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address to,
         uint amount
     ) external onlyTrustedMinters returns (bool rateInvalid) {
-        require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot issue 0 synths");
+        require(address(synths[currencyKey]) != address(0), "synth doesn't exist");
+        require(amount > 0, "cannot issue 0 synths");
 
         // record issue timestamp
         _setLastIssueEvent(to);
@@ -604,8 +596,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address from,
         uint amount
     ) external onlyTrustedMinters returns (bool rateInvalid) {
-        require(address(synths[currencyKey]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot issue 0 synths");
+        require(address(synths[currencyKey]) != address(0), "synth doesn't exist");
+        require(amount > 0, "cannot issue 0 synths");
 
         exchanger().settle(from, currencyKey);
 
@@ -626,10 +618,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      * @param amount The amount of sUSD collateral to be burnt
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
-        require(short != address(0), "Issuer: invalid address");
-        require(short == resolver.getAddress("CollateralShortLegacy"), "Issuer: wrong short address");
-        require(address(synths[sUSD]) != address(0), "Issuer: synth doesn't exist");
-        require(amount > 0, "Issuer: cannot burn 0 synths");
+        require(short == resolver.getAddress("CollateralShortLegacy"), "wrong address");
+        require(amount > 0, "cannot burn 0 synths");
 
         exchanger().settle(short, sUSD);
 
@@ -637,7 +627,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function issueSynths(address from, uint amount) external onlySynthetix {
-        require(amount > 0, "Issuer: cannot issue 0 synths");
+        require(amount > 0, "cannot issue 0 synths");
 
         _issueSynths(from, amount, false);
     }
@@ -720,8 +710,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Reduce debt shares by amount to liquidate.
         _removeFromDebtRegister(account, debtRemoved, initialDebtBalance);
 
-        // Remove liquidation flag
-        liquidator().removeAccountInLiquidation(account);
+        if (!isSelfLiquidation) {
+            // In case of forced liquidation only, remove the liquidation flag.
+            liquidator().removeAccountInLiquidation(account);
+        }
+        // Note: To remove the flag after self liquidation, burn to target and then call Liquidator.checkAndRemoveAccountInLiquidation(account).
     }
 
     function _liquidationAmounts(address account, bool isSelfLiquidation)
@@ -738,89 +731,85 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool anyRateIsInvalid;
         (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
 
-        // otherwise calculateAmountToFixCollateral reverts with unhelpful underflow error
-        if (!liquidator().isLiquidationOpen(account, isSelfLiquidation)) {
-            return (0, 0, 0, debtBalance);
-        }
-
-        // Get the penalty for the liquidation type
-        uint penalty = isSelfLiquidation ? getSelfLiquidationPenalty() : getSnxLiquidationPenalty();
-
         // Get the SNX rate
         (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
-        // Get the total amount of SNX collateral (including escrows and rewards)
-        uint collateralForAccount = _collateral(account);
+        uint penalty;
+        if (isSelfLiquidation) {
+            // Get self liquidation penalty
+            penalty = getSelfLiquidationPenalty();
 
-        // Calculate the amount of debt to liquidate to fix c-ratio
-        debtToRemove = liquidator().calculateAmountToFixCollateral(
-            debtBalance,
-            _snxToUSD(collateralForAccount, snxRate),
-            penalty
-        );
+            // Calculate the amount of debt to remove and SNX to redeem for a self liquidation
+            debtToRemove = liquidator().calculateAmountToFixCollateral(
+                debtBalance,
+                _snxToUSD(_collateral(account), snxRate),
+                penalty
+            );
 
-        // Get the equivalent amount of SNX for the amount to liquidate
-        // Note: While calculateAmountToFixCollateral takes the penalty into account,
-        // it only calculates the debt to be repaid (so that c-ratio is reached). The penalty still needs to be
-        // applied on the collateral side (SNX) correctly. Which is why redeemTarget needs to be multiplied by 1 + penalty
-        // to get the SNX amount calculateAmountToFixCollateral was using for its calculation.
-        // This is a "target" because it may not be available, so will be adjusted
-        uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+            // Get the minimum values for both totalRedeemed and debtToRemove
+            totalRedeemed = _getMinValue(
+                _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty)),
+                synthetixERC20().balanceOf(account)
+            );
+            debtToRemove = _getMinValue(
+                _snxToUSD(totalRedeemed, snxRate).divideDecimal(SafeDecimalMath.unit().add(penalty)),
+                debtToRemove
+            );
 
-        // calculate actually redeemable collateral for the conditions
-        (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, isSelfLiquidation);
+            // Return escrow as zero since it cannot be self liquidated
+            return (totalRedeemed, debtToRemove, 0, debtBalance);
+        } else {
+            // In the case of forced Liquidation
+            // Get the forced liquidation penalty and sum of the flag and liquidate rewards.
+            penalty = getSnxLiquidationPenalty();
+            uint rewardsSum = getLiquidateReward().add(getFlagReward());
 
-        // totalRedeemed == redeemTarget, all of the debtToRemove is removed, otherwise adjust it to redeemable collateral
-        if (totalRedeemed < redeemTarget) {
-            // Adjust debt amount to ratio of actual vs. target collateral amounts
-            debtToRemove = debtToRemove.multiplyDecimal(totalRedeemed).divideDecimal(redeemTarget);
+            // Get the total USD value of their SNX collateral (including escrow and rewards minus the flag and liquidate rewards)
+            uint collateralForAccountUSD = _snxToUSD(_collateral(account).sub(rewardsSum), snxRate);
 
-            // if all collateral is gone, erase the bad debt (some unliquidatable collateral can be in
-            // legacy SynthetixEscrow or LiquidatorRewards (if Synthetix liquidation method didn't call getReward() before this)
-            // Note that collateralForAccount cannot be < totalRedeemed, because totalRedeemed comes from an exact
-            // calculation in _redeemableCollateralForTarget(). If the calculations change to create a possibility
-            // for a rounding imprecision, this check may need to be changed to `<=`.
-            if (collateralForAccount == totalRedeemed) {
+            // Calculate the amount of debt to remove and the sUSD value of the SNX required to liquidate.
+            debtToRemove = liquidator().calculateAmountToFixCollateral(debtBalance, collateralForAccountUSD, penalty);
+            uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+
+            if (redeemTarget.add(rewardsSum) >= _collateral(account)) {
+                // need to wipe out the account
                 debtToRemove = debtBalance;
+                totalRedeemed = _collateral(account).sub(rewardsSum);
+                escrowToLiquidate = rewardEscrowV2().balanceOf(account);
+                return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
+            } else {
+                // normal forced liquidation
+                (totalRedeemed, escrowToLiquidate) = _redeemableCollateralForTarget(account, redeemTarget, rewardsSum);
+                return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
             }
         }
-
-        return (totalRedeemed, debtToRemove, escrowToLiquidate, debtBalance);
     }
 
     // SIP-252
-    // calculates the amount of SNX that can be liquidated (redeemed) for the various cases
-    // of transferrable & escrowed collateral & self or forced liquidation
+    // calculates the amount of SNX that can be force liquidated (redeemed)
+    // for the various cases of transferrable & escrowed collateral
     function _redeemableCollateralForTarget(
         address account,
         uint redeemTarget,
-        bool isSelfLiquidation
+        uint rewardsSum
     ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only SNX that can potentially be transfered if unstaked.
         uint transferable = synthetixERC20().balanceOf(account);
-        if (redeemTarget <= transferable) {
-            // transferrable is enough
+        if (redeemTarget.add(rewardsSum) <= transferable) {
+            // transferable is enough
             return (redeemTarget, 0);
         } else {
-            // if transferrable is not enough
-            if (isSelfLiquidation) {
-                // cannot use escrow because it's not available for self-liquidation
-                return (transferable, 0);
-            } else {
-                // can use escrow if forced liquidation
-                uint escrow = rewardEscrowV2().balanceOf(account);
-                if (redeemTarget > transferable.add(escrow)) {
-                    // all of escrow needs to be redeemed
-                    return (transferable.add(escrow), escrow);
-                } else {
-                    // need only part of the escrow, add the needed part to redeemed
-                    escrowToLiquidate = redeemTarget.sub(transferable);
-                    return (transferable.add(escrowToLiquidate), escrowToLiquidate);
-                }
-            }
+            // if transferable is not enough
+            // need only part of the escrow, add the needed part to redeemed
+            escrowToLiquidate = redeemTarget.add(rewardsSum).sub(transferable);
+            return (redeemTarget, escrowToLiquidate);
         }
+    }
+
+    function _getMinValue(uint x, uint y) internal pure returns (uint) {
+        return x < y ? x : y;
     }
 
     function setCurrentPeriodId(uint128 periodId) external {
@@ -1001,20 +990,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== MODIFIERS ========== */
     modifier onlySynthetix() {
-        require(msg.sender == address(synthetixERC20()), "Issuer: Only Synthetix");
+        require(msg.sender == address(synthetixERC20()), "Only Synthetix");
         _;
     }
 
     modifier onlyTrustedMinters() {
         address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
-        require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "Issuer: only trusted minters");
-        require(bridgeL1 == address(0) || bridgeL2 == address(0), "Issuer: one minter must be 0x0");
+        require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "only trusted minters");
+        require(bridgeL1 == address(0) || bridgeL2 == address(0), "one minter must be 0x0");
         _;
     }
 
     function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Issuer: Only SynthRedeemer");
+        require(msg.sender == address(synthRedeemer()), "Only SynthRedeemer");
     }
 
     modifier onlySynthRedeemer() {
