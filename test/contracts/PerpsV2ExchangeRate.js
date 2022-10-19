@@ -1,7 +1,7 @@
-const { contract, ethers } = require('hardhat');
+const { contract, ethers, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
-// const { toBN } = web3.utils;
-// const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
+const { currentTime, fastForward } = require('../utils')();
+const { toBN } = web3.utils;
 
 const { setupAllContracts, setupContract } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -11,7 +11,6 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 } = require('./helpers');
-// const { inRange } = require('lodash');
 
 contract('PerpsV2ExchangeRate', accounts => {
 	let perpsV2ExchangeRate, mockPyth;
@@ -206,9 +205,9 @@ contract('PerpsV2ExchangeRate', accounts => {
 		];
 
 		const DEFAULT_FEED_ID = toBytes32('eth-price-feed');
-		const DEFAULT_FEED_PRICE = 2000000000;
+		const DEFAULT_FEED_PRICE = 1000000000;
 		const DEFAULT_FEED_CONF = 1000000;
-		const DEFAULT_FEED_EXPO = 6;
+		const DEFAULT_FEED_EXPO = -6;
 		const DEFAULT_FEED_EMAPRICE = 2100000000;
 		const DEFAULT_FEED_EMACONF = 1100000;
 
@@ -328,7 +327,88 @@ contract('PerpsV2ExchangeRate', accounts => {
 		});
 
 		describe('when getting price updates', () => {
-			beforeEach('add initial feed data for feeds', async () => {});
+			const FEED_1_ASSET = feeds[0].assetId;
+			const FEED_1_ID = feeds[0].feedId;
+			const FEED_1_PRICE = DEFAULT_FEED_PRICE;
+			let feedPublishTimesamp;
+
+			beforeEach('add initial feed data for feeds', async () => {
+				feedPublishTimesamp = await currentTime();
+				// set fee to 0
+				await mockPyth.mockUpdateFee(0, { from: user1 });
+				const updateFeedData = await getFeedUpdateData({
+					id: FEED_1_ID,
+					price: FEED_1_PRICE,
+					publishTime: feedPublishTimesamp,
+				});
+				await perpsV2ExchangeRate.updatePythPrice(user1, [updateFeedData], { from: user1 });
+			});
+
+			describe('resolveAndGetLatestPrice', () => {
+				beforeEach('move in time', async () => {
+					await fastForward(100); // fast forward by 100 seconds
+				});
+
+				describe('get a valid price feed', () => {
+					it('gets the right values', async () => {
+						const price = await perpsV2ExchangeRate.resolveAndGetLatestPrice(FEED_1_ASSET);
+
+						assert.bnEqual(
+							price.price,
+							toBN(FEED_1_PRICE).mul(toBN(10 ** (18 + DEFAULT_FEED_EXPO)))
+						);
+
+						assert.bnEqual(price.publishTime, feedPublishTimesamp);
+					});
+				});
+
+				describe('attempt to get an in valid price feed', () => {
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2ExchangeRate.resolveAndGetLatestPrice(toBytes32('wrongAsset')),
+							'No price feed found for asset'
+						);
+					});
+				});
+			});
+
+			describe('resolveAndGetPrice', () => {
+				beforeEach('move in time', async () => {
+					await fastForward(100); // fast forward by 100 seconds
+				});
+
+				describe('get a valid price feed in time', () => {
+					it('gets the right values', async () => {
+						// Add some secs in the valid age
+						const price = await perpsV2ExchangeRate.resolveAndGetPrice(FEED_1_ASSET, 105);
+
+						assert.bnEqual(
+							price.price,
+							toBN(FEED_1_PRICE).mul(toBN(10 ** (18 + DEFAULT_FEED_EXPO)))
+						);
+
+						assert.bnEqual(price.publishTime, feedPublishTimesamp);
+					});
+				});
+
+				describe('attempt to get a valid price feed too old', () => {
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2ExchangeRate.resolveAndGetPrice(FEED_1_ASSET, 99),
+							'no price available which is recent enough'
+						);
+					});
+				});
+
+				describe('attempt to get an in valid price feed', () => {
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2ExchangeRate.resolveAndGetPrice(toBytes32('wrongAsset'), 1000),
+							'No price feed found for asset'
+						);
+					});
+				});
+			});
 		});
 	});
 });
