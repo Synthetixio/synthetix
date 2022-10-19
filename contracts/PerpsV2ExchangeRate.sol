@@ -55,7 +55,7 @@ contract PerpsV2ExchangeRate is Owned, MixinSystemSettings {
     function updatePythPrice(address sender, bytes[] calldata priceUpdateData) external payable {
         // Get fee amount to pay to Pyth
         uint fee = offchainOracle().getUpdateFee(priceUpdateData.length);
-        require(msg.value > fee, "Not enough eth for paying the fee");
+        require(msg.value >= fee, "Not enough eth for paying the fee");
 
         // Update the price data (and pay the fee)
         offchainOracle().updatePriceFeeds.value(fee)(priceUpdateData);

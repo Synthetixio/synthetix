@@ -348,6 +348,7 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// Perps V2
+		MockPyth: [60, 1],
 		PerpsV2ExchangeRate: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
