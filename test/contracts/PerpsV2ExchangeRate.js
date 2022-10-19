@@ -1,4 +1,4 @@
-const { contract } = require('hardhat');
+const { contract, ethers } = require('hardhat');
 const { toBytes32 } = require('../..');
 // const { toBN } = web3.utils;
 // const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
@@ -244,8 +244,8 @@ contract('PerpsV2ExchangeRate', accounts => {
 			});
 		});
 
-		describe('when attempting to updatePythPrice without sending eth', () => {
-			it('reverts if fee is > 0', async () => {
+		describe('when attempting to updatePythPrice with and without payment', () => {
+			it('reverts if fee is > 0 and value = 0', async () => {
 				// get updateFeedData
 				const updateFeedData = await getFeedUpdateData({});
 
@@ -258,12 +258,68 @@ contract('PerpsV2ExchangeRate', accounts => {
 				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
 			});
 
+			it('allows it if fee is > 0 and sent value is enough', async () => {
+				// price feed didn't exist before
+				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+
+				// get updateFeedData
+				const updateFeedData = await getFeedUpdateData({});
+
+				await perpsV2ExchangeRate.updatePythPrice(user1, [updateFeedData], {
+					from: user1,
+					value: 1,
+				});
+
+				// price feed exists
+				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), true);
+			});
+
+			it('charges the right amount, even if sending more', async () => {
+				// price feed didn't exist before
+				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+
+				// get updateFeedData
+				const updateFeedData = await getFeedUpdateData({});
+
+				const beforeUserBalance = await ethers.provider.getBalance(user1);
+				const beforePythBalance = await ethers.provider.getBalance(mockPyth.address);
+				const beforePerpsBalance = await ethers.provider.getBalance(perpsV2ExchangeRate.address);
+
+				const tx = await perpsV2ExchangeRate.updatePythPrice(user1, [updateFeedData], {
+					from: user1,
+					value: 100,
+				});
+
+				const afterUserBalance = await ethers.provider.getBalance(user1);
+				const afterPythBalance = await ethers.provider.getBalance(mockPyth.address);
+				const afterPerpsBalance = await ethers.provider.getBalance(perpsV2ExchangeRate.address);
+
+				const weiUsedInTx = tx.receipt.effectiveGasPrice * tx.receipt.gasUsed;
+
+				// price feed exists
+				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), true);
+
+				assert.equal(afterPythBalance.toString(), beforePythBalance.add(1).toString());
+				assert.equal(afterPerpsBalance.toString(), beforePerpsBalance.toString());
+				assert.equal(
+					afterUserBalance.toString(),
+					beforeUserBalance
+						.sub(weiUsedInTx)
+						.sub(1)
+						.toString()
+				);
+			});
+
 			it('allows it if fee is 0', async () => {
+				// price feed didn't exist before
+				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+
 				// set fee to 0
 				await mockPyth.mockUpdateFee(0, { from: user1 });
 
 				// get updateFeedData
 				const updateFeedData = await getFeedUpdateData({});
+
 				await perpsV2ExchangeRate.updatePythPrice(user1, [updateFeedData], { from: user1 });
 
 				// price feed exists
@@ -271,8 +327,8 @@ contract('PerpsV2ExchangeRate', accounts => {
 			});
 		});
 
-		describe('when setting up new feed ids', () => {
-			beforeEach('setup a couple of feeds', async () => {});
+		describe('when getting price updates', () => {
+			beforeEach('add initial feed data for feeds', async () => {});
 		});
 	});
 });

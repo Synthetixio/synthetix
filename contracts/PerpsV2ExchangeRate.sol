@@ -10,6 +10,8 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IPyth.sol";
 import "./interfaces/PythStructs.sol";
 
+import "hardhat/console.sol";
+
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2ExchangeRate
 contract PerpsV2ExchangeRate is Owned, MixinSystemSettings {
     bytes32 public constant CONTRACT_NAME = "PerpsV2ExchangeRate";
@@ -55,7 +57,10 @@ contract PerpsV2ExchangeRate is Owned, MixinSystemSettings {
     function updatePythPrice(address sender, bytes[] calldata priceUpdateData) external payable {
         // Get fee amount to pay to Pyth
         uint fee = offchainOracle().getUpdateFee(priceUpdateData.length);
+        // console.log('fee', fee);
+        // console.log('msg.value', msg.value);
         require(msg.value >= fee, "Not enough eth for paying the fee");
+        // console.log('msg.value - fee', msg.value - fee);
 
         // Update the price data (and pay the fee)
         offchainOracle().updatePriceFeeds.value(fee)(priceUpdateData);
