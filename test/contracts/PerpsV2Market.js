@@ -1,4 +1,4 @@
-const { artifacts, contract, web3, ethers } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toBN } = web3.utils;
 const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = require('../utils')();
@@ -252,7 +252,7 @@ contract('PerpsV2Market', accounts => {
 			assert.isFalse(result.invalid);
 		});
 
-		it.only('market size and skew', async () => {
+		it('market size and skew', async () => {
 			const minScale = (await futuresMarketSettings.parameters(marketKey)).skewScaleUSD;
 			const price = 100;
 			let sizes = await futuresMarket.marketSizes();
@@ -2701,34 +2701,46 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, toUnit('0.25'), { from: owner });
 
 				const trades = [
-					{ size: toUnit('100'), account: trader, fastForwardBy: 1000, expected: toUnit('0.0000') },
+					{
+						size: toUnit('100'),
+						account: trader,
+						fastForwardBy: 1000,
+						expectedRate: toUnit('0'),
+						expectedFunding: toUnit('0'),
+					},
 					{
 						size: toUnit('200'),
 						account: trader2,
 						fastForwardBy: 29000,
-						expected: toUnit('0.00839120'),
+						expectedRate: toUnit('0.00839120'),
+						expectedFunding: toUnit('0.001408'),
 					},
 					{
 						size: toUnit('-300'),
 						account: trader3,
 						fastForwardBy: 20000,
-						expected: toUnit('0.02575231'),
+						expectedRate: toUnit('0.02575231'),
+						expectedFunding: toUnit('0.005360'),
 					},
 				];
 				const marginDelta = toUnit('1000000');
 
 				for (const trade of trades) {
-					const { size, account, fastForwardBy, expected } = trade;
+					const { size, account, fastForwardBy, expectedRate, expectedFunding } = trade;
 					await fastForwardAndOpenPosition(fastForwardBy, account, fillPrice, marginDelta, size);
 
 					const fundingRate = await futuresMarket.currentFundingRate();
-					assert.bnClose(fundingRate, expected, toUnit('0.001'));
+					assert.bnClose(fundingRate, expectedRate, toUnit('0.001'));
+
+					const fundingSequenceLength = await futuresMarket.fundingSequenceLength();
+					const funding = await futuresMarket.fundingSequence(fundingSequenceLength - 1);
+					assert.bnClose(funding, expectedFunding, toUnit('0.001'));
 				}
 
 				// No change in skew, funding rate should remain the same.
 				await fastForward(50000);
 				const fundingRate = await futuresMarket.currentFundingRate();
-				assert.bnClose(fundingRate, trades[trades.length - 1].expected, toUnit('0.001'));
+				assert.bnClose(fundingRate, trades[trades.length - 1].expectedRate, toUnit('0.001'));
 			});
 
 			it('A balanced market may not always have zero funding', async () => {

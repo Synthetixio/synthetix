@@ -157,7 +157,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _unrecordedFunding(uint price) internal view returns (int) {
         int nextFundingRate = _currentFundingRate(price);
-        return int(marketState.fundingRate()).add(nextFundingRate).div(2).mul(_proportionalElapsed());
+        int avgFundingRate = (int(marketState.fundingRate()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
+        return avgFundingRate.multiplyDecimal(_proportionalElapsed());
     }
 
     /*
@@ -165,7 +166,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
     function _nextFundingEntry(uint price) internal view returns (int) {
-        return _latestFundingEntry().add(_unrecordedFunding(price));
+        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
     }
 
     function _netFundingPerUnit(uint startIndex, uint price) internal view returns (int) {
@@ -321,7 +322,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      * @dev The liquidation margin contains a buffer that is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * size. The buffer should prevent liquidation happening at negative margin (due to next price being worse)
      * so that stakers would not leak value to liquidators through minting rewards that are not from the
      * account's margin.
      */
@@ -395,10 +396,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _latestFundingIndex() internal view returns (uint) {
         return marketState.fundingSequenceLength().sub(1); // at least one element is pushed in constructor
-    }
-
-    function _latestFundingEntry() internal view returns (int) {
-        return marketState.fundingSequence(_latestFundingIndex());
     }
 
     function _postTradeDetails(Position memory oldPos, TradeParams memory params)
