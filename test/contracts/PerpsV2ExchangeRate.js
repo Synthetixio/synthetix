@@ -330,6 +330,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 			const FEED_1_ASSET = feeds[0].assetId;
 			const FEED_1_ID = feeds[0].feedId;
 			const FEED_1_PRICE = DEFAULT_FEED_PRICE;
+			const FEED_2_ASSET = feeds[1].assetId;
 			let feedPublishTimesamp;
 
 			beforeEach('add initial feed data for feeds', async () => {
@@ -362,11 +363,20 @@ contract('PerpsV2ExchangeRate', accounts => {
 					});
 				});
 
-				describe('attempt to get an in valid price feed', () => {
+				describe('attempt to get an invalid price feed', () => {
 					it('reverts', async () => {
 						await assert.revert(
 							perpsV2ExchangeRate.resolveAndGetLatestPrice(toBytes32('wrongAsset')),
 							'No price feed found for asset'
+						);
+					});
+				});
+
+				describe('attempt to get an uninitalized price feed', () => {
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2ExchangeRate.resolveAndGetLatestPrice(FEED_2_ASSET),
+							'no price feed found for the given price id'
 						);
 					});
 				});
@@ -405,6 +415,15 @@ contract('PerpsV2ExchangeRate', accounts => {
 						await assert.revert(
 							perpsV2ExchangeRate.resolveAndGetPrice(toBytes32('wrongAsset'), 1000),
 							'No price feed found for asset'
+						);
+					});
+				});
+
+				describe('attempt to get an uninitalized price feed', () => {
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2ExchangeRate.resolveAndGetPrice(FEED_2_ASSET, 1000),
+							'no price feed found for the given price id'
 						);
 					});
 				});
