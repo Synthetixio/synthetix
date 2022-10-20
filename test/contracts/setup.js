@@ -1304,6 +1304,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1315,6 +1316,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1326,6 +1328,19 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
+			],
+		},
+		{
+			contract: 'PerpsV2PythOrdersBTC',
+			source: 'PerpsV2MarketPythOrders',
+			deps: [
+				'ProxyPerpsV2MarketETH',
+				'PerpsV2MarketStateETH',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1337,6 +1352,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1350,6 +1366,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1363,6 +1380,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 	];

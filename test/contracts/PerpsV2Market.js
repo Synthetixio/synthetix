@@ -43,6 +43,7 @@ contract('PerpsV2Market', accounts => {
 		futuresMarketImpl,
 		futuresMarketViewsImpl,
 		futuresMarketDelayedOrderImpl,
+		futuresMarketOffchainDelayedOrderImpl,
 		futuresMarketState,
 		exchangeRates,
 		exchanger,
@@ -119,6 +120,7 @@ contract('PerpsV2Market', accounts => {
 			PerpsV2MarketBTC: futuresMarketImpl,
 			PerpsV2MarketViewsBTC: futuresMarketViewsImpl,
 			PerpsV2DelayedOrderBTC: futuresMarketDelayedOrderImpl,
+			PerpsV2PythOrdersBTC: futuresMarketOffchainDelayedOrderImpl,
 			ProxyPerpsV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -196,6 +198,19 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
+		it('Only expected functions are mutative PerpsV2MarketOffchainDelayedOrders', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: futuresMarketOffchainDelayedOrderImpl.abi,
+				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
+				expected: [
+					'cancelOffchainDelayedOrder',
+					'executeOffchainDelayedOrder',
+					'submitOffchainDelayedOrder',
+					'submitOffchainDelayedOrderWithTracking',
+				],
+			});
+		});
+
 		it('Only expected functions are mutative PerpsV2MarketViews', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketViewsImpl.abi,
@@ -218,8 +233,10 @@ contract('PerpsV2Market', accounts => {
 					'setFundingLastRecomputed',
 					'pushFundingSequence',
 					'updateDelayedOrder',
+					'updateOffchainDelayedOrder',
 					'updatePosition',
 					'deleteDelayedOrder',
+					'deleteOffchainDelayedOrder',
 					'deletePosition',
 				],
 			});

@@ -84,6 +84,7 @@ contract('PerpsV2MarketManager', accounts => {
 			contracts: [
 				'PerpsV2MarketManager',
 				'PerpsV2MarketSettings',
+				'PerpsV2ExchangeRate',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',

@@ -204,20 +204,20 @@ contract('PerpsV2ExchangeRate', accounts => {
 			{ assetId: toBytes32('sBTC'), feedId: toBytes32('feed-sBTC') },
 		];
 
-		const DEFAULT_FEED_ID = toBytes32('eth-price-feed');
-		const DEFAULT_FEED_PRICE = 1000000000;
-		const DEFAULT_FEED_CONF = 1000000;
-		const DEFAULT_FEED_EXPO = -6;
-		const DEFAULT_FEED_EMAPRICE = 2100000000;
-		const DEFAULT_FEED_EMACONF = 1100000;
+		const defaultFeedId = toBytes32('eth-price-feed');
+		const defaultFeedPrice = 1000000000;
+		const defaultFeedConfidence = 1000000;
+		const defaultFeedExpo = -6;
+		const defaultFeedEMAPrice = 2100000000;
+		const defaultFeedEMAConfidence = 1100000;
 
 		async function getFeedUpdateData({
-			id = DEFAULT_FEED_ID,
-			price = DEFAULT_FEED_PRICE,
-			conf = DEFAULT_FEED_CONF,
-			expo = DEFAULT_FEED_EXPO,
-			emaPrice = DEFAULT_FEED_EMAPRICE,
-			emaConf = DEFAULT_FEED_EMACONF,
+			id = defaultFeedId,
+			price = defaultFeedPrice,
+			conf = defaultFeedConfidence,
+			expo = defaultFeedExpo,
+			emaPrice = defaultFeedEMAPrice,
+			emaConf = defaultFeedEMAConfidence,
 			publishTime,
 		}) {
 			const feedUpdateData = await mockPyth.createPriceFeedUpdateData(
@@ -231,6 +231,10 @@ contract('PerpsV2ExchangeRate', accounts => {
 			);
 
 			return feedUpdateData;
+		}
+
+		function feedPriceToBase18(price, feedExpo = defaultFeedExpo) {
+			return toBN(price).mul(toBN(10 ** (18 + feedExpo)));
 		}
 
 		beforeEach('setup a mock oracle and feeds', async () => {
@@ -254,12 +258,12 @@ contract('PerpsV2ExchangeRate', accounts => {
 				);
 
 				// price feed doesn't exist
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), false);
 			});
 
 			it('allows it if fee is > 0 and sent value is enough', async () => {
 				// price feed didn't exist before
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), false);
 
 				// get updateFeedData
 				const updateFeedData = await getFeedUpdateData({});
@@ -270,12 +274,12 @@ contract('PerpsV2ExchangeRate', accounts => {
 				});
 
 				// price feed exists
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), true);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), true);
 			});
 
 			it('charges the right amount, even if sending more', async () => {
 				// price feed didn't exist before
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), false);
 
 				// get updateFeedData
 				const updateFeedData = await getFeedUpdateData({});
@@ -296,7 +300,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 				const weiUsedInTx = tx.receipt.effectiveGasPrice * tx.receipt.gasUsed;
 
 				// price feed exists
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), true);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), true);
 
 				assert.equal(afterPythBalance.toString(), beforePythBalance.add(1).toString());
 				assert.equal(afterPerpsBalance.toString(), beforePerpsBalance.toString());
@@ -311,7 +315,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 
 			it('allows it if fee is 0', async () => {
 				// price feed didn't exist before
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), false);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), false);
 
 				// set fee to 0
 				await mockPyth.mockUpdateFee(0, { from: user1 });
@@ -322,15 +326,15 @@ contract('PerpsV2ExchangeRate', accounts => {
 				await perpsV2ExchangeRate.updatePythPrice(user1, [updateFeedData], { from: user1 });
 
 				// price feed exists
-				assert.equal(await mockPyth.priceFeedExists(DEFAULT_FEED_ID), true);
+				assert.equal(await mockPyth.priceFeedExists(defaultFeedId), true);
 			});
 		});
 
 		describe('when getting price updates', () => {
-			const FEED_1_ASSET = feeds[0].assetId;
-			const FEED_1_ID = feeds[0].feedId;
-			const FEED_1_PRICE = DEFAULT_FEED_PRICE;
-			const FEED_2_ASSET = feeds[1].assetId;
+			const feed1Asset = feeds[0].assetId;
+			const feed1Id = feeds[0].feedId;
+			const feed1Price = defaultFeedPrice;
+			const feed2Asset = feeds[1].assetId;
 			let feedPublishTimesamp;
 
 			beforeEach('add initial feed data for feeds', async () => {
@@ -338,8 +342,8 @@ contract('PerpsV2ExchangeRate', accounts => {
 				// set fee to 0
 				await mockPyth.mockUpdateFee(0, { from: user1 });
 				const updateFeedData = await getFeedUpdateData({
-					id: FEED_1_ID,
-					price: FEED_1_PRICE,
+					id: feed1Id,
+					price: feed1Price,
 					publishTime: feedPublishTimesamp,
 				});
 				await perpsV2ExchangeRate.updatePythPrice(user1, [updateFeedData], { from: user1 });
@@ -352,12 +356,9 @@ contract('PerpsV2ExchangeRate', accounts => {
 
 				describe('get a valid price feed', () => {
 					it('gets the right values', async () => {
-						const price = await perpsV2ExchangeRate.resolveAndGetLatestPrice(FEED_1_ASSET);
+						const price = await perpsV2ExchangeRate.resolveAndGetLatestPrice(feed1Asset);
 
-						assert.bnEqual(
-							price.price,
-							toBN(FEED_1_PRICE).mul(toBN(10 ** (18 + DEFAULT_FEED_EXPO)))
-						);
+						assert.bnEqual(price.price, feedPriceToBase18(feed1Price));
 
 						assert.bnEqual(price.publishTime, feedPublishTimesamp);
 					});
@@ -375,7 +376,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 				describe('attempt to get an uninitalized price feed', () => {
 					it('reverts', async () => {
 						await assert.revert(
-							perpsV2ExchangeRate.resolveAndGetLatestPrice(FEED_2_ASSET),
+							perpsV2ExchangeRate.resolveAndGetLatestPrice(feed2Asset),
 							'no price feed found for the given price id'
 						);
 					});
@@ -390,12 +391,9 @@ contract('PerpsV2ExchangeRate', accounts => {
 				describe('get a valid price feed in time', () => {
 					it('gets the right values', async () => {
 						// Add some secs in the valid age
-						const price = await perpsV2ExchangeRate.resolveAndGetPrice(FEED_1_ASSET, 105);
+						const price = await perpsV2ExchangeRate.resolveAndGetPrice(feed1Asset, 105);
 
-						assert.bnEqual(
-							price.price,
-							toBN(FEED_1_PRICE).mul(toBN(10 ** (18 + DEFAULT_FEED_EXPO)))
-						);
+						assert.bnEqual(price.price, feedPriceToBase18(feed1Price));
 
 						assert.bnEqual(price.publishTime, feedPublishTimesamp);
 					});
@@ -404,7 +402,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 				describe('attempt to get a valid price feed too old', () => {
 					it('reverts', async () => {
 						await assert.revert(
-							perpsV2ExchangeRate.resolveAndGetPrice(FEED_1_ASSET, 99),
+							perpsV2ExchangeRate.resolveAndGetPrice(feed1Asset, 99),
 							'no price available which is recent enough'
 						);
 					});
@@ -422,7 +420,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 				describe('attempt to get an uninitalized price feed', () => {
 					it('reverts', async () => {
 						await assert.revert(
-							perpsV2ExchangeRate.resolveAndGetPrice(FEED_2_ASSET, 1000),
+							perpsV2ExchangeRate.resolveAndGetPrice(feed2Asset, 1000),
 							'no price feed found for the given price id'
 						);
 					});

@@ -101,10 +101,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[2] = CONTRACT_PERPSV2MARKETMANAGER;
-        newAddresses[3] = CONTRACT_PERPSV2MARKETSETTINGS;
-        newAddresses[6] = CONTRACT_PERPSV2EXCHANGERATE;
+        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[3] = CONTRACT_PERPSV2MARKETMANAGER;
+        newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
+        newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
