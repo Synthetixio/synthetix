@@ -265,7 +265,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
         int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, currentPrice);
 
-        // minimum margin beyond which position can be liqudiated
+        // minimum margin beyond which position can be liquidated
         uint liqMargin = _liquidationMargin(positionSize, currentPrice);
 
         // A position can be liquidated whenever:

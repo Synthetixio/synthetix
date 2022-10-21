@@ -2743,7 +2743,7 @@ contract('PerpsV2Market', accounts => {
 				}
 
 				// No change in skew, funding rate should remain the same.
-				await fastForward(50000);
+				await fastForward(60 * 60 * 24); // 1 day
 				const fundingRate = await futuresMarket.currentFundingRate();
 				assert.bnClose(fundingRate, trades[trades.length - 1].expectedRate, toUnit('0.001'));
 			});
@@ -3403,9 +3403,9 @@ contract('PerpsV2Market', accounts => {
 			it('Liquidation price is accurate with funding', async () => {
 				await setPrice(baseAsset, toUnit('100'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('100'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('100'), { from: trader }); // 10x long
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 });
+				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 }); // 10x short
 
 				let liquidationPrice = await futuresMarket.liquidationPrice(trader);
 
@@ -3509,31 +3509,43 @@ contract('PerpsV2Market', accounts => {
 				);
 			});
 
-			it('Liquidation price is accurate with funding', async () => {
+			it('Liquidation price is accurate with funding (variant)', async () => {
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
 
 				await setPrice(baseAsset, toUnit('250'));
-				// Submit orders that induce -0.05 funding rate
-				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('30'), { from: trader });
-				await futuresMarket.transferMargin(toUnit('500'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 });
 
-				// One day of funding
+				// Submit orders that induces an initial 0.05 funding rate
+				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('30'), { from: trader }); // 5x long
+
+				await futuresMarket.transferMargin(toUnit('500'), { from: trader2 });
+				await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 }); // 5x short
+
+				// note: the funding rate as grown by a small amount between the first modify and 2nd transfer.
+				// to be specific, in this example funding grew by `0.00000173611111111` (proportional to the 30 size
+				// for roughly 3 - 4 seconds).
+				//
+				// this means the induced funding rate is actually 0.05 + <small_funding_rate>. for clarity, fundingPerUnit
+				// is derived by the funding rate.
+
+				// 1 day of funding
 				await fastForward(24 * 60 * 60);
 
-				// liqMargin = max(20, 250 * 30 *0.0035) + 250 * 30*0.0025 = 45
-				// trader 1 pays 30 * -0.05 = -1.5 base units of funding, and a $22.5 trading fee
-				// liquidation price = pLast + (mLiq - m) / s + fPerUnit
-				// liquidation price = 250 + (45 - (1500 - 22.5)) / 30 + 0.05 * 250 = 214.75
-				let lPrice = await futuresMarket.liquidationPrice(trader);
-				assert.bnClose(lPrice[0], toUnit(214.75), toUnit(0.001));
+				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
+				//                   = 250 + (45 - 1477.5) / 30 - 0.025001736111111113
+				//                   ~202.224
+				//
+				// note: above margin is 1447.5 because of the 22.5 trading fee
+				const lPriceT1 = await futuresMarket.liquidationPrice(trader);
+				assert.bnClose(lPriceT1[0], toUnit(202.224), toUnit(0.001));
 
-				// liqMargin = max(20, 250 * 10 *0.0035) + 250 * 10*0.0025 = 26.25
-				// trader2 receives -10 * -0.05 = 0.5 base units of funding, and a $2.5 trading fee
-				// liquidation price = 250 + (26.25 - (500 - 2.5)) / (-10) + 0.05 * 250 = 309.625
-				lPrice = await futuresMarket.liquidationPrice(trader2);
-				assert.bnClose(lPrice[0], toUnit(309.625), toUnit(0.001));
+				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
+				//                   = 250 + (26.25 - 497.5) / -10 - 0.025001736111111113
+				//                   ~297.099
+				//
+				// Similar to above, margin is 497.5 because of a 2.5 trading fee.
+				const lPriceT2 = await futuresMarket.liquidationPrice(trader2);
+				assert.bnClose(lPriceT2[0], toUnit(297.099), toUnit(0.001));
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {
@@ -3549,22 +3561,21 @@ contract('PerpsV2Market', accounts => {
 
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 
-				// Check the prices are accurate while we're here
+				// Check the prices are accurate while we're here.
 
-				// liqMargin = max(20, 250 * 30 *0.0035) + 250 * 30*0.0025 = 45
-				// funding rate = -10/50 * 0.1 = -0.02
-				// trader 1 pays 30 * 7 * -0.02 = -4.2 units of funding, pays $22.5 exchange fee
-				// Remaining margin = 250 + (45 - (1500 - 22.5))/30 + ( 7 * 0.02) * 250 = 237.25
-				let lPrice = await futuresMarket.liquidationPrice(trader);
-				assert.bnClose(lPrice[0], toUnit(237.25), toUnit(0.01));
-				assert.isTrue(lPrice[1]);
+				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
+				//                   = 250 + (45 - 1477.5) / 30 - 0.4900129630165466
+				//                   ~201.759
+				const lPriceT1 = await futuresMarket.liquidationPrice(trader);
+				assert.bnClose(lPriceT1[0], toUnit(201.759), toUnit(0.01));
+				assert.isTrue(lPriceT1[1]);
 
-				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
-				// trader 2 receives -20 * 7 * -0.02 = 2.8 units of funding, pays $5 exchange fee
-				// Remaining margin = 250 + (32.5 - (1000 - 5)) / (-20) + (7 * 0.02) * 250 = 333.125
-				lPrice = await futuresMarket.liquidationPrice(trader2);
-				assert.bnClose(lPrice[0], toUnit(333.125), toUnit(0.01));
-				assert.isTrue(lPrice[1]);
+				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
+				//                   = 250 + (32.5 - 995) / -20 - 0.4900129630165466
+				//                   ~297.635
+				const lPriceT2 = await futuresMarket.liquidationPrice(trader2);
+				assert.bnClose(lPriceT2[0], toUnit(297.635), toUnit(0.01));
+				assert.isTrue(lPriceT2[1]);
 			});
 
 			it.skip('Liquidation price is accurate with funding with intervening funding sequence updates', async () => {
