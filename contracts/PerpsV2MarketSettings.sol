@@ -150,8 +150,11 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _makerFee(_marketKey),
                 _takerFeeDelayedOrder(_marketKey),
                 _makerFeeDelayedOrder(_marketKey),
+                _takerFeeOffchainDelayedOrder(_marketKey),
+                _makerFeeOffchainDelayedOrder(_marketKey),
                 _nextPriceConfirmWindow(_marketKey),
                 _delayedOrderConfirmWindow(_marketKey),
+                _offchainDelayedOrderConfirmWindow(_marketKey),
                 _maxLeverage(_marketKey),
                 _maxMarketValueUSD(_marketKey),
                 _maxFundingRate(_marketKey),
@@ -305,6 +308,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setDelayedOrderConfirmWindow(_marketKey, _parameters.delayedOrderConfirmWindow);
         setMinDelayTimeDelta(_marketKey, _parameters.minDelayTimeDelta);
         setMaxDelayTimeDelta(_marketKey, _parameters.maxDelayTimeDelta);
+        setTakerFeeOffchainDelayedOrder(_marketKey, _parameters.takerFeeOffchainDelayedOrder);
+        setMakerFeeOffchainDelayedOrder(_marketKey, _parameters.makerFeeOffchainDelayedOrder);
+        setOffchainDelayedOrderConfirmWindow(_marketKey, _parameters.offchainDelayedOrderConfirmWindow);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {

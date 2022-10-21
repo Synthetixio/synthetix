@@ -135,6 +135,7 @@ contract PerpsV2MarketPythOrders is IPerpsV2MarketPythOrders, PerpsV2MarketProxy
             order.sizeDelta,
             order.targetRoundId,
             order.executableAtTime,
+            order.latestPublishTime,
             order.commitDeposit,
             order.keeperDeposit,
             order.trackingCode
@@ -366,24 +367,34 @@ contract PerpsV2MarketPythOrders is IPerpsV2MarketPythOrders, PerpsV2MarketProxy
         int sizeDelta,
         uint targetRoundId,
         uint executableAtTime,
+        uint latestPublishTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     );
     bytes32 internal constant DELAYEDORDERORDERSUBMITTED_SIG =
-        keccak256("OffchainDelayedOrderSubmitted(address,int256,uint256,uint256,uint256,uint256,bytes32)");
+        keccak256("OffchainDelayedOrderSubmitted(address,int256,uint256,uint256,uint256,uint256,uint256,bytes32)");
 
     function emitOffchainDelayedOrderSubmitted(
         address account,
         int sizeDelta,
         uint targetRoundId,
         uint executableAtTime,
+        uint latestPublishTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     ) internal {
         proxy._emit(
-            abi.encode(sizeDelta, targetRoundId, executableAtTime, commitDeposit, keeperDeposit, trackingCode),
+            abi.encode(
+                sizeDelta,
+                targetRoundId,
+                executableAtTime,
+                latestPublishTime,
+                commitDeposit,
+                keeperDeposit,
+                trackingCode
+            ),
             2,
             DELAYEDORDERORDERSUBMITTED_SIG,
             addressToBytes32(account),
