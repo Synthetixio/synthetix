@@ -3945,9 +3945,13 @@ contract('PerpsV2Market', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], {
-						from: owner,
-					}),
+					futuresMarketSettings.setParameters(
+						marketKey,
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+						{
+							from: owner,
+						}
+					),
 					'Invalid price'
 				);
 			});
@@ -4015,17 +4019,25 @@ contract('PerpsV2Market', accounts => {
 			it('then futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-					from: owner,
-				});
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+					{
+						from: owner,
+					}
+				);
 			});
 
 			it('futuresMarketSettings parameter changes still revert if price is invalid', async () => {
 				await setPrice(baseAsset, toUnit('1'), false); // circuit breaker will revert
 				await assert.revert(
-					futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-						from: owner,
-					}),
+					futuresMarketSettings.setParameters(
+						marketKey,
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+						{
+							from: owner,
+						}
+					),
 					'Invalid price'
 				);
 			});
@@ -4169,9 +4181,13 @@ contract('PerpsV2Market', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-					from: owner,
-				});
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+					{
+						from: owner,
+					}
+				);
 			});
 		});
 
@@ -4241,9 +4257,13 @@ contract('PerpsV2Market', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingRate(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-					from: owner,
-				});
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+					{
+						from: owner,
+					}
+				);
 			});
 		});
 	});

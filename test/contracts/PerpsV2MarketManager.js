@@ -643,7 +643,10 @@ contract('PerpsV2MarketManager', accounts => {
 						toUnit('0.001'), // 0.1% maker fee
 						toUnit('0.0005'), // 0.05% taker fee delayed order
 						toUnit('0'), // 0% maker fee delayed order
+						toUnit('0.00005'), // 0.05% taker fee offchain delayed order
+						toUnit('0'), // 0% maker fee offchain delayed order
 						toBN('2'), // 2 rounds next price confirm window
+						30, // 30s delay confirm window
 						30, // 30s delay confirm window
 						toUnit('5'), // 5x max leverage
 						toUnit('1000000'), // 1000000 max total margin
