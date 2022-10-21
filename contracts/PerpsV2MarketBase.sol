@@ -132,6 +132,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * The size of the skew relative to the size of the market skew scaler.
      * This value can be outside of [-1, 1] values.
      * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
+     *
+     * TODO: Remove this. Replace skewScaleUsd with just skewScale, making `price` no longer necessary.
      */
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
@@ -146,19 +148,53 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return delta.divideDecimal(1 days);
     }
 
-    function _fundingVelocity(uint price) internal view returns (int) {
+    function _currentFundingVelocity(uint price) internal view returns (int) {
         int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
         return _proportionalSkew(price).multiplyDecimal(maxFundingRate);
     }
 
+    /*
+     * @dev Retrieves the _current_ funding rate given the current market conditions.
+     *
+     * This is used during funding computation _before_ the market is modified (e.g. closing or
+     * opening a position). However, called via the `currentFundingRate` view, will return the
+     * 'instantaneous' funding rate. It's similar but subtle in that velocity now includes the most
+     * recent skew modification.
+     *
+     * There is no variance in computation but will be affected based on outside modifications to
+     * the market skew, max funding rate, price, and time delta.
+     */
     function _currentFundingRate(uint price) internal view returns (int) {
-        return int(marketState.fundingRate()).add(_fundingVelocity(price).multiplyDecimal(_proportionalElapsed()));
+        // calculations:
+        //  - velocity          = proportional_skew * max_funding_rate
+        //  - proportional_skew = (skew * price) / skew_scale_usd
+        //
+        // example:
+        //  - prev_funding_rate = 0
+        //  - prev_velocity     = 0.0025
+        //  - time_delta        = 29,000s
+        //  - max_funding_rate  = 0.025 (2.5%) aka (max funding velocity)
+        //  - skew              = 300
+        //  - price             = 10,000 ($10k)
+        //  - skew_scale_usd    = 10,000,000 (10M)
+        //
+        // note: prev_velocity just refs to the velocity _before_ modifying the market skew.
+        //
+        // funding_rate = prev_funding_rate + prev_velocity * (time_delta / seconds_in_day)
+        // funding_rate = 0 + 0.0025 * (29,000 / 86,400)
+        //              = 0 + 0.0025 * 0.33564815
+        //              = 0.00083912
+        int fundingRate = marketState.fundingRate();
+        int fundingVelocity = _currentFundingVelocity(price);
+        int elapsed = _proportionalElapsed();
+        return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
     }
 
     function _unrecordedFunding(uint price) internal view returns (int) {
         int nextFundingRate = _currentFundingRate(price);
         int avgFundingRate = (int(marketState.fundingRate()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
-        return avgFundingRate.multiplyDecimal(_proportionalElapsed());
+        int elapsed = _proportionalElapsed();
+        return avgFundingRate.multiplyDecimal(elapsed);
     }
 
     /*
