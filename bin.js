@@ -57,9 +57,15 @@ program
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 	.option('-m, --decode-migration', 'Decodes a migration contract execution call')
-	.action(async (data, target, { network, useOvm, decodeMigration }) => {
+	.option('-e, --enhance-decode', 'Enhance decoded data', false)
+	.action(async (data, target, { network, useOvm, decodeMigration, enhanceDecode }) => {
 		console.log(
-			util.inspect(decode({ network, data, target, useOvm, decodeMigration }), false, null, true)
+			util.inspect(
+				decode({ network, data, target, useOvm, decodeMigration, enhanceDecode }),
+				false,
+				null,
+				true
+			)
 		);
 	});
 
@@ -69,7 +75,8 @@ program
 	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 	.option('-m, --decode-migration', 'Decodes a migration contract execution call')
-	.action(async (txsdata, target, { network, useOvm, decodeMigration }) => {
+	.option('-e, --enhance-decode', 'Enhance decoded data', false)
+	.action(async (txsdata, target, { network, useOvm, decodeMigration, enhanceDecode }) => {
 		if (txsdata.length <= 2) {
 			console.log('data too short');
 		}
@@ -128,13 +135,64 @@ program
 				destAddress,
 				operationType,
 				value: valueDecimal,
-				decoded: decode({ network, data, target, useOvm, decodeMigration }),
+				decoded: decode({ network, data, target, useOvm, decodeMigration, enhanceDecode }),
 			});
 
 			index++;
 		}
 
 		console.log(util.inspect(decodedTransactions, false, null, true));
+	});
+
+program
+	.command('decode-relay-batch <rawtxsdata> [target]')
+	.description('Decode data payload from a initiate relay batch staged to Synthetix contracts')
+	.option('-n, --network <value>', 'The network to use', x => x.toLowerCase(), 'mainnet')
+	.option('-e, --enhance-decode', 'Enhance decoded data', false)
+	.action(async (rawtxsdata, target, { network, enhanceDecode }) => {
+		if (rawtxsdata.length <= 2) {
+			console.log('data too short');
+		}
+
+		const decoded = decode({
+			network,
+			data: rawtxsdata,
+			target,
+			useOvm: false,
+			decodeMigration: false,
+			enhanceDecode: false,
+		});
+
+		if (decoded.method.name !== 'initiateRelayBatch') {
+			console.log('=============================================');
+			console.log('Warning: Not a relay batch staged transaction');
+			console.log('=============================================');
+			console.log(util.inspect(decoded, false, null, true));
+			return;
+		}
+		const targets = decoded.method.params[0].value;
+		const payloads = decoded.method.params[1].value;
+
+		const decodedRelayed = [];
+		for (let i = 0; i < targets.length; i++) {
+			const target = targets[i];
+			try {
+				const payload = decode({
+					network,
+					data: payloads[i],
+					target,
+					useOvm: true,
+					decodeMigration: false,
+					enhanceDecode,
+				});
+				decodedRelayed.push({ index: i, target, payload });
+			} catch (e) {
+				// unable to decode.
+				decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
+			}
+		}
+
+		console.log(util.inspect(decodedRelayed, false, null, true));
 	});
 
 program

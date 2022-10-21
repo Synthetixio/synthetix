@@ -14,6 +14,8 @@ module.exports = async ({
 	freshDeploy,
 	deploymentPath,
 	network,
+	generateSolidity,
+	yes,
 }) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
@@ -135,22 +137,31 @@ module.exports = async ({
 				writeArg: [marketKeyBytes, 80],
 				comment: 'Ensure futures market is paused according to config',
 			});
+			if (generateSolidity) {
+				migrationContractNoACLWarning(`pause ${marketKey} futures market`);
+			}
 		} else if (isPaused & !shouldPause) {
-			console.log(
-				yellow(
-					`⚠⚠⚠ WARNING: The market ${marketKey} is paused, 
-					but according to config should be resumed. Confirm that this market should
-					be resumed in this release and it's not a misconfiguration issue.`
-				)
-			);
+			let resume;
 
-			let resume; // in case we're trying to resume something that doesn't need to be resumed
-			try {
-				await confirmAction(gray('Unpause the market? (y/n) '));
+			if (!yes) {
+				// in case we're trying to resume something that doesn't need to be resumed
+				console.log(
+					yellow(
+						`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
+						`but according to config should be resumed. Confirm that this market should`,
+						`be resumed in this release and it's not a misconfiguration issue.`
+					)
+				);
+				try {
+					await confirmAction(gray('Unpause the market? (y/n) '));
+					resume = true;
+				} catch (err) {
+					console.log(gray('Market will remain paused'));
+					resume = false;
+				}
+			} else {
+				// yes mode (e.g. tests)
 				resume = true;
-			} catch (err) {
-				console.log(gray('Market will remain paused'));
-				resume = false;
 			}
 
 			if (resume) {
@@ -161,7 +172,21 @@ module.exports = async ({
 					writeArg: [marketKeyBytes],
 					comment: 'Ensure futures market is un-paused according to config',
 				});
+				if (generateSolidity) {
+					migrationContractNoACLWarning(`unpause ${marketKey} futures market`);
+				}
 			}
 		}
 	}
 };
+
+function migrationContractNoACLWarning(actionMessage) {
+	console.log(
+		yellow(
+			`⚠⚠⚠ WARNING: the step is trying to ${actionMessage}, but 'generateSolidity' is true. `,
+			`The migration contract will not have the SystemStatus ACL permissions to perform this step, `,
+			`so it should be EDITED OUT of the migration contract and performed separately (by rerunning `,
+			`the deploy script).`
+		)
+	);
+}

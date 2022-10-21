@@ -15,6 +15,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IHasBalance.sol";
 
 /// @title Upgrade Liquidation Mechanism V2 (SIP-148)
 /// @notice This contract is a modification to the existing liquidation mechanism defined in SIP-15
@@ -88,7 +89,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     function liquidationPenalty() external view returns (uint) {
-        return getLiquidationPenalty();
+        // SIP-251: use getSnxLiquidationPenalty instead of getLiquidationPenalty
+        // which is used for loans / shorts (collateral contracts).
+        // Keeping the view name because it makes sense in the context of this contract.
+        return getSnxLiquidationPenalty();
     }
 
     function selfLiquidationPenalty() external view returns (uint) {
@@ -132,12 +136,44 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
             // Open for liquidation if the deadline has passed and the user has enough SNX collateral.
-            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNX(account)) {
+            if (_deadlinePassed(liquidation.deadline) && _hasEnoughSNXForRewards(account)) {
                 return true;
             }
             return false;
+        } else {
+            // Not open for self-liquidation when the account's collateral value is less than debt issued + forced penalty
+            uint unit = SafeDecimalMath.unit();
+            if (accountCollateralisationRatio > (unit.divideDecimal(unit.add(getSnxLiquidationPenalty())))) {
+                return false;
+            }
         }
         return true;
+    }
+
+    /// View for calculating the amounts of collateral (liquid and escrow that will be liquidated), and debt that will
+    /// be removed.
+    /// @param account The account to be liquidated
+    /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
+    /// @return totalRedeemed the total amount of collateral (SNX) to redeem (liquid and escrow)
+    /// @return debtToRemove the amount of debt (sUSD) to burn in order to fix the account's c-ratio
+    /// @return escrowToLiquidate the amount of escrow SNX that will be revoked during liquidation
+    /// @return initialDebtBalance the amount of initial (sUSD) debt the account has
+    function liquidationAmounts(address account, bool isSelfLiquidation)
+        external
+        view
+        returns (
+            uint totalRedeemed,
+            uint debtToRemove,
+            uint escrowToLiquidate,
+            uint initialDebtBalance
+        )
+    {
+        // return zeroes otherwise calculateAmountToFixCollateral reverts with unhelpful underflow error
+        if (!this.isLiquidationOpen(account, isSelfLiquidation)) {
+            return (0, 0, 0, issuer().debtBalanceOf(account, "sUSD"));
+        }
+
+        return issuer().liquidationAmounts(account, isSelfLiquidation);
     }
 
     function isLiquidationDeadlinePassed(address account) external view returns (bool) {
@@ -152,17 +188,26 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     /// @notice Checks if an account has enough SNX balance to be considered open for forced liquidation.
-    function _hasEnoughSNX(address account) internal view returns (bool) {
-        uint balance = IERC20(address(synthetix())).balanceOf(account);
-        return balance > (getLiquidateReward().add(getFlagReward()));
+    function _hasEnoughSNXForRewards(address account) internal view returns (bool) {
+        uint balance = issuer().collateral(account);
+        return balance >= (getLiquidateReward().add(getFlagReward()));
     }
 
     /**
      * r = target issuance ratio
-     * D = debt balance
-     * V = Collateral
+     * D = debt value
+     * V = collateral value
      * P = liquidation penalty
+     * S = debt amount to redeem
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     *
+     * Derivation of the formula:
+     *   Collateral "sold" with penalty: collateral-sold = S * (1 + P)
+     *   After liquidation: new-debt = D - S, new-collateral = V - collateral-sold = V - S * (1 + P)
+     *   Because we fixed the c-ratio, new-debt / new-collateral = c-ratio: (D - S) / (V - S * (1 + P)) = r
+     *   After solving for S we get: S = (D - V * r) / (1 - (1 + P) * r)
+     * Note: this only returns the amount of debt to remove "assuming the penalty", the penalty still needs to be
+     * correctly applied when removing collateral.
      */
     function calculateAmountToFixCollateral(
         uint debtBalance,
@@ -211,6 +256,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
             accountsCollateralisationRatio >= getLiquidationRatio(),
             "Account issuance ratio is less than liquidation ratio"
         );
+
+        // if account doesn't have enough liquidatable collateral for rewards the liquidation transaction
+        // is not possible
+        require(_hasEnoughSNXForRewards(account), "not enough SNX for rewards");
 
         uint deadline = now.add(getLiquidationDelay());
 

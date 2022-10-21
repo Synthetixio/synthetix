@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./interfaces/IERC20.sol";
@@ -16,6 +17,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -33,6 +35,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
 
     // ========== CONSTRUCTOR ==========
 
@@ -52,13 +55,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](6);
+        addresses = new bytes32[](7);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
         addresses[4] = CONTRACT_LIQUIDATORREWARDS;
         addresses[5] = CONTRACT_LIQUIDATOR;
+        addresses[6] = CONTRACT_REWARDESCROW_V2;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -79,6 +83,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function liquidatorRewards() internal view returns (ILiquidatorRewards) {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATORREWARDS));
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function liquidator() internal view returns (ILiquidator) {
@@ -151,6 +159,23 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function transferableSynthetix(address account) external view returns (uint transferable) {
         (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
+    }
+
+    /// the index of the first non zero RewardEscrowV2 entry for an account in order of iteration over accountVestingEntryIDs.
+    /// This is intended as a convenience off-chain view for liquidators to calculate the startIndex to pass
+    /// into liquidateDelinquentAccountEscrowIndex to save gas.
+    function getFirstNonZeroEscrowIndex(address account) external view returns (uint) {
+        uint numIds = rewardEscrowV2().numVestingEntries(account);
+        uint entryID;
+        VestingEntries.VestingEntry memory entry;
+        for (uint i = 0; i < numIds; i++) {
+            entryID = rewardEscrowV2().accountVestingEntryIDs(account, i);
+            entry = rewardEscrowV2().vestingSchedules(account, entryID);
+            if (entry.escrowAmount > 0) {
+                return i;
+            }
+        }
+        revert("all entries are zero");
     }
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
@@ -279,6 +304,21 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
+    // SIP-252: migration of SNX token balance from old to new escrow rewards contract
+    function migrateEscrowContractBalance() external onlyOwner {
+        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
+        // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
+        // using the cached value and read the most updated one directly from the resolver
+        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
+        require(to != from, "cannot migrate to same address");
+
+        uint currentBalance = tokenState.balanceOf(from);
+        // allow no-op for idempotent migration steps in case action was performed already
+        if (currentBalance > 0) {
+            _internalTransfer(from, to, currentBalance);
+        }
+    }
+
     function issueSynths(uint amount) external issuanceActive optionalProxy {
         return issuer().issueSynths(messageSender, amount);
     }
@@ -314,78 +354,90 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
     /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(account, false);
+        return _liquidateDelinquentAccount(account, 0, messageSender);
+    }
 
-        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
+    /// @param escrowStartIndex: index into the account's vesting entries list to start iterating from
+    /// when liquidating from escrow in order to save gas (the default method uses 0 as default)
+    function liquidateDelinquentAccountEscrowIndex(address account, uint escrowStartIndex)
+        external
+        systemActive
+        optionalProxy
+        returns (bool)
+    {
+        return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
+    }
+
+    /// @notice Force liquidate a delinquent account and distribute the redeemed SNX rewards amongst the appropriate recipients.
+    /// @dev The SNX transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
+    function _liquidateDelinquentAccount(
+        address account,
+        uint escrowStartIndex,
+        address liquidatorAccount
+    ) internal returns (bool) {
+        // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
+        liquidatorRewards().getReward(account);
+
+        (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
+
+        // This transfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
+        // It is transferred to the account instead of to the rewards because of the liquidator / flagger
+        // rewards that may need to be paid (so need to be transferrable, to avoid edge cases)
+        if (escrowToLiquidate > 0) {
+            rewardEscrowV2().revokeFrom(account, account, escrowToLiquidate, escrowStartIndex);
+        }
+
+        emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
+
+        // First, pay out the flag and liquidate rewards.
+        uint flagReward = liquidator().flagReward();
+        uint liquidateReward = liquidator().liquidateReward();
+
+        // Transfer the flagReward to the account who flagged this account for liquidation.
+        address flagger = liquidator().getLiquidationCallerForAccount(account);
+        bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
+        require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
+
+        // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
+        bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
+        require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
         if (totalRedeemed > 0) {
-            uint stakerRewards; // The amount of rewards to be sent to the LiquidatorRewards contract.
-            uint flagReward = liquidator().flagReward();
-            uint liquidateReward = liquidator().liquidateReward();
-            // Check if the total amount of redeemed SNX is enough to payout the liquidation rewards.
-            if (totalRedeemed > flagReward.add(liquidateReward)) {
-                // Transfer the flagReward to the account who flagged this account for liquidation.
-                address flagger = liquidator().getLiquidationCallerForAccount(account);
-                bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
-                require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
-
-                // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
-                bool liquidateRewardTransferSucceeded = _transferByProxy(account, messageSender, liquidateReward);
-                require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
-
-                // The remaining SNX to be sent to the LiquidatorRewards contract.
-                stakerRewards = totalRedeemed.sub(flagReward.add(liquidateReward));
-            } else {
-                /* If the total amount of redeemed SNX is greater than zero 
-                but is less than the sum of the flag & liquidate rewards,
-                then just send all of the SNX to the LiquidatorRewards contract. */
-                stakerRewards = totalRedeemed;
-            }
-
-            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), stakerRewards);
+            // Send the remaining SNX to the LiquidatorRewards contract.
+            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
             require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
 
             // Inform the LiquidatorRewards contract about the incoming SNX rewards.
-            liquidatorRewards().notifyRewardAmount(stakerRewards);
-
-            return true;
-        } else {
-            // In this unlikely case, the total redeemed SNX is not greater than zero so don't perform any transfers.
-            return false;
+            liquidatorRewards().notifyRewardAmount(totalRedeemed);
         }
+
+        return true;
     }
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
-        // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateAccount(messageSender, true);
+        // must store liquidated account address because below functions may attempt to transfer SNX which changes messageSender
+        address liquidatedAccount = messageSender;
 
-        emitAccountLiquidated(messageSender, totalRedeemed, amountLiquidated, messageSender);
+        // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
+        liquidatorRewards().getReward(liquidatedAccount);
+
+        // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
+        // escrowToLiquidate is unused because it cannot be used for self-liquidations
+        (uint totalRedeemed, uint debtRemoved, ) = issuer().liquidateAccount(liquidatedAccount, true);
+        require(debtRemoved > 0, "cannot self liquidate");
+
+        emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
 
         // Transfer the redeemed SNX to the LiquidatorRewards contract.
         // Reverts if amount to redeem is more than balanceOf account (i.e. due to escrowed balance).
-        bool success = _transferByProxy(messageSender, address(liquidatorRewards()), totalRedeemed);
+        bool success = _transferByProxy(liquidatedAccount, address(liquidatorRewards()), totalRedeemed);
         require(success, "Transfer to LiquidatorRewards failed");
 
         // Inform the LiquidatorRewards contract about the incoming SNX rewards.
         liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;
-    }
-
-    /**
-     * @notice Once off function for SIP-239 to recover unallocated SNX rewards
-     * due to an initialization issue in the LiquidatorRewards contract deployed in SIP-148.
-     * @param amount The amount of SNX to be recovered and distributed to the rightful owners
-     */
-    bool public restituted = false;
-
-    function initializeLiquidatorRewardsRestitution(uint amount) external onlyOwner {
-        if (!restituted) {
-            restituted = true;
-            bool success = _transferByProxy(address(liquidatorRewards()), owner, amount);
-            require(success, "restitution transfer failed");
-        }
     }
 
     function exchangeWithTrackingForInitiator(

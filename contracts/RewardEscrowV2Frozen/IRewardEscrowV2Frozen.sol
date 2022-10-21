@@ -1,54 +1,24 @@
-pragma solidity >=0.4.24;
+pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "../RewardEscrowV2Frozen/IRewardEscrowV2Frozen.sol";
-
-interface IRewardEscrowV2Storage {
-    /// Views
-    function numVestingEntries(address account) external view returns (uint);
-
-    function totalEscrowedAccountBalance(address account) external view returns (uint);
-
-    function totalVestedAccountBalance(address account) external view returns (uint);
-
-    function totalEscrowedBalance() external view returns (uint);
-
-    function nextEntryId() external view returns (uint);
-
-    function vestingSchedules(address account, uint256 entryId) external view returns (VestingEntries.VestingEntry memory);
-
-    function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
-
-    /// Mutative
-    function setZeroAmount(address account, uint entryId) external;
-
-    function setZeroAmountUntilTarget(
-        address account,
-        uint startIndex,
-        uint targetAmount
-    )
-        external
-        returns (
-            uint total,
-            uint endIndex,
-            uint lastEntryTime
-        );
-
-    function updateEscrowAccountBalance(address account, int delta) external;
-
-    function updateVestedAccountBalance(address account, int delta) external;
-
-    function updateTotalEscrowedBalance(int delta) external;
-
-    function addVestingEntry(address account, VestingEntries.VestingEntry calldata entry) external returns (uint);
-
-    // setFallbackRewardEscrow is used for configuration but not used by contracts
+library VestingEntries {
+    struct VestingEntry {
+        uint64 endTime;
+        uint256 escrowAmount;
+    }
+    struct VestingEntryWithID {
+        uint64 endTime;
+        uint256 escrowAmount;
+        uint256 entryID;
+    }
 }
 
-/// this should remain backwards compatible to IRewardEscrowV2Frozen
-/// ideally this would be done by inheriting from that interface
-/// but solidity v0.5 doesn't support interface inheritance
-interface IRewardEscrowV2 {
+/// SIP-252: this is the interface for immutable V2 escrow (renamed with suffix Frozen).
+/// These sources need to exist here and match on-chain frozen contracts for tests and reference.
+/// the reason for the naming mess is that the immutable LiquidatorRewards expects a working
+/// RewardEscrowV2 resolver entry for its getReward method, so the "new" (would be V3)
+/// needs to be found at that entry for liq-rewards to function.
+interface IRewardEscrowV2Frozen {
     // Views
     function balanceOf(address account) external view returns (uint);
 
@@ -128,13 +98,6 @@ interface IRewardEscrowV2 {
 
     function accountVestingEntryIDs(address account, uint256 index) external view returns (uint);
 
-    /// below are methods not available in IRewardEscrowV2Frozen
-
-    // revoke entries for liquidations (access controlled to Synthetix)
-    function revokeFrom(
-        address account,
-        address recipient,
-        uint targetAmount,
-        uint startIndex
-    ) external;
+    //function totalEscrowedAccountBalance(address account) external view returns (uint);
+    //function totalVestedAccountBalance(address account) external view returns (uint);
 }

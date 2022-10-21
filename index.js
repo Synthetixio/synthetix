@@ -518,7 +518,7 @@ const getShortingRewards = ({
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
-	const testnetOwner = '0x73570075092502472E4b61A7058Df1A4a1DB12f2';
+	const testnetOwner = '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9';
 	const base = {
 		owner: testnetOwner,
 		deployer: testnetOwner,
@@ -531,16 +531,22 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 	const map = {
 		mainnet: Object.assign({}, base, {
 			owner: '0xEb3107117FEAd7de89Cd14D463D340A2E6917769',
-			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+			deployer: '0x302d2451d9f47620374B54c521423Bf0403916A2',
 			marketClosure: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7',
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		'mainnet-ovm': Object.assign({}, base, {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
-			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+			deployer: '0x302d2451d9f47620374B54c521423Bf0403916A2',
 		}),
-		goerli: Object.assign({}, base),
-		'goerli-ovm': Object.assign({}, base),
+		goerli: Object.assign({}, base, {
+			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
+		'goerli-ovm': Object.assign({}, base, {
+			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
 		local: Object.assign({}, base, {
 			// Deterministic account #0 when using `npx hardhat node`
 			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -649,6 +655,37 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 	);
 };
 
+const enhanceDecodedData = decoded => {
+	const enhancedParams = decoded.method.params.map(p => {
+		if (p.type === 'bytes32') {
+			try {
+				return { ...p, enhanced: { ascii: fromBytes32(p.value).replaceAll('\x00', '') } };
+			} catch (e) {
+				return p;
+			}
+		}
+
+		if (p.type === 'uint256') {
+			try {
+				const value = w3utils.toBN(p.value);
+				return {
+					...p,
+					enhanced: {
+						bp: value.div(w3utils.toBN(1e14)).toString(),
+						decimal: value.div(w3utils.toBN(1e18)).toString(),
+					},
+				};
+			} catch (e) {
+				return p;
+			}
+		}
+
+		return p;
+	});
+	const enhancedMethod = { ...decoded.method, params: enhancedParams };
+	return { ...decoded, method: enhancedMethod };
+};
+
 const decode = ({
 	network = 'mainnet',
 	fs,
@@ -657,6 +694,7 @@ const decode = ({
 	target,
 	useOvm = false,
 	decodeMigration = false,
+	enhanceDecode = false,
 } = {}) => {
 	const sources = getSource({ network, path, fs, useOvm });
 	for (const { abi } of Object.values(sources)) {
@@ -682,7 +720,9 @@ const decode = ({
 			({ address }) => address.toLowerCase() === target.toLowerCase()
 		)[0].name;
 	}
-	return { method: abiDecoder.decodeMethod(data), contract };
+	const result = { method: abiDecoder.decodeMethod(data), contract };
+
+	return enhanceDecode ? enhanceDecodedData(result) : result;
 };
 
 const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>

@@ -235,6 +235,9 @@ const setupContract = async ({
 			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
+		BaseRewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
+		RewardEscrowV2Frozen: [owner, tryGetAddressOf('AddressResolver')],
+		RewardEscrowV2Storage: [owner, ZERO_ADDRESS],
 		BaseRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		RewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		ImportableRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
@@ -562,6 +565,26 @@ const setupContract = async ({
 			});
 		},
 
+		async RewardEscrowV2() {
+			await Promise.all([
+				cache['RewardEscrowV2Storage'].setAssociatedContract(instance.address, { from: owner }),
+				cache['RewardEscrowV2Storage'].setFallbackRewardEscrow(
+					cache['RewardEscrowV2Frozen'].address,
+					{ from: owner }
+				),
+			]);
+		},
+
+		async ImportableRewardEscrowV2() {
+			await Promise.all([
+				cache['RewardEscrowV2Storage'].setAssociatedContract(instance.address, { from: owner }),
+				cache['RewardEscrowV2Storage'].setFallbackRewardEscrow(
+					cache['RewardEscrowV2Frozen'].address,
+					{ from: owner }
+				),
+			]);
+		},
+
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
 			await instance.updateAccessControls(
@@ -748,18 +771,34 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{
-			contract: 'BaseRewardEscrowV2',
+			contract: 'BaseRewardEscrowV2Frozen',
 			deps: ['AddressResolver'],
-			mocks: ['Synthetix', 'FeePool'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
+		},
+		{
+			contract: 'RewardEscrowV2Frozen',
+			deps: ['AddressResolver'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
+		},
+		{
+			contract: 'RewardEscrowV2Storage',
+			deps: ['RewardEscrowV2Frozen'],
+			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
+		},
+		{
+			contract: 'BaseRewardEscrowV2',
+			deps: ['AddressResolver', 'RewardEscrowV2Storage'],
+			mocks: ['Synthetix', 'FeePool', 'Issuer'],
 		},
 		{
 			contract: 'RewardEscrowV2',
-			deps: ['AddressResolver', 'SystemStatus'],
+			deps: ['AddressResolver', 'SystemStatus', 'RewardEscrowV2Storage'],
 			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
 		},
 		{
 			contract: 'ImportableRewardEscrowV2',
-			deps: ['AddressResolver'],
+			resolverAlias: `RewardEscrowV2`,
+			deps: ['AddressResolver', 'RewardEscrowV2Storage'],
 			mocks: ['Synthetix', 'FeePool', 'SynthetixBridgeToBase', 'Issuer'],
 		},
 		{ contract: 'SynthetixEscrow' },
@@ -767,7 +806,10 @@ const setupAllContracts = async ({
 		{ contract: 'EternalStorage', forContract: 'DelegateApprovals' },
 		{ contract: 'DelegateApprovals', deps: ['EternalStorage'] },
 		{ contract: 'EternalStorage', forContract: 'Liquidator' },
-		{ contract: 'Liquidator', deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage'] },
+		{
+			contract: 'Liquidator',
+			deps: ['AddressResolver', 'EternalStorage', 'FlexibleStorage', 'SynthetixEscrow'],
+		},
 		{
 			contract: 'LiquidatorRewards',
 			deps: ['AddressResolver', 'Liquidator', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
@@ -931,6 +973,7 @@ const setupAllContracts = async ({
 				'TokenState',
 				'RewardsDistribution',
 				'RewardEscrow',
+				'RewardEscrowV2',
 			],
 		},
 		{
