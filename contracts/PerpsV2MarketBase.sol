@@ -21,6 +21,8 @@ import "./interfaces/ISystemStatus.sol";
 // Internal references
 import "./interfaces/IPerpsV2MarketState.sol";
 
+import "hardhat/console.sol";
+
 interface IPerpsV2MarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
@@ -184,7 +186,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // funding_rate = 0 + 0.0025 * (29,000 / 86,400)
         //              = 0 + 0.0025 * 0.33564815
         //              = 0.00083912
-        int fundingRate = marketState.fundingRate();
+        int fundingRate = marketState.fundingRateLastRecomputed();
         int fundingVelocity = _currentFundingVelocity(price);
         int elapsed = _proportionalElapsed();
         return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
@@ -192,8 +194,25 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _unrecordedFunding(uint price) internal view returns (int) {
         int nextFundingRate = _currentFundingRate(price);
-        int avgFundingRate = (int(marketState.fundingRate()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
+        int avgFundingRate = (int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
         int elapsed = _proportionalElapsed();
+
+//        console.log("---- king shit BEGIN!");
+//
+//        console.log("current funding rate");
+//        console.logInt(marketState.fundingRate());
+//
+//        console.log("next funding rate");
+//        console.logInt(nextFundingRate);
+//
+//        console.log("avg funding rate");
+//        console.logInt(avgFundingRate);
+//
+//        console.log("elapsed");
+//        console.logInt(elapsed);
+//
+//        console.log("---- king shit");
+
         return avgFundingRate.multiplyDecimal(elapsed);
     }
 
