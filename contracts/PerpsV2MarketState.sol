@@ -140,7 +140,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         fundingSequence.push(_fundingSequence);
     }
 
-    // TODO: Perform this update when maxFundingRate and skewScale are modified.
+    // TODO: Perform this update when maxFundingVelocity and skewScale are modified.
     function setFundingRateLastRecomputed(int128 _fundingRateLastRecomputed) external onlyAssociatedContracts {
         fundingRateLastRecomputed = _fundingRateLastRecomputed;
     }

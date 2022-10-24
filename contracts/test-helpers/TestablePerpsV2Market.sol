@@ -23,8 +23,8 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return _proportionalSkew(price);
     }
 
-    function maxFundingRate() external view returns (uint) {
-        return _maxFundingRate(marketState.marketKey());
+    function maxFundingVelocity() external view returns (uint) {
+        return _maxFundingVelocity(marketState.marketKey());
     }
 
     /*
@@ -119,6 +119,10 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     function currentFundingRate() external view returns (int fundingRate) {
+        return 0;
+    }
+
+    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
         return 0;
     }
 

@@ -646,7 +646,7 @@ contract('PerpsV2MarketManager', accounts => {
 						30, // 30s delay confirm window
 						toUnit('5'), // 5x max leverage
 						toUnit('1000000'), // 1000000 max total margin
-						toUnit('0.2'), // 20% max funding rate
+						toUnit('0.2'), // 20% max funding velocity
 						toUnit('100000'), // 100000 USD skewScaleUSD
 						60, // 60s minimum delay time in seconds
 						120, // 120s maximum delay time in seconds

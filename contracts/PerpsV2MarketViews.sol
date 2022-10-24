@@ -101,7 +101,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * Velocity is a measure of how quickly the funding rate increases or decreases. A positive velocity means
      * funding rate is increasing positively (long skew). A negative velocity means the skew is on shorts.
      */
-    function currentFundingRateVelocity() external view returns (int) {
+    function currentFundingVelocity() external view returns (int) {
         (uint price, ) = _assetPrice();
         return _currentFundingVelocity(price);
     }

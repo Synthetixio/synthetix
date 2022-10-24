@@ -151,8 +151,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _currentFundingVelocity(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
-        return _proportionalSkew(price).multiplyDecimal(maxFundingRate);
+        int maxFundingVelocity = int(_maxFundingVelocity(marketState.marketKey()));
+        return _proportionalSkew(price).multiplyDecimal(maxFundingVelocity);
     }
 
     /*
@@ -164,21 +164,21 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * recent skew modification.
      *
      * There is no variance in computation but will be affected based on outside modifications to
-     * the market skew, max funding rate, price, and time delta.
+     * the market skew, max funding velocity, price, and time delta.
      */
     function _currentFundingRate(uint price) internal view returns (int) {
         // calculations:
-        //  - velocity          = proportional_skew * max_funding_rate
+        //  - velocity          = proportional_skew * max_funding_velocity
         //  - proportional_skew = (skew * price) / skew_scale_usd
         //
         // example:
-        //  - prev_funding_rate = 0
-        //  - prev_velocity     = 0.0025
-        //  - time_delta        = 29,000s
-        //  - max_funding_rate  = 0.025 (2.5%) aka (max funding velocity)
-        //  - skew              = 300
-        //  - price             = 10,000 ($10k)
-        //  - skew_scale_usd    = 10,000,000 (10M)
+        //  - prev_funding_rate     = 0
+        //  - prev_velocity         = 0.0025
+        //  - time_delta            = 29,000s
+        //  - max_funding_velocity  = 0.025 (2.5%) aka (max funding velocity)
+        //  - skew                  = 300
+        //  - price                 = 10,000 ($10k)
+        //  - skew_scale_usd        = 10,000,000 (10M)
         //
         // note: prev_velocity just refs to the velocity _before_ modifying the market skew.
         //

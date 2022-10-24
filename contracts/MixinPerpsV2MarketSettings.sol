@@ -23,7 +23,7 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW = "delayedOrderConfirmWindow";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
+    bytes32 internal constant PARAMETER_MAX_FUNDING_VELOCITY = "maxFundingVelocity";
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
     bytes32 internal constant PARAMETER_MIN_DELAY_TIME_DELTA = "minDelayTimeDelta";
     bytes32 internal constant PARAMETER_MAX_DELAY_TIME_DELTA = "maxDelayTimeDelta";
@@ -98,8 +98,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MIN_SKEW_SCALE);
     }
 
-    function _maxFundingRate(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAX_FUNDING_RATE);
+    function _maxFundingVelocity(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_FUNDING_VELOCITY);
     }
 
     function _minDelayTimeDelta(bytes32 _marketKey) internal view returns (uint) {
