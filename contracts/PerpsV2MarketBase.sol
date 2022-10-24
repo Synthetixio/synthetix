@@ -196,23 +196,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         int nextFundingRate = _currentFundingRate(price);
         int avgFundingRate = (int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
         int elapsed = _proportionalElapsed();
-
-//        console.log("---- king shit BEGIN!");
-//
-//        console.log("current funding rate");
-//        console.logInt(marketState.fundingRate());
-//
-//        console.log("next funding rate");
-//        console.logInt(nextFundingRate);
-//
-//        console.log("avg funding rate");
-//        console.logInt(avgFundingRate);
-//
-//        console.log("elapsed");
-//        console.logInt(elapsed);
-//
-//        console.log("---- king shit");
-
         return avgFundingRate.multiplyDecimal(elapsed);
     }
 
