@@ -2682,288 +2682,280 @@ contract('PerpsV2Market', accounts => {
 	});
 
 	describe('Funding', () => {
-		describe('New funding unit tests', () => {
-			const fastForwardAndOpenPosition = async (
-				fastForwardBy,
+		const fastForwardAndOpenPosition = async (
+			fastForwardBy,
+			account,
+			fillPrice,
+			marginDelta,
+			sizeDelta
+		) => {
+			await fastForward(fastForwardBy);
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
 				account,
 				fillPrice,
 				marginDelta,
-				sizeDelta
-			) => {
-				await fastForward(fastForwardBy);
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account,
-					fillPrice,
-					marginDelta,
-					sizeDelta,
-				});
-			};
+				sizeDelta,
+			});
+		};
 
-			it('A specific concrete floating rate with velocity example', async () => {
-				const fillPrice = toUnit('100');
-				await setPrice(baseAsset, fillPrice);
-				await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
-					from: owner,
-				});
+		it('A specific concrete floating rate with velocity example', async () => {
+			const fillPrice = toUnit('100');
+			await setPrice(baseAsset, fillPrice);
+			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
+				from: owner,
+			});
 
-				const trades = [
-					{
-						size: toUnit('100'),
-						account: trader,
-						fastForwardBy: 1000,
-						expectedRate: toUnit('0'),
-						expectedFunding: toUnit('0'),
-					},
-					{
-						size: toUnit('200'),
-						account: trader2,
-						fastForwardBy: 29000,
-						expectedRate: toUnit('0.00839120'),
-						expectedFunding: toUnit('0.001408'),
-					},
-					{
-						size: toUnit('-300'),
-						account: trader3,
-						fastForwardBy: 20000,
-						expectedRate: toUnit('0.02575231'),
-						expectedFunding: toUnit('0.005360'),
-					},
-				];
-				const marginDelta = toUnit('1000000');
+			const trades = [
+				{
+					size: toUnit('100'),
+					account: trader,
+					fastForwardBy: 1000,
+					expectedRate: toUnit('0'),
+					expectedFunding: toUnit('0'),
+				},
+				{
+					size: toUnit('200'),
+					account: trader2,
+					fastForwardBy: 29000,
+					expectedRate: toUnit('0.00839120'),
+					expectedFunding: toUnit('0.001408'),
+				},
+				{
+					size: toUnit('-300'),
+					account: trader3,
+					fastForwardBy: 20000,
+					expectedRate: toUnit('0.02575231'),
+					expectedFunding: toUnit('0.005360'),
+				},
+			];
+			const marginDelta = toUnit('1000000');
 
-				for (const trade of trades) {
-					const { size, account, fastForwardBy, expectedRate, expectedFunding } = trade;
-					await fastForwardAndOpenPosition(fastForwardBy, account, fillPrice, marginDelta, size);
+			for (const trade of trades) {
+				const { size, account, fastForwardBy, expectedRate, expectedFunding } = trade;
+				await fastForwardAndOpenPosition(fastForwardBy, account, fillPrice, marginDelta, size);
 
-					const fundingRate = await futuresMarket.currentFundingRate();
-					assert.bnClose(fundingRate, expectedRate, toUnit('0.001'));
-
-					const fundingSequenceLength = await futuresMarket.fundingSequenceLength();
-					const funding = await futuresMarket.fundingSequence(fundingSequenceLength - 1);
-					assert.bnClose(funding, expectedFunding, toUnit('0.001'));
-				}
-
-				// No change in skew, funding rate should remain the same.
-				await fastForward(60 * 60 * 24); // 1 day
 				const fundingRate = await futuresMarket.currentFundingRate();
-				assert.bnClose(fundingRate, trades[trades.length - 1].expectedRate, toUnit('0.001'));
-			});
+				assert.bnClose(fundingRate, expectedRate, toUnit('0.001'));
 
-			it('A balanced market may not always have zero funding', async () => {
-				const marginDelta = toUnit('1000000');
-				const fillPrice = toUnit('100');
-				await setPrice(baseAsset, fillPrice);
-				await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
-					from: owner,
-				});
+				const fundingSequenceLength = await futuresMarket.fundingSequenceLength();
+				const funding = await futuresMarket.fundingSequence(fundingSequenceLength - 1);
+				assert.bnClose(funding, expectedFunding, toUnit('0.001'));
+			}
 
-				// first trade occurs and causes a skew
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('100'),
-				});
-				// pushes skew even further
-				await fastForwardAndOpenPosition(5000, trader2, fillPrice, marginDelta, toUnit('200'));
-				// balances skew
-				await fastForwardAndOpenPosition(5000, trader3, fillPrice, marginDelta, toUnit('-300'));
-				// more time passes
-				await fastForward(5000);
-
-				// funding rate should not be 0.
-				assert.bnNotEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
-			});
-
-			it('Should have zero funding when market is new and empty', async () => {
-				assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
-			});
-
-			it('Should continue to increase rate so long as the market is skewed', async () => {
-				const marginDelta = toUnit('1000000');
-				const fillPrice = toUnit('100');
-				await setPrice(baseAsset, fillPrice);
-				await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
-					from: owner,
-				});
-
-				// first trade occurs and causes a skew
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader,
-					fillPrice,
-					marginDelta: toUnit('1000000'),
-					sizeDelta: toUnit('100'),
-				});
-
-				// time passes
-				await fastForward(5000);
-				const fundingRate1 = await futuresMarket.currentFundingRate();
-
-				// a new trader appears and further adds to the skew.
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader2,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('200'),
-				});
-
-				// time passes
-				await fastForward(5000);
-
-				// funding rate should continue to increase
-				assert.bnGt(await futuresMarket.currentFundingRate(), fundingRate1);
-
-				// a new trader appears, reduces skew but not balanced
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader3,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('-100'),
-				});
-
-				// time passes
-				await fastForward(5000);
-
-				// funding rate should continue to increase
-				assert.bnGt(await futuresMarket.currentFundingRate(), fundingRate1);
-			});
-
-			it('Should stop increasing and stay elevated when market is balanced', async () => {
-				const marginDelta = toUnit('1000000');
-				const fillPrice = toUnit('100');
-				await setPrice(baseAsset, fillPrice);
-				await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
-					from: owner,
-				});
-
-				// first trade occurs and causes a skew
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('-100'),
-				});
-
-				// pushes skew further
-				await fastForwardAndOpenPosition(5000, trader2, fillPrice, marginDelta, toUnit('-200'));
-				const fundingRate1 = await futuresMarket.currentFundingRate();
-
-				// time passes
-				await fastForward(5000);
-
-				// funding rate should continue to increase (but on the short side)
-				assert.bnLt(await futuresMarket.currentFundingRate(), fundingRate1);
-
-				// a new trader appears, balances the skew. funding rate at this point should stop changing.
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader3,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('300'),
-				});
-				const fairMarketFundingRate = await futuresMarket.currentFundingRate();
-
-				// even more time passes
-				await fastForward(10000);
-
-				// expecting no change in funding rate
-				assert.bnEqual(await futuresMarket.currentFundingRate(), fairMarketFundingRate);
-			});
-
-			it('Should increase rate in opposite direction when skew flips', async () => {
-				const marginDelta = toUnit('1000000');
-				const fillPrice = toUnit('100');
-				await setPrice(baseAsset, fillPrice);
-				await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
-					from: owner,
-				});
-
-				// first trade occurs and causes a skew
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('-100'),
-				});
-
-				// time passes
-				await fastForward(5000);
-				const fundingRate1 = await futuresMarket.currentFundingRate();
-
-				// a new trader appears and further adds to the skew.
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader2,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('-200'),
-				});
-
-				// time passes
-				await fastForward(5000);
-
-				// funding rate should continue to increase (but on the short side)
-				assert.bnLt(await futuresMarket.currentFundingRate(), fundingRate1);
-
-				// a new trader appears, flips the skew in the opposite direction.
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader3,
-					fillPrice,
-					marginDelta,
-					sizeDelta: toUnit('500'),
-				});
-				const fundingRate2 = await futuresMarket.currentFundingRate(); // post skew flip
-
-				// time passes
-				await fastForward(10000);
-
-				// expecting no change in funding rate
-				assert.bnGte(await futuresMarket.currentFundingRate(), fundingRate2);
-			});
-
-			it('Should cap (or not cap) the max daily funding rate by maxFundingVelocity');
-
-			it('Should increase funding rate proportional to skew/velocity');
-
-			it('Should proportionally affect funding after altering skewScaleUSD');
-
-			it('Should proportionally affect funding after altering maxFundingVelocity');
-
-			it('Should accrue no funding when position is zero-sized', async () => {
-				const fillPrice = toUnit('100');
-				await setPrice(baseAsset, fillPrice);
-				await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
-					from: owner,
-				});
-
-				// first trade occurs and causes a skew
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader,
-					fillPrice,
-					marginDelta: toUnit('1000000'),
-					sizeDelta: toUnit('-100'),
-				});
-
-				// time passes
-				await fastForward(10000);
-
-				// a trader without a size is a position tha does not exist.
-				const res = await futuresMarket.accruedFunding(trader2);
-				assert.bnEqual(res[0], toUnit('0'));
-			});
+			// No change in skew, funding rate should remain the same.
+			await fastForward(60 * 60 * 24); // 1 day
+			const fundingRate = await futuresMarket.currentFundingRate();
+			assert.bnClose(fundingRate, trades[trades.length - 1].expectedRate, toUnit('0.001'));
 		});
 
-		// Old tests (some may no longer be relevant)
+		it('A balanced market may not always have zero funding', async () => {
+			const marginDelta = toUnit('1000000');
+			const fillPrice = toUnit('100');
+			await setPrice(baseAsset, fillPrice);
+			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
+				from: owner,
+			});
+
+			// first trade occurs and causes a skew
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('100'),
+			});
+			// pushes skew even further
+			await fastForwardAndOpenPosition(5000, trader2, fillPrice, marginDelta, toUnit('200'));
+			// balances skew
+			await fastForwardAndOpenPosition(5000, trader3, fillPrice, marginDelta, toUnit('-300'));
+			// more time passes
+			await fastForward(5000);
+
+			// funding rate should not be 0.
+			assert.bnNotEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
+		});
+
+		it('Should have zero funding when market is new and empty', async () => {
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+		});
+
+		it('Should continue to increase rate so long as the market is skewed', async () => {
+			const marginDelta = toUnit('1000000');
+			const fillPrice = toUnit('100');
+			await setPrice(baseAsset, fillPrice);
+			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
+				from: owner,
+			});
+
+			// first trade occurs and causes a skew
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice,
+				marginDelta: toUnit('1000000'),
+				sizeDelta: toUnit('100'),
+			});
+
+			// time passes
+			await fastForward(5000);
+			const fundingRate1 = await futuresMarket.currentFundingRate();
+
+			// a new trader appears and further adds to the skew.
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('200'),
+			});
+
+			// time passes
+			await fastForward(5000);
+
+			// funding rate should continue to increase
+			assert.bnGt(await futuresMarket.currentFundingRate(), fundingRate1);
+
+			// a new trader appears, reduces skew but not balanced
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader3,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('-100'),
+			});
+
+			// time passes
+			await fastForward(5000);
+
+			// funding rate should continue to increase
+			assert.bnGt(await futuresMarket.currentFundingRate(), fundingRate1);
+		});
+
+		it('Should stop increasing and stay elevated when market is balanced', async () => {
+			const marginDelta = toUnit('1000000');
+			const fillPrice = toUnit('100');
+			await setPrice(baseAsset, fillPrice);
+			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
+				from: owner,
+			});
+
+			// first trade occurs and causes a skew
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('-100'),
+			});
+
+			// pushes skew further
+			await fastForwardAndOpenPosition(5000, trader2, fillPrice, marginDelta, toUnit('-200'));
+			const fundingRate1 = await futuresMarket.currentFundingRate();
+
+			// time passes
+			await fastForward(5000);
+
+			// funding rate should continue to increase (but on the short side)
+			assert.bnLt(await futuresMarket.currentFundingRate(), fundingRate1);
+
+			// a new trader appears, balances the skew. funding rate at this point should stop changing.
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader3,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('300'),
+			});
+			const fairMarketFundingRate = await futuresMarket.currentFundingRate();
+
+			// even more time passes
+			await fastForward(10000);
+
+			// expecting no change in funding rate
+			assert.bnEqual(await futuresMarket.currentFundingRate(), fairMarketFundingRate);
+		});
+
+		it('Should increase rate in opposite direction when skew flips', async () => {
+			const marginDelta = toUnit('1000000');
+			const fillPrice = toUnit('100');
+			await setPrice(baseAsset, fillPrice);
+			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
+				from: owner,
+			});
+
+			// first trade occurs and causes a skew
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('-100'),
+			});
+
+			// time passes
+			await fastForward(5000);
+			const fundingRate1 = await futuresMarket.currentFundingRate();
+
+			// a new trader appears and further adds to the skew.
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('-200'),
+			});
+
+			// time passes
+			await fastForward(5000);
+
+			// funding rate should continue to increase (but on the short side)
+			assert.bnLt(await futuresMarket.currentFundingRate(), fundingRate1);
+
+			// a new trader appears, flips the skew in the opposite direction.
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader3,
+				fillPrice,
+				marginDelta,
+				sizeDelta: toUnit('500'),
+			});
+			const fundingRate2 = await futuresMarket.currentFundingRate(); // post skew flip
+
+			// time passes
+			await fastForward(10000);
+
+			// expecting no change in funding rate
+			assert.bnGte(await futuresMarket.currentFundingRate(), fundingRate2);
+		});
+
+		it('Should cap the max daily funding velocity');
+
+		it('Should increase funding rate proportional to skew/velocity');
+
+		it('Should accrue no funding when position is zero-sized', async () => {
+			const fillPrice = toUnit('100');
+			await setPrice(baseAsset, fillPrice);
+			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
+				from: owner,
+			});
+
+			// first trade occurs and causes a skew
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice,
+				marginDelta: toUnit('1000000'),
+				sizeDelta: toUnit('-100'),
+			});
+
+			// time passes
+			await fastForward(10000);
+
+			// a trader without a size is a position tha does not exist.
+			const res = await futuresMarket.accruedFunding(trader2);
+			assert.bnEqual(res[0], toUnit('0'));
+		});
 
 		it('Altering the max funding velocity has a proportional effect', async () => {
 			// 0, +-50%, +-100%
@@ -2986,13 +2978,13 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
-			//			= (8 * 250) / 100_000 * 0.1
+			//          = (8 * 250) / 100_000 * 0.1
 			//          = 0.002
 			const expectedVelocity = toUnit('0.002');
 			assert.bnEqual(await futuresMarket.currentFundingVelocity(), expectedVelocity);
 
 			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
-			//			= (8 * 250) / 100_000 * 0.2
+			//          = (8 * 250) / 100_000 * 0.2
 			//          = 0.004
 			//          ~2x because max_funding_velocity doubled.
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.2'), { from: owner });
@@ -3065,6 +3057,8 @@ contract('PerpsV2Market', accounts => {
 			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(4 * price), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.2'));
 		});
+
+		// Old tests (some may no longer be relevant)
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
 			const side = parseInt(leverage.toString()) > 0 ? 'long' : 'short';
