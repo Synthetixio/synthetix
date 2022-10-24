@@ -216,7 +216,7 @@ contract('PerpsV2Market', accounts => {
 					'setEntryDebtCorrection',
 					'setNextPositionId',
 					'setFundingLastRecomputed',
-					'setFundingVelocity',
+					'setFundingRateLastRecomputed',
 					'pushFundingSequence',
 					'updateDelayedOrder',
 					'updatePosition',
@@ -2965,7 +2965,7 @@ contract('PerpsV2Market', accounts => {
 
 		// Old tests (some may no longer be relevant)
 
-		it('Altering the max funding has a proportional effect', async () => {
+		it('Altering the max funding velocity has a proportional effect', async () => {
 			// 0, +-50%, +-100%
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
@@ -2985,20 +2985,28 @@ contract('PerpsV2Market', accounts => {
 				sizeDelta: toUnit('-4'),
 			});
 
-			const expectedFunding = toUnit('-0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding velocity
-			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
+			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+			//			= (8 * 250) / 100_000 * 0.1
+			//          = 0.002
+			const expectedVelocity = toUnit('0.002');
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), expectedVelocity);
 
+			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+			//			= (8 * 250) / 100_000 * 0.2
+			//          = 0.004
+			//          ~2x because max_funding_velocity doubled.
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.2'), { from: owner });
 			assert.bnEqual(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(expectedFunding, toUnit(2))
+				await futuresMarket.currentFundingVelocity(),
+				multiplyDecimal(expectedVelocity, toUnit(2))
 			);
+
+			// zero because `* 0`
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0'), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0'));
 		});
 
 		it('Altering the skewScaleUSD has a proportional effect', async () => {
-			const initialPrice = 100;
 			const price = 250;
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
@@ -3016,36 +3024,46 @@ contract('PerpsV2Market', accounts => {
 				sizeDelta: toUnit('4'),
 			});
 
-			const expectedFunding = toUnit('0.002'); // 8 * 250 / 100_000 skew * 0.1 max funding velocity
-			assert.bnEqual(await futuresMarket.currentFundingRate(), expectedFunding);
+			// why?
+			//
+			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+			//          = (-8 * 250) / 100_000 * 0.1
+			//          = -0.002
+			//
+			// Note that we're negative here because we're skewed on the short side. Shorts pay the longs. A negative
+			// velocity pushes the funding rate at the rate of 0.002 in short direction.
+			const expectedVelocity = toUnit('-0.002');
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), expectedVelocity);
 
-			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(500 * initialPrice), {
+			// skew scale now halved from 100,000 -> 50,000
+			// 	= (-8 * 250) / 50000 * 0.1
+			// 	= -0.004
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(50000), {
 				from: owner,
 			});
-			assert.bnEqual(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(expectedFunding, toUnit('2'))
-			);
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.004'));
 
-			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(250 * initialPrice), {
+			// skew scale now halved from 50,000 -> 25,000
+			// 	= (-8 * 250) / 25000 * 0.1
+			// 	= -0.008
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(25000), {
 				from: owner,
 			});
-			assert.bnEqual(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(expectedFunding, toUnit('4'))
-			);
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.008'));
 
-			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(2000 * initialPrice), {
+			// skew scale from 25,000 to 200,000
+			// 	= (-8 * 250) / 200_000 * 0.1
+			// 	= -0.001
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(200000), {
 				from: owner,
 			});
-			assert.bnEqual(
-				await futuresMarket.currentFundingRate(),
-				multiplyDecimal(expectedFunding, toUnit('0.5'))
-			);
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.001'));
 
-			// skewScaleUSD is below market size
+			// skewScaleUSD is below market size (1000)
+			// 	= (-8 * 250) / 1000 * 0.1
+			// 	= -0.2
 			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(4 * price), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1')); // max funding velocity
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.2'));
 		});
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
@@ -3124,7 +3142,7 @@ contract('PerpsV2Market', accounts => {
 			});
 		}
 
-		it('Funding can be paused when market is paused', async () => {
+		it('Velocity can be paused when market is paused', async () => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
 			const price = toUnit('250');
@@ -3153,28 +3171,46 @@ contract('PerpsV2Market', accounts => {
 			const fundingRate = toUnit('0.0015');
 			assert.bnEqual(await futuresMarket.currentFundingRate(), fundingRate);
 
+			// Why 0.003?
+			//
+			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+			//          = (12 * 250) / 100_000 * 0.1
+			//          = 0.003
+			const fundingVelocity = await futuresMarket.currentFundingVelocity();
+			assert.bnEqual(fundingVelocity, toUnit('0.003'));
+
 			// 1 day
 			await fastForward(SECS_IN_DAY);
 			await setPrice(baseAsset, price);
 
 			// pause the market
 			await systemStatus.suspendFuturesMarket(marketKey, '0', { from: owner });
-			// set max funding velocity to 0
+
+			// no changed maxFundingVelocity, only a pause in the market. this allows for velocity to continue to go.
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0.003'));
+
+			// set maxFundingVelocity=0 - this will stop velocity from increasing and hence funding rate to move
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0'), { from: owner });
 
-			// check accrued
+			// velocity should now be 0.
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0'));
+
+			// accrued funding right after the pause.
 			const accrued = (await futuresMarket.accruedFunding(trader))[0];
-			// assert.bnClose(accrued, fundingRate.mul(toBN(250 * 12)), toUnit('0.01'));
 
 			// 2 days of pause
 			await fastForward(SECS_IN_DAY * 2);
 			await setPrice(baseAsset, price);
 
-			// check no funding accrued
-			assert.bnEqual((await futuresMarket.accruedFunding(trader))[0], accrued);
+			// funding accrual is expected to continue.
+			assert.bnGt((await futuresMarket.accruedFunding(trader))[0].abs(), accrued.abs());
+
+			// we also expect velocity to remain at 0
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0'));
 
 			// set max funding velocity to 0.1 again
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.1'), { from: owner });
+
 			// resume
 			await systemStatus.resumeFuturesMarket(marketKey, { from: owner });
 
@@ -3184,6 +3220,9 @@ contract('PerpsV2Market', accounts => {
 
 			// check more funding accrued
 			assert.bnGt((await futuresMarket.accruedFunding(trader))[0].abs(), accrued.abs());
+
+			// and velocity is back to non-zero
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0.003'));
 		});
 
 		describe('Funding sequence', () => {
