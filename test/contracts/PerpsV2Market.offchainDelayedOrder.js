@@ -1028,11 +1028,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 					});
 
 					describe('taker trade', () => {
-						// beforeEach(async () => {
-						// 	// go to next round
-						// 	await setOnchainPrice(baseAsset, price);
-						// });
-
 						it('from account owner', async () => {
 							await checkExecution(
 								trader,
