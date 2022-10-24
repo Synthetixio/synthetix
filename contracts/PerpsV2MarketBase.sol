@@ -132,7 +132,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /*
      * The size of the skew relative to the size of the market skew scaler.
-     * This value can be outside of [-1, 1] values.
      * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
      *
      * TODO: Remove this. Replace skewScaleUsd with just skewScale, making `price` no longer necessary.
@@ -142,7 +141,15 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         require(price > 0, "price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(marketState.marketKey()).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-        return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+
+        int pSkew = int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+
+        // Ensures the proportionalSkew is between -1 and 1.
+        //  - when pSkew = 1.1 then
+        //   min(1.1, 1) = 1
+        //  - when pSkew = -1.1 then
+        //   max(-0.02, -1) = -1
+        return pSkew > 0 ? _min(pSkew, _UNIT) : _max(pSkew, -_UNIT);
     }
 
     function _proportionalElapsed() internal view returns (int) {

@@ -2929,7 +2929,104 @@ contract('PerpsV2Market', accounts => {
 			assert.bnGte(await futuresMarket.currentFundingRate(), fundingRate2);
 		});
 
-		it('Should cap the max daily funding velocity');
+		it('Should cap the proportional max funding velocity', async () => {
+			const price = 250;
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit(price),
+				marginDelta: toUnit('1000'),
+				sizeDelta: toUnit('12'),
+			});
+
+			// we manipulate the skew_scale_usd value to reach a proportional skew of > 1 or < -1. long/shorts
+			// have a total of 6 permutations to test for:
+			//
+			//  - max_funding_velocity = 0.1
+			//  - +/-12 skew
+			//  - price = 250
+			//
+			// case 1: -1 < pSkew < 1 (long & between)
+			// case 2: pSkew > 1      (long and exceeds 1)
+			// case 3: pSkew = 1      (long and exactly cap)
+			// case 4: -1 < pSkew < 1 (short & between)
+			// case 5: pSkew < -1     (short and extends -1)
+			// case 6: pSkew = -1     (short and exactly cap)
+
+			// case (1)
+			//
+			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+			//          = 12 * 250 / 100000 * 0.1
+			//          = 0.003
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0.003'));
+
+			// case (2)
+			//
+			// velocity = min((skew * price) / skew_scale_usd, 1) * max_funding_velocity
+			//          = min(12 * 250 / (11 * 250), 1) * 0.1
+			//          = min(3000 / 2750, 1) * 0.1
+			//          = min(1.09090909, 1) * 0.1
+			//          = 0.1
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(11 * price), {
+				from: owner,
+			});
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0.1'));
+
+			// case (3)
+			//
+			// velocity = min((skew * price) / skew_scale_usd, 1) * max_funding_velocity
+			//          = min(12 * 250 / (12 * 250), 1) * 0.1
+			//          = min(3000 / 3000, 1) * 0.1
+			//          = min(1, 1) * 0.1
+			//          = 0.1
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(12 * price), {
+				from: owner,
+			});
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('0.1'));
+
+			// Flip the skew to short
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit(price),
+				marginDelta: toUnit('1000'), // 6x leverage (at $250)
+				sizeDelta: toUnit('-24'),
+			});
+
+			// case (4)
+			//
+			// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+			//          = -12 * 250 / 100000 * 0.1
+			//          = -0.003
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(100000), {
+				from: owner,
+			});
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.003'));
+
+			// case (5)
+			//
+			// velocity = max((skew * price) / skew_scale_usd, -1) * max_funding_velocity
+			//          = max(-12 * 250 / (11 * 250), -1) * 0.1
+			//          = max(-1.09090909, -1) * 0.1
+			//          = -1 * 0.1
+			//          = -0.1
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(11 * price), {
+				from: owner,
+			});
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.1'));
+
+			// case (6)
+			//
+			// velocity = max((skew * price) / skew_scale_usd, -1) * max_funding_velocity
+			//          = max(-12 * 250 / (12 * 250), -1) * 0.1
+			//          = max(-1, -1) * 0.1
+			//          = -1 * 0.1
+			//          = -0.1
+			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(12 * price), {
+				from: owner,
+			});
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.1'));
+		});
 
 		it('Should increase funding rate proportional to skew/velocity');
 
@@ -3052,10 +3149,15 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.001'));
 
 			// skewScaleUSD is below market size (1000)
-			// 	= (-8 * 250) / 1000 * 0.1
-			// 	= -0.2
+			//  = max((-8 * 250) / 1000), -1) * 0.1
+			//  = max(-2, -1) * 0.1
+			//  = -1 * 0.1
+			//  = -0.1
+			//
+			// note: min/max is applied to all velocity changes but since is skewScale never below size then we
+			// ignore that for simplicity.
 			await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit(4 * price), { from: owner });
-			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.2'));
+			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.1'));
 		});
 
 		// Old tests (some may no longer be relevant)
