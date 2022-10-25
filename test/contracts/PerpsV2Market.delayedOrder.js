@@ -145,7 +145,16 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: futuresMarket.address,
-				args: [trader, size, roundId.add(toBN(1)), spotFee, keeperFee],
+				args: [
+					trader,
+					size,
+					roundId.add(toBN(1)),
+					order.executableAtTime,
+					false,
+					0,
+					spotFee,
+					keeperFee,
+				],
 				log: decodedLogs[2],
 			});
 		});
@@ -272,7 +281,17 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: futuresMarket.address,
-				args: [trader, size, roundId.add(toBN(1)), spotFee, keeperFee, trackingCode],
+				args: [
+					trader,
+					size,
+					roundId.add(toBN(1)),
+					order.executableAtTime,
+					false,
+					0,
+					spotFee,
+					keeperFee,
+					trackingCode,
+				],
 				log: decodedLogs[2],
 			});
 		});

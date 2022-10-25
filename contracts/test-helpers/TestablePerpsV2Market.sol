@@ -186,7 +186,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     /* ---------- Delayed Orders ---------- */
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return DelayedOrder(0, 0, 0, 0, 0, bytes32(0));
+        return DelayedOrder(0, 0, 0, 0, 0, false, 0, bytes32(0));
     }
 
     function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}
@@ -211,11 +211,5 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         bytes32 trackingCode
     ) external {}
 
-    function cancelOffchainDelayedOrder(address account) external {}
-
     function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {}
-
-    function offchainDelayedOrders(address account) external view returns (OffchainDelayedOrder memory) {
-        return OffchainDelayedOrder(0, 0, 0, 0, 0, 0, bytes32(0));
-    }
 }

@@ -21,8 +21,6 @@ interface IPerpsV2MarketState {
 
     function delayedOrders(address) external view returns (IPerpsV2MarketBaseTypes.DelayedOrder memory);
 
-    function offchainDelayedOrders(address) external view returns (IPerpsV2MarketBaseTypes.OffchainDelayedOrder memory);
-
     function entryDebtCorrection() external view returns (int128);
 
     function nextPositionId() external view returns (uint64);
@@ -63,16 +61,7 @@ interface IPerpsV2MarketState {
         uint128 commitDeposit,
         uint128 keeperDeposit,
         uint256 executableAtTime,
-        bytes32 trackingCode
-    ) external;
-
-    function updateOffchainDelayedOrder(
-        address account,
-        int128 sizeDelta,
-        uint128 targetRoundId,
-        uint128 commitDeposit,
-        uint128 keeperDeposit,
-        uint256 executableAtTime,
+        bool isOffchain,
         uint256 latestPublishtime,
         bytes32 trackingCode
     ) external;
@@ -80,6 +69,4 @@ interface IPerpsV2MarketState {
     function deletePosition(address) external;
 
     function deleteDelayedOrder(address) external;
-
-    function deleteOffchainDelayedOrder(address) external;
 }

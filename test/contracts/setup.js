@@ -383,12 +383,6 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2PythOrdersBTC: [
-			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
-			tryGetAddressOf('PerpsV2MarketStateBTC'),
-			owner,
-			tryGetAddressOf('AddressResolver'),
-		],
 		PerpsV2DelayedOrderETH: [
 			tryGetAddressOf('ProxyPerpsV2MarketETH'),
 			tryGetAddressOf('PerpsV2MarketStateETH'),
@@ -743,24 +737,6 @@ const setupContract = async ({
 				instance.setProxy(cache['ProxyPerpsV2MarketETH'].address, { from: owner }),
 				...filteredFunctions.map(e =>
 					cache['ProxyPerpsV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
-						from: owner,
-					})
-				),
-			]);
-		},
-		async PerpsV2PythOrdersBTC() {
-			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
-
-			await Promise.all([
-				cache['PerpsV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
-					from: owner,
-				}),
-				cache['PerpsV2MarketStateBTC'].addAssociatedContracts([instance.address], {
-					from: owner,
-				}),
-				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
-				...filteredFunctions.map(e =>
-					cache['ProxyPerpsV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
 						from: owner,
 					})
 				),
@@ -1346,18 +1322,6 @@ const setupAllContracts = async ({
 		{
 			contract: 'PerpsV2DelayedOrderBTC',
 			source: 'PerpsV2MarketDelayedOrders',
-			deps: [
-				'ProxyPerpsV2MarketETH',
-				'PerpsV2MarketStateETH',
-				'AddressResolver',
-				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
-				'PerpsV2ExchangeRate',
-			],
-		},
-		{
-			contract: 'PerpsV2PythOrdersBTC',
-			source: 'PerpsV2MarketPythOrders',
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',

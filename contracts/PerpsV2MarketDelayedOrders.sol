@@ -4,12 +4,15 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsV2MarketProxyable.sol";
 import "./interfaces/IPerpsV2MarketDelayedOrders.sol";
+import "./interfaces/IPerpsV2MarketPythOrders.sol";
 
 // Reference
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
+import "./interfaces/IPerpsV2ExchangeRate.sol";
+import "./interfaces/IPyth.sol";
 
 /**
- Contract that implements DelayedOrders mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (onchain and offchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -21,7 +24,7 @@ import "./interfaces/IPerpsV2MarketBaseTypes.sol";
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrders
-contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2MarketProxyable {
+contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2MarketPythOrders, PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -33,6 +36,10 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
         return marketState.delayedOrders(account);
+    }
+
+    function _perpsV2ExchangeRate() internal view returns (IPerpsV2ExchangeRate) {
+        return IPerpsV2ExchangeRate(requireAndGetAddress(CONTRACT_PERPSV2EXCHANGERATE));
     }
 
     ///// Mutative methods
@@ -51,7 +58,9 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
     function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
-        _submitDelayedOrder(sizeDelta, desiredTimeDelta, bytes32(0));
+        bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, bytes32(0), false);
     }
 
     /// same as submitDelayedOrder but emits an event with the tracking code
@@ -61,18 +70,51 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         uint desiredTimeDelta,
         bytes32 trackingCode
     ) external {
-        _submitDelayedOrder(sizeDelta, desiredTimeDelta, trackingCode);
+        bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, trackingCode, false);
     }
 
-    function _submitDelayedOrder(
+    /**
+     * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
+     * Reverts if a previous order still exists (wasn't executed or cancelled).
+     * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
+     * incorrectly submitted orders (that cannot be filled).
+     *
+     * The order is executable after desiredTimeDelta. However, we also allow execution if the next price update
+     * occurs before the desiredTimeDelta.
+     * Reverts if the desiredTimeDelta is < minimum required delay.
+     *
+     * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
+     * @param desiredTimeDelta maximum time in seconds to wait before filling this order
+     */
+    function submitOffchainDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
+        bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, bytes32(0), true);
+    }
+
+    /// same as submitOffchainDelayedOrder but emits an event with the tracking code
+    /// to allow volume source fee sharing for integrations
+    function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode
+    ) external {
+        bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, trackingCode, true);
+    }
+
+    function _submitDelayedOrder(
+        bytes32 marketKey,
+        int sizeDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode,
+        bool isOffchain
     ) internal onlyProxy {
         // check that a previous order doesn't exist
         require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
-
-        bytes32 marketKey = _marketKey();
 
         // automatically set desiredTimeDelta to min if 0 is specified
         if (desiredTimeDelta == 0) {
@@ -92,12 +134,13 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         // simulate the order with current price and market and check that the order doesn't revert
         uint price = _assetPriceRequireSystemChecks();
         uint fundingIndex = _recomputeFunding(price);
+
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFeeDelayedOrder(_marketKey()),
-                makerFee: _makerFeeDelayedOrder(_marketKey()),
+                takerFee: isOffchain ? _takerFeeOffchainDelayedOrder(_marketKey()) : _takerFeeDelayedOrder(_marketKey()),
+                makerFee: isOffchain ? _makerFeeOffchainDelayedOrder(_marketKey()) : _makerFeeDelayedOrder(_marketKey()),
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
@@ -111,6 +154,10 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
 
         // create order
+        uint latestPublishTime;
+        if (isOffchain) {
+            (, latestPublishTime) = _perpsV2ExchangeRate().resolveAndGetLatestPrice(_baseAsset());
+        }
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
             DelayedOrder({
@@ -119,6 +166,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
                 executableAtTime: block.timestamp + desiredTimeDelta,
+                latestPublishTime: latestPublishTime,
+                isOffchain: isOffchain,
                 trackingCode: trackingCode
             });
         // emit event
@@ -126,6 +175,9 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             messageSender,
             order.sizeDelta,
             order.targetRoundId,
+            order.executableAtTime,
+            order.isOffchain,
+            order.latestPublishTime,
             order.commitDeposit,
             order.keeperDeposit,
             order.trackingCode
@@ -138,6 +190,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             order.commitDeposit,
             order.keeperDeposit,
             order.executableAtTime,
+            order.isOffchain,
+            order.latestPublishTime,
             order.trackingCode
         );
     }
@@ -223,6 +277,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
+        require(!order.isOffchain, "use offchain method");
+
         // check order executability and round-id
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
         require(
@@ -251,7 +307,9 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         }
 
         Position memory position = marketState.positions(account);
+
         uint currentPrice = _assetPriceRequireSystemChecks();
+
         uint fundingIndex = _recomputeFunding(currentPrice);
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
@@ -293,7 +351,118 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         );
     }
 
+    /**
+     * @notice Tries to execute a previously submitted delayed order.
+     * Reverts if:
+     * - There is no order
+     * - Target roundId wasn't reached yet
+     * - Order is stale (target roundId is too low compared to current roundId).
+     * - Order fails for accounting reason (e.g. margin was removed, leverage exceeded, etc)
+     * - Time delay and target round has not yet been reached
+     * If order reverts, it has to be removed by calling cancelDelayedOrder().
+     * Anyone can call this method for any account.
+     * If this is called by the account holder - the keeperFee is refunded into margin,
+     *  otherwise it sent to the msg.sender.
+     * @param account address of the account for which to try to execute a delayed order
+     */
+    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable onlyProxy {
+        // important!: order of the account, not the sender!
+        DelayedOrder memory order = marketState.delayedOrders(account);
+        // check that a previous order exists
+        require(order.sizeDelta != 0, "no previous order");
+
+        require(order.isOffchain, "use not offchain method");
+
+        // check order executability and round-id
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
+        require(
+            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
+            "executability not reached"
+        );
+
+        // check order is not too old to execute
+        // we cannot allow executing old orders because otherwise future knowledge
+        // can be used to trigger failures of orders that are more profitable
+        // then the commitFee that was charged, or can be used to confirm
+        // orders that are more profitable than known then (which makes this into a "cheap option").
+        require(
+            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+            "order too old, use cancel"
+        );
+
+        // handle the fees and refunds according to the mechanism rules
+        uint toRefund = order.commitDeposit; // refund the commitment deposit
+
+        // refund keeperFee to margin if it's the account holder
+        if (messageSender == account) {
+            toRefund += order.keeperDeposit;
+        } else {
+            _manager().issueSUSD(messageSender, order.keeperDeposit);
+        }
+
+        Position memory position = marketState.positions(account);
+
+        // update price feed (this is payable)
+        _perpsV2ExchangeRate().updatePythPrice(messageSender, priceUpdateData);
+
+        // get latest price for asset
+        (uint currentPrice, uint publishTimestamp) = _offchainAssetPriceRequireSystemChecks();
+        require(publishTimestamp > order.latestPublishTime, "price feed not updated");
+
+        uint fundingIndex = _recomputeFunding(currentPrice);
+        // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
+        // if the order later fails this is reverted of course
+        _updatePositionMargin(account, position, currentPrice, int(toRefund));
+        // emit event for modifying the position (refunding fee/s)
+        emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
+
+        // price depends on whether the delay or price update has reached/occurred first
+        uint executePrice = currentPrice;
+        if (currentRoundId >= order.targetRoundId) {
+            // the correct price for the past round if target round was met
+            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
+            executePrice = pastPrice;
+        }
+
+        // execute or revert
+        _trade(
+            account,
+            TradeParams({
+                sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
+                price: executePrice, // the funding is applied only from order confirmation time
+                takerFee: _takerFeeOffchainDelayedOrder(_marketKey()),
+                makerFee: _makerFeeOffchainDelayedOrder(_marketKey()),
+                trackingCode: order.trackingCode
+            })
+        );
+
+        // remove stored order
+        marketState.deleteDelayedOrder(account);
+        // emit event
+        emitDelayedOrderRemoved(
+            account,
+            currentRoundId,
+            order.sizeDelta,
+            order.targetRoundId,
+            order.commitDeposit,
+            order.keeperDeposit,
+            order.trackingCode
+        );
+    }
+
     ///// Internal views
+
+    /*
+     * The current base price, reverting if it is invalid, or if system or synth is suspended.
+     */
+    function _offchainAssetPriceRequireSystemChecks() internal view returns (uint price, uint publishTime) {
+        // check that futures market isn't suspended, revert with appropriate message
+        _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
+        // check that synth is active, and wasn't suspended, revert with appropriate message
+        _systemStatus().requireSynthActive(_baseAsset());
+
+        return _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), _offchainDelayedOrderConfirmWindow(_marketKey()));
+    }
 
     /// confirmation window is over when:
     ///  1. current roundId is more than nextPriceConfirmWindow rounds after target roundId
@@ -336,23 +505,38 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         address indexed account,
         int sizeDelta,
         uint targetRoundId,
+        uint executableAtTime,
+        bool isOffchain,
+        uint latestPublishTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     );
     bytes32 internal constant DELAYEDORDERORDERSUBMITTED_SIG =
-        keccak256("DelayedOrderSubmitted(address,int256,uint256,uint256,uint256,bytes32)");
+        keccak256("DelayedOrderSubmitted(address,int256,uint256,uint256,bool,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderSubmitted(
         address account,
         int sizeDelta,
         uint targetRoundId,
+        uint executableAtTime,
+        bool isOffchain,
+        uint latestPublishTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     ) internal {
         proxy._emit(
-            abi.encode(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
+            abi.encode(
+                sizeDelta,
+                targetRoundId,
+                executableAtTime,
+                isOffchain,
+                latestPublishTime,
+                commitDeposit,
+                keeperDeposit,
+                trackingCode
+            ),
             2,
             DELAYEDORDERORDERSUBMITTED_SIG,
             addressToBytes32(account),

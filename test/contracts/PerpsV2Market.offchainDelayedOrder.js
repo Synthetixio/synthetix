@@ -12,7 +12,7 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 	let perpsV2MarketSettings,
 		perpsV2Market,
-		perpsV2OffchainDelayedOrder,
+		perpsV2DelayedOrder,
 		perpsV2MarketState,
 		perpsV2ExchangeRate,
 		mockPyth,
@@ -103,7 +103,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		({
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
-			PerpsV2PythOrdersBTC: perpsV2OffchainDelayedOrder,
+			PerpsV2DelayedOrderBTC: perpsV2DelayedOrder,
 			PerpsV2MarketStateBTC: perpsV2MarketState,
 			PerpsV2ExchangeRate: perpsV2ExchangeRate,
 			ExchangeRates: exchangeRates,
@@ -212,7 +212,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
 			const expectedExecutableAt = txBlock.timestamp + desiredTimeDelta;
 
-			const order = await perpsV2MarketState.offchainDelayedOrders(trader);
+			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
@@ -228,7 +228,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [perpsV2Market, perpsV2OffchainDelayedOrder],
+				contracts: [perpsV2Market, perpsV2DelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
 			// PositionModified
@@ -238,15 +238,16 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
 				log: decodedLogs[1],
 			});
-			// OffchainDelayedOrderSubmitted
+			// DelayedOrderSubmitted
 			decodedEventEqual({
-				event: 'OffchainDelayedOrderSubmitted',
+				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
 				args: [
 					trader,
 					size,
 					roundId.add(toBN(1)),
 					expectedExecutableAt,
+					true,
 					latestPublishTime,
 					spotFee,
 					keeperFee,
@@ -260,7 +261,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, 0, { from: trader });
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
 
-			const order = await perpsV2MarketState.offchainDelayedOrders(trader);
+			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + minDelayTimeDelta);
 		});
 
@@ -362,7 +363,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
 
 			// check order
-			const order = await perpsV2MarketState.offchainDelayedOrders(trader);
+			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
@@ -372,18 +373,19 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
 			});
 
-			// OffchainDelayedOrderSubmitted
+			// DelayedOrderSubmitted
 			decodedEventEqual({
-				event: 'OffchainDelayedOrderSubmitted',
+				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
 				args: [
 					trader,
 					size,
 					roundId.add(toBN(1)),
 					txBlock.timestamp + desiredTimeDelta,
+					true,
 					latestPublishTime,
 					spotFee,
 					keeperFee,
@@ -428,7 +430,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
 			});
 
 			decodedEventEqual({
@@ -440,16 +442,16 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		});
 	});
 
-	describe('cancelOffchainDelayedOrder()', () => {
+	describe('cancelDelayedOrder()', () => {
 		it('cannot cancel when there is no order', async () => {
 			// account owner
 			await assert.revert(
-				perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
+				perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
 				'no previous order'
 			);
 			// keeper
 			await assert.revert(
-				perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+				perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 				'no previous order'
 			);
 		});
@@ -461,10 +463,10 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			async function checkCancellation(from) {
 				const currentMargin = toBN((await perpsV2Market.positions(trader)).margin);
 				// cancel the order
-				const tx = await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: from });
+				const tx = await perpsV2Market.cancelDelayedOrder(trader, { from: from });
 
 				// check order is removed
-				const order = await perpsV2MarketState.offchainDelayedOrders(trader);
+				const order = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
@@ -473,7 +475,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+					contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
 				});
 
 				if (from === trader) {
@@ -505,9 +507,9 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 					args: [await feePool.FEE_ADDRESS(), spotFee],
 					log: decodedLogs.slice(-2, -1)[0], // [-2]
 				});
-				// OffchainDelayedOrderRemoved
+				// DelayedOrderRemoved
 				decodedEventEqual({
-					event: 'OffchainDelayedOrderRemoved',
+					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
 					args: [trader, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
@@ -517,7 +519,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				// and can submit new order
 				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
-				const newOrder = await perpsV2MarketState.offchainDelayedOrders(trader);
+				const newOrder = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
@@ -531,7 +533,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			it('cannot cancel if futures markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
+					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -539,7 +541,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			it('cannot cancel if market is suspended', async () => {
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
+					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
 					'Market suspended'
 				);
 			});
@@ -597,28 +599,28 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				it('cannot cancel before confirmation window is over', async () => {
 					// same round
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// target round
 					await setOnchainPrice(baseAsset, price);
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// next round after target round
 					await setOnchainPrice(baseAsset, price);
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// next one after that (for 2 roundId)
 					await setOnchainPrice(baseAsset, price);
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
@@ -638,7 +640,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 					// no time has changed.
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
@@ -646,18 +648,18 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 					const ffDelta = 5;
 
 					// time has moved forward (no change to round) but not enough.
-					const order = await perpsV2MarketState.offchainDelayedOrders(trader);
+					const order = await perpsV2MarketState.delayedOrders(trader);
 					const exectuableAtTimeDelta = order.executableAtTime.sub(toBN(timestamp)).toNumber();
 					await fastForward(ffDelta); // fast forward by 5 seconds
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
 					// time has moved forward, order is executable but cancellable
 					await fastForward(exectuableAtTimeDelta - ffDelta + 1);
 					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
 					);
 
@@ -669,7 +671,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		});
 	});
 
-	describe('executeDelayedOrder()', () => {
+	describe('executeOffchainDelayedOrder()', () => {
 		it('cannot execute when there is no order', async () => {
 			const updateFeedData = await getFeedUpdateData({
 				id: defaultFeedId,
@@ -796,7 +798,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				});
 
 				// check order is removed now
-				const order = await perpsV2MarketState.offchainDelayedOrders(trader);
+				const order = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(order.sizeDelta, 0);
 				assert.bnEqual(order.targetRoundId, 0);
 				assert.bnEqual(order.commitDeposit, 0);
@@ -806,7 +808,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+					contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
 				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded
@@ -856,9 +858,9 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
-				// OffchainDelayedOrderRemoved
+				// DelayedOrderRemoved
 				decodedEventEqual({
-					event: 'OffchainDelayedOrderRemoved',
+					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
 					args: [trader, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
@@ -868,7 +870,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				// and can submit new order
 				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
-				const newOrder = await perpsV2MarketState.offchainDelayedOrders(trader);
+				const newOrder = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
 
@@ -1119,12 +1121,12 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			});
 
 			it('canceling an order works', async () => {
-				await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader });
+				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
 			});
 
 			it('submitting an order reverts', async () => {
 				// cancel existing
-				await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader });
+				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
 
 				await assert.revert(
 					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
