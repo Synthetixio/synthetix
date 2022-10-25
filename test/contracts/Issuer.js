@@ -212,7 +212,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				args: [sUSD, owner, toUnit(100)],
 				accounts,
 				address: synthetixBridgeToOptimism,
-				reason: 'Issuer: only trusted minters',
+				reason: 'only trusted minters',
 			});
 		});
 
@@ -223,7 +223,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// full functionality of this method requires issuing synths,
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
-				reason: 'Issuer: only trusted minters',
+				reason: 'only trusted minters',
 			});
 		});
 
@@ -232,7 +232,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -240,7 +240,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
@@ -248,7 +248,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynths,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -256,7 +256,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.issueMaxSynthsOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynths() cannot be invoked directly by a user', async () => {
@@ -264,7 +264,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynths,
 				args: [account1, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
@@ -272,7 +272,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
@@ -280,7 +280,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTarget,
 				args: [account1],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('liquidateAccount() cannot be invoked directly by a user', async () => {
@@ -288,7 +288,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.liquidateAccount,
 				args: [account1, false],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
@@ -296,7 +296,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				fnc: issuer.burnSynthsToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
-				reason: 'Issuer: Only Synthetix',
+				reason: 'Only Synthetix',
 			});
 		});
 		it('setCurrentPeriodId() cannot be invoked directly by a user', async () => {
@@ -322,7 +322,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					issuer.issueSynthsWithoutDebt(sUSD, owner, toUnit(100), {
 						from: synthetixBridgeToOptimism,
 					}),
-					'Issuer: one minter must be 0x0'
+					'one minter must be 0x0'
 				);
 			});
 		});
@@ -1842,7 +1842,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await assert.revert(
 							synthetix.issueSynths(issuedSynths1, { from: account1 }),
-							'Issuer: cannot issue 0 synths'
+							'cannot issue 0 synths'
 						);
 					});
 				});
@@ -2436,7 +2436,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.unitEqual(ratio, '0.2');
 				});
 
-				it("should include escrowed synthetix when calculating a user's collaterisation ratio", async () => {
+				it("should not include escrowed synthetix when calculating a user's collaterisation ratio", async () => {
 					const snx2usdRate = await exchangeRates.rateForCurrency(SNX);
 					const transferredSynthetixs = toUnit('60000');
 					await synthetix.transfer(account1, transferredSynthetixs, {
@@ -2468,7 +2468,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					const collaterisationRatio = await synthetix.collateralisationRatio(account1);
 					const expectedCollaterisationRatio = divideDecimal(
 						maxIssuable,
-						multiplyDecimal(escrowedSynthetixs.add(transferredSynthetixs), snx2usdRate)
+						multiplyDecimal(transferredSynthetixs, snx2usdRate)
 					);
 					assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 				});
@@ -2502,10 +2502,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				it('should permit user to issue sUSD debt with only escrowed SNX as collateral (no SNX in wallet)', async () => {
-					const oneWeek = 60 * 60 * 24 * 7;
-					const twelveWeeks = oneWeek * 12;
-					const now = await currentTime();
-
 					// ensure collateral of account1 is empty
 					let collateral = await synthetix.collateral(account1, { from: account1 });
 					assert.bnEqual(collateral, 0);
@@ -2516,17 +2512,12 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 					// Append escrow amount to account1
 					const escrowedAmount = toUnit('15000');
-					await synthetix.transfer(escrow.address, escrowedAmount, {
+					await synthetix.transfer(rewardEscrowV2.address, escrowedAmount, {
 						from: owner,
 					});
-					await escrow.appendVestingEntry(
-						account1,
-						web3.utils.toBN(now + twelveWeeks),
-						escrowedAmount,
-						{
-							from: owner,
-						}
-					);
+					await rewardEscrowV2.appendVestingEntry(account1, escrowedAmount, duration, {
+						from: account6,
+					});
 
 					// collateral should include escrowed amount
 					collateral = await synthetix.collateral(account1, { from: account1 });
@@ -2575,7 +2566,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					assert.bnEqual(collateral, amount);
 				});
 
-				it("should include escrowed synthetix when checking a user's collateral", async () => {
+				it("should not include escrowed synthetix when checking a user's collateral", async () => {
 					const oneWeek = 60 * 60 * 24 * 7;
 					const twelveWeeks = oneWeek * 12;
 					const now = await currentTime();
@@ -2595,7 +2586,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					const amount = toUnit('60000');
 					await synthetix.transfer(account1, amount, { from: owner });
 					const collateral = await synthetix.collateral(account1, { from: account2 });
-					assert.bnEqual(collateral, amount.add(escrowedAmount));
+					assert.bnEqual(collateral, amount);
 				});
 
 				it("should include escrowed reward synthetix when checking a user's collateral", async () => {
@@ -2635,21 +2626,13 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					// Setup escrow
-					const oneWeek = 60 * 60 * 24 * 7;
-					const twelveWeeks = oneWeek * 12;
-					const now = await currentTime();
 					const escrowedSynthetixs = toUnit('30000');
-					await synthetix.transfer(escrow.address, escrowedSynthetixs, {
+					await synthetix.transfer(rewardEscrowV2.address, escrowedSynthetixs, {
 						from: owner,
 					});
-					await escrow.appendVestingEntry(
-						account1,
-						web3.utils.toBN(now + twelveWeeks),
-						escrowedSynthetixs,
-						{
-							from: owner,
-						}
-					);
+					await rewardEscrowV2.appendVestingEntry(account1, escrowedSynthetixs, duration, {
+						from: account6,
+					});
 
 					const maxIssuable = await synthetix.maxIssuableSynths(account1);
 					// await synthetix.issueSynths(maxIssuable, { from: account1 });
@@ -2879,7 +2862,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						fnc: issuer.burnForRedemption,
 						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
 						accounts,
-						reason: 'Issuer: Only SynthRedeemer',
+						reason: 'Only SynthRedeemer',
 					});
 				});
 				describe('when a user has 100 sETH', () => {
@@ -3017,17 +3000,10 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 
 				describe('basic protection', () => {
-					it('should not allow address(0) for the CollateralShortLegacy', async () => {
-						await assert.revert(
-							issuer.upgradeCollateralShort(ZERO_ADDRESS, toUnit(0.1), { from: owner }),
-							'Issuer: invalid address'
-						);
-					});
-
 					it('should not allow an invalid address for the CollateralShortLegacy', async () => {
 						await assert.revert(
 							issuer.upgradeCollateralShort(wrongCollateralShort, toUnit(0.1), { from: owner }),
-							'Issuer: wrong short address'
+							'wrong address'
 						);
 					});
 
@@ -3036,7 +3012,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							issuer.upgradeCollateralShort(collateralShortMock, toUnit(0), {
 								from: owner,
 							}),
-							'Issuer: cannot burn 0 synths'
+							'cannot burn 0 synths'
 						);
 					});
 				});

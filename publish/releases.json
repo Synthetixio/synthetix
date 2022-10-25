@@ -703,7 +703,8 @@
 				"Synthetix",
 				"Liquidator",
 				"RewardEscrowV2Storage"
-			]
+			],
+			"released": "both"
 		},
 		{
 			"sip": 257,
@@ -1373,7 +1374,8 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
 		},
 		{
 			"name": "Aspidiske (Optimism)",
@@ -1382,7 +1384,8 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
 		}
 	]
 }

@@ -161,7 +161,11 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 		providerUrl = 'http://127.0.0.1:8545';
 	} else {
 		if (useOvm) {
-			providerUrl = `https://${network}.optimism.io`;
+			if (network === 'mainnet' && process.env.OVM_PROVIDER_URL) {
+				providerUrl = process.env.OVM_PROVIDER_URL;
+			} else if (process.env.OVM_GOERLI_PROVIDER_URL) {
+				providerUrl = process.env.OVM_GOERLI_PROVIDER_URL;
+			}
 		} else {
 			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
 				providerUrl = process.env.PROVIDER_URL_MAINNET;
