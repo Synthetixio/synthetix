@@ -279,75 +279,12 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
 
         require(!order.isOffchain, "use offchain method");
 
-        // check order executability and round-id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
-        require(
-            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
-            "executability not reached"
-        );
-
-        // check order is not too old to execute
-        // we cannot allow executing old orders because otherwise future knowledge
-        // can be used to trigger failures of orders that are more profitable
-        // then the commitFee that was charged, or can be used to confirm
-        // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(
-            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-            "order too old, use cancel"
-        );
-
-        // handle the fees and refunds according to the mechanism rules
-        uint toRefund = order.commitDeposit; // refund the commitment deposit
-
-        // refund keeperFee to margin if it's the account holder
-        if (messageSender == account) {
-            toRefund += order.keeperDeposit;
-        } else {
-            _manager().issueSUSD(messageSender, order.keeperDeposit);
-        }
-
-        Position memory position = marketState.positions(account);
-
-        uint currentPrice = _assetPriceRequireSystemChecks();
-
-        uint fundingIndex = _recomputeFunding(currentPrice);
-        // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
-        // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, currentPrice, int(toRefund));
-        // emit event for modifying the position (refunding fee/s)
-        emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
-
-        // price depends on whether the delay or price update has reached/occurred first
-        uint executePrice = currentPrice;
-        if (currentRoundId >= order.targetRoundId) {
-            // the correct price for the past round if target round was met
-            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
-            executePrice = pastPrice;
-        }
-
-        // execute or revert
-        _trade(
+        _executeDelayedOrder(
             account,
-            TradeParams({
-                sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: executePrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeDelayedOrder(_marketKey()),
-                makerFee: _makerFeeDelayedOrder(_marketKey()),
-                trackingCode: order.trackingCode
-            })
-        );
-
-        // remove stored order
-        marketState.deleteDelayedOrder(account);
-        // emit event
-        emitDelayedOrderRemoved(
-            account,
-            currentRoundId,
-            order.sizeDelta,
-            order.targetRoundId,
-            order.commitDeposit,
-            order.keeperDeposit,
-            order.trackingCode
+            order,
+            _assetPriceRequireSystemChecks(),
+            _takerFeeDelayedOrder(_marketKey()),
+            _makerFeeDelayedOrder(_marketKey())
         );
     }
 
@@ -371,8 +308,31 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        require(order.isOffchain, "use not offchain method");
+        require(order.isOffchain, "use onchain method");
 
+        // update price feed (this is payable)
+        _perpsV2ExchangeRate().updatePythPrice(messageSender, priceUpdateData);
+
+        // get latest price for asset
+        (uint currentPrice, uint publishTimestamp) = _offchainAssetPriceRequireSystemChecks();
+        require(publishTimestamp > order.latestPublishTime, "price feed not updated");
+
+        _executeDelayedOrder(
+            account,
+            order,
+            currentPrice,
+            _takerFeeOffchainDelayedOrder(_marketKey()),
+            _makerFeeOffchainDelayedOrder(_marketKey())
+        );
+    }
+
+    function _executeDelayedOrder(
+        address account,
+        DelayedOrder memory order,
+        uint currentPrice,
+        uint takerFee,
+        uint makerFee
+    ) internal {
         // check order executability and round-id
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
         require(
@@ -402,13 +362,6 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
 
         Position memory position = marketState.positions(account);
 
-        // update price feed (this is payable)
-        _perpsV2ExchangeRate().updatePythPrice(messageSender, priceUpdateData);
-
-        // get latest price for asset
-        (uint currentPrice, uint publishTimestamp) = _offchainAssetPriceRequireSystemChecks();
-        require(publishTimestamp > order.latestPublishTime, "price feed not updated");
-
         uint fundingIndex = _recomputeFunding(currentPrice);
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
@@ -430,8 +383,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
                 price: executePrice, // the funding is applied only from order confirmation time
-                takerFee: _takerFeeOffchainDelayedOrder(_marketKey()),
-                makerFee: _makerFeeOffchainDelayedOrder(_marketKey()),
+                takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
+                makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
                 trackingCode: order.trackingCode
             })
         );

@@ -826,7 +826,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 						event: 'Issued',
 						emittedFrom: sUSD.address,
 						args: [from, keeperFee],
-						log: decodedLogs[0],
+						log: decodedLogs[3],
 					});
 				}
 
