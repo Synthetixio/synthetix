@@ -132,21 +132,21 @@ contract('Exchanger (spec tests)', async accounts => {
 		}
 	}
 
-	async function setAtomicTwapWindow(window) {
-		if (directIntegration) {
-			await changeOneDISetting(4, window);
-		} else {
-			await systemSettings.setAtomicTwapWindow(window, { from: owner });
-		}
-	}
+	// async function setAtomicTwapWindow(window) {
+	// 	if (directIntegration) {
+	// 		await changeOneDISetting(4, window);
+	// 	} else {
+	// 		await systemSettings.setAtomicTwapWindow(window, { from: owner });
+	// 	}
+	// }
 
-	async function setAtomicMaxVolumePerBlock(vol) {
-		if (directIntegration) {
-			await changeOneDISetting(5, vol);
-		} else {
-			await systemSettings.setAtomicMaxVolumePerBlock(vol, { from: owner });
-		}
-	}
+	// async function setAtomicMaxVolumePerBlock(vol) {
+	// 	if (directIntegration) {
+	// 		await changeOneDISetting(5, vol);
+	// 	} else {
+	// 		await systemSettings.setAtomicMaxVolumePerBlock(vol, { from: owner });
+	// 	}
+	// }
 
 	async function setAtomicVolatilityConsiderationWindow(token, window) {
 		if (directIntegration) {
@@ -183,13 +183,13 @@ contract('Exchanger (spec tests)', async accounts => {
 		}
 	}
 
-	async function setExchangeMaxDynamicFee(fee) {
-		if (directIntegration) {
-			await changeOneDISetting(9, fee);
-		} else {
-			await systemSettings.setExchangeMaxDynamicFee(fee, { from: owner });
-		}
-	}
+	// async function setExchangeMaxDynamicFee(fee) {
+	// 	if (directIntegration) {
+	// 		await changeOneDISetting(9, fee);
+	// 	} else {
+	// 		await systemSettings.setExchangeMaxDynamicFee(fee, { from: owner });
+	// 	}
+	// }
 
 	async function setExchangeDynamicFeeRounds(rounds) {
 		if (directIntegration) {
@@ -199,21 +199,21 @@ contract('Exchanger (spec tests)', async accounts => {
 		}
 	}
 
-	async function setExchangeDynamicFeeThreshold(threshold) {
-		if (directIntegration) {
-			await changeOneDISetting(11, threshold);
-		} else {
-			await systemSettings.setExchangeDynamicFeeThreshold(threshold, { from: owner });
-		}
-	}
+	// async function setExchangeDynamicFeeThreshold(threshold) {
+	// 	if (directIntegration) {
+	// 		await changeOneDISetting(11, threshold);
+	// 	} else {
+	// 		await systemSettings.setExchangeDynamicFeeThreshold(threshold, { from: owner });
+	// 	}
+	// }
 
-	async function setExchangeDynamicFeeWeightDecay(decay) {
-		if (directIntegration) {
-			await changeOneDISetting(12, decay);
-		} else {
-			await systemSettings.setExchangeDynamicFeeWeightDecay(decay, { from: owner });
-		}
-	}
+	// async function setExchangeDynamicFeeWeightDecay(decay) {
+	// 	if (directIntegration) {
+	// 		await changeOneDISetting(12, decay);
+	// 	} else {
+	// 		await systemSettings.setExchangeDynamicFeeWeightDecay(decay, { from: owner });
+	// 	}
+	// }
 
 	const itReadsTheWaitingPeriod = () => {
 		describe('waitingPeriodSecs', () => {
