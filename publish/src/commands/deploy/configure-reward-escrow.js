@@ -29,7 +29,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		contract: 'RewardEscrowV2Frozen',
 		target: frozenOrPreviousEscrow,
 		read: 'accountMergingDuration',
-		expected: input => input === 0,
+		expected: input => input === '0',
 		write: 'setAccountMergingDuration',
 		writeArg: 0,
 		comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
