@@ -50,10 +50,10 @@ library ExchangeSettlementLib {
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
-            reclaim(resolvedAddresses, from, currencyKey, reclaimed);
+            _reclaim(resolvedAddresses, from, currencyKey, reclaimed);
         } else if (rebateAmount > reclaimAmount) {
             refunded = rebateAmount.sub(reclaimAmount);
-            refund(resolvedAddresses, from, currencyKey, refunded);
+            _refund(resolvedAddresses, from, currencyKey, refunded);
         }
 
         // by checking a reclaim or refund we also check that the currency key is still a valid synth,
@@ -91,10 +91,10 @@ library ExchangeSettlementLib {
         bytes32 currencyKey,
         uint waitingPeriod
     ) public view returns (uint) {
-        return secsLeftInWaitingPeriodForExchange(exchangeState.getMaxTimestamp(account, currencyKey), waitingPeriod);
+        return _secsLeftInWaitingPeriodForExchange(exchangeState.getMaxTimestamp(account, currencyKey), waitingPeriod);
     }
 
-    function secsLeftInWaitingPeriodForExchange(uint timestamp, uint waitingPeriod) internal view returns (uint) {
+    function _secsLeftInWaitingPeriodForExchange(uint timestamp, uint waitingPeriod) internal view returns (uint) {
         if (timestamp == 0 || now >= timestamp.add(waitingPeriod)) {
             return 0;
         }
@@ -102,7 +102,7 @@ library ExchangeSettlementLib {
         return timestamp.add(waitingPeriod).sub(now);
     }
 
-    function reclaim(
+    function _reclaim(
         ResolvedAddresses memory resolvedAddresses,
         address from,
         bytes32 currencyKey,
@@ -113,7 +113,7 @@ library ExchangeSettlementLib {
         ISynthetixInternal(address(resolvedAddresses.synthetix)).emitExchangeReclaim(from, currencyKey, amount);
     }
 
-    function refund(
+    function _refund(
         ResolvedAddresses memory resolvedAddresses,
         address from,
         bytes32 currencyKey,
@@ -181,11 +181,11 @@ library ExchangeSettlementLib {
         for (uint i = 0; i < numEntries; i++) {
             // fetch the entry from storage
             IExchangeState.ExchangeEntry memory exchangeEntry =
-                getExchangeEntry(resolvedAddresses.exchangeState, account, currencyKey, i);
+                _getExchangeEntry(resolvedAddresses.exchangeState, account, currencyKey, i);
 
             // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) =
-                getRoundIdsAtPeriodEnd(resolvedAddresses.exchangeRates, exchangeEntry, waitingPeriod);
+                _getRoundIdsAtPeriodEnd(resolvedAddresses.exchangeRates, exchangeEntry, waitingPeriod);
 
             // given these round ids, determine what effective value they should have received
             uint amountShouldHaveReceived;
@@ -200,7 +200,7 @@ library ExchangeSettlementLib {
                     );
 
                 // and deduct the fee from this amount using the exchangeFeeRate from storage
-                amountShouldHaveReceived = deductFeesFromAmount(destinationAmount, exchangeEntry.exchangeFeeRate);
+                amountShouldHaveReceived = _deductFeesFromAmount(destinationAmount, exchangeEntry.exchangeFeeRate);
             }
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
@@ -241,7 +241,7 @@ library ExchangeSettlementLib {
         return (reclaimAmount, rebateAmount, numEntries, settlements);
     }
 
-    function getExchangeEntry(
+    function _getExchangeEntry(
         IExchangeState exchangeState,
         address account,
         bytes32 currencyKey,
@@ -271,7 +271,7 @@ library ExchangeSettlementLib {
             });
     }
 
-    function getRoundIdsAtPeriodEnd(
+    function _getRoundIdsAtPeriodEnd(
         IExchangeRates exRates,
         IExchangeState.ExchangeEntry memory exchangeEntry,
         uint waitingPeriod
@@ -290,7 +290,11 @@ library ExchangeSettlementLib {
         );
     }
 
-    function deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate) internal pure returns (uint amountReceived) {
+    function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
+        internal
+        pure
+        returns (uint amountReceived)
+    {
         amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 

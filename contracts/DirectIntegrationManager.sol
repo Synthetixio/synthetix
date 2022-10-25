@@ -118,7 +118,6 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
     ) internal {
         require(address(integration) != address(0), "Address cannot be 0");
 
-        // TODO: causes `UnimplementedFeatureError`
         _settings[integration][currencyKey] = settings; // overwrites the parameters for a given direct integration
         emit IntegrationParametersSet(integration, currencyKey, settings);
     }

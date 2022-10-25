@@ -76,6 +76,8 @@ interface ISystemStatus {
         view
         returns (bool[] memory suspensions, uint256[] memory reasons);
 
+    function isDirectIntegrationSuspended(address integration) external view returns (bool);
+
     // Restricted functions
     function suspendIssuance(uint256 reason) external;
 

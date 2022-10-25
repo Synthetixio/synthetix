@@ -166,7 +166,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
         return
-            ExchangeSettlementLib.secsLeftInWaitingPeriodForExchange(
+            ExchangeSettlementLib._secsLeftInWaitingPeriodForExchange(
                 exchangeState().getMaxTimestamp(account, currencyKey),
                 getWaitingPeriodSecs()
             );
@@ -218,7 +218,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         }
 
-        systemStatus().requireDirectIntegrationActive(from);
         IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
             _exchangeSettings(from, sourceCurrencyKey);
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
@@ -382,7 +381,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
+        amountReceived = ExchangeSettlementLib._deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
         // Note: `fee` is denominated in the destinationCurrencyKey.
         fee = entry.destinationAmount.sub(amountReceived);
 
@@ -505,6 +504,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
     {
+        if (systemStatus().isDirectIntegrationSuspended(from)) from = address(0);
         settings = directIntegrationManager().getExchangeParameters(from, currencyKey);
     }
 
@@ -786,16 +786,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (uint destinationAmount, , ) =
             exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
+        amountReceived = ExchangeSettlementLib._deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
-    }
-
-    function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
-        internal
-        pure
-        returns (uint amountReceived)
-    {
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
     }
 
     function _notImplemented() internal pure {

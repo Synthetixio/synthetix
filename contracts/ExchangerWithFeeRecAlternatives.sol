@@ -155,7 +155,6 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         uint systemDestinationRate;
 
         {
-            systemStatus().requireDirectIntegrationActive(from);
             IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
                 _exchangeSettings(from, sourceCurrencyKey);
             IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
@@ -334,7 +333,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             .effectiveAtomicValueAndRates(sourceSettings, sourceAmount, destinationSettings, usdSettings);
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceSettings, destinationSettings);
-        amountReceived = ExchangeSettlementLib.deductFeesFromAmount(destinationAmount, exchangeFeeRate);
+        amountReceived = ExchangeSettlementLib._deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 

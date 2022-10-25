@@ -84,9 +84,7 @@ contract SystemStatus is Owned, ISystemStatus {
     }
 
     function requireDirectIntegrationActive(address integration) external view {
-        // Direct integrations require the system and exchanging to be active, as well as the integration itself.
-        _internalRequireSystemActive();
-        _internalRequireExchangeActive();
+        // Direct integrations also require the system and exchanging to be active, which are both checked by the exchangeActive modifier in BaseSynthetix.sol.
         _internalRequireDirectIntegrationActive(integration);
     }
 
@@ -182,6 +180,10 @@ contract SystemStatus is Owned, ISystemStatus {
             suspensions[i] = directIntegrationSuspension[integrations[i]].suspended;
             reasons[i] = directIntegrationSuspension[integrations[i]].reason;
         }
+    }
+
+    function isDirectIntegrationSuspended(address integration) external view returns (bool) {
+        return directIntegrationSuspension[integration].suspended;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
