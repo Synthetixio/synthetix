@@ -249,6 +249,6 @@
 		"maxMarketValueUSD": "1000000",
 		"maxFundingRate": "0.1",
 		"skewScaleUSD": "5000000",
-		"paused": true
+		"paused": false
 	}
 ]
