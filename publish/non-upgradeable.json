@@ -8,6 +8,7 @@
 	"ProxyERC20",
 	"RewardEscrow$",
 	"RewardEscrowV2Frozen",
+	"RewardEscrowV2Storage",
 	"RewardsDistribution",
 	"SafeDecimalMath",
 	"SynthetixEscrow",

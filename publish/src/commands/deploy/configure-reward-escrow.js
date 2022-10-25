@@ -2,7 +2,6 @@
 
 const { gray } = require('chalk');
 const {
-	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../../..');
 
@@ -10,10 +9,10 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	console.log(gray(`\n------ CONFIGURE REWARD ESCROW V2 (MIGRATION) ------\n`));
 
 	const {
-		AddressResolver,
+		// AddressResolver,
 		RewardEscrowV2,
 		RewardsDistribution,
-		Synthetix,
+		// Synthetix,
 		RewardEscrowV2Storage,
 		RewardEscrowV2Frozen,
 	} = deployer.deployedContracts;
@@ -23,48 +22,48 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	const frozenOrPreviousEscrow =
 		RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
 
-	// close account merging on previous contract
-	// this breaks account merging
-	await runStep({
-		contract: 'RewardEscrowV2Frozen',
-		target: frozenOrPreviousEscrow,
-		read: 'accountMergingDuration',
-		expected: input => input === '0',
-		write: 'setAccountMergingDuration',
-		writeArg: 0,
-		comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
-	});
+	// // close account merging on previous contract
+	// // this breaks account merging
+	// await runStep({
+	// 	contract: 'RewardEscrowV2Frozen',
+	// 	target: frozenOrPreviousEscrow,
+	// 	read: 'accountMergingDuration',
+	// 	expected: input => input === '0',
+	// 	write: 'setAccountMergingDuration',
+	// 	writeArg: 0,
+	// 	comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
+	// });
 
-	// set frozen address entry for migrating balances
-	// this breaks creating entries (since SNX cannot be transferred)
-	// note that FeePool will still be able to create entries on the old contract up to the point
-	// its resolver cache is rebuilt (if this is not done atomcally in a migration contract)
-	await runStep({
-		contract: 'AddressResolver',
-		target: AddressResolver,
-		read: 'getAddress',
-		readArg: [toBytes32('RewardEscrowV2Frozen')],
-		expected: input => input === addressOf(frozenOrPreviousEscrow),
-		write: 'importAddresses',
-		writeArg: [[toBytes32('RewardEscrowV2Frozen')], [addressOf(frozenOrPreviousEscrow)]],
-		comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
-	});
+	// // set frozen address entry for migrating balances
+	// // this breaks creating entries (since SNX cannot be transferred)
+	// // note that FeePool will still be able to create entries on the old contract up to the point
+	// // its resolver cache is rebuilt (if this is not done atomcally in a migration contract)
+	// await runStep({
+	// 	contract: 'AddressResolver',
+	// 	target: AddressResolver,
+	// 	read: 'getAddress',
+	// 	readArg: [toBytes32('RewardEscrowV2Frozen')],
+	// 	expected: input => input === addressOf(frozenOrPreviousEscrow),
+	// 	write: 'importAddresses',
+	// 	writeArg: [[toBytes32('RewardEscrowV2Frozen')], [addressOf(frozenOrPreviousEscrow)]],
+	// 	comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
+	// });
 
-	// move SNX balances if needed
-	// this breaks vesting
-	const migratableBalance = await Synthetix.balanceOf(frozenOrPreviousEscrow.address);
-	if (migratableBalance.gt(0)) {
-		await runStep({
-			contract: 'Synthetix',
-			target: Synthetix,
-			write: 'migrateEscrowContractBalance',
-			comment: 'Ensure that old escrow SNX balance is migrated to new contract',
-		});
-	} else {
-		console.log(
-			gray('Skipping Synthetix.migrateEscrowContractBalance as frozen contract has no SNX balance.')
-		);
-	}
+	// // move SNX balances if needed
+	// // this breaks vesting
+	// const migratableBalance = await Synthetix.balanceOf(frozenOrPreviousEscrow.address);
+	// if (migratableBalance.gt(0)) {
+	// 	await runStep({
+	// 		contract: 'Synthetix',
+	// 		target: Synthetix,
+	// 		write: 'migrateEscrowContractBalance',
+	// 		comment: 'Ensure that old escrow SNX balance is migrated to new contract',
+	// 	});
+	// } else {
+	// 	console.log(
+	// 		gray('Skipping Synthetix.migrateEscrowContractBalance as frozen contract has no SNX balance.')
+	// 	);
+	// }
 
 	// set state ownership to the rew escrow contract
 	// this enables new contract to make storage writes
@@ -80,8 +79,8 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 
 	// set the fallback (frozne) for storage contract
 	// this can only happen once, as this contract is immutable
-	// TODO: after release add to non-upgradable.json
 	// This step is performed last because beyond this point any new entries on previous contract will be ignored
+	// Note: added to RewardEscrowV2Storage to non-upgradable.json after the Aspidiske release.
 	await runStep({
 		contract: 'RewardEscrowV2Storage',
 		target: RewardEscrowV2Storage,
