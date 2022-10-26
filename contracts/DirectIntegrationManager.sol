@@ -46,7 +46,13 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
         view
         returns (ParameterIntegrationSettings memory overrides)
     {
-        ParameterIntegrationSettings memory storedOverrides = _settings[integration][currencyKey];
+        // Defaults to all zero values, which will fallback to normal system settings
+        ParameterIntegrationSettings memory storedOverrides;
+
+        // Single cold SLOAD if no integration is set
+        if (_settings[integration][currencyKey].currencyKey == currencyKey) {
+            storedOverrides = _settings[integration][currencyKey];
+        }
 
         return
             ParameterIntegrationSettings({
@@ -117,7 +123,7 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
         ParameterIntegrationSettings memory settings
     ) internal {
         require(address(integration) != address(0), "Address cannot be 0");
-
+        require(currencyKey == settings.currencyKey, "Currency key mismatch");
         _settings[integration][currencyKey] = settings; // overwrites the parameters for a given direct integration
         emit IntegrationParametersSet(integration, currencyKey, settings);
     }
