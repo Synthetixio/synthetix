@@ -201,7 +201,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _unrecordedFunding(uint price) internal view returns (int) {
         int nextFundingRate = _currentFundingRate(price);
-        int avgFundingRate = (int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
+        // note the minus sign: funding flows in the opposite direction to the skew.
+        int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
         int elapsed = _proportionalElapsed();
         return avgFundingRate.multiplyDecimal(elapsed);
     }
@@ -434,7 +435,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
+    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
         return _exchanger().dynamicFeeRateForExchange(sUSD, marketState.baseAsset());
     }
