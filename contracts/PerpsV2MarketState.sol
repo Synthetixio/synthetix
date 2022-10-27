@@ -49,9 +49,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     int128[] public fundingSequence;
 
     /*
-     * The funding rate calculated last time funding was recomputed. A market's funding rate floats is not
-     * instantly calculated based on the current market condition. It's affected by time, size, velocity,
-     * skew, etc. and is needed when calculating the next funding rate when markets are modified.
+     * The funding rate last time it was recomputed. The market funding rate floats and requires the previously
+     * calculated funding rate, time, and current market conditions to derive the next.
      */
     int128 public fundingRateLastRecomputed;
 

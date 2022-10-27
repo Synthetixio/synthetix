@@ -180,7 +180,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         //  - prev_funding_rate     = 0
         //  - prev_velocity         = 0.0025
         //  - time_delta            = 29,000s
-        //  - max_funding_velocity  = 0.025 (2.5%) aka (max funding velocity)
+        //  - max_funding_velocity  = 0.025 (2.5%)
         //  - skew                  = 300
         //  - price                 = 10,000 ($10k)
         //  - skew_scale_usd        = 10,000,000 (10M)
