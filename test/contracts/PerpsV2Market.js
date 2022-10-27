@@ -17,7 +17,6 @@ const {
 	updateAggregatorRates,
 	onlyGivenAddressCanInvoke,
 } = require('./helpers');
-const { ethers } = require('ethers');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
