@@ -224,6 +224,10 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, period);
     }
 
+    function _validateExchangeFeeRate(uint256 _exchangeFeeRate) internal pure {
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+    }
+
     function setExchangeFeeRateForSynths(
         IFlexibleStorage flexibleStorage,
         bytes32 settingExchangeFeeRate,
@@ -232,7 +236,7 @@ library SystemSettingsLib {
     ) external {
         require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
         for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+            _validateExchangeFeeRate(exchangeFeeRates[i]);
             flexibleStorage.setUIntValue(
                 SETTINGS_CONTRACT_NAME,
                 keccak256(abi.encodePacked(settingExchangeFeeRate, synthKeys[i])),
@@ -371,13 +375,22 @@ library SystemSettingsLib {
         );
     }
 
+    function _validateAtomicMaxVolumePerBlock(uint _maxVolume) internal pure {
+        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
+    }
+
     function setAtomicMaxVolumePerBlock(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         uint _maxVolume
     ) external {
-        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
+        _validateAtomicMaxVolumePerBlock(_maxVolume);
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _maxVolume);
+    }
+
+    function _validateAtomicTwapWindow(uint _window) internal pure {
+        require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
+        require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
     }
 
     function setAtomicTwapWindow(
@@ -385,9 +398,12 @@ library SystemSettingsLib {
         bytes32 settingName,
         uint _window
     ) external {
-        require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 1 min");
-        require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
+        _validateAtomicTwapWindow(_window);
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _window);
+    }
+
+    function _validateAtomicEquivalentForDexPricing(address _equivalent) internal pure {
+        require(_equivalent != address(0), "Atomic equivalent is 0 address");
     }
 
     function setAtomicEquivalentForDexPricing(
@@ -396,12 +412,16 @@ library SystemSettingsLib {
         bytes32 _currencyKey,
         address _equivalent
     ) external {
-        require(_equivalent != address(0), "Atomic equivalent is 0 address");
+        _validateAtomicEquivalentForDexPricing(_equivalent);
         flexibleStorage.setAddressValue(
             SETTINGS_CONTRACT_NAME,
             keccak256(abi.encodePacked(settingName, _currencyKey)),
             _equivalent
         );
+    }
+
+    function _validateAtomicExchangeFeeRate(uint _exchangeFeeRate) internal pure {
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
     }
 
     function setAtomicExchangeFeeRate(
@@ -410,7 +430,7 @@ library SystemSettingsLib {
         bytes32 _currencyKey,
         uint _exchangeFeeRate
     ) external {
-        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+        _validateAtomicExchangeFeeRate(_exchangeFeeRate);
         flexibleStorage.setUIntValue(
             SETTINGS_CONTRACT_NAME,
             keccak256(abi.encodePacked(settingName, _currencyKey)),
@@ -418,12 +438,7 @@ library SystemSettingsLib {
         );
     }
 
-    function setAtomicVolatilityConsiderationWindow(
-        IFlexibleStorage flexibleStorage,
-        bytes32 settingName,
-        bytes32 _currencyKey,
-        uint _window
-    ) external {
+    function _validateAtomicVolatilityConsiderationWindow(uint _window) internal pure {
         if (_window != 0) {
             require(
                 _window >= MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
@@ -434,6 +449,15 @@ library SystemSettingsLib {
                 "Atomic volatility consideration window exceed maximum 1 day"
             );
         }
+    }
+
+    function setAtomicVolatilityConsiderationWindow(
+        IFlexibleStorage flexibleStorage,
+        bytes32 settingName,
+        bytes32 _currencyKey,
+        uint _window
+    ) external {
+        _validateAtomicVolatilityConsiderationWindow(_window);
         flexibleStorage.setUIntValue(
             SETTINGS_CONTRACT_NAME,
             keccak256(abi.encodePacked(settingName, _currencyKey)),
@@ -476,14 +500,26 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(settingName, _currencyKey)), _value);
     }
 
+    function _validateExchangeMaxDynamicFee(uint _maxFee) internal pure {
+        require(_maxFee != 0, "Max dynamic fee cannot be 0");
+        require(_maxFee <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+    }
+
     function setExchangeMaxDynamicFee(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
-        uint maxFee
+        uint _maxFee
     ) external {
-        require(maxFee != 0, "Max dynamic fee cannot be 0");
-        require(maxFee <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+        _validateExchangeMaxDynamicFee(_maxFee);
+        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, _maxFee);
+    }
 
-        flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, maxFee);
+    // Other Dynamic Fee settings that require validation (checked in SystemSettings.sol).
+    function _validateExchangeDynamicFeeThreshold(uint _threshold) internal pure {
+        require(_threshold != 0, "Threshold cannot be 0");
+    }
+
+    function _validateExchangeDynamicFeeWeightDecay(uint _weightDecay) internal pure {
+        require(_weightDecay != 0, "Weight decay cannot be 0");
     }
 }

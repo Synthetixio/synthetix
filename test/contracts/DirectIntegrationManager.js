@@ -4,6 +4,8 @@ const { contract } = require('hardhat');
 
 const ethers = require('ethers');
 
+const { toUnit } = require('../utils')();
+
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
@@ -13,6 +15,7 @@ const { setupAllContracts } = require('./setup');
 const ZERO_BYTES32 = ethers.utils.formatBytes32String('');
 
 const sETH = ethers.utils.formatBytes32String('sETH');
+const sBTC = ethers.utils.formatBytes32String('sBTC');
 
 contract('DirectIntegrationManager', async accounts => {
 	let systemSettings, directIntegration, exchangeRates, resolver;
@@ -69,21 +72,7 @@ contract('DirectIntegrationManager', async accounts => {
 				args: [
 					address1,
 					[sETH],
-					[
-						sETH,
-						address1,
-						ethers.constants.AddressZero,
-						123,
-						1234,
-						2345,
-						3456,
-						4567,
-						5678,
-						6789,
-						7890,
-						8901,
-						9012,
-					],
+					[sETH, address1, address1, 123, 1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012],
 				],
 				accounts,
 				address: owner,
@@ -96,7 +85,7 @@ contract('DirectIntegrationManager', async accounts => {
 					address1,
 					[sETH],
 					[
-						ZERO_BYTES32,
+						sBTC,
 						ethers.constants.AddressZero,
 						ethers.constants.AddressZero,
 						0,
@@ -117,26 +106,29 @@ contract('DirectIntegrationManager', async accounts => {
 		});
 
 		describe('when overriding no parameters', () => {
-			before('override', async () => {
-				await directIntegration.setExchangeParameters(
-					address1,
-					[sETH],
-					[
-						sETH,
-						ethers.constants.AddressZero,
-						ethers.constants.AddressZero,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-					],
-					{ from: owner }
+			it('reverts at the first validation check', async () => {
+				await assert.revert(
+					directIntegration.setExchangeParameters(
+						address1,
+						[ZERO_BYTES32],
+						[
+							ZERO_BYTES32,
+							ethers.constants.AddressZero,
+							ethers.constants.AddressZero,
+							0,
+							0,
+							0,
+							0,
+							0,
+							0,
+							0,
+							0,
+							0,
+							0,
+						],
+						{ from: owner }
+					),
+					'Atomic equivalent is 0 address'
 				);
 			});
 
@@ -166,7 +158,21 @@ contract('DirectIntegrationManager', async accounts => {
 				await directIntegration.setExchangeParameters(
 					address1,
 					[sETH],
-					[sETH, address1, ethers.constants.AddressZero, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[
+						sETH,
+						address1,
+						fakeAddress,
+						123,
+						60,
+						0,
+						0,
+						0,
+						0,
+						toUnit('0.01'),
+						0,
+						toUnit('0.05'),
+						toUnit('1'),
+					],
 					{ from: owner }
 				);
 			});
@@ -179,15 +185,15 @@ contract('DirectIntegrationManager', async accounts => {
 					address1, // applied
 					fakeAddress,
 					'123', // applied
-					'200',
+					'60',
 					'400',
 					'500',
 					'700',
 					'800',
-					'900',
+					toUnit('0.01'),
 					'1000',
-					'1100',
-					'1200',
+					toUnit('0.05'),
+					toUnit('1'),
 				]);
 			});
 		});

@@ -373,7 +373,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     /// @param threshold The exchange dynamic fee threshold
     /// @return uint threshold constant
     function setExchangeDynamicFeeThreshold(uint threshold) external onlyOwner {
-        require(threshold != 0, "Threshold cannot be 0");
+        SystemSettingsLib._validateExchangeDynamicFeeThreshold(threshold);
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_THRESHOLD, threshold);
 
@@ -384,7 +384,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     /// @param weightDecay The exchange dynamic fee weight decay
     /// @return uint weight decay constant
     function setExchangeDynamicFeeWeightDecay(uint weightDecay) external onlyOwner {
-        require(weightDecay != 0, "Weight decay cannot be 0");
+        SystemSettingsLib._validateExchangeDynamicFeeWeightDecay(weightDecay);
 
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY, weightDecay);
 
