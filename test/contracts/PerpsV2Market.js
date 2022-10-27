@@ -17,6 +17,7 @@ const {
 	updateAggregatorRates,
 	onlyGivenAddressCanInvoke,
 } = require('./helpers');
+const { ethers } = require('ethers');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
@@ -2030,7 +2031,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toUnit('400'));
 			});
 
-			it('Reports invalid prices properly', async () => {
+			it('reports invalid prices properly', async () => {
 				assert.isFalse((await futuresMarket.profitLoss(trader))[1]);
 				await fastForward(7 * 24 * 60 * 60); // Stale the prices
 				assert.isTrue((await futuresMarket.profitLoss(trader))[1]);
@@ -2707,6 +2708,7 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			const trades = [
+				// skew = long
 				{
 					size: toUnit('100'),
 					account: trader,
@@ -2714,19 +2716,21 @@ contract('PerpsV2Market', accounts => {
 					expectedRate: toUnit('0'),
 					expectedFunding: toUnit('0'),
 				},
+				// skew = even more long
 				{
 					size: toUnit('200'),
 					account: trader2,
 					fastForwardBy: 29000,
 					expectedRate: toUnit('0.00839120'),
-					expectedFunding: toUnit('0.001408'),
+					expectedFunding: toUnit('-0.001408'), // neg because longs pay short
 				},
+				// skew = balanced but funding rate sticks.
 				{
 					size: toUnit('-300'),
 					account: trader3,
 					fastForwardBy: 20000,
 					expectedRate: toUnit('0.02575231'),
-					expectedFunding: toUnit('0.005360'),
+					expectedFunding: toUnit('-0.005360'), // neg because longs pay short
 				},
 			];
 			const marginDelta = toUnit('1000000');
@@ -2774,6 +2778,48 @@ contract('PerpsV2Market', accounts => {
 
 			// funding rate should not be 0.
 			assert.bnNotEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
+		});
+
+		it('Should accrue funding as time passes and no price changes occurs (long)', async () => {
+			const price = toUnit('100');
+			await setPrice(baseAsset, price);
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: price,
+				marginDelta: toUnit('10000'),
+				sizeDelta: toUnit('10'), // long
+			});
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: price,
+				marginDelta: toUnit('10000'),
+				sizeDelta: toUnit('-5'), // short
+			});
+
+			// market is long skewed, which means funding accrue for shorts.
+			//
+			// t1 = long  (must pay  -> accruedFunding should be negative)
+			// t2 = short (gets paid -> accruedFunding should be positive)
+
+			// t=0: no time has passed. technically some time has passed for the first trade but 2nd trade is new.
+			assert.bnLt((await futuresMarket.accruedFunding(trader))[0], toUnit('0'));
+			assert.bnClose((await futuresMarket.accruedFunding(trader2))[0], toUnit('0', '0.1'));
+
+			await fastForward(60 * 60 * 24); // 1d
+			await setPrice(baseAsset, price);
+
+			// t=1d: 1 day of funding has accrued. t1 should be in profit and t2 at loss.
+			assert.bnLt((await futuresMarket.accruedFunding(trader))[0], toUnit('0'));
+			assert.bnGt((await futuresMarket.accruedFunding(trader2))[0], toUnit('0'));
+
+			await fastForward(60 * 60 * 24); // 1d
+			await setPrice(baseAsset, price);
+
+			// t=2d: 2 days of funding has accrued. funding should continue to accrue in the same direction
+			assert.bnLt((await futuresMarket.accruedFunding(trader))[0], toUnit('0'));
+			assert.bnGt((await futuresMarket.accruedFunding(trader2))[0], toUnit('0'));
 		});
 
 		it('Should have zero funding when market is new and empty', async () => {
@@ -3158,8 +3204,6 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingVelocity(), toUnit('-0.1'));
 		});
 
-		// Old tests (some may no longer be relevant)
-
 		for (const leverage of ['1', '-1'].map(toUnit)) {
 			const side = parseInt(leverage.toString()) > 0 ? 'long' : 'short';
 
@@ -3184,11 +3228,22 @@ contract('PerpsV2Market', accounts => {
 					assert.bnEqual(await futuresMarket.currentFundingVelocity(), expected);
 				});
 
-				it('Different skew rates induce proportional funding levels', async () => {
+				it('Different skew rates induce proportional funding velocity levels', async () => {
 					// skewScaleUSD is below actual skew
-					const skewScaleUSD = toUnit(100 * 100);
+					const skewScaleUSD = toUnit(10000); // 10k USD
 					await futuresMarketSettings.setSkewScaleUSD(marketKey, skewScaleUSD, { from: owner });
 
+					// assuming leverage is positive (1) then...
+					//
+					// size = 1 * 10
+					//      = 10
+					//
+					// t1_position = price * size
+					//             = 100 * 10
+					//             = 1000 (margin also at 1000)
+					//             = 1x leverage long
+					//
+					// at this stage, given the market only has one position we are at 100% skewed long (size=10)
 					const traderPos = leverage.mul(toBN('10'));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
@@ -3197,40 +3252,79 @@ contract('PerpsV2Market', accounts => {
 						marginDelta: toUnit('1000'),
 						sizeDelta: traderPos,
 					});
+
+					// t2_position = empty (just transferred 1k USD margin)
 					await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
 
 					const points = 5;
 
+					// no price movement, just refresh prices.
 					await setPrice(baseAsset, toUnit('100'));
 
-					for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
-						await futuresMarketSettings.setMaxFundingVelocity(marketKey, maxFR, { from: owner });
+					// we're about to create a position (t2) in the opposite direction to the skew.
+					for (const maxFundingVelocity of ['0.1', '0.2', '0.05'].map(toUnit)) {
+						await futuresMarketSettings.setMaxFundingVelocity(marketKey, maxFundingVelocity, {
+							from: owner,
+						});
 
 						for (let i = points; i >= 0; i--) {
-							// now lerp from leverage*k to leverage
+							// calculations:
+							// frac              = leverage * point / points
+							// opposite_leverage = frac * -1
+							// size              = opposite_leverage * 10
+							//
+							// let's continue to assume we're skewed long but at iteration (2). iteration 1 is
+							// boring. a 100% skew offset will just result in a 0 funding velocity. 0.8 is a
+							// more interesting example.
+							//
+							// define:
+							// 	- points = 5
+							// 	- i = 4
+							// 	- leverage = 1
+							// 	- max_funding_velocity = 0.1
+							//
+							// frac = leverage * point / points
+							//      = 1 * 4 / 5
+							//      = 0.8
+							//
+							// opp_lev = -frac
+							//         = -0.8
+							//
+							// size = -0.8 * 10
+							//      = -8
 							const frac = leverage.mul(toBN(i)).div(toBN(points));
 							const oppLev = frac.neg();
 							const size = oppLev.mul(toBN('10'));
+
+							// update the t2's size in the opposite direction. pushing the skew back.
+							//
+							// following the same example, a -8 size gives a skew of now 2 (still long)
 							if (size.abs().gt(toBN('0'))) {
 								await futuresMarket.modifyPosition(size, { from: trader2 });
 							}
 
+							// so what is the skew then?
+							//
+							// skew_usd = t1.size + size * price
+							//          = 10 + -8 * 100
+							//          = 2 * 100
+							//          = 200
 							const skewUSD = multiplyDecimal(traderPos.add(size), toUnit('100'));
-							let expected = maxFR
-								.mul(skewUSD)
-								.div(skewScaleUSD)
-								.neg();
 
-							if (expected.gt(maxFR)) {
-								expected = maxFR;
-							}
+							// derive the expected funding velocity
+							//
+							// expected = skew_usd * max_funding_velocity / skew_scale_usd
+							//          = 200 * 0.1 / 10,000
+							//          = 0.002
+							const expected = maxFundingVelocity.mul(skewUSD).div(skewScaleUSD);
 
-							assert.bnClose(
-								await futuresMarket.currentFundingVelocity(),
-								expected,
-								toUnit('0.01')
-							);
+							// velocity = (skew * price) / skew_scale_usd * max_funding_velocity
+							//          = 2 * 100 / 10,000 * 0.1
+							//          = 200 / 10,000 * 0.1
+							//          = 0.002
+							assert.bnEqual(await futuresMarket.currentFundingVelocity(), expected);
 
+							// clear the position as to avoid affecting the next proportional skew update.
 							if (size.abs().gt(toBN(0))) {
 								await futuresMarket.closePosition({ from: trader2 });
 							}
@@ -3369,7 +3463,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+			it.only('Funding sequence is recomputed by setting funding rate parameters', async () => {
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('10000'), { from: owner });
 
 				// Initial sequence.
@@ -3384,14 +3478,16 @@ contract('PerpsV2Market', accounts => {
 
 				// ~1 day has passed ~86400 seconds (+2 second buffer)
 				//
-				// unrecordedFunding = (prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = (0.000000486111111109 + 0.060001874999999997) / 2 * (86400 / 86400)
-				//                   = 0.06000236 / 2 * 1
-				//                   = 0.03000118
-				//                   ~0.03
+				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
+				//                   = -(0.000000486111111109 + 0.060001874999999997) / 2 * (86400 / 86400)
+				//                   = -0.06000236 / 2 * 1
+				//                   = -0.03000118
+				//                   ~-0.03
+				//
+				// note: we invert the avgFundingRate here because accrual is paid in the opposite direction.
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
-					toUnit('0.03'),
+					toUnit('-0.03'),
 					toUnit('0.01')
 				);
 
@@ -3408,24 +3504,24 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
 				assert.bnClose(
 					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(6))),
-					toUnit('0.03'),
+					toUnit('-0.03'),
 					toUnit('0.01')
 				);
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('0'), toUnit('0.01'));
 
 				// Another day has passed.
 				//
-				// unrecordedFunding = (prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = (0.06000256944444444 + 0.3000109027777778) / 2 * (86400 / 86400)
-				//                   = 0.36001347 / 2 * 1
-				//                   = 0.18000674
-				//                   ~0.18
+				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
+				//                   = -(0.06000256944444444 + 0.2600071990740741) / 2 * (86400 / 86400)
+				//                   = -0.32000977 / 2 * 1
+				//                   = -0.16000488
+				//                   ~-0.16
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('200'));
 
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
-					toUnit('0.18'),
+					toUnit('-0.16'),
 					toUnit('0.01')
 				);
 				assert.bnEqual(
@@ -3433,21 +3529,20 @@ contract('PerpsV2Market', accounts => {
 					initialFundingIndex.add(toBN(7))
 				);
 
-				// TODO: FIXME!!! Numbers do not align. Why?
 				// Another day has passed.
 				//
-				// unrecordedFunding = (prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = (0.06000256944444444 + 0.7800240972222222) / 2 * (86400 / 86400)
-				//                   = 1.08003292 / 2 * 1
-				//                   = 0.54001646
-				//                   ~0.54
-				// await fastForward(24 * 60 * 60);
-				// await setPrice(baseAsset, toUnit('300'));
-				// assert.bnClose(
-				// 	(await futuresMarket.unrecordedFunding())[0],
-				// 	toUnit('0.54'),
-				// 	toUnit('0.01')
-				// );
+				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
+				//                   = -(0.2600071990740741 + 0.7800240972222222) / 2 * (86400 / 86400)
+				//                   = -1.0400313 / 2 * 1
+				//                   = -0.52001565
+				//                   ~-0.52
+				await fastForward(24 * 60 * 60);
+				await setPrice(baseAsset, toUnit('300'));
+				assert.bnClose(
+					(await futuresMarket.unrecordedFunding())[0],
+					toUnit('-0.52'),
+					toUnit('0.01')
+				);
 			});
 		});
 	});

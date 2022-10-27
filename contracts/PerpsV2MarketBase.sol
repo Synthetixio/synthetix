@@ -21,8 +21,6 @@ import "./interfaces/ISystemStatus.sol";
 // Internal references
 import "./interfaces/IPerpsV2MarketState.sol";
 
-import "hardhat/console.sol";
-
 interface IPerpsV2MarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
