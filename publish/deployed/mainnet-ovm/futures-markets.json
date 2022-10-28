@@ -206,7 +206,7 @@
 		"maxLeverage": "10",
 		"maxMarketValueUSD": "100000",
 		"maxFundingRate": "0.1",
-		"skewScaleUSD": "10000000",
+		"skewScaleUSD": "20000000",
 		"paused": false
 	},
 	{
