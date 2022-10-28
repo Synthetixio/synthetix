@@ -97,8 +97,22 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /*
      * The amount of time in seconds which confirming delayed orders is allow
      */
-    function offchainDelayedOrderConfirmWindow(bytes32 _marketKey) public view returns (uint) {
-        return _offchainDelayedOrderConfirmWindow(_marketKey);
+    function offchainDelayedOrderMinAge(bytes32 _marketKey) public view returns (uint) {
+        return _offchainDelayedOrderMinAge(_marketKey);
+    }
+
+    /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function offchainDelayedOrderMaxAge(bytes32 _marketKey) public view returns (uint) {
+        return _offchainDelayedOrderMaxAge(_marketKey);
+    }
+
+    /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function offchainDelayedOrderMinFeedAge(bytes32 _marketKey) public view returns (uint) {
+        return _offchainDelayedOrderMinFeedAge(_marketKey);
     }
 
     /*
@@ -152,15 +166,17 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _makerFeeDelayedOrder(_marketKey),
                 _takerFeeOffchainDelayedOrder(_marketKey),
                 _makerFeeOffchainDelayedOrder(_marketKey),
-                _nextPriceConfirmWindow(_marketKey),
-                _delayedOrderConfirmWindow(_marketKey),
-                _offchainDelayedOrderConfirmWindow(_marketKey),
                 _maxLeverage(_marketKey),
                 _maxMarketValueUSD(_marketKey),
                 _maxFundingRate(_marketKey),
                 _skewScaleUSD(_marketKey),
+                _nextPriceConfirmWindow(_marketKey),
+                _delayedOrderConfirmWindow(_marketKey),
                 _minDelayTimeDelta(_marketKey),
-                _maxDelayTimeDelta(_marketKey)
+                _maxDelayTimeDelta(_marketKey),
+                _offchainDelayedOrderMinAge(_marketKey),
+                _offchainDelayedOrderMaxAge(_marketKey),
+                _offchainDelayedOrderMinFeedAge(_marketKey)
             );
     }
 
@@ -246,11 +262,16 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW, _delayedOrderConfirmWindow);
     }
 
-    function setOffchainDelayedOrderConfirmWindow(bytes32 _marketKey, uint _offchainDelayedOrderConfirmWindow)
-        public
-        onlyOwner
-    {
-        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_CONFIRM_WINDOW, _offchainDelayedOrderConfirmWindow);
+    function setOffchainDelayedOrderMinAge(bytes32 _marketKey, uint _offchainDelayedOrderMinAge) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MIN_AGE, _offchainDelayedOrderMinAge);
+    }
+
+    function setOffchainDelayedOrderMaxAge(bytes32 _marketKey, uint _offchainDelayedOrderMaxAge) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MAX_AGE, _offchainDelayedOrderMaxAge);
+    }
+
+    function setOffchainDelayedOrderMinFeedAge(bytes32 _marketKey, uint _offchainDelayedOrderMinFeedAge) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MIN_FEED_AGE, _offchainDelayedOrderMinFeedAge);
     }
 
     function setMaxLeverage(bytes32 _marketKey, uint _maxLeverage) public onlyOwner {
@@ -310,7 +331,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setMaxDelayTimeDelta(_marketKey, _parameters.maxDelayTimeDelta);
         setTakerFeeOffchainDelayedOrder(_marketKey, _parameters.takerFeeOffchainDelayedOrder);
         setMakerFeeOffchainDelayedOrder(_marketKey, _parameters.makerFeeOffchainDelayedOrder);
-        setOffchainDelayedOrderConfirmWindow(_marketKey, _parameters.offchainDelayedOrderConfirmWindow);
+        setOffchainDelayedOrderMinAge(_marketKey, _parameters.offchainDelayedOrderMinAge);
+        setOffchainDelayedOrderMaxAge(_marketKey, _parameters.offchainDelayedOrderMaxAge);
+        setOffchainDelayedOrderMinFeedAge(_marketKey, _parameters.offchainDelayedOrderMinFeedAge);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {

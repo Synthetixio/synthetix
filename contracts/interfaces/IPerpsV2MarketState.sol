@@ -56,12 +56,13 @@ interface IPerpsV2MarketState {
 
     function updateDelayedOrder(
         address account,
+        bool isOffchain,
         int128 sizeDelta,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
         uint256 executableAtTime,
-        bool isOffchain,
+        uint256 intentionTime,
         uint256 latestPublishtime,
         bytes32 trackingCode
     ) external;

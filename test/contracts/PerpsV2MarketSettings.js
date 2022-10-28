@@ -32,12 +32,19 @@ contract('PerpsV2MarketSettings', accounts => {
 	const makerFee = toUnit('0.001');
 	const takerFeeDelayedOrder = toUnit('0.0005');
 	const makerFeeDelayedOrder = toUnit('0.0001');
+	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
+	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
+
 	const nextPriceConfirmWindow = toBN('2');
+
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
-
 	const maxFundingRate = toUnit('0.1');
 	const skewScaleUSD = toUnit('10000');
+
+	const offchainDelayedOrderMinAge = toBN('15');
+	const offchainDelayedOrderMaxAge = toBN('60');
+	const offchainDelayedOrderMinFeedAge = toBN('10');
 
 	before(async () => {
 		({
@@ -130,12 +137,14 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMinInitialMargin',
 				'setMinKeeperFee',
 				'setNextPriceConfirmWindow',
-				'setOffchainDelayedOrderConfirmWindow',
 				'setParameters',
 				'setSkewScaleUSD',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
 				'setTakerFeeOffchainDelayedOrder',
+				'setOffchainDelayedOrderMinAge',
+				'setOffchainDelayedOrderMaxAge',
+				'setOffchainDelayedOrderMinFeedAge',
 			],
 		});
 	});
@@ -149,11 +158,16 @@ contract('PerpsV2MarketSettings', accounts => {
 				makerFee,
 				takerFeeDelayedOrder,
 				makerFeeDelayedOrder,
-				nextPriceConfirmWindow,
+				takerFeeOffchainDelayedOrder,
+				makerFeeOffchainDelayedOrder,
 				maxLeverage,
 				maxMarketValueUSD,
 				maxFundingRate,
 				skewScaleUSD,
+				nextPriceConfirmWindow,
+				offchainDelayedOrderMinAge,
+				offchainDelayedOrderMaxAge,
+				offchainDelayedOrderMinFeedAge,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];

@@ -11,6 +11,7 @@ import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 import "./interfaces/IPerpsV2ExchangeRate.sol";
 import "./interfaces/IPyth.sol";
 
+// import "hardhat/console.sol";
 /**
  Contract that implements DelayedOrders (onchain and offchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
@@ -161,13 +162,14 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
             DelayedOrder({
+                isOffchain: isOffchain,
                 sizeDelta: int128(sizeDelta),
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
                 executableAtTime: block.timestamp + desiredTimeDelta,
+                intentionTime: block.timestamp,
                 latestPublishTime: latestPublishTime,
-                isOffchain: isOffchain,
                 trackingCode: trackingCode
             });
         // emit event
@@ -185,12 +187,13 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         // store order
         marketState.updateDelayedOrder(
             messageSender,
+            order.isOffchain,
             order.sizeDelta,
             order.targetRoundId,
             order.commitDeposit,
             order.keeperDeposit,
             order.executableAtTime,
-            order.isOffchain,
+            order.intentionTime,
             order.latestPublishTime,
             order.trackingCode
         );
@@ -279,10 +282,38 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
 
         require(!order.isOffchain, "use offchain method");
 
+        // check order executability and round-id
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
+        require(
+            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
+            "executability not reached"
+        );
+
+        // check order is not too old to execute
+        // we cannot allow executing old orders because otherwise future knowledge
+        // can be used to trigger failures of orders that are more profitable
+        // then the commitFee that was charged, or can be used to confirm
+        // orders that are more profitable than known then (which makes this into a "cheap option").
+        require(
+            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+            "order too old, use cancel"
+        );
+
+        // price depends on whether the delay or price update has reached/occurred first
+        uint currentPrice = _assetPriceRequireSystemChecks();
+        uint tradePrice = currentPrice;
+        if (currentRoundId >= order.targetRoundId) {
+            // the correct price for the past round if target round was met
+            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
+            tradePrice = pastPrice;
+        }
+
         _executeDelayedOrder(
             account,
             order,
-            _assetPriceRequireSystemChecks(),
+            currentPrice,
+            tradePrice,
+            currentRoundId,
             _takerFeeDelayedOrder(_marketKey()),
             _makerFeeDelayedOrder(_marketKey())
         );
@@ -314,13 +345,23 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         _perpsV2ExchangeRate().updatePythPrice(messageSender, priceUpdateData);
 
         // get latest price for asset
-        (uint currentPrice, uint publishTimestamp) = _offchainAssetPriceRequireSystemChecks();
-        require(publishTimestamp > order.latestPublishTime, "price feed not updated");
+        uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
+        uint minAge = _offchainDelayedOrderMinAge(_marketKey());
+        uint minPythAge = _offchainDelayedOrderMinFeedAge(_marketKey());
+
+        (uint currentPrice, uint publishTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
+        require(
+            (publishTimestamp - order.latestPublishTime >= minPythAge) && (publishTimestamp - order.intentionTime >= minAge),
+            "too early"
+        );
+        require((publishTimestamp - order.intentionTime < maxAge), "too late");
 
         _executeDelayedOrder(
             account,
             order,
             currentPrice,
+            currentPrice,
+            0,
             _takerFeeOffchainDelayedOrder(_marketKey()),
             _makerFeeOffchainDelayedOrder(_marketKey())
         );
@@ -330,26 +371,11 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         address account,
         DelayedOrder memory order,
         uint currentPrice,
+        uint tradePrice,
+        uint currentRoundId,
         uint takerFee,
         uint makerFee
     ) internal {
-        // check order executability and round-id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
-        require(
-            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
-            "executability not reached"
-        );
-
-        // check order is not too old to execute
-        // we cannot allow executing old orders because otherwise future knowledge
-        // can be used to trigger failures of orders that are more profitable
-        // then the commitFee that was charged, or can be used to confirm
-        // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(
-            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-            "order too old, use cancel"
-        );
-
         // handle the fees and refunds according to the mechanism rules
         uint toRefund = order.commitDeposit; // refund the commitment deposit
 
@@ -369,20 +395,12 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         // emit event for modifying the position (refunding fee/s)
         emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
-        // price depends on whether the delay or price update has reached/occurred first
-        uint executePrice = currentPrice;
-        if (currentRoundId >= order.targetRoundId) {
-            // the correct price for the past round if target round was met
-            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
-            executePrice = pastPrice;
-        }
-
         // execute or revert
         _trade(
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: executePrice, // the funding is applied only from order confirmation time
+                price: tradePrice, // the funding is applied only from order confirmation time
                 takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
                 makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
                 trackingCode: order.trackingCode
@@ -408,13 +426,13 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
     /*
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
      */
-    function _offchainAssetPriceRequireSystemChecks() internal view returns (uint price, uint publishTime) {
+    function _offchainAssetPriceRequireSystemChecks(uint maxAge) internal view returns (uint price, uint publishTime) {
         // check that futures market isn't suspended, revert with appropriate message
         _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(_baseAsset());
 
-        return _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), _offchainDelayedOrderConfirmWindow(_marketKey()));
+        return _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), maxAge);
     }
 
     /// confirmation window is over when:

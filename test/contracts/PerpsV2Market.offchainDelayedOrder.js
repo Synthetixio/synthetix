@@ -37,6 +37,9 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
 	const initialPrice = toUnit('100');
 
+	const offchainDelayedOrderMinAge = 15;
+	const offchainDelayedOrderMaxAge = 60;
+
 	const feeds = [
 		{ assetId: baseAsset, feedId: toBytes32('feed-sBTC') },
 		{ assetId: toBytes32('sETH'), feedId: toBytes32('feed-sETH') },
@@ -396,6 +399,9 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		});
 
 		it('executing an order emits the tracking event', async () => {
+			await perpsV2MarketSettings.setOffchainDelayedOrderMinFeedAge(marketKey, 0, { from: owner });
+			await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
+
 			// setup
 			await perpsV2Market.submitOffchainDelayedOrderWithTracking(
 				size,
@@ -420,7 +426,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 			const expectedFee = multiplyDecimal(
 				size,
-				multiplyDecimal(price, takerFeeOffchainDelayedOrder)
+				multiplyDecimal(offChainPrice, takerFeeOffchainDelayedOrder)
 			);
 
 			// execute the order
@@ -566,6 +572,11 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 			describe('an order that would revert on execution can be cancelled', () => {
 				beforeEach(async () => {
+					// remove minumun delay
+					await perpsV2MarketSettings.setOffchainDelayedOrderMinFeedAge(marketKey, 0, {
+						from: owner,
+					});
+					await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
 					// go to next round
 					await setOnchainPrice(baseAsset, price);
 					// withdraw margin (will cause order to fail)
@@ -691,89 +702,201 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		});
 
 		describe('when an order exists', () => {
-			let roundId, commitFee, keeperFee, updateFeedData;
+			let commitFee, keeperFee, updateFeedData;
 
-			beforeEach(async () => {
-				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				// commitFee is the fee that would be charged for a spot trade when order is submitted
-				commitFee = (await perpsV2Market.orderFee(size))[0];
-				// keeperFee is the minimum keeperFee for the system
-				keeperFee = await perpsV2MarketSettings.minKeeperFee();
+			async function submitOffchainOrderAndDelay(delay, feedTimeOffset = 0) {
+				await setOffchainPrice(trader, {
+					id: defaultFeedId,
+					price: feedBaseFromUNIT(offChainPrice),
+					conf: feedBaseFromUNIT(confidence),
+					publishTime: (await currentTime()) + feedTimeOffset,
+				});
+
 				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+
+				await fastForward(delay);
+
 				updateFeedData = await getFeedUpdateData({
 					id: defaultFeedId,
 					price: feedBaseFromUNIT(offChainPrice),
 					conf: feedBaseFromUNIT(confidence),
+					publishTime: await currentTime(),
 				});
-			});
+			}
 
 			describe('execution reverts', () => {
-				it('in same round', async () => {
-					// account owner
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-						'executability not reached'
-					);
-					// keeper
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
-						'executability not reached'
-					);
+				describe('if min age was not reached', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge - 1);
+					});
+
+					it('reverts for owner', async () => {
+						// account owner
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'too early'
+						);
+					});
+					it('reverts for keeper', async () => {
+						// keeper
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+								from: trader2,
+							}),
+							'too early'
+						);
+					});
 				});
 
-				it('after confirmation window', async () => {
-					// target round
-					await setOnchainPrice(baseAsset, price);
-					await setOnchainPrice(baseAsset, price);
-					await setOnchainPrice(baseAsset, price);
-					// after window
-					await setOnchainPrice(baseAsset, price);
+				describe('if min feed age was not reached', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-					// account owner
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-						'order too old, use cancel'
-					);
-					// keeper
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
-						'order too old, use cancel'
-					);
+						await submitOffchainOrderAndDelay(
+							offchainDelayedOrderMinAge + 1,
+							offchainDelayedOrderMinAge
+						);
+					});
+
+					it('reverts for owner', async () => {
+						// account owner
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'too early'
+						);
+					});
+					it('reverts for keeper', async () => {
+						// keeper
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+								from: trader2,
+							}),
+							'too early'
+						);
+					});
 				});
 
-				it('if margin removed', async () => {
-					// go to target round
-					await setOnchainPrice(baseAsset, price);
-					// withdraw margin (will cause order to fail)
-					await perpsV2Market.withdrawAllMargin({ from: trader });
+				describe('if max age was exceeded for order', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-					// account owner
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-						'Position can be liquidated'
-					);
-					// the difference in reverts is due to difference between refund into margin
-					// in case of account owner and transfer in case of keeper
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
-						'Insufficient margin'
-					);
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMaxAge + 2);
+					});
+
+					it('reverts for owner', async () => {
+						// account owner
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'too late'
+						);
+					});
+					it('reverts for keeper', async () => {
+						// keeper
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+								from: trader2,
+							}),
+							'too late'
+						);
+					});
 				});
 
-				it('if price too high', async () => {
-					// go to target round, set price too high
-					await setOnchainPrice(baseAsset, price.mul(toBN(5)));
+				describe('if max age was exceeded for price', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-					// account owner
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-						'Max leverage exceeded'
-					);
-					// keeper
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
-						'Max leverage exceeded'
-					);
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMaxAge - 1);
+
+						updateFeedData = await getFeedUpdateData({
+							id: defaultFeedId,
+							price: feedBaseFromUNIT(offChainPrice),
+							conf: feedBaseFromUNIT(confidence),
+							publishTime: (await currentTime()) - offchainDelayedOrderMaxAge,
+						});
+					});
+
+					it('reverts for owner', async () => {
+						// account owner
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'no price available which is recent enough'
+						);
+					});
+					it('reverts for keeper', async () => {
+						// keeper
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+								from: trader2,
+							}),
+							'no price available which is recent enough'
+						);
+					});
+				});
+
+				describe('orders on time', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
+					});
+
+					it('if margin removed', async () => {
+						// withdraw margin (will cause order to fail)
+						await perpsV2Market.withdrawAllMargin({ from: trader });
+
+						// account owner
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'Position can be liquidated'
+						);
+						// the difference in reverts is due to difference between refund into margin
+						// in case of account owner and transfer in case of keeper
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+								from: trader2,
+							}),
+							'Insufficient margin'
+						);
+					});
+
+					it('if price too high', async () => {
+						// set price too high
+						updateFeedData = await getFeedUpdateData({
+							id: defaultFeedId,
+							price: feedBaseFromUNIT(offChainPrice.mul(toBN(5))),
+							conf: feedBaseFromUNIT(confidence),
+						});
+
+						// account owner
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'Max leverage exceeded'
+						);
+						// keeper
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+								from: trader2,
+							}),
+							'Max leverage exceeded'
+						);
+					});
 				});
 			});
 
@@ -791,6 +914,8 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				spotTradeDetails,
 				updateFeedData
 			) {
+				const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
+
 				const currentMargin = toBN((await perpsV2Market.positions(trader)).margin);
 				// execute the order
 				const tx = await perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
@@ -875,58 +1000,24 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			}
 
 			describe('execution results in correct views and events', () => {
-				let targetPrice, targetOffchainPrice, spotTradeDetails;
+				let targetPrice, targetOffchainPrice, spotTradeDetails, updateFeedData;
 
 				beforeEach(async () => {
+					await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+
+					await fastForward(offchainDelayedOrderMinAge + 1);
+
 					targetPrice = multiplyDecimal(price, toUnit(0.9));
 					targetOffchainPrice = multiplyDecimal(offChainPrice, toUnit(0.9));
-				});
-
-				it('before target round but after delay', async () => {
-					// set target round to be many price updates into the future.
-					await perpsV2MarketSettings.setNextPriceConfirmWindow(marketKey, 10, { from: owner });
-
-					// check we cannot execute the order
-					await assert.revert(
-						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
-						'executability not reached'
-					);
-
-					// fast-forward to the order's executableAtTime
-					//
-					// note that we do NOT update the price (to ensure target round is never reached)
-					spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
-					await fastForward(desiredTimeDelta);
 
 					updateFeedData = await getFeedUpdateData({
 						id: defaultFeedId,
-						price: feedBaseFromUNIT(offChainPrice),
+						price: feedBaseFromUNIT(targetOffchainPrice),
 						conf: feedBaseFromUNIT(confidence),
 					});
-
-					// check we can execute.
-					//
-					// note the predicate uses `price` and not `targetPrice` because target is never reached
-					await checkExecution(
-						trader,
-						offChainPrice,
-						offChainPrice,
-						takerFeeOffchainDelayedOrder,
-						spotTradeDetails,
-						updateFeedData
-					);
 				});
 
 				describe('during target round', () => {
-					let updateFeedData;
-					beforeEach(async () => {
-						updateFeedData = await getFeedUpdateData({
-							id: defaultFeedId,
-							price: feedBaseFromUNIT(targetOffchainPrice),
-							conf: feedBaseFromUNIT(confidence),
-						});
-					});
-
 					describe('taker trade', () => {
 						beforeEach(async () => {
 							// go to next round
@@ -1012,79 +1103,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 						);
 					});
 				});
-
-				describe('after target round, but within confirmation window', () => {
-					let updateFeedData;
-					beforeEach(async () => {
-						updateFeedData = await getFeedUpdateData({
-							id: defaultFeedId,
-							price: feedBaseFromUNIT(targetOffchainPrice),
-							conf: feedBaseFromUNIT(confidence),
-						});
-						// target round has the new price
-						// Get spotTradeDetails with offchain price and back to original price
-						await setOnchainPrice(baseAsset, targetOffchainPrice);
-						spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
-						// other rounds are back to old price
-						await setOnchainPrice(baseAsset, price);
-					});
-
-					describe('taker trade', () => {
-						it('from account owner', async () => {
-							await checkExecution(
-								trader,
-								targetOffchainPrice,
-								targetOffchainPrice,
-								takerFeeOffchainDelayedOrder,
-								spotTradeDetails,
-								updateFeedData
-							);
-						});
-
-						it('from keeper', async () => {
-							await checkExecution(
-								trader2,
-								targetOffchainPrice,
-								targetOffchainPrice,
-								takerFeeOffchainDelayedOrder,
-								spotTradeDetails,
-								updateFeedData
-							);
-						});
-					});
-
-					describe('maker trade', () => {
-						beforeEach(async () => {
-							// skew the other way
-							await perpsV2Market.transferMargin(margin.mul(toBN(2)), { from: trader3 });
-							await perpsV2Market.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
-							// go to next round
-							await setOnchainPrice(baseAsset, price);
-						});
-
-						it('from account owner', async () => {
-							await checkExecution(
-								trader,
-								targetOffchainPrice,
-								targetOffchainPrice,
-								makerFeeOffchainDelayedOrder,
-								spotTradeDetails,
-								updateFeedData
-							);
-						});
-
-						it('from keeper', async () => {
-							await checkExecution(
-								trader2,
-								targetOffchainPrice,
-								targetOffchainPrice,
-								makerFeeOffchainDelayedOrder,
-								spotTradeDetails,
-								updateFeedData
-							);
-						});
-					});
-				});
 			});
 		});
 	});
@@ -1102,7 +1120,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 		describe('when dynamic fee is too high (price too volatile)', () => {
 			const spikedPrice = multiplyDecimal(initialPrice, toUnit(1.1));
-			let updateFeedData;
 			beforeEach(async () => {
 				// set up a healthy position
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
@@ -1112,12 +1129,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 				// spike the price
 				await setOnchainPrice(baseAsset, spikedPrice);
-
-				updateFeedData = await getFeedUpdateData({
-					id: defaultFeedId,
-					price: feedBaseFromUNIT(offChainPrice),
-					conf: feedBaseFromUNIT(confidence),
-				});
 			});
 
 			it('canceling an order works', async () => {
@@ -1130,16 +1141,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 				await assert.revert(
 					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
-					'Price too volatile'
-				);
-			});
-
-			it('executing an order reverts', async () => {
-				// advance to next round (same price, should be still volatile)
-				await setOnchainPrice(baseAsset, spikedPrice);
-
-				await assert.revert(
-					perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
 					'Price too volatile'
 				);
 			});

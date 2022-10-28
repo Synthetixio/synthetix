@@ -1738,15 +1738,20 @@ const setupAllContracts = async ({
 							toWei('0.0001'), // 0.01% maker fee delayed order
 							toWei('0.00005'), // 0.005% taker fee offchain delayed order
 							toWei('0.00001'), // 0.001% maker fee offchain delayed order
-							toBN('2'), // 2 rounds next price confirm window
-							30, // 30s delay confirm window
-							20, // 20s offchain delay confirm window
+
 							toWei('10'), // 10x max leverage
 							toWei('100000'), // 100000 max market debt
 							toWei('0.1'), // 10% max funding rate
 							toWei('100000'), // 100000 USD skewScaleUSD
+
+							toBN('2'), // 2 rounds next price confirm window
+							30, // 30s delay confirm window
 							60, // 60s minimum delay time in seconds
 							120, // 120s maximum delay time in seconds
+
+							15, // 20s offchain min delay window
+							60, // 20s offchain max delay window
+							10, // 20s offchain min feed delay window
 						],
 						{ from: owner }
 					),
