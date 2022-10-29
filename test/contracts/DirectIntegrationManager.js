@@ -36,8 +36,10 @@ contract('DirectIntegrationManager', async accounts => {
 		await systemSettings.setAtomicEquivalentForDexPricing(sETH, fakeAddress, { from: owner });
 		await systemSettings.setAtomicExchangeFeeRate(sETH, 100, { from: owner });
 		await systemSettings.setAtomicTwapWindow(200, { from: owner });
+		// await systemSettings.setAtomicMaxTwapDelta(300, { from: owner }) is not a thing on systemsettings
 		await systemSettings.setAtomicMaxVolumePerBlock(400, { from: owner });
 		await systemSettings.setAtomicVolatilityConsiderationWindow(sETH, 500, { from: owner });
+		// await systemSettings.setAtomicVolatilityTwapSeconds(sETH, 600, { from: owner }); is not a thing on systemsettings
 		await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 700, { from: owner });
 		await systemSettings.setExchangeFeeRateForSynths([sETH], [800], { from: owner });
 		await systemSettings.setExchangeMaxDynamicFee(900, { from: owner });
@@ -70,7 +72,7 @@ contract('DirectIntegrationManager', async accounts => {
 					address1,
 					[sETH],
 					[
-						sETH,
+						ZERO_BYTES32,
 						address1,
 						ethers.constants.AddressZero,
 						123,
@@ -83,37 +85,13 @@ contract('DirectIntegrationManager', async accounts => {
 						7890,
 						8901,
 						9012,
+						10123,
+						11234,
 					],
 				],
 				accounts,
 				address: owner,
 			});
-		});
-
-		it('reverts when currency keys dont match', async () => {
-			await assert.revert(
-				directIntegration.setExchangeParameters(
-					address1,
-					[sETH],
-					[
-						ZERO_BYTES32,
-						ethers.constants.AddressZero,
-						ethers.constants.AddressZero,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-					],
-					{ from: owner }
-				),
-				'Currency key mismatch'
-			);
 		});
 
 		describe('when overriding no parameters', () => {
@@ -122,9 +100,11 @@ contract('DirectIntegrationManager', async accounts => {
 					address1,
 					[sETH],
 					[
-						sETH,
+						ZERO_BYTES32,
 						ethers.constants.AddressZero,
 						ethers.constants.AddressZero,
+						0,
+						0,
 						0,
 						0,
 						0,
@@ -149,8 +129,10 @@ contract('DirectIntegrationManager', async accounts => {
 					fakeAddress,
 					'100',
 					'200',
+					'0',
 					'400',
 					'500',
+					'0',
 					'700',
 					'800',
 					'900',
@@ -166,7 +148,23 @@ contract('DirectIntegrationManager', async accounts => {
 				await directIntegration.setExchangeParameters(
 					address1,
 					[sETH],
-					[sETH, address1, ethers.constants.AddressZero, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+					[
+						ZERO_BYTES32,
+						address1,
+						ethers.constants.AddressZero,
+						123,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+					],
 					{ from: owner }
 				);
 			});
@@ -180,8 +178,10 @@ contract('DirectIntegrationManager', async accounts => {
 					fakeAddress,
 					'123', // applied
 					'200',
+					'0',
 					'400',
 					'500',
+					'0',
 					'700',
 					'800',
 					'900',
@@ -197,7 +197,23 @@ contract('DirectIntegrationManager', async accounts => {
 				await directIntegration.setExchangeParameters(
 					address1,
 					[sETH],
-					[sETH, address1, address1, 123, 1234, 2345, 3456, 4567, 5678, 6789, 7890, 8901, 9012],
+					[
+						ZERO_BYTES32,
+						address1,
+						address1,
+						123,
+						1234,
+						2345,
+						3456,
+						4567,
+						5678,
+						6789,
+						7890,
+						8901,
+						9012,
+						10123,
+						11234,
+					],
 					{ from: owner }
 				);
 			});
@@ -219,6 +235,8 @@ contract('DirectIntegrationManager', async accounts => {
 					'7890',
 					'8901',
 					'9012',
+					'10123',
+					'11234',
 				]);
 			});
 		});
