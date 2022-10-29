@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./SystemSettingsLib.sol";
 import "./interfaces/IDirectIntegrationManager.sol";
 
 /*
@@ -118,19 +117,6 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
 
     /* ---------- Internal Functions ---------- */
 
-    // Some parameters need to be checked in the same manner as SystemSettings to make sure they are valid.
-    function _validateExchangeParameters(ParameterIntegrationSettings memory settings) internal pure {
-        SystemSettingsLib._validateAtomicEquivalentForDexPricing(settings.atomicEquivalentForDexPricing);
-        SystemSettingsLib._validateAtomicExchangeFeeRate(settings.atomicExchangeFeeRate);
-        SystemSettingsLib._validateAtomicTwapWindow(settings.atomicTwapWindow);
-        SystemSettingsLib._validateAtomicMaxVolumePerBlock(settings.atomicMaxVolumePerBlock);
-        SystemSettingsLib._validateAtomicVolatilityConsiderationWindow(settings.atomicVolatilityConsiderationWindow);
-        SystemSettingsLib._validateExchangeFeeRate(settings.exchangeFeeRate);
-        SystemSettingsLib._validateExchangeMaxDynamicFee(settings.exchangeMaxDynamicFee);
-        SystemSettingsLib._validateExchangeDynamicFeeThreshold(settings.exchangeDynamicFeeThreshold);
-        SystemSettingsLib._validateExchangeDynamicFeeWeightDecay(settings.exchangeDynamicFeeWeightDecay);
-    }
-
     function _setExchangeParameters(
         address integration,
         bytes32 currencyKey,
@@ -138,8 +124,6 @@ contract DirectIntegrationManager is Owned, MixinSystemSettings, IDirectIntegrat
     ) internal {
         require(address(integration) != address(0), "Address cannot be 0");
         require(currencyKey == settings.currencyKey, "Currency key mismatch");
-
-        _validateExchangeParameters(settings);
         _settings[integration][currencyKey] = settings; // overwrites the parameters for a given direct integration
         emit IntegrationParametersSet(integration, currencyKey, settings);
     }
