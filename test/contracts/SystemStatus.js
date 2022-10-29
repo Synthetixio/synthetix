@@ -145,7 +145,6 @@ contract('SystemStatus', async accounts => {
 				await systemStatus.requireSynthActive(toBytes32('sETH'));
 				await systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH'));
 				await systemStatus.requireFuturesMarketActive(toBytes32('sBTC'));
-				await systemStatus.requireDirectIntegrationActive(integration1);
 			});
 
 			it('and all the bool views are correct', async () => {
@@ -193,7 +192,6 @@ contract('SystemStatus', async accounts => {
 					await assert.revert(systemStatus.requireFuturesActive(), reason);
 					await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
 					await assert.revert(systemStatus.requireFuturesMarketActive(toBytes32('sETH')), reason);
-					await assert.revert(systemStatus.requireDirectIntegrationActive(integration1), reason);
 					await assert.revert(
 						systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
 						reason
@@ -242,7 +240,6 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(systemStatus.requireFuturesActive(), reason);
 						await assert.revert(systemStatus.requireSynthActive(toBytes32('sETH')), reason);
 						await assert.revert(systemStatus.requireFuturesMarketActive(toBytes32('sETH')), reason);
-						await assert.revert(systemStatus.requireDirectIntegrationActive(integration1), reason);
 						await assert.revert(
 							systemStatus.requireSynthsActive(toBytes32('sBTC'), toBytes32('sETH')),
 							reason
@@ -670,12 +667,6 @@ contract('SystemStatus', async accounts => {
 						);
 						await assert.revert(
 							systemStatus.requireFuturesMarketActive(toBytes32('sETH')),
-							'Exchange is suspended. Operation prohibited'
-						);
-					});
-					it('and the direct integration require check reverts as expected', async () => {
-						await assert.revert(
-							systemStatus.requireDirectIntegrationActive(integration1),
 							'Exchange is suspended. Operation prohibited'
 						);
 					});

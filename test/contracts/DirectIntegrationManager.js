@@ -36,10 +36,8 @@ contract('DirectIntegrationManager', async accounts => {
 		await systemSettings.setAtomicEquivalentForDexPricing(sETH, fakeAddress, { from: owner });
 		await systemSettings.setAtomicExchangeFeeRate(sETH, 100, { from: owner });
 		await systemSettings.setAtomicTwapWindow(200, { from: owner });
-		// await systemSettings.setAtomicMaxTwapDelta(300, { from: owner }) is not a thing on systemsettings
 		await systemSettings.setAtomicMaxVolumePerBlock(400, { from: owner });
 		await systemSettings.setAtomicVolatilityConsiderationWindow(sETH, 500, { from: owner });
-		// await systemSettings.setAtomicVolatilityTwapSeconds(sETH, 600, { from: owner }); is not a thing on systemsettings
 		await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 700, { from: owner });
 		await systemSettings.setExchangeFeeRateForSynths([sETH], [800], { from: owner });
 		await systemSettings.setExchangeMaxDynamicFee(900, { from: owner });
@@ -85,8 +83,6 @@ contract('DirectIntegrationManager', async accounts => {
 						7890,
 						8901,
 						9012,
-						10123,
-						11234,
 					],
 				],
 				accounts,
@@ -113,8 +109,6 @@ contract('DirectIntegrationManager', async accounts => {
 						0,
 						0,
 						0,
-						0,
-						0,
 					],
 					{ from: owner }
 				);
@@ -129,10 +123,8 @@ contract('DirectIntegrationManager', async accounts => {
 					fakeAddress,
 					'100',
 					'200',
-					'0',
 					'400',
 					'500',
-					'0',
 					'700',
 					'800',
 					'900',
@@ -148,23 +140,7 @@ contract('DirectIntegrationManager', async accounts => {
 				await directIntegration.setExchangeParameters(
 					address1,
 					[sETH],
-					[
-						ZERO_BYTES32,
-						address1,
-						ethers.constants.AddressZero,
-						123,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-						0,
-					],
+					[ZERO_BYTES32, address1, ethers.constants.AddressZero, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 					{ from: owner }
 				);
 			});
@@ -178,10 +154,8 @@ contract('DirectIntegrationManager', async accounts => {
 					fakeAddress,
 					'123', // applied
 					'200',
-					'0',
 					'400',
 					'500',
-					'0',
 					'700',
 					'800',
 					'900',
@@ -211,8 +185,6 @@ contract('DirectIntegrationManager', async accounts => {
 						7890,
 						8901,
 						9012,
-						10123,
-						11234,
 					],
 					{ from: owner }
 				);
@@ -235,8 +207,6 @@ contract('DirectIntegrationManager', async accounts => {
 					'7890',
 					'8901',
 					'9012',
-					'10123',
-					'11234',
 				]);
 			});
 		});

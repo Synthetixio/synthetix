@@ -1990,8 +1990,6 @@ contract('Exchange Rates', async accounts => {
 			instance = contracts.ExchangeRates;
 			systemSettings = contracts.SystemSettings;
 
-			console.log(Object.entries(contracts).map(([n, c]) => [n, c.address]));
-
 			// remove the pre-configured aggregator
 			await instance.removeAggregator(toBytes32('SNX'), { from: owner });
 
