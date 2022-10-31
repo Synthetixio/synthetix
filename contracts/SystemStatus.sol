@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
+
 // Inheritance
 import "./Owned.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -16,7 +16,6 @@ contract SystemStatus is Owned, ISystemStatus {
     bytes32 public constant SECTION_FUTURES = "Futures";
     bytes32 public constant SECTION_SYNTH_EXCHANGE = "SynthExchange";
     bytes32 public constant SECTION_SYNTH = "Synth";
-    bytes32 public constant SECTION_DIRECT_INTEGRATION = "DirectIntegration";
 
     bytes32 public constant CONTRACT_NAME = "SystemStatus";
 
@@ -33,8 +32,6 @@ contract SystemStatus is Owned, ISystemStatus {
     mapping(bytes32 => Suspension) public synthSuspension;
 
     mapping(bytes32 => Suspension) public futuresMarketSuspension;
-
-    mapping(address => Suspension) public directIntegrationSuspension;
 
     constructor(address _owner) public Owned(_owner) {}
 
@@ -81,11 +78,6 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireExchangeActive(); // exchanging implicitely used
         _internalRequireFuturesActive(); // futures global flag
         _internalRequireFuturesMarketActive(marketKey); // specific futures market flag
-    }
-
-    function requireDirectIntegrationActive(address integration) external view {
-        // Direct integrations also require the system and exchanging to be active, which are both checked by the exchangeActive modifier in BaseSynthetix.sol.
-        _internalRequireDirectIntegrationActive(integration);
     }
 
     function synthSuspended(bytes32 currencyKey) external view returns (bool) {
@@ -166,24 +158,6 @@ contract SystemStatus is Owned, ISystemStatus {
             suspensions[i] = futuresMarketSuspension[marketKeys[i]].suspended;
             reasons[i] = futuresMarketSuspension[marketKeys[i]].reason;
         }
-    }
-
-    function getDirectIntegrationSuspensions(address[] calldata integrations)
-        external
-        view
-        returns (bool[] memory suspensions, uint256[] memory reasons)
-    {
-        suspensions = new bool[](integrations.length);
-        reasons = new uint256[](integrations.length);
-
-        for (uint i = 0; i < integrations.length; i++) {
-            suspensions[i] = directIntegrationSuspension[integrations[i]].suspended;
-            reasons[i] = directIntegrationSuspension[integrations[i]].reason;
-        }
-    }
-
-    function isDirectIntegrationSuspended(address integration) external view returns (bool) {
-        return directIntegrationSuspension[integration].suspended;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -333,26 +307,6 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalResumeSynths(currencyKeys);
     }
 
-    function suspendDirectIntegration(address integration, uint256 reason) external {
-        address[] memory integrations = new address[](1);
-        integrations[0] = integration;
-        _internalSuspendDirectIntegrations(integrations, reason);
-    }
-
-    function suspendDirectIntegrations(address[] calldata integrations, uint256 reason) external {
-        _internalSuspendDirectIntegrations(integrations, reason);
-    }
-
-    function resumeDirectIntegration(address integration) external {
-        address[] memory integrations = new address[](1);
-        integrations[0] = integration;
-        _internalResumeDirectIntegrations(integrations);
-    }
-
-    function resumeDirectIntegrations(address[] calldata integrations) external {
-        _internalResumeDirectIntegrations(integrations);
-    }
-
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireAccessToSuspend(bytes32 section) internal view {
@@ -394,10 +348,6 @@ contract SystemStatus is Owned, ISystemStatus {
 
     function _internalRequireFuturesMarketActive(bytes32 marketKey) internal view {
         require(!futuresMarketSuspension[marketKey].suspended, "Market suspended");
-    }
-
-    function _internalRequireDirectIntegrationActive(address integration) internal view {
-        require(!directIntegrationSuspension[integration].suspended, "Integration suspended");
     }
 
     function _internalSuspendSynths(bytes32[] memory currencyKeys, uint256 reason) internal {
@@ -457,25 +407,6 @@ contract SystemStatus is Owned, ISystemStatus {
         }
     }
 
-    function _internalSuspendDirectIntegrations(address[] memory integrations, uint256 reason) internal {
-        _requireAccessToSuspend(SECTION_DIRECT_INTEGRATION);
-        for (uint i = 0; i < integrations.length; i++) {
-            address integration = integrations[i];
-            directIntegrationSuspension[integration].suspended = true;
-            directIntegrationSuspension[integration].reason = uint248(reason);
-            emit DirectIntegrationSuspended(integration, reason);
-        }
-    }
-
-    function _internalResumeDirectIntegrations(address[] memory integrations) internal {
-        _requireAccessToResume(SECTION_DIRECT_INTEGRATION);
-        for (uint i = 0; i < integrations.length; i++) {
-            address integration = integrations[i];
-            emit DirectIntegrationResumed(integration, uint256(directIntegrationSuspension[integration].reason));
-            delete directIntegrationSuspension[integration];
-        }
-    }
-
     function _internalUpdateAccessControl(
         bytes32 section,
         address account,
@@ -488,8 +419,7 @@ contract SystemStatus is Owned, ISystemStatus {
                 section == SECTION_EXCHANGE ||
                 section == SECTION_FUTURES ||
                 section == SECTION_SYNTH_EXCHANGE ||
-                section == SECTION_SYNTH ||
-                section == SECTION_DIRECT_INTEGRATION,
+                section == SECTION_SYNTH,
             "Invalid section supplied"
         );
         accessControl[section][account].canSuspend = canSuspend;
@@ -519,9 +449,6 @@ contract SystemStatus is Owned, ISystemStatus {
 
     event FuturesMarketSuspended(bytes32 marketKey, uint256 reason);
     event FuturesMarketResumed(bytes32 marketKey, uint256 reason);
-
-    event DirectIntegrationSuspended(address integration, uint256 reason);
-    event DirectIntegrationResumed(address integration, uint256 reason);
 
     event AccessControlUpdated(bytes32 indexed section, address indexed account, bool canSuspend, bool canResume);
 }

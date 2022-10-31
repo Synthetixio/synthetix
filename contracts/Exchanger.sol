@@ -504,7 +504,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
     {
-        if (systemStatus().isDirectIntegrationSuspended(from)) from = address(0);
         settings = directIntegrationManager().getExchangeParameters(from, currencyKey);
     }
 

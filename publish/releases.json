@@ -734,8 +734,7 @@
 				"ExchangeRates",
 				"Synthetix",
 				"SystemSettings",
-				"SystemSettingsLib",
-				"SystemStatus"
+				"SystemSettingsLib"
 			]
 		},
 		{

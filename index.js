@@ -614,7 +614,6 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		80: 'Futures configuration', // pausing according to deployment configuration
 		231: 'Latency Breaker', // https://sips.synthetix.io/sips/sip-231/
-		420: 'Direct integration(s) paused', // https://sips.synthetix.io/sips/sip-267/
 		99999: 'Emergency',
 	};
 

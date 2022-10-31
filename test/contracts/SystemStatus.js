@@ -11,26 +11,16 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const { toBytes32 } = require('../..');
 
 contract('SystemStatus', async accounts => {
-	const [SYSTEM, ISSUANCE, EXCHANGE, SYNTH_EXCHANGE, SYNTH, FUTURES, DIRECT_INTEGRATION] = [
+	const [SYSTEM, ISSUANCE, EXCHANGE, SYNTH_EXCHANGE, SYNTH, FUTURES] = [
 		'System',
 		'Issuance',
 		'Exchange',
 		'SynthExchange',
 		'Synth',
 		'Futures',
-		'DirectIntegration',
 	].map(toBytes32);
 
-	const [
-		,
-		owner,
-		account1,
-		account2,
-		account3,
-		integration1,
-		integration2,
-		integration3,
-	] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	let SUSPENSION_REASON_UPGRADE;
 	let systemStatus;
@@ -54,8 +44,6 @@ contract('SystemStatus', async accounts => {
 				'resumeSynthsExchange',
 				'resumeFuturesMarket',
 				'resumeFuturesMarkets',
-				'resumeDirectIntegration',
-				'resumeDirectIntegrations',
 				'resumeSystem',
 				'suspendExchange',
 				'suspendFutures',
@@ -66,8 +54,6 @@ contract('SystemStatus', async accounts => {
 				'suspendSynthsExchange',
 				'suspendFuturesMarket',
 				'suspendFuturesMarkets',
-				'suspendDirectIntegration',
-				'suspendDirectIntegrations',
 				'suspendSystem',
 				'updateAccessControl',
 				'updateAccessControls',
@@ -108,23 +94,15 @@ contract('SystemStatus', async accounts => {
 			systemStatus.suspendFuturesMarkets([toBytes32('sETH')], '1', { from: owner }),
 			'Restricted to access control list'
 		);
-		await assert.revert(
-			systemStatus.suspendDirectIntegration(integration1, '1', { from: owner }),
-			'Restricted to access control list'
-		);
-		await assert.revert(
-			systemStatus.suspendDirectIntegrations([integration1], '1', { from: owner }),
-			'Restricted to access control list'
-		);
 	});
 
 	describe('when the owner is given access to suspend and resume everything', () => {
 		beforeEach(async () => {
 			await systemStatus.updateAccessControls(
-				[SYSTEM, ISSUANCE, EXCHANGE, SYNTH_EXCHANGE, SYNTH, FUTURES, DIRECT_INTEGRATION],
-				[owner, owner, owner, owner, owner, owner, owner],
-				[true, true, true, true, true, true, true],
-				[true, true, true, true, true, true, true],
+				[SYSTEM, ISSUANCE, EXCHANGE, SYNTH_EXCHANGE, SYNTH, FUTURES],
+				[owner, owner, owner, owner, owner, owner],
+				[true, true, true, true, true, true],
+				[true, true, true, true, true, true],
 				{ from: owner }
 			);
 		});
@@ -266,24 +244,12 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendFuturesMarkets([toBytes32('sETH')], '0', { from: account1 })
 						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegration(integration1, '0', { from: account1 })
-						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegrations([integration1], '0', { from: account1 })
-						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
 						await assert.revert(
 							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account1 })
 						);
 						await assert.revert(
 							systemStatus.resumeFuturesMarkets([toBytes32('sETH')], { from: account1 })
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account1 })
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegrations([integration1], { from: account1 })
 						);
 					});
 					it('yet the owner can still resume', async () => {
@@ -346,7 +312,6 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireIssuanceActive();
 							await systemStatus.requireSynthActive(toBytes32('sETH'));
 							await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -373,24 +338,12 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendFuturesMarkets([toBytes32('sETH')], '66', { from: account1 })
 							);
-							await assert.revert(
-								systemStatus.suspendDirectIntegration(integration1, '420', { from: account1 })
-							);
-							await assert.revert(
-								systemStatus.suspendDirectIntegrations([integration1], '420', { from: account1 })
-							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account1 }));
 							await assert.revert(
 								systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account1 })
 							);
 							await assert.revert(
 								systemStatus.resumeFuturesMarkets([toBytes32('sETH')], { from: account1 })
-							);
-							await assert.revert(
-								systemStatus.resumeDirectIntegration(integration1, { from: account1 })
-							);
-							await assert.revert(
-								systemStatus.resumeDirectIntegrations([integration1], { from: account1 })
 							);
 						});
 					});
@@ -467,7 +420,6 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
 						await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
-						await systemStatus.requireDirectIntegrationActive(integration1);
 					});
 					it('yet that address cannot resume', async () => {
 						await assert.revert(
@@ -489,15 +441,9 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '55', { from: account2 })
 						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 						await assert.revert(
 							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 })
 						);
 					});
 					it('yet the owner can still resume', async () => {
@@ -557,7 +503,6 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireIssuanceActive();
 							await systemStatus.requireSynthActive(toBytes32('sETH'));
 							await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -579,15 +524,9 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendFuturesMarket(toBytes32('sETH'), '5', { from: account2 })
 							);
-							await assert.revert(
-								systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 							await assert.revert(
 								systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
-							);
-							await assert.revert(
-								systemStatus.resumeDirectIntegration(integration1, { from: account2 })
 							);
 						});
 					});
@@ -704,15 +643,9 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '55', { from: account2 })
 						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 						await assert.revert(
 							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 })
 						);
 					});
 					it('yet the owner can still resume', async () => {
@@ -777,7 +710,6 @@ contract('SystemStatus', async accounts => {
 							);
 							await systemStatus.requireSynthActive(toBytes32('sETH'));
 							await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -799,15 +731,9 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendFuturesMarket(toBytes32('sETH'), '5', { from: account2 })
 							);
-							await assert.revert(
-								systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 							await assert.revert(
 								systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
-							);
-							await assert.revert(
-								systemStatus.resumeDirectIntegration(integration1, { from: account2 })
 							);
 						});
 					});
@@ -906,7 +832,6 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireSynthActive(sBTC);
 						await systemStatus.requireFuturesMarketActive(sBTC);
 						await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
-						await systemStatus.requireDirectIntegrationActive(integration1);
 					});
 					it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
 						const reason = 'Synth exchange suspended. Operation prohibited';
@@ -997,7 +922,6 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireFuturesMarketActive(sBTC);
 							await systemStatus.requireSynthsActive(sBTC, toBytes32('sETH'));
 							await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -1118,7 +1042,6 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireFuturesMarketActive(sBTC);
 							await systemStatus.requireExchangeBetweenSynthsAllowed(sETH, sBTC);
 							await systemStatus.requireSynthsActive(sBTC, sETH);
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 					});
 				});
@@ -1200,7 +1123,6 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireExchangeActive();
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
-						await systemStatus.requireDirectIntegrationActive(integration1);
 					});
 
 					it('yet that address cannot resume', async () => {
@@ -1220,13 +1142,7 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
 						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 })
-						);
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeFutures({ from: owner });
@@ -1284,7 +1200,6 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireFuturesActive();
 							await systemStatus.requireFuturesMarketActive(toBytes32('sBTC'));
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 
 						it('yet that address cannot suspend', async () => {
@@ -1303,13 +1218,7 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
 							);
-							await assert.revert(
-								systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-							await assert.revert(
-								systemStatus.resumeDirectIntegration(integration1, { from: account2 })
-							);
 						});
 					});
 				});
@@ -1428,7 +1337,6 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireExchangeActive();
 						await systemStatus.requireFuturesActive();
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
-						await systemStatus.requireDirectIntegrationActive(integration1);
 					});
 					it('and not other markets', async () => {
 						await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
@@ -1451,13 +1359,7 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
 						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 })
-						);
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeFutures({ from: owner });
@@ -1481,7 +1383,6 @@ contract('SystemStatus', async accounts => {
 						await systemStatus.requireExchangeActive();
 						await systemStatus.requireFuturesActive();
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
-						await systemStatus.requireDirectIntegrationActive(integration1);
 					});
 					it('and not other markets', async () => {
 						await systemStatus.requireFuturesMarketActive(toBytes32('sOTHER'));
@@ -1504,13 +1405,7 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(
 							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
 						);
-						await assert.revert(
-							systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 })
-						);
 					});
 					it('yet the owner can still resume', async () => {
 						await systemStatus.resumeFutures({ from: owner });
@@ -1582,7 +1477,6 @@ contract('SystemStatus', async accounts => {
 							await systemStatus.requireSystemActive();
 							await systemStatus.requireFuturesActive();
 							await systemStatus.requireFuturesMarketActive(sBTC);
-							await systemStatus.requireDirectIntegrationActive(integration1);
 						});
 
 						it('but not for second market', async () => {
@@ -1608,13 +1502,7 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
 							);
-							await assert.revert(
-								systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 })
-							);
 							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-							await assert.revert(
-								systemStatus.resumeDirectIntegration(integration1, { from: account2 })
-							);
 						});
 					});
 
@@ -1639,395 +1527,6 @@ contract('SystemStatus', async accounts => {
 							await assert.revert(
 								systemStatus.requireFuturesMarketActive(sLINK),
 								'Market suspended'
-							);
-						});
-					});
-				});
-			});
-		});
-
-		describe('suspendDirectIntegration(s)', () => {
-			let txn;
-
-			it('is not suspended initially', async () => {
-				const { suspended, reason } = await systemStatus.directIntegrationSuspension(integration1);
-				assert.equal(suspended, false);
-				assert.equal(reason, '0');
-			});
-
-			it('can only be invoked by the owner initially', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: systemStatus.suspendDirectIntegration,
-					accounts,
-					address: owner,
-					args: [integration1, '0'],
-					reason: 'Restricted to access control list',
-				});
-				await onlyGivenAddressCanInvoke({
-					fnc: systemStatus.suspendDirectIntegrations,
-					accounts,
-					address: owner,
-					args: [[integration1, integration2], '0'],
-					reason: 'Restricted to access control list',
-				});
-			});
-
-			it('getDirectIntegrationSuspensions(integration1, integration2) is empty', async () => {
-				const { suspensions, reasons } = await systemStatus.getDirectIntegrationSuspensions([
-					integration1,
-					integration2,
-				]);
-				assert.deepEqual(suspensions, [false, false]);
-				assert.deepEqual(reasons, ['0', '0']);
-			});
-
-			describe('when the owner suspends a single integration', () => {
-				beforeEach(async () => {
-					txn = await systemStatus.suspendDirectIntegration(integration2, '420', { from: owner });
-				});
-				it('it succeeds', async () => {
-					const { suspended, reason } = await systemStatus.directIntegrationSuspension(
-						integration2
-					);
-					assert.equal(suspended, true);
-					assert.equal(reason, '420');
-					assert.eventEqual(txn, 'DirectIntegrationSuspended', [integration2, '420']);
-				});
-				it('getDirectIntegrationSuspensions(integration1, integration2) returns values for integration2', async () => {
-					const { suspensions, reasons } = await systemStatus.getDirectIntegrationSuspensions([
-						integration1,
-						integration2,
-					]);
-					assert.deepEqual(suspensions, [false, true]);
-					assert.deepEqual(reasons, ['0', '420']);
-				});
-			});
-
-			describe('when the owner suspends multiple integrations', () => {
-				beforeEach(async () => {
-					txn = await systemStatus.suspendDirectIntegrations([integration1, integration2], '420', {
-						from: owner,
-					});
-				});
-				it('it succeeds', async () => {
-					assert.equal(
-						(await systemStatus.directIntegrationSuspension(integration1)).suspended,
-						true
-					);
-					assert.equal(
-						(await systemStatus.directIntegrationSuspension(integration2)).suspended,
-						true
-					);
-				});
-				it('getDirectIntegrationSuspensions(integration1, integration2) returns values for both', async () => {
-					const { suspensions, reasons } = await systemStatus.getDirectIntegrationSuspensions([
-						integration1,
-						integration2,
-					]);
-					assert.deepEqual(suspensions, [true, true]);
-					assert.deepEqual(reasons, ['420', '420']);
-				});
-			});
-
-			describe('when the owner adds an address to suspend only', () => {
-				beforeEach(async () => {
-					await systemStatus.updateAccessControl(DIRECT_INTEGRATION, account2, true, false, {
-						from: owner,
-					});
-				});
-
-				it('other addresses still cannot suspend', async () => {
-					await assert.revert(
-						systemStatus.suspendDirectIntegration(integration1, '1', { from: account1 }),
-						'Restricted to access control list'
-					);
-					await assert.revert(
-						systemStatus.suspendDirectIntegration(integration1, '420', { from: account3 }),
-						'Restricted to access control list'
-					);
-					await assert.revert(
-						systemStatus.suspendDirectIntegrations([integration1], '420', { from: account3 }),
-						'Restricted to access control list'
-					);
-				});
-
-				describe('and that address invokes suspend for a single integration', () => {
-					beforeEach(async () => {
-						txn = await systemStatus.suspendDirectIntegration(integration1, '420', {
-							from: account2,
-						});
-					});
-					it('it succeeds', async () => {
-						const { suspended, reason } = await systemStatus.directIntegrationSuspension(
-							integration1
-						);
-						assert.equal(suspended, true);
-						assert.equal(reason, '420');
-					});
-					it('and emits the expected event', async () => {
-						assert.eventEqual(txn, 'DirectIntegrationSuspended', [integration1, '420']);
-					});
-					it('and the require check reverts as expected', async () => {
-						await assert.revert(
-							systemStatus.requireDirectIntegrationActive(integration1),
-							'Integration suspended'
-						);
-					});
-					it('but not the other checks', async () => {
-						await systemStatus.requireSystemActive();
-						await systemStatus.requireExchangeActive();
-						await systemStatus.requireFuturesActive();
-						await systemStatus.requireSynthActive(toBytes32('sETH'));
-						await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
-					});
-					it('and not other integrations', async () => {
-						await systemStatus.requireDirectIntegrationActive(integration2);
-					});
-
-					it('yet that address cannot resume', async () => {
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 }),
-							'Restricted to access control list'
-						);
-					});
-					it('nor can it do any other restricted action', async () => {
-						await assert.revert(
-							systemStatus.updateAccessControl(SYSTEM, account3, true, true, { from: account2 })
-						);
-						await assert.revert(
-							systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
-						);
-						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
-						await assert.revert(
-							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
-						);
-						await assert.revert(
-							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '55', { from: account2 })
-						);
-						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-						await assert.revert(
-							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
-						);
-					});
-					it('yet the owner can still resume', async () => {
-						await systemStatus.resumeDirectIntegration(integration1, { from: owner });
-					});
-				});
-
-				describe('and that address suspends multiple integrations', () => {
-					beforeEach(async () => {
-						txn = await systemStatus.suspendDirectIntegrations(
-							[integration1, integration2],
-							'420',
-							{ from: account2 }
-						);
-					});
-					it('it succeeds', async () => {
-						assert.equal(
-							(await systemStatus.directIntegrationSuspension(integration1)).suspended,
-							true
-						);
-						assert.equal(
-							(await systemStatus.directIntegrationSuspension(integration2)).suspended,
-							true
-						);
-					});
-					it('and the require checks reverts as expected', async () => {
-						await assert.revert(
-							systemStatus.requireDirectIntegrationActive(integration1),
-							'Integration suspended'
-						);
-						await assert.revert(
-							systemStatus.requireDirectIntegrationActive(integration2),
-							'Integration suspended'
-						);
-					});
-					it('but not the other checks', async () => {
-						await systemStatus.requireSystemActive();
-						await systemStatus.requireExchangeActive();
-						await systemStatus.requireFuturesActive();
-						await systemStatus.requireSynthActive(toBytes32('sETH'));
-						await systemStatus.requireFuturesMarketActive(toBytes32('sETH'));
-					});
-					it('and not other integrations', async () => {
-						await systemStatus.requireDirectIntegrationActive(integration3);
-					});
-
-					it('yet that address cannot resume', async () => {
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account2 }),
-							'Restricted to access control list'
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration2, { from: account2 }),
-							'Restricted to access control list'
-						);
-					});
-					it('nor can it do any other restricted action', async () => {
-						await assert.revert(
-							systemStatus.updateAccessControl(SYSTEM, account3, true, true, { from: account3 })
-						);
-						await assert.revert(
-							systemStatus.suspendSystem(SUSPENSION_REASON_UPGRADE, { from: account2 })
-						);
-						await assert.revert(systemStatus.resumeSystem({ from: account2 }));
-						await assert.revert(
-							systemStatus.suspendSynth(toBytes32('sETH'), '55', { from: account2 })
-						);
-						await assert.revert(
-							systemStatus.suspendFuturesMarket(toBytes32('sETH'), '55', { from: account2 })
-						);
-						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-						await assert.revert(
-							systemStatus.resumeFuturesMarket(toBytes32('sETH'), { from: account2 })
-						);
-					});
-					it('yet the owner can still resume', async () => {
-						await systemStatus.resumeDirectIntegration(integration1, { from: owner });
-						await systemStatus.resumeDirectIntegration(integration2, { from: owner });
-					});
-				});
-			});
-		});
-
-		describe('resumeDirectIntegration(s)', () => {
-			let txn;
-
-			it('can only be invoked by the owner initially', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: systemStatus.resumeDirectIntegration,
-					accounts,
-					address: owner,
-					args: [integration1],
-					reason: 'Restricted to access control list',
-				});
-				await onlyGivenAddressCanInvoke({
-					fnc: systemStatus.resumeDirectIntegrations,
-					accounts,
-					address: owner,
-					args: [[integration1, integration2]],
-					reason: 'Restricted to access control list',
-				});
-			});
-
-			describe('when the owner suspends multiple integrations', () => {
-				const givenReason = '420';
-				beforeEach(async () => {
-					await systemStatus.suspendDirectIntegrations(
-						[integration1, integration2, integration3],
-						givenReason,
-						{
-							from: owner,
-						}
-					);
-				});
-
-				describe('when the owner adds an address to resume only', () => {
-					beforeEach(async () => {
-						await systemStatus.updateAccessControl(DIRECT_INTEGRATION, account2, false, true, {
-							from: owner,
-						});
-					});
-
-					it('other addresses still cannot resume', async () => {
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration1, { from: account1 })
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegration(integration2, { from: account3 })
-						);
-						await assert.revert(
-							systemStatus.resumeDirectIntegrations([integration3], { from: account3 })
-						);
-					});
-
-					describe('and that address invokes resume for first integration', () => {
-						beforeEach(async () => {
-							txn = await systemStatus.resumeDirectIntegration(integration1, { from: account2 });
-						});
-
-						it('it succeeds', async () => {
-							const { suspended, reason } = await systemStatus.directIntegrationSuspension(
-								integration1
-							);
-							assert.equal(suspended, false);
-							assert.equal(reason, '0');
-						});
-
-						it('and emits the expected event', async () => {
-							assert.eventEqual(txn, 'DirectIntegrationResumed', [integration1, givenReason]);
-						});
-
-						it('and all the require checks succeed', async () => {
-							await systemStatus.requireSystemActive();
-							await systemStatus.requireExchangeActive();
-							await systemStatus.requireFuturesActive();
-							await systemStatus.requireSynthActive(toBytes32('sETH'));
-							await systemStatus.requireFuturesMarketActive(toBytes32('sBTC'));
-						});
-
-						it('but not for the second integration', async () => {
-							await assert.revert(
-								systemStatus.requireDirectIntegrationActive(integration2),
-								'Integration suspended'
-							);
-						});
-
-						it('yet that address cannot suspend', async () => {
-							await assert.revert(
-								systemStatus.suspendDirectIntegration(integration1, '420', { from: account2 }),
-								'Restricted to access control list'
-							);
-						});
-
-						it('nor can it do any other restricted action', async () => {
-							await assert.revert(
-								systemStatus.updateAccessControl(SYSTEM, account3, false, true, { from: account2 })
-							);
-							await assert.revert(systemStatus.suspendSystem('8', { from: account2 }));
-							await assert.revert(systemStatus.resumeSystem({ from: account2 }));
-							await assert.revert(
-								systemStatus.suspendSynth(toBytes32('sETH'), '5', { from: account2 })
-							);
-							await assert.revert(
-								systemStatus.suspendFuturesMarket(toBytes32('sBTC'), '5', { from: account2 })
-							);
-							await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
-							await assert.revert(
-								systemStatus.resumeFuturesMarket(toBytes32('sBTC'), { from: account2 })
-							);
-						});
-					});
-
-					describe('and that address invokes resume for two integrations', () => {
-						beforeEach(async () => {
-							txn = await systemStatus.resumeDirectIntegrations([integration1, integration2], {
-								from: account2,
-							});
-						});
-
-						it('it succeeds', async () => {
-							assert.equal(
-								(await systemStatus.directIntegrationSuspension(integration1)).suspended,
-								false
-							);
-							assert.equal(
-								(await systemStatus.directIntegrationSuspension(integration2)).suspended,
-								false
-							);
-						});
-
-						it('and all the require checks succeed', async () => {
-							await systemStatus.requireSystemActive();
-							await systemStatus.requireExchangeActive();
-							await systemStatus.requireDirectIntegrationActive(integration1);
-							await systemStatus.requireDirectIntegrationActive(integration2);
-						});
-
-						it('but not for third market', async () => {
-							await assert.revert(
-								systemStatus.requireDirectIntegrationActive(integration3),
-								'Integration suspended'
 							);
 						});
 					});
