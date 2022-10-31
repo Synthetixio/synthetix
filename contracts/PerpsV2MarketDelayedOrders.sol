@@ -87,24 +87,19 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitOffchainDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
+    function submitOffchainDelayedOrder(int sizeDelta) external {
         bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, bytes32(0), true);
+        _submitDelayedOrder(marketKey, sizeDelta, 0, bytes32(0), true);
     }
 
     /// same as submitOffchainDelayedOrder but emits an event with the tracking code
     /// to allow volume source fee sharing for integrations
-    function submitOffchainDelayedOrderWithTracking(
-        int sizeDelta,
-        uint desiredTimeDelta,
-        bytes32 trackingCode
-    ) external {
+    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
         bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, trackingCode, true);
+        _submitDelayedOrder(marketKey, sizeDelta, 0, trackingCode, true);
     }
 
     function _submitDelayedOrder(

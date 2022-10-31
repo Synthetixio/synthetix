@@ -28,6 +28,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
+	const defaultDesiredTimeDelta = 60;
 
 	const marketKeySuffix = '-perp';
 
@@ -172,14 +173,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin,
-		size,
-		price,
-		offChainPrice,
-		confidence,
-		desiredTimeDelta,
-		minDelayTimeDelta,
-		latestPublishTime;
+	let margin, size, price, offChainPrice, confidence, latestPublishTime;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -189,8 +183,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		price = toUnit('200');
 		offChainPrice = toUnit('190');
 		confidence = toUnit('1');
-		desiredTimeDelta = 60;
-		minDelayTimeDelta = 60;
 		latestPublishTime = await currentTime();
 
 		await setOnchainPrice(baseAsset, price);
@@ -209,11 +201,11 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsV2Market.orderFee(size))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
-			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, {
+			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, {
 				from: trader,
 			});
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
-			const expectedExecutableAt = txBlock.timestamp + desiredTimeDelta;
+			const expectedExecutableAt = txBlock.timestamp + defaultDesiredTimeDelta;
 
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
@@ -259,19 +251,10 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			});
 		});
 
-		it('set desiredTimeDelta to minDelayTimeDelta when delta is 0', async () => {
-			// setup
-			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, 0, { from: trader });
-			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
-
-			const order = await perpsV2MarketState.delayedOrders(trader);
-			assert.bnEqual(order.executableAtTime, txBlock.timestamp + minDelayTimeDelta);
-		});
-
 		describe('cannot submit an order when', () => {
 			it('zero size', async () => {
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(0, desiredTimeDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(0, { from: trader }),
 					'Cannot submit empty order'
 				);
 			});
@@ -279,14 +262,14 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			it('not enough margin', async () => {
 				await perpsV2Market.withdrawAllMargin({ from: trader });
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(size, { from: trader }),
 					'Insufficient margin'
 				);
 			});
 
 			it('too much leverage', async () => {
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size.mul(toBN(10)), desiredTimeDelta, {
+					perpsV2Market.submitOffchainDelayedOrder(size.mul(toBN(10)), {
 						from: trader,
 					}),
 					'Max leverage exceeded'
@@ -294,9 +277,9 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			});
 
 			it('previous delayed order exists', async () => {
-				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(size, { from: trader }),
 					'previous order exists'
 				);
 			});
@@ -304,7 +287,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			it('if futures markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(size, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -312,35 +295,8 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			it('if market is suspended', async () => {
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(size, { from: trader }),
 					'Market suspended'
-				);
-			});
-
-			it('if desiredTimeDelta is below the minimum delay or negative', async () => {
-				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(0, 1, { from: trader }),
-					'delay out of bounds'
-				);
-				try {
-					await perpsV2Market.submitOffchainDelayedOrder(0, -1, { from: trader });
-				} catch (err) {
-					const { reason, code, argument } = err;
-					assert.deepEqual(
-						{
-							reason: 'value out-of-bounds',
-							code: 'INVALID_ARGUMENT',
-							argument: 'desiredTimeDelta',
-						},
-						{ reason, code, argument }
-					);
-				}
-			});
-
-			it('if desiredTimeDelta is above the maximum delay', async () => {
-				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(0, 1000000, { from: trader }),
-					'delay out of bounds'
 				);
 			});
 		});
@@ -357,7 +313,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 
 			const tx = await perpsV2Market.submitOffchainDelayedOrderWithTracking(
 				size,
-				desiredTimeDelta,
+
 				trackingCode,
 				{
 					from: trader,
@@ -371,7 +327,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, spotFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
-			assert.bnEqual(order.executableAtTime, txBlock.timestamp + desiredTimeDelta);
+			assert.bnEqual(order.executableAtTime, txBlock.timestamp + defaultDesiredTimeDelta);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
 			const decodedLogs = await getDecodedLogs({
@@ -379,7 +335,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
 			});
 
-			// DelayedOrderSubmitted
+			// OffchainDelayedOrderSubmitted
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
@@ -387,7 +343,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 					trader,
 					size,
 					roundId.add(toBN(1)),
-					txBlock.timestamp + desiredTimeDelta,
+					txBlock.timestamp + 60,
 					true,
 					latestPublishTime,
 					spotFee,
@@ -405,7 +361,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			// setup
 			await perpsV2Market.submitOffchainDelayedOrderWithTracking(
 				size,
-				desiredTimeDelta,
+
 				trackingCode,
 				{
 					from: trader,
@@ -524,7 +480,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				// transfer more margin
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 				const newOrder = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -533,7 +489,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				spotFee = (await perpsV2Market.orderFee(size))[0];
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
-				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 			});
 
 			it('cannot cancel if futures markets are suspended', async () => {
@@ -712,7 +668,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 					publishTime: (await currentTime()) + feedTimeOffset,
 				});
 
-				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 
 				await fastForward(delay);
 
@@ -994,7 +950,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				// transfer more margin
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 				const newOrder = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -1003,7 +959,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				let targetPrice, targetOffchainPrice, spotTradeDetails, updateFeedData;
 
 				beforeEach(async () => {
-					await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+					await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 
 					await fastForward(offchainDelayedOrderMinAge + 1);
 
@@ -1125,7 +1081,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
 				// submit an order
-				await perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 
 				// spike the price
 				await setOnchainPrice(baseAsset, spikedPrice);
@@ -1140,7 +1096,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
 
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size, desiredTimeDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(size, { from: trader }),
 					'Price too volatile'
 				);
 			});
