@@ -59,6 +59,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
      * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
     function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
         bytes32 marketKey = _marketKey();
 
         _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, bytes32(0), false);
@@ -71,6 +72,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         uint desiredTimeDelta,
         bytes32 trackingCode
     ) external {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
         bytes32 marketKey = _marketKey();
 
         _submitDelayedOrder(marketKey, sizeDelta, desiredTimeDelta, trackingCode, false);
@@ -89,14 +91,15 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      */
     function submitOffchainDelayedOrder(int sizeDelta) external {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
         bytes32 marketKey = _marketKey();
 
+        // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
         _submitDelayedOrder(marketKey, sizeDelta, 0, bytes32(0), true);
     }
 
-    /// same as submitOffchainDelayedOrder but emits an event with the tracking code
-    /// to allow volume source fee sharing for integrations
     function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
         bytes32 marketKey = _marketKey();
 
         _submitDelayedOrder(marketKey, sizeDelta, 0, trackingCode, true);
@@ -150,10 +153,6 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
 
         // create order
-        uint latestPublishTime;
-        if (isOffchain) {
-            (, latestPublishTime) = _perpsV2ExchangeRate().resolveAndGetLatestPrice(_baseAsset());
-        }
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
             DelayedOrder({
@@ -164,17 +163,15 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
                 keeperDeposit: uint128(keeperDeposit),
                 executableAtTime: block.timestamp + desiredTimeDelta,
                 intentionTime: block.timestamp,
-                latestPublishTime: latestPublishTime,
                 trackingCode: trackingCode
             });
         // emit event
         emitDelayedOrderSubmitted(
             messageSender,
+            order.isOffchain,
             order.sizeDelta,
             order.targetRoundId,
             order.executableAtTime,
-            order.isOffchain,
-            order.latestPublishTime,
             order.commitDeposit,
             order.keeperDeposit,
             order.trackingCode
@@ -189,7 +186,6 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
             order.keeperDeposit,
             order.executableAtTime,
             order.intentionTime,
-            order.latestPublishTime,
             order.trackingCode
         );
     }
@@ -342,14 +338,13 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         // get latest price for asset
         uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
         uint minAge = _offchainDelayedOrderMinAge(_marketKey());
-        uint minPythAge = _offchainDelayedOrderMinFeedAge(_marketKey());
 
-        (uint currentPrice, uint publishTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
+        (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
         require(
-            (publishTimestamp - order.latestPublishTime >= minPythAge) && (publishTimestamp - order.intentionTime >= minAge),
+            (executionTimestamp > order.intentionTime) && (executionTimestamp - order.intentionTime > minAge),
             "too early"
         );
-        require((publishTimestamp - order.intentionTime < maxAge), "too late");
+        require((executionTimestamp - order.intentionTime < maxAge), "too late");
 
         _executeDelayedOrder(
             account,
@@ -469,40 +464,29 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
     ///// Events
     event DelayedOrderSubmitted(
         address indexed account,
+        bool isOffchain,
         int sizeDelta,
         uint targetRoundId,
         uint executableAtTime,
-        bool isOffchain,
-        uint latestPublishTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     );
     bytes32 internal constant DELAYEDORDERORDERSUBMITTED_SIG =
-        keccak256("DelayedOrderSubmitted(address,int256,uint256,uint256,bool,uint256,uint256,uint256,bytes32)");
+        keccak256("DelayedOrderSubmitted(address,bool,int256,uint256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderSubmitted(
         address account,
+        bool isOffchain,
         int sizeDelta,
         uint targetRoundId,
         uint executableAtTime,
-        bool isOffchain,
-        uint latestPublishTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     ) internal {
         proxy._emit(
-            abi.encode(
-                sizeDelta,
-                targetRoundId,
-                executableAtTime,
-                isOffchain,
-                latestPublishTime,
-                commitDeposit,
-                keeperDeposit,
-                trackingCode
-            ),
+            abi.encode(isOffchain, sizeDelta, targetRoundId, executableAtTime, commitDeposit, keeperDeposit, trackingCode),
             2,
             DELAYEDORDERORDERSUBMITTED_SIG,
             addressToBytes32(account),

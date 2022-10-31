@@ -19,7 +19,6 @@ interface IPerpsV2MarketSettings {
         uint maxDelayTimeDelta;
         uint offchainDelayedOrderMinAge;
         uint offchainDelayedOrderMaxAge;
-        uint offchainDelayedOrderMinFeedAge;
     }
 
     function takerFee(bytes32 _marketKey) external view returns (uint);
@@ -41,8 +40,6 @@ interface IPerpsV2MarketSettings {
     function offchainDelayedOrderMinAge(bytes32 _marketKey) external view returns (uint);
 
     function offchainDelayedOrderMaxAge(bytes32 _marketKey) external view returns (uint);
-
-    function offchainDelayedOrderMinFeedAge(bytes32 _marketKey) external view returns (uint);
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 

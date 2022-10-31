@@ -44,7 +44,6 @@ contract('PerpsV2MarketSettings', accounts => {
 
 	const offchainDelayedOrderMinAge = toBN('15');
 	const offchainDelayedOrderMaxAge = toBN('60');
-	const offchainDelayedOrderMinFeedAge = toBN('10');
 
 	before(async () => {
 		({
@@ -144,7 +143,6 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setTakerFeeOffchainDelayedOrder',
 				'setOffchainDelayedOrderMinAge',
 				'setOffchainDelayedOrderMaxAge',
-				'setOffchainDelayedOrderMinFeedAge',
 			],
 		});
 	});
@@ -167,7 +165,6 @@ contract('PerpsV2MarketSettings', accounts => {
 				nextPriceConfirmWindow,
 				offchainDelayedOrderMinAge,
 				offchainDelayedOrderMaxAge,
-				offchainDelayedOrderMinFeedAge,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];

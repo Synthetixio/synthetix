@@ -177,7 +177,6 @@ contract('PerpsV2MarketData', accounts => {
 					120, // 120s maximum delay time in seconds
 					15, // offchainDelayedOrderMinAge
 					60, // offchainDelayedOrderMaxAge
-					10, // offchainDelayedOrderMinFeedAge
 				],
 				{ from: owner }
 			);

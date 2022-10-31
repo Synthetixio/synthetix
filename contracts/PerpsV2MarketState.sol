@@ -163,7 +163,6 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
      * @param keeperDeposit The keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
      * @param executableAtTime The timestamp at which this order is executable at
      * @param isOffchain Flag indicating if the order is offchain
-     * @param latestPublishtime The latest offchain publish time of the price feed
      * @param trackingCode Tracking code to emit on execution for volume source fee sharing
      */
     function updateDelayedOrder(
@@ -175,7 +174,6 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         uint128 keeperDeposit,
         uint256 executableAtTime,
         uint256 intentionTime,
-        uint256 latestPublishtime,
         bytes32 trackingCode
     ) external onlyAssociatedContracts {
         delayedOrders[account] = DelayedOrder(
@@ -186,7 +184,6 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             keeperDeposit,
             executableAtTime,
             intentionTime,
-            latestPublishtime,
             trackingCode
         );
     }

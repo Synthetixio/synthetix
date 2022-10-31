@@ -213,7 +213,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			assert.bnEqual(order.commitDeposit, spotFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, expectedExecutableAt);
-			assert.bnEqual(order.latestPublishTime, latestPublishTime);
 
 			// check margin
 			const position = await perpsV2Market.positions(trader);
@@ -237,16 +236,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [
-					trader,
-					size,
-					roundId.add(toBN(1)),
-					expectedExecutableAt,
-					true,
-					latestPublishTime,
-					spotFee,
-					keeperFee,
-				],
+				args: [trader, true, size, roundId.add(toBN(1)), expectedExecutableAt, spotFee, keeperFee],
 				log: decodedLogs[2],
 			});
 		});
@@ -341,11 +331,10 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				emittedFrom: perpsV2Market.address,
 				args: [
 					trader,
+					true,
 					size,
 					roundId.add(toBN(1)),
 					txBlock.timestamp + 60,
-					true,
-					latestPublishTime,
 					spotFee,
 					keeperFee,
 					trackingCode,
@@ -355,7 +344,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 		});
 
 		it('executing an order emits the tracking event', async () => {
-			await perpsV2MarketSettings.setOffchainDelayedOrderMinFeedAge(marketKey, 0, { from: owner });
 			await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
 
 			// setup
@@ -529,9 +517,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			describe('an order that would revert on execution can be cancelled', () => {
 				beforeEach(async () => {
 					// remove minumun delay
-					await perpsV2MarketSettings.setOffchainDelayedOrderMinFeedAge(marketKey, 0, {
-						from: owner,
-					});
 					await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
 					// go to next round
 					await setOnchainPrice(baseAsset, price);
@@ -689,37 +674,6 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
 						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge - 1);
-					});
-
-					it('reverts for owner', async () => {
-						// account owner
-						await assert.revert(
-							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-							'too early'
-						);
-					});
-					it('reverts for keeper', async () => {
-						// keeper
-						await assert.revert(
-							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
-								from: trader2,
-							}),
-							'too early'
-						);
-					});
-				});
-
-				describe('if min feed age was not reached', () => {
-					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a spot trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size))[0];
-						// keeperFee is the minimum keeperFee for the system
-						keeperFee = await perpsV2MarketSettings.minKeeperFee();
-
-						await submitOffchainOrderAndDelay(
-							offchainDelayedOrderMinAge + 1,
-							offchainDelayedOrderMinAge
-						);
 					});
 
 					it('reverts for owner', async () => {

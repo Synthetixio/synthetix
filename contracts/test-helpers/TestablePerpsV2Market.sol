@@ -186,7 +186,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     /* ---------- Delayed Orders ---------- */
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, 0, bytes32(0));
+        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, bytes32(0));
     }
 
     function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}

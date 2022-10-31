@@ -36,7 +36,6 @@ interface IPerpsV2MarketBaseTypes {
         uint128 keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
         uint256 executableAtTime; // The timestamp at which this order is executable at
         uint256 intentionTime; // The block timestamp of submission
-        uint256 latestPublishTime; // The offchain latest publish time of the priceFeed
         bytes32 trackingCode; // tracking code to emit on execution for volume source fee sharing
     }
 }

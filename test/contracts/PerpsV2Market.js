@@ -83,7 +83,6 @@ contract('PerpsV2Market', accounts => {
 	const maxDelayTimeDelta = 120;
 	const offchainMinAge = 15;
 	const offchainMaxAge = 60;
-	const offchainMinFeedAge = 10;
 
 	const initialFundingIndex = toBN(0);
 
@@ -252,7 +251,6 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(parameters.maxDelayTimeDelta, maxDelayTimeDelta);
 			assert.bnEqual(parameters.offchainDelayedOrderMinAge, offchainMinAge);
 			assert.bnEqual(parameters.offchainDelayedOrderMaxAge, offchainMaxAge);
-			assert.bnEqual(parameters.offchainDelayedOrderMinFeedAge, offchainMinFeedAge);
 		});
 
 		it('prices are properly fetched', async () => {
@@ -531,7 +529,7 @@ contract('PerpsV2Market', accounts => {
 
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketState.updateDelayedOrder,
-					args: [noBalance, false, 1, 1, 1, 1, 1, 1, 1, toBytes32('code')],
+					args: [noBalance, false, 1, 1, 1, 1, 1, 1, toBytes32('code')],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only an associated contract can perform this action',
 					skipPassCheck: true,
@@ -3943,7 +3941,7 @@ contract('PerpsV2Market', accounts => {
 				await assert.revert(
 					futuresMarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 						{
 							from: owner,
 						}
@@ -4017,7 +4015,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
 					{
 						from: owner,
 					}
@@ -4029,7 +4027,7 @@ contract('PerpsV2Market', accounts => {
 				await assert.revert(
 					futuresMarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
 						{
 							from: owner,
 						}
@@ -4179,7 +4177,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
 					{
 						from: owner,
 					}
@@ -4255,7 +4253,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setSkewScaleUSD(marketKey, toUnit('100'), { from: owner });
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
 					{
 						from: owner,
 					}

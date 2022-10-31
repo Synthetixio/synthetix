@@ -1751,7 +1751,6 @@ const setupAllContracts = async ({
 
 							15, // 20s offchain min delay window
 							60, // 20s offchain max delay window
-							10, // 20s offchain min feed delay window
 						],
 						{ from: owner }
 					),

@@ -63,7 +63,6 @@ interface IPerpsV2MarketState {
         uint128 keeperDeposit,
         uint256 executableAtTime,
         uint256 intentionTime,
-        uint256 latestPublishtime,
         bytes32 trackingCode
     ) external;
 
