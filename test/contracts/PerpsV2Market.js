@@ -73,7 +73,7 @@ contract('PerpsV2Market', accounts => {
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 	const maxFundingVelocity = toUnit('0.1');
-	const skewScale = toUnit('400');
+	const skewScale = toUnit('1000');
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
@@ -2948,7 +2948,11 @@ contract('PerpsV2Market', accounts => {
 		});
 
 		it('Should cap the proportional max funding velocity', async () => {
+			await futuresMarketSettings.setSkewScale(marketKey, toUnit('400'), {
+				from: owner,
+			});
 			const price = 250;
+
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
@@ -3069,13 +3073,18 @@ contract('PerpsV2Market', accounts => {
 		});
 
 		it('Altering the max funding velocity has a proportional effect', async () => {
+			const fillPrice = toUnit('250');
+			await futuresMarketSettings.setSkewScale(marketKey, toUnit('400'), {
+				from: owner,
+			});
+
 			// 0, +-50%, +-100%
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
-				fillPrice: toUnit('250'),
+				fillPrice,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('12'),
 			});
@@ -3083,19 +3092,19 @@ contract('PerpsV2Market', accounts => {
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader2,
-				fillPrice: toUnit('250'),
+				fillPrice,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('-4'),
 			});
 
-			// velocity = (skew * price) / skew_scale * max_funding_velocity
-			//          = (8 * 250) / 100_000 * 0.1
+			// velocity = skew / skew_scale * max_funding_velocity
+			//          = 8 / 400 * 0.1
 			//          = 0.002
 			const expectedVelocity = toUnit('0.002');
 			assert.bnEqual(await futuresMarket.currentFundingVelocity(), expectedVelocity);
 
-			// velocity = (skew * price) / skew_scale * max_funding_velocity
-			//          = (8 * 250) / 100_000 * 0.2
+			// velocity = skew / skew_scale * max_funding_velocity
+			//          = 8 / 400 * 0.2
 			//          = 0.004
 			//          ~2x because max_funding_velocity doubled.
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.2'), { from: owner });
@@ -3110,11 +3119,15 @@ contract('PerpsV2Market', accounts => {
 		});
 
 		it('Altering the skewScale has a proportional effect', async () => {
-			const price = 250;
+			const fillPrice = toUnit('250');
+			await futuresMarketSettings.setSkewScale(marketKey, toUnit('400'), {
+				from: owner,
+			});
+
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
-				fillPrice: toUnit(price),
+				fillPrice,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('-12'),
 			});
@@ -3122,7 +3135,7 @@ contract('PerpsV2Market', accounts => {
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader2,
-				fillPrice: toUnit(price),
+				fillPrice,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('4'),
 			});
@@ -3305,6 +3318,10 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
 			const price = toUnit('250');
+			await futuresMarketSettings.setSkewScale(marketKey, toUnit('400'), {
+				from: owner,
+			});
+
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
@@ -3318,10 +3335,10 @@ contract('PerpsV2Market', accounts => {
 			// 12hrs
 			await fastForward(SECS_IN_DAY / 2);
 
-			// velocity     = (skew * price) / skew_scale * max_funding_velocity
+			// velocity     = skew / skew_scale * max_funding_velocity
 			// funding_rate = prev_funding_rate + (velocity * (time_delta / seconds_in_day))
 
-			// velocity = (12 * 250) / 100_000 * 0.1
+			// velocity = 12 / 400 * 0.1
 			//          = 0.003
 			//
 			// funding_rate = 0 + (0.003 * (43200 / 86400))
@@ -3332,8 +3349,8 @@ contract('PerpsV2Market', accounts => {
 
 			// Why 0.003?
 			//
-			// velocity = (skew * price) / skew_scale * max_funding_velocity
-			//          = (12 * 250) / 100_000 * 0.1
+			// velocity = skew / skew_scale * max_funding_velocity
+			//          = 12 / 400 * 0.1
 			//          = 0.003
 			const fundingVelocity = await futuresMarket.currentFundingVelocity();
 			assert.bnEqual(fundingVelocity, toUnit('0.003'));
@@ -3431,9 +3448,8 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(false);
 			});
 
-			it.only('Funding sequence is recomputed by setting funding rate parameters', async () => {
-				// note: market is current skew 60 long
-				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
+			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+				await futuresMarketSettings.setSkewScale(marketKey, toUnit('1000'), { from: owner });
 
 				// Initial sequence.
 				assert.bnEqual(
@@ -3443,7 +3459,7 @@ contract('PerpsV2Market', accounts => {
 
 				// 1d passed
 				await fastForward(24 * 60 * 60);
-				await setPrice(baseAsset, toUnit('100'));
+				// await setPrice(baseAsset, toUnit('100'));
 
 				// ~1 day has passed ~86400 seconds (+2 second buffer)
 				//
@@ -3763,9 +3779,7 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('Liquidation price is accurate with funding (variant)', async () => {
-				const skewScale = toUnit('100'); // 100 per unit, 100 units = 10k USD scale
-				await futuresMarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
-
+				await futuresMarketSettings.setSkewScale(marketKey, toUnit('40'), { from: owner });
 				await setPrice(baseAsset, toUnit('250'));
 
 				// submit orders that induces an initial 0.05 funding rate. the market is currently long by 20 size
@@ -4022,7 +4036,7 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
-				await futuresMarketSettings.setSkewScale(marketKey, toUnit('20000'), { from: owner });
+				await futuresMarketSettings.setSkewScale(marketKey, toUnit('57.14285714'), { from: owner });
 
 				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
 
