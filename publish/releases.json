@@ -732,6 +732,7 @@
 				"Exchanger",
 				"ExchangeSettlementLib",
 				"ExchangeRates",
+				"Issuer",
 				"Synthetix",
 				"SystemSettings",
 				"SystemSettingsLib"
