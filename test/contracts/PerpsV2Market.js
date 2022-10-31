@@ -2669,12 +2669,8 @@ contract('PerpsV2Market', accounts => {
 			});
 		};
 
-		it('A specific concrete floating rate with velocity example', async () => {
+		it.only('A specific concrete floating rate with velocity example', async () => {
 			const fillPrice = toUnit('100');
-			const skewScale = toUnit('1000'); // 100 per unit, 1000 scale = 100k USD scale
-
-			await setPrice(baseAsset, fillPrice);
-			await futuresMarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
 				from: owner,
 			});
@@ -2682,7 +2678,7 @@ contract('PerpsV2Market', accounts => {
 			const trades = [
 				// skew = long
 				{
-					size: toUnit('10'),
+					size: toUnit('100'),
 					account: trader,
 					fastForwardBy: 1000,
 					expectedRate: toUnit('0'),
@@ -2690,18 +2686,18 @@ contract('PerpsV2Market', accounts => {
 				},
 				// skew = even more long
 				{
-					size: toUnit('20'),
+					size: toUnit('200'),
 					account: trader2,
 					fastForwardBy: 29000,
-					expectedRate: toUnit('0.000839120'),
+					expectedRate: toUnit('0.00839120'),
 					expectedFunding: toUnit('-0.001408'), // neg because longs pay short
 				},
 				// skew = balanced but funding rate sticks.
 				{
-					size: toUnit('-30'),
+					size: toUnit('-300'),
 					account: trader3,
 					fastForwardBy: 20000,
-					expectedRate: toUnit('0.002575231'),
+					expectedRate: toUnit('0.02575231'),
 					expectedFunding: toUnit('-0.005360'), // neg because longs pay short
 				},
 			];
@@ -2716,7 +2712,7 @@ contract('PerpsV2Market', accounts => {
 
 				const fundingSequenceLength = await futuresMarket.fundingSequenceLength();
 				const funding = await futuresMarket.fundingSequence(fundingSequenceLength - 1);
-				assert.bnClose(funding, expectedFunding, toUnit('0.01'));
+				assert.bnClose(funding, expectedFunding, toUnit('0.001'));
 			}
 
 			// No change in skew, funding rate should remain the same.
@@ -3449,8 +3445,6 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
-				await futuresMarketSettings.setSkewScale(marketKey, toUnit('1000'), { from: owner });
-
 				// Initial sequence.
 				assert.bnEqual(
 					await futuresMarket.fundingSequenceLength(),
@@ -3459,7 +3453,6 @@ contract('PerpsV2Market', accounts => {
 
 				// 1d passed
 				await fastForward(24 * 60 * 60);
-				// await setPrice(baseAsset, toUnit('100'));
 
 				// ~1 day has passed ~86400 seconds (+2 second buffer)
 				//
