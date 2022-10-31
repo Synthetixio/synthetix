@@ -12,7 +12,7 @@ interface IPerpsV2MarketSettings {
         uint maxLeverage;
         uint maxMarketValueUSD;
         uint maxFundingVelocity;
-        uint skewScaleUSD;
+        uint skewScale;
         uint minDelayTimeDelta;
         uint maxDelayTimeDelta;
     }
@@ -35,7 +35,7 @@ interface IPerpsV2MarketSettings {
 
     function maxFundingVelocity(bytes32 _marketKey) external view returns (uint);
 
-    function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
+    function skewScale(bytes32 _marketKey) external view returns (uint);
 
     function minDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
 

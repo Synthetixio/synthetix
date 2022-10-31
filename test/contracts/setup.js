@@ -1734,7 +1734,7 @@ const setupAllContracts = async ({
 							toWei('10'), // 10x max leverage
 							toWei('100000'), // 100000 max market debt
 							toWei('0.1'), // 10% max funding velocity
-							toWei('100000'), // 100000 USD skewScaleUSD
+							toWei('400'), // 400 native units skewScale
 							60, // 60s minimum delay time in seconds
 							120, // 120s maximum delay time in seconds
 						],

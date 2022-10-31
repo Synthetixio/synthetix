@@ -19,8 +19,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     function proportionalSkew() external view returns (int) {
-        (uint price, ) = _assetPrice();
-        return _proportionalSkew(price);
+        return _proportionalSkew();
     }
 
     function maxFundingVelocity() external view returns (uint) {

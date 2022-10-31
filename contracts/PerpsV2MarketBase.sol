@@ -129,18 +129,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     /* ---------- Market Details ---------- */
 
     /*
-     * The size of the skew relative to the size of the market skew scaler.
-     * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
-     *
-     * TODO: Remove this. Replace skewScaleUsd with just skewScale, making `price` no longer necessary.
+     * Returns the pSkew = skew / skewScale capping the pSkew between [-1, 1].
      */
-    function _proportionalSkew(uint price) internal view returns (int) {
-        // marketSize is in baseAsset units so we need to convert from USD units
-        require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(marketState.marketKey()).divideDecimal(price);
-        require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-
-        int pSkew = int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+    function _proportionalSkew() internal view returns (int) {
+        int pSkew = int(marketState.marketSkew()).divideDecimal(int(_skewScale(marketState.marketKey())));
 
         // Ensures the proportionalSkew is between -1 and 1.
         return _min(_max(-_UNIT, pSkew), _UNIT);
@@ -151,9 +143,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return delta.divideDecimal(1 days);
     }
 
-    function _currentFundingVelocity(uint price) internal view returns (int) {
+    function _currentFundingVelocity() internal view returns (int) {
         int maxFundingVelocity = int(_maxFundingVelocity(marketState.marketKey()));
-        return _proportionalSkew(price).multiplyDecimal(maxFundingVelocity);
+        return _proportionalSkew().multiplyDecimal(maxFundingVelocity);
     }
 
     /*
@@ -167,10 +159,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * There is no variance in computation but will be affected based on outside modifications to
      * the market skew, max funding velocity, price, and time delta.
      */
-    function _currentFundingRate(uint price) internal view returns (int) {
+    function _currentFundingRate() internal view returns (int) {
         // calculations:
         //  - velocity          = proportional_skew * max_funding_velocity
-        //  - proportional_skew = (skew * price) / skew_scale_usd
+        //  - proportional_skew = skew / skew_scale
         //
         // example:
         //  - prev_funding_rate     = 0
@@ -178,8 +170,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         //  - time_delta            = 29,000s
         //  - max_funding_velocity  = 0.025 (2.5%)
         //  - skew                  = 300
-        //  - price                 = 10,000 ($10k)
-        //  - skew_scale_usd        = 10,000,000 (10M)
+        //  - skew_scale            = 10,000
         //
         // note: prev_velocity just refs to the velocity _before_ modifying the market skew.
         //
@@ -188,13 +179,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         //              = 0 + 0.0025 * 0.33564815
         //              = 0.00083912
         int fundingRate = marketState.fundingRateLastRecomputed();
-        int fundingVelocity = _currentFundingVelocity(price);
+        int fundingVelocity = _currentFundingVelocity();
         int elapsed = _proportionalElapsed();
         return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
     }
 
-    function _unrecordedFunding(uint price) internal view returns (int) {
-        int nextFundingRate = _currentFundingRate(price);
+    function _unrecordedFunding() internal view returns (int) {
+        int nextFundingRate = _currentFundingRate();
         // note the minus sign: funding flows in the opposite direction to the skew.
         int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
         int elapsed = _proportionalElapsed();
@@ -205,13 +196,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
-    function _nextFundingEntry(uint price) internal view returns (int) {
-        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
+    function _nextFundingEntry() internal view returns (int) {
+        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding());
     }
 
-    function _netFundingPerUnit(uint startIndex, uint price) internal view returns (int) {
+    function _netFundingPerUnit(uint startIndex) internal view returns (int) {
         // Compute the net difference between start and end indices.
-        return _nextFundingEntry(price).sub(marketState.fundingSequence(startIndex));
+        return _nextFundingEntry().sub(marketState.fundingSequence(startIndex));
     }
 
     /* ---------- Position Details ---------- */
@@ -264,12 +255,12 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return int(position.size).multiplyDecimal(priceShift);
     }
 
-    function _accruedFunding(Position memory position, uint price) internal view returns (int funding) {
+    function _accruedFunding(Position memory position) internal view returns (int funding) {
         uint lastModifiedIndex = position.lastFundingIndex;
         if (lastModifiedIndex == 0) {
             return 0; // The position does not exist -- no funding.
         }
-        int net = _netFundingPerUnit(lastModifiedIndex, price);
+        int net = _netFundingPerUnit(lastModifiedIndex);
         return int(position.size).multiplyDecimal(net);
     }
 
@@ -277,7 +268,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
      */
     function _marginPlusProfitFunding(Position memory position, uint price) internal view returns (int) {
-        int funding = _accruedFunding(position, price);
+        int funding = _accruedFunding(position);
         return int(position.margin).add(_profitLoss(position, price)).add(funding);
     }
 
@@ -536,6 +527,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /* ---------- Utilities ---------- */
+
     /*
      * The current base price from the oracle, and whether that price was invalid. Zero prices count as invalid.
      * Public because used both externally and internally
@@ -545,6 +537,18 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // Ensure we catch uninitialised rates or suspended state / synth
         invalid = invalid || price == 0 || _systemStatus().synthSuspended(marketState.baseAsset());
         return (price, invalid);
+    }
+
+    function _assetFillPrice(int size) internal view returns (uint, bool) {
+        (uint price, bool invalid) = _assetPrice();
+        int skew = marketState.marketSkew();
+        int skewScale = int(_skewScale(marketState.marketKey()));
+        int pdBefore = skew.divideDecimal(skewScale);
+        int pdAfter = skew.add(size).divideDecimal(skewScale);
+        uint fillPrice = uint(
+            int(price).add(pdBefore).add(int(price).add(pdAfter)).divideDecimal(_UNIT * 2)
+        );
+        return (fillPrice, invalid);
     }
 
     /*

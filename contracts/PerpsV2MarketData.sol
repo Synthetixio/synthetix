@@ -57,7 +57,7 @@ contract PerpsV2MarketData {
 
     struct FundingParameters {
         uint maxFundingVelocity;
-        uint skewScaleUSD;
+        uint skewScale;
     }
 
     struct FeeRates {
@@ -186,7 +186,7 @@ contract PerpsV2MarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(params.maxFundingVelocity, params.skewScaleUSD);
+        return FundingParameters(params.maxFundingVelocity, params.skewScale);
     }
 
     function _marketSizes(IPerpsV2MarketViews market) internal view returns (Sides memory) {

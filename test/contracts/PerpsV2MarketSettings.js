@@ -37,7 +37,7 @@ contract('PerpsV2MarketSettings', accounts => {
 	const maxMarketValueUSD = toUnit('100000');
 
 	const maxFundingVelocity = toUnit('0.1');
-	const skewScaleUSD = toUnit('10000');
+	const skewScale = toUnit('10000');
 
 	before(async () => {
 		({
@@ -130,7 +130,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMinKeeperFee',
 				'setNextPriceConfirmWindow',
 				'setParameters',
-				'setSkewScaleUSD',
+				'setSkewScale',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
 			],
@@ -150,7 +150,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				maxLeverage,
 				maxMarketValueUSD,
 				maxFundingVelocity,
-				skewScaleUSD,
+				skewScale,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];
@@ -194,9 +194,9 @@ contract('PerpsV2MarketSettings', accounts => {
 				);
 			});
 
-			it('should revert if setSkewScaleUSD is 0', async () => {
+			it('should revert if setSkewScale is 0', async () => {
 				await assert.revert(
-					futuresMarketSettings.setSkewScaleUSD(marketKey, 0, {
+					futuresMarketSettings.setSkewScale(marketKey, 0, {
 						from: owner,
 					}),
 					'cannot set skew scale 0'

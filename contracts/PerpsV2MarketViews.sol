@@ -49,6 +49,10 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         return _assetPrice();
     }
 
+    function assetFillPrice(int size) external view returns (uint price, bool invalid) {
+        return _assetFillPrice(size);
+    }
+
     /*
      * The number of entries in the funding sequence.
      */
@@ -93,8 +97,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * If this is positive, shorts pay longs, if it is negative, longs pay shorts.
      */
     function currentFundingRate() external view returns (int) {
-        (uint price, ) = _assetPrice();
-        return _currentFundingRate(price);
+        return _currentFundingRate();
     }
 
     /*
@@ -102,8 +105,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * funding rate is increasing positively (long skew). A negative velocity means the skew is on shorts.
      */
     function currentFundingVelocity() external view returns (int) {
-        (uint price, ) = _assetPrice();
-        return _currentFundingVelocity(price);
+        return _currentFundingVelocity();
     }
 
     /*
@@ -111,8 +113,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * been persisted in the funding sequence.
      */
     function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_unrecordedFunding(price), isInvalid);
+        (uint _, bool isInvalid) = _assetPrice();
+        return (_unrecordedFunding(), isInvalid);
     }
 
     /*
@@ -144,8 +146,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * The funding accrued in a position since it was opened; this does not include PnL.
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice();
-        return (_accruedFunding(marketState.positions(account), price), isInvalid);
+        (uint _, bool isInvalid) = _assetPrice();
+        return (_accruedFunding(marketState.positions(account)), isInvalid);
     }
 
     /*
@@ -272,7 +274,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         }
 
         // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
-        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, currentPrice);
+        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex);
 
         // minimum margin beyond which position can be liquidated
         uint liqMargin = _liquidationMargin(positionSize, currentPrice);
@@ -302,7 +304,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
-        int priceWithFunding = int(price).add(_nextFundingEntry(price));
+        int priceWithFunding = int(price).add(_nextFundingEntry());
         int totalDebt =
             int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
         return uint(_max(totalDebt, 0));

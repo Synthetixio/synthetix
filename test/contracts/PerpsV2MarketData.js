@@ -168,7 +168,7 @@ contract('PerpsV2MarketData', accounts => {
 					toWei('5'), // 5x max leverage
 					toWei('1000000'), // 1000000 max total margin
 					toWei('0.2'), // 20% max funding velocity
-					toWei('100000'), // 100000 USD skewScaleUSD
+					toWei('400'), // 400 native units skewScale
 					60, // 60s minimum delay time in seconds
 					120, // 120s maximum delay time in seconds
 				],
@@ -249,7 +249,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
 			assert.bnEqual(details.fundingParameters.maxFundingVelocity, params.maxFundingVelocity);
-			assert.bnEqual(details.fundingParameters.skewScaleUSD, params.skewScaleUSD);
+			assert.bnEqual(details.fundingParameters.skewScale, params.skewScale);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
 			const marketSizes = await futuresMarket.marketSizes();
