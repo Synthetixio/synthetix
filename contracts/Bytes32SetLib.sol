@@ -1,5 +1,4 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
 
 // https://docs.synthetix.io/contracts/source/libraries/bytes32setlib/
 library Bytes32SetLib {

@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
+
 // Inheritance
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20.sol";
 

@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
+
 import "../LimitedSetup.sol";
 
 contract OneWeekSetup is LimitedSetup(1 weeks) {

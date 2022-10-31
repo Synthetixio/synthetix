@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
+
 import "./VirtualSynth.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/virtualsynthmastercopy
