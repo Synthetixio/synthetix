@@ -539,6 +539,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return (price, invalid);
     }
 
+    // TODO: Replace _trade calls with _assetFillPrice over _assetPrice.
     function _assetFillPrice(int size) internal view returns (uint, bool) {
         (uint price, bool invalid) = _assetPrice();
         int skew = marketState.marketSkew();
