@@ -2669,7 +2669,7 @@ contract('PerpsV2Market', accounts => {
 			});
 		};
 
-		it.only('A specific concrete floating rate with velocity example', async () => {
+		it('A specific concrete floating rate with velocity example', async () => {
 			const fillPrice = toUnit('100');
 			await futuresMarketSettings.setMaxFundingVelocity(marketKey, toUnit('0.25'), {
 				from: owner,
@@ -3444,7 +3444,9 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+			it.only('Funding sequence is recomputed by setting funding rate parameters', async () => {
+				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
+
 				// Initial sequence.
 				assert.bnEqual(
 					await futuresMarket.fundingSequenceLength(),
@@ -3453,6 +3455,7 @@ contract('PerpsV2Market', accounts => {
 
 				// 1d passed
 				await fastForward(24 * 60 * 60);
+				await setPrice(baseAsset, toUnit('100'));
 
 				// ~1 day has passed ~86400 seconds (+2 second buffer)
 				//
@@ -3496,7 +3499,7 @@ contract('PerpsV2Market', accounts => {
 				//                   = -0.16000488
 				//                   ~-0.16
 				await fastForward(24 * 60 * 60);
-				await setPrice(baseAsset, toUnit('200'));
+				await setPrice(baseAsset, toUnit('100'));
 
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
