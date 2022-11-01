@@ -1,5 +1,5 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
+
 import "../interfaces/IDexPriceAggregator.sol";
 import "../interfaces/IERC20.sol";
 import "../SafeDecimalMath.sol";
