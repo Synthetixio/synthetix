@@ -143,11 +143,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         int pSkew = int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
 
         // Ensures the proportionalSkew is between -1 and 1.
-        //  - when pSkew = 1.1 then
-        //   min(1.1, 1) = 1
-        //  - when pSkew = -1.1 then
-        //   max(-0.02, -1) = -1
-        return pSkew > 0 ? _min(pSkew, _UNIT) : _max(pSkew, -_UNIT);
+        return _min(_max(-_UNIT, pSkew), _UNIT);
     }
 
     function _proportionalElapsed() internal view returns (int) {

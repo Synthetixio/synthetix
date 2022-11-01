@@ -2042,33 +2042,12 @@ contract('PerpsV2Market', accounts => {
 		});
 
 		describe('Remaining margin', async () => {
-			let fee, fee2;
-
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('100'));
-				fee = (await futuresMarket.orderFee(toUnit('50')))[0];
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('50'), { from: trader });
-				fee2 = (await futuresMarket.orderFee(toUnit('-50')))[0];
 				await futuresMarket.transferMargin(toUnit('5000'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-50'), { from: trader2 });
-			});
-
-			it('Remaining margin unchanged with no funding or profit', async () => {
-				await fastForward(24 * 60 * 60);
-				// Note that the first guy paid a bit of funding as there was a delay between confirming
-				// the first and second orders
-				assert.bnClose(
-					(await futuresMarket.remainingMargin(trader))[0],
-					toUnit('1000').sub(fee),
-					toUnit('0.1')
-				);
-
-				assert.bnClose(
-					(await futuresMarket.remainingMargin(trader2))[0],
-					toUnit('5000').sub(fee2),
-					toUnit('0.1')
-				);
 			});
 
 			describe.skip('profit and no funding', async () => {
