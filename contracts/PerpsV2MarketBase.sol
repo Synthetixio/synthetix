@@ -509,14 +509,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
             }
         }
 
-        // Check that the order isn't too large for the markets. Allow an additional unit for rounding errors.
-        if (
-            _orderSizeTooLarge(
-                _maxMarketValue(marketState.marketKey()).add(uint(_UNIT)),
-                oldPos.size,
-                newPos.size
-            )
-        ) {
+        // Check that the order isn't too large for the markets.
+        if (_orderSizeTooLarge(_maxMarketValue(marketState.marketKey()), oldPos.size, newPos.size)) {
             return (oldPos, 0, Status.MaxMarketSizeExceeded);
         }
 
