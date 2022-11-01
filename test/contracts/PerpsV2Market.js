@@ -2604,6 +2604,12 @@ contract('PerpsV2Market', accounts => {
 		});
 	});
 
+	describe('Premium/Discount Pricing', () => {
+		it('A complete premium/discount sample scenario');
+		it('Should result in a higher fillPrice when expanding skew (premium)');
+		it('Should result in a lower fillPrice when contracting skew (discount)');
+	});
+
 	describe('Funding', () => {
 		const fastForwardAndOpenPosition = async (
 			fastForwardBy,

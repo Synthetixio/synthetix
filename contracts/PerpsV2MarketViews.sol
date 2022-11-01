@@ -49,8 +49,9 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         return _assetPrice();
     }
 
-    function assetFillPrice(int size) external view returns (uint price, bool invalid) {
-        return _assetFillPrice(size);
+    function fillPrice(int size) external view returns (uint, bool) {
+        (uint price, bool invalid) = _assetPrice();
+        return (_fillPrice(size, price), invalid);
     }
 
     /*
@@ -246,6 +247,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     {
         bool invalid;
         (price, invalid) = _assetPrice();
+        price = _fillPrice(size, price);
+
         if (invalid) {
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
         }

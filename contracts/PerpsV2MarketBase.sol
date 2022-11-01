@@ -536,15 +536,12 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return (price, invalid);
     }
 
-    // TODO: Replace _trade calls with _assetFillPrice over _assetPrice.
-    function _assetFillPrice(int size) internal view returns (uint, bool) {
-        (uint price, bool invalid) = _assetPrice();
+    function _fillPrice(int size, uint price) internal view returns (uint) {
         int skew = marketState.marketSkew();
         int skewScale = int(_skewScale(marketState.marketKey()));
         int pdBefore = skew.divideDecimal(skewScale);
         int pdAfter = skew.add(size).divideDecimal(skewScale);
-        uint fillPrice = uint(int(price).add(pdBefore).add(int(price).add(pdAfter)).divideDecimal(_UNIT * 2));
-        return (fillPrice, invalid);
+        return uint(int(price).add(pdBefore).add(int(price).add(pdAfter)).divideDecimal(_UNIT * 2));
     }
 
     /*

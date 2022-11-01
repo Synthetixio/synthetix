@@ -272,7 +272,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: executePrice, // the funding is applied only from order confirmation time
+                price: _fillPrice(order.sizeDelta, executePrice), // the funding is applied only from order confirmation time
                 takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
                 makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
                 trackingCode: order.trackingCode
