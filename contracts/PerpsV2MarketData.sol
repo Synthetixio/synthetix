@@ -35,7 +35,7 @@ contract PerpsV2MarketData {
 
     struct MarketLimits {
         uint maxLeverage;
-        uint maxMarketValueUSD;
+        uint maxMarketValue;
     }
 
     struct Sides {
@@ -208,7 +208,7 @@ contract PerpsV2MarketData {
                 baseAsset,
                 marketKey,
                 FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder),
-                MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
+                MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, invalid)

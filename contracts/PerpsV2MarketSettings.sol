@@ -88,10 +88,10 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The maximum allowable notional value on each side of a market.
+     * The maximum allowable value (base asset) on each side of a market.
      */
-    function maxMarketValueUSD(bytes32 _marketKey) public view returns (uint) {
-        return _maxMarketValueUSD(_marketKey);
+    function maxMarketValue(bytes32 _marketKey) public view returns (uint) {
+        return _maxMarketValue(_marketKey);
     }
 
     /*
@@ -132,7 +132,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _nextPriceConfirmWindow(_marketKey),
                 _delayedOrderConfirmWindow(_marketKey),
                 _maxLeverage(_marketKey),
-                _maxMarketValueUSD(_marketKey),
+                _maxMarketValue(_marketKey),
                 _maxFundingVelocity(_marketKey),
                 _skewScale(_marketKey),
                 _minDelayTimeDelta(_marketKey),
@@ -216,8 +216,8 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValueUSD(bytes32 _marketKey, uint _maxMarketValueUSD) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
+    function setMaxMarketValue(bytes32 _marketKey, uint _maxMarketValue) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
@@ -258,7 +258,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setTakerFee(_marketKey, _parameters.takerFee);
         setMakerFee(_marketKey, _parameters.makerFee);
         setMaxLeverage(_marketKey, _parameters.maxLeverage);
-        setMaxMarketValueUSD(_marketKey, _parameters.maxMarketValueUSD);
+        setMaxMarketValue(_marketKey, _parameters.maxMarketValue);
         setMaxFundingVelocity(_marketKey, _parameters.maxFundingVelocity);
         setSkewScale(_marketKey, _parameters.skewScale);
         setTakerFeeDelayedOrder(_marketKey, _parameters.takerFeeDelayedOrder);

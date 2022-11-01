@@ -166,7 +166,7 @@ contract('PerpsV2MarketData', accounts => {
 					toBN('2'), // 2 rounds next price confirm window
 					30, // 30s delay confirm window
 					toWei('5'), // 5x max leverage
-					toWei('1000000'), // 1000000 max total margin
+					toWei('1000'), // 1000 max market value
 					toWei('0.2'), // 20% max funding velocity
 					toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
 					60, // 60s minimum delay time in seconds
@@ -246,7 +246,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
-			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
+			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
 
 			assert.bnEqual(details.fundingParameters.maxFundingVelocity, params.maxFundingVelocity);
 			assert.bnEqual(details.fundingParameters.skewScale, params.skewScale);

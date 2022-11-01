@@ -1732,7 +1732,7 @@ const setupAllContracts = async ({
 							toBN('2'), // 2 rounds next price confirm window
 							30, // 30s delay confirm window
 							toWei('10'), // 10x max leverage
-							toWei('100000'), // 100000 max market debt
+							toWei('1000'), // 1000 max market value
 							toWei('0.1'), // 10% max funding velocity
 							toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
 							60, // 60s minimum delay time in seconds

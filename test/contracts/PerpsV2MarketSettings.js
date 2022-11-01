@@ -34,7 +34,7 @@ contract('PerpsV2MarketSettings', accounts => {
 	const makerFeeDelayedOrder = toUnit('0.0001');
 	const nextPriceConfirmWindow = toBN('2');
 	const maxLeverage = toUnit('10');
-	const maxMarketValueUSD = toUnit('100000');
+	const maxMarketValue = toUnit('1000');
 
 	const maxFundingVelocity = toUnit('0.1');
 	const skewScale = toUnit('10000');
@@ -124,7 +124,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMaxDelayTimeDelta',
 				'setMaxFundingVelocity',
 				'setMaxLeverage',
-				'setMaxMarketValueUSD',
+				'setMaxMarketValue',
 				'setMinDelayTimeDelta',
 				'setMinInitialMargin',
 				'setMinKeeperFee',
@@ -148,7 +148,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				makerFeeDelayedOrder,
 				nextPriceConfirmWindow,
 				maxLeverage,
-				maxMarketValueUSD,
+				maxMarketValue,
 				maxFundingVelocity,
 				skewScale,
 			}).map(([key, val]) => {

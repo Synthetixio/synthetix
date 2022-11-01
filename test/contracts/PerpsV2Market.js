@@ -71,7 +71,7 @@ contract('PerpsV2Market', accounts => {
 	const takerFeeDelayedOrder = toUnit('0.0005');
 	const makerFeeDelayedOrder = toUnit('0.0001');
 	const maxLeverage = toUnit('10');
-	const maxMarketValueUSD = toUnit('100000');
+	const maxMarketValue = toUnit('1000');
 	const maxFundingVelocity = toUnit('0.1');
 	const skewScale = toUnit('1000');
 	const initialPrice = toUnit('100');
@@ -236,7 +236,7 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(parameters.takerFeeDelayedOrder, takerFeeDelayedOrder);
 			assert.bnEqual(parameters.makerFeeDelayedOrder, makerFeeDelayedOrder);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
-			assert.bnEqual(parameters.maxMarketValueUSD, maxMarketValueUSD);
+			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
 			assert.bnEqual(parameters.maxFundingVelocity, maxFundingVelocity);
 			assert.bnEqual(parameters.skewScale, skewScale);
 			assert.bnEqual(parameters.minDelayTimeDelta, minDelayTimeDelta);
@@ -1457,21 +1457,24 @@ contract('PerpsV2Market', accounts => {
 			it('properly reports the max order size on each side', async () => {
 				let maxOrderSizes = await futuresMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxMarketValueUSD, initialPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, initialPrice));
+				assert.bnEqual(maxOrderSizes.long, maxMarketValue);
+				assert.bnEqual(maxOrderSizes.short, maxMarketValue);
 
-				let newPrice = toUnit('193');
+				// maxMarketValue does _not_ depend on price (value refers to number of base units).
+				const newPrice = toUnit('200');
 				await setPrice(baseAsset, newPrice);
 
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
 
-				assert.bnEqual(maxOrderSizes.long, divideDecimal(maxMarketValueUSD, newPrice));
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.long, maxMarketValue);
+				assert.bnEqual(maxOrderSizes.short, maxMarketValue);
 
 				// Submit order on one side, leaving part of what's left.
-
-				// 400 units submitted, out of 666.66.. available
-				newPrice = toUnit('150');
+				//
+				// 1000 maxMarketValue
+				// 400 sizeDelta
+				// 600 remaining (long)
+				// 1000 remaining (short - no change)
 				await transferMarginAndModifyPosition({
 					market: futuresMarket,
 					account: trader,
@@ -1481,26 +1484,20 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
-				assert.bnEqual(
-					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('400'))
-				);
-				assert.bnEqual(maxOrderSizes.short, divideDecimal(maxMarketValueUSD, newPrice));
+				assert.bnEqual(maxOrderSizes.long, maxMarketValue.sub(toUnit('400')));
+				assert.bnEqual(maxOrderSizes.short, maxMarketValue);
 
 				// Submit order on the other side, removing all available supply.
 				await transferMarginAndModifyPosition({
 					market: futuresMarket,
 					account: trader2,
 					fillPrice: newPrice,
-					marginDelta: toUnit('10001'),
-					sizeDelta: toUnit('-666.733'),
+					marginDelta: toUnit('100001'),
+					sizeDelta: toUnit('-1000'),
 				});
 
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
-				assert.bnEqual(
-					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('400'))
-				); // Long side is unaffected
+				assert.bnEqual(maxOrderSizes.long, maxMarketValue.sub(toUnit('400'))); // Long side is unaffected
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
 
 				// An additional few units on the long side by another trader
@@ -1513,31 +1510,8 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				maxOrderSizes = await futuresMarket.maxOrderSizes();
-				assert.bnEqual(
-					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('600'))
-				);
+				assert.bnEqual(maxOrderSizes.long, maxMarketValue.sub(toUnit('600')));
 				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
-
-				// Price increases - no more supply allowed.
-				await setPrice(baseAsset, newPrice.mul(toBN(2)));
-				maxOrderSizes = await futuresMarket.maxOrderSizes();
-				assert.bnEqual(maxOrderSizes.long, toUnit('0')); // Long side is unaffected
-				assert.bnEqual(maxOrderSizes.short, toUnit('0'));
-
-				// Price decreases - more supply allowed again.
-				newPrice = newPrice.div(toBN(4));
-				await setPrice(baseAsset, newPrice);
-				maxOrderSizes = await futuresMarket.maxOrderSizes();
-				assert.bnEqual(
-					maxOrderSizes.long,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('600'))
-				);
-				assert.bnClose(
-					maxOrderSizes.short,
-					divideDecimal(maxMarketValueUSD, newPrice).sub(toUnit('666.73333')),
-					toUnit('0.001')
-				);
 			});
 
 			for (const side of ['long', 'short']) {
@@ -1546,7 +1520,7 @@ contract('PerpsV2Market', accounts => {
 					const leverage = side === 'long' ? toUnit('10') : toUnit('-10');
 
 					beforeEach(async () => {
-						await futuresMarketSettings.setMaxMarketValueUSD(marketKey, toUnit('10000'), {
+						await futuresMarketSettings.setMaxMarketValue(marketKey, toUnit('100'), {
 							from: owner,
 						});
 						await setPrice(baseAsset, toUnit('1'));
@@ -1575,11 +1549,13 @@ contract('PerpsV2Market', accounts => {
 						await futuresMarket.modifyPosition(orderSize.add(toBN('1')), { from: trader });
 					});
 
-					it('Orders are allowed a touch of extra size to account for price motion on confirmation', async () => {
-						// Ensure there's some existing order size for prices to shunt around.
+					it('Price motion does not impact the max market size', async () => {
+						// Ensure there's some existing order size
 						await futuresMarket.transferMargin(maxMargin, {
 							from: trader2,
 						});
+
+						// 100 / 10 * 7 = 70
 						await futuresMarket.modifyPosition(orderSize.div(toBN(10)).mul(toBN(7)), {
 							from: trader2,
 						});
@@ -1588,45 +1564,22 @@ contract('PerpsV2Market', accounts => {
 							from: trader,
 						});
 
-						// The price moves, so the value of the already-confirmed order shunts out the pending one.
-						await setPrice(baseAsset, toUnit('1.08'));
+						// prices do not affect market size despite doing a 2x
+						await setPrice(baseAsset, toUnit('2'));
 
+						// 100 / 100 * 25 = 25
+						//
+						// 70 + 25 = 95
 						const sizeDelta = orderSize.div(toBN(100)).mul(toBN(25));
 						const postDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
-						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
-						await assert.revert(
-							futuresMarket.modifyPosition(sizeDelta, {
-								from: trader,
-							}),
-							'Max market size exceeded'
-						);
-
-						// Price moves back partially and allows the order to confirm
-						await setPrice(baseAsset, toUnit('1.04'));
-						await futuresMarket.modifyPosition(orderSize.div(toBN(100)).mul(toBN(25)), {
+						assert.equal(postDetails.status, Status.Ok);
+						await futuresMarket.modifyPosition(sizeDelta, {
 							from: trader,
 						});
-					});
-
-					it('Orders are allowed to reduce in size (or close) even if the result is still over the max', async () => {
-						const sideVar = leverage.div(leverage.abs());
-						const initialSize = orderSize.div(toBN('10')).mul(toBN('8'));
-
-						await futuresMarket.transferMargin(maxMargin.mul(toBN('10')), {
-							from: trader,
-						});
-						await futuresMarket.modifyPosition(initialSize, { from: trader });
-
-						// Now exceed max size (but price isn't so high that shorts would be liquidated)
-						await setPrice(baseAsset, toUnit('1.9'));
-
 						const sizes = await futuresMarket.maxOrderSizes();
-						assert.bnEqual(sizes[leverage.gt(toBN('0')) ? 0 : 1], toBN('0'));
 
-						// Reduce the order size, even though we are above the maximum
-						await futuresMarket.modifyPosition(toUnit('-1').mul(sideVar), {
-							from: trader,
-						});
+						// remaining size = 5 available.
+						assert.bnEqual(sizes[leverage.gt(toBN('0')) ? 0 : 1].abs(), toUnit('5'));
 					});
 				});
 			}
@@ -2482,9 +2435,9 @@ contract('PerpsV2Market', accounts => {
 
 					await setPrice(baseAsset, toUnit('10'));
 
-					await futuresMarket.modifyPosition(toUnit('500'), { from: trader });
-					await futuresMarket.modifyPosition(toUnit('-1100'), { from: trader2 });
-					await futuresMarket.modifyPosition(toUnit('9000'), { from: trader3 });
+					await futuresMarket.modifyPosition(toUnit('50'), { from: trader });
+					await futuresMarket.modifyPosition(toUnit('-110'), { from: trader2 });
+					await futuresMarket.modifyPosition(toUnit('900'), { from: trader3 });
 
 					assert.bnGt((await futuresMarket.accessibleMargin(trader))[0], toBN('0'));
 					assert.bnGt((await futuresMarket.accessibleMargin(trader2))[0], toBN('0'));
@@ -3188,20 +3141,24 @@ contract('PerpsV2Market', accounts => {
 
 			describe(`${side}`, () => {
 				beforeEach(async () => {
-					await futuresMarketSettings.setMaxMarketValueUSD(marketKey, toUnit('100000'), {
+					await futuresMarketSettings.setMaxMarketValue(marketKey, toUnit('1000'), {
 						from: owner,
 					});
 				});
 
 				it('100% skew induces maximum funding velocity', async () => {
+					// maxMarketValue = 1000 (size)
+					// sizeDelta = 10000 / 10
+					//           = 1000
+					//
+					// sizeDelta = maxMarketValue (for both long and short (1, -1).
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
 						fillPrice: toUnit('1'),
 						marginDelta: toUnit('1000000'),
-						sizeDelta: divideDecimal(multiplyDecimal(leverage, toUnit('1000000')), toUnit('10')),
+						sizeDelta: divideDecimal(multiplyDecimal(leverage, toUnit('10000')), toUnit('10')),
 					});
-
 					const expected = side === 'long' ? maxFundingVelocity : -maxFundingVelocity;
 
 					assert.bnEqual(await futuresMarket.currentFundingVelocity(), expected);

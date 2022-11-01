@@ -242,8 +242,8 @@ function itCanTrade({ ctx }) {
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLt(maxLeverage, toUnit(100));
 
-					const maxMarketValueUSD = await PerpsV2MarketSettings.maxMarketValueUSD(marketKey);
-					assert.bnLt(maxMarketValueUSD, toUnit(100000000));
+					const maxMarketValue = await PerpsV2MarketSettings.maxMarketValue(marketKey);
+					assert.bnLt(maxMarketValue, toUnit(100000000));
 
 					const skewScale = await PerpsV2MarketSettings.skewScale(marketKey);
 					// not too small, may not be true for a deprecated (winding down) market
