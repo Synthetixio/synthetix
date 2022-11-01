@@ -3444,7 +3444,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(false);
 			});
 
-			it.only('Funding sequence is recomputed by setting funding rate parameters', async () => {
+			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 
 				// Initial sequence.
@@ -3455,14 +3455,13 @@ contract('PerpsV2Market', accounts => {
 
 				// 1d passed
 				await fastForward(24 * 60 * 60);
-				await setPrice(baseAsset, toUnit('100'));
 
 				// ~1 day has passed ~86400 seconds (+2 second buffer)
 				//
 				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = -(0.000000486111111109 + 0.060001874999999997) / 2 * (86400 / 86400)
-				//                   = -0.06000236 / 2 * 1
-				//                   = -0.03000118
+				//                   = -(4.86111111109e-07 + 0.06000048611111111) / 2 * (86400 / 86400)
+				//                   = -0.06000097222222222 / 2 * 1
+				//                   = -0.03000049
 				//                   ~-0.03
 				//
 				// note: we invert the avgFundingRate here because accrual is paid in the opposite direction.
@@ -3479,6 +3478,8 @@ contract('PerpsV2Market', accounts => {
 				const time = await currentTime();
 
 				// Ensure funding is recomputed when maxFundingVelocity is updated.
+				//
+				// no additional time has passed. funding seq remains the same (but there should be an additional entry)
 				assert.bnEqual(
 					await futuresMarket.fundingSequenceLength(),
 					initialFundingIndex.add(toBN(7))
@@ -3489,21 +3490,22 @@ contract('PerpsV2Market', accounts => {
 					toUnit('-0.03'),
 					toUnit('0.01')
 				);
+
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('0'), toUnit('0.01'));
 
 				// Another day has passed.
 				//
 				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = -(0.06000256944444444 + 0.2600071990740741) / 2 * (86400 / 86400)
-				//                   = -0.32000977 / 2 * 1
-				//                   = -0.16000488
-				//                   ~-0.16
+				//                   = -(0.060001180555555554 + 0.18000118055555556) / 2 * (86400 / 86400)
+				//                   = -0.24000236 / 2 * 1
+				//                   = -0.12000118
+				//                   ~-0.12
+				//
+				// no change in funding rates. skew has not moved.
 				await fastForward(24 * 60 * 60);
-				await setPrice(baseAsset, toUnit('100'));
-
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
-					toUnit('-0.16'),
+					toUnit('-0.12'),
 					toUnit('0.01')
 				);
 				assert.bnEqual(
@@ -3511,19 +3513,26 @@ contract('PerpsV2Market', accounts => {
 					initialFundingIndex.add(toBN(7))
 				);
 
-				// Another day has passed.
+				// Another day has passed (note we haven't updated the funding sequence).
 				//
 				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = -(0.2600071990740741 + 0.7800240972222222) / 2 * (86400 / 86400)
-				//                   = -1.0400313 / 2 * 1
-				//                   = -0.52001565
-				//                   ~-0.52
+				//                   = -(0.060001180555555554 + 0.3000011805555556) / 2 * ((86400 * 2) / 86400)
+				//                   = -0.36000236 / 2 * 2
+				//                   = -0.36000236
+				//                   ~-0.36
+				//
+				// additional note: since funding was not updated, fundingLastRecomputed is also unchanged. this means
+				// elapsed is actually 2 days, not 1.
 				await fastForward(24 * 60 * 60);
-				await setPrice(baseAsset, toUnit('300'));
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
-					toUnit('-0.52'),
+					toUnit('-0.36'),
 					toUnit('0.01')
+				);
+				// no change in the funding sequence
+				assert.bnEqual(
+					await futuresMarket.fundingSequenceLength(),
+					initialFundingIndex.add(toBN(7))
 				);
 			});
 		});
