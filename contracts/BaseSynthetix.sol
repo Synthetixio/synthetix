@@ -379,8 +379,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().getReward(account);
 
         (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
-        // this should not happen, but better to ensure (since it's coming from another contract)
-        require(totalRedeemed >= escrowToLiquidate, "escrowToLiquidate too large");
 
         // This transfers the to-be-liquidated part of escrow to the account (!) as liquid SNX.
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger
@@ -391,41 +389,29 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
         emitAccountLiquidated(account, totalRedeemed, debtToRemove, liquidatorAccount);
 
+        // First, pay out the flag and liquidate rewards.
+        uint flagReward = liquidator().flagReward();
+        uint liquidateReward = liquidator().liquidateReward();
+
+        // Transfer the flagReward to the account who flagged this account for liquidation.
+        address flagger = liquidator().getLiquidationCallerForAccount(account);
+        bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
+        require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
+
+        // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
+        bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
+        require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
+
         if (totalRedeemed > 0) {
-            uint stakerRewards; // The amount of rewards to be sent to the LiquidatorRewards contract.
-            uint flagReward = liquidator().flagReward();
-            uint liquidateReward = liquidator().liquidateReward();
-            // Check if the total amount of redeemed SNX is enough to payout the liquidation rewards.
-            if (totalRedeemed >= flagReward.add(liquidateReward)) {
-                // Transfer the flagReward to the account who flagged this account for liquidation.
-                address flagger = liquidator().getLiquidationCallerForAccount(account);
-                bool flagRewardTransferSucceeded = _transferByProxy(account, flagger, flagReward);
-                require(flagRewardTransferSucceeded, "Flag reward transfer did not succeed");
-
-                // Transfer the liquidateReward to liquidator (the account who invoked this liquidation).
-                bool liquidateRewardTransferSucceeded = _transferByProxy(account, liquidatorAccount, liquidateReward);
-                require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
-
-                // The remaining SNX to be sent to the LiquidatorRewards contract.
-                stakerRewards = totalRedeemed.sub(flagReward.add(liquidateReward));
-            } else {
-                /* If the total amount of redeemed SNX is greater than zero 
-                but is less than the sum of the flag & liquidate rewards,
-                then just send all of the SNX to the LiquidatorRewards contract. */
-                stakerRewards = totalRedeemed;
-            }
-
-            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), stakerRewards);
+            // Send the remaining SNX to the LiquidatorRewards contract.
+            bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
             require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
 
             // Inform the LiquidatorRewards contract about the incoming SNX rewards.
-            liquidatorRewards().notifyRewardAmount(stakerRewards);
-
-            return true;
-        } else {
-            // In this unlikely case, the total redeemed SNX is not greater than zero so don't perform any transfers.
-            return false;
+            liquidatorRewards().notifyRewardAmount(totalRedeemed);
         }
+
+        return true;
     }
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
@@ -437,10 +423,9 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().getReward(liquidatedAccount);
 
         // Self liquidate the account (`isSelfLiquidation` flag must be set to `true`).
-        (uint totalRedeemed, uint debtRemoved, uint escrowToLiquidate) = issuer().liquidateAccount(liquidatedAccount, true);
-        // escrowToLiquidate can only be zero, this is to protect from an issuer calc bug causing
-        // incorrect accounting & transfers later
-        require(escrowToLiquidate == 0, "cannot self liquidate escrow");
+        // escrowToLiquidate is unused because it cannot be used for self-liquidations
+        (uint totalRedeemed, uint debtRemoved, ) = issuer().liquidateAccount(liquidatedAccount, true);
+        require(debtRemoved > 0, "cannot self liquidate");
 
         emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
 
@@ -453,21 +438,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;
-    }
-
-    /**
-     * @notice Once off function for SIP-239 to recover unallocated SNX rewards
-     * due to an initialization issue in the LiquidatorRewards contract deployed in SIP-148.
-     * @param amount The amount of SNX to be recovered and distributed to the rightful owners
-     */
-    bool public restituted = false;
-
-    function initializeLiquidatorRewardsRestitution(uint amount) external onlyOwner {
-        if (!restituted) {
-            restituted = true;
-            bool success = _transferByProxy(address(liquidatorRewards()), owner, amount);
-            require(success, "restitution transfer failed");
-        }
     }
 
     function exchangeWithTrackingForInitiator(
