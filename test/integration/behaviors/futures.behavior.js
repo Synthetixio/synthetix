@@ -213,8 +213,8 @@ function itCanTrade({ ctx }) {
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLt(maxLeverage, toUnit(100));
 
-					const maxMarketValue = await FuturesMarketSettings.maxMarketValue(marketKey);
-					assert.bnLt(maxMarketValue, toUnit(100000000));
+					const maxMarketValueUSD = await FuturesMarketSettings.maxMarketValueUSD(marketKey);
+					assert.bnLt(maxMarketValueUSD, toUnit(100000000));
 
 					const skewScaleUSD = await FuturesMarketSettings.skewScaleUSD(marketKey);
 					// not too small, may not be true for a deprecated (winding down) market
