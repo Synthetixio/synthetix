@@ -6,6 +6,15 @@ import "../interfaces/ISynth.sol";
 interface IIssuer {
     // Views
 
+    function allNetworksDebtInfo()
+        external
+        view
+        returns (
+            uint256 debt,
+            uint256 sharesSupply,
+            bool isStale
+        );
+
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
