@@ -285,8 +285,8 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			// go to next round
 			await setPrice(baseAsset, price);
-
-			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, takerFeeDelayedOrder));
+			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const expectedFee = multiplyDecimal(size, multiplyDecimal(fillPrice, takerFeeDelayedOrder));
 
 			// execute the order
 			const tx = await futuresMarket.executeDelayedOrder(trader, { from: trader });

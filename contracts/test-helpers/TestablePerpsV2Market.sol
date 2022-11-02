@@ -109,6 +109,12 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (0, false);
     }
 
+    function fillPrice(int size) external view returns (uint price, bool invalid) {
+        (uint price, bool invalid) = _assetPrice();
+        uint fillPrice = _fillPrice(size, price);
+        return (fillPrice, invalid);
+    }
+
     function marketSizes() external view returns (uint long, uint short) {
         return (0, 0);
     }

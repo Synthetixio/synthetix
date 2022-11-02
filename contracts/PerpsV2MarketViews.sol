@@ -29,14 +29,14 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /*
-     * Sizes of the long and short sides of the market (in sUSD)
+     * Sizes of the long and short sides of the market.
      */
     function marketSize() external view returns (uint128) {
         return marketState.marketSize();
     }
 
     /*
-     * Sizes of the long and short sides of the market (in sUSD)
+     * Sizes of the long and short sides of the market.
      */
     function marketSkew() external view returns (int128) {
         return marketState.marketSkew();
@@ -49,7 +49,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         return _assetPrice();
     }
 
-    function fillPrice(int size) external view returns (uint, bool) {
+    function fillPrice(int size) external view returns (uint price, bool invalid) {
         (uint price, bool invalid) = _assetPrice();
         return (_fillPrice(size, price), invalid);
     }
