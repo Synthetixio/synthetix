@@ -251,8 +251,9 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         }
 
         Position memory position = marketState.positions(account);
-        uint currentPrice = _assetPriceRequireSystemChecks();
+        uint currentPrice = _fillPrice(order.sizeDelta, _assetPriceRequireSystemChecks());
         uint fundingIndex = _recomputeFunding();
+
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
         _updatePositionMargin(account, position, currentPrice, int(toRefund));
@@ -264,7 +265,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         if (currentRoundId >= order.targetRoundId) {
             // the correct price for the past round if target round was met
             (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(marketState.baseAsset(), order.targetRoundId);
-            executePrice = pastPrice;
+            executePrice = _fillPrice(order.sizeDelta, pastPrice);
         }
 
         // execute or revert
@@ -272,7 +273,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: _fillPrice(order.sizeDelta, executePrice), // the funding is applied only from order confirmation time
+                price: executePrice, // the funding is applied only from order confirmation time
                 takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
                 makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
                 trackingCode: order.trackingCode

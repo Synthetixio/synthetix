@@ -247,7 +247,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     {
         bool invalid;
         (price, invalid) = _assetPrice();
-        price = _fillPrice(size, price);
+        uint fillPrice = _fillPrice(size, price);
 
         if (invalid) {
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
@@ -256,7 +256,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: price,
+                price: fillPrice,
                 takerFee: _takerFee(marketKey()),
                 makerFee: _makerFee(marketKey()),
                 trackingCode: bytes32(0)
