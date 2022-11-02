@@ -206,7 +206,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 					await assert.revert(
 						instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
-						'unexpected'
+						'Transaction reverted without a reason string'
 					);
 				});
 

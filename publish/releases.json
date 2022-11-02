@@ -725,6 +725,19 @@
 			"released": "both"
 		},
 		{
+			"sip": 267,
+			"layer": "both",
+			"sources": [
+				"DirectIntegrationManager",
+				"Exchanger",
+				"ExchangeSettlementLib",
+				"ExchangeRates",
+				"Issuer",
+				"SystemSettings",
+				"SystemSettingsLib"
+			]
+		},
+		{
 			"sip": 269,
 			"layer": "ovm",
 			"sources": [],
@@ -1372,6 +1385,23 @@
 			},
 			"sips": [252],
 			"released": true
+		},
+		{
+			"name": "Suhail",
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267]
+		},
+		{
+			"name": "Suhail (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267]
 		}
 	]
 }
