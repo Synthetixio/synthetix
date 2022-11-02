@@ -533,9 +533,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     function _fillPrice(int size, uint price) internal view returns (uint) {
         int skew = marketState.marketSkew();
         int skewScale = int(_skewScale(marketState.marketKey()));
+
         int pdBefore = skew.divideDecimal(skewScale);
         int pdAfter = skew.add(size).divideDecimal(skewScale);
-        return uint(int(price).add(pdBefore).add(int(price).add(pdAfter)).divideDecimal(_UNIT * 2));
+        int priceBefore = int(price).add(pdBefore);
+        int priceAfter = int(price).add(pdAfter);
+
+        return uint(priceBefore.add(priceAfter).divideDecimal(_UNIT * 2 ));
     }
 
     /*

@@ -89,8 +89,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         Position memory position = marketState.positions(messageSender);
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
-        // simulate the order with current price and market and check that the order doesn't revert
-        uint price = _assetPriceRequireSystemChecks();
+        // simulate the order with current price (+ p/d) and market and check that the order doesn't revert
+        uint price = _fillPrice(sizeDelta, _assetPriceRequireSystemChecks());
         uint fundingIndex = _recomputeFunding();
         TradeParams memory params =
             TradeParams({

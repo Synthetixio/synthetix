@@ -222,7 +222,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: price,
+                price: _fillPrice(sizeDelta, price),
                 takerFee: _takerFee(marketKey()),
                 makerFee: _makerFee(marketKey()),
                 trackingCode: bytes32(0)
