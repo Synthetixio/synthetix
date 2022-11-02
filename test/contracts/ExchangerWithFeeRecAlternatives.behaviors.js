@@ -65,31 +65,31 @@ module.exports = function({ accounts }) {
 		systemSourceRate,
 		systemDestinationRate,
 	}) => {
-		this.mocks.ExchangeRates.smocked.effectiveAtomicValueAndRates.will.return.with(
-			(srcKey, amount, destKey) => {
-				amount = amount.toString(); // seems to be passed to smock as a number
+		this.mocks.ExchangeRates.smocked[
+			'effectiveAtomicValueAndRates((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
+		].will.return.with((srcKey, amount, destKey) => {
+			amount = amount.toString(); // seems to be passed to smock as a number
 
-				// For ease of comparison when mocking, atomicRate is specified in the
-				// same direction as systemDestinationRate
-				const atomicValue =
-					srcKey === sourceCurrency
-						? divideDecimal(amount, atomicRate)
-						: multiplyDecimal(amount, atomicRate);
+			// For ease of comparison when mocking, atomicRate is specified in the
+			// same direction as systemDestinationRate
+			const atomicValue =
+				srcKey[0] === sourceCurrency
+					? divideDecimal(amount, atomicRate)
+					: multiplyDecimal(amount, atomicRate);
 
-				const [sourceRate, destinationRate] =
-					srcKey === sourceCurrency
-						? [systemSourceRate, systemDestinationRate]
-						: [systemDestinationRate, systemSourceRate];
-				const systemValue = divideDecimal(multiplyDecimal(amount, sourceRate), destinationRate);
+			const [sourceRate, destinationRate] =
+				srcKey[0] === sourceCurrency
+					? [systemSourceRate, systemDestinationRate]
+					: [systemDestinationRate, systemSourceRate];
+			const systemValue = divideDecimal(multiplyDecimal(amount, sourceRate), destinationRate);
 
-				return [
-					atomicValue, // value
-					systemValue, // systemValue
-					systemSourceRate, // systemSourceRate
-					systemDestinationRate, // systemDestinationRate
-				].map(bn => bn.toString());
-			}
-		);
+			return [
+				atomicValue, // value
+				systemValue, // systemValue
+				systemSourceRate, // systemSourceRate
+				systemDestinationRate, // systemDestinationRate
+			].map(bn => bn.toString());
+		});
 	};
 
 	return {
@@ -244,9 +244,9 @@ module.exports = function({ accounts }) {
 				volatile ? 'volatile' : 'not volatile'
 			}`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.synthTooVolatileForAtomicExchange.will.return.with(
-						synthToCheck => (synthToCheck === synth ? volatile : false)
-					);
+					this.mocks.ExchangeRates.smocked[
+						'synthTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
+					].will.return.with(synthToCheck => (synthToCheck === synth ? volatile : false));
 				});
 			});
 		},

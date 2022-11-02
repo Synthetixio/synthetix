@@ -160,7 +160,9 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
                 _exchangeSettings(from, destinationCurrencyKey);
 
-            _ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount);
+            if (!_ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount)) {
+                return (0, 0);
+            }
             require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
             require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationSettings), "Dest synth too volatile");
 
