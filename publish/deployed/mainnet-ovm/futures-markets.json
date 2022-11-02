@@ -226,8 +226,8 @@
 	{
 		"marketKey": "sDOGE",
 		"asset": "DOGE",
-		"takerFee": "0.0040",
-		"makerFee": "0.0035",
+		"takerFee": "0.0065",
+		"makerFee": "0.0060",
 		"takerFeeNextPrice": "0.0030",
 		"makerFeeNextPrice": "0.0025",
 		"nextPriceConfirmWindow": "2",
