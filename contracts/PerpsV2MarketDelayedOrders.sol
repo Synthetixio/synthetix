@@ -253,26 +253,19 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         Position memory position = marketState.positions(account);
         uint currentPrice = _assetPriceRequireSystemChecks();
         uint fundingIndex = _recomputeFunding(currentPrice);
+
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
         _updatePositionMargin(account, position, currentPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
         emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
 
-        // price depends on whether the delay or price update has reached/occurred first
-        uint executePrice = currentPrice;
-        if (currentRoundId >= order.targetRoundId) {
-            // the correct price for the past round if target round was met
-            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(marketState.baseAsset(), order.targetRoundId);
-            executePrice = pastPrice;
-        }
-
         // execute or revert
         _trade(
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: executePrice, // the funding is applied only from order confirmation time
+                price: currentPrice, // the funding is applied only from order confirmation time
                 takerFee: _takerFeeDelayedOrder(marketState.marketKey()),
                 makerFee: _makerFeeDelayedOrder(marketState.marketKey()),
                 trackingCode: order.trackingCode
@@ -340,7 +333,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         uint keeperDeposit,
         bytes32 trackingCode
     );
-    bytes32 internal constant DELAYEDORDERORDERSUBMITTED_SIG =
+    bytes32 internal constant DELAYEDORDERSUBMITTED_SIG =
         keccak256("DelayedOrderSubmitted(address,int256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderSubmitted(
@@ -354,7 +347,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         proxy._emit(
             abi.encode(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
             2,
-            DELAYEDORDERORDERSUBMITTED_SIG,
+            DELAYEDORDERSUBMITTED_SIG,
             addressToBytes32(account),
             0,
             0
@@ -370,7 +363,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         uint keeperDeposit,
         bytes32 trackingCode
     );
-    bytes32 internal constant DELAYEDORDERORDERREMOVED_SIG =
+    bytes32 internal constant DELAYEDORDERREMOVED_SIG =
         keccak256("DelayedOrderRemoved(address,uint256,int256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderRemoved(
@@ -385,7 +378,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         proxy._emit(
             abi.encode(currentRoundId, sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
             2,
-            DELAYEDORDERORDERREMOVED_SIG,
+            DELAYEDORDERREMOVED_SIG,
             addressToBytes32(account),
             0,
             0

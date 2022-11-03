@@ -800,9 +800,12 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
-						spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+
 						// other rounds are back to old price
 						await setPrice(baseAsset, price);
+
+						// latest price = the price we use.
+						spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
 					});
 
 					describe('taker trade', () => {
@@ -812,11 +815,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, price, takerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader2, price, takerFeeDelayedOrder, spotTradeDetails);
 						});
 					});
 
@@ -830,11 +833,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, price, makerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader2, price, makerFeeDelayedOrder, spotTradeDetails);
 						});
 					});
 				});
