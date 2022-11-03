@@ -547,11 +547,17 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			let roundId, commitFee, keeperFee;
 
 			beforeEach(async () => {
+				// the beginning of each test, `trader` submits a delayed order with `size`.
+				//
+				// the commitFee they pay is relative to the current skew and price. this means we want to track
+				// their commitFee upfront now (as this is the fee refunded if they are also the keeper).
+
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				// commitFee is the fee that would be charged for a spot trade when order is submitted
-				commitFee = (await futuresMarket.orderFee(size))[0];
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await futuresMarketSettings.minKeeperFee();
+				// commitFee is the fee that would be charged for a spot trade when order is submitted
+				commitFee = (await futuresMarket.orderFee(size))[0];
+
 				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 			});
 
@@ -676,9 +682,9 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					});
 				}
 
-				// trader was refunded correctly
-				// PositionModified
 				let expectedMargin = currentMargin.add(expectedRefund);
+
+				// trader was refunded correctly
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: futuresMarket.address,
@@ -687,7 +693,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				});
 
 				// trade was executed correctly
-				// PositionModified
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
 
 				// calculate the expected margin after trade
@@ -695,6 +700,12 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					.add(spotTradeDetails.fee)
 					.sub(expectedFee)
 					.add(expectedRefund);
+
+				console.log('margin', spotTradeDetails.margin.toString());
+				console.log('fee', spotTradeDetails.fee.toString());
+				console.log('expectedFee', expectedFee.toString());
+				console.log('expectedRefund', expectedRefund.toString());
+				console.log('expectedMargin(total)', expectedMargin.toString());
 
 				decodedEventEqual({
 					event: 'PositionModified',
@@ -818,22 +829,22 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				});
 
 				describe('after target round, but within confirmation window', () => {
-					let targetFillPrice;
-
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
 						spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
-						targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 
 						// other rounds are back to old price
 						await setPrice(baseAsset, price);
 					});
 
 					describe('taker trade', () => {
+						let targetFillPrice;
+
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, price);
+							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 						});
 
 						it('from account owner', async () => {
@@ -855,18 +866,23 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 						beforeEach(async () => {
 							// skew the other way
+							//
+							// note: we need to update spotTradeDetails because this modifies the skew and hence
+							// will affect the p/d on fillPrice. since this existing trade is short, the execution
+							// of the delay order contracts the skew hence targetFillPrice will be a discount on price.
 							await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader3 });
+							await futuresMarket.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
 
-							// note: a discount is applied on maker.
-							const makerSize = size.mul(toBN(-2));
-							targetFillPrice = (await futuresMarket.fillPrice(makerSize))[0];
-							await futuresMarket.modifyPosition(makerSize, { from: trader3 });
+							console.log('beforeTradeUpdate', spotTradeDetails.margin.toString());
+							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+							console.log('afterTradeUpdate', spotTradeDetails.margin.toString());
 
 							// go to next round
 							await setPrice(baseAsset, price);
+							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 						});
 
-						it('from account owner', async () => {
+						it.only('from account owner', async () => {
 							await checkExecution(trader, targetFillPrice, makerFeeDelayedOrder, spotTradeDetails);
 						});
 

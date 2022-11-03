@@ -2605,7 +2605,45 @@ contract('PerpsV2Market', accounts => {
 	});
 
 	describe('Premium/Discount Pricing', () => {
-		it('A complete premium/discount sample scenario');
+		it('A complete premium/discount sample scenario', async () => {
+			const price = toUnit('100');
+
+			await setPrice(baseAsset, price);
+			await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), {
+				from: owner,
+			});
+
+			let fillPrice = (await futuresMarket.fillPrice(toUnit('100')))[0];
+			assert.bnEqual(fillPrice, toUnit('100.5'));
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: price,
+				marginDelta: toUnit('100000'),
+				sizeDelta: toUnit('100'),
+			});
+
+			fillPrice = (await futuresMarket.fillPrice(toUnit('100')))[0];
+			assert.bnEqual(fillPrice, toUnit('101.5'));
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: price,
+				marginDelta: toUnit('100000'),
+				sizeDelta: toUnit('100'),
+			});
+
+			fillPrice = (await futuresMarket.fillPrice(toUnit('-200')))[0];
+			assert.bnEqual(fillPrice, toUnit('101'));
+			await transferMarginAndModifyPosition({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: price,
+				marginDelta: toUnit('100000'),
+				sizeDelta: toUnit('-200'),
+			});
+		});
+
 		it('Should result in a higher fillPrice when expanding skew (premium)');
 		it('Should result in a lower fillPrice when contracting skew (discount)');
 	});
