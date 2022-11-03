@@ -1,5 +1,5 @@
 pragma solidity >=0.4.24;
-
+pragma experimental ABIEncoderV2;
 import "./IVirtualSynth.sol";
 
 // https://docs.synthetix.io/contracts/source/interfaces/iexchanger
@@ -23,6 +23,7 @@ interface IExchanger {
         uint exchangeDynamicFeeRate;
         uint roundIdForSrc;
         uint roundIdForDest;
+        uint sourceAmountAfterSettlement;
     }
 
     // Views
@@ -104,6 +105,50 @@ interface IExchanger {
             uint refunded,
             uint numEntries
         );
+}
 
-    function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
+// Used to have strongly-typed access to internal mutative functions in Synthetix
+interface ISynthetixInternal {
+    function emitExchangeTracking(
+        bytes32 trackingCode,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        uint256 fee
+    ) external;
+
+    function emitSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint fromAmount,
+        bytes32 toCurrencyKey,
+        uint toAmount,
+        address toAddress
+    ) external;
+
+    function emitAtomicSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint fromAmount,
+        bytes32 toCurrencyKey,
+        uint toAmount,
+        address toAddress
+    ) external;
+
+    function emitExchangeReclaim(
+        address account,
+        bytes32 currencyKey,
+        uint amount
+    ) external;
+
+    function emitExchangeRebate(
+        address account,
+        bytes32 currencyKey,
+        uint amount
+    ) external;
+}
+
+interface IExchangerInternalDebtCache {
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
+
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
