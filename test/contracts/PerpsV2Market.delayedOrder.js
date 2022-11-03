@@ -832,10 +832,12 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					beforeEach(async () => {
 						// target round has the new price
 						await setPrice(baseAsset, targetPrice);
-						spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
 
 						// other rounds are back to old price
 						await setPrice(baseAsset, price);
+
+						// latest price = the price we use.
+						spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
 					});
 
 					describe('taker trade', () => {
