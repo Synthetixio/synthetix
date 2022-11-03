@@ -14,39 +14,39 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_Suhail is BaseMigration {
-    // https://goerli.etherscan.io/address/0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
-    address public constant OWNER = 0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
+    // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
+    address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://goerli.etherscan.io/address/0x0C80ff30d1e09135ec60cfe52B2c2EaE1B2f42AB
-    AddressResolver public constant addressresolver_i = AddressResolver(0x0C80ff30d1e09135ec60cfe52B2c2EaE1B2f42AB);
-    // https://goerli.etherscan.io/address/0x4023B3Bf1749725584B0a467406C5bb24DA3AC4e
-    ExchangeState public constant exchangestate_i = ExchangeState(0x4023B3Bf1749725584B0a467406C5bb24DA3AC4e);
-    // https://goerli.etherscan.io/address/0x31541f35F6Bd061f4A894fB7eEE565f81EE50df3
-    SystemStatus public constant systemstatus_i = SystemStatus(0x31541f35F6Bd061f4A894fB7eEE565f81EE50df3);
-    // https://goerli.etherscan.io/address/0xC6fEa2a12a8a9e11232b18DC4d9D525F02180247
+    // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
+    AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
+    // https://etherscan.io/address/0x545973f28950f50fc6c7F52AAb4Ad214A27C0564
+    ExchangeState public constant exchangestate_i = ExchangeState(0x545973f28950f50fc6c7F52AAb4Ad214A27C0564);
+    // https://etherscan.io/address/0x696c905F8F8c006cA46e9808fE7e00049507798F
+    SystemStatus public constant systemstatus_i = SystemStatus(0x696c905F8F8c006cA46e9808fE7e00049507798F);
+    // https://etherscan.io/address/0x648280dD2db772CD018A0CEC72fab5bF8B7683AB
     ExchangeRatesWithDexPricing public constant exchangerates_i =
-        ExchangeRatesWithDexPricing(0xC6fEa2a12a8a9e11232b18DC4d9D525F02180247);
-    // https://goerli.etherscan.io/address/0x35a3F27736955394ee27Ce5348854670CE8D31DF
-    Issuer public constant issuer_i = Issuer(0x35a3F27736955394ee27Ce5348854670CE8D31DF);
+        ExchangeRatesWithDexPricing(0x648280dD2db772CD018A0CEC72fab5bF8B7683AB);
+    // https://etherscan.io/address/0x5810Fc0E79F4323B2dd3c638914083Fd23a941C0
+    Issuer public constant issuer_i = Issuer(0x5810Fc0E79F4323B2dd3c638914083Fd23a941C0);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://goerli.etherscan.io/address/0x063E110E614474Aa1FFB36936aBED4b1d173e5fc
-    address public constant new_SystemSettings_contract = 0x063E110E614474Aa1FFB36936aBED4b1d173e5fc;
-    // https://goerli.etherscan.io/address/0xC6fEa2a12a8a9e11232b18DC4d9D525F02180247
-    address public constant new_ExchangeRates_contract = 0xC6fEa2a12a8a9e11232b18DC4d9D525F02180247;
-    // https://goerli.etherscan.io/address/0x6Ce575c870ce744e245Ef8400b6d89412C35c328
-    address public constant new_Exchanger_contract = 0x6Ce575c870ce744e245Ef8400b6d89412C35c328;
-    // https://goerli.etherscan.io/address/0x35a3F27736955394ee27Ce5348854670CE8D31DF
-    address public constant new_Issuer_contract = 0x35a3F27736955394ee27Ce5348854670CE8D31DF;
-    // https://goerli.etherscan.io/address/0x79654872398a5C667455058890B29B081Ed47939
-    address public constant new_DirectIntegrationManager_contract = 0x79654872398a5C667455058890B29B081Ed47939;
+    // https://etherscan.io/address/0x202ae40Bed1640b09e2AF7aC5719D129A498B7C8
+    address public constant new_SystemSettings_contract = 0x202ae40Bed1640b09e2AF7aC5719D129A498B7C8;
+    // https://etherscan.io/address/0x648280dD2db772CD018A0CEC72fab5bF8B7683AB
+    address public constant new_ExchangeRates_contract = 0x648280dD2db772CD018A0CEC72fab5bF8B7683AB;
+    // https://etherscan.io/address/0xaeA0065E146FD75Dc24465961a583827284D405a
+    address public constant new_Exchanger_contract = 0xaeA0065E146FD75Dc24465961a583827284D405a;
+    // https://etherscan.io/address/0x5810Fc0E79F4323B2dd3c638914083Fd23a941C0
+    address public constant new_Issuer_contract = 0x5810Fc0E79F4323B2dd3c638914083Fd23a941C0;
+    // https://etherscan.io/address/0x5F41718459955217df6A02AA8f5C19614ECfA6E7
+    address public constant new_DirectIntegrationManager_contract = 0x5F41718459955217df6A02AA8f5C19614ECfA6E7;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -91,18 +91,64 @@ contract Migration_Suhail is BaseMigration {
         exchangestate_i.setAssociatedContract(new_Exchanger_contract);
         // Ensure Issuer contract can suspend issuance - see SIP-165;
         systemstatus_i.updateAccessControl("Issuance", new_Issuer_contract, true, false);
+        // Ensure the ExchangeRates contract has the standalone feed for SNX;
+        exchangerates_i.addAggregator("SNX", 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699);
         // Ensure the ExchangeRates contract has the standalone feed for ETH;
-        exchangerates_i.addAggregator("ETH", 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e);
+        exchangerates_i.addAggregator("ETH", 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
+        // Ensure the ExchangeRates contract has the standalone feed for AAVE;
+        exchangerates_i.addAggregator("AAVE", 0x547a514d5e3769680Ce22B2361c10Ea13619e8a9);
+        // Ensure the ExchangeRates contract has the standalone feed for DOT;
+        exchangerates_i.addAggregator("DOT", 0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734);
         // Ensure the ExchangeRates contract has the standalone feed for BTC;
-        exchangerates_i.addAggregator("BTC", 0xA39434A63A52E749F02807ae27335515BA4b07F7);
+        exchangerates_i.addAggregator("BTC", 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c);
         // Ensure the ExchangeRates contract has the standalone feed for LINK;
-        exchangerates_i.addAggregator("LINK", 0x48731cF7e84dc94C5f84577882c14Be11a5B7456);
-        // Ensure the ExchangeRates contract has the feed for sETH;
-        exchangerates_i.addAggregator("sETH", 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e);
+        exchangerates_i.addAggregator("LINK", 0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c);
+        // Ensure the ExchangeRates contract has the standalone feed for ADA;
+        exchangerates_i.addAggregator("ADA", 0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55);
+        // Ensure the ExchangeRates contract has the standalone feed for ETHBTC;
+        exchangerates_i.addAggregator("ETHBTC", 0xAc559F25B1619171CbC396a50854A3240b6A4e99);
+        // Ensure the ExchangeRates contract has the standalone feed for EUR;
+        exchangerates_i.addAggregator("EUR", 0xb49f677943BC038e9857d61E7d053CaA2C1734C1);
+        // Ensure the ExchangeRates contract has the standalone feed for JPY;
+        exchangerates_i.addAggregator("JPY", 0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3);
+        // Ensure the ExchangeRates contract has the standalone feed for AUD;
+        exchangerates_i.addAggregator("AUD", 0x77F9710E7d0A19669A13c055F62cd80d313dF022);
+        // Ensure the ExchangeRates contract has the standalone feed for GBP;
+        exchangerates_i.addAggregator("GBP", 0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5);
+        // Ensure the ExchangeRates contract has the standalone feed for CHF;
+        exchangerates_i.addAggregator("CHF", 0x449d117117838fFA61263B61dA6301AA2a88B13A);
+        // Ensure the ExchangeRates contract has the standalone feed for KRW;
+        exchangerates_i.addAggregator("KRW", 0x01435677FB11763550905594A16B645847C1d0F3);
+        // Ensure the ExchangeRates contract has the feed for sEUR;
+        exchangerates_i.addAggregator("sEUR", 0xb49f677943BC038e9857d61E7d053CaA2C1734C1);
+        // Ensure the ExchangeRates contract has the feed for sJPY;
+        exchangerates_i.addAggregator("sJPY", 0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3);
+        // Ensure the ExchangeRates contract has the feed for sAUD;
+        exchangerates_i.addAggregator("sAUD", 0x77F9710E7d0A19669A13c055F62cd80d313dF022);
+        // Ensure the ExchangeRates contract has the feed for sGBP;
+        exchangerates_i.addAggregator("sGBP", 0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5);
+        // Ensure the ExchangeRates contract has the feed for sCHF;
+        exchangerates_i.addAggregator("sCHF", 0x449d117117838fFA61263B61dA6301AA2a88B13A);
+        // Ensure the ExchangeRates contract has the feed for sKRW;
+        exchangerates_i.addAggregator("sKRW", 0x01435677FB11763550905594A16B645847C1d0F3);
         // Ensure the ExchangeRates contract has the feed for sBTC;
-        exchangerates_i.addAggregator("sBTC", 0xA39434A63A52E749F02807ae27335515BA4b07F7);
+        exchangerates_i.addAggregator("sBTC", 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c);
+        // Ensure the ExchangeRates contract has the feed for sETH;
+        exchangerates_i.addAggregator("sETH", 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
+        // Ensure the ExchangeRates contract has the feed for sLINK;
+        exchangerates_i.addAggregator("sLINK", 0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c);
+        // Ensure the ExchangeRates contract has the feed for sADA;
+        exchangerates_i.addAggregator("sADA", 0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55);
+        // Ensure the ExchangeRates contract has the feed for sAAVE;
+        exchangerates_i.addAggregator("sAAVE", 0x547a514d5e3769680Ce22B2361c10Ea13619e8a9);
+        // Ensure the ExchangeRates contract has the feed for sDOT;
+        exchangerates_i.addAggregator("sDOT", 0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734);
+        // Ensure the ExchangeRates contract has the feed for sETHBTC;
+        exchangerates_i.addAggregator("sETHBTC", 0xAc559F25B1619171CbC396a50854A3240b6A4e99);
         // Add synths to the Issuer contract - batch 1;
-        issuer_addSynths_15();
+        issuer_addSynths_37();
+        // SIP-120 Set the DEX price aggregator (uniswap TWAP oracle reader);
+        exchangerates_i.setDexPriceAggregator(IDexPriceAggregator(0xf120F029Ac143633d1942e48aE2Dfa2036C5786c));
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         nominateAll();
@@ -144,45 +190,67 @@ contract Migration_Suhail is BaseMigration {
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_SystemSettings_contract);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0xac0BE3b71d0bd224FCF83654e5aC2d2c9e2817BC);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xc30BECA82f1f60DC0e4d3490428525985eef4D74);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x05e661738E3A3C6F254d9c29a40Dad0Ec357ea85);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x1620Aa736939597891C1940CF0d28b82566F9390);
         addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(new_Exchanger_contract);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x183B4A053CbA70a420E581918008Ef8e65d95E05);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xf1D0Ee19af243bcbC140A2259290B490E4df92A9);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x9f231dBE53D460f359B2B8CC47574493caA5B7Bf);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0xeAcaEd9581294b1b5cfb6B941d4B8B81B2005437);
         addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(new_Issuer_contract);
-        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0x1427Bc44755d9Aa317535B1feE38922760Aa4e65);
-        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x9B79D6dFe4650d70f35dbb80f7d1EC0Cf7f823Fd);
-        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x4556b9761b2aC071D1665FAe01faA255a53d1307);
-        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x814AAB41E07D2c3fA53C0c6f3002cD654a4489EE);
-        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0x86bfC5Be44f5DE1673824c0d0d1CCEA1306cD40e);
-        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0x7D2bEB18a21468808E16fD1fbe9637eFa98D0777);
-        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0x0376Bdaf9C97E2e454C83e728154eC621df23958);
-        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0x6d20C286D94a603A1cdE80D1f8e5f44Bc22550C0);
+        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0x39Ea01a0298C315d149a490E34B59Dbf2EC7e48F);
+        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0xC1AAE9d18bBe386B102435a8632C8063d31e747C);
+        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x067e398605E84F2D0aEEC1806e62768C5110DCc6);
+        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x5c8344bcdC38F1aB5EB5C1d4a35DdEeA522B5DfA);
+        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0xaa03aB31b55DceEeF845C8d17890CC61cD98eD04);
+        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0x1F2c3a1046c32729862fcB038369696e3273a516);
+        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0x7C22547779c8aa41bAE79E03E8383a0BefBCecf0);
+        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0xCea392596F1AB7f1d6f8F241967094cA519E6129);
         addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(new_ExchangeRates_contract);
-        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0x4187a6CecB490F5154c04514410a928191830443);
-        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034);
-        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0x6eab29a0904d0fd964AdE1F6c3ab1584E36602aE);
-        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(0x8f01E7815583C5Be70e4608Fde3DdE7DcC29592f);
+        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0x6b10E5Ce50e3A062731d83Cd3cAD1964e5F93DA6);
+        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0x3B2f389AeE480238A49E3A9985cd6815370712eB);
+        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0x62922670313bf6b41C580143d1f6C173C5C20019);
+        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(0x10A5F7D9D65bCc2734763444D4940a31b109275f);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
     function addressresolver_rebuildCaches_2() internal {
-        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](7);
-        addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xB7774b79f83191eFF5F159889d1e7A5A242e2244);
-        addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c);
-        addressresolver_rebuildCaches_destinations_2_0[2] = MixinResolver(0x4300a068B3826aCEFaE7062b411aF467a34Bf3A6);
-        addressresolver_rebuildCaches_destinations_2_0[3] = MixinResolver(0x671C874C43B571878D6a90C5AA27288096eEac21);
-        addressresolver_rebuildCaches_destinations_2_0[4] = MixinResolver(0x601A1Cf1a34d9cF0020dCCD361c155Fe54CE24fB);
-        addressresolver_rebuildCaches_destinations_2_0[5] = MixinResolver(0x32A0BAA5Acec418a85Fd032f0292893B8E4f743B);
-        addressresolver_rebuildCaches_destinations_2_0[6] = MixinResolver(new_DirectIntegrationManager_contract);
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](18);
+        addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xa8E31E3C38aDD6052A9407298FAEB8fD393A6cF9);
+        addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0xE1cc2332852B2Ac0dA59A1f9D3051829f4eF3c1C);
+        addressresolver_rebuildCaches_destinations_2_0[2] = MixinResolver(0xfb020CA7f4e8C4a5bBBe060f59a249c6275d2b69);
+        addressresolver_rebuildCaches_destinations_2_0[3] = MixinResolver(0xdc883b9d9Ee16f74bE08826E68dF4C9D9d26e8bD);
+        addressresolver_rebuildCaches_destinations_2_0[4] = MixinResolver(0xBb5b03E920cF702De5A3bA9Fc1445aF4B3919c88);
+        addressresolver_rebuildCaches_destinations_2_0[5] = MixinResolver(0xdAe6C79c46aB3B280Ca28259000695529cbD1339);
+        addressresolver_rebuildCaches_destinations_2_0[6] = MixinResolver(0x1cB004a8e84a5CE95C1fF895EE603BaC8EC506c7);
+        addressresolver_rebuildCaches_destinations_2_0[7] = MixinResolver(0x5D4C724BFe3a228Ff0E29125Ac1571FE093700a4);
+        addressresolver_rebuildCaches_destinations_2_0[8] = MixinResolver(0xDF69bC4541b86Aa4c5A470B4347E730c38b2c3B2);
+        addressresolver_rebuildCaches_destinations_2_0[9] = MixinResolver(0x91b82d62Ff322b8e02b86f33E9A99a813437830d);
+        addressresolver_rebuildCaches_destinations_2_0[10] = MixinResolver(0x942Eb6e8c029EB22103743C99985aF4F4515a559);
+        addressresolver_rebuildCaches_destinations_2_0[11] = MixinResolver(0x75A0c1597137AA36B40b6a515D997F9a6c6eefEB);
+        addressresolver_rebuildCaches_destinations_2_0[12] = MixinResolver(0x07C1E81C345A7c58d7c24072EFc5D929BD0647AD);
+        addressresolver_rebuildCaches_destinations_2_0[13] = MixinResolver(0xAc86855865CbF31c8f9FBB68C749AD5Bd72802e3);
+        addressresolver_rebuildCaches_destinations_2_0[14] = MixinResolver(0x89FCb32F29e509cc42d0C8b6f058C993013A843F);
+        addressresolver_rebuildCaches_destinations_2_0[15] = MixinResolver(0xf79603a71144e415730C1A6f57F366E4Ea962C00);
+        addressresolver_rebuildCaches_destinations_2_0[16] = MixinResolver(0xe533139Af961c9747356D947838c98451015e234);
+        addressresolver_rebuildCaches_destinations_2_0[17] = MixinResolver(new_DirectIntegrationManager_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
-    function issuer_addSynths_15() internal {
-        ISynth[] memory issuer_addSynths_synthsToAdd_15_0 = new ISynth[](3);
-        issuer_addSynths_synthsToAdd_15_0[0] = ISynth(0x8f01E7815583C5Be70e4608Fde3DdE7DcC29592f);
-        issuer_addSynths_synthsToAdd_15_0[1] = ISynth(0xB7774b79f83191eFF5F159889d1e7A5A242e2244);
-        issuer_addSynths_synthsToAdd_15_0[2] = ISynth(0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_15_0);
+    function issuer_addSynths_37() internal {
+        ISynth[] memory issuer_addSynths_synthsToAdd_37_0 = new ISynth[](14);
+        issuer_addSynths_synthsToAdd_37_0[0] = ISynth(0x10A5F7D9D65bCc2734763444D4940a31b109275f);
+        issuer_addSynths_synthsToAdd_37_0[1] = ISynth(0xa8E31E3C38aDD6052A9407298FAEB8fD393A6cF9);
+        issuer_addSynths_synthsToAdd_37_0[2] = ISynth(0xE1cc2332852B2Ac0dA59A1f9D3051829f4eF3c1C);
+        issuer_addSynths_synthsToAdd_37_0[3] = ISynth(0xfb020CA7f4e8C4a5bBBe060f59a249c6275d2b69);
+        issuer_addSynths_synthsToAdd_37_0[4] = ISynth(0xdc883b9d9Ee16f74bE08826E68dF4C9D9d26e8bD);
+        issuer_addSynths_synthsToAdd_37_0[5] = ISynth(0xBb5b03E920cF702De5A3bA9Fc1445aF4B3919c88);
+        issuer_addSynths_synthsToAdd_37_0[6] = ISynth(0xdAe6C79c46aB3B280Ca28259000695529cbD1339);
+        issuer_addSynths_synthsToAdd_37_0[7] = ISynth(0x1cB004a8e84a5CE95C1fF895EE603BaC8EC506c7);
+        issuer_addSynths_synthsToAdd_37_0[8] = ISynth(0x5D4C724BFe3a228Ff0E29125Ac1571FE093700a4);
+        issuer_addSynths_synthsToAdd_37_0[9] = ISynth(0xDF69bC4541b86Aa4c5A470B4347E730c38b2c3B2);
+        issuer_addSynths_synthsToAdd_37_0[10] = ISynth(0x91b82d62Ff322b8e02b86f33E9A99a813437830d);
+        issuer_addSynths_synthsToAdd_37_0[11] = ISynth(0x942Eb6e8c029EB22103743C99985aF4F4515a559);
+        issuer_addSynths_synthsToAdd_37_0[12] = ISynth(0x75A0c1597137AA36B40b6a515D997F9a6c6eefEB);
+        issuer_addSynths_synthsToAdd_37_0[13] = ISynth(0x07C1E81C345A7c58d7c24072EFc5D929BD0647AD);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_37_0);
     }
 }
