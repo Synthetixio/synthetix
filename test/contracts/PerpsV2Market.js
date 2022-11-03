@@ -1212,13 +1212,14 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
+			const fillPrice = (await futuresMarket.fillPrice(size))[0];
 			const fee = (await futuresMarket.orderFee(size))[0];
 			const tx = await futuresMarket.modifyPosition(size, { from: trader });
 
 			const position = await futuresMarket.positions(trader);
 			assert.bnEqual(position.margin, margin.sub(fee));
 			assert.bnEqual(position.size, size);
-			assert.bnEqual(position.lastPrice, price);
+			assert.bnEqual(position.lastPrice, fillPrice);
 			assert.bnEqual(position.lastFundingIndex, initialFundingIndex.add(toBN(2))); // margin transfer and position modification
 
 			// Skew, size, entry notional sum, pending order value are updated.
@@ -1226,7 +1227,7 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(await futuresMarket.marketSize(), size);
 			assert.bnEqual(
 				await futuresMarket.entryDebtCorrection(),
-				margin.sub(fee).sub(multiplyDecimal(size, price))
+				margin.sub(fee).sub(multiplyDecimal(size, fillPrice))
 			);
 
 			// The relevant events are properly emitted
@@ -1245,7 +1246,7 @@ contract('PerpsV2Market', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: futuresMarket.address,
-				args: [toBN('1'), trader, margin.sub(fee), size, size, price, toBN(2), fee],
+				args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
 				log: decodedLogs[2],
 			});
 		});
@@ -1299,6 +1300,7 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('10');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
+			const fillPrice = (await futuresMarket.fillPrice(size))[0];
 
 			// suspend
 			await systemStatus.suspendSystem('3', { from: owner });
@@ -1314,7 +1316,7 @@ contract('PerpsV2Market', accounts => {
 			await futuresMarket.modifyPosition(size, { from: trader });
 			const position = await futuresMarket.positions(trader);
 			assert.bnEqual(position.size, size);
-			assert.bnEqual(position.lastPrice, price);
+			assert.bnEqual(position.lastPrice, fillPrice);
 		});
 
 		it('Cannot modify a position if the synth is suspended', async () => {
@@ -1323,6 +1325,7 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('10');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
+			const fillPrice = (await futuresMarket.fillPrice(size))[0];
 
 			// suspend
 			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
@@ -1338,7 +1341,7 @@ contract('PerpsV2Market', accounts => {
 			await futuresMarket.modifyPosition(size, { from: trader });
 			const position = await futuresMarket.positions(trader);
 			assert.bnEqual(position.size, size);
-			assert.bnEqual(position.lastPrice, price);
+			assert.bnEqual(position.lastPrice, fillPrice);
 		});
 
 		it('Empty orders fail', async () => {
@@ -1378,12 +1381,13 @@ contract('PerpsV2Market', accounts => {
 			const FEE_ADDRESS = await feePool.FEE_ADDRESS();
 			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
 			const preDistribution = (await feePool.recentFeePeriods(0))[3];
-			await setPrice(baseAsset, toUnit('200'));
+			const price = toUnit('200');
+			await setPrice(baseAsset, price);
 			const fee = (await futuresMarket.orderFee(toUnit('50')))[0];
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
-				fillPrice: toUnit('200'),
+				fillPrice: price,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('50'),
 			});
@@ -1430,34 +1434,34 @@ contract('PerpsV2Market', accounts => {
 			);
 			postDetails = await futuresMarket.postTradeDetails(toUnit('-101'), trader2);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
-
-			// But we actually allow up to 10.01x leverage to account for rounding issues.
-			await futuresMarket.modifyPosition(toUnit('100.09'), { from: trader });
-			await futuresMarket.modifyPosition(toUnit('-100.09'), { from: trader2 });
 		});
 
 		it('min margin must be provided', async () => {
-			await setPrice(baseAsset, toUnit('10'));
+			const price = toUnit('10');
+			const size = toUnit('10');
+
+			await setPrice(baseAsset, price);
+			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+
 			await futuresMarket.transferMargin(minInitialMargin.sub(toUnit('1')), { from: trader });
 			await assert.revert(
 				futuresMarket.modifyPosition(toUnit('10'), { from: trader }),
 				'Insufficient margin'
 			);
 
-			let postDetails = await futuresMarket.postTradeDetails(toUnit('10'), trader);
+			let postDetails = await futuresMarket.postTradeDetails(price, trader);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
 
 			// But it works after transferring the remaining $1
 			await futuresMarket.transferMargin(toUnit('1'), { from: trader });
 
-			postDetails = await futuresMarket.postTradeDetails(toUnit('10'), trader);
-			assert.bnEqual(postDetails.margin, minInitialMargin.sub(toUnit('0.3')));
-			assert.bnEqual(postDetails.size, toUnit('10'));
-			assert.bnEqual(postDetails.price, toUnit('10'));
-			// liqMargin = max(20, 10*10*0.0035) + 10*10*0.0025 = 20.25
-			// 10 + (20.25 − (100 - 0.3))÷10 = 2.055
-			assert.bnEqual(postDetails.liqPrice, toUnit('2.055'));
-			assert.bnEqual(postDetails.fee, toUnit('0.3'));
+			const fee = toUnit('0.30015');
+			postDetails = await futuresMarket.postTradeDetails(size, trader);
+			assert.bnEqual(postDetails.margin, minInitialMargin.sub(fee));
+			assert.bnEqual(postDetails.size, size);
+			assert.bnEqual(postDetails.price, fillPrice);
+			assert.bnEqual(postDetails.liqPrice, toUnit('2.0600275'));
+			assert.bnEqual(postDetails.fee, fee);
 			assert.equal(postDetails.status, Status.Ok);
 
 			await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
@@ -1554,9 +1558,6 @@ contract('PerpsV2Market', accounts => {
 							}),
 							'Max market size exceeded'
 						);
-
-						// orders are allowed a bit over the formal limit to account for rounding etc.
-						await futuresMarket.modifyPosition(orderSize.add(toBN('1')), { from: trader });
 					});
 
 					it('Price motion does not impact the max market size', async () => {
@@ -1897,6 +1898,8 @@ contract('PerpsV2Market', accounts => {
 		});
 
 		describe('post-trade position details', async () => {
+			const sizeDelta = toUnit('10');
+
 			const getPositionDetails = async ({ account }) => {
 				const newPosition = await futuresMarket.positions(account);
 				const { price: liquidationPrice } = await futuresMarket.liquidationPrice(account);
@@ -1905,27 +1908,25 @@ contract('PerpsV2Market', accounts => {
 					liquidationPrice,
 				};
 			};
-			const sizeDelta = toUnit('10');
 
 			it('can get position details for new position', async () => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await setPrice(await futuresMarket.baseAsset(), toUnit('240'));
+				const fillPrice = (await futuresMarket.fillPrice(sizeDelta))[0];
 
-				const expectedDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+				const postTradeDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
 
 				// Now execute the trade.
-				await futuresMarket.modifyPosition(sizeDelta, {
-					from: trader,
-				});
+				await futuresMarket.modifyPosition(sizeDelta, { from: trader });
 
 				const details = await getPositionDetails({ account: trader });
 
-				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
-				assert.bnEqual(expectedDetails.size, details.size);
-				assert.bnEqual(expectedDetails.price, details.lastPrice);
-				assert.bnClose(expectedDetails.liqPrice, details.liquidationPrice, toUnit(0.01));
-				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
-				assert.bnEqual(expectedDetails.status, Status.Ok);
+				assert.bnClose(postTradeDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
+				assert.bnEqual(postTradeDetails.size, details.size);
+				assert.bnEqual(postTradeDetails.price, fillPrice); // fillPrice can only be derived before the trade
+				assert.bnClose(postTradeDetails.liqPrice, details.liquidationPrice, toUnit(0.01));
+				assert.bnEqual(postTradeDetails.fee, toUnit('7.20015'));
+				assert.bnEqual(postTradeDetails.status, Status.Ok);
 			});
 
 			it('uses the margin of an existing position', async () => {
@@ -1937,21 +1938,20 @@ contract('PerpsV2Market', accounts => {
 					sizeDelta,
 				});
 
-				const expectedDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+				const fillPrice = (await futuresMarket.fillPrice(sizeDelta))[0];
+				const postTradeDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
 
 				// Now execute the trade.
-				await futuresMarket.modifyPosition(sizeDelta, {
-					from: trader,
-				});
+				await futuresMarket.modifyPosition(sizeDelta, { from: trader });
 
 				const details = await getPositionDetails({ account: trader });
 
-				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
-				assert.bnEqual(expectedDetails.size, details.size);
-				assert.bnEqual(expectedDetails.price, details.lastPrice);
-				assert.bnClose(expectedDetails.positionLiquidationPrice, details.liqPrice, toUnit(0.01));
-				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
-				assert.bnEqual(expectedDetails.status, Status.Ok);
+				assert.bnClose(postTradeDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
+				assert.bnEqual(postTradeDetails.size, details.size);
+				assert.bnEqual(postTradeDetails.price, fillPrice); // fillPrice can only be derived before the trade
+				assert.bnClose(postTradeDetails.positionLiquidationPrice, details.liqPrice, toUnit(0.01));
+				assert.bnEqual(postTradeDetails.fee, toUnit('7.20045')); // higher fee due to higher skew
+				assert.bnEqual(postTradeDetails.status, Status.Ok);
 			});
 		});
 	});
