@@ -216,7 +216,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     function _closePosition(bytes32 trackingCode) internal onlyProxy {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _fillPrice(size, _assetPriceRequireSystemChecks());
+        uint price = _fillPrice(-size, _assetPriceRequireSystemChecks());
         _recomputeFunding();
         _trade(
             messageSender,

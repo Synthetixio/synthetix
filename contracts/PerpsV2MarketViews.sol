@@ -247,7 +247,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     {
         bool invalid;
         (price, invalid) = _assetPrice();
-        uint fillPrice = _fillPrice(size, price);
+        uint fillPrice = _fillPrice(sizeDelta, price);
 
         if (invalid) {
             return (0, 0, 0, 0, 0, Status.InvalidPrice);
