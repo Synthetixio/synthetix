@@ -171,7 +171,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS)).latestRoundData();
+            _latestRoundData(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS));
 
         (uint rawRatio, uint ratioUpdatedAt) = _rawDebtRatioAndUpdatedAt();
 
@@ -189,9 +189,27 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
+    function _rateAndInvalid(bytes32 currencyKey) internal view returns (uint, bool) {
+        return exchangeRates().rateAndInvalid(currencyKey);
+    }
+
+    function _latestRoundData(address aggregator)
+        internal
+        view
+        returns (
+            uint80,
+            int256,
+            uint256,
+            uint256,
+            uint80
+        )
+    {
+        return AggregatorV2V3Interface(aggregator).latestRoundData();
+    }
+
     function _rawDebtRatioAndUpdatedAt() internal view returns (uint, uint) {
         (, int256 rawRatioInt, , uint ratioUpdatedAt, ) =
-            AggregatorV2V3Interface(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO)).latestRoundData();
+            _latestRoundData(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO));
         return (uint(rawRatioInt), ratioUpdatedAt);
     }
 
@@ -229,8 +247,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (uint debt, , bool cacheIsInvalid, bool cacheIsStale) = debtCache().cacheInfo();
         anyRateIsInvalid = cacheIsInvalid || cacheIsStale;
 
-        IExchangeRates exRates = exchangeRates();
-
         // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
             (uint nonSnxDebt, bool invalid) = debtCache().totalNonSnxBackedDebt();
@@ -242,7 +258,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             return (debt, anyRateIsInvalid);
         }
 
-        (uint currencyRate, bool currencyRateInvalid) = exRates.rateAndInvalid(currencyKey);
+        (uint currencyRate, bool currencyRateInvalid) = _rateAndInvalid(currencyKey);
         return (debt.divideDecimalRound(currencyRate), anyRateIsInvalid || currencyRateInvalid);
     }
 
@@ -263,7 +279,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
-        (uint currencyRate, bool currencyRateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+        (uint currencyRate, bool currencyRateInvalid) = _rateAndInvalid(currencyKey);
 
         debtBalance = _debtForShares(debtShareBalance).divideDecimalRound(currencyRate);
         totalSystemValue = snxBackedAmount;
@@ -315,7 +331,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
         // What is the value of their SNX balance in sUSD
-        (uint snxRate, bool isInvalid) = exchangeRates().rateAndInvalid(SNX);
+        (uint snxRate, bool isInvalid) = _rateAndInvalid(SNX);
         uint destinationValue = _snxToUSD(_collateral(_issuer), snxRate);
 
         // They're allowed to issue up to issuanceRatio of that value
@@ -584,7 +600,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[currencyKey].issue(to, amount);
 
         // Account for the issued debt in the cache
-        (uint rate, bool rateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+        (uint rate, bool rateInvalid) = _rateAndInvalid(currencyKey);
         debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount.multiplyDecimal(rate)));
 
         // returned so that the caller can decide what to do if the rate is invalid
@@ -605,7 +621,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         synths[currencyKey].burn(from, amount);
 
         // Account for the burnt debt in the cache. If rate is invalid, the user won't be able to exchange
-        (uint rate, bool rateInvalid) = exchangeRates().rateAndInvalid(currencyKey);
+        (uint rate, bool rateInvalid) = _rateAndInvalid(currencyKey);
         debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amount.multiplyDecimal(rate)));
 
         // returned so that the caller can decide what to do if the rate is invalid
@@ -732,7 +748,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(synthetixDebtShare().balanceOf(account), sUSD);
 
         // Get the SNX rate
-        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
+        (uint snxRate, bool snxRateInvalid) = _rateAndInvalid(SNX);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint penalty;
