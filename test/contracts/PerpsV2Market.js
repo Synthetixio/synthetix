@@ -570,27 +570,38 @@ contract('PerpsV2Market', accounts => {
 
 			describe(`${side}`, () => {
 				it('Ensure that the order fee (both maker and taker) is correct when the order is actually submitted', async () => {
+					const price = toUnit('100');
+
 					const t2size = toUnit('70');
+					const t2Margin = margin.mul(toBN(2));
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.mul(toBN(2)),
+						fillPrice: price,
+						marginDelta: t2Margin,
 						sizeDelta: t2size,
 					});
 
 					const t1size = toUnit('-35');
+					const t1Margin = margin;
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
-						marginDelta: margin,
+						fillPrice: price,
+						marginDelta: t1Margin,
 						sizeDelta: t1size,
 					});
 
+					// size = 105
+					// skew = 35 (long)
+
 					const fee = toUnit('14');
-					await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader });
+					await futuresMarket.transferMargin(t1Margin.mul(toBN(2)), { from: trader });
 					assert.bnEqual((await futuresMarket.orderFee(t1size.mul(toBN(2)))).fee, fee);
+
+					const currentMargin = toBN((await futuresMarket.positions(trader)).margin);
+
+					// trader1 adds more margin.
 					const tx = await futuresMarket.modifyPosition(t1size.mul(toBN(2)), { from: trader });
 
 					// Fee is properly recorded and deducted.
@@ -599,19 +610,18 @@ contract('PerpsV2Market', accounts => {
 						contracts: [futuresMarket],
 					});
 
+					const expectedMargin = currentMargin.sub(fee);
+
 					decodedEventEqual({
 						event: 'PositionModified',
 						emittedFrom: futuresMarket.address,
 						args: [
 							toBN('1'),
 							trader,
-							margin
-								.mul(toBN(3))
-								.sub(fee)
-								.sub(toUnit('3.5')),
+							expectedMargin,
 							t1size.mul(toBN(3)),
 							t1size.mul(toBN(2)),
-							toUnit('100'),
+							price,
 							toBN(3),
 							fee,
 						],
@@ -1947,31 +1957,70 @@ contract('PerpsV2Market', accounts => {
 	});
 
 	describe('Profit & Loss, margin, leverage', () => {
+		// PnL is affected by not just the price but the skew. p/d is applied to the trade's fillPrice
+		// upon execution depending on the expansion/contraction of skew.
+		//
+		// However, you can easily calculate this by figuring out the fillPrice before the `modifyPosition` of each
+		// trade then (priceNow - fillPrice) * size.
 		describe('PnL', () => {
+			let price, fillPrice1, fillPrice2, size1, size2;
+
 			beforeEach(async () => {
-				await setPrice(baseAsset, toUnit('100'));
+				price = toUnit('100');
+
+				await setPrice(baseAsset, price);
+
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('50'), { from: trader });
+				size1 = toUnit('50');
+				fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+				await futuresMarket.modifyPosition(size1, { from: trader });
+
 				await futuresMarket.transferMargin(toUnit('4000'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('-40'), { from: trader2 });
+				size2 = toUnit('-40');
+				fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+				await futuresMarket.modifyPosition(size2, { from: trader2 });
 			});
 
 			it('steady price', async () => {
-				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], toBN(0));
-				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toBN(0));
+				// A steady price does indeed impact PnL (because a premium is applied). So although the
+				// price does not change a premium is added and hence affects their PnL
+				const expectedPnL1 = multiplyDecimal(price.sub(fillPrice1), size1);
+				const expectedPnL2 = multiplyDecimal(price.sub(fillPrice2), size2);
+
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], expectedPnL1);
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], expectedPnL2);
+			});
+
+			it('price increase to fillPrice', async () => {
+				// This is a special scenario where the price is increased to the fillPrice of the 1st trader. In this
+				// scenario there is no PnL, so we should expect 0. The premium fee is covered by the price increase.
+				await setPrice(baseAsset, fillPrice1);
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], 0);
+
+				await setPrice(baseAsset, fillPrice2);
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], 0);
 			});
 
 			it('price increase', async () => {
-				await setPrice(baseAsset, toUnit('150'));
-				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], toUnit('2500'));
-				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toUnit('-2000'));
+				const newPrice = toUnit('150');
+				await setPrice(baseAsset, newPrice);
+
+				const expectedPnL1 = multiplyDecimal(newPrice.sub(fillPrice1), size1);
+				const expectedPnL2 = multiplyDecimal(newPrice.sub(fillPrice2), size2);
+
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], expectedPnL1);
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], expectedPnL2);
 			});
 
 			it('price decrease', async () => {
-				await setPrice(baseAsset, toUnit('90'));
+				const newPrice = toUnit('90');
+				await setPrice(baseAsset, newPrice);
 
-				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], toUnit('-500'));
-				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toUnit('400'));
+				const expectedPnL1 = multiplyDecimal(newPrice.sub(fillPrice1), size1);
+				const expectedPnL2 = multiplyDecimal(newPrice.sub(fillPrice2), size2);
+
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], expectedPnL1);
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], expectedPnL2);
 			});
 
 			it('reports invalid prices properly', async () => {

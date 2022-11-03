@@ -94,7 +94,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin, size, price, desiredTimeDelta, minDelayTimeDelta;
+	let margin, size, price, fillPrice, desiredTimeDelta, minDelayTimeDelta;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -105,6 +105,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		desiredTimeDelta = 60;
 		minDelayTimeDelta = 60;
 		await setPrice(baseAsset, price);
+		fillPrice = (await futuresMarket.fillPrice(size))[0];
 	});
 
 	describe('submitDelayedOrder()', () => {
@@ -134,14 +135,13 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				contracts: [futuresMarket, futuresDelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
-			// PositionModified
+
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: futuresMarket.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
 				log: decodedLogs[1],
 			});
-			// DelayedOrderSubmitted
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: futuresMarket.address,
@@ -701,12 +701,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					.sub(expectedFee)
 					.add(expectedRefund);
 
-				console.log('margin', spotTradeDetails.margin.toString());
-				console.log('fee', spotTradeDetails.fee.toString());
-				console.log('expectedFee', expectedFee.toString());
-				console.log('expectedRefund', expectedRefund.toString());
-				console.log('expectedMargin(total)', expectedMargin.toString());
-
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: futuresMarket.address,
@@ -875,16 +869,14 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader3 });
 							await futuresMarket.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
 
-							console.log('beforeTradeUpdate', spotTradeDetails.margin.toString());
 							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
-							console.log('afterTradeUpdate', spotTradeDetails.margin.toString());
 
 							// go to next round
 							await setPrice(baseAsset, price);
 							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 						});
 
-						it.only('from account owner', async () => {
+						it('from account owner', async () => {
 							await checkExecution(trader, targetFillPrice, makerFeeDelayedOrder, spotTradeDetails);
 						});
 
