@@ -735,7 +735,8 @@
 				"Issuer",
 				"SystemSettings",
 				"SystemSettingsLib"
-			]
+			],
+			"released": "both"
 		},
 		{
 			"sip": 269,
@@ -1392,7 +1393,8 @@
 				"major": 2,
 				"minor": 78
 			},
-			"sips": [267]
+			"sips": [267],
+			"released": true
 		},
 		{
 			"name": "Suhail (Optimism)",
@@ -1401,7 +1403,8 @@
 				"major": 2,
 				"minor": 78
 			},
-			"sips": [267]
+			"sips": [267],
+			"released": true
 		}
 	]
 }
