@@ -49,6 +49,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     int128[] public fundingSequence;
 
     /*
+     * The funding rate last time it was recomputed. The market funding rate floats and requires the previously
+     * calculated funding rate, time, and current market conditions to derive the next.
+     */
+    int128 public fundingRateLastRecomputed;
+
+    /*
      * Each user's position. Multiple positions can always be merged, so each user has
      * only have one position at a time.
      */
@@ -74,6 +80,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
+
+        fundingRateLastRecomputed = 0;
     }
 
     function entryDebtCorrection() external view returns (int128) {
@@ -129,6 +137,11 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function pushFundingSequence(int128 _fundingSequence) external onlyAssociatedContracts {
         fundingSequence.push(_fundingSequence);
+    }
+
+    // TODO: Perform this update when maxFundingVelocity and skewScale are modified.
+    function setFundingRateLastRecomputed(int128 _fundingRateLastRecomputed) external onlyAssociatedContracts {
+        fundingRateLastRecomputed = _fundingRateLastRecomputed;
     }
 
     /**

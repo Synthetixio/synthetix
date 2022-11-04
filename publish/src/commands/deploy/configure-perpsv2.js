@@ -92,7 +92,7 @@ module.exports = async ({
 			maxDelayTimeDelta,
 			maxLeverage,
 			maxMarketValueUSD,
-			maxFundingRate,
+			maxFundingVelocity,
 			skewScaleUSD,
 			paused,
 		} = market;
@@ -112,7 +112,7 @@ module.exports = async ({
 			maxDelayTimeDelta: maxDelayTimeDelta,
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
-			maxFundingRate: w3utils.toWei(maxFundingRate),
+			maxFundingVelocity: w3utils.toWei(maxFundingVelocity),
 			skewScaleUSD: w3utils.toWei(skewScaleUSD),
 		};
 

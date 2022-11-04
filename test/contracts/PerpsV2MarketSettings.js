@@ -39,7 +39,8 @@ contract('PerpsV2MarketSettings', accounts => {
 
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
-	const maxFundingRate = toUnit('0.1');
+
+	const maxFundingVelocity = toUnit('0.1');
 	const skewScaleUSD = toUnit('10000');
 
 	const offchainDelayedOrderMinAge = toBN('15');
@@ -129,7 +130,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMakerFeeDelayedOrder',
 				'setMakerFeeOffchainDelayedOrder',
 				'setMaxDelayTimeDelta',
-				'setMaxFundingRate',
+				'setMaxFundingVelocity',
 				'setMaxLeverage',
 				'setMaxMarketValueUSD',
 				'setMinDelayTimeDelta',
@@ -160,7 +161,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				makerFeeOffchainDelayedOrder,
 				maxLeverage,
 				maxMarketValueUSD,
-				maxFundingRate,
+				maxFundingVelocity,
 				skewScaleUSD,
 				nextPriceConfirmWindow,
 				offchainDelayedOrderMinAge,
@@ -493,10 +494,10 @@ contract('PerpsV2MarketSettings', accounts => {
 		it('should be able to change parameters for both markets independently', async () => {
 			const val1 = toUnit(0.1);
 			const val2 = toUnit(0.5);
-			await futuresMarketSettings.setMaxFundingRate(firstMarketKey, val1, { from: owner });
-			await futuresMarketSettings.setMaxFundingRate(secondMarketKey, val2, { from: owner });
-			assert.bnEqual(await futuresMarketSettings.maxFundingRate(firstMarketKey), val1);
-			assert.bnEqual(await futuresMarketSettings.maxFundingRate(secondMarketKey), val2);
+			await futuresMarketSettings.setMaxFundingVelocity(firstMarketKey, val1, { from: owner });
+			await futuresMarketSettings.setMaxFundingVelocity(secondMarketKey, val2, { from: owner });
+			assert.bnEqual(await futuresMarketSettings.maxFundingVelocity(firstMarketKey), val1);
+			assert.bnEqual(await futuresMarketSettings.maxFundingVelocity(secondMarketKey), val2);
 		});
 	});
 });

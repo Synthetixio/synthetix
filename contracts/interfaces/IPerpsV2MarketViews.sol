@@ -38,6 +38,8 @@ interface IPerpsV2MarketViews {
 
     function currentFundingRate() external view returns (int fundingRate);
 
+    function currentFundingVelocity() external view returns (int fundingRateVelocity);
+
     function unrecordedFunding() external view returns (int funding, bool invalid);
 
     function fundingSequenceLength() external view returns (uint length);

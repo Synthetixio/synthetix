@@ -418,7 +418,7 @@ const setupContract = async ({
 				instance.address
 			);
 			if (contract.startsWith('PerpsV2Market') || contract.startsWith('ProxyPerpsV2Market')) {
-				log('Deployed wiht default args:', defaultArgs[contract], 'and args:', args);
+				log('Deployed with default args:', defaultArgs[contract], 'and args:', args);
 			}
 		}
 	} catch (err) {
@@ -1679,7 +1679,7 @@ const setupAllContracts = async ({
 						toBN('2'), // 2 rounds next price confirm window
 						toWei('10'), // 10x max leverage
 						toWei('100000'), // 100000 max market debt
-						toWei('0.1'), // 10% max funding rate
+						toWei('0.1'), // 10% max funding velocity
 						toWei('100000'), // 100000 USD skewScaleUSD
 						{ from: owner }
 					),
@@ -1741,7 +1741,7 @@ const setupAllContracts = async ({
 
 							toWei('10'), // 10x max leverage
 							toWei('100000'), // 100000 max market debt
-							toWei('0.1'), // 10% max funding rate
+							toWei('0.1'), // 10% max funding velocity
 							toWei('100000'), // 100000 USD skewScaleUSD
 
 							toBN('2'), // 2 rounds next price confirm window

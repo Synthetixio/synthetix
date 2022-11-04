@@ -92,11 +92,13 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLengthBefore = marketState.fundingSequenceLength();
 
+        int fundingRate = _currentFundingRate(price);
         int funding = _nextFundingEntry(price);
         marketState.pushFundingSequence(int128(funding));
         marketState.setFundingLastRecomputed(uint32(block.timestamp));
+        marketState.setFundingRateLastRecomputed(int128(fundingRate));
 
-        emitFundingRecomputed(funding, sequenceLengthBefore, marketState.fundingLastRecomputed());
+        emitFundingRecomputed(funding, fundingRate, sequenceLengthBefore, marketState.fundingLastRecomputed());
 
         return sequenceLengthBefore;
     }
@@ -291,15 +293,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
     }
 
-    event FundingRecomputed(int funding, uint index, uint timestamp);
-    bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,uint256,uint256)");
+    event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
+    bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,int256,uint256,uint256)");
 
     function emitFundingRecomputed(
         int funding,
+        int fundingRate,
         uint index,
         uint timestamp
     ) internal {
-        proxy._emit(abi.encode(funding, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
+        proxy._emit(abi.encode(funding, fundingRate, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
     }
 
     event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);

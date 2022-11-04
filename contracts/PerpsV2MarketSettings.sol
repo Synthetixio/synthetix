@@ -123,14 +123,14 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The maximum theoretical funding rate per day charged by a market.
+     * The maximum theoretical funding velocity per day charged by a market.
      */
-    function maxFundingRate(bytes32 _marketKey) public view returns (uint) {
-        return _maxFundingRate(_marketKey);
+    function maxFundingVelocity(bytes32 _marketKey) public view returns (uint) {
+        return _maxFundingVelocity(_marketKey);
     }
 
     /*
-     * The skew level at which the max funding rate will be charged.
+     * The skew level at which the max funding velocity will be charged.
      */
     function skewScaleUSD(bytes32 _marketKey) public view returns (uint) {
         return _skewScaleUSD(_marketKey);
@@ -161,7 +161,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _makerFeeOffchainDelayedOrder(_marketKey),
                 _maxLeverage(_marketKey),
                 _maxMarketValueUSD(_marketKey),
-                _maxFundingRate(_marketKey),
+                _maxFundingVelocity(_marketKey),
                 _skewScaleUSD(_marketKey),
                 _nextPriceConfirmWindow(_marketKey),
                 _delayedOrderConfirmWindow(_marketKey),
@@ -284,9 +284,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         }
     }
 
-    function setMaxFundingRate(bytes32 _marketKey, uint _maxFundingRate) public onlyOwner {
+    function setMaxFundingVelocity(bytes32 _marketKey, uint _maxFundingVelocity) public onlyOwner {
         _recomputeFunding(_marketKey);
-        _setParameter(_marketKey, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
+        _setParameter(_marketKey, PARAMETER_MAX_FUNDING_VELOCITY, _maxFundingVelocity);
     }
 
     function setSkewScaleUSD(bytes32 _marketKey, uint _skewScaleUSD) public onlyOwner {
@@ -309,7 +309,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setMakerFee(_marketKey, _parameters.makerFee);
         setMaxLeverage(_marketKey, _parameters.maxLeverage);
         setMaxMarketValueUSD(_marketKey, _parameters.maxMarketValueUSD);
-        setMaxFundingRate(_marketKey, _parameters.maxFundingRate);
+        setMaxFundingVelocity(_marketKey, _parameters.maxFundingVelocity);
         setSkewScaleUSD(_marketKey, _parameters.skewScaleUSD);
         setTakerFeeDelayedOrder(_marketKey, _parameters.takerFeeDelayedOrder);
         setMakerFeeDelayedOrder(_marketKey, _parameters.makerFeeDelayedOrder);

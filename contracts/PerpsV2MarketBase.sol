@@ -139,35 +139,82 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /*
      * The size of the skew relative to the size of the market skew scaler.
-     * This value can be outside of [-1, 1] values.
      * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
+     *
+     * TODO: Remove this. Replace skewScaleUsd with just skewScale, making `price` no longer necessary.
      */
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
         uint skewScaleBaseAsset = _skewScaleUSD(_marketKey()).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-        return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+
+        int pSkew = int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+
+        // Ensures the proportionalSkew is between -1 and 1.
+        return _min(_max(-_UNIT, pSkew), _UNIT);
     }
 
+    function _proportionalElapsed() internal view returns (int) {
+        int delta = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
+        return delta.divideDecimal(1 days);
+    }
+
+    function _currentFundingVelocity(uint price) internal view returns (int) {
+        int maxFundingVelocity = int(_maxFundingVelocity(marketState.marketKey()));
+        return _proportionalSkew(price).multiplyDecimal(maxFundingVelocity);
+    }
+
+    /*
+     * @dev Retrieves the _current_ funding rate given the current market conditions.
+     *
+     * This is used during funding computation _before_ the market is modified (e.g. closing or
+     * opening a position). However, called via the `currentFundingRate` view, will return the
+     * 'instantaneous' funding rate. It's similar but subtle in that velocity now includes the most
+     * recent skew modification.
+     *
+     * There is no variance in computation but will be affected based on outside modifications to
+     * the market skew, max funding velocity, price, and time delta.
+     */
     function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(_marketKey()));
-        // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
+        // calculations:
+        //  - velocity          = proportional_skew * max_funding_velocity
+        //  - proportional_skew = (skew * price) / skew_scale_usd
+        //
+        // example:
+        //  - prev_funding_rate     = 0
+        //  - prev_velocity         = 0.0025
+        //  - time_delta            = 29,000s
+        //  - max_funding_velocity  = 0.025 (2.5%)
+        //  - skew                  = 300
+        //  - price                 = 10,000 ($10k)
+        //  - skew_scale_usd        = 10,000,000 (10M)
+        //
+        // note: prev_velocity just refs to the velocity _before_ modifying the market skew.
+        //
+        // funding_rate = prev_funding_rate + prev_velocity * (time_delta / seconds_in_day)
+        // funding_rate = 0 + 0.0025 * (29,000 / 86,400)
+        //              = 0 + 0.0025 * 0.33564815
+        //              = 0.00083912
+        int fundingRate = marketState.fundingRateLastRecomputed();
+        int fundingVelocity = _currentFundingVelocity(price);
+        int elapsed = _proportionalElapsed();
+        return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
     }
 
-    function _unrecordedFunding(uint price) internal view returns (int funding) {
-        int elapsed = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
-        // The current funding rate, rescaled to a percentage per second.
-        int currentFundingRatePerSecond = _currentFundingRate(price) / 1 days;
-        return currentFundingRatePerSecond.multiplyDecimal(int(price)).mul(elapsed);
+    function _unrecordedFunding(uint price) internal view returns (int) {
+        int nextFundingRate = _currentFundingRate(price);
+        // note the minus sign: funding flows in the opposite direction to the skew.
+        int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
+        int elapsed = _proportionalElapsed();
+        return avgFundingRate.multiplyDecimal(elapsed);
     }
 
     /*
      * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
-    function _nextFundingEntry(uint price) internal view returns (int funding) {
+    function _nextFundingEntry(uint price) internal view returns (int) {
         return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
     }
 
@@ -324,7 +371,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      * @dev The liquidation margin contains a buffer that is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * size. The buffer should prevent liquidation happening at negative margin (due to next price being worse)
      * so that stakers would not leak value to liquidators through minting rewards that are not from the
      * account's margin.
      */
@@ -391,7 +438,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
+    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
         return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset());
     }
