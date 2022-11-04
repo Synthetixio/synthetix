@@ -166,18 +166,13 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
 					toUnit('0'), // 0% maker fee offchain delayed order
 
-					toUnit('5'), // 5x max leverage
-					toUnit('1000000'), // 1000000 max total margin
-					toUnit('0.2'), // 20% max funding rate
-					toUnit('100000'), // 100000 USD skewScaleUSD
-
-					toBN('2'), // 2 rounds next price confirm window
-					30, // 30s delay confirm window
-
 					toWei('5'), // 5x max leverage
 					toWei('1000000'), // 1000000 max total margin
 					toWei('0.2'), // 20% max funding velocity
 					toWei('100000'), // 100000 USD skewScaleUSD
+
+					toBN('2'), // 2 rounds next price confirm window
+					30, // 30s delay confirm window
 
 					60, // 60s minimum delay time in seconds
 					120, // 120s maximum delay time in seconds

@@ -11,7 +11,6 @@ import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 import "./interfaces/IPerpsV2ExchangeRate.sol";
 import "./interfaces/IPyth.sol";
 
-// import "hardhat/console.sol";
 /**
  Contract that implements DelayedOrders (onchain and offchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
