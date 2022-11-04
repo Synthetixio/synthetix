@@ -480,7 +480,15 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
 			});
 
+			it('cannot cancel before time', async () => {
+				await assert.revert(
+					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+					'cannot cancel yet'
+				);
+			});
+
 			it('cannot cancel if futures markets are suspended', async () => {
+				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
 					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
@@ -489,6 +497,7 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			});
 
 			it('cannot cancel if market is suspended', async () => {
+				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
 					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
@@ -496,21 +505,89 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				);
 			});
 
-			describe('account owner can cancel', () => {
-				it('in same round', async () => {
+			describe('account owner moving in time', () => {
+				it('cannot cancel before time based 2 maxAge', async () => {
+					// set a known and deterministic confirmation window.
+					let ffDelta = 0;
+					const maxAge = 60;
+					const executionExpiredDelay = maxAge + 1;
+					const cancellableDelay = 2 * maxAge + 1;
+					await perpsV2MarketSettings.setOffchainDelayedOrderMaxAge(marketKey, maxAge, {
+						from: owner,
+					});
+
+					// no time has changed.
+					await assert.revert(
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+						'cannot cancel yet'
+					);
+
+					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
+					ffDelta = executionExpiredDelay - ffDelta;
+					await fastForward(ffDelta);
+					const updateFeedData = await getFeedUpdateData({
+						id: defaultFeedId,
+						price: feedBaseFromUNIT(offChainPrice),
+						conf: feedBaseFromUNIT(confidence),
+					});
+
+					await assert.revert(
+						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+						'too late'
+					);
+
+					await assert.revert(
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+						'cannot cancel yet'
+					);
+
+					// time has moved forward and now is cancellable
+					ffDelta = cancellableDelay - ffDelta;
+					await fastForward(ffDelta);
 					await checkCancellation(trader);
 				});
+			});
 
-				it('in target round', async () => {
-					await setOnchainPrice(baseAsset, price);
-					await checkCancellation(trader);
-				});
+			describe('non-account owner moving in time', () => {
+				it('cannot cancel before time based 2 maxAge', async () => {
+					// set a known and deterministic confirmation window.
+					let ffDelta = 0;
+					const maxAge = 60;
+					const executionExpiredDelay = maxAge + 1;
+					const cancellableDelay = 2 * maxAge + 1;
+					await perpsV2MarketSettings.setOffchainDelayedOrderMaxAge(marketKey, maxAge, {
+						from: owner,
+					});
 
-				it('after confirmation window', async () => {
-					await setOnchainPrice(baseAsset, price);
-					await setOnchainPrice(baseAsset, price);
-					await setOnchainPrice(baseAsset, price);
-					await checkCancellation(trader);
+					// no time has changed.
+					await assert.revert(
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
+						'cannot cancel yet'
+					);
+
+					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
+					ffDelta = executionExpiredDelay - ffDelta;
+					await fastForward(ffDelta);
+					const updateFeedData = await getFeedUpdateData({
+						id: defaultFeedId,
+						price: feedBaseFromUNIT(offChainPrice),
+						conf: feedBaseFromUNIT(confidence),
+					});
+
+					await assert.revert(
+						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
+						'too late'
+					);
+
+					await assert.revert(
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
+						'cannot cancel yet'
+					);
+
+					// time has moved forward and now is cancellable
+					ffDelta = cancellableDelay - ffDelta;
+					await fastForward(ffDelta);
+					await checkCancellation(trader2);
 				});
 			});
 
@@ -535,88 +612,13 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 				});
 
 				it('by account owner', async () => {
+					await fastForward(offchainDelayedOrderMaxAge * 2);
 					await checkCancellation(trader);
 				});
 
-				it('by non-account owner, after confirmation window', async () => {
-					await setOnchainPrice(baseAsset, price);
-					await setOnchainPrice(baseAsset, price);
-					await setOnchainPrice(baseAsset, price);
+				it('by non-account owner', async () => {
+					await fastForward(offchainDelayedOrderMaxAge * 2);
 					// now cancel
-					await checkCancellation(trader2);
-				});
-			});
-
-			describe('non-account owner', () => {
-				it('cannot cancel before confirmation window is over', async () => {
-					// same round
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					// target round
-					await setOnchainPrice(baseAsset, price);
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					// next round after target round
-					await setOnchainPrice(baseAsset, price);
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					// next one after that (for 2 roundId)
-					await setOnchainPrice(baseAsset, price);
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					// ok now
-					await setOnchainPrice(baseAsset, price);
-					await checkCancellation(trader2);
-				});
-
-				it('cannot cancel before time based confirmation window is over', async () => {
-					// set a known and deterministic confirmation window.
-					const delayedOrderConfirmWindow = 60;
-					await perpsV2MarketSettings.setDelayedOrderConfirmWindow(
-						marketKey,
-						delayedOrderConfirmWindow,
-						{ from: owner }
-					);
-
-					// no time has changed.
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					const { timestamp } = await ethers.provider.getBlock('latest');
-					const ffDelta = 5;
-
-					// time has moved forward (no change to round) but not enough.
-					const order = await perpsV2MarketState.delayedOrders(trader);
-					const exectuableAtTimeDelta = order.executableAtTime.sub(toBN(timestamp)).toNumber();
-					await fastForward(ffDelta); // fast forward by 5 seconds
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					// time has moved forward, order is executable but cancellable
-					await fastForward(exectuableAtTimeDelta - ffDelta + 1);
-					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
-						'cannot be cancelled by keeper yet'
-					);
-
-					// time has moved forward and now past confirmation window (still no round change)
-					await fastForward(delayedOrderConfirmWindow);
 					await checkCancellation(trader2);
 				});
 			});
@@ -1042,11 +1044,13 @@ contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
 			});
 
 			it('canceling an order works', async () => {
+				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
 			});
 
 			it('submitting an order reverts', async () => {
 				// cancel existing
+				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
 
 				await assert.revert(

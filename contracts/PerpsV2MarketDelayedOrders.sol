@@ -210,6 +210,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
 
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
+        _confirmCanCancel(account, order, currentRoundId);
+
         if (account == messageSender) {
             // this is account owner
             // refund keeper fee to margin
@@ -221,14 +223,6 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
             // emit event for modifying the position (add the fee to margin)
             emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
         } else {
-            // this is someone else (like a keeper)
-            // cancellation by third party is only possible when execution cannot be attempted any longer
-            // otherwise someone might try to grief an account by cancelling for the keeper fee
-            require(
-                _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-                "cannot be cancelled by keeper yet"
-            );
-
             // send keeper fee to keeper
             _manager().issueSUSD(messageSender, order.keeperDeposit);
         }
@@ -409,6 +403,29 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
             order.keeperDeposit,
             order.trackingCode
         );
+    }
+
+    function _confirmCanCancel(
+        address account,
+        DelayedOrder memory order,
+        uint currentRoundId
+    ) internal {
+        if (order.isOffchain) {
+            require(
+                block.timestamp - order.intentionTime > _offchainDelayedOrderMaxAge(_marketKey()) * 2,
+                "cannot cancel yet"
+            );
+        } else {
+            if (account != messageSender) {
+                // this is someone else (like a keeper)
+                // cancellation by third party is only possible when execution cannot be attempted any longer
+                // otherwise someone might try to grief an account by cancelling for the keeper fee
+                require(
+                    _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+                    "cannot be cancelled by keeper yet"
+                );
+            }
+        }
     }
 
     ///// Internal views
