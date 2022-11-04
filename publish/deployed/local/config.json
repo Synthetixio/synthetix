@@ -208,5 +208,11 @@
 	},
 	"SystemSettingsLib": {
 		"deploy": true
+	},
+	"ExchangeSettlementLib": {
+		"deploy": true
+	},
+	"DirectIntegrationManager": {
+		"deploy": true
 	}
 }

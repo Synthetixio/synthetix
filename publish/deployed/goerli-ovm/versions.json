@@ -19,8 +19,9 @@
 			},
 			"SystemSettingsLib": {
 				"address": "0x83732C3eD8F24Af9b87DAcDC23b0Fe40abb77337",
-				"status": "current",
-				"keccak256": "0xc4e328478f9c625bb34c4f019040afd62b9dfb8f03882727e39888d3173f09a9"
+				"status": "replaced",
+				"keccak256": "0xc4e328478f9c625bb34c4f019040afd62b9dfb8f03882727e39888d3173f09a9",
+				"replaced_in": "v2.78.0-alpha"
 			},
 			"SignedSafeDecimalMath": {
 				"address": "0x6d2eA159C128eC361a9a23b1456Ef0aAD0bec46b",
@@ -54,8 +55,9 @@
 			},
 			"SystemSettings": {
 				"address": "0xD2cECA6DD62243aB2d342Eb04882c86a10b35274",
-				"status": "current",
-				"keccak256": "0xc78f371d395251ef1ee8c1305b485d38f084d31530560e802f5fc5147fe83451"
+				"status": "replaced",
+				"keccak256": "0xc78f371d395251ef1ee8c1305b485d38f084d31530560e802f5fc5147fe83451",
+				"replaced_in": "v2.78.0-alpha"
 			},
 			"SystemStatus": {
 				"address": "0x9D89fF8C6f3CC22F4BbB859D0F85FB3a4e1FA916",
@@ -326,13 +328,15 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x280E5dFaA78CE685a846830bAe5F2FD21d6A3D89",
-				"status": "current",
-				"keccak256": "0x3898ac05c8e31b7a6ea707cd3f18e094d8fe6e3789dd9a564814a9e6591d1ff4"
+				"status": "replaced",
+				"keccak256": "0x3898ac05c8e31b7a6ea707cd3f18e094d8fe6e3789dd9a564814a9e6591d1ff4",
+				"replaced_in": "v2.78.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0x601A1Cf1a34d9cF0020dCCD361c155Fe54CE24fB",
-				"status": "current",
-				"keccak256": "0x3561c57db4da45a7926d94eade122a491e8dea6e213b463a2a6d50acd7e44c2f"
+				"status": "replaced",
+				"keccak256": "0x3561c57db4da45a7926d94eade122a491e8dea6e213b463a2a6d50acd7e44c2f",
+				"replaced_in": "v2.78.0-alpha"
 			},
 			"Issuer": {
 				"address": "0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034",
@@ -412,8 +416,9 @@
 			},
 			"Issuer": {
 				"address": "0x6CE33132d1c4d0D232ea8F470C83a108f7ee0d6A",
-				"status": "current",
-				"keccak256": "0x46ee08b601ed69f547ba282d3e6c5a30e5163cd3652d7aa77c45633a7905da6d"
+				"status": "replaced",
+				"keccak256": "0x46ee08b601ed69f547ba282d3e6c5a30e5163cd3652d7aa77c45633a7905da6d",
+				"replaced_in": "v2.78.0-alpha"
 			},
 			"SynthsUSD": {
 				"address": "0xfDa54191F3C0999dbf4c193dEF1B83EDD3e3Ba39",
@@ -494,6 +499,51 @@
 				"address": "0xc006bd42B2ca95Cd640D314dA3DF4c59436C7739",
 				"status": "current",
 				"keccak256": "0x4832bfedbf509d251bd63ceb83839c269605fecdf61ed4a20e9dee06448e02b8"
+			}
+		}
+	},
+	"v2.78.0-alpha": {
+		"tag": "v2.78.0-alpha",
+		"fulltag": "v2.78.0-alpha",
+		"release": "Suhail",
+		"network": "goerli",
+		"date": "2022-11-03T09:49:41-04:00",
+		"commit": "ae588340b5c7ed2e8ad7f0e88c245253e3eb501c",
+		"contracts": {
+			"SystemSettingsLib": {
+				"address": "0x6B2554A8349319597D1a8a36DeeD07Fb7c70400d",
+				"status": "current",
+				"keccak256": "0xc4e328478f9c625bb34c4f019040afd62b9dfb8f03882727e39888d3173f09a9"
+			},
+			"SystemSettings": {
+				"address": "0x418B1025f74E8BB889D35e9F37205d587743Ec9b",
+				"status": "current",
+				"keccak256": "0x6af2cf3e8bef667404d764f991e906eaffedde5921397198a65282aef2e2056c"
+			},
+			"ExchangeRates": {
+				"address": "0x061B75475035c20ef2e35E1002Beb90C3c1f24cC",
+				"status": "current",
+				"keccak256": "0xbb4e3145d78771f77a18817fd6f00a4ac4870152e20a3e98780a9bfaab2ef961"
+			},
+			"Exchanger": {
+				"address": "0x164724726608622b6e5Fa1aF8932b45A7Bd1a94D",
+				"status": "current",
+				"keccak256": "0x3b924889c1ebb903cb0ba5cafb01a9bc44740a4a18e1554db88764e88df6042e"
+			},
+			"Issuer": {
+				"address": "0x59bd355dd9A853b345434474341178DbC27dC7a6",
+				"status": "current",
+				"keccak256": "0xfe5fc654ccd66b4bf3baca842a69216b468e96447c2529ba5eabdfb6793b8955"
+			},
+			"ExchangeSettlementLib": {
+				"address": "0xc09f90045F772117634FDF23fFCCd3bEE1abB4AD",
+				"status": "current",
+				"keccak256": "0x9b464e20dadef8a37ddf2ddcc41f4d22d5ba6aab434f244b2c687babcdc03d3e"
+			},
+			"DirectIntegrationManager": {
+				"address": "0xbDC73F42943bAce3A4eEE280650e80531Cc6a38C",
+				"status": "current",
+				"keccak256": "0xa461f2178b2a89520febb03b493fbcccc1b7299fade9826090a391186ce0b36d"
 			}
 		}
 	}
