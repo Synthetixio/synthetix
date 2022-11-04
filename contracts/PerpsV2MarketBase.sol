@@ -539,7 +539,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         int priceBefore = int(price).add(pdBefore);
         int priceAfter = int(price).add(pdAfter);
 
-        return uint(priceBefore.add(priceAfter).divideDecimal(_UNIT * 2 ));
+        return uint(priceBefore.add(priceAfter).divideDecimal(_UNIT * 2));
     }
 
     /*
