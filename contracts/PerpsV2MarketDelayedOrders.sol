@@ -373,6 +373,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         Position memory position = marketState.positions(account);
 
         uint fundingIndex = _recomputeFunding(currentPrice);
+
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
         _updatePositionMargin(account, position, currentPrice, int(toRefund));
@@ -489,7 +490,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         uint keeperDeposit,
         bytes32 trackingCode
     );
-    bytes32 internal constant DELAYEDORDERORDERSUBMITTED_SIG =
+    bytes32 internal constant DELAYEDORDERSUBMITTED_SIG =
         keccak256("DelayedOrderSubmitted(address,bool,int256,uint256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderSubmitted(
@@ -505,7 +506,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         proxy._emit(
             abi.encode(isOffchain, sizeDelta, targetRoundId, executableAtTime, commitDeposit, keeperDeposit, trackingCode),
             2,
-            DELAYEDORDERORDERSUBMITTED_SIG,
+            DELAYEDORDERSUBMITTED_SIG,
             addressToBytes32(account),
             0,
             0
@@ -521,7 +522,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         uint keeperDeposit,
         bytes32 trackingCode
     );
-    bytes32 internal constant DELAYEDORDERORDERREMOVED_SIG =
+    bytes32 internal constant DELAYEDORDERREMOVED_SIG =
         keccak256("DelayedOrderRemoved(address,uint256,int256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderRemoved(
@@ -536,7 +537,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2Mark
         proxy._emit(
             abi.encode(currentRoundId, sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
             2,
-            DELAYEDORDERORDERREMOVED_SIG,
+            DELAYEDORDERREMOVED_SIG,
             addressToBytes32(account),
             0,
             0
