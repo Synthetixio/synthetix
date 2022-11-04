@@ -19,11 +19,15 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
     bytes32 internal constant PARAMETER_TAKER_FEE_DELAYED_ORDER = "takerFeeDelayedOrder";
     bytes32 internal constant PARAMETER_MAKER_FEE_DELAYED_ORDER = "makerFeeDelayedOrder";
+    bytes32 internal constant PARAMETER_TAKER_FEE_OFFCHAIN_DELAYED_ORDER = "takerFeeOffchainDelayedOrder";
+    bytes32 internal constant PARAMETER_MAKER_FEE_OFFCHAIN_DELAYED_ORDER = "makerFeeOffchainDelayedOrder";
     bytes32 internal constant PARAMETER_NEXT_PRICE_CONFIRM_WINDOW = "nextPriceConfirmWindow";
     bytes32 internal constant PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW = "delayedOrderConfirmWindow";
+    bytes32 internal constant PARAMETER_OFFCHAIN_DELAYED_ORDER_MIN_AGE = "offchainDelayedOrderMinAge";
+    bytes32 internal constant PARAMETER_OFFCHAIN_DELAYED_ORDER_MAX_AGE = "offchainDelayedOrderMaxAge";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValueUSD";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
+    bytes32 internal constant PARAMETER_MAX_FUNDING_VELOCITY = "maxFundingVelocity";
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScaleUSD";
     bytes32 internal constant PARAMETER_MIN_DELAY_TIME_DELTA = "minDelayTimeDelta";
     bytes32 internal constant PARAMETER_MAX_DELAY_TIME_DELTA = "maxDelayTimeDelta";
@@ -78,12 +82,28 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAKER_FEE_DELAYED_ORDER);
     }
 
+    function _takerFeeOffchainDelayedOrder(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_TAKER_FEE_OFFCHAIN_DELAYED_ORDER);
+    }
+
+    function _makerFeeOffchainDelayedOrder(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAKER_FEE_OFFCHAIN_DELAYED_ORDER);
+    }
+
     function _nextPriceConfirmWindow(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW);
     }
 
     function _delayedOrderConfirmWindow(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW);
+    }
+
+    function _offchainDelayedOrderMinAge(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MIN_AGE);
+    }
+
+    function _offchainDelayedOrderMaxAge(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MAX_AGE);
     }
 
     function _maxLeverage(bytes32 _marketKey) internal view returns (uint) {
@@ -98,8 +118,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MIN_SKEW_SCALE);
     }
 
-    function _maxFundingRate(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_MAX_FUNDING_RATE);
+    function _maxFundingVelocity(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_FUNDING_VELOCITY);
     }
 
     function _minDelayTimeDelta(bytes32 _marketKey) internal view returns (uint) {

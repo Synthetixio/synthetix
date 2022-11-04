@@ -17,6 +17,8 @@ interface IPerpsV2MarketState {
 
     function fundingSequence(uint) external view returns (int128);
 
+    function fundingRateLastRecomputed() external view returns (int128);
+
     function positions(address) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
     function delayedOrders(address) external view returns (IPerpsV2MarketBaseTypes.DelayedOrder memory);
@@ -43,6 +45,8 @@ interface IPerpsV2MarketState {
 
     function setFundingLastRecomputed(uint32) external;
 
+    function setFundingRateLastRecomputed(int128 _fundingRateLastRecomputed) external;
+
     function pushFundingSequence(int128) external;
 
     function updatePosition(
@@ -56,11 +60,13 @@ interface IPerpsV2MarketState {
 
     function updateDelayedOrder(
         address account,
+        bool isOffchain,
         int128 sizeDelta,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
         uint256 executableAtTime,
+        uint256 intentionTime,
         bytes32 trackingCode
     ) external;
 

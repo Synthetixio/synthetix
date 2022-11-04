@@ -180,7 +180,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
     /*
      * Same as modifyPosition, but emits an event with the passed tracking code to
-     * allow offchain calculations for fee sharing with originating integrations
+     * allow off-chain calculations for fee sharing with originating integrations
      */
     function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external {
         _modifyPosition(sizeDelta, trackingCode);
@@ -194,8 +194,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );
@@ -223,8 +223,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: -size,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );

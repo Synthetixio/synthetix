@@ -54,9 +54,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_PERPSV2MARKETMANAGER = "PerpsV2MarketManager";
     bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
-    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 internal constant CONTRACT_PERPSV2EXCHANGERATE = "PerpsV2ExchangeRate";
 
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
@@ -97,12 +98,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[2] = CONTRACT_PERPSV2MARKETMANAGER;
-        newAddresses[3] = CONTRACT_PERPSV2MARKETSETTINGS;
-        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[3] = CONTRACT_PERPSV2MARKETMANAGER;
+        newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
+        newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -127,38 +129,92 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /* ---------- Market Details ---------- */
+    function _baseAsset() internal view returns (bytes32) {
+        return marketState.baseAsset();
+    }
+
+    function _marketKey() internal view returns (bytes32) {
+        return marketState.marketKey();
+    }
 
     /*
      * The size of the skew relative to the size of the market skew scaler.
-     * This value can be outside of [-1, 1] values.
      * Scaler used for skew is at skewScaleUSD to prevent extreme funding rates for small markets.
+     *
+     * TODO: Remove this. Replace skewScaleUsd with just skewScale, making `price` no longer necessary.
      */
     function _proportionalSkew(uint price) internal view returns (int) {
         // marketSize is in baseAsset units so we need to convert from USD units
         require(price > 0, "price can't be zero");
-        uint skewScaleBaseAsset = _skewScaleUSD(marketState.marketKey()).divideDecimal(price);
+        uint skewScaleBaseAsset = _skewScaleUSD(_marketKey()).divideDecimal(price);
         require(skewScaleBaseAsset != 0, "skewScale is zero"); // don't divide by zero
-        return int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+
+        int pSkew = int(marketState.marketSkew()).divideDecimal(int(skewScaleBaseAsset));
+
+        // Ensures the proportionalSkew is between -1 and 1.
+        return _min(_max(-_UNIT, pSkew), _UNIT);
     }
 
+    function _proportionalElapsed() internal view returns (int) {
+        int delta = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
+        return delta.divideDecimal(1 days);
+    }
+
+    function _currentFundingVelocity(uint price) internal view returns (int) {
+        int maxFundingVelocity = int(_maxFundingVelocity(marketState.marketKey()));
+        return _proportionalSkew(price).multiplyDecimal(maxFundingVelocity);
+    }
+
+    /*
+     * @dev Retrieves the _current_ funding rate given the current market conditions.
+     *
+     * This is used during funding computation _before_ the market is modified (e.g. closing or
+     * opening a position). However, called via the `currentFundingRate` view, will return the
+     * 'instantaneous' funding rate. It's similar but subtle in that velocity now includes the most
+     * recent skew modification.
+     *
+     * There is no variance in computation but will be affected based on outside modifications to
+     * the market skew, max funding velocity, price, and time delta.
+     */
     function _currentFundingRate(uint price) internal view returns (int) {
-        int maxFundingRate = int(_maxFundingRate(marketState.marketKey()));
-        // Note the minus sign: funding flows in the opposite direction to the skew.
-        return _min(_max(-_UNIT, -_proportionalSkew(price)), _UNIT).multiplyDecimal(maxFundingRate);
+        // calculations:
+        //  - velocity          = proportional_skew * max_funding_velocity
+        //  - proportional_skew = (skew * price) / skew_scale_usd
+        //
+        // example:
+        //  - prev_funding_rate     = 0
+        //  - prev_velocity         = 0.0025
+        //  - time_delta            = 29,000s
+        //  - max_funding_velocity  = 0.025 (2.5%)
+        //  - skew                  = 300
+        //  - price                 = 10,000 ($10k)
+        //  - skew_scale_usd        = 10,000,000 (10M)
+        //
+        // note: prev_velocity just refs to the velocity _before_ modifying the market skew.
+        //
+        // funding_rate = prev_funding_rate + prev_velocity * (time_delta / seconds_in_day)
+        // funding_rate = 0 + 0.0025 * (29,000 / 86,400)
+        //              = 0 + 0.0025 * 0.33564815
+        //              = 0.00083912
+        int fundingRate = marketState.fundingRateLastRecomputed();
+        int fundingVelocity = _currentFundingVelocity(price);
+        int elapsed = _proportionalElapsed();
+        return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
     }
 
-    function _unrecordedFunding(uint price) internal view returns (int funding) {
-        int elapsed = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
-        // The current funding rate, rescaled to a percentage per second.
-        int currentFundingRatePerSecond = _currentFundingRate(price) / 1 days;
-        return currentFundingRatePerSecond.multiplyDecimal(int(price)).mul(elapsed);
+    function _unrecordedFunding(uint price) internal view returns (int) {
+        int nextFundingRate = _currentFundingRate(price);
+        // note the minus sign: funding flows in the opposite direction to the skew.
+        int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
+        int elapsed = _proportionalElapsed();
+        return avgFundingRate.multiplyDecimal(elapsed);
     }
 
     /*
      * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
-    function _nextFundingEntry(uint price) internal view returns (int funding) {
+    function _nextFundingEntry(uint price) internal view returns (int) {
         return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
     }
 
@@ -273,7 +329,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(marketState.marketKey()).sub(milli));
+        int maxLeverage = int(_maxLeverage(_marketKey()).sub(milli));
         uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -315,7 +371,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      * @dev The liquidation margin contains a buffer that is proportional to the position
-     * size. The buffer should prevent liquidation happenning at negative margin (due to next price being worse)
+     * size. The buffer should prevent liquidation happening at negative margin (due to next price being worse)
      * so that stakers would not leak value to liquidators through minting rewards that are not from the
      * account's margin.
      */
@@ -348,23 +404,43 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal view returns (uint fee) {
         // usd value of the difference in position
+        int marketSkew = marketState.marketSkew();
         int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
 
-        // If the order is submitted on the same side as the skew (increasing it) - the taker fee is charged.
-        // Otherwise if the order is opposite to the skew, the maker fee is charged.
-        // the case where the order flips the skew is ignored for simplicity due to being negligible
-        // in both size of effect and frequency of occurrence
-        uint staticRate = _sameSide(notionalDiff, marketState.marketSkew()) ? params.takerFee : params.makerFee;
-        uint feeRate = staticRate.add(dynamicFeeRate);
-        return _abs(notionalDiff.multiplyDecimal(int(feeRate)));
+        // minimum fee to pay regardless (due to dynamic fees).
+        uint baseFee = _abs(notionalDiff).multiplyDecimal(dynamicFeeRate);
+
+        // does this trade keep the skew on one side?
+        if (_sameSide(marketSkew + params.sizeDelta, marketSkew)) {
+            // use a flat maker/taker fee for the entire size depending on whether the skew is increased or reduced.
+            //
+            // if the order is submitted on the same side as the skew (increasing it) - the taker fee is charged.
+            // otherwise if the order is opposite to the skew, the maker fee is charged.
+            uint staticRate = _sameSide(notionalDiff, marketState.marketSkew()) ? params.takerFee : params.makerFee;
+            return baseFee + _abs(notionalDiff.multiplyDecimal(int(staticRate)));
+        }
+
+        // this trade flips the skew.
+        //
+        // the proportion of size that moves in the direction after the flip should not be considered
+        // as a maker (reducing skew) as it's now taking (increasing skew) in the opposite direction. hence,
+        // a different fee is applied on the proportion increasing the skew.
+
+        // proportion of size that's on the other direction
+        uint takerSize = _abs((marketSkew + params.sizeDelta).divideDecimal(params.sizeDelta));
+        uint makerSize = uint(_UNIT) - takerSize;
+        uint takerFee = _abs(notionalDiff).multiplyDecimal(takerSize).multiplyDecimal(params.takerFee);
+        uint makerFee = _abs(notionalDiff).multiplyDecimal(makerSize).multiplyDecimal(params.makerFee);
+
+        return baseFee + takerFee + makerFee;
     }
 
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
+    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, marketState.baseAsset());
+        return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset());
     }
 
     function _latestFundingIndex() internal view returns (uint) {
@@ -446,7 +522,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         {
             // stack too deep
             int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
-            if (_maxLeverage(marketState.marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            if (_maxLeverage(_marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
         }
@@ -455,9 +531,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // Allow a bit of extra value in case of rounding errors.
         if (
             _orderSizeTooLarge(
-                uint(
-                    int(_maxMarketValueUSD(marketState.marketKey()).add(100 * uint(_UNIT))).divideDecimal(int(params.price))
-                ),
+                uint(int(_maxMarketValueUSD(_marketKey()).add(100 * uint(_UNIT))).divideDecimal(int(params.price))),
                 oldPos.size,
                 newPos.size
             )
@@ -474,9 +548,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * Public because used both externally and internally
      */
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(marketState.baseAsset());
+        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(_baseAsset());
         // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(marketState.baseAsset());
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset());
         return (price, invalid);
     }
 

@@ -7,14 +7,18 @@ interface IPerpsV2MarketSettings {
         uint makerFee;
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
-        uint nextPriceConfirmWindow;
-        uint delayedOrderConfirmWindow;
+        uint takerFeeOffchainDelayedOrder;
+        uint makerFeeOffchainDelayedOrder;
         uint maxLeverage;
         uint maxMarketValueUSD;
-        uint maxFundingRate;
+        uint maxFundingVelocity;
         uint skewScaleUSD;
+        uint nextPriceConfirmWindow;
+        uint delayedOrderConfirmWindow;
         uint minDelayTimeDelta;
         uint maxDelayTimeDelta;
+        uint offchainDelayedOrderMinAge;
+        uint offchainDelayedOrderMaxAge;
     }
 
     function takerFee(bytes32 _marketKey) external view returns (uint);
@@ -25,15 +29,23 @@ interface IPerpsV2MarketSettings {
 
     function makerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint);
 
+    function takerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint);
+
+    function makerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint);
+
     function nextPriceConfirmWindow(bytes32 _marketKey) external view returns (uint);
 
     function delayedOrderConfirmWindow(bytes32 _marketKey) external view returns (uint);
+
+    function offchainDelayedOrderMinAge(bytes32 _marketKey) external view returns (uint);
+
+    function offchainDelayedOrderMaxAge(bytes32 _marketKey) external view returns (uint);
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 
     function maxMarketValueUSD(bytes32 _marketKey) external view returns (uint);
 
-    function maxFundingRate(bytes32 _marketKey) external view returns (uint);
+    function maxFundingVelocity(bytes32 _marketKey) external view returns (uint);
 
     function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
 

@@ -1,5 +1,5 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toWei, toBN } = web3.utils;
+const { toBN } = web3.utils;
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 const {
@@ -159,18 +159,30 @@ contract('PerpsV2MarketData', accounts => {
 			await futuresMarketSettings.setParameters(
 				marketKey,
 				[
-					toWei('0.005'), // 0.5% taker fee
-					toWei('0.001'), // 0.1% maker fee
-					toWei('0.0005'), // 0.05% taker fee delayed order
-					toWei('0'), // 0% maker fee delayed order
+					toUnit('0.005'), // 0.5% taker fee
+					toUnit('0.001'), // 0.1% maker fee
+					toUnit('0.0005'), // 0.05% taker fee delayed order
+					toUnit('0'), // 0% maker fee delayed order
+					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
+					toUnit('0'), // 0% maker fee offchain delayed order
+
+					toUnit('5'), // 5x max leverage
+					toUnit('1000000'), // 1000000 max total margin
+					toUnit('0.2'), // 20% max funding rate
+					toUnit('100000'), // 100000 USD skewScaleUSD
+
 					toBN('2'), // 2 rounds next price confirm window
 					30, // 30s delay confirm window
+          
 					toWei('5'), // 5x max leverage
 					toWei('1000000'), // 1000000 max total margin
-					toWei('0.2'), // 20% max funding rate
+					toWei('0.2'), // 20% max funding velocity
 					toWei('100000'), // 100000 USD skewScaleUSD
-					60, // 60s minimum delay time in seconds
+
+          60, // 60s minimum delay time in seconds
 					120, // 120s maximum delay time in seconds
+					15, // offchainDelayedOrderMinAge
+					60, // offchainDelayedOrderMaxAge
 				],
 				{ from: owner }
 			);
@@ -248,7 +260,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
-			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
+			assert.bnEqual(details.fundingParameters.maxFundingVelocity, params.maxFundingVelocity);
 			assert.bnEqual(details.fundingParameters.skewScaleUSD, params.skewScaleUSD);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());

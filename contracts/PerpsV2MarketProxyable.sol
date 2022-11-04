@@ -72,15 +72,15 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
      */
     function _assetPriceRequireSystemChecks() internal returns (uint) {
         // check that futures market isn't suspended, revert with appropriate message
-        _systemStatus().requireFuturesMarketActive(marketState.marketKey()); // asset and market may be different
+        _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
-        _systemStatus().requireSynthActive(marketState.baseAsset());
+        _systemStatus().requireSynthActive(_baseAsset());
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
         // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
         //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
         //  because last-rate is what used for measuring the deviation for subsequent trades.
-        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(marketState.baseAsset());
+        (uint price, bool circuitBroken) = _exchangeCircuitBreaker().rateWithBreakCircuit(_baseAsset());
         // revert if price is invalid or circuit was broken
         // note: we revert here, which means that circuit is not really broken (is not persisted), this is
         //  because the futures methods and interface are designed for reverts, and do not support no-op
@@ -92,11 +92,13 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLengthBefore = marketState.fundingSequenceLength();
 
+        int fundingRate = _currentFundingRate(price);
         int funding = _nextFundingEntry(price);
         marketState.pushFundingSequence(int128(funding));
         marketState.setFundingLastRecomputed(uint32(block.timestamp));
+        marketState.setFundingRateLastRecomputed(int128(fundingRate));
 
-        emitFundingRecomputed(funding, sequenceLengthBefore, marketState.fundingLastRecomputed());
+        emitFundingRecomputed(funding, fundingRate, sequenceLengthBefore, marketState.fundingLastRecomputed());
 
         return sequenceLengthBefore;
     }
@@ -136,7 +138,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
                 _revertIfError(
                     (margin < _minInitialMargin()) ||
                         (margin <= _liquidationMargin(position.size, price)) ||
-                        (_maxLeverage(marketState.marketKey()) < _abs(_currentLeverage(position, price, margin))),
+                        (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
                     Status.InsufficientMargin
                 );
             }
@@ -179,13 +181,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             _manager().payFee(fee);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                emitFuturesTracking(
-                    params.trackingCode,
-                    marketState.baseAsset(),
-                    marketState.marketKey(),
-                    params.sizeDelta,
-                    fee
-                );
+                emitFuturesTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
             }
         }
 
@@ -297,15 +293,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
     }
 
-    event FundingRecomputed(int funding, uint index, uint timestamp);
-    bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,uint256,uint256)");
+    event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
+    bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,int256,uint256,uint256)");
 
     function emitFundingRecomputed(
         int funding,
+        int fundingRate,
         uint index,
         uint timestamp
     ) internal {
-        proxy._emit(abi.encode(funding, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
+        proxy._emit(abi.encode(funding, fundingRate, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
     }
 
     event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
