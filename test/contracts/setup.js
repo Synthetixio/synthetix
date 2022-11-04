@@ -1351,7 +1351,7 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2DelayedOrderBTC',
-				'PerpsV2PythOrdersBTC',
+				'PerpsV2OffchainOrdersBTC',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',

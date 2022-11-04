@@ -9,7 +9,7 @@ const { setupAllContracts, setupContract } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
-contract('PerpsV2Market PerpsV2MarketPythOrders', accounts => {
+contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	let perpsV2MarketSettings,
 		perpsV2Market,
 		perpsV2DelayedOrder,

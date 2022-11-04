@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsV2MarketProxyable.sol";
 import "./interfaces/IPerpsV2MarketDelayedOrders.sol";
-import "./interfaces/IPerpsV2MarketPythOrders.sol";
+import "./interfaces/IPerpsV2MarketOffchainOrders.sol";
 
 // Reference
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
@@ -25,7 +25,7 @@ import "./interfaces/IPyth.sol";
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrders
-contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2MarketPythOrders, PerpsV2MarketProxyable {
+contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, IPerpsV2MarketOffchainOrders, PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
