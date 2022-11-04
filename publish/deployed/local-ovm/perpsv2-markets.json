@@ -1,0 +1,34 @@
+[
+  {
+    "marketKey": "sBTC",
+    "asset": "sBTC",
+    "takerFee": "0.003",
+    "makerFee": "0.002",
+    "takerFeeDelayedOrder": "0.001",
+    "makerFeeDelayedOrder": "0.0",
+    "nextPriceConfirmWindow": "2",
+    "delayedOrderConfirmWindow": "60",
+    "minDelayTimeDelta": "30",
+    "maxDelayTimeDelta": "120",
+    "maxLeverage": "10",
+    "maxMarketValueUSD": "20000000",
+    "maxFundingRate": "0.1",
+    "skewScaleUSD": "300000000"
+  },
+  {
+    "marketKey": "sETH",
+    "asset": "sETH",
+    "takerFee": "0.003",
+    "makerFee": "0.002",
+    "takerFeeDelayedOrder": "0.001",
+    "makerFeeDelayedOrder": "0.0",
+    "nextPriceConfirmWindow": "2",
+    "delayedOrderConfirmWindow": "60",
+    "minDelayTimeDelta": "30",
+    "maxDelayTimeDelta": "120",
+    "maxLeverage": "10",
+    "maxMarketValueUSD": "20000000",
+    "maxFundingRate": "0.1",
+    "skewScaleUSD": "300000000"
+  }
+]

@@ -347,7 +347,9 @@ const setupContract = async ({
 			toBytes32('sETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
-		// Futures V2
+		// Perps V2
+		MockPyth: [60, 1],
+		PerpsV2ExchangeRate: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketData: [tryGetAddressOf('AddressResolver')],
@@ -375,13 +377,13 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2NextPriceBTC: [
+		PerpsV2DelayedOrderBTC: [
 			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
 			tryGetAddressOf('PerpsV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2NextPriceETH: [
+		PerpsV2DelayedOrderETH: [
 			tryGetAddressOf('ProxyPerpsV2MarketETH'),
 			tryGetAddressOf('PerpsV2MarketStateETH'),
 			owner,
@@ -416,7 +418,7 @@ const setupContract = async ({
 				instance.address
 			);
 			if (contract.startsWith('PerpsV2Market') || contract.startsWith('ProxyPerpsV2Market')) {
-				log('Deployed wiht default args:', defaultArgs[contract], 'and args:', args);
+				log('Deployed with default args:', defaultArgs[contract], 'and args:', args);
 			}
 		}
 	} catch (err) {
@@ -704,7 +706,7 @@ const setupContract = async ({
 				)
 			);
 		},
-		async PerpsV2NextPriceBTC() {
+		async PerpsV2DelayedOrderBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
@@ -722,7 +724,7 @@ const setupContract = async ({
 				),
 			]);
 		},
-		async PerpsV2NextPriceETH() {
+		async PerpsV2DelayedOrderETH() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
@@ -1275,7 +1277,8 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 
-		// Futures v2
+		// Perps v2
+		{ contract: 'PerpsV2ExchangeRate', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'Proxy', source: 'ProxyPerpsV2', forContract: 'PerpsV2MarketBTC' },
 		{ contract: 'Proxy', source: 'ProxyPerpsV2', forContract: 'PerpsV2MarketETH' },
 		{
@@ -1286,10 +1289,7 @@ const setupAllContracts = async ({
 			contract: 'PerpsV2MarketStateETH',
 			source: 'PerpsV2MarketState',
 		},
-		{
-			contract: 'PerpsV2MarketSettings',
-			deps: ['AddressResolver', 'FlexibleStorage'],
-		},
+		{ contract: 'PerpsV2MarketSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'PerpsV2MarketData', deps: ['PerpsV2MarketSettings'] },
 		{
 			contract: 'PerpsV2MarketManager',
@@ -1304,6 +1304,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1315,17 +1316,19 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
-			contract: 'PerpsV2NextPriceBTC',
-			source: 'PerpsV2MarketNextPriceOrders',
+			contract: 'PerpsV2DelayedOrderBTC',
+			source: 'PerpsV2MarketDelayedOrders',
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1337,6 +1340,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1346,10 +1350,12 @@ const setupAllContracts = async ({
 				'ProxyPerpsV2MarketBTC',
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
-				'PerpsV2NextPriceBTC',
+				'PerpsV2DelayedOrderBTC',
+				'PerpsV2OffchainOrdersBTC',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1363,6 +1369,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
+				'PerpsV2ExchangeRate',
 			],
 		},
 	];
@@ -1672,7 +1679,7 @@ const setupAllContracts = async ({
 						toBN('2'), // 2 rounds next price confirm window
 						toWei('10'), // 10x max leverage
 						toWei('100000'), // 100000 max market debt
-						toWei('0.1'), // 10% max funding rate
+						toWei('0.1'), // 10% max funding velocity
 						toWei('100000'), // 100000 USD skewScaleUSD
 						{ from: owner }
 					),
@@ -1689,7 +1696,7 @@ const setupAllContracts = async ({
 			await Promise.all(promises);
 		}
 
-		// Futures V2
+		// PerpsV2
 		if (returnObj['PerpsV2MarketSettings']) {
 			const promises = [
 				returnObj['PerpsV2MarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
@@ -1724,15 +1731,27 @@ const setupAllContracts = async ({
 				await Promise.all([
 					returnObj['PerpsV2MarketSettings'].setParameters(
 						marketKey,
-						toWei('0.003'), // 0.3% taker fee
-						toWei('0.001'), // 0.1% maker fee
-						toWei('0.0005'), // 0.05% taker fee next price
-						toWei('0.0001'), // 0.01% maker fee next price
-						toBN('2'), // 2 rounds next price confirm window
-						toWei('10'), // 10x max leverage
-						toWei('100000'), // 100000 max market debt
-						toWei('0.1'), // 10% max funding rate
-						toWei('100000'), // 100000 USD skewScaleUSD
+						[
+							toWei('0.003'), // 0.3% taker fee
+							toWei('0.001'), // 0.1% maker fee
+							toWei('0.0005'), // 0.05% taker fee delayed order
+							toWei('0.0001'), // 0.01% maker fee delayed order
+							toWei('0.00005'), // 0.005% taker fee offchain delayed order
+							toWei('0.00001'), // 0.001% maker fee offchain delayed order
+
+							toWei('10'), // 10x max leverage
+							toWei('100000'), // 100000 max market debt
+							toWei('0.1'), // 10% max funding velocity
+							toWei('100000'), // 100000 USD skewScaleUSD
+
+							toBN('2'), // 2 rounds next price confirm window
+							30, // 30s delay confirm window
+							60, // 60s minimum delay time in seconds
+							120, // 120s maximum delay time in seconds
+
+							15, // 20s offchain min delay window
+							60, // 20s offchain max delay window
+						],
 						{ from: owner }
 					),
 				]);

@@ -41,30 +41,30 @@ import "./interfaces/IPerpsV2Market.sol";
  *
  * Each market is composed of the following pieces, one of each of this exists per asset:
  *
- *     - ProxyPerpsV2.sol:         The Proxy is the main entry point and visible, permanent address of the market.
- *                                  It acts as a combination of Proxy and Router sending the messages to the
- *                                  appropriate implementation (or fragment) of the Market.
- *                                   Margin is maintained isolated per market. each market is composed of several
- *                                  contracts (or fragments) accessed by this proxy:
- *                                    `base` contains all the common logic and is inherited by other fragments.
+ *     - ProxyPerpsV2.sol:              The Proxy is the main entry point and visible, permanent address of the market.
+ *                                      It acts as a combination of Proxy and Router sending the messages to the
+ *                                      appropriate implementation (or fragment) of the Market.
+ *                                      Margin is maintained isolated per market. each market is composed of several
+ *                                      contracts (or fragments) accessed by this proxy:
+ *                                       `base` contains all the common logic and is inherited by other fragments.
  *                                            It's treated as abstract and not deployed alone;
- *                                    `proxyable` is an extension of `base` that implements the proxyable interface
+ *                                       `proxyable` is an extension of `base` that implements the proxyable interface
  *                                           and is used as base for fragments that require the messageSender.
- *                                    `mutations` contains the basic market behaviour
- *                                    `views` contains functions to provide visibility to different parameters and
+ *                                       `mutations` contains the basic market behaviour
+ *                                       `views` contains functions to provide visibility to different parameters and
  *                                           is used by external or manager contracts.
- *                                    `nextPriceOrders` contains the logic to implement the next-price order flows.
+ *                                        `delayedOrders` contains the logic to implement the delayed order flows.
  *
- *     - PerpsV2State.sol:         The State contracts holds all the state for the market and is consumed/updated
- *                                  by the fragments.
- *                                  It provides access to the positions in case a migration is needed in the future.
+ *     - PerpsV2State.sol:               The State contracts holds all the state for the market and is consumed/updated
+ *                                       by the fragments.
+ *                                       It provides access to the positions in case a migration is needed in the future.
  *
- *     - PerpsV2Market.sol:        Contains the core logic to implement the market and positon flows.
+ *     - PerpsV2Market.sol:              Contains the core logic to implement the market and position flows.
  *
- *     - PerpsV2MarketViews.sol:   Contains the logic to access market and positions parameters by external or
- *                                  manager contracts
+ *     - PerpsV2MarketViews.sol:         Contains the logic to access market and positions parameters by external or
+ *                                       manager contracts
  *
- *     - PerpsV2MarketNextPriceOrders.sol:  Contains the lofic to implement next-price order flows
+ *     - PerpsV2MarketDelayedOrder.sol:  Contains the logic to implement delayed order flows
  *
  *
  * Technical note: internal functions within the PerpsV2Market contract assume the following:
@@ -180,7 +180,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
     /*
      * Same as modifyPosition, but emits an event with the passed tracking code to
-     * allow offchain calculations for fee sharing with originating integrations
+     * allow off-chain calculations for fee sharing with originating integrations
      */
     function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external {
         _modifyPosition(sizeDelta, trackingCode);
@@ -194,8 +194,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );
@@ -223,8 +223,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: -size,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );

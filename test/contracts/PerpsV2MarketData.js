@@ -1,5 +1,5 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toWei, toBN } = web3.utils;
+const { toBN } = web3.utils;
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 const {
@@ -118,19 +118,19 @@ contract('PerpsV2MarketData', accounts => {
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
-			const marketNextPrice = await setupContract({
+			const marketDelayedOrder = await setupContract({
 				accounts,
-				contract: 'PerpsV2NextPriceAdded' + symbol,
-				source: 'PerpsV2MarketNextPriceOrders',
+				contract: 'PerpsV2DelayedOrderAdded' + symbol,
+				source: 'PerpsV2MarketDelayedOrders',
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
 			const filteredFunctions = [
 				...getFunctionSignatures(marketViews, excludedFunctions),
-				...getFunctionSignatures(marketNextPrice, excludedFunctions),
+				...getFunctionSignatures(marketDelayedOrder, excludedFunctions),
 			];
 
-			await marketState.addAssociatedContracts([marketImpl.address, marketNextPrice.address], {
+			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
 				from: owner,
 			});
 			await market.setTarget(marketImpl.address, { from: owner });
@@ -146,7 +146,7 @@ contract('PerpsV2MarketData', accounts => {
 			});
 
 			await addressResolver.rebuildCaches(
-				[market.address, marketViews.address, marketNextPrice.address],
+				[market.address, marketViews.address, marketDelayedOrder.address],
 				{
 					from: owner,
 				}
@@ -158,15 +158,32 @@ contract('PerpsV2MarketData', accounts => {
 			// Now that the market exists we can set the all its parameters
 			await futuresMarketSettings.setParameters(
 				marketKey,
-				toWei('0.005'), // 0.5% taker fee
-				toWei('0.001'), // 0.1% maker fee
-				toWei('0.0005'), // 0.05% taker fee next price
-				toWei('0'), // 0% maker fee next price
-				toBN('2'), // 2 rounds next price confirm window
-				toWei('5'), // 5x max leverage
-				toWei('1000000'), // 1000000 max total margin
-				toWei('0.2'), // 20% max funding rate
-				toWei('100000'), // 100000 USD skewScaleUSD
+				[
+					toUnit('0.005'), // 0.5% taker fee
+					toUnit('0.001'), // 0.1% maker fee
+					toUnit('0.0005'), // 0.05% taker fee delayed order
+					toUnit('0'), // 0% maker fee delayed order
+					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
+					toUnit('0'), // 0% maker fee offchain delayed order
+
+					toUnit('5'), // 5x max leverage
+					toUnit('1000000'), // 1000000 max total margin
+					toUnit('0.2'), // 20% max funding rate
+					toUnit('100000'), // 100000 USD skewScaleUSD
+
+					toBN('2'), // 2 rounds next price confirm window
+					30, // 30s delay confirm window
+          
+					toWei('5'), // 5x max leverage
+					toWei('1000000'), // 1000000 max total margin
+					toWei('0.2'), // 20% max funding velocity
+					toWei('100000'), // 100000 USD skewScaleUSD
+
+          60, // 60s minimum delay time in seconds
+					120, // 120s maximum delay time in seconds
+					15, // offchainDelayedOrderMinAge
+					60, // offchainDelayedOrderMaxAge
+				],
 				{ from: owner }
 			);
 		}
@@ -238,12 +255,12 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(details.baseAsset, baseAsset);
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
-			assert.bnEqual(details.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
-			assert.bnEqual(details.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
+			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
+			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
-			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
+			assert.bnEqual(details.fundingParameters.maxFundingVelocity, params.maxFundingVelocity);
 			assert.bnEqual(details.fundingParameters.skewScaleUSD, params.skewScaleUSD);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
@@ -252,6 +269,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(details.marketSizeDetails.sides.short, marketSizes.short);
 			assert.bnEqual(details.marketSizeDetails.marketDebt, (await futuresMarket.marketDebt()).debt);
 			assert.bnEqual(details.marketSizeDetails.marketSkew, await futuresMarket.marketSkew());
+
+			// TODO: Include min/max delayed order
 
 			const assetPrice = await futuresMarket.assetPrice();
 			assert.bnEqual(details.priceDetails.price, assetPrice.price);
@@ -324,8 +343,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
 			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
-			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
+			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 		});
 
 		it('For market keys', async () => {
@@ -358,8 +377,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
-			assert.equal(sBTCSummary.feeRates.takerFeeNextPrice, fmParams.takerFeeNextPrice);
-			assert.equal(sBTCSummary.feeRates.makerFeeNextPrice, fmParams.makerFeeNextPrice);
+			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
+			assert.equal(sBTCSummary.feeRates.makerFeeDelayedOrder, fmParams.makerFeeDelayedOrder);
 
 			const sETHParams = await futuresMarketData.parameters(newMarketKey); // sETH
 
@@ -373,8 +392,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
 			assert.equal(sETHSummary.feeRates.takerFee, sETHParams.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, sETHParams.takerFeeNextPrice);
-			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, sETHParams.makerFeeNextPrice);
+			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, sETHParams.takerFeeDelayedOrder);
+			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, sETHParams.makerFeeDelayedOrder);
 
 			assert.equal(
 				sLINKSummary.market,
@@ -388,8 +407,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sLINKSummary.currentFundingRate, toUnit(0));
 			assert.equal(sLINKSummary.feeRates.takerFee, toUnit('0.005'));
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
-			assert.equal(sLINKSummary.feeRates.takerFeeNextPrice, toUnit('0.0005'));
-			assert.equal(sLINKSummary.feeRates.makerFeeNextPrice, toUnit('0'));
+			assert.equal(sLINKSummary.feeRates.takerFeeDelayedOrder, toUnit('0.0005'));
+			assert.equal(sLINKSummary.feeRates.makerFeeDelayedOrder, toUnit('0'));
 		});
 	});
 });

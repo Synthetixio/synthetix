@@ -56,15 +56,15 @@ contract PerpsV2MarketData {
     }
 
     struct FundingParameters {
-        uint maxFundingRate;
+        uint maxFundingVelocity;
         uint skewScaleUSD;
     }
 
     struct FeeRates {
         uint takerFee;
         uint makerFee;
-        uint takerFeeNextPrice;
-        uint makerFeeNextPrice;
+        uint takerFeeDelayedOrder;
+        uint makerFeeDelayedOrder;
     }
 
     struct FundingDetails {
@@ -137,29 +137,7 @@ contract PerpsV2MarketData {
     }
 
     function _parameters(bytes32 marketKey) internal view returns (IPerpsV2MarketSettings.Parameters memory) {
-        (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        ) = _futuresMarketSettings().parameters(marketKey);
-        return
-            IPerpsV2MarketSettings.Parameters(
-                takerFee,
-                makerFee,
-                takerFeeNextPrice,
-                makerFeeNextPrice,
-                nextPriceConfirmWindow,
-                maxLeverage,
-                maxMarketValueUSD,
-                maxFundingRate,
-                skewScaleUSD
-            );
+        return _futuresMarketSettings().parameters(marketKey);
     }
 
     function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {
@@ -184,7 +162,7 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice)
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder)
             );
         }
 
@@ -208,7 +186,7 @@ contract PerpsV2MarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(params.maxFundingRate, params.skewScaleUSD);
+        return FundingParameters(params.maxFundingVelocity, params.skewScaleUSD);
     }
 
     function _marketSizes(IPerpsV2MarketViews market) internal view returns (Sides memory) {
@@ -229,7 +207,7 @@ contract PerpsV2MarketData {
                 address(market),
                 baseAsset,
                 marketKey,
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeNextPrice, params.makerFeeNextPrice),
+                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder),
                 MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),

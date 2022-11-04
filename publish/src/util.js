@@ -22,6 +22,7 @@ const {
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
 		FUTURES_MARKETS_FILENAME,
+		PERPS_V2_MARKETS_FILENAME,
 	},
 	wrap,
 } = require('../..');
@@ -98,6 +99,10 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const futuresMarketsFile = path.join(deploymentPath, FUTURES_MARKETS_FILENAME);
 	const futuresMarkets = JSON.parse(fs.readFileSync(futuresMarketsFile));
 
+	console.log(gray(`Loading the list of perpsv2 markets on ${network.toUpperCase()}...`));
+	const perpsv2MarketsFile = path.join(deploymentPath, PERPS_V2_MARKETS_FILENAME);
+	const perpsv2Markets = JSON.parse(fs.readFileSync(perpsv2MarketsFile));
+
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
 	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
 
@@ -134,6 +139,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 		stakingRewardsFile,
 		futuresMarkets,
 		futuresMarketsFile,
+		perpsv2Markets,
+		perpsv2MarketsFile,
 		deployment,
 		deploymentFile,
 		ownerActions,

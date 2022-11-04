@@ -19,13 +19,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
 
     // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
     // for the same asset in order to allow migrations.
-    function marketKey() public view returns (bytes32 key) {
-        return marketState.marketKey();
+    function marketKey() external view returns (bytes32 key) {
+        return _marketKey();
     }
 
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
     function baseAsset() external view returns (bytes32 key) {
-        return marketState.baseAsset();
+        return _baseAsset();
     }
 
     /*
@@ -95,6 +95,15 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     function currentFundingRate() external view returns (int) {
         (uint price, ) = _assetPrice();
         return _currentFundingRate(price);
+    }
+
+    /*
+     * Velocity is a measure of how quickly the funding rate increases or decreases. A positive velocity means
+     * funding rate is increasing positively (long skew). A negative velocity means the skew is on shorts.
+     */
+    function currentFundingVelocity() external view returns (int) {
+        (uint price, ) = _assetPrice();
+        return _currentFundingVelocity(price);
     }
 
     /*
@@ -211,8 +220,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketKey()),
-                makerFee: _makerFee(marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: bytes32(0)
             });
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
@@ -243,8 +252,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketKey()),
-                makerFee: _makerFee(marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: bytes32(0)
             });
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(marketState.positions(sender), params);
@@ -265,7 +274,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
         int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex, currentPrice);
 
-        // minimum margin beyond which position can be liqudiated
+        // minimum margin beyond which position can be liquidated
         uint liqMargin = _liquidationMargin(positionSize, currentPrice);
 
         // A position can be liquidated whenever:

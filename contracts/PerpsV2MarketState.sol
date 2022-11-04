@@ -49,6 +49,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     int128[] public fundingSequence;
 
     /*
+     * The funding rate last time it was recomputed. The market funding rate floats and requires the previously
+     * calculated funding rate, time, and current market conditions to derive the next.
+     */
+    int128 public fundingRateLastRecomputed;
+
+    /*
      * Each user's position. Multiple positions can always be merged, so each user has
      * only have one position at a time.
      */
@@ -61,7 +67,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     uint64 internal _nextPositionId = 1;
 
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
-    mapping(address => NextPriceOrder) public nextPriceOrders;
+    mapping(address => DelayedOrder) public delayedOrders;
 
     constructor(
         address _owner,
@@ -74,6 +80,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
+
+        fundingRateLastRecomputed = 0;
     }
 
     function entryDebtCorrection() external view returns (int128) {
@@ -131,6 +139,11 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         fundingSequence.push(_fundingSequence);
     }
 
+    // TODO: Perform this update when maxFundingVelocity and skewScale are modified.
+    function setFundingRateLastRecomputed(int128 _fundingRateLastRecomputed) external onlyAssociatedContracts {
+        fundingRateLastRecomputed = _fundingRateLastRecomputed;
+    }
+
     /**
      * @notice Set the position of a given account
      * @dev Only the associated contract may call this.
@@ -154,24 +167,38 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     /**
-     * @notice Store a next price order at the specified account
+     * @notice Store a delayed order at the specified account
      * @dev Only the associated contract may call this.
      * @param account The account whose value to set.
      * @param sizeDelta Difference in position to pass to modifyPosition
      * @param targetRoundId Price oracle roundId using which price this order needs to executed
      * @param commitDeposit The commitDeposit paid upon submitting that needs to be refunded if order succeeds
      * @param keeperDeposit The keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
+     * @param executableAtTime The timestamp at which this order is executable at
+     * @param isOffchain Flag indicating if the order is offchain
      * @param trackingCode Tracking code to emit on execution for volume source fee sharing
      */
-    function updateNextPriceOrder(
+    function updateDelayedOrder(
         address account,
+        bool isOffchain,
         int128 sizeDelta,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
+        uint256 executableAtTime,
+        uint256 intentionTime,
         bytes32 trackingCode
     ) external onlyAssociatedContracts {
-        nextPriceOrders[account] = NextPriceOrder(sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode);
+        delayedOrders[account] = DelayedOrder(
+            isOffchain,
+            sizeDelta,
+            targetRoundId,
+            commitDeposit,
+            keeperDeposit,
+            executableAtTime,
+            intentionTime,
+            trackingCode
+        );
     }
 
     /**
@@ -186,7 +213,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         }
     }
 
-    function deleteNextPriceOrder(address account) external onlyAssociatedContracts {
-        delete nextPriceOrders[account];
+    function deleteDelayedOrder(address account) external onlyAssociatedContracts {
+        delete delayedOrders[account];
     }
 }

@@ -30,14 +30,21 @@ contract('PerpsV2MarketSettings', accounts => {
 	const marketKey = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
-	const takerFeeNextPrice = toUnit('0.0005');
-	const makerFeeNextPrice = toUnit('0.0001');
+	const takerFeeDelayedOrder = toUnit('0.0005');
+	const makerFeeDelayedOrder = toUnit('0.0001');
+	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
+	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
+
 	const nextPriceConfirmWindow = toBN('2');
+
 	const maxLeverage = toUnit('10');
 	const maxMarketValueUSD = toUnit('100000');
 
-	const maxFundingRate = toUnit('0.1');
+	const maxFundingVelocity = toUnit('0.1');
 	const skewScaleUSD = toUnit('10000');
+
+	const offchainDelayedOrderMinAge = toBN('15');
+	const offchainDelayedOrderMaxAge = toBN('60');
 
 	before(async () => {
 		({
@@ -116,20 +123,27 @@ contract('PerpsV2MarketSettings', accounts => {
 			abi: futuresMarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'setTakerFee',
+				'setDelayedOrderConfirmWindow',
+				'setLiquidationBufferRatio',
+				'setLiquidationFeeRatio',
 				'setMakerFee',
-				'setTakerFeeNextPrice',
-				'setMakerFeeNextPrice',
-				'setNextPriceConfirmWindow',
+				'setMakerFeeDelayedOrder',
+				'setMakerFeeOffchainDelayedOrder',
+				'setMaxDelayTimeDelta',
+				'setMaxFundingVelocity',
 				'setMaxLeverage',
 				'setMaxMarketValueUSD',
-				'setMaxFundingRate',
-				'setSkewScaleUSD',
-				'setParameters',
-				'setMinKeeperFee',
-				'setLiquidationFeeRatio',
-				'setLiquidationBufferRatio',
+				'setMinDelayTimeDelta',
 				'setMinInitialMargin',
+				'setMinKeeperFee',
+				'setNextPriceConfirmWindow',
+				'setParameters',
+				'setSkewScaleUSD',
+				'setTakerFee',
+				'setTakerFeeDelayedOrder',
+				'setTakerFeeOffchainDelayedOrder',
+				'setOffchainDelayedOrderMinAge',
+				'setOffchainDelayedOrderMaxAge',
 			],
 		});
 	});
@@ -141,13 +155,17 @@ contract('PerpsV2MarketSettings', accounts => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
-				takerFeeNextPrice,
-				makerFeeNextPrice,
-				nextPriceConfirmWindow,
+				takerFeeDelayedOrder,
+				makerFeeDelayedOrder,
+				takerFeeOffchainDelayedOrder,
+				makerFeeOffchainDelayedOrder,
 				maxLeverage,
 				maxMarketValueUSD,
-				maxFundingRate,
+				maxFundingVelocity,
 				skewScaleUSD,
+				nextPriceConfirmWindow,
+				offchainDelayedOrderMinAge,
+				offchainDelayedOrderMaxAge,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];
@@ -175,7 +193,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 			it('should revert if maker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setMakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setMakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'maker fee greater than 1'
@@ -184,7 +202,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 			it('should revert if taker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setTakerFeeNextPrice(marketKey, toUnit('1').add(new BN(1)), {
+					futuresMarketSettings.setTakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -476,10 +494,10 @@ contract('PerpsV2MarketSettings', accounts => {
 		it('should be able to change parameters for both markets independently', async () => {
 			const val1 = toUnit(0.1);
 			const val2 = toUnit(0.5);
-			await futuresMarketSettings.setMaxFundingRate(firstMarketKey, val1, { from: owner });
-			await futuresMarketSettings.setMaxFundingRate(secondMarketKey, val2, { from: owner });
-			assert.bnEqual(await futuresMarketSettings.maxFundingRate(firstMarketKey), val1);
-			assert.bnEqual(await futuresMarketSettings.maxFundingRate(secondMarketKey), val2);
+			await futuresMarketSettings.setMaxFundingVelocity(firstMarketKey, val1, { from: owner });
+			await futuresMarketSettings.setMaxFundingVelocity(secondMarketKey, val2, { from: owner });
+			assert.bnEqual(await futuresMarketSettings.maxFundingVelocity(firstMarketKey), val1);
+			assert.bnEqual(await futuresMarketSettings.maxFundingVelocity(secondMarketKey), val2);
 		});
 	});
 });

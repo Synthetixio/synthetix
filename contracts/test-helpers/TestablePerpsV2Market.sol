@@ -3,10 +3,10 @@ pragma experimental ABIEncoderV2;
 
 import "../PerpsV2Market.sol";
 import "../interfaces/IPerpsV2MarketViews.sol";
-import "../interfaces/IPerpsV2MarketNextPriceOrders.sol";
+import "../interfaces/IPerpsV2MarketDelayedOrders.sol";
 import "../interfaces/IPerpsV2MarketBaseTypes.sol";
 
-contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2MarketNextPriceOrders {
+contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2MarketDelayedOrders {
     constructor(
         address payable _proxy,
         address _marketState,
@@ -23,8 +23,8 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return _proportionalSkew(price);
     }
 
-    function maxFundingRate() external view returns (uint) {
-        return _maxFundingRate(marketState.marketKey());
+    function maxFundingVelocity() external view returns (uint) {
+        return _maxFundingVelocity(_marketKey());
     }
 
     /*
@@ -41,7 +41,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     {
         uint price;
         (price, invalid) = _assetPrice();
-        int sizeLimit = int(_maxMarketValueUSD(marketState.marketKey())).divideDecimal(int(price));
+        int sizeLimit = int(_maxMarketValueUSD(_marketKey())).divideDecimal(int(price));
         (uint longSize, uint shortSize) = _marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));
@@ -122,6 +122,10 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return 0;
     }
 
+    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
+        return 0;
+    }
+
     function unrecordedFunding() external view returns (int funding, bool invalid) {
         return (0, false);
     }
@@ -183,17 +187,29 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (0, 0, 0, 0, 0, IPerpsV2MarketBaseTypes.Status.Ok);
     }
 
-    /* ---------- Next Price Orders ---------- */
+    /* ---------- Delayed Orders ---------- */
 
-    function nextPriceOrders(address account) external view returns (NextPriceOrder memory) {
-        return NextPriceOrder(0, 0, 0, 0, bytes32(0));
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
+        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, bytes32(0));
     }
 
-    function submitNextPriceOrder(int sizeDelta) external {}
+    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}
 
-    function submitNextPriceOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+    function submitDelayedOrderWithTracking(
+        int sizeDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode
+    ) external {}
 
-    function cancelNextPriceOrder(address account) external {}
+    function cancelDelayedOrder(address account) external {}
 
-    function executeNextPriceOrder(address account) external {}
+    function executeDelayedOrder(address account) external {}
+
+    /* ---------- Offchain Delayed Orders ---------- */
+
+    function submitOffchainDelayedOrder(int sizeDelta) external {}
+
+    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+
+    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {}
 }

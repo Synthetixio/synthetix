@@ -53,17 +53,31 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The fee charged when opening a position on the heavy side of a futures market using next price mechanism.
+     * The fee charged when opening a position on the heavy side of a futures market using delayed order mechanism.
      */
-    function takerFeeNextPrice(bytes32 _marketKey) external view returns (uint) {
-        return _takerFeeNextPrice(_marketKey);
+    function takerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint) {
+        return _takerFeeDelayedOrder(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the light side of a futures market using next price mechanism.
+     * The fee charged when opening a position on the light side of a futures market using delayed order mechanism.
      */
-    function makerFeeNextPrice(bytes32 _marketKey) public view returns (uint) {
-        return _makerFeeNextPrice(_marketKey);
+    function makerFeeDelayedOrder(bytes32 _marketKey) public view returns (uint) {
+        return _makerFeeDelayedOrder(_marketKey);
+    }
+
+    /*
+     * The fee charged when opening a position on the heavy side of a futures market using delayed order mechanism.
+     */
+    function takerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint) {
+        return _takerFeeOffchainDelayedOrder(_marketKey);
+    }
+
+    /*
+     * The fee charged when opening a position on the light side of a futures market using delayed order mechanism.
+     */
+    function makerFeeOffchainDelayedOrder(bytes32 _marketKey) public view returns (uint) {
+        return _makerFeeOffchainDelayedOrder(_marketKey);
     }
 
     /*
@@ -71,6 +85,27 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function nextPriceConfirmWindow(bytes32 _marketKey) public view returns (uint) {
         return _nextPriceConfirmWindow(_marketKey);
+    }
+
+    /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function delayedOrderConfirmWindow(bytes32 _marketKey) public view returns (uint) {
+        return _delayedOrderConfirmWindow(_marketKey);
+    }
+
+    /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function offchainDelayedOrderMinAge(bytes32 _marketKey) public view returns (uint) {
+        return _offchainDelayedOrderMinAge(_marketKey);
+    }
+
+    /*
+     * The amount of time in seconds which confirming delayed orders is allow
+     */
+    function offchainDelayedOrderMaxAge(bytes32 _marketKey) public view returns (uint) {
+        return _offchainDelayedOrderMaxAge(_marketKey);
     }
 
     /*
@@ -88,43 +123,53 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The maximum theoretical funding rate per day charged by a market.
+     * The maximum theoretical funding velocity per day charged by a market.
      */
-    function maxFundingRate(bytes32 _marketKey) public view returns (uint) {
-        return _maxFundingRate(_marketKey);
+    function maxFundingVelocity(bytes32 _marketKey) public view returns (uint) {
+        return _maxFundingVelocity(_marketKey);
     }
 
     /*
-     * The skew level at which the max funding rate will be charged.
+     * The skew level at which the max funding velocity will be charged.
      */
     function skewScaleUSD(bytes32 _marketKey) public view returns (uint) {
         return _skewScaleUSD(_marketKey);
     }
 
-    function parameters(bytes32 _marketKey)
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint takerFeeNextPrice,
-            uint makerFeeNextPrice,
-            uint nextPriceConfirmWindow,
-            uint maxLeverage,
-            uint maxMarketValueUSD,
-            uint maxFundingRate,
-            uint skewScaleUSD
-        )
-    {
-        takerFee = _takerFee(_marketKey);
-        makerFee = _makerFee(_marketKey);
-        takerFeeNextPrice = _takerFeeNextPrice(_marketKey);
-        makerFeeNextPrice = _makerFeeNextPrice(_marketKey);
-        nextPriceConfirmWindow = _nextPriceConfirmWindow(_marketKey);
-        maxLeverage = _maxLeverage(_marketKey);
-        maxMarketValueUSD = _maxMarketValueUSD(_marketKey);
-        maxFundingRate = _maxFundingRate(_marketKey);
-        skewScaleUSD = _skewScaleUSD(_marketKey);
+    /*
+     * The delayed order lower bound whereby the desired delta must be greater than or equal to.
+     */
+    function minDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
+        return _minDelayTimeDelta(_marketKey);
+    }
+
+    /*
+     * The delayed order upper bound whereby the desired delta must be greater than or equal to.
+     */
+    function maxDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
+        return _maxDelayTimeDelta(_marketKey);
+    }
+
+    function parameters(bytes32 _marketKey) external view returns (Parameters memory) {
+        return
+            Parameters(
+                _takerFee(_marketKey),
+                _makerFee(_marketKey),
+                _takerFeeDelayedOrder(_marketKey),
+                _makerFeeDelayedOrder(_marketKey),
+                _takerFeeOffchainDelayedOrder(_marketKey),
+                _makerFeeOffchainDelayedOrder(_marketKey),
+                _maxLeverage(_marketKey),
+                _maxMarketValueUSD(_marketKey),
+                _maxFundingVelocity(_marketKey),
+                _skewScaleUSD(_marketKey),
+                _nextPriceConfirmWindow(_marketKey),
+                _delayedOrderConfirmWindow(_marketKey),
+                _minDelayTimeDelta(_marketKey),
+                _maxDelayTimeDelta(_marketKey),
+                _offchainDelayedOrderMinAge(_marketKey),
+                _offchainDelayedOrderMaxAge(_marketKey)
+            );
     }
 
     /*
@@ -181,18 +226,40 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAKER_FEE, _makerFee);
     }
 
-    function setTakerFeeNextPrice(bytes32 _marketKey, uint _takerFeeNextPrice) public onlyOwner {
-        require(_takerFeeNextPrice <= 1e18, "taker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_TAKER_FEE_NEXT_PRICE, _takerFeeNextPrice);
+    function setTakerFeeDelayedOrder(bytes32 _marketKey, uint _takerFeeDelayedOrder) public onlyOwner {
+        require(_takerFeeDelayedOrder <= 1e18, "taker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_TAKER_FEE_DELAYED_ORDER, _takerFeeDelayedOrder);
     }
 
-    function setMakerFeeNextPrice(bytes32 _marketKey, uint _makerFeeNextPrice) public onlyOwner {
-        require(_makerFeeNextPrice <= 1e18, "maker fee greater than 1");
-        _setParameter(_marketKey, PARAMETER_MAKER_FEE_NEXT_PRICE, _makerFeeNextPrice);
+    function setMakerFeeDelayedOrder(bytes32 _marketKey, uint _makerFeeDelayedOrder) public onlyOwner {
+        require(_makerFeeDelayedOrder <= 1e18, "maker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_MAKER_FEE_DELAYED_ORDER, _makerFeeDelayedOrder);
+    }
+
+    function setTakerFeeOffchainDelayedOrder(bytes32 _marketKey, uint _takerFeeOffchainDelayedOrder) public onlyOwner {
+        require(_takerFeeOffchainDelayedOrder <= 1e18, "taker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_TAKER_FEE_OFFCHAIN_DELAYED_ORDER, _takerFeeOffchainDelayedOrder);
+    }
+
+    function setMakerFeeOffchainDelayedOrder(bytes32 _marketKey, uint _makerFeeOffchainDelayedOrder) public onlyOwner {
+        require(_makerFeeOffchainDelayedOrder <= 1e18, "maker fee greater than 1");
+        _setParameter(_marketKey, PARAMETER_MAKER_FEE_OFFCHAIN_DELAYED_ORDER, _makerFeeOffchainDelayedOrder);
     }
 
     function setNextPriceConfirmWindow(bytes32 _marketKey, uint _nextPriceConfirmWindow) public onlyOwner {
         _setParameter(_marketKey, PARAMETER_NEXT_PRICE_CONFIRM_WINDOW, _nextPriceConfirmWindow);
+    }
+
+    function setDelayedOrderConfirmWindow(bytes32 _marketKey, uint _delayedOrderConfirmWindow) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_DELAYED_ORDER_CONFIRM_WINDOW, _delayedOrderConfirmWindow);
+    }
+
+    function setOffchainDelayedOrderMinAge(bytes32 _marketKey, uint _offchainDelayedOrderMinAge) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MIN_AGE, _offchainDelayedOrderMinAge);
+    }
+
+    function setOffchainDelayedOrderMaxAge(bytes32 _marketKey, uint _offchainDelayedOrderMaxAge) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_DELAYED_ORDER_MAX_AGE, _offchainDelayedOrderMaxAge);
     }
 
     function setMaxLeverage(bytes32 _marketKey, uint _maxLeverage) public onlyOwner {
@@ -217,9 +284,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         }
     }
 
-    function setMaxFundingRate(bytes32 _marketKey, uint _maxFundingRate) public onlyOwner {
+    function setMaxFundingVelocity(bytes32 _marketKey, uint _maxFundingVelocity) public onlyOwner {
         _recomputeFunding(_marketKey);
-        _setParameter(_marketKey, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
+        _setParameter(_marketKey, PARAMETER_MAX_FUNDING_VELOCITY, _maxFundingVelocity);
     }
 
     function setSkewScaleUSD(bytes32 _marketKey, uint _skewScaleUSD) public onlyOwner {
@@ -228,28 +295,32 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
     }
 
-    function setParameters(
-        bytes32 _marketKey,
-        uint _takerFee,
-        uint _makerFee,
-        uint _takerFeeNextPrice,
-        uint _makerFeeNextPrice,
-        uint _nextPriceConfirmWindow,
-        uint _maxLeverage,
-        uint _maxMarketValueUSD,
-        uint _maxFundingRate,
-        uint _skewScaleUSD
-    ) external onlyOwner {
+    function setMinDelayTimeDelta(bytes32 _marketKey, uint _minDelayTimeDelta) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MIN_DELAY_TIME_DELTA, _minDelayTimeDelta);
+    }
+
+    function setMaxDelayTimeDelta(bytes32 _marketKey, uint _maxDelayTimeDelta) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA, _maxDelayTimeDelta);
+    }
+
+    function setParameters(bytes32 _marketKey, Parameters calldata _parameters) external onlyOwner {
         _recomputeFunding(_marketKey);
-        setTakerFee(_marketKey, _takerFee);
-        setMakerFee(_marketKey, _makerFee);
-        setTakerFeeNextPrice(_marketKey, _takerFeeNextPrice);
-        setMakerFeeNextPrice(_marketKey, _makerFeeNextPrice);
-        setNextPriceConfirmWindow(_marketKey, _nextPriceConfirmWindow);
-        setMaxLeverage(_marketKey, _maxLeverage);
-        setMaxMarketValueUSD(_marketKey, _maxMarketValueUSD);
-        setMaxFundingRate(_marketKey, _maxFundingRate);
-        setSkewScaleUSD(_marketKey, _skewScaleUSD);
+        setTakerFee(_marketKey, _parameters.takerFee);
+        setMakerFee(_marketKey, _parameters.makerFee);
+        setMaxLeverage(_marketKey, _parameters.maxLeverage);
+        setMaxMarketValueUSD(_marketKey, _parameters.maxMarketValueUSD);
+        setMaxFundingVelocity(_marketKey, _parameters.maxFundingVelocity);
+        setSkewScaleUSD(_marketKey, _parameters.skewScaleUSD);
+        setTakerFeeDelayedOrder(_marketKey, _parameters.takerFeeDelayedOrder);
+        setMakerFeeDelayedOrder(_marketKey, _parameters.makerFeeDelayedOrder);
+        setNextPriceConfirmWindow(_marketKey, _parameters.nextPriceConfirmWindow);
+        setDelayedOrderConfirmWindow(_marketKey, _parameters.delayedOrderConfirmWindow);
+        setMinDelayTimeDelta(_marketKey, _parameters.minDelayTimeDelta);
+        setMaxDelayTimeDelta(_marketKey, _parameters.maxDelayTimeDelta);
+        setTakerFeeOffchainDelayedOrder(_marketKey, _parameters.takerFeeOffchainDelayedOrder);
+        setMakerFeeOffchainDelayedOrder(_marketKey, _parameters.makerFeeOffchainDelayedOrder);
+        setOffchainDelayedOrderMinAge(_marketKey, _parameters.offchainDelayedOrderMinAge);
+        setOffchainDelayedOrderMaxAge(_marketKey, _parameters.offchainDelayedOrderMaxAge);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {
