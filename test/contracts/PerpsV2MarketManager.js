@@ -84,6 +84,7 @@ contract('PerpsV2MarketManager', accounts => {
 			contracts: [
 				'PerpsV2MarketManager',
 				'PerpsV2MarketSettings',
+				'PerpsV2ExchangeRate',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -642,14 +643,20 @@ contract('PerpsV2MarketManager', accounts => {
 						toUnit('0.001'), // 0.1% maker fee
 						toUnit('0.0005'), // 0.05% taker fee delayed order
 						toUnit('0'), // 0% maker fee delayed order
-						toBN('2'), // 2 rounds next price confirm window
-						30, // 30s delay confirm window
+						toUnit('0.00005'), // 0.005% taker fee offchain delayed order
+						toUnit('0'), // 0% maker fee offchain delayed order
+
 						toUnit('5'), // 5x max leverage
 						toUnit('1000000'), // 1000000 max total margin
 						toUnit('0.2'), // 20% max funding rate
 						toUnit('100000'), // 100000 USD skewScaleUSD
+
+						toBN('2'), // 2 rounds next price confirm window
+						30, // 30s delay confirm window
 						60, // 60s minimum delay time in seconds
 						120, // 120s maximum delay time in seconds
+						15, // offchainDelayedOrderMinAge
+						60, // offchainDelayedOrderMaxAge
 					],
 					{ from: owner }
 				);

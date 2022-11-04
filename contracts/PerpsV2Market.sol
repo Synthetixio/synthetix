@@ -194,8 +194,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );
@@ -223,8 +223,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: -size,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );
