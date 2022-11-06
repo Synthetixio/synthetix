@@ -43,6 +43,7 @@ contract('PerpsV2Market', accounts => {
 		futuresMarketImpl,
 		futuresMarketViewsImpl,
 		futuresMarketDelayedOrderImpl,
+		futuresMarketOffchainDelayedOrderImpl,
 		futuresMarketState,
 		exchangeRates,
 		exchanger,
@@ -123,6 +124,7 @@ contract('PerpsV2Market', accounts => {
 			PerpsV2MarketBTC: futuresMarketImpl,
 			PerpsV2MarketViewsBTC: futuresMarketViewsImpl,
 			PerpsV2DelayedOrderBTC: futuresMarketDelayedOrderImpl,
+			PerpsV2OffchainOrderBTC: futuresMarketOffchainDelayedOrderImpl,
 			ProxyPerpsV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -196,6 +198,16 @@ contract('PerpsV2Market', accounts => {
 					'executeDelayedOrder',
 					'submitDelayedOrder',
 					'submitDelayedOrderWithTracking',
+				],
+			});
+		});
+
+		it('Only expected functions are mutative PerpsV2MarketDelayedOrdersOffchain', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: futuresMarketOffchainDelayedOrderImpl.abi,
+				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
+				expected: [
+					'cancelOffchainDelayedOrder',
 					'executeOffchainDelayedOrder',
 					'submitOffchainDelayedOrder',
 					'submitOffchainDelayedOrderWithTracking',
@@ -445,6 +457,42 @@ contract('PerpsV2Market', accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketDelayedOrderImpl.executeDelayedOrder,
 					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+			});
+		});
+
+		describe('PerpsV2MarketDelayedOrdersOffchain', () => {
+			it('Only proxy functions only work for proxy', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.submitOffchainDelayedOrder,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.submitOffchainDelayedOrderWithTracking,
+					args: [1, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.cancelOffchainDelayedOrder,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.executeOffchainDelayedOrder,
+					args: [noBalance, [toBytes32('code')]],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only the proxy can call',
 					skipPassCheck: true,

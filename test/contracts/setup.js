@@ -394,9 +394,9 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2DelayedOrderETH: [
-			tryGetAddressOf('ProxyPerpsV2MarketETH'),
-			tryGetAddressOf('PerpsV2MarketStateETH'),
+		PerpsV2OffchainOrderBTC: [
+			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
+			tryGetAddressOf('PerpsV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
@@ -735,19 +735,19 @@ const setupContract = async ({
 				),
 			]);
 		},
-		async PerpsV2DelayedOrderETH() {
+		async PerpsV2OffchainOrderBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
-				cache['PerpsV2MarketStateETH'].removeAssociatedContracts([deployerAccount], {
+				cache['PerpsV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
 					from: owner,
 				}),
-				cache['PerpsV2MarketStateETH'].addAssociatedContracts([instance.address], {
+				cache['PerpsV2MarketStateBTC'].addAssociatedContracts([instance.address], {
 					from: owner,
 				}),
-				instance.setProxy(cache['ProxyPerpsV2MarketETH'].address, { from: owner }),
+				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
 				...filteredFunctions.map(e =>
-					cache['ProxyPerpsV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
+					cache['ProxyPerpsV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
 						from: owner,
 					})
 				),
@@ -1350,8 +1350,8 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'PerpsV2NextPriceETH',
-			source: 'PerpsV2MarketNextPriceOrders',
+			contract: 'PerpsV2OffchainOrderBTC',
+			source: 'PerpsV2MarketDelayedOrdersOffchain',
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
@@ -1369,7 +1369,7 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2DelayedOrderBTC',
-				'PerpsV2OffchainOrdersBTC',
+				'PerpsV2OffchainOrderBTC',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',

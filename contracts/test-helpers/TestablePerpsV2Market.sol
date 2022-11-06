@@ -211,5 +211,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
 
+    function cancelOffchainDelayedOrder(address account) external {}
+
     function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {}
 }

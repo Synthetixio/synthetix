@@ -161,7 +161,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _currentFundingVelocity(uint price) internal view returns (int) {
-        int maxFundingVelocity = int(_maxFundingVelocity(marketState.marketKey()));
+        int maxFundingVelocity = int(_maxFundingVelocity(_marketKey()));
         return _proportionalSkew(price).multiplyDecimal(maxFundingVelocity);
     }
 

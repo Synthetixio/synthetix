@@ -392,16 +392,16 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		});
 	});
 
-	describe('cancelDelayedOrder()', () => {
+	describe('cancelOffchainDelayedOrder()', () => {
 		it('cannot cancel when there is no order', async () => {
 			// account owner
 			await assert.revert(
-				perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+				perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
 				'no previous order'
 			);
 			// keeper
 			await assert.revert(
-				perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
+				perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
 				'no previous order'
 			);
 		});
@@ -413,7 +413,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			async function checkCancellation(from) {
 				const currentMargin = toBN((await perpsV2Market.positions(trader)).margin);
 				// cancel the order
-				const tx = await perpsV2Market.cancelDelayedOrder(trader, { from: from });
+				const tx = await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: from });
 
 				// check order is removed
 				const order = await perpsV2MarketState.delayedOrders(trader);
@@ -482,7 +482,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			it('cannot cancel before time', async () => {
 				await assert.revert(
-					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+					perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
 					'cannot cancel yet'
 				);
 			});
@@ -491,7 +491,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
-					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+					perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
 					'Futures markets are suspended'
 				);
 			});
@@ -500,7 +500,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
-					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+					perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
 					'Market suspended'
 				);
 			});
@@ -518,7 +518,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 					// no time has changed.
 					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
 						'cannot cancel yet'
 					);
 
@@ -537,7 +537,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					);
 
 					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
 						'cannot cancel yet'
 					);
 
@@ -561,7 +561,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 					// no time has changed.
 					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
 						'cannot cancel yet'
 					);
 
@@ -580,7 +580,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					);
 
 					await assert.revert(
-						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
+						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
 						'cannot cancel yet'
 					);
 
@@ -1045,13 +1045,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			it('canceling an order works', async () => {
 				await fastForward(offchainDelayedOrderMaxAge * 2);
-				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
+				await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader });
 			});
 
 			it('submitting an order reverts', async () => {
 				// cancel existing
 				await fastForward(offchainDelayedOrderMaxAge * 2);
-				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
+				await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader });
 
 				await assert.revert(
 					perpsV2Market.submitOffchainDelayedOrder(size, { from: trader }),

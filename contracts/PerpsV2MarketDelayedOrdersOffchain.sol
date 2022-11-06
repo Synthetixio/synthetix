@@ -3,11 +3,10 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./PerpsV2MarketDelayedOrdersBase.sol";
-import "./interfaces/IPerpsV2MarketDelayedOrders.sol";
 import "./interfaces/IPerpsV2MarketOffchainOrders.sol";
 
 // Reference
-import "./interfaces/IPerpsV2MarketBaseTypes.sol";
+// import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 import "./interfaces/IPerpsV2ExchangeRate.sol";
 import "./interfaces/IPyth.sol";
 
@@ -23,8 +22,8 @@ import "./interfaces/IPyth.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrders
-contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2MarketDelayedOrdersBase {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrdersOffchain
+contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, PerpsV2MarketDelayedOrdersBase {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -33,6 +32,10 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         address _owner,
         address _resolver
     ) public PerpsV2MarketDelayedOrdersBase(_proxy, _marketState, _owner, _resolver) {}
+
+    function _perpsV2ExchangeRate() internal view returns (IPerpsV2ExchangeRate) {
+        return IPerpsV2ExchangeRate(requireAndGetAddress(CONTRACT_PERPSV2EXCHANGERATE));
+    }
 
     ///// Mutative methods
 
@@ -47,26 +50,20 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
+    function submitOffchainDelayedOrder(int sizeDelta) external {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, desiredTimeDelta, bytes32(0), false);
+        // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
+        _submitDelayedOrder(_marketKey(), sizeDelta, 0, bytes32(0), true);
     }
 
-    /// same as submitDelayedOrder but emits an event with the tracking code
-    /// to allow volume source fee sharing for integrations
-    function submitDelayedOrderWithTracking(
-        int sizeDelta,
-        uint desiredTimeDelta,
-        bytes32 trackingCode
-    ) external {
+    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, desiredTimeDelta, trackingCode, false);
+        _submitDelayedOrder(_marketKey(), sizeDelta, 0, trackingCode, true);
     }
 
     /**
@@ -81,13 +78,13 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      *  or send to the msg.sender if it's not the account holder.
      * @param account the account for which the stored order should be cancelled
      */
-    function cancelDelayedOrder(address account) external onlyProxy {
+    function cancelOffchainDelayedOrder(address account) external onlyProxy {
         // important!! order of the account, not the msg.sender
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        require(!order.isOffchain, "use offchain method");
+        require(order.isOffchain, "use onchain method");
 
         _cancelDelayedOrder(account, order);
     }
@@ -106,83 +103,59 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a delayed order
      */
-    function executeDelayedOrder(address account) external onlyProxy {
+    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable onlyProxy {
         // important!: order of the account, not the sender!
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        require(!order.isOffchain, "use offchain method");
+        require(order.isOffchain, "use onchain method");
 
-        // check order executability and round-id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
+        // update price feed (this is payable)
+        _perpsV2ExchangeRate().updatePythPrice(messageSender, priceUpdateData);
+
+        // get latest price for asset
+        uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
+        uint minAge = _offchainDelayedOrderMinAge(_marketKey());
+
+        (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
         require(
-            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
-            "executability not reached"
+            (executionTimestamp > order.intentionTime) && (executionTimestamp - order.intentionTime > minAge),
+            "too early"
         );
-
-        // check order is not too old to execute
-        // we cannot allow executing old orders because otherwise future knowledge
-        // can be used to trigger failures of orders that are more profitable
-        // then the commitFee that was charged, or can be used to confirm
-        // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(
-            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-            "order too old, use cancel"
-        );
-
-        // price depends on whether the delay or price update has reached/occurred first
-        uint currentPrice = _assetPriceRequireSystemChecks();
-        uint tradePrice = currentPrice;
-        if (currentRoundId >= order.targetRoundId) {
-            // the correct price for the past round if target round was met
-            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
-            tradePrice = pastPrice;
-        }
+        require((executionTimestamp - order.intentionTime < maxAge), "too late");
 
         _executeDelayedOrder(
             account,
             order,
             currentPrice,
-            tradePrice,
-            currentRoundId,
-            _takerFeeDelayedOrder(_marketKey()),
-            _makerFeeDelayedOrder(_marketKey())
+            currentPrice,
+            0,
+            _takerFeeOffchainDelayedOrder(_marketKey()),
+            _makerFeeOffchainDelayedOrder(_marketKey())
         );
     }
 
+    // solhint-disable no-unused-vars
     function _confirmCanCancel(
         address account,
         DelayedOrder memory order,
         uint currentRoundId
     ) internal {
-        if (account != messageSender) {
-            // this is someone else (like a keeper)
-            // cancellation by third party is only possible when execution cannot be attempted any longer
-            // otherwise someone might try to grief an account by cancelling for the keeper fee
-            require(
-                _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-                "cannot be cancelled by keeper yet"
-            );
-        }
+        require(block.timestamp - order.intentionTime > _offchainDelayedOrderMaxAge(_marketKey()) * 2, "cannot cancel yet");
     }
 
     ///// Internal views
 
-    /// confirmation window is over when:
-    ///  1. current roundId is more than nextPriceConfirmWindow rounds after target roundId
-    ///  2. or executableAtTime - block.timestamp is more than delayedOrderConfirmWindow
-    ///
-    /// if either conditions are met, an order is considered to have exceeded the window.
-    function _confirmationWindowOver(
-        uint executableAtTime,
-        uint currentRoundId,
-        uint targetRoundId
-    ) internal view returns (bool) {
-        bytes32 marketKey = _marketKey();
-        return
-            (block.timestamp > executableAtTime &&
-                (block.timestamp - executableAtTime) > _delayedOrderConfirmWindow(marketKey)) ||
-            ((currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey))); // don't underflow
+    /*
+     * The current base price, reverting if it is invalid, or if system or synth is suspended.
+     */
+    function _offchainAssetPriceRequireSystemChecks(uint maxAge) internal view returns (uint price, uint publishTime) {
+        // check that futures market isn't suspended, revert with appropriate message
+        _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
+        // check that synth is active, and wasn't suspended, revert with appropriate message
+        _systemStatus().requireSynthActive(_baseAsset());
+
+        return _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), maxAge);
     }
 }
