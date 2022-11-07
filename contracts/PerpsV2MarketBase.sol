@@ -14,7 +14,7 @@ import "./SignedSafeDecimalMath.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeCircuitBreaker.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
 
@@ -52,7 +52,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    // bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_PERPSV2MARKETMANAGER = "PerpsV2MarketManager";
@@ -100,16 +101,21 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
         newAddresses[3] = CONTRACT_PERPSV2MARKETMANAGER;
         newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
         newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
+        // newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    // function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+    //     return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    // }
+
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _exchanger() internal view returns (IExchanger) {
@@ -548,7 +554,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * Public because used both externally and internally
      */
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(_baseAsset());
+        (price, invalid) = _exchangeRates().rateAndInvalid(_baseAsset());
         // Ensure we catch uninitialised rates or suspended state / synth
         invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset());
         return (price, invalid);

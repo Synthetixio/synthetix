@@ -221,12 +221,6 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
     ///// Internal views
 
-    // convenience view to access exchangeRates contract for methods that are not exposed
-    // via _exchangeCircuitBreaker() contract
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(_exchangeCircuitBreaker().exchangeRates());
-    }
-
     // calculate the commitFee, which is the fee that would be charged on the order if it was spot
     function _delayedOrderCommitDeposit(TradeParams memory params) internal view returns (uint) {
         // modify params to spot fee
